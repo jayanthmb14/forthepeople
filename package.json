@@ -50,7 +50,7 @@
     "next-intl": "^4.8.3",
     "node-cron": "^4.2.1",
     "otpauth": "^9.5.0",
-    "prisma": "^7.5.0",
+    "prisma": "^7.6.0",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
     "react": "19.2.3",
