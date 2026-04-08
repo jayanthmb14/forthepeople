@@ -5,7 +5,7 @@
  */
 
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono, Noto_Sans_Kannada } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Noto_Sans_Kannada, Noto_Sans_Devanagari } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -26,6 +26,13 @@ const jetBrains = JetBrains_Mono({
 const notoKannada = Noto_Sans_Kannada({
   variable: "--font-noto-kannada",
   subsets: ["kannada"],
+  weight: ["400", "600"],
+  display: "swap",
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-noto-devanagari",
+  subsets: ["devanagari"],
   weight: ["400", "600"],
   display: "swap",
 });
@@ -202,7 +209,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${jetBrains.variable} ${notoKannada.variable}`}
+      className={`${plusJakarta.variable} ${jetBrains.variable} ${notoKannada.variable} ${notoDevanagari.variable}`}
     >
       <head>
         <meta name="theme-color" content="#2563EB" />

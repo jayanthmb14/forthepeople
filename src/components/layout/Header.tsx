@@ -46,7 +46,7 @@ const MODULE_INDEX = [
 const LANGUAGES = [
   { code: "en", name: "English",   nameLocal: "English",        active: true },
   { code: "kn", name: "Kannada",   nameLocal: "ಕನ್ನಡ",          active: false },
-  { code: "hi", name: "Hindi",     nameLocal: "हिन्दी",           active: false },
+  { code: "hi", name: "Hindi",     nameLocal: "हिन्दी",           active: true },
   { code: "te", name: "Telugu",    nameLocal: "తెలుగు",          active: false },
   { code: "ta", name: "Tamil",     nameLocal: "தமிழ்",            active: false },
   { code: "ml", name: "Malayalam", nameLocal: "മലയാളം",          active: false },

@@ -1,0 +1,79 @@
+{
+  "site": {
+    "name": "ForThePeople.in",
+    "tagline": "आपका जिला। आपका डेटा। आपका अधिकार।",
+    "disclaimer": "ForThePeople.in एक स्वतंत्र नागरिक पारदर्शिता पहल है। यह एक आधिकारिक सरकारी वेबसाइट नहीं है। सभी डेटा भारत की ओपन डेटा नीति (NDSAP) के तहत सार्वजनिक रूप से उपलब्ध सरकारी पोर्टल से लिया गया है।"
+  },
+  "nav": {
+    "home": "होम",
+    "search": "जिला खोजें...",
+    "language": "भाषा",
+    "about": "परिचय",
+    "support": "सहयोग",
+    "feedback": "प्रतिक्रिया"
+  },
+  "map": {
+    "title": "भारत — अपना जिला चुनें",
+    "comingSoon": "जल्द आ रहा है",
+    "activeState": "सक्रिय",
+    "selectDistrict": "जानकारी के लिए जिला चुनें"
+  },
+  "district": {
+    "overview": "अवलोकन",
+    "lastUpdated": "अंतिम अपडेट",
+    "liveData": "लाइव डेटा",
+    "loading": "लोड हो रहा है...",
+    "error": "डेटा लोड नहीं हो सका",
+    "population": "जनसंख्या",
+    "area": "क्षेत्रफल",
+    "literacy": "साक्षरता",
+    "taluks": "तालुक",
+    "villages": "गांव"
+  },
+  "modules": {
+    "leadership": "नेतृत्व",
+    "budget": "बजट",
+    "crops": "फसल मूल्य",
+    "weather": "मौसम",
+    "dams": "बांध और जल",
+    "infrastructure": "बुनियादी ढांचा",
+    "schemes": "योजनाएं",
+    "police": "पुलिस",
+    "courts": "न्यायालय",
+    "news": "समाचार",
+    "elections": "चुनाव",
+    "transport": "परिवहन",
+    "schools": "विद्यालय",
+    "housing": "आवास",
+    "soil": "मृदा स्वास्थ्य",
+    "rti": "RTI",
+    "mgnrega": "मनरेगा",
+    "offices": "सरकारी कार्यालय",
+    "alerts": "अलर्ट",
+    "famous": "प्रसिद्ध व्यक्तित्व",
+    "responsibility": "मेरी जिम्मेदारी",
+    "jjm": "जल जीवन मिशन",
+    "power": "बिजली कटौती",
+    "panchayat": "ग्राम पंचायत",
+    "sugar": "चीनी मिलें",
+    "services": "नागरिक सेवाएं"
+  },
+  "common": {
+    "viewAll": "सभी देखें",
+    "noData": "कोई डेटा उपलब्ध नहीं",
+    "source": "स्रोत",
+    "pending": "लंबित",
+    "active": "सक्रिय",
+    "completed": "पूर्ण",
+    "total": "कुल",
+    "crore": "करोड़",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "back": "वापस",
+    "updated": "अपडेट किया गया"
+  },
+  "footer": {
+    "disclaimer": "स्वतंत्र नागरिक पहल। आधिकारिक सरकारी वेबसाइट नहीं। NDSAP के तहत डेटा।",
+    "builtBy": "निर्मित: Jayanth M B"
+  }
+}
