@@ -205,7 +205,10 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
 
       <style>{`
         @media (max-width: 500px) {
-          .health-grid { grid-template-columns: repeat(5, 1fr) !important; }
+          .health-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+        @media (max-width: 340px) {
+          .health-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
     </div>

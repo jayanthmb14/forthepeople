@@ -50,6 +50,14 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
   return (
     <div style={{ padding: 24 }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .weather-temp { font-size: 38px !important; }
+        }
+        @media (max-width: 360px) {
+          .weather-temp { font-size: 32px !important; }
+        }
+      `}</style>
       <ModuleHeader icon={Cloud} title="Weather & Rainfall" description="Live weather readings and historical monsoon data" backHref={base} liveTag>
         <LastUpdatedBadge lastUpdated={weatherData?.meta?.lastUpdated } />
       </ModuleHeader>
@@ -69,7 +77,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
           <div style={{ background: "linear-gradient(135deg, #EFF6FF, #F0F9FF)", border: "1px solid #BFDBFE", borderRadius: 16, padding: 20, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
               <div>
-                <div style={{ fontSize: 52, fontWeight: 700, fontFamily: "var(--font-mono)", color: "#1A1A1A", letterSpacing: "-2px" }}>
+                <div className="weather-temp" style={{ fontSize: 52, fontWeight: 700, fontFamily: "var(--font-mono)", color: "#1A1A1A", letterSpacing: "-2px" }}>
                   {latest.temperature !== null && latest.temperature !== undefined ? `${latest.temperature}°C` : "—"}
                 </div>
                 <div style={{ fontSize: 16, color: "#6B6B6B", marginTop: 4 }}>{latest.conditions ?? "—"}</div>

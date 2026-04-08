@@ -151,9 +151,24 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
 
   return (
     <div style={{ padding: "0" }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .district-header { padding: 16px 16px 14px !important; }
+          .district-title { font-size: 20px !important; }
+          .widgets-grid { grid-template-columns: 1fr !important; }
+          .projects-grid { grid-template-columns: 1fr !important; }
+          .stats-grid-sm { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+          .leader-card { min-width: 140px !important; }
+        }
+        @media (max-width: 360px) {
+          .stat-divider { padding-left: 12px !important; border-left: none !important; }
+          .modules-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important; }
+          .district-title { font-size: 18px !important; }
+        }
+      `}</style>
 
       {/* ── District Header (clean white, no gradient) ─── */}
-      <div style={{
+      <div className="district-header" style={{
         background: "#FFFFFF",
         borderBottom: "1px solid #E8E8E4",
         padding: "24px 28px 20px",
@@ -169,7 +184,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         </div>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.6px", margin: 0, lineHeight: 1.1 }}>
+            <h1 className="district-title" style={{ fontSize: 28, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.6px", margin: 0, lineHeight: 1.1 }}>
               {districtData.name}
             </h1>
             {districtData.nameLocal && (
@@ -196,7 +211,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             </div>
           )}
           {districtData.area && (
-            <div style={{ paddingLeft: 20, borderLeft: "1px solid #E8E8E4" }}>
+            <div className="stat-divider" style={{ paddingLeft: 20, borderLeft: "1px solid #E8E8E4" }}>
               <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-mono)", letterSpacing: "-0.4px", color: "#1A1A1A" }}>
                 {districtData.area.toLocaleString("en-IN")}
               </div>
@@ -204,7 +219,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             </div>
           )}
           {districtData.literacy && (
-            <div style={{ paddingLeft: 20, borderLeft: "1px solid #E8E8E4" }}>
+            <div className="stat-divider" style={{ paddingLeft: 20, borderLeft: "1px solid #E8E8E4" }}>
               <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-mono)", letterSpacing: "-0.4px", color: "#1A1A1A" }}>
                 {districtData.literacy}%
               </div>
@@ -212,7 +227,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             </div>
           )}
           {districtData.talukCount && (
-            <div style={{ paddingLeft: 20, borderLeft: "1px solid #E8E8E4" }}>
+            <div className="stat-divider" style={{ paddingLeft: 20, borderLeft: "1px solid #E8E8E4" }}>
               <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-mono)", letterSpacing: "-0.4px", color: "#1A1A1A" }}>
                 {districtData.talukCount}
               </div>
@@ -262,7 +277,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         )}
 
         {/* ── Live Data Row ─────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <div className="widgets-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, marginBottom: 24 }}>
 
           {/* Weather Widget */}
           <Link href={`${base}/weather`} style={{ textDecoration: "none" }}
@@ -381,7 +396,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
               {topLeaders.map((l) => (
                 <Link key={l.id} href={`${base}/leadership`} style={{ textDecoration: "none", flexShrink: 0 }}>
-                  <div style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px", minWidth: 160, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                  <div className="leader-card" style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px", minWidth: 160, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
                     <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
                       {l.name.charAt(0)}
                     </div>
@@ -401,7 +416,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             <SectionLabel action={<Link href={`${base}/map`} style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", fontWeight: 500 }}>See map →</Link>}>
               Ongoing Projects
             </SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
+            <div className="projects-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
               {ongoingProjects.map((p) => {
                 const pct = p.progressPct ?? 0;
                 const catColors: Record<string, string> = {
@@ -460,7 +475,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                 <div style={{ fontSize: 13, color: "#9B9B9B", textAlign: "center", padding: "12px 0" }}>No budget data available</div>
               ) : (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 16, marginBottom: 16 }}>
+                  <div className="stats-grid-sm" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 16, marginBottom: 16 }}>
                     <div>
                       <div style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Total Allocated</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: "#1A1A1A", fontFamily: "var(--font-mono)", letterSpacing: "-0.5px" }}>
@@ -638,7 +653,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                       gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
                       gap: 8,
                     }}
-                    className="module-grid"
+                    className="module-grid modules-grid"
                   >
                     {mods.map((mod) => {
                       const isLive = LIVE_MODULES.has(mod.slug);

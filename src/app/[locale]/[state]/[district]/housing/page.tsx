@@ -34,6 +34,16 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
 
   return (
     <div style={{ padding: 24 }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .housing-scheme-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .housing-fund-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 340px) {
+          .housing-scheme-grid { grid-template-columns: 1fr !important; }
+          .housing-fund-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <ModuleHeader icon={Home} title="Housing" description="PMAY and housing scheme progress — houses sanctioned, completed, in-progress" backHref={base} />
       <AIInsightCard module="housing" district={district} />
       {isLoading && <LoadingShell rows={4} />}
@@ -100,7 +110,7 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
                     </div>
                     <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-mono)", color: "#16A34A" }}>{completedPct.toFixed(0)}%</div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+                  <div className="housing-scheme-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
                     {[
                       { label: "Target", value: h.targetHouses },
                       { label: "Sanctioned", value: h.sanctioned },
@@ -120,7 +130,7 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
                     <ProgressBar pct={completedPct} />
                   </div>
                   {h.fundsAllocated && (
-                    <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                    <div className="housing-fund-grid" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                       {[
                         { label: "Allocated", value: h.fundsAllocated },
                         { label: "Released", value: h.fundsReleased ?? 0 },
