@@ -72,7 +72,6 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
 
     fetch(`/api/data/insight?module=${module}&district=${district}`)
       .then((r) => r.json())
