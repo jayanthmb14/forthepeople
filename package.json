@@ -54,7 +54,7 @@
     "dotenv": "^17.3.1",
     "ioredis": "^5.10.0",
     "lucide-react": "^0.577.0",
-    "next": "16.1.7",
+    "next": "16.2.3",
     "next-intl": "^4.8.3",
     "node-cron": "^4.2.1",
     "otpauth": "^9.5.0",
