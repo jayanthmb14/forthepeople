@@ -8,6 +8,7 @@ import QueryProvider from "@/components/providers/QueryProvider";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import DisclaimerBar from "@/components/layout/DisclaimerBar";
+import MigrationBanner from "@/components/layout/MigrationBanner";
 
 export default async function LocaleLayout({
   children,
@@ -20,6 +21,7 @@ export default async function LocaleLayout({
 
   return (
     <QueryProvider>
+      <MigrationBanner />
       <DisclaimerBar />
       <Header locale={locale} />
       {children}
