@@ -6,13 +6,12 @@
 
 "use client";
 import { use } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { BarChart3 } from "lucide-react";
-import { usePopulation, useRainfall } from "@/hooks/useRealtimeData";
+import { usePopulation } from "@/hooks/useRealtimeData";
 import { ModuleHeader, StatCard, SectionLabel, LoadingShell, ErrorBlock, DataTable } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import DataSourceBanner from "@/components/common/DataSourceBanner";
-import NoDataCard from "@/components/common/NoDataCard";
 import { getModuleSources } from "@/lib/constants/state-config";
 import ModuleNews from "@/components/district/ModuleNews";
 
@@ -20,19 +19,9 @@ export default function PopulationPage({ params }: { params: Promise<{ locale: s
   const { locale, state, district } = use(params);
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = usePopulation(district, state);
-  const { data: rainfall } = useRainfall(district, state);
 
   const rows = data?.data ?? [];
   const latest = rows[rows.length - 1];
-  const rainfallData = (rainfall?.data ?? []).slice(0, 24);
-
-  // Monthly rainfall aggregated by year for chart
-  const rainfallByYear = Object.entries(
-    rainfallData.reduce((acc: Record<number, number>, r) => {
-      acc[r.year] = (acc[r.year] ?? 0) + r.rainfall;
-      return acc;
-    }, {})
-  ).map(([year, total]) => ({ year, total: Math.round(total) })).sort((a, b) => Number(a.year) - Number(b.year));
 
   return (
     <div style={{ padding: 24 }}>
@@ -86,22 +75,6 @@ export default function PopulationPage({ params }: { params: Promise<{ locale: s
         </>
       )}
 
-      {rainfallByYear.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <SectionLabel>Annual Rainfall (mm)</SectionLabel>
-          <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16 }}>
-            <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={rainfallByYear} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
-                <XAxis dataKey="year" tick={{ fontSize: 11, fill: "#9B9B9B" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#9B9B9B" }} />
-                <Tooltip formatter={(v) => [`${Number(v)} mm`, "Rainfall"]} />
-                <Line type="monotone" dataKey="total" stroke="#2563EB" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
       <ModuleNews district={district} state={state} locale={locale} module="population" />
     </div>
   );

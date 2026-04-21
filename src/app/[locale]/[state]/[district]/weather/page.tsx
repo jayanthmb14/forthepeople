@@ -6,7 +6,7 @@
 
 "use client";
 import { use } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
 import { Cloud, Download } from "lucide-react";
 import { useWeather, useRainfall } from "@/hooks/useRealtimeData";
 import { ModuleHeader, SectionLabel, LoadingShell, LiveBadge, DataTable, LastUpdatedBadge } from "@/components/district/ui";
@@ -35,6 +35,22 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
     normal: r.normal,
     departure: r.departure,
   })).reverse();
+
+  // Aggregate monthly rainfall into yearly totals for trend visualization
+  const rainfallByYear = Object.entries(
+    rainfallRows.reduce((acc: Record<number, number>, r) => {
+      const year = Number(r.year);
+      const rainfall = Number(r.rainfall);
+      if (!year || isNaN(rainfall)) return acc;
+      acc[year] = (acc[year] ?? 0) + rainfall;
+      return acc;
+    }, {})
+  )
+    .map(([year, total]) => ({
+      year: Number(year),
+      total: Math.round(total),
+    }))
+    .sort((a, b) => a.year - b.year);
 
   function handleDownload() {
     const rows = rainfallRows.slice(0, 60).map((r) => ({
@@ -114,37 +130,67 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* Rainfall History */}
       {rLoading && <LoadingShell rows={3} />}
-      {!rLoading && chartData.length > 0 && (
+      {/* Render rainfall section after data loads */}
+      {!rLoading && (
         <>
-          <SectionLabel>Monthly Rainfall — Actual vs Normal (mm)</SectionLabel>
-          <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16, marginBottom: 20 }}>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9B9B9B" }} angle={-45} textAnchor="end" interval={1} />
-                <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} />
-                <Tooltip formatter={(v, name) => [`${Number(v)} mm`, name === "actual" ? "Actual" : "Normal"]} />
-                <Bar dataKey="actual" fill="#2563EB" radius={[3, 3, 0, 0]} name="Actual" />
-                <Bar dataKey="normal" fill="#E8E8E4" radius={[3, 3, 0, 0]} name="Normal" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Show monthly charts only if sufficient data exists */}
+          {chartData.length > 0 && (
+            <>
+            <SectionLabel>Monthly Rainfall — Actual vs Normal (mm)</SectionLabel>
+            <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9B9B9B" }} angle={-45} textAnchor="end" interval={1} />
+                  <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} />
+                  <Tooltip formatter={(v, name) => [`${Number(v)} mm`, name === "actual" ? "Actual" : "Normal"]} />
+                  <Bar dataKey="actual" fill="#2563EB" radius={[3, 3, 0, 0]} name="Actual" />
+                  <Bar dataKey="normal" fill="#E8E8E4" radius={[3, 3, 0, 0]} name="Normal" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-          <SectionLabel>Departure from Normal</SectionLabel>
-          <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16, marginBottom: 20 }}>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={chartData} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9B9B9B" }} angle={-45} textAnchor="end" interval={1} />
-                <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} />
-                <Tooltip formatter={(v) => [`${Number(v)} mm`, "Departure"]} />
-                <ReferenceLine y={0} stroke="#9B9B9B" />
-                <Bar dataKey="departure" fill="#D97706" radius={[3, 3, 0, 0]}
-                  label={false}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+            <SectionLabel>Departure from Normal</SectionLabel>
+            <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9B9B9B" }} angle={-45} textAnchor="end" interval={1} />
+                  <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} />
+                  <Tooltip formatter={(v) => [`${Number(v)} mm`, "Departure"]} />
+                  <ReferenceLine y={0} stroke="#9B9B9B" />
+                  <Bar dataKey="departure" fill="#D97706" radius={[3, 3, 0, 0]}
+                    label={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            </>
+          )}
+
+          {/* Year-wise rainfall trend visualization */}
+          {rainfallByYear.length > 0 && (
+            <>
+              <SectionLabel>Annual Rainfall (mm)</SectionLabel>
+              <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                <ResponsiveContainer width="100%" height={160} key={rainfallByYear.length}>
+                  <LineChart data={rainfallByYear} margin={{ top: 0, right: 15, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="year" interval={0} tick={{ fontSize: 10 }}/>
+                    <YAxis tick={{ fontSize: 10 }} domain={[0, (dataMax: number) => Math.ceil(dataMax / 100) * 100]}/>
+                    <Tooltip formatter={(v) => [`${Number(v)} mm`, "Rainfall"]} />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      stroke="#2563EB"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
 
           <SectionLabel action={
             <div style={{ display: "flex", gap: 6 }}>
