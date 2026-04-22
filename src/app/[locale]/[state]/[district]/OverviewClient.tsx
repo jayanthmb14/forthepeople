@@ -317,7 +317,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         {/* ── District Snapshot ─────────────────────────── */}
         <div style={{ marginBottom: 24 }}>
           <SectionLabel>District Snapshot</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             <StatCard label="Population" value={districtData.population?.toLocaleString("en-IN") ?? "—"} icon={Users} />
             <StatCard label="Area (km²)" value={districtData.area?.toLocaleString("en-IN") ?? "—"} icon={TreePine} />
             <StatCard label={stateConfig?.subDistrictUnitPlural ?? "Taluks"} value={displayedTalukCount ?? "—"} icon={MapPin} />

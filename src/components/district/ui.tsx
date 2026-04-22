@@ -146,6 +146,7 @@ export function StatCard({
         borderRadius: 12,
         padding: "16px 18px",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        flex: "1 0 auto",
       }}
     >
       <div
@@ -178,6 +179,7 @@ export function StatCard({
           fontFamily: "var(--font-mono)",
           letterSpacing: "-0.5px",
           lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}
       >
         {value}

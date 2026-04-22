@@ -170,8 +170,8 @@ export default function PopulationPage({
             {/* 5. Headline stats */}
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
+                display: "flex",
+                flexWrap: "wrap",
                 gap: 10,
                 marginBottom: 24,
               }}
