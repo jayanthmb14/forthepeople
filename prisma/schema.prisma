@@ -41,17 +41,19 @@ model District {
   // Whether the Tenders module (Module 30) is activated for this district.
   // When false, the /tenders page renders a locked "coming soon" state
   // instead of the dashboard. See docs/TENDERS-ACTIVATION.md.
-  tendersActive       Boolean              @default(false)
-  population          Int?
-  area                Float?
-  talukCount          Int?
-  villageCount        Int?
-  literacy            Float?
-  sexRatio            Int?
-  density             Float?
-  avgRainfall         Float?
-  goLiveDate          DateTime? // When this district was first activated. Drives the NEW badge (45-day window).
-  taluks              Taluk[]
+tendersActive Boolean @default(false)
+  population    Int?
+  area          Float?
+  talukCount    Int?
+  villageCount  Int?
+  literacy      Float?
+  sexRatio      Int?
+  density       Float?
+  avgRainfall   Float?
+  owmCityName   String? // OpenWeatherMap city name override (e.g. "Bangalore" for bengaluru-urban). Falls back to districtName if null.
+  agmarknetName String? // AGMARKNET district name override (e.g. "Delhi" for new-delhi). Falls back to districtName if null.
+  goLiveDate    DateTime? // When this district was first activated. Drives the NEW badge (45-day window).
+  taluks        Taluk[]
   responsibilityItems ResponsibilityItem[]
 
   leaders             Leader[]

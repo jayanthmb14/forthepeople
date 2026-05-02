@@ -21,7 +21,8 @@ export interface JobContext {
   districtName: string;
   stateSlug: string;
   stateName: string;
+  owmCityName?: string | null;   
+  agmarknetName?: string | null; 
   log: (msg: string) => void;
 }
-
 export type ScraperJob = (ctx: JobContext) => Promise<ScraperResult>;
