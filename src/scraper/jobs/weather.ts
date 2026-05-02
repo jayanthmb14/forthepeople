@@ -15,25 +15,6 @@ import { logUpdate } from "@/lib/update-log";
 const OWM_KEY = process.env.OPENWEATHER_API_KEY;
 
 // Override map for districts where OWM city name differs from district name
-const OWM_CITY_OVERRIDE: Record<string, string> = {
-  "bengaluru-urban": "Bangalore",
-  "mysuru":          "Mysore",
-  "new-delhi":       "New Delhi",
-  "central-delhi":   "New Delhi",
-  "north-delhi":     "New Delhi",
-  "north-west-delhi":"New Delhi",
-  "north-east-delhi":"New Delhi",
-  "east-delhi":      "New Delhi",
-  "south-delhi":     "New Delhi",
-  "south-west-delhi":"New Delhi",
-  "south-east-delhi":"New Delhi",
-  "west-delhi":      "New Delhi",
-  "shahdara":        "New Delhi",
-  "mumbai":          "Mumbai",
-  "kolkata":         "Kolkata",
-  "chennai":         "Chennai",
-  "pune":            "Pune",
-};
 
 interface OWMResponse {
   main: { temp: number; feels_like: number; humidity: number; pressure: number };
@@ -55,7 +36,7 @@ export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
   }
 
   try {
-    const city = OWM_CITY_OVERRIDE[ctx.districtSlug] ?? ctx.districtName ?? ctx.districtSlug;
+    const city = ctx.owmCityName ?? ctx.districtName ?? ctx.districtSlug;
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},IN&appid=${OWM_KEY}&units=metric`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -16,25 +16,6 @@ const API_KEY = process.env.DATA_GOV_API_KEY;
 const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070";
 
 // Override map for districts where AGMARKNET name differs from district name
-const AGMARKNET_DISTRICT_OVERRIDE: Record<string, string> = {
-  "bengaluru-urban": "Bangalore",
-  "mysuru":          "Mysore",
-  "new-delhi":       "Delhi",
-  "central-delhi":   "Delhi",
-  "north-delhi":     "Delhi",
-  "north-west-delhi":"Delhi",
-  "north-east-delhi":"Delhi",
-  "east-delhi":      "Delhi",
-  "south-delhi":     "Delhi",
-  "south-west-delhi":"Delhi",
-  "south-east-delhi":"Delhi",
-  "west-delhi":      "Delhi",
-  "shahdara":        "Delhi",
-  "mumbai":          "Mumbai",
-  "kolkata":         "Kolkata",
-  "chennai":         "Chennai",
-  "pune":            "Pune",
-};
 
 interface AgmarkRecord {
   commodity: string;
@@ -57,7 +38,7 @@ export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
 
   try {
     const state = ctx.stateName ?? (ctx.stateSlug.charAt(0).toUpperCase() + ctx.stateSlug.slice(1));
-    const district = AGMARKNET_DISTRICT_OVERRIDE[ctx.districtSlug] ?? ctx.districtName ?? ctx.districtSlug;
+    const district = ctx.agmarknetName ?? ctx.districtName ?? ctx.districtSlug;
     const url = `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&limit=100`;
 
     const res = await fetch(url);
