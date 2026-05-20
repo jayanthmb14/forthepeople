@@ -51,7 +51,7 @@
   animation: ftp-pulse 2s ease-in-out infinite;
 }
 .identityTitle {
-  font-family: var(--font-serif);
+  font-family: var(--font-jakarta);
   font-size: 22px;
   font-weight: 500;
   line-height: 1.05;
@@ -272,7 +272,7 @@
   margin-top: 6px;
 }
 .headlineMajor {
-  font-family: var(--font-serif);
+  font-family: var(--font-mono);
   font-size: 64px;
   font-weight: 500;
   line-height: 0.95;
@@ -286,7 +286,7 @@
   gap: 2px;
 }
 .headlineMinor {
-  font-family: var(--font-serif);
+  font-family: var(--font-jakarta);
   font-size: 22px;
   font-style: italic;
   color: rgba(15, 110, 86, 0.65);
@@ -328,7 +328,7 @@
   text-transform: uppercase;
 }
 .rightCalloutValue {
-  font-family: var(--font-serif);
+  font-family: var(--font-mono);
   font-size: 22px;
   font-weight: 500;
   color: #085041;

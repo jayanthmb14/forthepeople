@@ -22,6 +22,30 @@
   --color-selected-bg: #EFF6FF;
 
   /* ── Fonts ── */
+  /*
+   * FONT DISCIPLINE (canonical rule, established 2026-05-20 Phase B):
+   *
+   *   --font-sans / --font-jakarta  → UI default. Body, headings, labels,
+   *                                   navigation, units, section titles.
+   *   --font-mono                   → Data emphasis. Metric values, rank
+   *                                   numbers, data domains, code-like text.
+   *   --font-serif                  → Heritage flourish ONLY:
+   *                                   (a) the H1 "India" word on /en/india,
+   *                                   (b) the constitutional motto italic,
+   *                                   (c) native-script language rotator
+   *                                       in the hero.
+   *
+   * DO NOT use --font-serif outside of: india-hero-headline, the
+   * constitutional motto italic, language rotator native-script. Not for
+   * section titles, big numbers, units, rank values, identity titles in
+   * bands, deep-dive module pages, or district pages.
+   *
+   * Pre-push grep audit:
+   *   grep -rn "font-serif\|font-family.*serif\|Cormorant" src/
+   *     --include="*.tsx" --include="*.ts" --include="*.css"
+   * Expected output: only IndiaHero.tsx, LanguageRotator.tsx, and this
+   * globals.css declaration block.
+   */
   --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), "JetBrains Mono", monospace;
   --font-regional: var(--font-noto-kannada), "Noto Sans Kannada", sans-serif;
