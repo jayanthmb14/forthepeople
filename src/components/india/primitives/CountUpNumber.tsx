@@ -82,6 +82,7 @@ export function CountUpNumber({
     if (!node) return;
 
     let rafId: number | null = null;
+    let initialCheckRafId: number | null = null;
     let observer: IntersectionObserver | null = null;
     let timeoutId: number | null = null;
 
@@ -100,16 +101,20 @@ export function CountUpNumber({
       rafId = requestAnimationFrame(tick);
     };
 
+    const fire = () => {
+      if (delay > 0) {
+        timeoutId = window.setTimeout(startAnimation, delay);
+      } else {
+        startAnimation();
+      }
+      observer?.disconnect();
+    };
+
     observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            if (delay > 0) {
-              timeoutId = window.setTimeout(startAnimation, delay);
-            } else {
-              startAnimation();
-            }
-            observer?.disconnect();
+            fire();
           }
         }
       },
@@ -117,8 +122,26 @@ export function CountUpNumber({
     );
     observer.observe(node);
 
+    // IntersectionObserver only fires on threshold *crossings*. An element
+    // that's already visible at observer-init time (e.g. hero KPI tiles
+    // above the fold on initial page load) never crosses the threshold,
+    // so it stays at 0 indefinitely. Manually check visibility one
+    // animation frame after mount so layout has settled before we measure.
+    initialCheckRafId = requestAnimationFrame(() => {
+      if (fired.current) return;
+      const rect = node.getBoundingClientRect();
+      if (rect.height <= 0) return;
+      const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      const visibleHeight =
+        Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+      if (inViewport && visibleHeight >= rect.height * 0.3) {
+        fire();
+      }
+    });
+
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
+      if (initialCheckRafId !== null) cancelAnimationFrame(initialCheckRafId);
       if (timeoutId !== null) window.clearTimeout(timeoutId);
       observer?.disconnect();
     };
