@@ -286,9 +286,13 @@ export function SectionProgressBar() {
       aria-valuemax={SECTION_SLUGS_IN_ORDER.length}
       style={{
         position: "sticky",
-        // Sits below the global header (56) + breadcrumb (~36) — same
-        // top offset the previous bar used.
-        top: "100px",
+        // Butts directly against the bottom of IndiaBreadcrumb.
+        // IndiaBreadcrumb is sticky at top:41px and renders at ~36px tall
+        // (8px+8px padding + 13px font + 0.5px border + flex baseline gap),
+        // so its bottom sits at ~77px. Earlier value 100px left a visible
+        // ~23px transparent gap between the breadcrumb and this bar.
+        // Phase C 2026-05-20: gap closed.
+        top: "77px",
         width: "100%",
         height: "4px",
         zIndex: 39,
