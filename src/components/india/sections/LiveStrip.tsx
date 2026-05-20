@@ -2,21 +2,29 @@
  * LiveStrip — slim freshness/coverage strip above the hero.
  *
  * File 48 §4.7.2. Tricolor-tinted gradient background (saffron → blue → green
- * at ~4% opacity each). Five metadata items: last sync, sources, modules,
+ * at ~4% opacity each) layered over the page background so the strip stays
+ * readable when sticky. Five metadata items: data as of, sources, modules,
  * districts, states. Pulsing green LIVE dot on the left.
  *
  * Server Component. Two values are derived from the live system:
- *   - `lastSync`: MAX(IndiaScraperRun.startedAt) formatted via timeAgoLabel
+ *   - `dataAsOf`: MAX(IndiaIndicator.asOfDate) formatted as "MMM yyyy".
+ *     Replaces the earlier IndiaScraperRun.startedAt + timeAgoLabel
+ *     ("LAST SYNC 483h ago") display — Phase F 2026-05-20 confirmed those
+ *     scraper rows are seed placeholders, not real freshness signals. The
+ *     honest signal is the source data's own as-of date.
  *   - `liveDistrictCount`: getTotalActiveDistrictCount() from the registry
  *
  * The other four values (sourceCount, liveModuleCount, editorialModuleCount,
  * liveStateCount, totalStates, totalDistricts) are slow-drift aggregates that
  * stay as hardcoded placeholders for Phase 4.7. Wire them when needed.
+ *
+ * Sticky positioning (Phase D 2026-05-21): pinned at top:81px (header 41 +
+ * breadcrumb 36 + section progress bar 4 = 81) so the strip stays visible as
+ * the user scrolls. Z-index 38 sits one below SectionProgressBar's 39.
  */
 
 import * as React from "react";
 import { prisma } from "@/lib/db";
-import { timeAgoLabel } from "@/lib/utils/timeAgo";
 import { getTotalActiveDistrictCount } from "@/lib/constants/districts";
 
 interface LiveStripProps {
@@ -70,18 +78,22 @@ export async function LiveStrip({
   liveStateCount = 7,
   totalStates = 36,
 }: LiveStripProps = {}) {
-  // Latest scraper run across all sources — drives the freshness label.
-  const latestRun = await prisma.indiaScraperRun.findFirst({
-    orderBy: { startedAt: "desc" },
-    select: { startedAt: true },
+  // The honest freshness signal is the most recent source asOfDate across
+  // all India indicators — Census, NFHS, NTCA, etc. update yearly+ not
+  // hourly. Phase D 2026-05-21 replaced the misleading "LAST SYNC X h ago"
+  // (which was reading IndiaScraperRun seed-placeholder timestamps) with
+  // "DATA AS OF MMM YYYY" sourced from IndiaIndicator.asOfDate.
+  const latestIndicator = await prisma.indiaIndicator.findFirst({
+    orderBy: { asOfDate: "desc" },
+    select: { asOfDate: true },
   });
 
-  // Use a 30-day stale threshold instead of the default 2h. The "LIVE" pill
-  // on the strip already conveys live status; the freshness label is meant
-  // to show actual time since last sync ("14m ago" / "2h ago" / "3d ago").
-  const lastSync = timeAgoLabel(latestRun?.startedAt ?? null, {
-    staleThresholdMinutes: 30 * 24 * 60,
-  }).label;
+  const dataAsOf = latestIndicator?.asOfDate
+    ? new Intl.DateTimeFormat("en-IN", {
+        month: "short",
+        year: "numeric",
+      }).format(latestIndicator.asOfDate)
+    : "—";
 
   const liveDistrictCount = getTotalActiveDistrictCount();
 
@@ -94,7 +106,7 @@ export async function LiveStrip({
   const trailingItems = (
     <>
       <Divider />
-      <Item label="Last sync" value={lastSync} />
+      <Item label="Data as of" value={dataAsOf} />
       <Divider />
       <Item label="Sources" value={`${sourceCount} .gov.in`} />
       <Divider />
@@ -113,10 +125,20 @@ export async function LiveStrip({
     <div
       data-ftp-live-bar="1"
       style={{
-        border: "0.5px solid rgba(83, 74, 183, 0.18)",
+        // Phase D 2026-05-21: pin the strip below the section progress bar
+        // so it stays visible as a contextual anchor (data freshness +
+        // coverage) while the user scrolls through the 10 bands.
+        position: "sticky",
+        top: "81px",
+        zIndex: 38,
+        // Layered background: tricolor 4%-opacity gradient on top of the
+        // page surface color so the strip is opaque when sticky (content
+        // beneath scrolls under it cleanly).
         background:
-          "linear-gradient(90deg, rgba(255, 153, 51, 0.04) 0%, rgba(24, 95, 165, 0.04) 50%, rgba(19, 136, 8, 0.04) 100%)",
+          "linear-gradient(90deg, rgba(255, 153, 51, 0.04) 0%, rgba(24, 95, 165, 0.04) 50%, rgba(19, 136, 8, 0.04) 100%), var(--color-background, #FAFAF8)",
+        border: "0.5px solid rgba(83, 74, 183, 0.18)",
         borderRadius: "var(--border-radius-md)",
+        boxShadow: "0 2px 4px -2px rgba(0, 0, 0, 0.04)",
         padding: "7px 12px",
         display: "flex",
         alignItems: "center",
