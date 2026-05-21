@@ -299,25 +299,7 @@ export function SectionProgressBar() {
         display: "flex",
         gap: "1px",
         pointerEvents: "none",
-        // Phase B 2026-05-21: replace the near-invisible neutral track with
-        // a static 10-stop gradient using the super-category accent ramp.
-        // Order matches the band order on the page (macro-snapshot → culture).
-        // -700 stops are mid-darkness; opacity 0.7 keeps it readable as a
-        // thin colorful ribbon rather than a saturated rainbow strip.
-        // The per-segment scaleX paint-in still runs on top of this track.
-        background:
-          "linear-gradient(90deg," +
-          " var(--accent-blue-700) 0%," +
-          " var(--accent-indigo-700) 11.1%," +
-          " var(--accent-teal-700) 22.2%," +
-          " var(--accent-forest-green-700) 33.3%," +
-          " var(--accent-wheat-700) 44.4%," +
-          " var(--accent-slate-700) 55.6%," +
-          " var(--accent-amber-700) 66.7%," +
-          " var(--accent-purple-700) 77.8%," +
-          " var(--accent-coral-700) 88.9%," +
-          " var(--accent-pink-700) 100%)",
-        opacity: 0.7,
+        background: "rgba(0,0,0,0.025)",
       }}
     >
       {SECTION_SLUGS_IN_ORDER.map((slug, i) => {
