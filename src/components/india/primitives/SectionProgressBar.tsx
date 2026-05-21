@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SectionProgressBar — sticky 4px bar at the top of the viewport
+ * SectionProgressBar — sticky 6px bar at the top of the viewport
  * (just below IndiaBreadcrumb at top:56) that shows scroll progress
  * across the 10 super-categories as 10 equal-width segments.
  *
@@ -294,12 +294,16 @@ export function SectionProgressBar() {
         // Phase C 2026-05-20: gap closed.
         top: "77px",
         width: "100%",
-        height: "4px",
+        // Phase 2026-05-21: 4px→6px + track 0.025→0.10 so the bar reads as
+        // a visible grey hairline at rest. The per-segment scaleX paint-in
+        // is only perceptible if the surface it paints onto is itself
+        // visible — a 4px bar on a 2.5%-opacity track was imperceptible.
+        height: "6px",
         zIndex: 39,
         display: "flex",
         gap: "1px",
         pointerEvents: "none",
-        background: "rgba(0,0,0,0.025)",
+        background: "rgba(0,0,0,0.10)",
       }}
     >
       {SECTION_SLUGS_IN_ORDER.map((slug, i) => {
