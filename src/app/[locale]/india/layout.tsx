@@ -10,24 +10,17 @@
  */
 
 import * as React from "react";
-import { ScrollProgressBar } from "@/components/india/primitives/ScrollProgressBar";
 
 export default function IndiaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      {/* Fixed 2px gradient progress bar at top:0 — scoped to /en/india
-          and its sub-routes via this layout file (doesn't appear on /en
-          homepage or district pages). Phase C 2026-05-21. */}
-      <ScrollProgressBar />
-      <div
-        style={{
-          margin: "0 auto",
-          width: "100%",
-          maxWidth: "min(96vw, 1600px)",
-        }}
-      >
-        {children}
-      </div>
-    </>
+    <div
+      style={{
+        margin: "0 auto",
+        width: "100%",
+        maxWidth: "min(96vw, 1600px)",
+      }}
+    >
+      {children}
+    </div>
   );
 }
