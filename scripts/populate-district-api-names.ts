@@ -8,8 +8,8 @@
 // Script: Populate owmCityName + agmarknetName for existing districts
 //
 // Run once after the schema migration to backfill API name overrides
-// for all currently seeded districts. Safe to re-run (uses upsert).
-//
+// for all currently seeded districts. Safe to re-run (idempotent).
+// 
 // Usage:
 //   npx tsx scripts/populate-district-api-names.ts
 //
@@ -81,7 +81,7 @@ async function main() {
 
   for (const override of OVERRIDES) {
     const district = await prisma.district.findFirst({
-       where: {
+      where: {
        slug: override.slug,
        state: { slug: override.stateSlug },
   },
