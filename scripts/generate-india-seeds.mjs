@@ -315,7 +315,7 @@ async function main() {
     for (const d of dists.sort((a, b) => a.name.localeCompare(b.name))) {
       out += `  await prisma.district.upsert({\n`;
       out += `    where: { stateId_slug: { stateId: ${varName}.id, slug: "${d.slug}" } },\n`;
-      out += `    update: {},\n`;
+      out += `    update: { name: "${d.name}", nameLocal: "${d.name}", population: ${d.population ?? "null"}, area: ${d.area ?? "null"} },\n`;
       out += `    create: {\n`;
       out += `      stateId: ${varName}.id,\n`;
       out += `      name: "${d.name}",\n`;

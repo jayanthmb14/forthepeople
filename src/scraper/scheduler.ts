@@ -102,7 +102,7 @@ async function runJob(
 // ── Resolve district IDs ──────────────────────────────────
 async function getDistrictContext(slug: string, name: string, stateSlug: string, stateName: string, owmCityName: string | null, agmarknetName: string | null): Promise<JobContext | null> {
   const district = await prisma.district.findFirst({
-    where: { slug },
+    where: { slug, state: { slug: stateSlug } },
     select: { id: true },
   });
   if (!district) {

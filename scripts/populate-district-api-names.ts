@@ -51,7 +51,6 @@ const OVERRIDES: DistrictOverride[] = [
   { slug: "south-east-delhi",  stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
   { slug: "west-delhi",        stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
   { slug: "shahdara",          stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
-];
 
   // ── Maharashtra ──────────────────────────────────────────────
   // Mumbai — no override needed; "Mumbai" works in both APIs
