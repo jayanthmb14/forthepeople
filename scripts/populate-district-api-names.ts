@@ -27,6 +27,7 @@ const prisma = new PrismaClient();
 
 interface DistrictOverride {
   slug: string;
+  stateSlug: string;
   owmCityName: string | null;   // null = use districtName as-is
   agmarknetName: string | null; // null = use districtName as-is
 }
@@ -34,33 +35,23 @@ interface DistrictOverride {
 // Only districts where the API name differs from the district slug/name.
 // Districts NOT listed here will retain null (fallback to districtName).
 const OVERRIDES: DistrictOverride[] = [
-  // ── Karnataka ────────────────────────────────────────────────
-  {
-    slug: "bengaluru-urban",
-    owmCityName: "Bangalore",   // OWM uses old anglicised spelling
-    agmarknetName: "Bangalore", // AGMARKNET uses old spelling
-  },
-  {
-    slug: "mysuru",
-    owmCityName: "Mysore",      // OWM uses old anglicised spelling
-    agmarknetName: "Mysore",    // AGMARKNET uses old spelling
-  },
-  // Mandya — no override needed; "Mandya" works in both APIs
+  // ── Karnataka ──────────────────────────────────────────────
+  { slug: "bengaluru-urban", stateSlug: "karnataka", owmCityName: "Bangalore",  agmarknetName: "Bangalore" },
+  { slug: "mysuru",          stateSlug: "karnataka", owmCityName: "Mysore",     agmarknetName: "Mysore" },
 
-  // ── Delhi UT ─────────────────────────────────────────────────
-  // All Delhi sub-districts map to "New Delhi" for OWM
-  // and "Delhi" for AGMARKNET (which treats Delhi as one district)
-  { slug: "new-delhi",        owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "central-delhi",    owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "north-delhi",      owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "north-west-delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "north-east-delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "east-delhi",       owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "south-delhi",      owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "south-west-delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "south-east-delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "west-delhi",       owmCityName: "New Delhi", agmarknetName: "Delhi" },
-  { slug: "shahdara",         owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  // ── Delhi ──────────────────────────────────────────────────
+  { slug: "new-delhi",         stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "central-delhi",     stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "north-delhi",       stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "north-west-delhi",  stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "north-east-delhi",  stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "east-delhi",        stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "south-delhi",       stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "south-west-delhi",  stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "south-east-delhi",  stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "west-delhi",        stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+  { slug: "shahdara",          stateSlug: "delhi", owmCityName: "New Delhi", agmarknetName: "Delhi" },
+];
 
   // ── Maharashtra ──────────────────────────────────────────────
   // Mumbai — no override needed; "Mumbai" works in both APIs
@@ -91,9 +82,12 @@ async function main() {
 
   for (const override of OVERRIDES) {
     const district = await prisma.district.findFirst({
-      where: { slug: override.slug },
-      select: { id: true, name: true, owmCityName: true, agmarknetName: true },
-    });
+       where: {
+       slug: override.slug,
+       state: { slug: override.stateSlug },
+  },
+    select: { id: true, name: true, owmCityName: true, agmarknetName: true },
+});
 
     if (!district) {
       console.warn(`  [SKIP] District not found in DB: ${override.slug}`);
