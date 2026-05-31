@@ -41,7 +41,9 @@ const TIER_HARDCODE: Record<string, "metro" | "tier2" | "emerging"> = {
   "lucknow":         "tier2",
   "mysuru":          "tier2",
   "mandya":          "emerging",
+  "dima-hasao":      "emerging",
 };
+
 
 interface ActiveDistrict {
   slug: string;

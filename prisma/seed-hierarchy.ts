@@ -685,8 +685,78 @@ async function main() {
     }
   }
 
+  // ── Assam State ──────────────────────────────────────────
+  const assam = await prisma.state.upsert({
+    where: { slug: "assam" },
+    update: { active: true },
+    create: { name: "Assam", nameLocal: "অসম", slug: "assam", active: true, capital: "Dispur" },
+  });
+  console.log("✓ Assam state");
+
+  const assamDistricts = [
+    {
+      slug: "dima-hasao",
+      name: "Dima Hasao", nameLocal: "ডিমা হাছাও",
+      tagline: "The Land of Blue Hills", taglineLocal: "The Land of Blue Hills",
+      population: 214102, area: 4888, talukCount: 4, villageCount: 695,
+      literacy: 77.54, sexRatio: 933, density: 44, avgRainfall: 2200,
+      active: true,
+      taluks: [
+        { slug: "haflong", name: "Haflong", nameLocal: "হাফলং", tagline: "Switzerland of the East", pop: 85000, area: 1200, villages: 150 },
+        { slug: "mahur", name: "Mahur", nameLocal: "মাহুৰ", tagline: "Gateway to the Hills", pop: 45000, area: 1100, villages: 180 },
+        { slug: "maibong", name: "Maibong", nameLocal: "মাইবং", tagline: "Historic Capital of Dimasa Kingdom", pop: 50000, area: 1300, villages: 200 },
+        { slug: "umrangso", name: "Umrangso", nameLocal: "উমৰাংছু", tagline: "Industrial and Hydel Hub", pop: 34102, area: 1288, villages: 165 },
+      ]
+    }
+  ];
+
+  for (const def of assamDistricts) {
+    const district = await prisma.district.upsert({
+      where: { stateId_slug: { stateId: assam.id, slug: def.slug } },
+      update: { active: def.active ?? false },
+      create: {
+        stateId: assam.id,
+        slug: def.slug,
+        name: def.name,
+        nameLocal: def.nameLocal,
+        tagline: def.tagline,
+        population: def.population,
+        area: def.area,
+        talukCount: def.talukCount ?? 0,
+        villageCount: def.villageCount ?? 0,
+        literacy: def.literacy,
+        sexRatio: def.sexRatio,
+        density: def.density,
+        active: def.active ?? false,
+      },
+    });
+
+    for (const t of def.taluks) {
+      await prisma.taluk.upsert({
+        where: { districtId_slug: { districtId: district.id, slug: t.slug } },
+        update: {},
+        create: {
+          districtId: district.id,
+          slug: t.slug,
+          name: t.name,
+          nameLocal: t.nameLocal,
+          tagline: t.tagline,
+          population: t.pop,
+          area: t.area,
+          villageCount: t.villages,
+        },
+      });
+    }
+    if (def.taluks.length > 0) {
+      console.log(`✓ ${def.name} + ${def.taluks.length} revenue circles`);
+    } else {
+      console.log(`✓ ${def.name} (inactive — no revenue circles seeded)`);
+    }
+  }
+
   console.log("\n✅ Hierarchy upsert complete — no data deleted.");
 }
+
 
 main()
   .catch((e) => { console.error("❌ Failed:", e); process.exit(1); })

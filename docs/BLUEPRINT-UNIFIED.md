@@ -3,8 +3,25 @@
 # SINGLE SOURCE OF TRUTH — Combines original + all addendums
 # Claude Code: Read this file at the start of EVERY session.
 # Generic for ANY Indian district. Pilots: Mandya, Mysuru, Bengaluru Urban (Karnataka).
-# Last updated: April 23, 2026
+# Last updated: May 31, 2026
 # ═══════════════════════════════════════════════════════════
+#
+# 2026-05-31 — ASSAM, DIMA HASAO DISTRICT #11 LAUNCH:             COMPLETE (local, pre-push)
+#   Active district count: 10 → 11. Assam now has 1 active (Dima Hasao).
+#
+#   RECORDS SEEDED (idempotent findFirst-then-create):
+#   • Taluks: Haflong, Mahur, Maibong, Umrangso (with regional names)
+#   • Curated Leaders: Debolal Gorlosa (CEM, NCHAC), Rupali Langthasa (MLA), Amarsing Tisso (MP), Gayatri Devidas Hyalinge (DC), Ripunjoy Kakati (SP)
+#   • Infrastructure Projects: Haflong Urban Water Supply (AMRUT 2.0), Disaster Resilient Hill Roads (ADRHRDP), Lanka-Umrangso BG Railway, Jatinga-Harangajao 4-Laning Stretch
+#   • Industries: Umrangso Cement Hub, Organic Horticulture & Agriculture, Eco & Heritage Tourism
+#   • Schemes: Orunodoi 3.0 (Assam regional scheme), JJM, PMAY, MGNREGA
+#   • Schools: Haflong Government College, Maibang Higher Secondary School
+#
+#   UI & SCRAPER WIRING:
+#   • /en/assam/dima-hasao routes route 200 OK.
+#   • Dima Hasao registered in districts.ts, DistrictExplorer.tsx, LiveDistrictsList.tsx, DistrictBadges.tsx, and DistrictHeroIllustration.tsx.
+#   • Added custom mountain landscape visual styling/SVG for Dima Hasao hero illustration.
+#   • Fixed a major news scraper bug in news.ts where the state "Karnataka" was hardcoded into query builder. It now uses ctx.stateName dynamically to query news (e.g. "Dima Hasao Assam").
 #
 # 2026-04-23 — PUNE DISTRICT #10 LAUNCH (Maharashtra):              COMPLETE (local, pre-push)
 #   Active district count: 9 → 10. Maharashtra now has 2 active (Mumbai + Pune).

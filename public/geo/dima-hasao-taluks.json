@@ -1,0 +1,13 @@
+{
+  "_attribution": "Dima Hasao district taluk polygons PENDING — authoritative source not yet fetched. Intended sources (in order of preference): (1) datameet/maps under OGL India license; (2) geohacker/india; (3) OpenStreetMap Overpass API under ODbL attribution. Stub file exists so TalukMap component loads valid JSON (empty FeatureCollection) and falls back to 'coverage: missing' instead of 404.",
+  "_fetched_at": null,
+  "_expected_features": 4,
+  "_expected_taluks": [
+    "Haflong",
+    "Mahur",
+    "Maibong",
+    "Umrangso"
+  ],
+  "type": "FeatureCollection",
+  "features": []
+}
