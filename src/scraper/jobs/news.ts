@@ -199,12 +199,12 @@ async function isTitleDuplicate(
   return !!existing;
 }
 
-function buildQueries(districtSlug: string): string[] {
+function buildQueries(districtSlug: string, stateName: string): string[] {
   const name = districtSlug.replace(/-/g, " ");
   return [
-    `${name} Karnataka`,
+    `${name} ${stateName}`,
     `${name} district news`,
-    `${name} Karnataka latest`,
+    `${name} ${stateName} latest`,
   ];
 }
 
@@ -272,7 +272,7 @@ async function fetchRSSItems(query: string): Promise<Array<{
 
 export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
   try {
-    const queries = buildQueries(ctx.districtSlug);
+    const queries = buildQueries(ctx.districtSlug, ctx.stateName);
     const seenUrls = new Set<string>();
     const seenTitleKeys = new Set<string>();
     let newCount = 0;

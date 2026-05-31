@@ -170,13 +170,13 @@ async function scheduleJobs() {
 
     // ── Monthly 1st, 5 AM: Finance, Transport, Schemes ───
     cron.schedule("0 5 1 * *", async () => {
-      await runJob("finance", scrapeFinance, ctx, ["finance"]);
+      await runJob("finance", scrapeFinance, ctx, ["budget", "finance"]);
       await runJob("transport", scrapeTransport, ctx, ["transport"]);
       await runJob("schemes", scrapeSchemes, ctx, ["schemes"]);
     });
 
     // ── Weekly Monday 6 AM: Budget collection ─────────────
-    cron.schedule("0 6 * * 1", () => runJob("budget", scrapeBudget, ctx, ["finance"]));
+    cron.schedule("0 6 * * 1", () => runJob("budget", scrapeBudget, ctx, ["budget", "finance"]));
 
     // ── Monthly 15th, 3 AM: Soil, Elections ──────────────
     cron.schedule("0 3 15 * *", async () => {

@@ -42,12 +42,17 @@ services:
   # ── PostgreSQL ─────────────────────────────────────────────
   db:
     image: postgres:16-alpine
+    ports:
+      # NOTE: Binding to 127.0.0.1 restricts access to the local machine for dev/migrations.
+      # For production, either remove this mapping or ensure the port is blocked by network policies/firewalls.
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: forthepeople
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - pgdata:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

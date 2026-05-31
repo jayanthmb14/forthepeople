@@ -28,7 +28,10 @@ const AVOID_MAP: Record<string, number[]> = {
   mumbai: [3],             // avoid blue (steel blue palette)
   kolkata: [6],            // avoid amber (ochre palette)
   lucknow: [5, 1],         // avoid pink, purple (mauve palette)
+  "dima-hasao": [4],       // avoid green (green forest/hills palette)
+  guwahati: [3],           // avoid blue (river blue palette)
 };
+
 
 function getBadgeColors(districtSlug: string, count: number) {
   const avoid = new Set(AVOID_MAP[districtSlug] ?? []);

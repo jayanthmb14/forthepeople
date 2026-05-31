@@ -27,7 +27,10 @@ export const PALETTES: Record<string, Palette> = {
   kolkata:          { primary: "#c4a050", secondary: "#a8862e", accent: "#f0e0b0", gradientBase: "250,246,235" },
   lucknow:          { primary: "#a87d9e", secondary: "#8a6185", accent: "#e0cede", gradientBase: "248,242,247" },
   pune:             { primary: "#c48a5a", secondary: "#a87045", accent: "#e8d0b8", gradientBase: "250,245,238" },
+  "dima-hasao":      { primary: "#4e7d5a", secondary: "#3c6346", accent: "#c8dfd0", gradientBase: "240,248,242" },
+  guwahati:          { primary: "#4a7bb0", secondary: "#335e8f", accent: "#c5daf0", gradientBase: "238,245,250" },
 };
+
 
 export const DEFAULT_PALETTE: Palette = { primary: "#9B9B9B", secondary: "#7a7a7a", accent: "#e0e0e0", gradientBase: "248,248,245" };
 
@@ -362,7 +365,79 @@ function DistrictSVG({ slug, p }: { slug: string; p: Palette }) {
         </svg>
       );
 
+    case "dima-hasao":
+      // Mountain ranges + pine trees + birds (Swiss of the East theme)
+      return (
+        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }} aria-hidden="true">
+          {/* Distant mountain silhouette */}
+          <path d="M120 280 L220 130 L320 280 Z" fill={p.accent} opacity="0.35" />
+          <path d="M220 280 L300 160 L380 280 Z" fill={p.accent} opacity="0.45" />
+          <path d="M50 280 L150 180 L250 280 Z" fill={p.accent} opacity="0.25" />
+          
+          {/* Pine trees on hills */}
+          {[100, 120, 140, 240, 260, 280, 300].map((x, idx) => (
+            <g key={x} opacity={0.4 + (idx % 3) * 0.1}>
+              <line x1={x} y1="280" x2={x} y2="230" stroke={p.secondary} strokeWidth="2" />
+              <path d={`M${x-10} 260 L${x} 235 L${x+10} 260 Z`} fill={p.primary} />
+              <path d={`M${x-8} 245 L${x} 225 L${x+8} 245 Z`} fill={p.primary} />
+              <path d={`M${x-6} 230 L${x} 215 L${x+6} 230 Z`} fill={p.primary} />
+            </g>
+          ))}
+          
+          {/* Birds migrating in V-formation */}
+          <path d="M180 60 Q184 56 188 60" stroke={p.secondary} strokeWidth="1.2" fill="none" opacity="0.4" />
+          <path d="M195 50 Q199 46 203 50" stroke={p.secondary} strokeWidth="1.2" fill="none" opacity="0.45" />
+          <path d="M210 65 Q214 61 218 65" stroke={p.secondary} strokeWidth="1.2" fill="none" opacity="0.35" />
+        </svg>
+      );
+
+    case "guwahati":
+      // Brahmaputra River + Saraighat Bridge theme
+      return (
+        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }} aria-hidden="true">
+          {/* Sun */}
+          <circle cx="280" cy="110" r="35" fill={p.accent} opacity="0.3" />
+          
+          {/* Distant Hills / Kamakhya Hill */}
+          <path d="M0 200 Q80 140 180 180 T360 160 Q380 160 400 170 L400 300 L0 300 Z" fill={p.accent} opacity="0.15" />
+          
+          {/* Brahmaputra River waves at the bottom */}
+          <path d="M0 250 C100 240 200 260 300 245 C350 238 380 248 400 242 L400 300 L0 300 Z" fill={p.accent} opacity="0.4" />
+          <path d="M0 265 C120 260 220 275 320 260 C360 255 380 262 400 258 L400 300 L0 300 Z" fill={p.primary} opacity="0.25" />
+          
+          {/* Saraighat Bridge Truss structure */}
+          <g stroke={p.secondary} strokeWidth="2.5" opacity="0.75">
+            {/* Main deck */}
+            <line x1="0" y1="210" x2="400" y2="210" />
+            {/* Top chord */}
+            <line x1="10" y1="190" x2="390" y2="190" strokeWidth="2" />
+            {/* Vertical and diagonal truss members */}
+            {[20, 60, 100, 140, 180, 220, 260, 300, 340, 380].map((x, idx) => (
+              <g key={x}>
+                <line x1={x} y1="190" x2={x} y2="210" />
+                {idx < 9 && (
+                  <line x1={x} y1="190" x2={x + 40} y2="210" strokeWidth="1.5" />
+                )}
+                {idx < 9 && (
+                  <line x1={x + 40} y1="190" x2={x} y2="210" strokeWidth="1.5" />
+                )}
+              </g>
+            ))}
+            {/* Bridge Pillars */}
+            {[80, 180, 280].map((x) => (
+              <path key={x} d={`M${x-10} 210 L${x-6} 250 L${x+6} 250 L${x+10} 210 Z`} fill={p.secondary} stroke="none" />
+            ))}
+          </g>
+          
+          {/* Small Country Boat / Ferry */}
+          <path d="M220 240 L245 240 L250 234 L215 234 Z" fill={p.primary} opacity="0.8" />
+          <line x1="232" y1="234" x2="232" y2="220" stroke={p.secondary} strokeWidth="1.5" />
+          <path d="M232 220 L242 225 L232 230 Z" fill={p.accent} />
+        </svg>
+      );
+
     default:
+
       // Generic placeholder for locked/future districts
       return (
         <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>

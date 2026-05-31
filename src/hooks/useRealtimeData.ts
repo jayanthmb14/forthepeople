@@ -56,6 +56,9 @@ export interface BudgetAllocation {
   released: number;
   spent: number;
   lapsed: number;
+  source?: string | null;
+  sourceUrl?: string | null;
+  remarks?: string | null;
 }
 
 export interface RevenueEntry {

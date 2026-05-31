@@ -31,7 +31,10 @@ const DISTRICT_INTROS: Record<string, string> = {
   "kolkata":          "Cultural capital, City of Joy",
   "mysuru":           "Heritage city of palaces",
   "mandya":           "Sugar capital of South India",
+  "dima-hasao":       "Switzerland of the East",
+  "guwahati":         "Gateway to Northeast India",
 };
+
 
 const NEW_BADGE_COUNT = 3;
 

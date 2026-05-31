@@ -1037,10 +1037,160 @@ const HYDERABAD_DISTRICT: District = {
   ],
 };
 
+// ── Dima Hasao District ──────────────────────────────────
+const DIMA_HASAO_DISTRICT: District = {
+  slug: "dima-hasao",
+  name: "Dima Hasao",
+  nameLocal: "ডিমা হাছাও",
+  tagline: "The Land of Blue Hills",
+  taglineLocal: "নীল পাহাৰৰ দেশ",
+  active: true,
+  badges: [
+    { emoji: "⛰️", label: "Land of Blue Hills" },
+    { emoji: "🐦", label: "Jatinga Bird Sanctuary" },
+    { emoji: "🌿", label: "Organic Horticulture" },
+    { emoji: "⛳", label: "Umrangso Golf Course" },
+    { emoji: "🏭", label: "Cement Manufacturing Hub" },
+  ],
+  population: 214102,
+  area: 4888,
+  talukCount: 4,
+  villageCount: 695,
+  literacy: 77.54,
+  sexRatio: 933,
+  taluks: [
+    {
+      slug: "haflong",
+      name: "Haflong",
+      nameLocal: "হাফলং",
+      tagline: "Switzerland of the East",
+      population: 85000,
+      area: 1200,
+      villages: [
+        { slug: "haflong-town", name: "Haflong Town", nameLocal: "হাফলং টাউন", population: 45000, pincode: "788819" },
+        { slug: "jatinga", name: "Jatinga", nameLocal: "জাতিঙ্গা", population: 8000, pincode: "788820" },
+      ]
+    },
+    {
+      slug: "mahur",
+      name: "Mahur",
+      nameLocal: "মাহুৰ",
+      tagline: "Gateway to the Hills",
+      population: 45000,
+      area: 1100,
+      villages: [
+        { slug: "mahur-town", name: "Mahur Town", nameLocal: "মাহুৰ টাউন", population: 15000, pincode: "788830" },
+      ]
+    },
+    {
+      slug: "maibong",
+      name: "Maibong",
+      nameLocal: "মাইবং",
+      tagline: "Historic Dimasa Capital",
+      population: 50000,
+      area: 1300,
+      villages: [
+        { slug: "maibong-town", name: "Maibong Town", nameLocal: "মাইবং টাউন", population: 20000, pincode: "788831" },
+      ]
+    },
+    {
+      slug: "umrangso",
+      name: "Umrangso",
+      nameLocal: "উমৰাংছু",
+      tagline: "Industrial and Hydel Hub",
+      population: 34102,
+      area: 1288,
+      villages: [
+        { slug: "umrangso-town", name: "Umrangso Town", nameLocal: "উমৰাংছু টাউন", population: 18000, pincode: "788832" },
+      ]
+    }
+  ]
+};
+
+const KAMRUP_METRO_DISTRICT: District = {
+  slug: "guwahati",
+  name: "Kamrup Metro",
+  nameLocal: "কামৰূপ মহানগৰ",
+  tagline: "Gateway to Northeast India",
+  taglineLocal: "উত্তৰ-পূব ভাৰতৰ প্ৰৱেশদ্বাৰ",
+  active: true,
+  badges: [
+    { emoji: "🌉", label: "Saraighat Bridge" },
+    { emoji: "🛕", label: "Kamakhya Temple" },
+    { emoji: "🍵", label: "GTAC Tea Auction" },
+    { emoji: "🏭", label: "Noonmati Refinery" },
+    { emoji: "🚢", label: "Brahmaputra Cruise" },
+  ],
+  population: 1253938,
+  area: 955,
+  talukCount: 5,
+  villageCount: 220,
+  literacy: 88.71,
+  sexRatio: 922,
+  taluks: [
+    {
+      slug: "dispur",
+      name: "Dispur",
+      nameLocal: "দিছপুৰ",
+      tagline: "State Capital Region",
+      population: 350000,
+      area: 150,
+      villages: [
+        { slug: "dispur-city", name: "Dispur City", nameLocal: "দিছপুৰ মহানগৰ", population: 150000, pincode: "781006" },
+      ]
+    },
+    {
+      slug: "guwahati-taluk",
+      name: "Guwahati",
+      nameLocal: "গুৱাহাটী",
+      tagline: "Historic Pragjyotishpura",
+      population: 550000,
+      area: 200,
+      villages: [
+        { slug: "paltan-bazar", name: "Paltan Bazar", nameLocal: "পল্টন বজাৰ", population: 120000, pincode: "781008" },
+      ]
+    },
+    {
+      slug: "sonapur",
+      name: "Sonapur",
+      nameLocal: "সোণাপুৰ",
+      tagline: "Green Suburban Belt",
+      population: 180000,
+      area: 300,
+      villages: [
+        { slug: "sonapur-town", name: "Sonapur Town", nameLocal: "সোণাপুৰ টাউন", population: 30000, pincode: "782402" },
+      ]
+    },
+    {
+      slug: "azara",
+      name: "Azara",
+      nameLocal: "আজৰা",
+      tagline: "Airport Gateway Zone",
+      population: 110000,
+      area: 180,
+      villages: [
+        { slug: "azara-town", name: "Azara Town", nameLocal: "আজৰা টাউন", population: 25000, pincode: "781017" },
+      ]
+    },
+    {
+      slug: "chandrapur",
+      name: "Chandrapur",
+      nameLocal: "চন্দ্ৰপুৰ",
+      tagline: "Brahmaputra Riverside Circle",
+      population: 63938,
+      area: 125,
+      villages: [
+        { slug: "chandrapur-town", name: "Chandrapur Town", nameLocal: "চন্দ্ৰপুৰ টাউন", population: 12000, pincode: "781150" },
+      ]
+    }
+  ]
+};
+
 // ── Helper to create a locked district ───────────────────
 function lockedDistrict(slug: string, name: string): District {
   return { slug, name, nameLocal: name, active: false, taluks: [] };
 }
+
 
 // ── All 36 States + UTs ───────────────────────────────────
 export const INDIA_STATES: State[] = [
@@ -1282,13 +1432,46 @@ export const INDIA_STATES: State[] = [
   },
   {
     slug: "assam", name: "Assam", nameLocal: "অসম",
-    active: false, capital: "Dispur", type: "state",
+    active: true, capital: "Dispur", type: "state",
     districts: [
-      lockedDistrict("guwahati", "Kamrup Metro"),
+      DIMA_HASAO_DISTRICT,
+      KAMRUP_METRO_DISTRICT,
       lockedDistrict("dibrugarh", "Dibrugarh"),
       lockedDistrict("jorhat", "Jorhat"),
+      lockedDistrict("bajali", "Bajali"),
+      lockedDistrict("baksa", "Baksa"),
+      lockedDistrict("barpeta", "Barpeta"),
+      lockedDistrict("biswanath", "Biswanath"),
+      lockedDistrict("bongaigaon", "Bongaigaon"),
+      lockedDistrict("cachar", "Cachar"),
+      lockedDistrict("charaideo", "Charaideo"),
+      lockedDistrict("chirang", "Chirang"),
+      lockedDistrict("darrang", "Darrang"),
+      lockedDistrict("dhemaji", "Dhemaji"),
+      lockedDistrict("dhubri", "Dhubri"),
+      lockedDistrict("goalpara", "Goalpara"),
+      lockedDistrict("golaghat", "Golaghat"),
+      lockedDistrict("hailakandi", "Hailakandi"),
+      lockedDistrict("hojai", "Hojai"),
+      lockedDistrict("kamrup", "Kamrup Rural"),
+      lockedDistrict("karbi-anglong", "Karbi Anglong"),
+      lockedDistrict("karimganj", "Karimganj"),
+      lockedDistrict("kokrajhar", "Kokrajhar"),
+      lockedDistrict("lakhimpur", "Lakhimpur"),
+      lockedDistrict("majuli", "Majuli"),
+      lockedDistrict("morigaon", "Morigaon"),
+      lockedDistrict("nagaon", "Nagaon"),
+      lockedDistrict("nalbari", "Nalbari"),
+      lockedDistrict("sivasagar", "Sivasagar"),
+      lockedDistrict("sonitpur", "Sonitpur"),
+      lockedDistrict("south-salmara-mankachar", "South Salmara-Mankachar"),
+      lockedDistrict("tinsukia", "Tinsukia"),
+      lockedDistrict("udalguri", "Udalguri"),
+      lockedDistrict("west-karbi-anglong", "West Karbi Anglong"),
+      lockedDistrict("tamulpur", "Tamulpur"),
     ],
   },
+
   {
     slug: "goa", name: "Goa", nameLocal: "गोंय",
     active: false, capital: "Panaji", type: "state",
