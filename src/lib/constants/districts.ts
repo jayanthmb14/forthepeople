@@ -1043,7 +1043,7 @@ const DIMA_HASAO_DISTRICT: District = {
   name: "Dima Hasao",
   nameLocal: "ডিমা হাছাও",
   tagline: "The Land of Blue Hills",
-  taglineLocal: "The Land of Blue Hills",
+  taglineLocal: "নীল পাহাৰৰ দেশ",
   active: true,
   badges: [
     { emoji: "⛰️", label: "Land of Blue Hills" },
@@ -1112,7 +1112,7 @@ const KAMRUP_METRO_DISTRICT: District = {
   name: "Kamrup Metro",
   nameLocal: "কামৰূপ মহানগৰ",
   tagline: "Gateway to Northeast India",
-  taglineLocal: "Gateway to Northeast India",
+  taglineLocal: "উত্তৰ-পূব ভাৰতৰ প্ৰৱেশদ্বাৰ",
   active: true,
   badges: [
     { emoji: "🌉", label: "Saraighat Bridge" },

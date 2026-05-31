@@ -697,7 +697,7 @@ async function main() {
     {
       slug: "dima-hasao",
       name: "Dima Hasao", nameLocal: "ডিমা হাছাও",
-      tagline: "The Land of Blue Hills", taglineLocal: "The Land of Blue Hills",
+      tagline: "The Land of Blue Hills", taglineLocal: "নীল পাহাৰৰ দেশ",
       population: 214102, area: 4888, talukCount: 4, villageCount: 695,
       literacy: 77.54, sexRatio: 933, density: 44, avgRainfall: 2200,
       active: true,
@@ -711,7 +711,7 @@ async function main() {
     {
       slug: "guwahati",
       name: "Kamrup Metro", nameLocal: "কামৰূপ মহানগৰ",
-      tagline: "Gateway to Northeast India", taglineLocal: "Gateway to Northeast India",
+      tagline: "Gateway to Northeast India", taglineLocal: "উত্তৰ-পূব ভাৰতৰ প্ৰৱেশদ্বাৰ",
       population: 1253938, area: 955, talukCount: 5, villageCount: 220,
       literacy: 88.71, sexRatio: 922, density: 1313, avgRainfall: 1700,
       active: true,

@@ -1,7 +1,7 @@
 # Lightweight scraper runner (no Next.js build needed)
-FROM node:20-alpine
+FROM node:20-alpine3.23
 WORKDIR /app
-RUN apk add --no-cache python3 make g++ chromium nss freetype harfbuzz ca-certificates ttf-freefont
+RUN apk add --no-cache python3 make g++ chromium=148.0.7778.178-r0 nss freetype harfbuzz ca-certificates ttf-freefont
 
 COPY package*.json ./
 RUN npm install --legacy-peer-deps

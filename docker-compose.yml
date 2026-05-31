@@ -43,7 +43,9 @@ services:
   db:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      # NOTE: Binding to 127.0.0.1 restricts access to the local machine for dev/migrations.
+      # For production, either remove this mapping or ensure the port is blocked by network policies/firewalls.
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: forthepeople
       POSTGRES_USER: postgres
