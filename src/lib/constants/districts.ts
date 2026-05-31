@@ -1107,6 +1107,85 @@ const DIMA_HASAO_DISTRICT: District = {
   ]
 };
 
+const KAMRUP_METRO_DISTRICT: District = {
+  slug: "guwahati",
+  name: "Kamrup Metro",
+  nameLocal: "কামৰূপ মহানগৰ",
+  tagline: "Gateway to Northeast India",
+  taglineLocal: "Gateway to Northeast India",
+  active: true,
+  badges: [
+    { emoji: "🌉", label: "Saraighat Bridge" },
+    { emoji: "🛕", label: "Kamakhya Temple" },
+    { emoji: "🍵", label: "GTAC Tea Auction" },
+    { emoji: "🏭", label: "Noonmati Refinery" },
+    { emoji: "🚢", label: "Brahmaputra Cruise" },
+  ],
+  population: 1253938,
+  area: 955,
+  talukCount: 5,
+  villageCount: 220,
+  literacy: 88.71,
+  sexRatio: 922,
+  taluks: [
+    {
+      slug: "dispur",
+      name: "Dispur",
+      nameLocal: "দিছপুৰ",
+      tagline: "State Capital Region",
+      population: 350000,
+      area: 150,
+      villages: [
+        { slug: "dispur-city", name: "Dispur City", nameLocal: "দিছপুৰ মহানগৰ", population: 150000, pincode: "781006" },
+      ]
+    },
+    {
+      slug: "guwahati-taluk",
+      name: "Guwahati",
+      nameLocal: "গুৱাহাটী",
+      tagline: "Historic Pragjyotishpura",
+      population: 550000,
+      area: 200,
+      villages: [
+        { slug: "paltan-bazar", name: "Paltan Bazar", nameLocal: "পল্টন বজাৰ", population: 120000, pincode: "781008" },
+      ]
+    },
+    {
+      slug: "sonapur",
+      name: "Sonapur",
+      nameLocal: "সোণাপুৰ",
+      tagline: "Green Suburban Belt",
+      population: 180000,
+      area: 300,
+      villages: [
+        { slug: "sonapur-town", name: "Sonapur Town", nameLocal: "সোণাপুৰ টাউন", population: 30000, pincode: "782402" },
+      ]
+    },
+    {
+      slug: "azara",
+      name: "Azara",
+      nameLocal: "আজৰা",
+      tagline: "Airport Gateway Zone",
+      population: 110000,
+      area: 180,
+      villages: [
+        { slug: "azara-town", name: "Azara Town", nameLocal: "আজৰা টাউন", population: 25000, pincode: "781017" },
+      ]
+    },
+    {
+      slug: "chandrapur",
+      name: "Chandrapur",
+      nameLocal: "চন্দ্ৰপুৰ",
+      tagline: "Brahmaputra Riverside Circle",
+      population: 63938,
+      area: 125,
+      villages: [
+        { slug: "chandrapur-town", name: "Chandrapur Town", nameLocal: "চন্দ্ৰপুৰ টাউন", population: 12000, pincode: "781150" },
+      ]
+    }
+  ]
+};
+
 // ── Helper to create a locked district ───────────────────
 function lockedDistrict(slug: string, name: string): District {
   return { slug, name, nameLocal: name, active: false, taluks: [] };
@@ -1356,7 +1435,7 @@ export const INDIA_STATES: State[] = [
     active: true, capital: "Dispur", type: "state",
     districts: [
       DIMA_HASAO_DISTRICT,
-      lockedDistrict("guwahati", "Kamrup Metro"),
+      KAMRUP_METRO_DISTRICT,
       lockedDistrict("dibrugarh", "Dibrugarh"),
       lockedDistrict("jorhat", "Jorhat"),
       lockedDistrict("bajali", "Bajali"),

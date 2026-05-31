@@ -29,6 +29,7 @@ const AVOID_MAP: Record<string, number[]> = {
   kolkata: [6],            // avoid amber (ochre palette)
   lucknow: [5, 1],         // avoid pink, purple (mauve palette)
   "dima-hasao": [4],       // avoid green (green forest/hills palette)
+  guwahati: [3],           // avoid blue (river blue palette)
 };
 
 

@@ -22,6 +22,7 @@ const DISTRICT_PROJECTION: Record<string, { center: [number, number]; scale: num
   "lucknow":         { center: [80.90, 26.85], scale: 10000 },
   "pune":            { center: [73.86, 18.52], scale: 6000  },
   "dima-hasao":      { center: [93.02, 25.18], scale: 11000 },
+  "guwahati":        { center: [91.75, 26.15], scale: 18000 },
 };
 const DEFAULT_PROJECTION = { center: [76.77, 12.55] as [number, number], scale: 16000 };
 
@@ -75,6 +76,12 @@ const TALUK_COLORS: Record<string, { fill: string; stroke: string }> = {
   "mahur":            { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
   "maibong":          { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
   "umrangso":         { fill: "rgba(239,68,68,0.22)",   stroke: "#DC2626" },
+  // Kamrup Metro
+  "dispur":           { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
+  "guwahati-taluk":   { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
+  "sonapur":          { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
+  "azara":            { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
+  "chandrapur":       { fill: "rgba(236,72,153,0.22)",  stroke: "#DB2777" },
 };
 const DEFAULT_COLOR = { fill: "rgba(37,99,235,0.18)", stroke: "#2563EB" };
 
@@ -105,6 +112,8 @@ const NAME_TO_SLUG: Record<string, string> = {
   "Malihabad": "malihabad", "Bakshi Ka Talab": "bakshi-ka-talab",
   // Dima Hasao
   "Haflong": "haflong", "Mahur": "mahur", "Maibong": "maibong", "Umrangso": "umrangso",
+  // Kamrup Metro
+  "Dispur": "dispur", "Guwahati": "guwahati-taluk", "Sonapur": "sonapur", "Azara": "azara", "Chandrapur": "chandrapur",
 };
 
 interface TalukMapProps {

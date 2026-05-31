@@ -40,6 +40,7 @@ const TIER_HARDCODE: Record<string, "metro" | "tier2" | "emerging"> = {
   "pune":            "tier2",
   "lucknow":         "tier2",
   "mysuru":          "tier2",
+  "guwahati":        "tier2",
   "mandya":          "emerging",
   "dima-hasao":      "emerging",
 };

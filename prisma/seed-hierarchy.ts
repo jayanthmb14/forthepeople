@@ -707,6 +707,21 @@ async function main() {
         { slug: "maibong", name: "Maibong", nameLocal: "মাইবং", tagline: "Historic Capital of Dimasa Kingdom", pop: 50000, area: 1300, villages: 200 },
         { slug: "umrangso", name: "Umrangso", nameLocal: "উমৰাংছু", tagline: "Industrial and Hydel Hub", pop: 34102, area: 1288, villages: 165 },
       ]
+    },
+    {
+      slug: "guwahati",
+      name: "Kamrup Metro", nameLocal: "কামৰূপ মহানগৰ",
+      tagline: "Gateway to Northeast India", taglineLocal: "Gateway to Northeast India",
+      population: 1253938, area: 955, talukCount: 5, villageCount: 220,
+      literacy: 88.71, sexRatio: 922, density: 1313, avgRainfall: 1700,
+      active: true,
+      taluks: [
+        { slug: "dispur", name: "Dispur", nameLocal: "দিছপুৰ", tagline: "State Capital Region", pop: 350000, area: 150, villages: 12 },
+        { slug: "guwahati-taluk", name: "Guwahati", nameLocal: "গুৱাহাটী", tagline: "Historic Pragjyotishpura", pop: 550000, area: 200, villages: 18 },
+        { slug: "sonapur", name: "Sonapur", nameLocal: "সোণাপুৰ", tagline: "Green Suburban Belt", pop: 180000, area: 300, villages: 85 },
+        { slug: "azara", name: "Azara", nameLocal: "আজৰা", tagline: "Airport Gateway Zone", pop: 110000, area: 180, villages: 45 },
+        { slug: "chandrapur", name: "Chandrapur", nameLocal: "চন্দ্ৰপুৰ", tagline: "Brahmaputra Riverside Circle", pop: 63938, area: 125, villages: 60 },
+      ]
     }
   ];
 
