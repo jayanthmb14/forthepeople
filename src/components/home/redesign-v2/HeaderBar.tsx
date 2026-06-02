@@ -113,7 +113,7 @@ const LANGUAGES: Lang[] = [
   { code: "kn", name: "Kannada",   nameLocal: "ಕನ್ನಡ",        active: false },
   { code: "ta", name: "Tamil",     nameLocal: "தமிழ்",        active: false },
   { code: "te", name: "Telugu",    nameLocal: "తెలుగు",       active: false },
-  { code: "bn", name: "Bengali",   nameLocal: "বাংলা",         active: false },
+  { code: "bn", name: "Bengali",   nameLocal: "বাংলা",         active: true  },
   { code: "mr", name: "Marathi",   nameLocal: "मराठी",         active: false },
   { code: "gu", name: "Gujarati",  nameLocal: "ગુજરાતી",       active: false },
   { code: "pa", name: "Punjabi",   nameLocal: "ਪੰਜਾਬੀ",        active: false },

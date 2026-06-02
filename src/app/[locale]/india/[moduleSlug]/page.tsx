@@ -16,6 +16,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import enDict from "@/dictionaries/en.json";
 import knDict from "@/dictionaries/kn.json";
+import bnDict from "@/dictionaries/bn.json";
 import {
   INDIA_MODULES,
   getIndiaModuleBySlug,
@@ -104,6 +105,7 @@ export async function generateMetadata({
       languages: {
         en: `${BASE_URL}/en/india/${mod.slug}`,
         kn: `${BASE_URL}/kn/india/${mod.slug}`,
+        bn: `${BASE_URL}/bn/india/${mod.slug}`,
         "x-default": `${BASE_URL}/en/india/${mod.slug}`,
       },
     },
@@ -127,7 +129,7 @@ export default async function ModuleRoute({
   const { locale, moduleSlug } = await params;
   const mod = getIndiaModuleBySlug(moduleSlug);
   if (!mod) notFound();
-  const dict = (locale === "kn" ? knDict : enDict).india;
+  const dict = (locale === "kn" ? knDict : locale === "bn" ? bnDict : enDict).india;
 
   // schema.org/Dataset JSON-LD — makes the module page eligible for
   // Google Dataset Search (file 31 §18 + Phase 2.5f).
