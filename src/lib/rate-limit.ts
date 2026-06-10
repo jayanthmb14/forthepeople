@@ -4,6 +4,38 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 import { redis } from "./redis";
+import { createHash } from "crypto";
+
+/**
+ * Extract the client IP from a request (x-forwarded-for first, then x-real-ip).
+ * Accepts both `Request` and `NextRequest` (which extends `Request`).
+ */
+export function getClientIp(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+/**
+ * Hash an IP with VOTE_IP_SALT before using it as a rate-limit key, so raw IPs
+ * are never persisted anywhere. Same approach as /api/district-request.
+ */
+export function hashIp(ip: string): string {
+  const salt = process.env.VOTE_IP_SALT || "forthepeople-default-salt";
+  return createHash("sha256").update(ip + salt).digest("hex").slice(0, 32);
+}
+
+/** Clear a rate-limit counter (e.g. on a successful admin login). Best-effort. */
+export async function resetRateLimit(identifier: string): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.del(`rate:${identifier}`);
+  } catch {
+    // non-fatal
+  }
+}
 
 /**
  * Simple sliding-window rate limiter using Upstash Redis.

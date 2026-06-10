@@ -10,29 +10,17 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { verifyTOTP, verifyBackupCode } from "@/lib/totp";
+import { rateLimit, resetRateLimit, hashIp } from "@/lib/rate-limit";
 
 const COOKIE = "ftp_admin_v1";
 const TOTP_PENDING_COOKIE = "admin_totp_pending";
 
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000;
-
-function checkLoginRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = loginAttempts.get(ip);
-  if (!record || now > record.resetAt) {
-    loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  if (record.count >= MAX_ATTEMPTS) return false;
-  record.count++;
-  return true;
-}
-
-function resetLoginAttempts(ip: string) {
-  loginAttempts.delete(ip);
-}
+// Admin-login attempt limiter — Upstash Redis (5 attempts / 15 min), IP-hashed.
+// Reliable across serverless invocations (replaces the old in-memory Map, which
+// reset on every Vercel invocation and so provided no real protection).
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+const loginKey = (ip: string) => `admin-login:${hashIp(ip)}`;
 
 export async function loginAction(formData: FormData) {
   const pw = formData.get("password") as string;
@@ -44,7 +32,8 @@ export async function loginAction(formData: FormData) {
     hdrs.get("x-real-ip") ||
     "unknown";
 
-  if (!checkLoginRateLimit(ip)) {
+  const rl = await rateLimit(loginKey(ip), LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_SECONDS);
+  if (!rl.success) {
     redirect(`/${locale}/admin?error=rate`);
   }
 
@@ -64,7 +53,7 @@ export async function loginAction(formData: FormData) {
       redirect(`/${locale}/admin?step=totp`);
     }
 
-    resetLoginAttempts(ip);
+    await resetRateLimit(loginKey(ip));
     (await cookies()).set(COOKIE, "ok", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -129,7 +118,7 @@ export async function totpAction(formData: FormData) {
     redirect(`/${locale}/admin?step=totp&error=code`);
   }
 
-  resetLoginAttempts(ip);
+  await resetRateLimit(loginKey(ip));
   jar.set(COOKIE, "ok", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
