@@ -38,6 +38,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forthepeople
           NEXT_PUBLIC_SITE_URL: https://forthepeople.in
+          # Dummy non-empty value. src/lib/admin-auth.ts throws at module load if
+          # ADMIN_SESSION_SECRET is unset (no fallback), which next build executes,
+          # so CI needs SOME value. NOT a real secret — CI never serves auth requests.
+          ADMIN_SESSION_SECRET: ci-build-placeholder-not-a-real-secret
 
   lint:
     name: Lint

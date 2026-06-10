@@ -4,6 +4,31 @@ _Living document. Append new sections; don't rewrite history._
 
 ---
 
+## 2026-06-11 — Session 2 (audit fix): Drop db-push from build/CI + patch Next 16.2.4→16.2.6 (PRE-PUSH)
+
+**Status:** Branch `session-2-build-cve` off `main` (local only, not pushed). Second of the 5 audit-fix sessions. See `docs/BUG-TRACKER.md` → SEC-2. Touches build config + deps only — zero application code.
+
+### What landed
+- **Removed `prisma db push` from the build** — `vercel.json` `buildCommand` and the `package.json` `"build"` script are now `prisma generate && next build`. Previously db push ran on *every* deploy (including unreviewed dependabot PR previews) against the prod Neon schema — root cause of the red CI / ERROR preview builds and a real risk of dropping prod columns. (`db:push` npm script already existed for deliberate pushes.)
+- **Patched Next.js 16.2.4 → 16.2.6** — the 7 May 2026 security release (13 advisories; patched only in 16.2.6; Vercel shipped no WAF coverage, so patching is the only fix). `npm install next@16.2.6 --legacy-peer-deps`. **Did NOT run `npm audit fix`** (prohibited).
+- **`.github/workflows/ci.yml`** — added a dummy non-empty `ADMIN_SESSION_SECRET` to the Build step env. This branch is off main so `admin-auth.ts` isn't here yet, but once Session 1 merges, `next build` executes its module-load throw and CI would fail without the var. Lint job untouched.
+- **NEW `.github/dependabot.yml`** — groups minor+patch npm (and github-actions) updates into one weekly PR instead of a PR per bump.
+
+### New workflow (IMPORTANT)
+Schema changes are now applied **manually** via `npm run db:push` against prod Neon **BEFORE** pushing dependent code. The build never mutates the DB. Documented in `CLAUDE.md` and `BLUEPRINT-UNIFIED.md`.
+
+### Verified locally
+- Lockfile + `node_modules/next/package.json` both resolve to **16.2.6** (not just the package.json range).
+- `rm -rf node_modules && npm ci --legacy-peer-deps` → clean (added 871 packages, no ghost/lockfile errors).
+- `npx tsc --noEmit` → 0 errors.
+- `npm run build` → completes (exit 0), grep-confirmed **no `prisma db push`** ran, 174 static pages generated.
+- Dev smoke (16.2.6 dev server): `/en`, `/en/karnataka/mandya`, `/en/india` → 200; `/about`, `/disclaimer` → 307 locale-redirect → `/en/about`, `/en/disclaimer` 200.
+
+### Merge note
+Off main, so this branch's `BUG-TRACKER.md` (created here) and the top-of-file entries in `BLUEPRINT-UNIFIED.md` / `LIVE-STATE.md` will trivially union-conflict with Session 1's. Recommended: merge `session-1-admin-auth` first, then rebase `session-2-build-cve` onto updated main and keep both dated entries. ⚠️ Also: set `ADMIN_SESSION_SECRET` in Vercel env before the combined push (Session 1 requirement).
+
+---
+
 ## 2026-04-26 — Session 11: Homepage redesign-v2 (slim core) (PRE-PUSH)
 
 **Status:** ~138 commits ahead of origin/main (was 125 → +13 this session). 12 component commits + 1 page.tsx snapshot + 1 page.tsx swap + 1 docs commit. Pure presentation layer; zero schema, API, Razorpay-write, or env-var changes. No new npm dependencies.

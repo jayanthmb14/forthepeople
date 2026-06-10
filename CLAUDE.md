@@ -4,6 +4,16 @@
 ForThePeople.in — Free, open-source citizen transparency platform for Indian districts.
 Built by Jayanth M B. Next.js 16 + TypeScript + Tailwind v4 + Prisma 7.5 + Neon PostgreSQL.
 
+## Database Schema Changes (CRITICAL — changed June 2026)
+**The build NO LONGER runs `prisma db push`.** The Vercel/CI build runs only
+`prisma generate && next build` and never mutates the database. So any schema change
+must be applied **manually against prod Neon BEFORE pushing the dependent code:**
+1. Edit `prisma/schema.prisma`.
+2. Run `npm run db:push` against prod Neon (applies the schema).
+3. THEN commit + push the code that depends on the new schema.
+(Session 2 audit fix, 2026-06-11 — db push was being run on every deploy, including
+unreviewed dependabot PR previews, against the prod schema.)
+
 ## Documentation Location
 ALL documentation lives inside `docs/` folder:
 ```
