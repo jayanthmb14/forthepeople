@@ -3,8 +3,32 @@
 # SINGLE SOURCE OF TRUTH — Combines original + all addendums
 # Claude Code: Read this file at the start of EVERY session.
 # Generic for ANY Indian district. Pilots: Mandya, Mysuru, Bengaluru Urban (Karnataka).
-# Last updated: April 23, 2026
+# Last updated: June 11, 2026
 # ═══════════════════════════════════════════════════════════
+#
+# 2026-06-11 — SESSION 1: SIGNED REVOCABLE ADMIN SESSIONS (SECURITY):  COMPLETE (local, pre-push)
+#   Killed the CRITICAL admin-auth bypass. The cookie ftp_admin_v1 was the static
+#   string "ok" (name + value both public in this open-source repo) — anyone could
+#   forge it for full admin access. Now: signed, expiring, server-revocable sessions.
+#
+#   • NEW src/lib/admin-auth.ts — createAdminSession()/requireAdmin()/destroyAdminSession().
+#       Session = random 32-byte id in Upstash Redis (admin:session:<id>, 8h TTL,
+#       delete to revoke) + signed cookie token <id>.<expiryMs>.<hmac>
+#       (hmac = HMAC-SHA256("<id>.<expiryMs>", ADMIN_SESSION_SECRET)). requireAdmin()
+#       checks HMAC (constant-time) + expiry + Redis key existence.
+#   • HYBRID: requireAdmin() also accepts a timing-safe admin secret header
+#       (x-admin-secret/x-admin-password == ADMIN_PASSWORD, or Bearer SEED_SECRET) so
+#       the standalone /admin tooling pages + curl/ops scripts keep working.
+#   • ~78 admin routes/pages migrated to requireAdmin() (single source of truth);
+#       old inline === "ok" checks + per-route secret-header helpers removed. Vault
+#       routes keep their layered 10-min TOTP vault-session (vault-session.ts untouched).
+#   • NEW ENV VAR: ADMIN_SESSION_SECRET (openssl rand -hex 32). admin-auth.ts THROWS
+#       at module load if unset — NO fallback. ⚠️ Set it in Vercel env AND CI build
+#       env BEFORE deploying this branch, or the build/runtime will throw.
+#   • Verified: tsc 0 errors; lint 70 (pre-existing, <110, 0 in migrated files);
+#       runtime — forged ftp_admin_v1=ok → 401, valid signed cookie → 200,
+#       tamper/expire/revoke → 401, valid header secret → 200.
+#   • Bug tracker: docs/BUG-TRACKER.md (SEC-1 = RESOLVED-local).
 #
 # 2026-04-23 — PUNE DISTRICT #10 LAUNCH (Maharashtra):              COMPLETE (local, pre-push)
 #   Active district count: 9 → 10. Maharashtra now has 2 active (Mumbai + Pune).

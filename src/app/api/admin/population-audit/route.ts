@@ -6,12 +6,10 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 
 export const revalidate = 0;
-
-const COOKIE = "ftp_admin_v1";
 
 function isPresent(v: unknown): boolean {
   if (v == null) return false;
@@ -21,8 +19,8 @@ function isPresent(v: unknown): boolean {
 }
 
 export async function GET() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

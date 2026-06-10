@@ -4,6 +4,36 @@ _Living document. Append new sections; don't rewrite history._
 
 ---
 
+## 2026-06-11 — Session 1 (audit fix): Signed revocable admin sessions — kill static-cookie bypass (PRE-PUSH)
+
+**Status:** Branch `session-1-admin-auth` off `main` (local only, not pushed). First of the 5 audit-fix sessions. See `docs/BUG-TRACKER.md` → SEC-1 (RESOLVED-local).
+
+### The bug (CRITICAL)
+Admin cookie `ftp_admin_v1` was the literal string `"ok"`, checked with `=== "ok"` across ~78 routes/pages. Both cookie name and value are public in this open-source repo → anyone could forge it in dev-tools for full admin (supporters, finance, API-key vault, scraper triggers, audit logs).
+
+### What landed
+- **NEW `src/lib/admin-auth.ts`** — `createAdminSession(ip)` / `requireAdmin()` / `destroyAdminSession()`. Session = random 32-byte id in Upstash Redis (`admin:session:<id>`, 8h TTL, delete to revoke) + signed cookie token `<id>.<expiryMs>.<hmac>`. `requireAdmin()` validates HMAC (constant-time) + expiry + Redis key existence.
+- **Hybrid auth** — `requireAdmin()` also accepts a timing-safe admin secret header (`x-admin-secret`/`x-admin-password` == `ADMIN_PASSWORD`, or `Authorization: Bearer <SEED_SECRET>`), so the standalone `/admin/review` + `/admin/scrapers` pages and curl/ops tools (`seed-tenders`, `cleanup-news`, `payments`) keep working. (User decision: chose "Hybrid requireAdmin" over cookie-only.)
+- **~78 files migrated** to `requireAdmin()` — 59 uniform API routes (inline + `isAuthed()` buckets) done via a parallel sub-agent workflow; 5 vault routes + 5 header-auth routes + 7 admin pages/layout + `actions.ts` done by hand. Old `=== "ok"` checks and per-route secret helpers removed.
+- **`actions.ts`** — login + TOTP now mint sessions via `createAdminSession()`; logout calls `destroyAdminSession()`. The 2nd login path in `[locale]/admin/review/page.tsx` was also migrated (it still set `"ok"`).
+- **Vault preserved** — `vault-session.ts` (the layered 10-min TOTP vault session) was NOT touched; vault routes still read the raw cookie value for binding.
+- **`proxy.ts`** — IP allowlist documented as optional defense-in-depth; `/api/admin` intentionally kept out of the matcher (would run intl middleware over API routes). Real gate is per-route `requireAdmin()`.
+- **In-memory login limiter** left in place with a comment — Session 4 moves it to Redis.
+
+### New env var (ACTION REQUIRED before deploy)
+`ADMIN_SESSION_SECRET` — generate `openssl rand -hex 32`. `admin-auth.ts` **throws at module load** if unset (no fallback). ⚠️ Must be set in **Vercel env AND CI build env BEFORE** this branch is pushed/deployed, or the build/runtime throws. Added to `.env.example`. (CI note for Session 2: add a dummy `ADMIN_SESSION_SECRET` to `.github/workflows/ci.yml` build env.)
+
+### Verified locally
+- `npx tsc --noEmit` → 0 errors. `npm run lint` → 70 errors (all pre-existing, under the 110 ceiling; 0 in any migrated file).
+- Runtime (dev server + Upstash): no cookie → 401; **forged `ftp_admin_v1=ok` → 401**; valid signed cookie → 200; tampered HMAC → 401; expired → 401; **revoked (Redis key deleted) → 401**; valid `x-admin-secret`/`x-admin-password` → 200; wrong secret → 401.
+- Not driven via curl (recommend manual browser confirm): full password+2FA login UX and logout. TOTP verify logic unchanged.
+
+### Follow-ups noted (not done)
+- `security/logout-all` only clears the current browser cookie; could delete all `admin:session:*` keys to revoke everywhere.
+- `SEED_SECRET` is now a universal admin credential via `requireAdmin()` (was seed-tenders-only).
+
+---
+
 ## 2026-04-26 — Session 11: Homepage redesign-v2 (slim core) (PRE-PUSH)
 
 **Status:** ~138 commits ahead of origin/main (was 125 → +13 this session). 12 component commits + 1 page.tsx snapshot + 1 page.tsx swap + 1 docs commit. Pure presentation layer; zero schema, API, Razorpay-write, or env-var changes. No new npm dependencies.

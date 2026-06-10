@@ -6,11 +6,9 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 import { redis } from "@/lib/redis";
-
-const COOKIE = "ftp_admin_v1";
 
 // Expected update frequency per module (minutes). Used by the UI to colour-code
 // freshness cells and in the per-cell popover.
@@ -38,8 +36,8 @@ interface FreshnessRow {
 }
 
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 async function lastErrorFor(jobPrefix: string, districtSlug: string): Promise<string | null> {

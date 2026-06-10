@@ -12,17 +12,19 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { VAULT_COOKIE, bumpReveals, checkVaultSession } from "@/lib/vault-session";
 import { logAuditAuto } from "@/lib/audit-log";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(_req: NextRequest, ctx: Ctx) {
-  const jar = await cookies();
-  const admin = jar.get(COOKIE)?.value;
-  if (admin !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const jar = await cookies();
+  const admin = jar.get(COOKIE)?.value;
   const sessionToken = jar.get(VAULT_COOKIE)?.value;
   const status = await checkVaultSession(sessionToken, admin);
   if (!status.valid || !sessionToken) {

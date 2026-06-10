@@ -5,16 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma";
 import { logAuditAuto } from "@/lib/audit-log";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 type RouteCtx = { params: Promise<{ id: string }> };

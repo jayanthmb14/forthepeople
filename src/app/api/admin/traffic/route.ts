@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import {
   fetchAllPlausibleData,
@@ -13,7 +13,6 @@ import {
   type PlausiblePeriod,
 } from "@/lib/plausible-api";
 
-const COOKIE = "ftp_admin_v1";
 const CACHE_KEY = "ftp:admin:traffic";
 const CACHE_TTL = 180;
 
@@ -32,8 +31,8 @@ function normalizePeriod(raw: string | null): PlausiblePeriod {
 }
 
 export async function GET(req: NextRequest) {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

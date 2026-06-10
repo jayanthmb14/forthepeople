@@ -13,14 +13,16 @@ import {
   VAULT_TTL_SECONDS,
   MAX_REVEALS_PER_SESSION,
 } from "@/lib/vault-session";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 
 export async function GET() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const jar = await cookies();
   const sessionToken = jar.get(VAULT_COOKIE)?.value;
   const status = await checkVaultSession(sessionToken, jar.get(COOKIE)?.value);
   return NextResponse.json({
@@ -33,10 +35,11 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const jar = await cookies();
   const token = jar.get(VAULT_COOKIE)?.value;
   if (token) await destroyVaultSession(token);
   jar.delete(VAULT_COOKIE);

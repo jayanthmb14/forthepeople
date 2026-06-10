@@ -6,13 +6,14 @@
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 const TOTP_PENDING = "admin_totp_pending";
 
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function POST() {

@@ -5,11 +5,10 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
 
-const COOKIE = "ftp_admin_v1";
 const CACHE_KEY = "ftp:admin:finance-summary";
 const CACHE_TTL = 300;
 
@@ -55,8 +54,8 @@ function startOfMonthUTC(d: Date): Date {
 }
 
 export async function GET() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const DEFAULT_TEMPLATES: Record<string, string> = {
   feedback_template_bug: "Thank you for reporting this! Our team has logged it and will investigate within 48 hours. The fix will appear in our Update Log on the district page.",
@@ -12,8 +10,8 @@ const DEFAULT_TEMPLATES: Record<string, string> = {
 };
 
 export async function GET() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

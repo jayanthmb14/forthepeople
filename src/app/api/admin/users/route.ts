@@ -9,17 +9,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { logAuditAuto } from "@/lib/audit-log";
+import { requireAdmin } from "@/lib/admin-auth";
 
-const COOKIE = "ftp_admin_v1";
 const VALID_ROLES = new Set(["owner", "admin", "viewer"]);
 
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function GET() {

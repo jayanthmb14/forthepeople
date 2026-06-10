@@ -6,13 +6,11 @@
 
 import { NextResponse } from "next/server";
 import { callAI } from "@/lib/ai-provider";
-import { cookies } from "next/headers";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function POST() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const start = Date.now();

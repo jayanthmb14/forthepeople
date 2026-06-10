@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { isAutoClassifyEnabled, setAdminSetting } from "@/lib/admin-settings";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function GET() {

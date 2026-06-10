@@ -5,18 +5,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { runModuleFactCheck } from "@/lib/fact-checker";
 import { ALL_MODULES } from "../fact-check-status/route";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // Modules that have no structured data to verify
 const SKIP_MODULES = new Set(["overview", "interactive-map", "services", "file-rti"]);
 
 async function isAuthed() {
-  return (await cookies()).get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function POST(req: NextRequest) {

@@ -5,20 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db";
-
-function checkAuth(req: NextRequest): boolean {
-  const secret = process.env.ADMIN_PASSWORD;
-  if (!secret) return false;
-  const auth = req.headers.get("x-admin-secret");
-  if (!auth || auth.length !== secret.length) return false;
-  return timingSafeEqual(Buffer.from(auth), Buffer.from(secret));
-}
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET — list all review queue items (pending first, then recent reviewed, max 100)
-export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
+export async function GET() {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -51,7 +44,8 @@ export async function GET(req: NextRequest) {
 
 // POST — approve or reject a review queue item
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

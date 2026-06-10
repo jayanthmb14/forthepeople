@@ -10,19 +10,17 @@
  * - Razorpay sync button
  */
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SyncButton } from "./SyncButton";
 import SupportersSection from "./SupportersSection";
 import type { SupporterRow } from "./SupportersTable";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 type Params = Promise<{ locale: string }>;
 
 export default async function SupportersPage({ params }: { params: Params }) {
   const { locale } = await params;
-  const authed = (await cookies()).get(COOKIE)?.value === "ok";
+  const { ok: authed } = await requireAdmin();
   if (!authed) redirect(`/${locale}/admin`);
 
   const [supporters, districts, states] = await Promise.all([

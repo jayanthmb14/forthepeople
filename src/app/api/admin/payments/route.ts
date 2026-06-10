@@ -5,22 +5,13 @@
  */
 
 // GET /api/admin/payments — returns paid contributions with summary stats
-import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 
-function safeCheckAuth(provided: string | null, secret: string): boolean {
-  if (!provided || provided.length !== secret.length) return false;
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(secret));
-}
-
-export async function GET(req: NextRequest) {
-  const secret = process.env.ADMIN_PASSWORD;
-  if (!secret) {
-    return NextResponse.json({ error: "Admin not configured" }, { status: 503 });
-  }
-  const auth = req.headers.get("x-admin-secret");
-  if (!safeCheckAuth(auth, secret)) {
+export async function GET() {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

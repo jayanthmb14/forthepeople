@@ -14,15 +14,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import redis from "@/lib/redis";
 import { cacheKey } from "@/lib/cache";
 import { logUpdate } from "@/lib/update-log";
 import { logAuditAuto } from "@/lib/audit-log";
 import { getModuleConfig } from "../route";
-
-const COOKIE = "ftp_admin_v1";
 
 interface Body {
   module?: string;
@@ -50,8 +48,8 @@ function coerce(value: unknown, prev: unknown): unknown {
 }
 
 export async function POST(req: NextRequest) {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

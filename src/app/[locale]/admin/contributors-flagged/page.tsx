@@ -9,18 +9,16 @@
  * administrative overrides).
  */
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import FlaggedNamesClient from "./FlaggedNamesClient";
 import FlaggedMessagesClient from "./FlaggedMessagesClient";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 type Params = Promise<{ locale: string }>;
 
 export default async function FlaggedContributorsPage({ params }: { params: Params }) {
   const { locale } = await params;
-  const authed = (await cookies()).get(COOKIE)?.value === "ok";
+  const { ok: authed } = await requireAdmin();
   if (!authed) redirect(`/${locale}/admin`);
 
   const [nameRows, messageRows] = await Promise.all([

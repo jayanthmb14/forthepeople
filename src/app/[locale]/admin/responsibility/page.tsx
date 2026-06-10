@@ -1,14 +1,12 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import ResponsibilityAdminClient from "./ResponsibilityAdminClient";
-
-const COOKIE = "ftp_admin_v1";
+import { requireAdmin } from "@/lib/admin-auth";
 type Params = Promise<{ locale: string }>;
 
 export default async function AdminResponsibilityPage({ params }: { params: Params }) {
   const { locale } = await params;
-  const authed = (await cookies()).get(COOKIE)?.value === "ok";
+  const { ok: authed } = await requireAdmin();
   if (!authed) redirect(`/${locale}/admin`);
 
   const districts = await prisma.district.findMany({

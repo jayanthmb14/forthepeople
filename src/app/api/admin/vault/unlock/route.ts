@@ -14,14 +14,21 @@ import { prisma } from "@/lib/db";
 import { verifyTOTP } from "@/lib/totp";
 import { createVaultSession, VAULT_COOKIE } from "@/lib/vault-session";
 import { logAuditAuto } from "@/lib/audit-log";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 
 export async function POST(req: NextRequest) {
+  const { ok } = await requireAdmin();
+  if (!ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const jar = await cookies();
   const adminCookie = jar.get(COOKIE)?.value;
-  if (adminCookie !== "ok") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!adminCookie) {
+    // Vault sessions bind to the admin cookie value; header-only admin auth
+    // (x-admin-secret / Bearer) cannot unlock the vault.
+    return NextResponse.json({ error: "Vault requires a cookie session" }, { status: 401 });
   }
 
   const body = await req.json().catch(() => ({}));

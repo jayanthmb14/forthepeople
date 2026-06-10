@@ -4,14 +4,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 
-const COOKIE = "ftp_admin_v1";
-
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function GET() {

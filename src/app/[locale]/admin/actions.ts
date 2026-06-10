@@ -10,10 +10,14 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { verifyTOTP, verifyBackupCode } from "@/lib/totp";
+import { createAdminSession, destroyAdminSession } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 const TOTP_PENDING_COOKIE = "admin_totp_pending";
 
+// Best-effort login-attempt limiter. NOTE: this in-memory Map resets per
+// serverless invocation on Vercel, so it is NOT reliable protection.
+// Session 4 moves this to the Upstash-backed rateLimit() helper.
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000;
@@ -65,7 +69,8 @@ export async function loginAction(formData: FormData) {
     }
 
     resetLoginAttempts(ip);
-    (await cookies()).set(COOKIE, "ok", {
+    const sessionToken = await createAdminSession(ip);
+    (await cookies()).set(COOKIE, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 8 * 3600,
@@ -130,7 +135,8 @@ export async function totpAction(formData: FormData) {
   }
 
   resetLoginAttempts(ip);
-  jar.set(COOKIE, "ok", {
+  const sessionToken = await createAdminSession(ip);
+  jar.set(COOKIE, sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: 8 * 3600,
@@ -152,7 +158,7 @@ export async function totpAction(formData: FormData) {
 export async function logoutAction(formData: FormData) {
   const locale = formData.get("locale") as string;
   const jar = await cookies();
-  jar.delete(COOKIE);
+  await destroyAdminSession(); // deletes the Redis session record + clears the cookie
   jar.delete(TOTP_PENDING_COOKIE);
   revalidatePath(`/${locale}/admin`);
   redirect(`/${locale}/admin`);

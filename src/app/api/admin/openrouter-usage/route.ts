@@ -6,11 +6,10 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 
-const COOKIE = "ftp_admin_v1";
 const CACHE_KEY = "ftp:admin:openrouter-usage";
 const CACHE_TTL = 300; // 5 minutes
 const USD_TO_INR = 84; // approximate conversion; made dynamic in a later prompt
@@ -90,8 +89,8 @@ async function fallbackFromUsageLog(): Promise<OpenRouterUsage> {
 }
 
 export async function GET() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

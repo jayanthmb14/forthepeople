@@ -8,14 +8,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { logAuditAuto } from "@/lib/audit-log";
 import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem } from "@/lib/support-defaults";
 import type { Prisma } from "@/generated/prisma";
 
-const COOKIE = "ftp_admin_v1";
 const ROW_ID = "support-page-config";
 const CACHE_KEY = "ftp:support-page-config:v1";
 
@@ -23,13 +22,9 @@ function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
-async function requireAdmin() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
-}
-
 export async function GET() {
-  if (!(await requireAdmin())) return unauthorized();
+  const { ok } = await requireAdmin();
+  if (!ok) return unauthorized();
   const row = await prisma.supportPageConfig.findUnique({ where: { id: ROW_ID } });
   if (!row) {
     return NextResponse.json({ config: { ...SUPPORT_DEFAULTS, updatedAt: null }, defaults: SUPPORT_DEFAULTS });
@@ -84,7 +79,8 @@ function sanitizeHelp(input: unknown): HelpItem[] {
 }
 
 export async function PUT(req: NextRequest) {
-  if (!(await requireAdmin())) return unauthorized();
+  const { ok } = await requireAdmin();
+  if (!ok) return unauthorized();
 
   let body: Record<string, unknown>;
   try {

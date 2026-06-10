@@ -8,8 +8,8 @@ import { cookies } from "next/headers";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminBot from "@/components/admin/AdminBot";
 import { loginAction, totpAction } from "./actions";
+import { requireAdmin } from "@/lib/admin-auth";
 
-const COOKIE = "ftp_admin_v1";
 const TOTP_PENDING_COOKIE = "admin_totp_pending";
 
 type Params = Promise<{ locale: string }>;
@@ -23,7 +23,7 @@ export default async function AdminLayout({
 }) {
   const { locale } = await params;
   const jar = await cookies();
-  const authed = jar.get(COOKIE)?.value === "ok";
+  const { ok: authed } = await requireAdmin();
   const totpPending = jar.get(TOTP_PENDING_COOKIE)?.value === "ok";
 
   if (!authed) {

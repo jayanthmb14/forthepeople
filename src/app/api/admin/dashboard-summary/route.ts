@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import redis from "@/lib/redis";
 import { cacheGet, cacheSet } from "@/lib/cache";
@@ -15,7 +15,6 @@ import type { OpenRouterUsage } from "../openrouter-usage/route";
 
 export const runtime = "nodejs";
 
-const COOKIE = "ftp_admin_v1";
 const CACHE_KEY = "ftp:admin:dashboard-summary";
 const CACHE_TTL = 30;
 const STALE_THRESHOLD_MS = 24 * 3_600_000;
@@ -60,8 +59,8 @@ async function fetchOpenRouterFromCache(): Promise<OpenRouterUsage | null> {
 }
 
 export async function GET() {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

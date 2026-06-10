@@ -9,10 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-
-const COOKIE = "ftp_admin_v1";
 
 interface BotResponse {
   reply: string;
@@ -22,13 +20,9 @@ interface BotResponse {
   estimate?: { usd: number; inr: number };
 }
 
-async function authed(): Promise<boolean> {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
-}
-
 export async function GET(req: NextRequest) {
-  if (!(await authed())) {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const limit = Math.min(100, Number(req.nextUrl.searchParams.get("limit") ?? 20));
@@ -40,7 +34,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await authed())) {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

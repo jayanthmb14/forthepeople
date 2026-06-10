@@ -4,10 +4,11 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAdmin, createAdminSession } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 
@@ -16,7 +17,13 @@ async function loginAction(formData: FormData) {
   const pw = formData.get("password") as string;
   const locale = formData.get("locale") as string;
   if (pw === (process.env.ADMIN_PASSWORD ?? "")) {
-    (await cookies()).set(COOKIE, "ok", {
+    const hdrs = await headers();
+    const ip =
+      hdrs.get("x-forwarded-for")?.split(",")[0].trim() ||
+      hdrs.get("x-real-ip") ||
+      "unknown";
+    const token = await createAdminSession(ip);
+    (await cookies()).set(COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 8 * 3600,
@@ -70,7 +77,7 @@ export default async function AdminReviewPage({
 }) {
   const { locale } = await params;
   const { error, tab = "review" } = await searchParams;
-  const authed = (await cookies()).get(COOKIE)?.value === "ok";
+  const { ok: authed } = await requireAdmin();
 
   if (!authed) {
     return (

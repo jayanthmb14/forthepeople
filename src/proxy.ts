@@ -11,7 +11,14 @@ import { routing } from "./i18n/routing";
 const intlMiddleware = createMiddleware(routing);
 
 export default function proxy(req: NextRequest) {
-  // Admin IP restriction (optional — skip if ADMIN_ALLOWED_IPS is empty/unset)
+  // Admin IP allowlist — OPTIONAL, best-effort defense-in-depth only. It runs
+  // solely when ADMIN_ALLOWED_IPS is set. Real admin auth is per-route via
+  // `requireAdmin()` (src/lib/admin-auth.ts); this IP check is NOT the gate.
+  //
+  // Matcher decision: `/api/admin/*` is intentionally NOT in `config.matcher`
+  // below — adding it would run next-intl's middleware over API routes and can
+  // rewrite/redirect them. So this allowlist effectively covers the admin
+  // *page* (/[locale]/admin) only; API routes are gated by requireAdmin().
   if (req.nextUrl.pathname.includes("/admin") || req.nextUrl.pathname.includes("/api/admin")) {
     const allowed = process.env.ADMIN_ALLOWED_IPS?.split(",").map(s => s.trim()) || [];
     if (allowed.length > 0 && allowed[0] !== "") {

@@ -15,7 +15,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // Vercel Pro allows up to 60s — seed touches ~80 rows across 5 tables,
 // well within budget. Bump if you ever grow the seed substantially.
@@ -25,17 +25,10 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const hdrs = await headers();
-  const authHeader = hdrs.get("authorization");
-  const expected = process.env.SEED_SECRET;
-
-  if (!expected) {
-    return NextResponse.json(
-      { error: "Server misconfigured: SEED_SECRET not set" },
-      { status: 500 },
-    );
-  }
-  if (authHeader !== `Bearer ${expected}`) {
+  // requireAdmin() accepts the admin session cookie, x-admin-secret == ADMIN_PASSWORD,
+  // OR the documented `Authorization: Bearer <SEED_SECRET>` ops header.
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

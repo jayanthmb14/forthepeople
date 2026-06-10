@@ -2,16 +2,15 @@
 // GET returns the full row; PUT upserts all fields.
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
-const COOKIE = "ftp_admin_v1";
 const SINGLETON_ID = "site-announcement-singleton";
 
 async function isAuthed(): Promise<boolean> {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function GET() {

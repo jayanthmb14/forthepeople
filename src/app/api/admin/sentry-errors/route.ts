@@ -5,17 +5,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { fetchSentryIssues, type SentryFetchResult } from "@/lib/sentry-api";
 
-const COOKIE = "ftp_admin_v1";
 const CACHE_KEY = "ftp:admin:sentry-errors";
 const CACHE_TTL = 300;
 
 export async function GET(req: NextRequest) {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

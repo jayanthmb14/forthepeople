@@ -12,15 +12,19 @@ import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { VAULT_COOKIE, checkVaultSession } from "@/lib/vault-session";
 import { logAuditAuto } from "@/lib/audit-log";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const COOKIE = "ftp_admin_v1";
 
 async function requireVault(): Promise<{ ok: true } | { ok: false; res: NextResponse }> {
-  const jar = await cookies();
-  const admin = jar.get(COOKIE)?.value;
-  if (admin !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return { ok: false, res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
+  // Vault session is bound to the raw admin cookie value (see vault-session.ts),
+  // so read it to validate the unlocked-vault layer on top of admin auth.
+  const jar = await cookies();
+  const admin = jar.get(COOKIE)?.value;
   const sessionToken = jar.get(VAULT_COOKIE)?.value;
   const status = await checkVaultSession(sessionToken, admin);
   if (!status.valid) {

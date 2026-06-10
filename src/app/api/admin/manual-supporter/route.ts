@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { logAuditAuto } from "@/lib/audit-log";
@@ -17,8 +17,6 @@ import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
-
-const COOKIE = "ftp_admin_v1";
 
 const CONTRIBUTOR_CACHE_KEYS = [
   "ftp:contributors:v1",
@@ -33,8 +31,8 @@ async function invalidateContributorCaches() {
 }
 
 export async function POST(req: NextRequest) {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

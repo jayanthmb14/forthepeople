@@ -9,23 +9,13 @@
 // One-time cleanup: remove stale articles, duplicates, wrong auto-alerts
 // Auth: ADMIN_PASSWORD
 // ═══════════════════════════════════════════════════════════
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { timingSafeEqual } from "crypto";
+import { requireAdmin } from "@/lib/admin-auth";
 
-function checkAuth(req: NextRequest): boolean {
-  const auth = req.headers.get("x-admin-password") ?? "";
-  const expected = process.env.ADMIN_PASSWORD ?? "";
-  if (!expected || auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
+export async function POST() {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

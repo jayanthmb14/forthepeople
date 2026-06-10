@@ -5,11 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma";
-
-const COOKIE = "ftp_admin_v1";
 
 const VALID_STATUSES = new Set([
   "PENDING",
@@ -21,8 +19,8 @@ const VALID_STATUSES = new Set([
 ]);
 
 export async function GET(req: NextRequest) {
-  const jar = await cookies();
-  if (jar.get(COOKIE)?.value !== "ok") {
+  const { ok } = await requireAdmin();
+  if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const status = req.nextUrl.searchParams.get("status");

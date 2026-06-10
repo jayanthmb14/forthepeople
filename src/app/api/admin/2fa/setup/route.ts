@@ -5,15 +5,13 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { generateTOTPSecret, generateQRCode, generateBackupCodes } from "@/lib/totp";
 
-const COOKIE = "ftp_admin_v1";
-
 async function isAuthed() {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 // POST: Generate new TOTP secret + QR code (does NOT enable 2FA yet)

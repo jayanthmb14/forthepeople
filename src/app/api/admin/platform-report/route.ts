@@ -8,19 +8,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { estimateReportCost, generatePlatformReport } from "@/lib/platform-analysis";
 import { logAuditAuto } from "@/lib/audit-log";
-
-const COOKIE = "ftp_admin_v1";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 async function isAuthed(): Promise<boolean> {
-  const jar = await cookies();
-  return jar.get(COOKIE)?.value === "ok";
+  const { ok } = await requireAdmin();
+  return ok;
 }
 
 export async function GET() {
