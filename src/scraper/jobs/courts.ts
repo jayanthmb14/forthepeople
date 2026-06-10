@@ -15,16 +15,6 @@ import { JobContext, ScraperResult } from "../types";
 // NJDG API endpoint for district court statistics
 const NJDG_API = "https://njdg.ecourts.gov.in/njdgnew/api/index.php";
 
-const COURT_NAMES = [
-  "District & Sessions Court",
-  "Chief Judicial Magistrate",
-  "Civil Judge Sr. Division",
-  "Family Court",
-  "Labour Court",
-  "POCSO Special Court",
-  "JMFC",
-];
-
 export async function scrapeCourts(ctx: JobContext): Promise<ScraperResult> {
   try {
     let newCount = 0;
@@ -78,38 +68,14 @@ export async function scrapeCourts(ctx: JobContext): Promise<ScraperResult> {
         }
       }
     } else {
-      // NJDG API may require auth or rate-limit. Use approximate values from last known.
-      ctx.log(`Courts: NJDG returned HTTP ${res.status} — generating estimate from seed`);
-
-      for (const courtName of COURT_NAMES) {
-        const latest = await prisma.courtStat.findFirst({
-          where: { districtId: ctx.districtId, courtName },
-          orderBy: { year: "desc" },
-        });
-
-        const prevPending = latest?.pending ?? 500;
-        const filed = Math.floor(prevPending * 0.05);
-        const disposed = Math.floor(prevPending * 0.04);
-
-        const existing = await prisma.courtStat.findFirst({
-          where: { districtId: ctx.districtId, year, courtName },
-        });
-
-        if (!existing) {
-          await prisma.courtStat.create({
-            data: {
-              districtId: ctx.districtId,
-              year,
-              courtName,
-              filed,
-              disposed,
-              pending: prevPending + filed - disposed,
-              source: "NJDG (estimated)",
-            },
-          });
-          newCount++;
-        }
-      }
+      // Honest empty state: NJDG failed, so write NOTHING. The old fallback derived
+      // pending = prevPending + filed - disposed (with filed/disposed guessed as a
+      // fraction of the last known pending) and stored it as "NJDG (estimated)" — a
+      // computed number presented as current case data, which violates the platform's
+      // zero-fabrication rule. The last REAL rows stay untouched; the /courts page
+      // degrades to its NoDataCard empty state when a district has no real rows.
+      ctx.log(`Courts: NJDG returned HTTP ${res.status} — no data written (honest empty state)`);
+      return { success: false, recordsNew: 0, recordsUpdated: 0, error: `NJDG HTTP ${res.status}` };
     }
 
     ctx.log(`Courts: ${newCount} new records`);

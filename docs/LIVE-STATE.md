@@ -4,6 +4,40 @@ _Living document. Append new sections; don't rewrite history._
 
 ---
 
+## 2026-06-11 — Session 3 (audit fix): Stop fabricating RTI/court stats — honest empty state (PRE-PUSH)
+
+**Status:** Branch `session-3-data-integrity` off `main` (local only, not pushed). Third of the 5 audit-fix sessions. See `docs/BUG-TRACKER.md` → DATA-1.
+
+### The bug (HIGH — data integrity)
+Two scrapers invented numbers on portal failure and wrote them to the DB, violating the platform's #1 rule (zero fabrication):
+- `src/scraper/jobs/rti.ts` — on `!res.ok`, used `Math.random()` to invent RTI filed-counts + avg-days, stored as `source: "KIC Karnataka (estimated)"`.
+- `src/scraper/jobs/courts.ts` — on NJDG failure, derived `pending = prevPending + filed - disposed` (filed/disposed guessed as a fraction of last pending) and stored it as `source: "NJDG (estimated)"`.
+
+### What landed
+- **rti.ts** — deleted the entire `Math.random()` synthetic-stats block. On failure it now `ctx.log(...)`s and returns `{ success: false, recordsNew: 0, recordsUpdated: 0, error: "KIC HTTP <status>" }`. Writes nothing.
+- **courts.ts** — deleted the derived-estimate block. On failure it returns the same honest failed status and writes nothing; the last REAL rows are left untouched.
+- Removed the orphaned `CORE_DEPARTMENTS` / `COURT_NAMES` constants (only used by the deleted fabrication code).
+- **`/rti` + `/courts` pages** — `NoDataCard` was imported but never rendered; empty data showed a misleading "Filed 0 / Disposed 0 / Pending 0" block. Wired `NoDataCard` to the empty case (`!isLoading && !error && stats.length === 0`) so a no-data district shows the honest "data being collected" state. (Minor deviation from the literal prompt, which only said "add NoDataCard if it crashes" — it didn't crash, but it also wasn't showing NoDataCard. Flagged for review; easily reverted.)
+- **NEW `scripts/purge-estimated-stats.ts`** — deletes `RtiStat` + `CourtStat` rows whose `source` contains "estimated". **Safe by default** (dry-run; pass `--confirm` to delete). **NOT run by this session.**
+
+### ⚠️ Manual action required (you)
+Run the purge against prod Neon AFTER deploying Session 3 — fabricated rows already exist in prod (confirmed live: `GET /api/data/courts?district=mumbai` returns `source:"NJDG (estimated)"` rows, filed 25 / disposed 20 / pending 505):
+```
+DATABASE_URL="<prod Neon>" npx tsx scripts/purge-estimated-stats.ts            # dry-run / count
+DATABASE_URL="<prod Neon>" npx tsx scripts/purge-estimated-stats.ts --confirm  # delete
+```
+
+### Verified locally
+- `npx tsc --noEmit` → 0 errors.
+- **Forced portal failure** (overrode `fetch` → HTTP 503) and ran both jobs against a throwaway Postgres → **0 rows written** (RtiStat/CourtStat counts 0 before and after; both jobs returned `success:false, recordsNew:0`). PASS.
+- Dev smoke: `/rti` + `/courts` serve 200 for an empty district (mumbai) and a data district (mandya). `GET /api/data/rti?district=mumbai` returns `stats:[]` → the RTI page hits its `NoDataCard` branch. (Courts NoDataCard shows once the existing fabricated rows are purged.)
+- Did NOT touch any other scraper, route, component, or AI code. `AI-NEWS-INTELLIGENCE-SKILL.md` checked — it doesn't document this scraper behavior, so left unchanged.
+
+### Merge note
+Off main, so `BUG-TRACKER.md` (created here) + the top-of-file `BLUEPRINT` / `LIVE-STATE` entries will trivially union-conflict with Sessions 1 & 2. Merge in order (1 → 2 → 3) and keep all dated entries.
+
+---
+
 ## 2026-04-26 — Session 11: Homepage redesign-v2 (slim core) (PRE-PUSH)
 
 **Status:** ~138 commits ahead of origin/main (was 125 → +13 this session). 12 component commits + 1 page.tsx snapshot + 1 page.tsx swap + 1 docs commit. Pure presentation layer; zero schema, API, Razorpay-write, or env-var changes. No new npm dependencies.

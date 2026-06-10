@@ -49,7 +49,11 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
-      {!isLoading && (
+      {!isLoading && !error && stats.length === 0 && (
+        <NoDataCard module="courts" district={district} state={state} />
+      )}
+
+      {!isLoading && stats.length > 0 && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
             <StatCard label={`Filed (${recentYear})`} value={totalFiled.toLocaleString("en-IN")} icon={Scale} />

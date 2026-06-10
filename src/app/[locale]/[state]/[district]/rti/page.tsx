@@ -45,7 +45,11 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
-      {!isLoading && (
+      {!isLoading && !error && stats.length === 0 && (
+        <NoDataCard module="rti" district={district} state={state} />
+      )}
+
+      {!isLoading && stats.length > 0 && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
             <StatCard label={`Filed (${recentYear})`} value={totalFiled.toLocaleString("en-IN")} icon={FileText} />
