@@ -41,7 +41,12 @@ their remediation across the 5 fix sessions. Status values: **OPEN** ·
     `BLUEPRINT-UNIFIED.md` + `SCALING-CHECKLIST.md`).
   - Patched Next.js → **16.2.6** (`package.json` `^16.2.6`; lockfile + node_modules
     both resolved to 16.2.6, verified). Did **not** run `npm audit fix`.
-  - `.github/workflows/ci.yml` Build step: added a dummy non-empty
+  - `.github/workflows/ci.yml`: added an ephemeral `postgres:16` **service container**
+    + a `prisma db push --accept-data-loss` step, so the CI build job has a REACHABLE
+    (empty) database. `next build` queries the DB at build time to statically generate
+    pages like `/[locale]/india/[moduleSlug]`; against the old dummy localhost URL it
+    failed with `ECONNREFUSED`. db push here only ever touches the disposable CI
+    container, NEVER prod (the correct use of db push). Also added a dummy non-empty
     `ADMIN_SESSION_SECRET` (so CI builds once Session 1's `admin-auth.ts` merges).
   - New `.github/dependabot.yml` — groups minor+patch npm (and github-actions)
     updates into a single weekly PR.
@@ -49,9 +54,13 @@ their remediation across the 5 fix sessions. Status values: **OPEN** ·
   - Lockfile + `node_modules/next/package.json` both = 16.2.6.
   - `rm -rf node_modules && npm ci --legacy-peer-deps` → clean (no ghost/lockfile errors).
   - `npx tsc --noEmit` → 0 errors.
-  - `npm run build` → exit 0; grep-confirmed **no `prisma db push`** ran; 174 static pages.
+  - `npm run build` → exit 0; grep-confirmed **no `prisma db push`** in the deploy build; 174 static pages.
   - Dev smoke (16.2.6): `/en`, `/en/karnataka/mandya`, `/en/india` → 200; `/about`,
     `/disclaimer` → 307 locale-redirect → 200.
+  - **CI build verified GREEN via faithful local replication:** spun up a throwaway
+    Postgres (Homebrew binaries, no Docker), `prisma db push` (schema only, NO seed),
+    then `npm run build` against it → exit 0, 174/174 static pages, zero `ECONNREFUSED`.
+    Confirmed an empty-but-reachable DB is sufficient (pages render their empty state).
 - **Deploy ordering:** combined with Session 1, set `ADMIN_SESSION_SECRET` in Vercel
   env BEFORE the push, or the prod build throws at module load.
 
