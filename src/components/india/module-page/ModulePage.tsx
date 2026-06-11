@@ -232,7 +232,7 @@ export default async function ModulePage({ locale, module, disclaimers }: Props)
                 <p style={{ margin: "6px 0 0" }}>
                   This module ships with national-level data first. Per-state
                   breakdowns will appear here once the upstream source publishes
-                  state-wise figures and the scraper is wired in.
+                  state-wise figures and that data source is connected.
                 </p>
               </div>
             </section>

@@ -7,8 +7,15 @@
 import crypto from "crypto";
 
 function getEncryptionKey(): Buffer {
-  // Use dedicated secret, NOT admin password
-  const secret = process.env.ENCRYPTION_SECRET || process.env.ADMIN_PASSWORD || "forthepeople-fallback-change-me";
+  // Prefer a dedicated secret; fall back to ADMIN_PASSWORD. Refuse to start with a
+  // public fallback constant — encrypting the API-key vault with a known string
+  // (committed in this open-source repo) would be trivially reversible.
+  const secret = process.env.ENCRYPTION_SECRET || process.env.ADMIN_PASSWORD;
+  if (!secret) {
+    throw new Error(
+      "ENCRYPTION_SECRET (or ADMIN_PASSWORD) must be set — refusing to encrypt/decrypt with a fallback constant.",
+    );
+  }
   return crypto.scryptSync(secret, "forthepeople-salt-v2", 32);
 }
 

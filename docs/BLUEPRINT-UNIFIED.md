@@ -102,6 +102,34 @@
 #   • ⚠️ MERGE NOTE: actions.ts is ALSO edited by Session 1 (admin sessions). Merging
 #       both will conflict in actions.ts — compatible (Session 1's signed-cookie logic +
 #       Session 4's Upstash limiter coexist); merge session-1 first, then rebase session-4.
+# ▶ RELEASE GATE — citizen-facing "scraping" copy:
+#   Before ANY push, run:
+#       grep -rniE 'scrap' src/components src/app
+#   and eyeball the hits. CODE identifiers (scraperKey, ScraperLog, ScraperJob,
+#   IndiaScraperRun, runScraper…), comments, and ADMIN-only dashboard strings are
+#   fine. What must NOT appear is CITIZEN-facing rendered copy using "scrape/scraper/
+#   scraping" — use "data collection / data source / auto-update" instead. (Rule:
+#   never use scraper/scraping/scraped in user-facing text.) Added Session 5.
+#
+# 2026-06-11 — SESSION 5: HYGIENE BATCH (MED/LOW):                  COMPLETE (local, pre-push)
+#   Branch session-5-hygiene (off main). Low-risk cleanup.
+#   • Citizen-facing copy: TenderLockedState.tsx "portal scraping setup" → "data-collection
+#       setup"; india/module-page/ModulePage.tsx "the scraper is wired in" → "that data
+#       source is connected". (Internal code identifiers keep the word "scraper".)
+#   • src/lib/encryption.ts — replaced the "forthepeople-fallback-change-me" fallback:
+#       getEncryptionKey() now THROWS if neither ENCRYPTION_SECRET nor ADMIN_PASSWORD is
+#       set, instead of encrypting the API-key vault with a public constant. (Locally +
+#       prod ADMIN_PASSWORD is set, so no behaviour change there; build/runtime fine.)
+#   • Deleted 28 committed *.vN.tsx backup snapshots (git history preserves them) — grep
+#       confirmed zero imports; tsc + build still pass.
+#   • Removed 3 dead deps (bullmq, ioredis, puppeteer) — zero imports anywhere;
+#       `npm uninstall … --legacy-peer-deps`. Lockfile diff is pure deletions (1218 lines),
+#       no other version churn. Did NOT run `npm audit fix`.
+#   • Verified: tsc 0 errors; `next build` completes (174 static pages); lint 65 errors
+#       (down from 70 — deleted .v files removed their problems; <110). Dev smoke: district
+#       page, locked-tenders page, /en/india module page → 200. Bug tracker: HYG-1.
+#   • NOTE: `npm run build` NOT run directly — on this branch (off main) it still contains
+#       `prisma db push` (Session 2 removes it); ran `npx next build` to avoid touching prod.
 #
 # 2026-04-23 — PUNE DISTRICT #10 LAUNCH (Maharashtra):              COMPLETE (local, pre-push)
 #   Active district count: 9 → 10. Maharashtra now has 2 active (Mumbai + Pune).
