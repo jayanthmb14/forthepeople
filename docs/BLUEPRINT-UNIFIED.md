@@ -52,6 +52,32 @@
 #   • MERGE NOTE: this branch is off main, so its BUG-TRACKER.md / BLUEPRINT / LIVE-STATE
 #       top-of-file entries will trivially union-conflict with Session 1's. Merge
 #       session-1 first, then rebase session-2 onto updated main and keep both entries.
+# 2026-06-11 — SESSION 3: STOP FABRICATING RTI/COURT STATS (DATA INTEGRITY):  COMPLETE (local, pre-push)
+#   Branch session-3-data-integrity (off main). Two scrapers were inventing numbers
+#   on portal failure and writing them to the DB — a direct violation of the #1 rule
+#   (zero fabrication; every number must come from a cited government source).
+#
+#   • src/scraper/jobs/rti.ts — the if(!res.ok) branch used Math.random() to invent
+#       RTI filed-counts/avg-days and stored them as source "KIC Karnataka (estimated)".
+#       DELETED. On portal failure it now writes NOTHING and returns a failed status
+#       { success:false, recordsNew:0, recordsUpdated:0, error }.
+#   • src/scraper/jobs/courts.ts — the else branch derived pending = prevPending +
+#       filed - disposed (filed/disposed guessed as a % of last pending) and stored it
+#       as source "NJDG (estimated)". DELETED. On NJDG failure it now writes NOTHING and
+#       returns a failed status. Last REAL rows are left untouched.
+#   • Removed the now-orphaned CORE_DEPARTMENTS / COURT_NAMES constants (only used by
+#       the fabrication code).
+#   • /rti + /courts pages: NoDataCard was imported but never rendered (empty data
+#       showed a misleading "Filed 0 / Pending 0" block). Wired NoDataCard to the empty
+#       case so a no-data district shows the honest "data being collected" state.
+#   • NEW scripts/purge-estimated-stats.ts — deletes RtiStat + CourtStat rows whose
+#       source contains "estimated". SAFE BY DEFAULT (dry-run; --confirm to delete).
+#       ⚠️ MUST BE RUN MANUALLY against prod Neon after deploy — fabricated rows already
+#       exist in prod (confirmed live: mumbai /courts returns "NJDG (estimated)" rows
+#       filed 25 / disposed 20 / pending 505). NOT run by this session.
+#   • Verified: tsc 0 errors; forced fetch->503 + ran both jobs against a throwaway
+#       Postgres → 0 rows written (PASS); /rti + /courts serve 200 for empty + data
+#       districts; mumbai /rti returns stats:[] → NoDataCard path. Bug tracker: DATA-1.
 #
 # 2026-04-23 — PUNE DISTRICT #10 LAUNCH (Maharashtra):              COMPLETE (local, pre-push)
 #   Active district count: 9 → 10. Maharashtra now has 2 active (Mumbai + Pune).

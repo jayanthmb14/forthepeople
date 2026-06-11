@@ -16,12 +16,6 @@ import { JobContext, ScraperResult } from "../types";
 // Karnataka Information Commission publishes quarterly RTI disposal stats
 const KIC_URL = "https://kic.karnataka.gov.in/page/RTI+Statistics/en";
 
-// Departments commonly filing RTIs in revenue-heavy Karnataka districts
-const CORE_DEPARTMENTS = [
-  "Revenue", "Panchayat Raj", "Public Works", "Education",
-  "Health & Family Welfare", "Agriculture", "Police", "Water Resources",
-];
-
 export async function scrapeRTI(ctx: JobContext): Promise<ScraperResult> {
   try {
     let newCount = 0;
@@ -36,31 +30,13 @@ export async function scrapeRTI(ctx: JobContext): Promise<ScraperResult> {
     const month = today.getMonth() + 1;
 
     if (!res.ok) {
-      ctx.log(`RTI: KIC returned HTTP ${res.status} — using synthetic stats`);
-      // Fallback: generate approximate synthetic stats from KIC annual report patterns
-      for (const dept of CORE_DEPARTMENTS.slice(0, 3)) {
-        const existing = await prisma.rtiStat.findFirst({
-          where: { districtId: ctx.districtId, year, month, department: dept },
-        });
-        if (!existing) {
-          const filed = Math.floor(Math.random() * 40) + 10;
-          await prisma.rtiStat.create({
-            data: {
-              districtId: ctx.districtId,
-              year,
-              month,
-              department: dept,
-              filed,
-              disposed: Math.floor(filed * 0.7),
-              pending: Math.floor(filed * 0.3),
-              avgDays: Math.floor(Math.random() * 20) + 15,
-              source: "KIC Karnataka (estimated)",
-            },
-          });
-          newCount++;
-        }
-      }
-      return { success: true, recordsNew: newCount, recordsUpdated: 0 };
+      // Honest empty state: the portal failed, so write NOTHING. The old fallback
+      // fabricated RTI counts and avg-days with Math.random() and stored them as
+      // "KIC Karnataka (estimated)" — that violates the platform's zero-fabrication
+      // rule (every number must come from a cited government source). On failure we
+      // simply write no rows; the /rti page degrades to its NoDataCard empty state.
+      ctx.log(`RTI: KIC returned HTTP ${res.status} — no data written (honest empty state)`);
+      return { success: false, recordsNew: 0, recordsUpdated: 0, error: `KIC HTTP ${res.status}` };
     }
 
     const html = await res.text();
