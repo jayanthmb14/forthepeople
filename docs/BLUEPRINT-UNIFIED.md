@@ -29,6 +29,29 @@
 #       runtime — forged ftp_admin_v1=ok → 401, valid signed cookie → 200,
 #       tamper/expire/revoke → 401, valid header secret → 200.
 #   • Bug tracker: docs/BUG-TRACKER.md (SEC-1 = RESOLVED-local).
+# 2026-06-11 — SESSION 2: BUILD PIPELINE HARDENING + NEXT CVE PATCH:    COMPLETE (local, pre-push)
+#   Branch session-2-build-cve (off main). Two coupled audit fixes:
+#   • DROPPED `prisma db push` from the build. vercel.json buildCommand and the
+#       package.json "build" script are now `prisma generate && next build` only.
+#       (Was running db push on EVERY deploy — incl. dependabot PR previews — against
+#       the prod Neon schema; root cause of red CI + ERROR preview builds.)
+#       ⚠️ NEW WORKFLOW: schema changes are applied MANUALLY via `npm run db:push`
+#       against prod Neon BEFORE pushing dependent code. The build never touches the DB.
+#       (`db:push` script already existed in package.json.)
+#   • PATCHED Next.js 16.2.4 → 16.2.6 (May-2026 security release, 13 advisories;
+#       Vercel shipped no WAF coverage, so patching is the only fix). package.json
+#       "^16.2.6"; lockfile + node_modules both resolve to 16.2.6 (verified).
+#   • ci.yml Build step: added a DUMMY non-empty ADMIN_SESSION_SECRET so CI builds
+#       once Session 1 (admin-auth.ts, which throws at module load if unset) merges.
+#   • NEW .github/dependabot.yml — groups minor+patch npm (and gh-actions) updates
+#       into one weekly PR instead of a PR per bump.
+#   • Verified: clean `npm ci --legacy-peer-deps` (no ghost entries); tsc 0 errors;
+#       `npm run build` completes and runs NO db push (174 static pages); dev smoke
+#       /en, /en/karnataka/mandya, /en/india, /about, /disclaimer all 200.
+#   • Did NOT run `npm audit fix` (prohibited). Bug tracker: SEC-2 = RESOLVED-local.
+#   • MERGE NOTE: this branch is off main, so its BUG-TRACKER.md / BLUEPRINT / LIVE-STATE
+#       top-of-file entries will trivially union-conflict with Session 1's. Merge
+#       session-1 first, then rebase session-2 onto updated main and keep both entries.
 #
 # 2026-04-23 — PUNE DISTRICT #10 LAUNCH (Maharashtra):              COMPLETE (local, pre-push)
 #   Active district count: 9 → 10. Maharashtra now has 2 active (Mumbai + Pune).

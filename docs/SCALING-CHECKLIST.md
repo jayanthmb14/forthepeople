@@ -5,6 +5,22 @@
 # Status: 10 live (Karnataka: Mandya ✅ | Mysuru ✅ | Bengaluru Urban ✅ | Delhi: New Delhi ✅ | Maharashtra: Mumbai ✅ + Pune ✅ | West Bengal: Kolkata ✅ | Tamil Nadu: Chennai ✅ | Telangana: Hyderabad ✅ | Uttar Pradesh: Lucknow ✅)
 # ─────────────────────────────────────────────────────────────────────
 
+## 2026-06-11 — Build pipeline (Session 2 audit fix)
+
+- **The deploy build no longer runs `prisma db push`.** `vercel.json` and the
+  `package.json` "build" script are now `prisma generate && next build`. Schema
+  changes must be applied manually via `npm run db:push` against prod Neon BEFORE
+  pushing dependent code. This removes the prior risk of an unreviewed branch /
+  dependabot preview mutating or dropping prod columns mid-deploy.
+- **Next.js pinned to 16.2.6** (was 16.2.4) — patches the 7 May 2026 security
+  batch (13 advisories). Keep current; Dependabot now groups minor/patch bumps
+  into a single weekly PR (`.github/dependabot.yml`).
+- Deploy ordering reminder: when the Session 1 admin-session work lands,
+  `ADMIN_SESSION_SECRET` must exist in Vercel env (and CI build env) BEFORE the
+  push, or the build throws at module load.
+
+---
+
 ## 2026-04-23 — Pune launch traffic notes
 
 - Pune population 94.3 lakh (3rd-largest in Maharashtra, after Mumbai Suburban

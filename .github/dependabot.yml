@@ -1,0 +1,30 @@
+# Dependabot — ForThePeople.in
+# Groups all minor + patch npm updates into ONE weekly PR (instead of a PR per
+# bump). Major version bumps still open their own PRs so they get individual review.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep the GitHub Actions used by ci.yml current too (weekly, grouped).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions-all:
+        update-types:
+          - "minor"
+          - "patch"

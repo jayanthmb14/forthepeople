@@ -11,6 +11,31 @@ jobs:
     name: Type-check & Build
     runs-on: ubuntu-latest
 
+    # Throwaway Postgres for the build. `next build` statically generates DB-backed
+    # pages (e.g. /[locale]/india/[moduleSlug]) and queries the DB at build time, so
+    # the build needs a REACHABLE database — not a real one. We push the schema to
+    # this ephemeral service (empty data; pages render their empty state) and build
+    # against it. `db push` here is CORRECT: it only ever touches this disposable CI
+    # container, NEVER production.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: forthepeople
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Every DB-using step below targets the throwaway `postgres` service above.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forthepeople
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,9 +51,11 @@ jobs:
 
       - name: Generate Prisma client
         run: npx prisma generate
-        env:
-          # Dummy URL so generate works without a real DB
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forthepeople
+
+      - name: Push schema to the throwaway CI database
+        # Applies the schema to the disposable CI Postgres so `next build` can
+        # statically generate DB-backed pages. NEVER points at prod.
+        run: npx prisma db push --accept-data-loss
 
       - name: Type-check
         run: npx tsc --noEmit
@@ -36,8 +63,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forthepeople
           NEXT_PUBLIC_SITE_URL: https://forthepeople.in
+          # Dummy non-empty value. src/lib/admin-auth.ts (Session 1) throws at module
+          # load if ADMIN_SESSION_SECRET is unset, which next build executes, so CI
+          # needs SOME value. NOT a real secret — CI never serves auth requests.
+          ADMIN_SESSION_SECRET: ci-build-placeholder-not-a-real-secret
 
   lint:
     name: Lint

@@ -1,57 +1,68 @@
 # ForThePeople.in — Bug & Security Tracker
 
 _Living document. Tracks findings from the 10 June 2026 security/quality audit and
-their remediation across the 5 fix sessions. Append new findings; update statuses
-in place. Status values: **OPEN** · **RESOLVED-local** (fixed + verified locally,
-not yet pushed) · **RESOLVED-prod** (pushed + verified on production)._
+their remediation across the 5 fix sessions. Status values: **OPEN** ·
+**RESOLVED-local** (fixed + verified locally, not yet pushed) · **RESOLVED-prod**
+(pushed + verified on production)._
+
+> **Merge note:** this copy was created on branch `session-2-build-cve` (off main).
+> Branch `session-1-admin-auth` creates its own copy with the **SEC-1** entry. When
+> both land, union the two files (keep SEC-1 from session-1 + SEC-2 here). Merge
+> session-1 first, then rebase session-2.
 
 ---
 
 ## CRITICAL
 
 ### SEC-1 — Admin auth bypass via static cookie `ftp_admin_v1="ok"`
-- **Status:** ✅ RESOLVED-local — 2026-06-11 (branch `session-1-admin-auth`, commit pending review)
+- **Status:** ✅ RESOLVED-local on branch `session-1-admin-auth` (not in this branch).
+  Full entry lives in that branch's `docs/BUG-TRACKER.md`. Summary: replaced the
+  forgeable static cookie with signed, expiring, server-revocable sessions
+  (`src/lib/admin-auth.ts`, `requireAdmin()`), new env var `ADMIN_SESSION_SECRET`.
+
+### SEC-2 — Build runs `prisma db push` on every deploy + Next.js 16.2.4 exposed to May-2026 CVE batch
+- **Status:** ✅ RESOLVED-local — 2026-06-11 (branch `session-2-build-cve`, commit pending review)
 - **Severity:** CRITICAL
-- **Finding:** The admin session cookie was set to the literal string `"ok"` and
-  checked with `=== "ok"` across ~78 routes/pages. Both the cookie **name**
-  (`ftp_admin_v1`) and **value** (`"ok"`) are public in this open-source repo, so
-  anyone could forge the cookie in dev-tools and gain full admin access
-  (supporters, finance, the encrypted API-key vault, scraper triggers, audit logs).
-- **Fix:** New `src/lib/admin-auth.ts` issues **signed, expiring, server-revocable**
-  sessions: a random 32-byte session id stored in Upstash Redis under
-  `admin:session:<id>` (8h TTL — delete to revoke), plus a signed cookie token
-  `<id>.<expiryMs>.<hmac>` (`hmac = HMAC-SHA256("<id>.<expiryMs>", ADMIN_SESSION_SECRET)`).
-  Single source of truth `requireAdmin()` validates HMAC (constant-time) + expiry +
-  Redis key existence. **Hybrid:** it also accepts a timing-safe admin secret header
-  (`x-admin-secret`/`x-admin-password` == `ADMIN_PASSWORD`, or
-  `Authorization: Bearer <SEED_SECRET>`) so the standalone `/admin` tooling pages and
-  curl/ops scripts keep working. All ~78 admin routes/pages migrated to `requireAdmin()`;
-  the old inline `=== "ok"` checks and per-route secret-header helpers are gone.
-  `actions.ts` login/TOTP now mint sessions via `createAdminSession()`; logout calls
-  `destroyAdminSession()`. `proxy.ts` IP allowlist is now documented as optional
-  defense-in-depth only.
-- **New env var:** `ADMIN_SESSION_SECRET` (generate `openssl rand -hex 32`).
-  `admin-auth.ts` **throws at module load** if it is unset — there is no fallback.
-  ⚠️ **Deploy ordering:** set `ADMIN_SESSION_SECRET` in Vercel env **AND** in CI
-  build env **BEFORE** pushing/deploying this branch, or the build/runtime will throw.
+- **Finding (two coupled problems):**
+  1. The build ran `npx prisma generate && npx prisma db push && next build` on
+     **every** deploy — including unreviewed dependabot PR previews — against the
+     **production** Neon schema. An unreviewed branch could mutate/drop prod columns;
+     also the root cause of the red CI and ERROR preview builds (db push fails against
+     the CI dummy `DATABASE_URL`).
+  2. Live Next.js was **16.2.4**, exposed to the 7 May 2026 security release (13
+     advisories; patched only in **16.2.6**). Vercel shipped no WAF coverage for this
+     batch, so upgrading is the only mitigation.
+- **Fix:**
+  - Removed `prisma db push` from `vercel.json` `buildCommand` and the `package.json`
+    `"build"` script → both now `prisma generate && next build`. The build never
+    touches the DB. The `db:push` npm script (already present) is the deliberate,
+    manual path. **New workflow:** apply schema changes via `npm run db:push` against
+    prod Neon BEFORE pushing dependent code (documented in `CLAUDE.md` +
+    `BLUEPRINT-UNIFIED.md` + `SCALING-CHECKLIST.md`).
+  - Patched Next.js → **16.2.6** (`package.json` `^16.2.6`; lockfile + node_modules
+    both resolved to 16.2.6, verified). Did **not** run `npm audit fix`.
+  - `.github/workflows/ci.yml`: added an ephemeral `postgres:16` **service container**
+    + a `prisma db push --accept-data-loss` step, so the CI build job has a REACHABLE
+    (empty) database. `next build` queries the DB at build time to statically generate
+    pages like `/[locale]/india/[moduleSlug]`; against the old dummy localhost URL it
+    failed with `ECONNREFUSED`. db push here only ever touches the disposable CI
+    container, NEVER prod (the correct use of db push). Also added a dummy non-empty
+    `ADMIN_SESSION_SECRET` (so CI builds once Session 1's `admin-auth.ts` merges).
+  - New `.github/dependabot.yml` — groups minor+patch npm (and github-actions)
+    updates into a single weekly PR.
 - **Verified locally:**
-  - `npx tsc --noEmit` → 0 errors. `npm run lint` → 70 errors (all pre-existing,
-    under the 110 ceiling; 0 in any migrated file).
-  - Runtime (dev server + Upstash): no cookie → 401; **forged `ftp_admin_v1=ok` → 401**;
-    valid signed cookie → 200; tampered HMAC → 401; expired token → 401;
-    **revoked (Redis key deleted) → 401**; valid `x-admin-secret`/`x-admin-password` → 200;
-    wrong secret → 401.
-- **Manual confirmation still recommended:** real browser login (password + 2FA/TOTP
-  flow) and logout, since the server-action path can't be driven via curl. The TOTP
-  verification logic itself was not touched; only the post-verify cookie set now uses
-  `createAdminSession()`.
-- **Follow-ups (out of scope for SEC-1, noted):**
-  - `/api/admin/security/logout-all` currently only clears the *current* browser's
-    cookie. With revocable sessions it could now delete all `admin:session:*` keys to
-    truly log out everywhere — small enhancement, not done here.
-  - `SEED_SECRET` is now a universal admin credential via `requireAdmin()` (was
-    scoped to seed-tenders only). Acceptable (strong random secret); tighten later if
-    least-privilege is desired.
+  - Lockfile + `node_modules/next/package.json` both = 16.2.6.
+  - `rm -rf node_modules && npm ci --legacy-peer-deps` → clean (no ghost/lockfile errors).
+  - `npx tsc --noEmit` → 0 errors.
+  - `npm run build` → exit 0; grep-confirmed **no `prisma db push`** in the deploy build; 174 static pages.
+  - Dev smoke (16.2.6): `/en`, `/en/karnataka/mandya`, `/en/india` → 200; `/about`,
+    `/disclaimer` → 307 locale-redirect → 200.
+  - **CI build verified GREEN via faithful local replication:** spun up a throwaway
+    Postgres (Homebrew binaries, no Docker), `prisma db push` (schema only, NO seed),
+    then `npm run build` against it → exit 0, 174/174 static pages, zero `ECONNREFUSED`.
+    Confirmed an empty-but-reachable DB is sufficient (pages render their empty state).
+- **Deploy ordering:** combined with Session 1, set `ADMIN_SESSION_SECRET` in Vercel
+  env BEFORE the push, or the prod build throws at module load.
 
 ---
 
@@ -59,7 +70,6 @@ not yet pushed) · **RESOLVED-prod** (pushed + verified on production)._
 
 | ID | Sev | Finding | Target session | Status |
 |----|-----|---------|----------------|--------|
-| SEC-2 | CRITICAL | Build runs `prisma db push` against prod on every deploy; Next.js 16.2.4 exposed to May-2026 CVE batch | Session 2 | OPEN |
 | DATA-1 | HIGH | RTI/court scrapers fabricate numbers (`Math.random()` / derived "estimated") on portal failure | Session 3 | OPEN |
 | SEC-3 | HIGH | Public POST endpoints (tender-alerts subscribe, suggestions, feedback) lack real rate-limit/validation/DPDP consent | Session 4 | OPEN |
 | HYG-1 | MED/LOW | Citizen-facing "scraping" copy, public encryption fallback secret, 28 committed `.v` backups, 3 dead deps | Session 5 | OPEN |

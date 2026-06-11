@@ -28,7 +28,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:tenders": "bash scripts/lint-tender-copy.sh",
@@ -58,7 +58,7 @@
     "dotenv": "^17.3.1",
     "ioredis": "^5.10.0",
     "lucide-react": "^0.577.0",
-    "next": "^16.2.3",
+    "next": "^16.2.6",
     "next-intl": "^4.8.3",
     "node-cron": "^4.2.1",
     "otpauth": "^9.5.0",
