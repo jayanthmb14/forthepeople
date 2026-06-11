@@ -77,7 +77,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/cheerio": "^0.22.35",
+    "@types/cheerio": "^1.0.0",
     "@types/d3": "^7.4.3",
     "@types/node": "^20",
     "@types/node-cron": "^3.0.11",
