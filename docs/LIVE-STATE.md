@@ -4,6 +4,29 @@ _Living document. Append new sections; don't rewrite history._
 
 ---
 
+## 2026-06-11 — Session 5 (audit fix): Hygiene batch — copy, encryption fallback, .v backups, dead deps (PRE-PUSH)
+
+**Status:** Branch `session-5-hygiene` off `main` (local only, not pushed). Fifth and last of the audit-fix sessions. See `docs/BUG-TRACKER.md` → HYG-1.
+
+### What landed
+- **Citizen-facing copy (no "scraping"):** `components/tenders/TenderLockedState.tsx` "portal scraping setup" → "data-collection setup"; `components/india/module-page/ModulePage.tsx` "the scraper is wired in" → "that data source is connected". Internal code identifiers (`scraperKey`, `ScraperLog`, etc.) intentionally keep "scraper".
+- **`src/lib/encryption.ts`** — `getEncryptionKey()` now **throws** if neither `ENCRYPTION_SECRET` nor `ADMIN_PASSWORD` is set, instead of falling back to the public constant `"forthepeople-fallback-change-me"` (which would make the encrypted API-key vault trivially reversible). Local + prod have `ADMIN_PASSWORD`, so no behaviour change there.
+- **Deleted 28 committed `*.vN.tsx` backup snapshots** (`git rm`; git history preserves them) — grep confirmed zero imports.
+- **Removed 3 dead deps** — `bullmq`, `ioredis`, `puppeteer` (zero imports anywhere). `npm uninstall … --legacy-peer-deps`. Lockfile diff is pure deletions (1218 lines, no other version churn). **Did NOT run `npm audit fix`.**
+- **`BLUEPRINT-UNIFIED.md`** — added a `/scrap/i` release-gate note (grep `src/components` + `src/app` before every push; code identifiers/comments/admin strings OK, citizen-facing "scraping" copy NOT).
+
+### Verified locally
+- `npx tsc --noEmit` → 0 errors. Lint → **65 errors** (down from 70 — the deleted `.v` files removed their own lint problems; well under 110).
+- Build: ran `npx prisma generate && npx next build` → exit 0, 174 static pages. (Did **not** run `npm run build` directly: on this branch, off main, it still contains `prisma db push` — Session 2 removes it — and I won't touch prod. Confirms the `.v` deletions + dep removal broke no imports.)
+- Dev smoke: `/en/karnataka/mandya`, `/en/maharashtra/mumbai/tenders` (locked → `TenderLockedState`), `/en/karnataka/mandya/tenders`, `/en/india/national-snapshot` (→ `ModulePage`) all **200**.
+- Ran the new release-gate grep: the 2 citizen-facing strings are gone; all remaining `scrap` hits are code identifiers / comments / admin-only dashboard text / a `SCRAPPED→CANCELLED` data mapping — none citizen-facing.
+- DO NOT TOUCH respected: no admin-auth, payment/webhook, scraper logic, or route-handler logic changed (only 2 display strings + 1 fallback + file/dep deletions).
+
+### Merge note
+Off main → `BUG-TRACKER.md` + the `BLUEPRINT`/`LIVE-STATE` top entries union-conflict with Sessions 1–4. Merge in order 1 → 2 → 3 → 4 → 5, keep all entries. (Session 5 otherwise touches different files than 1–4.)
+
+---
+
 ## 2026-04-26 — Session 11: Homepage redesign-v2 (slim core) (PRE-PUSH)
 
 **Status:** ~138 commits ahead of origin/main (was 125 → +13 this session). 12 component commits + 1 page.tsx snapshot + 1 page.tsx swap + 1 docs commit. Pure presentation layer; zero schema, API, Razorpay-write, or env-var changes. No new npm dependencies.

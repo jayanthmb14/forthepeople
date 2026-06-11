@@ -95,7 +95,7 @@ export default function TenderLockedState({
             Help bring tenders to {districtName}
           </div>
           <p style={{ fontSize: 13, color: "#64748B", margin: "0 0 18px", lineHeight: 1.6 }}>
-            Covering a new district costs time (legal review, portal scraping
+            Covering a new district costs time (legal review, data-collection
             setup, state-specific disclaimer). Supporters decide where we go next.
           </p>
           <Link
