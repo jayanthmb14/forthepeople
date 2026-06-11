@@ -18,6 +18,28 @@
 - Deploy ordering reminder: when the Session 1 admin-session work lands,
   `ADMIN_SESSION_SECRET` must exist in Vercel env (and CI build env) BEFORE the
   push, or the build throws at module load.
+## 2026-06-11 — Public POST endpoint rate limits (Session 4 audit fix)
+
+All public POST endpoints now use the Upstash-backed `rateLimit()` helper
+(`src/lib/rate-limit.ts`), IP-hashed via `sha256(ip + VOTE_IP_SALT)`. These limits
+are also a load-shedding control — keep them in mind when load-testing / under a
+viral spike:
+
+| Endpoint | Limit (per IP) |
+|----------|----------------|
+| `/api/district-request` (votes) | 120 / min |
+| `/api/suggestions` | 3 / hour |
+| `/api/feedback` | 10 / hour |
+| `/api/tenders/alerts/subscribe` | 5 / hour |
+| admin login (`actions.ts`) | 5 / 15 min |
+
+- The old in-memory `Map` limiters (suggestions, admin login) were a no-op on
+  Vercel serverless (reset per invocation) — now genuinely enforced via Redis.
+- `rateLimit()` **fails open** (allows the request) if Upstash is unreachable, so a
+  Redis outage degrades to "no limit", not "deny all". Watch Upstash availability
+  under load; a hard outage removes abuse protection until it recovers.
+- k6 load tests will hit these limits — vary the source IP (or raise limits
+  temporarily on a staging deploy) so the limiter doesn't mask throughput numbers.
 
 ---
 

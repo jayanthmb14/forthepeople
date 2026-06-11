@@ -85,6 +85,31 @@ DATABASE_URL="<prod Neon>" npx tsx scripts/purge-estimated-stats.ts --confirm  #
 
 ### Merge note
 Off main, so `BUG-TRACKER.md` (created here) + the top-of-file `BLUEPRINT` / `LIVE-STATE` entries will trivially union-conflict with Sessions 1 & 2. Merge in order (1 → 2 → 3) and keep all dated entries.
+## 2026-06-11 — Session 4 (audit fix): Rate-limit + validate public POST endpoints, DPDP consent (PRE-PUSH)
+
+**Status:** Branch `session-4-endpoint-hardening` off `main` (local only, not pushed). Fourth of the 5 audit-fix sessions. See `docs/BUG-TRACKER.md` → SEC-3.
+
+### The bug (HIGH — security + DPDP)
+Public POST endpoints had no real abuse protection: `tenders/alerts/subscribe` had zero rate-limit / validation and stored emails; `suggestions` and the admin-login limiter used in-memory `Map`s that reset per serverless invocation on Vercel — effectively a no-op.
+
+### What landed
+- **`src/lib/rate-limit.ts`** — added shared `getClientIp()`, `hashIp()` (`sha256(ip + VOTE_IP_SALT)`, 32 chars — identical to `/api/district-request`) and `resetRateLimit()`, so all four call sites reuse one IP-hash approach (raw IPs never stored).
+- **`api/suggestions`** — deleted the in-memory Map + `checkRateLimit`; now `rateLimit('suggestion:<ipHash>', 3, 3600)`. Existing validation untouched.
+- **`api/feedback`** — added `rateLimit('feedback:<ipHash>', 10, 3600)` + explicit subject cap (≤200) alongside the existing message cap (≤2000).
+- **`api/tenders/alerts/subscribe`** — added `rateLimit('tender-alert:<ipHash>', 5, 3600)`; strict email regex on `alertChannelEmail`; length caps (≤200) on identifier/contact fields; and **DPDP**: require affirmative `consent:true` before storing any contact detail (→ 400 `CONSENT_REQUIRED`), with purpose documented in-file. Validation is ordered before the tender lookup so 400s never touch the DB.
+- **`[locale]/admin/actions.ts`** — moved the login limiter (5 attempts / 15 min) from the in-memory Map to `rateLimit('admin-login:<ipHash>', 5, 900)`, reset on successful login via `resetRateLimit()`.
+
+### Decisions / notes
+- **DPDP consent storage:** `TenderSavedByUser` has no consent column, so persisting the flag would need a schema migration + manual `db:push` (Session 2's workflow). Did the prompt's documented minimum (require `consent:true`, reject without, purpose comment) and flagged persistence as a follow-up. No schema change this session.
+- **⚠️ actions.ts merge conflict:** Session 1 ALSO edits `actions.ts` (signed admin sessions). Merging both will conflict there — the changes are compatible (Session 1's `createAdminSession`/cookie-token + Session 4's Upstash limiter coexist). Merge `session-1` first, then rebase `session-4` and keep both.
+
+### Verified locally
+- `npx tsc --noEmit` → 0 errors. `npm run lint` → 70 errors (pre-existing baseline, under 110; **0 in any of the 5 touched files**).
+- Runtime (dev + prod Upstash; unique `X-Forwarded-For` per endpoint, invalid bodies so no DB writes): suggestions `400×3 → 429`; feedback `400×10 → 429`; tender-alerts `400×5 → 429`. tender-alerts: missing-consent → **400**, invalid-email → **400**, valid input + nonexistent tender → **404** (validation passes; only fails at the tender lookup). Admin-login limiter uses the same verified `rateLimit()` helper (server action, not curl-tested).
+- DO NOT TOUCH respected: no payment/webhook/cron/scraper/AI code changed.
+
+### Merge note
+Off main → `BUG-TRACKER.md` + the `BLUEPRINT`/`LIVE-STATE` top entries union-conflict with Sessions 1–3. Merge in order 1 → 2 → 3 → 4, keep all entries.
 
 ---
 

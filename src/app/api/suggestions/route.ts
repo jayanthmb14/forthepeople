@@ -4,8 +4,8 @@
  *   POST /api/suggestions   submit (validated, rate-limited)
  *   GET  /api/suggestions   list ACCEPTED + IMPLEMENTED suggestions (public)
  *
- * Rate limit: 3 submissions per IP per rolling hour (in-memory; swap to
- * Upstash Redis when single-server assumption breaks).
+ * Rate limit: 3 submissions per IP per rolling hour (Upstash Redis, IP-hashed —
+ * reliable across serverless invocations, unlike the old in-memory Map).
  *
  * Email notification: if RESEND_API_KEY is set, a non-blocking email goes
  * to forthepeople1547@gmail.com (FTP product inbox, NOT jayanth's personal
@@ -16,32 +16,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { sendEmail } from "@/lib/email";
+import { rateLimit, hashIp, getClientIp } from "@/lib/rate-limit";
 
 const VALID_CATEGORIES = ["Feature", "Bug", "Data", "UX", "Other"] as const;
 const PRODUCT_NOTIFICATION_TO =
   process.env.ADMIN_EMAIL || "forthepeople1547@gmail.com";
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const hour = 60 * 60 * 1000;
-  const entry = rateLimitMap.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + hour });
-    return true;
-  }
-  if (entry.count >= 3) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-  if (!checkRateLimit(ip)) {
+  const rl = await rateLimit(`suggestion:${hashIp(getClientIp(req))}`, 3, 3600);
+  if (!rl.success) {
     return NextResponse.json(
       { error: "Rate limit — max 3 suggestions per hour." },
-      { status: 429 },
+      { status: 429, headers: { "Retry-After": "3600" } },
     );
   }
 

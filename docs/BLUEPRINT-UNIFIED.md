@@ -78,6 +78,30 @@
 #   • Verified: tsc 0 errors; forced fetch->503 + ran both jobs against a throwaway
 #       Postgres → 0 rows written (PASS); /rti + /courts serve 200 for empty + data
 #       districts; mumbai /rti returns stats:[] → NoDataCard path. Bug tracker: DATA-1.
+# 2026-06-11 — SESSION 4: HARDEN PUBLIC POST ENDPOINTS (SECURITY + DPDP):  COMPLETE (local, pre-push)
+#   Branch session-4-endpoint-hardening (off main). Public POST endpoints had no real
+#   abuse protection (in-memory Map limiters reset per serverless invocation = no-op).
+#
+#   • src/lib/rate-limit.ts — added shared getClientIp(), hashIp() (sha256(ip + VOTE_IP_SALT),
+#       same as /api/district-request) and resetRateLimit() helpers.
+#   • api/suggestions — deleted the in-memory Map checkRateLimit; now Upstash
+#       rateLimit('suggestion:<ipHash>', 3, 3600). Existing validation kept.
+#   • api/feedback — added Upstash rateLimit('feedback:<ipHash>', 10, 3600) + explicit
+#       subject length cap (≤200) alongside the existing message cap (≤2000).
+#   • api/tenders/alerts/subscribe — added rateLimit('tender-alert:<ipHash>', 5, 3600);
+#       strict email regex on alertChannelEmail; length caps (≤200) on identifier/contact
+#       fields; and DPDP: require an affirmative consent:true in the body before storing
+#       any contact detail (reject → 400 CONSENT_REQUIRED). Purpose documented in-file.
+#       (Persisting the consent flag needs a TenderSavedByUser column — follow-up.)
+#   • [locale]/admin/actions.ts — moved the admin-login limiter (5 attempts / 15 min)
+#       from the in-memory Map to Upstash rateLimit('admin-login:<ipHash>', 5, 900),
+#       reset on successful login via resetRateLimit().
+#   • Verified: tsc 0 errors; lint clean on all 5 files (70 total, <110). Runtime:
+#       suggestions 400×3→429, feedback 400×10→429, tender-alerts 400×5→429; tender-alerts
+#       missing-consent→400, invalid-email→400, valid+nonexistent-tender→404. Bug tracker: SEC-3.
+#   • ⚠️ MERGE NOTE: actions.ts is ALSO edited by Session 1 (admin sessions). Merging
+#       both will conflict in actions.ts — compatible (Session 1's signed-cookie logic +
+#       Session 4's Upstash limiter coexist); merge session-1 first, then rebase session-4.
 #
 # 2026-04-23 — PUNE DISTRICT #10 LAUNCH (Maharashtra):              COMPLETE (local, pre-push)
 #   Active district count: 9 → 10. Maharashtra now has 2 active (Mumbai + Pune).

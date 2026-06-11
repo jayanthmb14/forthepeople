@@ -9,9 +9,18 @@ import { prisma } from "@/lib/db";
 import { alertNewFeedback } from "@/lib/admin-alerts";
 import { isAutoClassifyEnabled } from "@/lib/admin-settings";
 import { classifyFeedback } from "@/lib/feedback-classifier";
+import { rateLimit, hashIp, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = await rateLimit(`feedback:${hashIp(getClientIp(req))}`, 10, 3600);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Rate limit — max 10 feedback submissions per hour." },
+        { status: 429, headers: { "Retry-After": "3600" } },
+      );
+    }
+
     const body = await req.json();
     const { type, module, subject, message, email, name, districtSlug, stateSlug, page, rating } = body;
 
@@ -19,7 +28,11 @@ export async function POST(req: NextRequest) {
     if (!type || !subject || !message) {
       return NextResponse.json({ error: "type, subject, and message are required" }, { status: 400 });
     }
-    if (message.length > 2000) {
+    // Length caps on free-text fields — reject grossly over-long input before storing.
+    if (typeof subject !== "string" || subject.length > 200) {
+      return NextResponse.json({ error: "Subject too long (max 200 chars)" }, { status: 400 });
+    }
+    if (typeof message !== "string" || message.length > 2000) {
       return NextResponse.json({ error: "Message too long (max 2000 chars)" }, { status: 400 });
     }
 
