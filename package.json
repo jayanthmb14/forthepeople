@@ -86,7 +86,7 @@
     "@types/react-dom": "^19",
     "@types/react-simple-maps": "^3.0.6",
     "@types/topojson-client": "^3.1.5",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "16.1.7",
     "pdf-parse": "^2.4.5",
     "tailwindcss": "^4",
