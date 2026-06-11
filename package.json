@@ -48,7 +48,7 @@
     "@prisma/client": "^7.5.0",
     "@sentry/nextjs": "^10.48.0",
     "@tanstack/react-query": "^5.90.21",
-    "@types/bcryptjs": "^2.4.6",
+    "@types/bcryptjs": "^3.0.0",
     "@upstash/redis": "^1.37.0",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
