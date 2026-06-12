@@ -46,10 +46,10 @@ import { scrapeBudget } from "./jobs/budget";
 import { scrapeExams } from "./jobs/exams";
 
 // ── Fetch active districts from DB ───────────────────────
-async function getActiveDistricts(): Promise<Array<{ slug: string; name: string; stateSlug: string; stateName: string }>> {
+async function getActiveDistricts(): Promise<Array<{ slug: string; name: string; stateSlug: string; stateName: string; owmCityName: string | null; agmarknetName: string | null }>> {
   const rows = await prisma.district.findMany({
     where: { active: true },
-    select: { slug: true, name: true, state: { select: { slug: true, name: true } } },
+    select: { slug: true, name: true, owmCityName: true, agmarknetName: true, state: { select: { slug: true, name: true } } },
     orderBy: { name: "asc" },
   });
   return rows.map((r) => ({
@@ -57,9 +57,10 @@ async function getActiveDistricts(): Promise<Array<{ slug: string; name: string;
     name: r.name,
     stateSlug: (r as { state?: { slug: string } }).state?.slug ?? "karnataka",
     stateName: (r as { state?: { name: string } }).state?.name ?? "Karnataka",
+    owmCityName: r.owmCityName ?? null,
+    agmarknetName: r.agmarknetName ?? null,
   }));
 }
-
 // ── Cache invalidation helper ─────────────────────────────
 async function invalidateCache(districtSlug: string, modules: string[]) {
   if (!redis) return;
@@ -99,9 +100,9 @@ async function runJob(
 }
 
 // ── Resolve district IDs ──────────────────────────────────
-async function getDistrictContext(slug: string, name: string, stateSlug: string, stateName: string): Promise<JobContext | null> {
+async function getDistrictContext(slug: string, name: string, stateSlug: string, stateName: string, owmCityName: string | null, agmarknetName: string | null): Promise<JobContext | null> {
   const district = await prisma.district.findFirst({
-    where: { slug },
+    where: { slug, state: { slug: stateSlug } },
     select: { id: true },
   });
   if (!district) {
@@ -114,15 +115,16 @@ async function getDistrictContext(slug: string, name: string, stateSlug: string,
     districtName: name,
     stateSlug,
     stateName,
+    owmCityName,
+    agmarknetName,
     log: console.log,
   };
 }
-
 // ── Schedule definitions ──────────────────────────────────
 async function scheduleJobs() {
   const activeDistricts = await getActiveDistricts();
-  for (const { slug, name, stateSlug, stateName } of activeDistricts) {
-    const ctx = await getDistrictContext(slug, name, stateSlug, stateName);
+  for (const { slug, name, stateSlug, stateName, owmCityName, agmarknetName } of activeDistricts) {
+    const ctx = await getDistrictContext(slug, name, stateSlug, stateName, owmCityName, agmarknetName);
     if (!ctx) continue;
 
     // ── Every 5 min: Weather ──────────────────────────────
