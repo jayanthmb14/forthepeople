@@ -46,7 +46,7 @@
     "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
-    "@sentry/nextjs": "^10.48.0",
+    "@sentry/nextjs": "^10.58.0",
     "@tanstack/react-query": "^5.90.21",
     "@types/bcryptjs": "^2.4.6",
     "@upstash/redis": "^1.37.0",
