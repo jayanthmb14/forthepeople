@@ -316,7 +316,7 @@ async function main() {
     // ═══════════════════════════════════════════════════════════
     // G. REMAINING 25+ MODELS FOR LAUNCH CHECKLIST
     // ═══════════════════════════════════════════════════════════
-    console.log("\\n📌 Seeding missing civic & demographic data...");
+    console.log("\n📌 Seeding missing civic & demographic data...");
 
     await tx.taluk.createMany({
       data: [
