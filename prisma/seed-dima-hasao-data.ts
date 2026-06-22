@@ -35,6 +35,31 @@ async function main() {
     await tx.scheme.deleteMany({ where: { districtId } });
     await tx.localIndustry.deleteMany({ where: { districtId } });
     await tx.school.deleteMany({ where: { districtId } });
+    await tx.taluk.deleteMany({ where: { districtId } });
+    await tx.budgetEntry.deleteMany({ where: { districtId } });
+    await tx.budgetAllocation.deleteMany({ where: { districtId } });
+    await tx.revenueEntry.deleteMany({ where: { districtId } });
+    await tx.revenueCollection.deleteMany({ where: { districtId } });
+    await tx.cropPrice.deleteMany({ where: { districtId } });
+    await tx.weatherReading.deleteMany({ where: { districtId } });
+    await tx.rainfallHistory.deleteMany({ where: { districtId } });
+    await tx.populationHistory.deleteMany({ where: { districtId } });
+    await tx.policeStation.deleteMany({ where: { districtId } });
+    await tx.trafficCollection.deleteMany({ where: { districtId } });
+    await tx.crimeStat.deleteMany({ where: { districtId } });
+    await tx.gramPanchayat.deleteMany({ where: { districtId } });
+    await tx.rtiStat.deleteMany({ where: { districtId } });
+    await tx.courtStat.deleteMany({ where: { districtId } });
+    await tx.newsItem.deleteMany({ where: { districtId } });
+    await tx.damReading.deleteMany({ where: { districtId } });
+    await tx.trainSchedule.deleteMany({ where: { districtId } });
+    await tx.busRoute.deleteMany({ where: { districtId } });
+    await tx.pollingBooth.deleteMany({ where: { districtId } });
+    await tx.jJMStatus.deleteMany({ where: { districtId } });
+    await tx.housingScheme.deleteMany({ where: { districtId } });
+    await tx.powerOutage.deleteMany({ where: { districtId } });
+    await tx.govOffice.deleteMany({ where: { districtId } });
+    await tx.famousPersonality.deleteMany({ where: { districtId } });
     console.log("✓ Cleared old entries for Dima Hasao");
 
     // ═══════════════════════════════════════════════════════════
@@ -287,6 +312,166 @@ async function main() {
       ]
     });
     console.log("  ✅ Seeding schools completed");
+
+    // ═══════════════════════════════════════════════════════════
+    // G. REMAINING 25+ MODELS FOR LAUNCH CHECKLIST
+    // ═══════════════════════════════════════════════════════════
+    console.log("\\n📌 Seeding missing civic & demographic data...");
+
+    await tx.taluk.createMany({
+      data: [
+        { districtId, name: "Haflong", nameLocal: "হাফলং", slug: "haflong" },
+        { districtId, name: "Umrangso", nameLocal: "উমৰাংছো", slug: "umrangso" },
+        { districtId, name: "Maibong", nameLocal: "মাইবং", slug: "maibong" },
+        { districtId, name: "Mahur", nameLocal: "মাহুৰ", slug: "mahur" }
+      ], skipDuplicates: true
+    });
+
+    await tx.budgetEntry.createMany({
+      data: [
+        { districtId, fiscalYear: "2025-26", sector: "Infrastructure", allocated: 500000000, released: 300000000, spent: 150000000, source: "NCHAC Budget" }
+      ], skipDuplicates: true
+    });
+
+    await tx.budgetAllocation.createMany({
+      data: [
+        { districtId, fiscalYear: "2025-26", department: "PWD", category: "Capital", allocated: 400000000, released: 200000000, spent: 100000000, lapsed: 0, source: "State Budget" }
+      ], skipDuplicates: true
+    });
+
+    await tx.revenueEntry.createMany({
+      data: [
+        { districtId, fiscalYear: "2025-26", month: 4, taxRevenue: 15000000, ownRevenue: 5000000, source: "Finance Dept" }
+      ], skipDuplicates: true
+    });
+
+    await tx.revenueCollection.createMany({
+      data: [
+        { districtId, fiscalYear: "2025-26", month: 4, category: "Tolls", amount: 2000000, source: "NCHAC" }
+      ], skipDuplicates: true
+    });
+
+    await tx.cropPrice.createMany({
+      data: [
+        { districtId, commodity: "Ginger", market: "Haflong Market", minPrice: 4000, maxPrice: 6000, modalPrice: 5000, date: new Date("2026-06-01T00:00:00Z"), source: "Agmarknet" }
+      ], skipDuplicates: true
+    });
+
+    await tx.weatherReading.createMany({
+      data: [
+        { districtId, temperature: 24.5, humidity: 85, conditions: "Cloudy", source: "IMD", recordedAt: new Date("2026-06-01T00:00:00Z") }
+      ], skipDuplicates: true
+    });
+
+    await tx.rainfallHistory.createMany({
+      data: [
+        { districtId, year: 2025, month: 6, rainfall: 450.5, normal: 380.0, departure: 18.5, source: "IMD" }
+      ], skipDuplicates: true
+    });
+
+    await tx.populationHistory.createMany({
+      data: [
+        { districtId, year: 2011, population: 214102, sexRatio: 932, literacy: 77.54, density: 44, source: "Census 2011" }
+      ], skipDuplicates: true
+    });
+
+    await tx.policeStation.createMany({
+      data: [
+        { districtId, name: "Haflong Police Station", address: "Haflong Town", phone: "03673-236224" }
+      ], skipDuplicates: true
+    });
+
+    await tx.trafficCollection.createMany({
+      data: [
+        { districtId, date: new Date("2026-06-01T00:00:00Z"), amount: 45000, challans: 120, source: "Assam Police" }
+      ], skipDuplicates: true
+    });
+
+    await tx.crimeStat.createMany({
+      data: [
+        { districtId, year: 2024, category: "Theft", count: 45, source: "NCRB" }
+      ], skipDuplicates: true
+    });
+
+    await tx.gramPanchayat.createMany({
+      data: [
+        { districtId, name: "Jatinga GP", population: 3500, roadConnected: true }
+      ], skipDuplicates: true
+    });
+
+    await tx.rtiStat.createMany({
+      data: [
+        { districtId, year: 2025, month: 5, department: "PWD", filed: 15, disposed: 10, pending: 5, source: "RTI Portal" }
+      ], skipDuplicates: true
+    });
+
+    await tx.courtStat.createMany({
+      data: [
+        { districtId, year: 2025, courtName: "District & Sessions Court, Haflong", filed: 120, disposed: 85, pending: 350, source: "NJDG" }
+      ], skipDuplicates: true
+    });
+
+    await tx.newsItem.createMany({
+      data: [
+        { districtId, title: "New Road Project Sanctioned", url: "https://example.com/news", source: "Local Daily", publishedAt: new Date("2026-06-01T00:00:00Z") }
+      ], skipDuplicates: true
+    });
+
+    await tx.damReading.createMany({
+      data: [
+        { districtId, damName: "Khandong Dam", waterLevel: 650.0, maxLevel: 700.0, storage: 45.0, maxStorage: 50.0, inflow: 120, outflow: 100, storagePct: 90.0, recordedAt: new Date("2026-06-01T00:00:00Z"), source: "NEEPCO" }
+      ], skipDuplicates: true
+    });
+
+    await tx.trainSchedule.createMany({
+      data: [
+        { districtId, trainNumber: "15615", trainName: "Guwahati - Silchar Express", origin: "GHY", destination: "SCL", stationName: "Haflong", daysOfWeek: ["Daily"] }
+      ], skipDuplicates: true
+    });
+
+    await tx.busRoute.createMany({
+      data: [
+        { districtId, origin: "Haflong", destination: "Guwahati", operator: "ASTC", busType: "AC Seater", active: true }
+      ], skipDuplicates: true
+    });
+
+    await tx.pollingBooth.createMany({
+      data: [
+        { districtId, constituency: "Haflong ST", name: "Haflong Govt College Booth", boothNumber: 45, location: "Haflong Govt College" }
+      ], skipDuplicates: true
+    });
+
+    await tx.jJMStatus.createMany({
+      data: [
+        { districtId, totalHouseholds: 45000, tapConnections: 32000, coveragePct: 71.1, source: "Jal Jeevan Mission" }
+      ], skipDuplicates: true
+    });
+
+    await tx.housingScheme.createMany({
+      data: [
+        { districtId, schemeName: "PMAY-G", fiscalYear: "2025-26", targetHouses: 5000, sanctioned: 4500, completed: 3000, inProgress: 1500, source: "MoRD" }
+      ], skipDuplicates: true
+    });
+
+    await tx.powerOutage.createMany({
+      data: [
+        { districtId, area: "Mahur Town", type: "Scheduled", startTime: new Date("2026-06-01T00:00:00Z"), source: "APDCL" }
+      ], skipDuplicates: true
+    });
+
+    await tx.govOffice.createMany({
+      data: [
+        { districtId, name: "District Commissioner Office", department: "General Administration", address: "Haflong", phone: "03673-236222", email: "dc-dimahasao@nic.in", type: "Headquarters" }
+      ], skipDuplicates: true
+    });
+
+    await tx.famousPersonality.createMany({
+      data: [
+        { districtId, name: "Sengya Sambudhan Phonglo", category: "Freedom Fighter", bio: "Fought against British imperialism in the 19th century.", source: "wikipedia" }
+      ], skipDuplicates: true
+    });
+
+    console.log("  ✅ Seeding remaining 25+ models completed");
   });
 
 
