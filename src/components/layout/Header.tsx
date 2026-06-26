@@ -164,11 +164,8 @@ export default function Header({ locale }: HeaderProps) {
         <button
           onClick={() => setSidebarOpen(true)}
           aria-label="Open navigation menu"
-          className="md:hidden"
+          className="flex md:hidden items-center justify-center"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             minWidth: 44,
             minHeight: 44,
             width: 44,
