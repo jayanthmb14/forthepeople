@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
     // The old route is being deleted; this preserves bookmarks and the
     // legacy CTAs while we migrate.
     const indiaDetailRedirect = {
-      source: "/:locale(en|kn)/india-detail",
+      source: "/:locale(en|kn|bn)/india-detail",
       destination: "/:locale/india",
       permanent: true,
     };

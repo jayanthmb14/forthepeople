@@ -43,6 +43,7 @@ import {
 import { INDIA_MODULES } from "@/lib/india/india-modules";
 import enDict from "@/dictionaries/en.json";
 import knDict from "@/dictionaries/kn.json";
+import bnDict from "@/dictionaries/bn.json";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -65,6 +66,7 @@ export async function generateMetadata({
       languages: {
         en: `${BASE_URL}/en/india`,
         kn: `${BASE_URL}/kn/india`,
+        bn: `${BASE_URL}/bn/india`,
       },
     },
     openGraph: { url, title: "India in One Page · ForThePeople.in" },
@@ -92,7 +94,7 @@ export default async function IndiaRoute({
     innovation: "innovation",
     culture: "culture",
   };
-  const dict = locale === "kn" ? knDict : enDict;
+  const dict = locale === "kn" ? knDict : locale === "bn" ? bnDict : enDict;
   const indiaDict = (
     dict as {
       india?: {
