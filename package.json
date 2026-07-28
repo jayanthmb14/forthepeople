@@ -56,7 +56,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "lucide-react": "^0.577.0",
-    "next": "^16.2.6",
+    "next": "^16.2.12",
     "next-intl": "^4.8.3",
     "node-cron": "^4.2.1",
     "otpauth": "^9.5.0",
