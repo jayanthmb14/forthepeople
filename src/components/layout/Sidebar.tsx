@@ -4,13 +4,38 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Sidebar — the desktop left rail on district pages (CONCEPT-v3 §6)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  • 240 px wide, sticky under the 56 px header. Collapses to 56 px icons
+//    with native title tooltips.
+//  • Five groups (from sidebar-modules.ts) with 11 px uppercase labels.
+//  • Items are 36 px tall with a 16 px Lucide icon. Active = brand-tint
+//    background + brand text. No left border, no emoji, no shadows.
+//  • A 6 px freshness dot on modules that have a live feed (weather,
+//    crops, water, news), fed by useFreshness — one request per district,
+//    cached for five minutes. Grey when unknown.
+//  • Every colour is a `var(--ftp-…)` token. No hex in this file.
+//
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import type { CSSProperties } from "react";
+import {
+  GitCompareArrows,
+  Heart,
+  Lightbulb,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { SIDEBAR_MODULES, getTieredModules, getOrderedSlugs } from "@/lib/constants/sidebar-modules";
+import { useFreshness, MODULE_TO_FRESHNESS_KEY } from "@/hooks/useFreshness";
+import type { FreshnessStatus } from "@/hooks/useFreshness";
 
 interface SidebarProps {
   locale: string;
@@ -18,263 +43,247 @@ interface SidebarProps {
   districtSlug: string;
 }
 
-// Categories + flat order are derived from the priority field in
+// Groups + flat order are derived from the priority field in
 // sidebar-modules.ts — no hardcoded slug lists live in this file.
-const SIDEBAR_CATEGORIES = getTieredModules().map((g) => ({
-  label: g.label.toUpperCase(),
+const SIDEBAR_GROUPS = getTieredModules().map((g) => ({
+  label: g.label,
   slugs: g.modules.map((m) => m.slug),
 }));
 
 const ALL_SLUGS = getOrderedSlugs();
-
 const MODULE_MAP = Object.fromEntries(SIDEBAR_MODULES.map((m) => [m.slug, m]));
+
+const COLLAPSED_KEY = "ftp.railCollapsed";
+const ITEM_HEIGHT = 36;
+const ICON_SIZE = 16;
+
+// ── Collapsed flag, remembered per browser ─────────────────────────────
+// Exposed through useSyncExternalStore so the server render (expanded)
+// never mismatches on hydration and no setState runs inside an effect.
+const collapsedListeners = new Set<() => void>();
+function readCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeCollapsed(next: boolean) {
+  try {
+    window.localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0");
+  } catch {
+    /* storage unavailable — the rail simply stays as rendered */
+  }
+  collapsedListeners.forEach((l) => l());
+}
+function subscribeCollapsed(listener: () => void) {
+  collapsedListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    collapsedListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+/** Dot colour for a freshness status. Unknown / no feed = grey. */
+function dotColor(status: FreshnessStatus | null | undefined): string {
+  switch (status) {
+    case "green":
+      return "var(--ftp-live)";
+    case "amber":
+      return "var(--ftp-warn)";
+    case "red":
+      return "var(--ftp-danger)";
+    default:
+      return "var(--ftp-border-strong)";
+  }
+}
+
+/** Shared style for every rail row (module links and the utility links). */
+function rowStyle(collapsed: boolean, active: boolean, color?: string): CSSProperties {
+  return {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: collapsed ? "center" : "flex-start",
+    gap: 10,
+    height: ITEM_HEIGHT,
+    margin: "0 8px",
+    padding: collapsed ? 0 : "0 10px",
+    borderRadius: "var(--ftp-radius-tile)",
+    textDecoration: "none",
+    background: active ? "var(--ftp-brand-tint)" : "transparent",
+    color: active ? "var(--ftp-brand)" : (color ?? "var(--ftp-text-2)"),
+    fontFamily: "var(--ftp-font-sans)",
+    fontSize: 13,
+    lineHeight: "20px",
+    fontWeight: active ? 500 : 400,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+  };
+}
+
+function UtilityLink({
+  href,
+  icon: Icon,
+  label,
+  collapsed,
+  color,
+}: {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  collapsed: boolean;
+  color?: string;
+}) {
+  return (
+    <Link href={href} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} className="ftp-rail-item" style={rowStyle(collapsed, false, color)}>
+      <Icon size={ICON_SIZE} aria-hidden style={{ flexShrink: 0 }} />
+      {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>}
+    </Link>
+  );
+}
 
 export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+  const freshness = useFreshness(stateSlug, districtSlug);
+
+  function toggleCollapsed() {
+    writeCollapsed(!collapsed);
+  }
 
   const baseUrl = `/${locale}/${stateSlug}/${districtSlug}`;
   const pathParts = pathname.split("/").filter(Boolean);
   const activeSlug = pathParts[3] ?? "overview";
 
-  function renderLink(slug: string) {
+  function renderModule(slug: string) {
     const mod = MODULE_MAP[slug];
     if (!mod) return null;
     const Icon = mod.icon;
     const isActive = activeSlug === slug;
     const href = slug === "overview" ? baseUrl : `${baseUrl}/${slug}`;
+    const hasFeed = slug in MODULE_TO_FRESHNESS_KEY;
+    const fresh = hasFeed ? freshness.forModule(slug) : null;
+    const dotTitle = hasFeed
+      ? fresh?.age
+        ? `Data ${fresh.age}`
+        : freshness.loading
+          ? "Checking data age"
+          : "Data age unknown"
+      : undefined;
 
     return (
       <Link
         key={slug}
         href={href}
         title={collapsed ? mod.label : undefined}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: collapsed ? "8px 14px" : "6px 12px",
-          textDecoration: "none",
-          background: isActive ? "#EFF6FF" : "transparent",
-          borderLeft: isActive ? "3px solid #2563EB" : "3px solid transparent",
-          color: isActive ? "#2563EB" : "#6B6B6B",
-          fontSize: 13,
-          fontWeight: isActive ? 600 : 400,
-          transition: "background 150ms ease, color 150ms ease",
-          borderRadius: "0 6px 6px 0",
-        }}
-        onMouseEnter={(e) => {
-          if (!isActive) {
-            (e.currentTarget as HTMLElement).style.background = "#F5F5F0";
-            (e.currentTarget as HTMLElement).style.color = "#1A1A1A";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) {
-            (e.currentTarget as HTMLElement).style.background = "transparent";
-            (e.currentTarget as HTMLElement).style.color = "#6B6B6B";
-          }
-        }}
+        aria-label={collapsed ? mod.label : undefined}
+        aria-current={isActive ? "page" : undefined}
+        data-active={isActive ? "true" : "false"}
+        className="ftp-rail-item"
+        style={rowStyle(collapsed, isActive)}
       >
-        {collapsed ? (
-          <Icon size={15} style={{ flexShrink: 0, color: isActive ? "#2563EB" : "#9B9B9B" }} />
-        ) : (
-          <>
-            <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1 }}>{mod.emoji}</span>
-            <span style={{ flex: 1, lineHeight: 1.3 }}>{mod.label}</span>
-          </>
+        <Icon size={ICON_SIZE} aria-hidden style={{ flexShrink: 0 }} />
+        {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{mod.label}</span>}
+        {hasFeed && (
+          <span
+            aria-hidden
+            title={dotTitle}
+            style={{
+              position: collapsed ? "absolute" : "static",
+              top: collapsed ? 8 : undefined,
+              right: collapsed ? 10 : undefined,
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: dotColor(fresh?.status),
+              flexShrink: 0,
+            }}
+          />
         )}
+        {hasFeed && dotTitle && !collapsed && <span className="sr-only">{dotTitle}</span>}
       </Link>
     );
   }
 
   return (
     <aside
+      aria-label="District navigation"
       style={{
-        width: collapsed ? 52 : 240,
-        minWidth: collapsed ? 52 : 240,
+        width: collapsed ? "var(--ftp-rail-collapsed)" : "var(--ftp-rail-width)",
+        minWidth: collapsed ? "var(--ftp-rail-collapsed)" : "var(--ftp-rail-width)",
         height: "calc(100vh - 56px - 36px)",
         position: "sticky",
         top: 56,
         overflowY: "auto",
         overflowX: "hidden",
-        background: "#FFFFFF",
-        borderRight: "1px solid #E8E8E4",
-        transition: "width 200ms ease, min-width 200ms ease",
+        background: "var(--ftp-surface)",
+        borderRight: "1px solid var(--ftp-border)",
         flexShrink: 0,
         scrollbarWidth: "thin",
-        scrollbarColor: "#E8E8E4 transparent",
+        scrollbarColor: "var(--ftp-border) transparent",
       }}
       className="hidden md:block"
     >
-      {/* ◀ / ▶ Collapse toggle */}
+      {/* Collapse / expand toggle */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: collapsed ? "center" : "flex-end",
-          padding: "10px 10px 6px",
-          borderBottom: "1px solid #E8E8E4",
+          height: 44,
+          padding: "0 8px",
+          borderBottom: "1px solid var(--ftp-border)",
         }}
       >
         <button
-          onClick={() => setCollapsed((v) => !v)}
+          type="button"
+          onClick={toggleCollapsed}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+          className="ftp-btn-secondary"
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 26,
-            height: 26,
-            border: "1px solid #E8E8E4",
-            borderRadius: 6,
-            background: "#FAFAF8",
+            width: 28,
+            height: 28,
+            border: "1px solid var(--ftp-border)",
+            borderRadius: "var(--ftp-radius-tile)",
+            background: "var(--ftp-surface)",
+            color: "var(--ftp-text-2)",
             cursor: "pointer",
-            color: "#6B6B6B",
           }}
         >
-          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+          {collapsed ? <PanelLeftOpen size={ICON_SIZE} aria-hidden /> : <PanelLeftClose size={ICON_SIZE} aria-hidden />}
         </button>
       </div>
 
-      {collapsed ? (
-        /* Collapsed: icon-only list of all modules */
-        <>
-          <div style={{ paddingTop: 4 }}>
-            {ALL_SLUGS.map(renderLink)}
-          </div>
-          <div style={{ borderTop: "1px solid #E8E8E4", marginTop: 4 }}>
-            <Link
-              href={`/${locale}/compare?a=${districtSlug}`}
-              title="Compare Districts"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 14px", textDecoration: "none", color: "#6B6B6B" }}
-            >
-              <span style={{ fontSize: 14 }}>⚖️</span>
-            </Link>
-            <Link
-              href="/support"
-              title="Support This Project"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 14px", textDecoration: "none", color: "#DC2626" }}
-            >
-              <span style={{ fontSize: 14 }}>❤️</span>
-            </Link>
-            <Link
-              href="/en/features"
-              title="Vote on Features"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 14px", textDecoration: "none", color: "#7C3AED" }}
-            >
-              <span style={{ fontSize: 14 }}>🗳️</span>
-            </Link>
-            <div style={{ height: 8 }} />
-          </div>
-        </>
-      ) : (
-        /* Expanded: full categorized list — always visible */
-        <div style={{ paddingBottom: 8 }}>
-          {SIDEBAR_CATEGORIES.map((cat, catIdx) => (
-            <div key={cat.label}>
-              {catIdx > 0 && (
-                <div style={{ height: 1, background: "#F0F0EC", margin: "5px 0" }} />
-              )}
-              <div
-                style={{
-                  padding: catIdx === 0 ? "10px 12px 4px" : "7px 12px 3px",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.07em",
-                  textTransform: "uppercase",
-                  color: "#C0C0BA",
-                }}
-              >
-                {cat.label}
+      <nav aria-label="District modules" style={{ paddingBottom: 12 }}>
+        {collapsed ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>{ALL_SLUGS.map(renderModule)}</div>
+        ) : (
+          SIDEBAR_GROUPS.map((group) => (
+            <div key={group.label}>
+              <div className="ftp-label" style={{ padding: "14px 18px 4px" }}>
+                {group.label}
               </div>
-              {cat.slugs.map(renderLink)}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{group.slugs.map(renderModule)}</div>
             </div>
-          ))}
+          ))
+        )}
 
-          {/* Bottom: Compare + Support */}
-          <div style={{ height: 1, background: "#E8E8E4", margin: "10px 0 4px" }} />
-          <Link
-            href={`/${locale}/compare?a=${districtSlug}`}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 12px", textDecoration: "none",
-              color: "#6B6B6B", fontSize: 13,
-              borderLeft: "3px solid transparent",
-              borderRadius: "0 6px 6px 0",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "#F5F5F0";
-              (e.currentTarget as HTMLElement).style.color = "#1A1A1A";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.color = "#6B6B6B";
-            }}
-          >
-            <span style={{ fontSize: 14, flexShrink: 0 }}>⚖️</span>
-            <span>Compare Districts</span>
-          </Link>
-          <Link
-            href="/support"
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 12px", textDecoration: "none",
-              color: "#DC2626", fontSize: 13, fontWeight: 500,
-              borderLeft: "3px solid transparent",
-              borderRadius: "0 6px 6px 0",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "#FFF1F2";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
-          >
-            <span style={{ fontSize: 14, flexShrink: 0 }}>❤️</span>
-            <span>Support This Project</span>
-          </Link>
-          <Link
-            href="/en/features"
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 12px", textDecoration: "none",
-              color: "#7C3AED", fontSize: 13, fontWeight: 500,
-              borderLeft: "3px solid transparent",
-              borderRadius: "0 6px 6px 0",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "#F5F3FF";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
-          >
-            <span style={{ fontSize: 14, flexShrink: 0 }}>🗳️</span>
-            <span>Vote on Features</span>
-          </Link>
-          <Link
-            href={`/${locale}/features?tab=suggest`}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 12px", textDecoration: "none",
-              color: "#16A34A", fontSize: 13, fontWeight: 500,
-              borderLeft: "3px solid transparent",
-              borderRadius: "0 6px 6px 0",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "#F0FDF4";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
-          >
-            <span style={{ fontSize: 14, flexShrink: 0 }}>💬</span>
-            <span>Spot something wrong? Tell us.</span>
-          </Link>
-          <div style={{ height: 12 }} />
+        {/* Utility links */}
+        <div style={{ height: 1, background: "var(--ftp-border)", margin: "12px 8px 8px" }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <UtilityLink href={`/${locale}/compare?a=${districtSlug}`} icon={GitCompareArrows} label="Compare districts" collapsed={collapsed} />
+          <UtilityLink href="/support" icon={Heart} label="Support this project" collapsed={collapsed} color="var(--ftp-support)" />
+          <UtilityLink href={`/${locale}/features`} icon={Lightbulb} label="Vote on features" collapsed={collapsed} color="var(--ftp-features)" />
+          <UtilityLink href={`/${locale}/features?tab=suggest`} icon={MessageSquare} label="Spot something wrong? Tell us." collapsed={collapsed} />
         </div>
-      )}
+      </nav>
     </aside>
   );
 }
