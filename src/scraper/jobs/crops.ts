@@ -6,7 +6,12 @@
 
 // ═══════════════════════════════════════════════════════════
 // Job: Crop Prices — AGMARKNET via data.gov.in API
-// Schedule: Every 15 min (6AM–8PM IST)
+// Schedule: daily 03:30 UTC via /api/cron/scrape-crops (vercel.json)
+//
+// Sept 2026 performance fix: the data.gov.in fetch now times out at 20 s,
+// and instead of one findFirst + one create per record (up to ~2,000
+// sequential round-trips to Neon), we load the district's existing keys
+// with ONE findMany and insert everything new with ONE createMany.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
@@ -60,45 +65,72 @@ export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
     const district = AGMARKNET_DISTRICT_OVERRIDE[ctx.districtSlug] ?? ctx.districtName ?? ctx.districtSlug;
     const url = `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&limit=100`;
 
-    const res = await fetch(url);
+    // data.gov.in sometimes hangs for minutes; a hard 20 s cap keeps one
+    // slow district from eating the whole cron budget.
+    const fetchStart = Date.now();
+    const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     const records: AgmarkRecord[] = json.records ?? [];
+    ctx.log(`fetched ${records.length} records in ${Date.now() - fetchStart}ms`);
 
-    let newCount = 0;
+    // ── Step 1: ONE query for the keys we already have ──
+    // CropPrice has no unique index (schema is frozen), so we dedupe in
+    // memory: the identity of a row is (commodity, market, date).
+    const existingRows = await prisma.cropPrice.findMany({
+      where: { districtId: ctx.districtId },
+      select: { commodity: true, market: true, date: true },
+    });
+    const seen = new Set(existingRows.map((e) => `${e.commodity}|${e.market}|${e.date.toISOString()}`));
+
+    // ── Step 2: build the list of rows that are genuinely new ──
+    const fetchedAt = new Date();
+    const toInsert: Array<{
+      districtId: string;
+      commodity: string;
+      variety: string | null;
+      market: string;
+      minPrice: number;
+      maxPrice: number;
+      modalPrice: number;
+      date: Date;
+      source: string;
+      fetchedAt: Date;
+    }> = [];
+
     for (const r of records) {
       // API now uses lowercase fields + numeric prices (changed 2026-03)
       const dateStr = r.arrival_date;
-      if (!dateStr) continue;
+      if (!dateStr || !r.commodity || !r.market) continue;
       const [dd, mm, yyyy] = dateStr.split("/");
       const date = new Date(`${yyyy}-${mm}-${dd}`);
       if (isNaN(date.getTime())) continue;
 
-      const existing = await prisma.cropPrice.findFirst({
-        where: {
-          districtId: ctx.districtId,
-          commodity: r.commodity,
-          market: r.market,
-          date,
-        },
+      const key = `${r.commodity}|${r.market}|${date.toISOString()}`;
+      if (seen.has(key)) continue; // already in DB, or duplicate within this batch
+      seen.add(key);
+
+      toInsert.push({
+        districtId: ctx.districtId,
+        commodity: r.commodity,
+        variety: r.variety || null,
+        market: r.market,
+        minPrice: Number(r.min_price) || 0,
+        maxPrice: Number(r.max_price) || 0,
+        modalPrice: Number(r.modal_price) || 0,
+        date,
+        source: "AGMARKNET / data.gov.in",
+        fetchedAt,
       });
-      if (!existing) {
-        await prisma.cropPrice.create({
-          data: {
-            districtId: ctx.districtId,
-            commodity: r.commodity,
-            variety: r.variety || null,
-            market: r.market,
-            minPrice: Number(r.min_price) || 0,
-            maxPrice: Number(r.max_price) || 0,
-            modalPrice: Number(r.modal_price) || 0,
-            date,
-            source: "AGMARKNET / data.gov.in",
-            fetchedAt: new Date(),
-          },
-        });
-        newCount++;
-      }
+    }
+
+    // ── Step 3: ONE insert for all of them ──
+    // skipDuplicates is a no-op without a unique index but is harmless and
+    // becomes useful the day one is added to the schema.
+    let newCount = 0;
+    if (toInsert.length > 0) {
+      const created = await prisma.cropPrice.createMany({ data: toInsert, skipDuplicates: true });
+      newCount = created.count;
     }
 
     // Keep only last 100 records

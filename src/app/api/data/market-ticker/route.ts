@@ -7,11 +7,24 @@
 // ═══════════════════════════════════════════════════════════
 // ForThePeople.in — Market Ticker API
 // GET /api/data/market-ticker
-// Free data: Yahoo Finance + open.er-api.com + goodreturns.in
+// Free data: Yahoo Finance + open.er-api.com + IBJA
 // Redis cache: 5 min market hours, 30 min after hours
+//
+// Sept 2026 fix: this route used to fetch nine upstreams one after another
+// with no timeout, so a single hung Yahoo call 504'd the whole ticker
+// (Vercel logged "Task timed out after 300 seconds"). Now every upstream
+// gets AbortSignal.timeout(5000), all of them run in parallel via
+// Promise.allSettled, and the route caps itself at maxDuration = 15.
+// Worst case the ticker answers in ~5 s with whatever came back.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import { cacheGet, cacheSet } from "@/lib/cache";
+
+export const runtime = "nodejs";
+export const maxDuration = 15;
+
+// Hard cap per upstream call. Yahoo normally answers in <1 s.
+const UPSTREAM_TIMEOUT_MS = 5_000;
 
 const CACHE_KEY = "ftp:market-ticker:v4"; // bump: added Bank Nifty + BTC/ETH + EUR/INR
 // Fuel prices removed — not universal across districts
@@ -59,6 +72,7 @@ async function fetchYahooQuote(
     const res = await fetch(url, {
       headers: YAHOO_HEADERS,
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -78,6 +92,7 @@ async function fetchUSDINR(): Promise<{ rate: number; changePct: number } | null
   try {
     const res = await fetch("https://open.er-api.com/v6/latest/USD", {
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -105,6 +120,7 @@ async function fetchIBJAPrices(): Promise<{
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
     if (!res.ok) return { gold: null, silver: null };
     const html = await res.text();
@@ -194,6 +210,33 @@ function fmt(n: number, decimals = 0): string {
   return n.toLocaleString("en-IN", { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
 }
 
+
+// ── Small helper: build one ticker row from a quote ─────────
+function quoteItem(
+  symbol: string,
+  label: string,
+  q: { price: number; change: number; changePct: number },
+  opts: { prefix?: string; decimals?: number; unit?: string; dashWhenFlat?: boolean } = {},
+): TickerItem {
+  const { prefix = "", decimals = 0, unit = "", dashWhenFlat = false } = opts;
+  const price = decimals === 0 ? Math.round(q.price) : q.price;
+  const change = decimals === 0 ? Math.round(q.change) : q.change;
+  return {
+    symbol,
+    label,
+    value: `${prefix}${fmt(price, decimals)}`,
+    change: dashWhenFlat && change === 0 ? "–" : `${change >= 0 ? "+" : ""}${fmt(change, decimals)}`,
+    changePct: q.changePct,
+    direction: q.change > 0 ? "up" : q.change < 0 ? "down" : "flat",
+    unit,
+  };
+}
+
+/** Unwrap a Promise.allSettled result; a rejection counts as "no data". */
+function settledValue<T>(r: PromiseSettledResult<T | null>): T | null {
+  return r.status === "fulfilled" ? r.value : null;
+}
+
 export async function GET() {
   // Check cache first
   const cached = await cacheGet<{ items: TickerItem[]; asOf: string; fromCache: boolean }>(CACHE_KEY);
@@ -201,113 +244,49 @@ export async function GET() {
     return NextResponse.json({ ...cached, fromCache: true });
   }
 
+  // ── Fire every upstream at once. Each has its own 5 s timeout, so the
+  //    slowest possible path here is ~5 s, not 9 × (however long Yahoo hangs).
+  const [sensexR, niftyR, niftyBankR, btcR, ethR, eurInrR, usdYahooR, crudeR, ibjaR] = await Promise.allSettled([
+    fetchYahooQuote("^BSESN"),
+    fetchYahooQuote("^NSEI"),
+    fetchYahooQuote("^NSEBANK"),
+    fetchYahooQuote("BTC-INR"),
+    fetchYahooQuote("ETH-INR"),
+    fetchYahooQuote("EURINR=X"),
+    fetchYahooQuote("USDINR=X"),
+    fetchYahooQuote("CL=F"),
+    fetchIBJAPrices(),
+  ]);
+
+  const sensex = settledValue(sensexR);
+  const nifty = settledValue(niftyR);
+  const niftyBank = settledValue(niftyBankR);
+  const btc = settledValue(btcR);
+  const eth = settledValue(ethR);
+  const eurInr = settledValue(eurInrR);
+  const usdYahoo = settledValue(usdYahooR);
+  const crude = settledValue(crudeR);
+  const ibja = settledValue(ibjaR) ?? { gold: null, silver: null };
+
   const items: TickerItem[] = [];
   let fetchedAny = false;
 
-  // Sensex
-  const sensex = await fetchYahooQuote("^BSESN");
-  if (sensex) {
-    fetchedAny = true;
-    items.push({
-      symbol: "SENSEX",
-      label: "Sensex",
-      value: fmt(Math.round(sensex.price)),
-      change: `${sensex.change >= 0 ? "+" : ""}${fmt(Math.round(sensex.change))}`,
-      changePct: sensex.changePct,
-      direction: sensex.change > 0 ? "up" : sensex.change < 0 ? "down" : "flat",
-      unit: "",
-    });
-  }
-
-  // Nifty 50
-  const nifty = await fetchYahooQuote("^NSEI");
-  if (nifty) {
-    fetchedAny = true;
-    items.push({
-      symbol: "NIFTY50",
-      label: "Nifty 50",
-      value: fmt(Math.round(nifty.price)),
-      change: `${nifty.change >= 0 ? "+" : ""}${fmt(Math.round(nifty.change))}`,
-      changePct: nifty.changePct,
-      direction: nifty.change > 0 ? "up" : nifty.change < 0 ? "down" : "flat",
-      unit: "",
-    });
-  }
-
+  if (sensex) { fetchedAny = true; items.push(quoteItem("SENSEX", "Sensex", sensex)); }
+  if (nifty) { fetchedAny = true; items.push(quoteItem("NIFTY50", "Nifty 50", nifty)); }
   // Session 16 v10 Phase C (Fix #2): Nifty Bank, BTC/INR, ETH/INR, EUR/INR
-  const niftyBank = await fetchYahooQuote("^NSEBANK");
-  if (niftyBank) {
-    fetchedAny = true;
-    items.push({
-      symbol: "NIFTYBANK",
-      label: "Nifty Bank",
-      value: fmt(Math.round(niftyBank.price)),
-      change: `${niftyBank.change >= 0 ? "+" : ""}${fmt(Math.round(niftyBank.change))}`,
-      changePct: niftyBank.changePct,
-      direction: niftyBank.change > 0 ? "up" : niftyBank.change < 0 ? "down" : "flat",
-      unit: "",
-    });
-  }
-
-  const btc = await fetchYahooQuote("BTC-INR");
-  if (btc) {
-    fetchedAny = true;
-    items.push({
-      symbol: "BTC_INR",
-      label: "Bitcoin",
-      value: `₹${fmt(Math.round(btc.price))}`,
-      change: `${btc.change >= 0 ? "+" : ""}${fmt(Math.round(btc.change))}`,
-      changePct: btc.changePct,
-      direction: btc.change > 0 ? "up" : btc.change < 0 ? "down" : "flat",
-      unit: "",
-    });
-  }
-
-  const eth = await fetchYahooQuote("ETH-INR");
-  if (eth) {
-    fetchedAny = true;
-    items.push({
-      symbol: "ETH_INR",
-      label: "Ethereum",
-      value: `₹${fmt(Math.round(eth.price))}`,
-      change: `${eth.change >= 0 ? "+" : ""}${fmt(Math.round(eth.change))}`,
-      changePct: eth.changePct,
-      direction: eth.change > 0 ? "up" : eth.change < 0 ? "down" : "flat",
-      unit: "",
-    });
-  }
-
-  const eurInr = await fetchYahooQuote("EURINR=X");
+  if (niftyBank) { fetchedAny = true; items.push(quoteItem("NIFTYBANK", "Nifty Bank", niftyBank)); }
+  if (btc) { fetchedAny = true; items.push(quoteItem("BTC_INR", "Bitcoin", btc, { prefix: "₹" })); }
+  if (eth) { fetchedAny = true; items.push(quoteItem("ETH_INR", "Ethereum", eth, { prefix: "₹" })); }
   if (eurInr) {
     fetchedAny = true;
-    items.push({
-      symbol: "EUR_INR",
-      label: "EUR/INR",
-      value: `₹${fmt(eurInr.price, 2)}`,
-      change: eurInr.change !== 0
-        ? `${eurInr.change >= 0 ? "+" : ""}${fmt(eurInr.change, 2)}`
-        : "–",
-      changePct: eurInr.changePct,
-      direction: eurInr.change > 0 ? "up" : eurInr.change < 0 ? "down" : "flat",
-      unit: "",
-    });
+    items.push(quoteItem("EUR_INR", "EUR/INR", eurInr, { prefix: "₹", decimals: 2, dashWhenFlat: true }));
   }
 
-  // USD/INR — try Yahoo Finance first (real-time), fall back to open.er-api
-  const usdYahoo = await fetchYahooQuote("USDINR=X");
+  // USD/INR — Yahoo first (real-time); only if that failed, try open.er-api
+  // (one extra 5 s call at most, and only on the failure path).
   if (usdYahoo) {
     fetchedAny = true;
-    items.push({
-      symbol: "USD_INR",
-      label: "USD/INR",
-      value: `₹${fmt(usdYahoo.price, 2)}`,
-      change: usdYahoo.change !== 0
-        ? `${usdYahoo.change >= 0 ? "+" : ""}${fmt(usdYahoo.change, 2)}`
-        : "–",
-      changePct: usdYahoo.changePct,
-      direction: usdYahoo.change > 0 ? "up" : usdYahoo.change < 0 ? "down" : "flat",
-      unit: "",
-    });
+    items.push(quoteItem("USD_INR", "USD/INR", usdYahoo, { prefix: "₹", decimals: 2, dashWhenFlat: true }));
   } else {
     const usd = await fetchUSDINR();
     if (usd) {
@@ -324,23 +303,12 @@ export async function GET() {
     }
   }
 
-  // Crude oil
-  const crude = await fetchYahooQuote("CL=F");
   if (crude) {
     fetchedAny = true;
-    items.push({
-      symbol: "CRUDE",
-      label: "Crude",
-      value: `$${fmt(crude.price, 2)}`,
-      change: `${crude.change >= 0 ? "+" : ""}${fmt(crude.change, 2)}`,
-      changePct: crude.changePct,
-      direction: crude.change > 0 ? "up" : crude.change < 0 ? "down" : "flat",
-      unit: "/bbl",
-    });
+    items.push(quoteItem("CRUDE", "Crude", crude, { prefix: "$", decimals: 2, unit: "/bbl" }));
   }
 
   // Gold & Silver — IBJA (India Bullion and Jewellers Association) official Indian rates
-  const ibja = await fetchIBJAPrices();
   if (ibja.gold) {
     fetchedAny = true;
     // IBJA gives price per 10g — convert to per gram
@@ -399,20 +367,10 @@ export async function GET() {
 
   // Order: indices first (Sensex/Nifty/Bank), then commodities (Gold/Silver/Crude),
   // then fuel + currencies + crypto. Session 16 v10 Phase C.
-  const ordered: TickerItem[] = [
-    items.find((i) => i.symbol === "SENSEX"),
-    items.find((i) => i.symbol === "NIFTY50"),
-    items.find((i) => i.symbol === "NIFTYBANK"),
-    items.find((i) => i.symbol === "GOLD"),
-    items.find((i) => i.symbol === "SILVER"),
-    items.find((i) => i.symbol === "CRUDE"),
-    items.find((i) => i.symbol === "PETROL"),
-    items.find((i) => i.symbol === "DIESEL"),
-    items.find((i) => i.symbol === "USD_INR"),
-    items.find((i) => i.symbol === "EUR_INR"),
-    items.find((i) => i.symbol === "BTC_INR"),
-    items.find((i) => i.symbol === "ETH_INR"),
-  ].filter(Boolean) as TickerItem[];
+  const ORDER = ["SENSEX", "NIFTY50", "NIFTYBANK", "GOLD", "SILVER", "CRUDE", "PETROL", "DIESEL", "USD_INR", "EUR_INR", "BTC_INR", "ETH_INR"];
+  const ordered: TickerItem[] = ORDER
+    .map((sym) => items.find((i) => i.symbol === sym))
+    .filter((i): i is TickerItem => Boolean(i));
 
   // Use fallback if nothing fetched
   const finalItems = fetchedAny && ordered.length >= 2 ? ordered : FALLBACK;
@@ -425,8 +383,10 @@ export async function GET() {
     usingFallback: !fetchedAny,
   };
 
-  await cacheSet(CACHE_KEY, result, getCacheTTL());
+  // Do not cache a pure-fallback answer for long: retry upstreams sooner.
+  const ttl = fetchedAny ? getCacheTTL() : 60;
+  await cacheSet(CACHE_KEY, result, ttl);
   return NextResponse.json(result, {
-    headers: { "Cache-Control": `public, s-maxage=${getCacheTTL()}, stale-while-revalidate=60` },
+    headers: { "Cache-Control": `public, s-maxage=${ttl}, stale-while-revalidate=60` },
   });
 }

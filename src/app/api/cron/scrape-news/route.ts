@@ -5,8 +5,10 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Vercel Cron: Hourly news scraper
+// Vercel Cron: Daily news collector (06:00 UTC, vercel.json)
 // Also: auto-expires stale alerts (>14 days) + deduplicates news
+// Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
+// Run state: Redis "ftp:cron:scrape-news"
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
@@ -16,20 +18,22 @@ import { redis } from "@/lib/redis";
 import { scrapeNews } from "@/scraper/jobs/news";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { resetExtractionCounters } from "@/lib/news-action-engine";
+import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
+const CRON_NAME = "scrape-news";
 
 const STALE_ALERT_DAYS = 14;
 
 export async function GET(request: Request) {
   // Verify cron secret to prevent unauthorized invocations
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCron(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const runStart = await cronStarted(CRON_NAME);
 
   // Reset module-scoped extraction counters so this cron starts fresh.
   // (news-action-engine caps expensive extractions like infrastructure at
@@ -134,5 +138,16 @@ export async function GET(request: Request) {
 
   const totalNew = results.reduce((s, r) => s + r.newCount, 0);
   const totalDedup = results.reduce((s, r) => s + r.dedupRemoved, 0);
+
+  // Record the run for /api/health. If EVERY district failed, that is an
+  // error run (one flaky feed is not — the others still delivered).
+  const failedDistricts = results.filter((r) => !r.success);
+  const allFailed = results.length > 0 && failedDistricts.length === results.length;
+  await cronFinished(CRON_NAME, runStart, {
+    status: allFailed ? "error" : "ok",
+    count: totalNew,
+    error: allFailed ? `all ${results.length} districts failed: ${failedDistricts[0]?.error ?? "unknown"}` : undefined,
+  });
+
   return NextResponse.json({ ok: true, totalNew, totalDedup, totalAlertsExpired, results });
 }

@@ -6,7 +6,9 @@
 
 // ═══════════════════════════════════════════════════════════
 // Job: Weather — OpenWeatherMap API
-// Schedule: Every 5 minutes
+// Schedule: every 30 min via /api/cron/scrape-weather (vercel.json).
+//   (The old "every 5 minutes" ran on a Railway node-cron container that
+//    expired in April 2026; Vercel Cron is the only scheduler now.)
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
@@ -57,7 +59,9 @@ export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
   try {
     const city = OWM_CITY_OVERRIDE[ctx.districtSlug] ?? ctx.districtName ?? ctx.districtSlug;
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},IN&appid=${OWM_KEY}&units=metric`;
-    const res = await fetch(url);
+    // 8 s cap: OpenWeather normally answers in <1 s; a hung call must not
+    // block the other districts in the same cron run.
+    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: OWMResponse = await res.json();
 

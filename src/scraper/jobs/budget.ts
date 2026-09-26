@@ -41,6 +41,15 @@ const STATE_BUDGET_RESOURCES: Record<string, { resourceId: string; description: 
   "tamil-nadu": null,
 };
 
+/**
+ * True when at least one state has a known data.gov.in resource id above.
+ * The scrape-budget cron uses this to exit early with {skipped: true}
+ * instead of looping every district for a guaranteed no-op.
+ */
+export function hasAnyLiveBudgetSource(): boolean {
+  return Object.values(STATE_BUDGET_RESOURCES).some((r) => r !== null);
+}
+
 export async function scrapeBudget(ctx: JobContext): Promise<ScraperResult> {
   const apiKey = process.env.DATA_GOV_API_KEY;
   if (!apiKey) {
