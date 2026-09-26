@@ -390,6 +390,194 @@
 .ftp-color-host-24 { background-color: var(--ftp-color-tier-district-bg); }
 .ftp-color-host-25 { border-color: var(--ftp-color-tier-district-border); }
 
+/*
+ * ═══════════════════════════════════════════════════════════════════════
+ *  DESIGN v3 "Civic Ledger" TOKEN SET  (2026-09-27, CONCEPT-v3 §3)
+ * ═══════════════════════════════════════════════════════════════════════
+ *  These `--ftp-*` variables are the ONLY colours, radii and fonts that
+ *  citizen-facing components may use. The rule is simple:
+ *
+ *      NO HEX IN COMPONENTS.  Write `var(--ftp-brand)`, never `#2563EB`.
+ *
+ *  Why: one place to change a colour, dark mode for free (see the
+ *  [data-theme="dark"] block below), and a grep that proves compliance
+ *  (`grep -nE '#[0-9A-Fa-f]{6}' src/components/...` must return nothing).
+ *
+ *  Older tokens above (--ftp-color-*, --color-*, --accent-*) are kept
+ *  untouched so pages that still use them keep working. New work should
+ *  prefer the v3 names. Semantic colour (live / warn / danger) appears
+ *  only as text or a 6 px dot, never as a stripe or gradient.
+ *
+ *  Module accent tints for icons reuse the super-category ramps declared
+ *  earlier on :root (--accent-blue-700, --accent-teal-700, ...). Map:
+ *  civic → purple · money → amber · services → teal · accountability →
+ *  slate · community → pink · data → blue.
+ */
+:root {
+  /* Surfaces */
+  --ftp-bg:              #FAFAF8;
+  --ftp-surface:         #FFFFFF;
+  --ftp-surface-2:       #F1F1ED;
+  --ftp-border:          #E8E8E4;
+  --ftp-border-strong:   #D5D5D0;
+
+  /* Text */
+  --ftp-text:            #1A1A1A;
+  --ftp-text-2:          #6B6B6B;
+
+  /* Brand */
+  --ftp-brand:           #2563EB;
+  --ftp-brand-deep:      #1E40AF;
+  --ftp-brand-tint:      #EFF6FF;
+
+  /* Semantic */
+  --ftp-live:            #16A34A;
+  --ftp-live-tint:       #ECFDF5;
+  --ftp-live-text:       #166534;
+  --ftp-warn:            #B45309;
+  --ftp-warn-tint:       #FFFBEB;
+  --ftp-danger:          #B42318;
+  --ftp-danger-tint:     #FEE9E7;
+  --ftp-features:        #6E59C0;
+  --ftp-features-tint:   #EEEDFE;
+  --ftp-support:         #E11D48;
+  --ftp-support-tint:    #FFF1F2;
+
+  /* Map */
+  --ftp-map-live:        #2563EB;
+  --ftp-map-locked:      #D5D5D0;
+
+  /* Shape — the only three radii in the system */
+  --ftp-radius-card:     12px;
+  --ftp-radius-tile:     8px;
+  --ftp-radius-pill:     999px;
+
+  /* Type — aliases of the next/font variables set in app/layout.tsx */
+  --ftp-font-sans:       var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+  --ftp-font-mono:       var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+
+  /* Layout */
+  --ftp-container-max:   1200px;
+  --ftp-reading-max:     960px;
+  --ftp-gutter:          24px;
+  --ftp-rail-width:      240px;
+  --ftp-rail-collapsed:  56px;
+}
+
+/* Dark redefinition — mirrors the existing [data-theme="dark"] pattern.
+   Only colours change; radii, fonts and layout are theme-independent. */
+[data-theme="dark"] {
+  --ftp-bg:              #0E0E0C;
+  --ftp-surface:         #1A1A18;
+  --ftp-surface-2:       #232320;
+  --ftp-border:          rgba(255, 255, 255, 0.10);
+  --ftp-border-strong:   rgba(255, 255, 255, 0.18);
+
+  --ftp-text:            #F5F5F1;
+  --ftp-text-2:          #B8B8B4;
+
+  --ftp-brand:           #8FA0FF;
+  --ftp-brand-deep:      #C7D2FE;
+  --ftp-brand-tint:      rgba(143, 160, 255, 0.14);
+
+  --ftp-live:            #4ADE80;
+  --ftp-live-tint:       rgba(74, 222, 128, 0.14);
+  --ftp-live-text:       #BBF7D0;
+  --ftp-warn:            #FBBF24;
+  --ftp-warn-tint:       rgba(251, 191, 36, 0.14);
+  --ftp-danger:          #F87171;
+  --ftp-danger-tint:     rgba(248, 113, 113, 0.14);
+  --ftp-features:        #B4A7F5;
+  --ftp-features-tint:   rgba(180, 167, 245, 0.16);
+  --ftp-support:         #FB7185;
+  --ftp-support-tint:    rgba(251, 113, 133, 0.14);
+
+  --ftp-map-live:        #8FA0FF;
+  --ftp-map-locked:      rgba(255, 255, 255, 0.18);
+}
+
+/* ── v3 layout utilities ── */
+.ftp-container {
+  max-width: var(--ftp-container-max);
+  margin: 0 auto;
+  padding: 0 var(--ftp-gutter);
+}
+.ftp-grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--ftp-gutter);
+}
+@media (max-width: 767px) {
+  .ftp-container { padding: 0 16px; }
+  .ftp-grid-12   { gap: 16px; }
+}
+
+/* ── v3 type scale (CONCEPT-v3 §2.3) ──
+   Plus Jakarta Sans 400/500; 600 is reserved for the page H1.
+   Numbers are always JetBrains Mono 500 with tabular figures. */
+.ftp-h1    { font-family: var(--ftp-font-sans); font-size: 36px; line-height: 40px; font-weight: 600; color: var(--ftp-text); letter-spacing: -0.01em; margin: 0; }
+.ftp-h2    { font-family: var(--ftp-font-sans); font-size: 22px; line-height: 28px; font-weight: 500; color: var(--ftp-text); margin: 0; }
+.ftp-title { font-family: var(--ftp-font-sans); font-size: 15px; line-height: 22px; font-weight: 500; color: var(--ftp-text); margin: 0; }
+.ftp-body  { font-family: var(--ftp-font-sans); font-size: 13px; line-height: 20px; font-weight: 400; color: var(--ftp-text); margin: 0; }
+.ftp-label { font-family: var(--ftp-font-sans); font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ftp-text-2); margin: 0; }
+.ftp-num   { font-family: var(--ftp-font-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+@media (max-width: 767px) {
+  .ftp-h1 { font-size: 28px; line-height: 32px; }
+}
+
+/* Stat tile value: 28/32 desktop, 24/28 phone. */
+.ftp-stat-value { font-size: 28px; line-height: 32px; }
+/* Stat strip: 2/3/4 columns on desktop (set --ftp-strip-cols), 2×2 on phone. */
+.ftp-stat-strip { display: grid; gap: 12px; grid-template-columns: repeat(var(--ftp-strip-cols, 4), minmax(0, 1fr)); }
+/* Filter chips: 32 px desktop, 44 px phone (touch target). */
+.ftp-chip { min-height: 32px; }
+@media (max-width: 767px) {
+  .ftp-stat-value { font-size: 24px; line-height: 28px; }
+  .ftp-stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ftp-chip { min-height: 44px; }
+}
+
+/* Interactive card: 150 ms border-colour on hover, nothing else. */
+.ftp-card-link { transition: border-color 150ms ease; }
+.ftp-card-link:hover { border-color: var(--ftp-border-strong); }
+
+/* Left rail item (Sidebar.tsx). Hover = surface-2; active is set inline. */
+.ftp-rail-item { transition: background-color 150ms ease, color 150ms ease; }
+.ftp-rail-item:hover:not([data-active="true"]) { background: var(--ftp-surface-2); color: var(--ftp-text); }
+
+/* Secondary (quiet) button used by Toolbar. */
+.ftp-btn-secondary { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-btn-secondary:hover { border-color: var(--ftp-border-strong); background: var(--ftp-surface-2); }
+
+/* Live dot: the ONE permitted animation — 2 s opacity pulse, only when
+   data is under 30 minutes old. Reduced motion turns it off. */
+@keyframes ftp-live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.ftp-live-dot { animation: ftp-live-pulse 2s ease-in-out infinite; }
+
+/* Skeleton rows for LoadingShell: flat surface-2 blocks, gentle fade. */
+@keyframes ftp-skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.ftp-skeleton { background: var(--ftp-surface-2); animation: ftp-skeleton 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ftp-live-dot, .ftp-skeleton { animation: none; }
+  .ftp-card-link, .ftp-rail-item, .ftp-btn-secondary { transition: none; }
+}
+
+/* Consumer anchors so the bundler never drops a v3 token (same reason as
+   .ftp-color-host-* above). Never rendered. */
+.ftp-v3-host-1 { background: var(--ftp-bg); color: var(--ftp-text); border-color: var(--ftp-border); }
+.ftp-v3-host-2 { background: var(--ftp-surface); color: var(--ftp-text-2); border-color: var(--ftp-border-strong); }
+.ftp-v3-host-3 { background: var(--ftp-surface-2); color: var(--ftp-brand); border-color: var(--ftp-brand-deep); }
+.ftp-v3-host-4 { background: var(--ftp-brand-tint); color: var(--ftp-live); border-color: var(--ftp-live-text); }
+.ftp-v3-host-5 { background: var(--ftp-live-tint); color: var(--ftp-warn); background-color: var(--ftp-warn-tint); }
+.ftp-v3-host-6 { background: var(--ftp-danger-tint); color: var(--ftp-danger); }
+.ftp-v3-host-7 { background: var(--ftp-features-tint); color: var(--ftp-features); }
+.ftp-v3-host-8 { background: var(--ftp-support-tint); color: var(--ftp-support); }
+.ftp-v3-host-9 { fill: var(--ftp-map-live); stroke: var(--ftp-map-locked); border-radius: var(--ftp-radius-pill); font-family: var(--ftp-font-sans); }
+
 /* ── Base ── */
 *,
 *::before,
