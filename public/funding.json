@@ -1,0 +1,81 @@
+{
+  "$schema": "https://fundingjson.org/schema/v1.1.0/funding.schema.json",
+  "version": "v1.1.0",
+  "entity": {
+    "type": "individual",
+    "role": "maintainer",
+    "name": "Jayanth M B",
+    "email": "support@forthepeople.in",
+    "description": "Independent creator and maintainer of ForThePeople.in, a free, open-source citizen transparency platform that turns publicly available Indian government data into clean district-level dashboards. Based in Karnataka, India. The platform is public digital infrastructure maintained by a citizen: no advertising, no data selling, no government affiliation.",
+    "webpageUrl": {
+      "url": "https://forthepeople.in"
+    }
+  },
+  "projects": [
+    {
+      "guid": "forthepeople-in",
+      "name": "ForThePeople.in",
+      "description": "ForThePeople.in aggregates publicly available Indian government data into clean, citizen-friendly dashboards, one for every district. Instead of navigating dozens of government portals, citizens get a single place for crop prices, dam levels, budget spending, school performance, infrastructure projects, government schemes, tenders and more, updated daily or when sources publish. Currently live for districts across several states, with the goal of covering every district in India. Built with Next.js, TypeScript, Prisma and PostgreSQL and released under the MIT licence.",
+      "webpageUrl": {
+        "url": "https://forthepeople.in"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/jayanthmb14/forthepeople",
+        "wellKnown": "https://github.com/jayanthmb14/forthepeople/blob/main/public/.well-known/funding-manifest-urls"
+      },
+      "licenses": ["spdx:MIT"],
+      "tags": [
+        "civic-tech",
+        "open-data",
+        "india",
+        "transparency",
+        "government-data",
+        "district-dashboard",
+        "nextjs",
+        "typescript"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "razorpay",
+        "type": "payment-provider",
+        "address": "https://forthepeople.in/en/support",
+        "description": "Razorpay checkout on the ForThePeople.in support page. Accepts one-time and monthly contributions in Indian Rupees from Indian payment methods (UPI, cards, net banking). Domestic (India) funding only; no foreign contributions are accepted through this channel."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "infrastructure-yearly",
+        "status": "active",
+        "name": "Infrastructure and operations (one year)",
+        "description": "Covers one year of hosting, database, cache, error monitoring, privacy-friendly analytics, email delivery, AI inference for news classification and insights, and the domain, so the platform stays free and advertising-free for citizens.",
+        "amount": 360000,
+        "currency": "INR",
+        "frequency": "yearly",
+        "channels": ["razorpay"]
+      },
+      {
+        "guid": "district-expansion",
+        "status": "active",
+        "name": "District expansion (one-time)",
+        "description": "One-time funding to research, source, verify and publish dashboards for the next batch of districts: sourcing official data, seeding it, and quality-checking every module before it goes live.",
+        "amount": 500000,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": ["razorpay"]
+      },
+      {
+        "guid": "any-amount",
+        "status": "active",
+        "name": "Any amount",
+        "description": "Any one-time or monthly contribution through the support page.",
+        "amount": 0,
+        "currency": "INR",
+        "frequency": "other",
+        "channels": ["razorpay"]
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ If you discover a security vulnerability in ForThePeople.in, please report it re
 
 ### How to Report
 
-Send an email to **jayanthmb14@gmail.com** with:
+Email **support@forthepeople.in** (the single security contact; also published at [`/.well-known/security.txt`](https://forthepeople.in/.well-known/security.txt)) with:
 
 1. A description of the vulnerability
 2. Steps to reproduce the issue
@@ -15,16 +15,17 @@ Send an email to **jayanthmb14@gmail.com** with:
 
 ### What to Expect
 
-- **Acknowledgment** within 48 hours of your report
-- **Status update** within 7 days
-- **Fix deployed** as quickly as possible depending on severity
+- **Acknowledgement within 7 days** of your report (this is a solo-maintained project; you will get a human reply, not an auto-responder)
+- A status update once the issue is confirmed and a fix is planned
+- A fix deployed as quickly as severity allows, and credit in the changelog if you want it
 
 ### What Counts as a Security Issue
 
 - Exposed API keys or credentials
 - SQL injection or database access vulnerabilities
 - Cross-site scripting (XSS)
-- Authentication or authorization bypasses
+- Authentication or authorization bypasses (admin sessions, 2FA, cron endpoints)
+- Payment-flow issues (Razorpay order / verify / webhook signature handling)
 - Data leaks or privacy violations
 - Server-side request forgery (SSRF)
 

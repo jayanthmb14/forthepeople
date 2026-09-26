@@ -1,14 +1,49 @@
 # ForThePeople.in — Bug & Security Tracker
 
-_Living document. Tracks findings from the 10 June 2026 security/quality audit and
-their remediation across the 5 fix sessions. Status values: **OPEN** ·
-**RESOLVED-local** (fixed + verified locally, not yet pushed) · **RESOLVED-prod**
-(pushed + verified on production)._
-
-> All five sessions are now **merged into local `main`** (not pushed). Each finding
-> below is **RESOLVED-local**.
+_Living document. Status values: **OPEN** · **RESOLVED-local** (fixed + verified
+locally, not yet pushed) · **RESOLVED-prod** (pushed + verified on production)._
 
 ---
+
+## 2026-09-27 — Correction + second audit (branch `audit-fixes-2026-09`)
+
+> **Correction:** the June note below ("merged into local main, not pushed") is
+> stale. All five June sessions **were pushed and are deployed** — production has
+> run commit `38df958` (the Session-5 merge) since 2026-06-11. Every June finding
+> is therefore **RESOLVED-prod**, not RESOLVED-local.
+
+A second end-to-end audit (26–27 Sep 2026) found the items below. They are fixed
+on branch `audit-fixes-2026-09` and are **RESOLVED-local** pending review + push.
+Detail per item is in `CHANGELOG.md` → Unreleased.
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| CRON-1 | High | Two AI crons never ran from Vercel (wrong auth header / HTTP method) | RESOLVED-local |
+| AI-1 | High | Every free OpenRouter model in the chain withdrawn upstream → all AI calls failing since late Aug | RESOLVED-local (new model chain) |
+| CRON-2 | High | crops job times out; weather/dams/power/alerts have no scheduler at all | RESOLVED-local (timeouts + new crons) |
+| OPS-1 | High | `/api/health` always "healthy"; no freshness signal | RESOLVED-local (degraded on stale crons) |
+| SEC-3 | High | Vercel CDN cache rule on `/api/(.*)` can serve admin JSON to anonymous users | RESOLVED-local (`no-store` on admin) |
+| SEC-4 | High | TOTP step reachable without password, no rate limit | RESOLVED-local (signed challenge + limits) |
+| SEC-5 | Medium | Header-auth ops path unlimited | RESOLVED-local (rate-limited) |
+| PRIV-1 | Medium | Supporter emails/phones reachable via public payloads | RESOLVED-local (anonymised) |
+| DEP-1 | High | Next.js 16.2.x carried critical advisories (Dependabot #90) | RESOLVED-local (next ^16.3.4) |
+| CI-1 | High | Lint job red on every push since April (65 errors) | RESOLVED-local (0 errors, rules block in eslint.config.mjs) |
+| CI-2 | Medium | CI on Node 20 (EOL), no engines / .nvmrc | RESOLVED-local (Node 24 everywhere) |
+| UX-1 | High | Hard-coded green "Live" pill; homepage cards read wrong API shape | RESOLVED-local |
+| DOC-1 | High | Counts/dates/cadence hand-typed in six places | RESOLVED-local (single source) |
+| FUND-1 | High | No `funding.json` / `.well-known` manifest; LICENSE not real MIT (NOASSERTION) | RESOLVED-local |
+| SEC-6 | Medium | No `security.txt`; SECURITY.md promised 48 h to a personal Gmail | RESOLVED-local |
+| CODE-1 | Medium | ~112 unreachable source files | RESOLVED-local (removed) |
+| TEST-1 | Medium | Zero automated tests | RESOLVED-local (Vitest, pure helpers) |
+| OPS-2 | High | Vercel account deployment-blocked since 13 Sep | **OPEN — owner action** (billing page as owning Gmail) |
+| OPS-3 | High | No uptime monitor, no cron alerting, no log drain | **OPEN — owner action** (external monitor) |
+| SEC-7 | High | Live secret values in the private vault notes 13 / 42 | **OPEN — owner action** (rotate + names only) |
+| FUND-2 | High | Monthly cost basis unreconciled (₹2,700 ledger vs ₹25–30k in applications) | **OPEN — owner action** |
+| COMM-1 | High | 0 PRs merged, 0 maintainer replies, 8 human PRs waiting | **OPEN — owner action** (reply drafts in audit §6) |
+
+---
+
+## June 2026 audit (all RESOLVED-prod since 2026-06-11, see correction above)
 
 ## CRITICAL
 

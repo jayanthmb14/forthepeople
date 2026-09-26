@@ -2,17 +2,18 @@
 Creator & Developer: Jayanth M B
 Location: Karnataka, India
 Site: https://forthepeople.in
-Contact: via instagram.com/jayanth_m_b
+Contact: support@forthepeople.in / instagram.com/jayanth_m_b
 
 /* SITE */
 Name: ForThePeople.in
 Tagline: Your District. Your Data. Your Right.
 Inception: March 2026
 Stack: Next.js, TypeScript, Tailwind CSS v4, Prisma, PostgreSQL
-License: MIT with Attribution
+License: MIT
 Repository: github.com/jayanthmb14/forthepeople
+Funding: https://forthepeople.in/funding.json
 
 /* THANKS */
 Data: Government of India Open Data (NDSAP)
-AI: Anthropic Claude, Google Gemini
-Hosting: Vercel, Neon, Upstash, Railway
+AI: Anthropic Claude, Google Gemini (via OpenRouter)
+Hosting: Vercel, Neon, Upstash
