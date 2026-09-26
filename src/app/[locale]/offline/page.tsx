@@ -4,11 +4,14 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// Lives under [locale] (route: /en/offline) so the service worker can
+// precache a real 200 page; see public/sw.js. Rendered inside the locale
+// layout (header + footer), hence 60vh rather than a full-screen block.
 export default function OfflinePage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "60vh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

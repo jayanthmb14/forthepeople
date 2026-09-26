@@ -5,13 +5,26 @@
  */
 
 import { ImageResponse } from "next/og";
+import { getPlatformFacts } from "@/lib/platform-facts";
 
-export const runtime = "edge";
+// Lives under [locale] so the route is /en/opengraph-image (and /kn/...).
+// Next.js injects it as og:image / twitter:image for every page in the
+// segment; src/app/layout.tsx points its explicit metadata at the same URL.
+// Runs on the Node runtime (the default for next/og) so it can import the
+// district and module registries without an edge bundle.
 export const alt = "ForThePeople.in — Your District. Your Data. Your Right.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default function OGImage() {
+  // Counts from the registry, never hand-typed (issue #36).
+  const facts = getPlatformFacts();
+  const pills = [
+    `${facts.activeDistricts} districts live`,
+    `${facts.modulesPerDistrict} data modules`,
+    "Source-linked",
+    "Free forever",
+  ];
   return new ImageResponse(
     (
       <div
@@ -42,8 +55,12 @@ export default function OGImage() {
           </div>
         </div>
 
-        {/* Headline */}
+        {/* Headline — three stacked lines in a flex column. Satori (next/og)
+            refuses a <div> with several text children unless it is
+            display:flex; the old "\n"-separated version made the route 500. */}
         <div style={{
+          display: "flex",
+          flexDirection: "column",
           color: "#FFFFFF",
           fontSize: 64,
           fontWeight: 800,
@@ -51,23 +68,29 @@ export default function OGImage() {
           marginBottom: 28,
           maxWidth: 900,
         }}>
-          Your District.{"\n"}Your Data.{"\n"}Your Right.
+          <div>Your District.</div>
+          <div>Your Data.</div>
+          <div>Your Right.</div>
         </div>
 
         {/* Subline */}
+        {/* Subline — kept to ONE line on purpose: Satori under-measures
+            wrapped text here and the pills row overlapped it. */}
         <div style={{
+          display: "flex",
           color: "rgba(255,255,255,0.75)",
-          fontSize: 28,
+          fontSize: 26,
           fontWeight: 400,
-          marginBottom: 48,
-          maxWidth: 800,
+          lineHeight: 1.4,
+          marginBottom: 40,
+          whiteSpace: "nowrap",
         }}>
-          India&apos;s citizen transparency platform — free district-level government data for every Indian.
+          Free, source-linked government data for every Indian district.
         </div>
 
         {/* Stats row */}
         <div style={{ display: "flex", gap: 32 }}>
-          {["780+ Districts", "28 Data Modules", "Live Updates", "Free Forever"].map((s) => (
+          {pills.map((s) => (
             <div
               key={s}
               style={{

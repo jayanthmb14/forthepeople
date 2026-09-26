@@ -1,9 +1,16 @@
 // ForThePeople.in Service Worker — Offline + Cache + Push Notifications
-const CACHE_NAME = "ftp-v2";
+//
+// v3 (2026-09): precache list now uses locale-prefixed URLs. "/", "/about"
+// and "/offline" all redirect (or 404) because every page lives under
+// /<locale>/ — cache.addAll() rejects the whole install when any entry is
+// not a plain 200, so the service worker never installed and the offline
+// page never worked. Bumping CACHE_NAME evicts the old broken cache.
+const CACHE_NAME = "ftp-v3";
+const OFFLINE_URL = "/en/offline";
 const STATIC_ASSETS = [
-  "/",
-  "/about",
-  "/offline",
+  "/en",
+  "/en/about",
+  OFFLINE_URL,
   "/android-chrome-192x192.png",
   "/android-chrome-512x512.png",
 ];
@@ -56,7 +63,7 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() =>
           caches.match(request).then(
-            (cached) => cached ?? caches.match("/offline").then((off) => off ?? caches.match("/"))
+            (cached) => cached ?? caches.match(OFFLINE_URL).then((off) => off ?? caches.match("/en"))
           )
         )
     );

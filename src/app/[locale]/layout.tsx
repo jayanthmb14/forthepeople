@@ -4,6 +4,8 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+import { notFound } from "next/navigation";
+import { routing, type Locale } from "@/i18n/routing";
 import QueryProvider from "@/components/providers/QueryProvider";
 import MigrationBanner from "@/components/layout/MigrationBanner";
 import PageProgressBar from "@/components/common/PageProgressBar";
@@ -18,6 +20,30 @@ import DisclaimerBanner from "@/components/home/redesign-v2/DisclaimerBanner";
 import HeaderBar from "@/components/home/redesign-v2/HeaderBar";
 import Footer from "@/components/home/redesign-v2/Footer";
 
+/**
+ * Only the locales in src/i18n/routing.ts may render this layout.
+ *
+ * Before this check, ANY first path segment matched `[locale]` — so
+ * `/random-xyz.json` or `/hi` quietly rendered the English homepage with a
+ * 200 status ("soft 404"). Search engines index those as duplicate pages and
+ * uptime monitors can never see a real error. Unknown locales now fall
+ * through to the root not-found page with a proper 404.
+ */
+function isSupportedLocale(value: string): value is Locale {
+  return (routing.locales as readonly string[]).includes(value);
+}
+
+/**
+ * Tell Next.js the complete list of valid `[locale]` values and refuse
+ * anything else (`dynamicParams = false`). This returns a 404 for
+ * `/random-xyz.json` BEFORE the homepage's database query runs — the
+ * `notFound()` guard below is the belt, this is the braces.
+ */
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+export const dynamicParams = false;
+
 export default async function LocaleLayout({
   children,
   params,
@@ -26,6 +52,7 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  if (!isSupportedLocale(locale)) notFound();
 
   return (
     <QueryProvider>
