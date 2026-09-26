@@ -108,7 +108,7 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
     <div style={{ border: "1px solid #E8E8E4", borderRadius: 10, padding: 16, background: "#FFFFFF" }}>
       <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A", marginBottom: 12 }}>Can I apply? (client-side check)</div>
       <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 14 }}>
-        Your answers never leave this browser. Matching runs against the tender's published eligibility criteria. Information only — not legal advice.
+        Your answers never leave this browser. Matching runs against the tender&apos;s published eligibility criteria. Information only — not legal advice.
       </div>
 
       <div style={{ display: "grid", gap: 14 }}>
@@ -148,7 +148,7 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
           </div>
         </div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <label style={checkboxLabel}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} /> I'm Udyam-registered (MSE)</label>
+          <label style={checkboxLabel}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} /> I&apos;m Udyam-registered (MSE)</label>
           <label style={checkboxLabel}><input type="checkbox" checked={profile.isStartup} onChange={(e) => setProfile((p) => ({ ...p, isStartup: e.target.checked }))} /> I have DPIIT Startup recognition</label>
           <label style={checkboxLabel}><input type="checkbox" checked={profile.hasDsc} onChange={(e) => setProfile((p) => ({ ...p, hasDsc: e.target.checked }))} /> I have a Class-3 DSC</label>
         </div>

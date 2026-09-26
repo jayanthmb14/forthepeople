@@ -30,7 +30,7 @@ export default function GlobalError({
             Something went wrong
           </h2>
           <p style={{ fontSize: 14, color: "#6B6B6B", marginBottom: 24 }}>
-            We've been notified and are looking into it.
+            We&apos;ve been notified and are looking into it.
           </p>
           <button
             onClick={reset}

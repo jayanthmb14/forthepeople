@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useContext } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Instagram, Linkedin, Github, Twitter, ExternalLink } from "lucide-react";
@@ -14,7 +14,7 @@ import { INDIA_STATES } from "@/lib/constants/districts";
 import { validateSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
-import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { QueryClientContext } from "@tanstack/react-query";
 
 declare global {
   interface Window {
@@ -78,12 +78,13 @@ interface Props {
 }
 
 export default function SupportCheckout({ tier }: Props) {
-  let queryClient: QueryClient | null = null;
-  try {
-    queryClient = useQueryClient();
-  } catch {
-    queryClient = null;
-  }
+  // React Query client, if this component is rendered inside <QueryProvider>.
+  // Every /[locale]/support page is wrapped by the provider in
+  // src/app/[locale]/layout.tsx, but the legacy non-locale /support route is
+  // not. Reading the context directly (instead of useQueryClient(), which
+  // throws when no provider exists) keeps hook order stable on every render
+  // and satisfies react-hooks/rules-of-hooks without a try/catch around a hook.
+  const queryClient = useContext(QueryClientContext) ?? null;
 
   function invalidateContributorQueries() {
     if (!queryClient) return;

@@ -53,7 +53,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
               <div style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: 14, marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A", marginBottom: 10 }}>Quick filter — tell us about yourself</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                  <label style={{ fontSize: 13, color: "#374151" }}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} /> I'm Udyam-registered (MSE)</label>
+                  <label style={{ fontSize: 13, color: "#374151" }}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} /> I&apos;m Udyam-registered (MSE)</label>
                   <label style={{ fontSize: 13, color: "#374151" }}><input type="checkbox" checked={profile.isStartup} onChange={(e) => setProfile((p) => ({ ...p, isStartup: e.target.checked }))} /> DPIIT Startup recognition</label>
                   <label style={{ fontSize: 13, color: "#374151" }}><input type="checkbox" checked={profile.hasDsc} onChange={(e) => setProfile((p) => ({ ...p, hasDsc: e.target.checked }))} /> I have a Class-3 DSC</label>
                 </div>
