@@ -11,7 +11,15 @@ interface UsageData {
   avgCostPerCall: number;
   byPurpose: Array<{ purpose: string; calls: number; tokens: number; costINR: number }>;
   byDay: Array<{ day: string; calls: number; tokens: number; costINR: number }>;
-  byModel: Array<{ model: string; calls: number; tokens: number }>;
+  byModel: Array<{
+    model: string;
+    calls: number;
+    tokens: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    /** Sum of AIUsageLog.costUSD — the real per-call cost written by ai-provider.ts since Sept 2026. */
+    costUSD?: number;
+  }>;
 }
 
 interface Sub {
@@ -69,25 +77,27 @@ const card: React.CSSProperties = {
   padding: 16,
 };
 
-// Known OpenRouter per-model pricing (USD per 1M input tokens).
-// Used for internal cost estimate in the "By Model" section. Output tokens
-// usually cost more but we don't break them out in AIUsageLog today, so this
-// is a conservative lower-bound estimate.
-const MODEL_PRICE_USD_PER_MTOK: Record<string, number> = {
-  "google/gemma-4-26b-a4b-it:free": 0,
-  "openai/gpt-oss-120b:free": 0,
-  "openai/gpt-oss-20b:free": 0,
-  "google/gemini-2.5-pro": 1.25,
-  "google/gemini-2.5-flash": 0.075,
-  "anthropic/claude-sonnet-4": 3,
-  "anthropic/claude-opus-4": 15,
-  "anthropic/claude-haiku-4.5": 1,
+// Fallback OpenRouter pricing (USD per 1M tokens: [input, output]) for the
+// "By Model" section. Since Sept 2026 every AIUsageLog row carries the real
+// costUSD/costINR computed in src/lib/ai-provider.ts (PRICE_TABLE), so this
+// map is only consulted for rows logged before that (costUSD = 0). Keep it
+// in sync with the model chain in ai-provider.ts when you rotate models.
+const MODEL_PRICE_USD_PER_MTOK: Record<string, [number, number]> = {
+  "google/gemma-4-31b-it:free": [0, 0],
+  "google/gemma-4-26b-a4b-it:free": [0, 0],
+  "nvidia/nemotron-3-super-120b-a12b:free": [0, 0],
+  "qwen/qwen3.8-27b:free": [0, 0],
+  "google/gemini-2.5-flash-lite": [0.1, 0.4],
+  "google/gemini-2.5-pro": [1.25, 10],
+  "anthropic/claude-sonnet-4": [3, 15],
+  "openai/gpt-oss-20b": [0.018, 0.09],
 };
 
-function estimateCostUSD(model: string, tokens: number): number {
+function estimateCostUSD(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_PRICE_USD_PER_MTOK[model];
   if (rate == null) return 0;
-  return (tokens / 1_000_000) * rate;
+  const [inPrice, outPrice] = rate;
+  return (inputTokens / 1_000_000) * inPrice + (outputTokens / 1_000_000) * outPrice;
 }
 
 const COSTS_HELP =
@@ -135,10 +145,16 @@ export default function CostsTab() {
 
   const byModelWithCost = useMemo(() => {
     if (!usage) return [];
-    const withCost = usage.byModel.map((m) => ({
-      ...m,
-      estimatedUSD: estimateCostUSD(m.model, m.tokens),
-    }));
+    const withCost = usage.byModel.map((m) => {
+      // Prefer the cost logged per call (AIUsageLog.costUSD); fall back to the
+      // price map for rows written before costUSD was populated (they carry 0).
+      const logged = m.costUSD ?? 0;
+      const estimatedUSD =
+        logged > 0
+          ? logged
+          : estimateCostUSD(m.model, m.inputTokens ?? m.tokens, m.outputTokens ?? 0);
+      return { ...m, estimatedUSD };
+    });
     const totalUSD = withCost.reduce((s, m) => s + m.estimatedUSD, 0);
     return withCost
       .map((m) => ({
@@ -516,7 +532,8 @@ export default function CostsTab() {
                 </tbody>
               </table>
               <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 6 }}>
-                Estimate is input-token × published per-MTok rate per model. Free tier
+                Cost is the sum of per-call costUSD logged by the AI provider; rows logged
+                before Sept 2026 fall back to tokens × published per-MTok rate. Free tier
                 models report $0. Actual OpenRouter charges appear in the top card.
               </div>
             </div>

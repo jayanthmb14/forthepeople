@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Session M1 Phase H: bottom-sheet variant of the breadcrumb dropdown
  * for mobile. Portal-rendered to body so it sits above the sticky

@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Recharts wrapper for module time-series charts. Used by any module
  * with hasTimeSeries=true once IndiaTimeSeries rows exist.

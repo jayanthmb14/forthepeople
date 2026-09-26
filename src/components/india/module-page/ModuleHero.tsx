@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Module deep-dive hero: SVG illustration (Phase 2.5d sets the real
  * SVG library; this phase falls back to a Lucide icon with a

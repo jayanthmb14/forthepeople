@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Per-module Lucide icon used in the hero tile when no heroImage is set.
  * Replaces the Phase 2.5d hand-drawn SVG library — those tigers looked

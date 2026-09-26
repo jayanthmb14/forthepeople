@@ -47,12 +47,22 @@ export async function GET(req: NextRequest) {
     byDay[day].costINR += l.costINR;
   }
 
-  // Group by model
-  const byModel: Record<string, { calls: number; tokens: number }> = {};
+  // Group by model. costUSD/costINR are the real per-call costs written by
+  // src/lib/ai-provider.ts (rows logged before Sept 2026 carry 0).
+  const byModel: Record<
+    string,
+    { calls: number; tokens: number; inputTokens: number; outputTokens: number; costUSD: number; costINR: number }
+  > = {};
   for (const l of logs) {
-    if (!byModel[l.model]) byModel[l.model] = { calls: 0, tokens: 0 };
+    if (!byModel[l.model]) {
+      byModel[l.model] = { calls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUSD: 0, costINR: 0 };
+    }
     byModel[l.model].calls++;
     byModel[l.model].tokens += l.totalTokens;
+    byModel[l.model].inputTokens += l.inputTokens;
+    byModel[l.model].outputTokens += l.outputTokens;
+    byModel[l.model].costUSD += l.costUSD;
+    byModel[l.model].costINR += l.costINR;
   }
 
   return NextResponse.json({

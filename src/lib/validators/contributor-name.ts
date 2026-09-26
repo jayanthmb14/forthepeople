@@ -14,7 +14,10 @@
  * cleanup script.
  */
 
-const NAME_REGEX = /^[\p{L}\s.\-']+$/u;
+// \p{M} (combining marks) is required alongside \p{L}: Indic vowel signs /
+// matras (e.g. the ಿ in ರವಿ, the ा in राम) are marks, not letters, so
+// without it every Indic name that uses one was rejected (fixed 2026-09-27).
+const NAME_REGEX = /^[\p{L}\p{M}\s.\-']+$/u;
 const MAX_LEN = 40;
 const MIN_LEN = 2;
 

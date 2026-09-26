@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Floating "Report an issue" button + form panel. Replaces the older
  * floating "Sources" button (Phase 2.5f) — sources are now visible

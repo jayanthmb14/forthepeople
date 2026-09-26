@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Sub-features queued for this module's deep-dive page. Each item
  * gets a "Vote to prioritise" link that prefills the main /en/india

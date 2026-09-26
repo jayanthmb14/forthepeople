@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Module-specific news strip — top 6 NewsItem rows whose title or
  * description matches any of the module.newsKeywords. Falls back to

@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Mobile drawer host for district pages. Owns the open/close state for
  * MobileDistrictDrawer and listens for a window-level event so HeaderBar's

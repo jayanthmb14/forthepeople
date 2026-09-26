@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Cross-link card grid: 3-5 related modules at the bottom of every
  * module deep-dive page. Drives internal-link signal for SEO.

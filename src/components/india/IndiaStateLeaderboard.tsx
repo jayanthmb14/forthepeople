@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Top-5 / Bottom-5 state leaderboard widget. Used by modules with
  * hasStateBreakdown=true. Each row links out to /[locale]/[stateSlug]

@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Horizontal bar that fills from 0% to a target percentage when it
  * enters the viewport. Used in state leaderboards and anywhere a

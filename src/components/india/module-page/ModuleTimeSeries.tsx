@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Time-series chart on the module deep-dive page. Uses the shared
  * IndiaTimeSeriesChart wrapped with mock data so the layout exists
