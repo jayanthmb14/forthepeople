@@ -17,13 +17,7 @@
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
         { "key": "X-Creator", "value": "Jayanth M B" },
         { "key": "X-Project-ID", "value": "FTP-JMB-2026-IN" },
-        { "key": "X-License", "value": "MIT with Attribution — github.com/jayanthmb14/forthepeople" }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=300" }
+        { "key": "X-License", "value": "MIT" }
       ]
     }
   ],
@@ -37,6 +31,14 @@
     {
       "path": "/api/cron/scrape-crops",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-weather",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/scrape-dams",
+      "schedule": "0 */6 * * *"
     },
     {
       "path": "/api/cron/generate-insights",
@@ -57,6 +59,10 @@
     {
       "path": "/api/cron/update-exams",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/platform-report",
+      "schedule": "0 0 * * 0"
     }
   ]
 }

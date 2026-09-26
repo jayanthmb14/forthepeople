@@ -6,15 +6,27 @@
 
 // ═══════════════════════════════════════════════════════════
 // Cron: Generate weekly citizen tips for all districts
-// POST /api/cron/generate-citizen-tips
-// Schedule: Weekly (Vercel cron — see vercel.json)
-// Protected by x-cron-secret: CRON_SECRET header
-// Generates tips via Gemini and stores in Redis (7-day TTL)
+// GET or POST /api/cron/generate-citizen-tips
+// Schedule: Weekly, Sunday 06:00 UTC (Vercel cron — see vercel.json)
+// Auth: verifyCron() — "Authorization: Bearer <CRON_SECRET>" (Vercel)
+//       or "x-cron-secret: <CRON_SECRET>" (manual curl)
+// Generates tips via callAI (free tier) and stores in Redis (7-day TTL)
+//
+// Sept 2026 fix: Vercel Cron only ever sends GET, but this file exported
+// POST only, so every Sunday run got a 405 before the handler ran and the
+// Citizen Corner page said "next tips in 1 day" forever. GET now delegates
+// to POST. Run state is recorded in Redis "ftp:cron:generate-citizen-tips".
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { callAI } from "@/lib/ai-provider";
+import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+
+export const runtime = "nodejs";
+// 10 districts × (AI call + 2 s pause) comfortably fits; cap at 5 min.
+export const maxDuration = 300;
+const CRON_NAME = "generate-citizen-tips";
 
 const TIPS_TTL = 7 * 24 * 60 * 60; // 7 days
 
@@ -125,12 +137,12 @@ Guidelines:
 }
 
 export async function POST(req: NextRequest) {
-  // ── Auth ────────────────────────────────────────────────
-  const secret = req.headers.get("x-cron-secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // ── Auth (accepts Bearer or x-cron-secret; fails closed) ──
+  if (!verifyCron(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const runStart = await cronStarted(CRON_NAME);
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
@@ -200,7 +212,16 @@ export async function POST(req: NextRequest) {
       await sleep(2000);
     }
 
-    console.log(`[citizen-tips cron] Done. ${results.filter((r) => r.ok).length}/${districts.length} districts succeeded.`);
+    const okCount = results.filter((r) => r.ok).length;
+    console.log(`[citizen-tips cron] Done. ${okCount}/${districts.length} districts succeeded.`);
+
+    // If not a single district got tips, the AI layer is almost certainly
+    // down — record the run as an error so /api/health goes "degraded".
+    await cronFinished(CRON_NAME, runStart, {
+      status: okCount > 0 || districts.length === 0 ? "ok" : "error",
+      count: okCount,
+      error: okCount === 0 && districts.length > 0 ? "0 districts received tips" : undefined,
+    });
 
     return NextResponse.json({
       success: true,
@@ -211,6 +232,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("[citizen-tips cron] Error:", err);
+    await cronFinished(CRON_NAME, runStart, { status: "error", error: String(err) });
     return NextResponse.json({ error: "Internal error", details: String(err) }, { status: 500 });
   }
+}
+
+// Vercel Cron always calls with GET — delegate to the same handler.
+export async function GET(req: NextRequest) {
+  return POST(req);
 }

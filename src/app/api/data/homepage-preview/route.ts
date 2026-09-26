@@ -13,7 +13,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
 
-const CACHE_KEY = "ftp:homepage-preview:v1";
+// v2 (Sept 2026): weather now carries recordedAt and is null when older
+// than WEATHER_MAX_AGE_MS, so the homepage never shows an April temperature
+// as "Latest weather reading" again (audit item 3.7). Key bumped so the old
+// cached shape is never served.
+const CACHE_KEY = "ftp:homepage-preview:v2";
+
+// A temperature older than this is not "current" — hide it rather than
+// mislead. The weather cron runs every 30 min, so 6 h means 12 missed runs.
+const WEATHER_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 export async function GET() {
   const cached = await cacheGet<object>(CACHE_KEY);
@@ -65,12 +73,15 @@ export async function GET() {
           nameLocal: d.nameLocal,
           tagline: d.tagline,
           goLiveDate: d.goLiveDate ? d.goLiveDate.toISOString() : null,
-          weather: weather
-            ? {
-                temp: weather.temperature ? Math.round(weather.temperature) : null,
-                conditions: weather.conditions,
-              }
-            : null,
+          // Stale readings become null — the card then simply omits weather.
+          weather:
+            weather && Date.now() - weather.recordedAt.getTime() <= WEATHER_MAX_AGE_MS
+              ? {
+                  temp: weather.temperature != null ? Math.round(weather.temperature) : null,
+                  conditions: weather.conditions,
+                  recordedAt: weather.recordedAt.toISOString(),
+                }
+              : null,
           dam: dam
             ? {
                 name: dam.damName,

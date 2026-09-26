@@ -6,7 +6,8 @@
 // ═══════════════════════════════════════════════════════════
 // Vercel Cron: Daily exam status updater
 // Schedule: 30 6 * * *  (06:30 UTC = 12:00 IST)
-// Auth: Bearer ${CRON_SECRET}
+// Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
+// Run state: Redis "ftp:cron:update-exams"
 //
 // Two passes:
 //   A) Auto-advance status based on calendar dates (no AI, just logic).
@@ -16,9 +17,11 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
+import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+const CRON_NAME = "update-exams";
 
 const STALE_DAYS = 30;
 
@@ -71,12 +74,11 @@ function computeStatusFromDates(e: {
 }
 
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const startedAt = Date.now();
+  const startedAt = await cronStarted(CRON_NAME);
   let scanned = 0;
   let statusAdvanced = 0;
   let flaggedStale = 0;
@@ -123,6 +125,8 @@ export async function GET(req: Request) {
     });
     flaggedStale = stale.count;
 
+    await cronFinished(CRON_NAME, startedAt, { status: "ok", count: statusAdvanced + flaggedStale });
+
     return NextResponse.json({
       ok: true,
       scanned,
@@ -133,6 +137,10 @@ export async function GET(req: Request) {
   } catch (err) {
     Sentry.captureException(err);
     console.error("[cron/update-exams] error:", err);
+    await cronFinished(CRON_NAME, startedAt, {
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
