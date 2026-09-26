@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     // Test-runner output
     "coverage/**",
+    // Agent worktrees and local tool state live inside the repo dir — never lint them
+    ".claude/**",
   ]),
   {
     rules: {

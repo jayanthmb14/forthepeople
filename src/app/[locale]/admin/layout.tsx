@@ -9,6 +9,7 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminBot from "@/components/admin/AdminBot";
 import { loginAction, totpAction } from "./actions";
 import { requireAdmin } from "@/lib/admin-auth";
+import { TOTP_PENDING_TOKEN_COOKIE } from "@/lib/admin-auth";
 
 
 type Params = Promise<{ locale: string }>;
