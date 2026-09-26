@@ -8,8 +8,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
+
+// Each call creates a Razorpay plan + subscription: 10 per hour per hashed IP.
+// Same limiter key as create-order (see the note there). Fails open on a
+// Redis outage.
+const ORDER_LIMIT = 10;
+const ORDER_WINDOW_SECONDS = 60 * 60;
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(`payment-order:${hashIp(getClientIp(req))}`, ORDER_LIMIT, ORDER_WINDOW_SECONDS);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many payment attempts. Please try again in an hour." },
+      { status: 429, headers: { "Retry-After": String(ORDER_WINDOW_SECONDS) } }
+    );
+  }
+
   try {
     const body = await req.json();
     const { tier, amount, name, email, phone, districtId, stateId, socialLink, message } = body as {

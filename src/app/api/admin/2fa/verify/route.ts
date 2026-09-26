@@ -5,12 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminCookie } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { verifyTOTP } from "@/lib/totp";
 
+// Cookie-only — see setup/route.ts for why the header path is excluded.
 async function isAuthed() {
-  const { ok } = await requireAdmin();
+  const { ok } = await requireAdminCookie();
   return ok;
 }
 

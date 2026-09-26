@@ -7,16 +7,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyTOTP } from "@/lib/totp";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminCookie } from "@/lib/admin-auth";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
+// Cookie-only: disabling 2FA with just the password header would let a
+// password-only attacker downgrade the account. A browser session that
+// already passed 2FA is required, PLUS a fresh valid code below.
 async function isAuthed() {
-  const { ok } = await requireAdmin();
+  const { ok } = await requireAdminCookie();
   return ok;
 }
 
 // POST: { code: "123456" } — must provide valid TOTP code to disable
 export async function POST(req: NextRequest) {
   if (!(await isAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // The code check is a credential check, so throttle it (fail closed).
+  const rl = await rateLimit(`admin-2fa-disable:${hashIp(getClientIp(req))}`, 5, 15 * 60, {
+    failClosed: true,
+  });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many attempts. Try again in 15 minutes." },
+      { status: 429, headers: { "Retry-After": "900" } }
+    );
+  }
 
   const { code } = await req.json() as { code: string };
   if (!code) return NextResponse.json({ error: "code required" }, { status: 400 });

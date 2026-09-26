@@ -12,8 +12,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createHash } from "crypto";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+// Votes are public writes: 20 per hour per hashed IP. Fails OPEN on a Redis
+// outage (a cache blip should not block citizens from voting; the
+// fingerprint dedupe below still prevents double votes).
+const VOTE_LIMIT = 20;
+const VOTE_WINDOW_SECONDS = 60 * 60;
 
 // Build a simple fingerprint from IP + User-Agent
 function buildFingerprint(req: NextRequest): string {
@@ -42,6 +49,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(`feature-vote:${hashIp(getClientIp(req))}`, VOTE_LIMIT, VOTE_WINDOW_SECONDS);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: `Rate limit — max ${VOTE_LIMIT} votes per hour.` },
+      { status: 429, headers: { "Retry-After": String(VOTE_WINDOW_SECONDS) } }
+    );
+  }
+
   const featureId = req.nextUrl.searchParams.get("id");
   if (!featureId) {
     return NextResponse.json({ error: "id required" }, { status: 400 });

@@ -1,6 +1,78 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Content-Security-Policy (REPORT-ONLY)
+// ─────────────────────────────────────────────────────────────────────────────
+// This policy is deliberately shipped as `Content-Security-Policy-Report-Only`.
+// Browsers LOG violations (and POST them to Sentry when a DSN is configured)
+// but never block anything, so it cannot break the site. Watch the reports for
+// a few weeks, tighten the list, and only then consider switching the header
+// key to the enforcing `Content-Security-Policy`.
+//
+// Hosts explained:
+//   plausible.io               analytics script + event beacon (src/app/layout.tsx)
+//   checkout.razorpay.com      Razorpay checkout.js + its iframe
+//   api.razorpay.com           Razorpay checkout iframe/XHR
+//   lumberjack.razorpay.com    Razorpay's own telemetry beacon from checkout
+//   fonts.googleapis.com       Noto Sans Tamil/Bengali/Telugu @import (globals.css)
+//   fonts.gstatic.com          the font files those stylesheets load
+//   *.ingest.*.sentry.io       browser error reports (NEXT_PUBLIC_SENTRY_DSN)
+//   api.github.com             star count fetch in the header
+//   https: for img-src         leader/personality photos come from many gov + wiki hosts
+//   data: / blob:              QR codes (2FA setup), inline SVG maps, CSV downloads
+//
+// 'unsafe-inline' is required by Next.js for its bootstrap scripts and by our
+// inline JSON-LD / service-worker snippets. Moving to nonces is a separate,
+// larger task and is not needed for a report-only rollout.
+const CSP_REPORT_ONLY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://plausible.io https://checkout.razorpay.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  [
+    "connect-src 'self'",
+    "https://plausible.io",
+    "https://api.razorpay.com",
+    "https://checkout.razorpay.com",
+    "https://lumberjack.razorpay.com",
+    "https://*.ingest.sentry.io",
+    "https://*.ingest.us.sentry.io",
+    "https://*.ingest.de.sentry.io",
+    "https://api.github.com",
+  ].join(" "),
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+/**
+ * If a public Sentry DSN is configured, turn it into Sentry's CSP report
+ * endpoint so violations show up in the Sentry project instead of vanishing
+ * into the browser console. The DSN key is already public (NEXT_PUBLIC_*).
+ * DSN shape: https://<key>@<host>/<projectId>
+ */
+function sentryCspReportUri(): string | null {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!dsn) return null;
+  try {
+    const u = new URL(dsn);
+    const projectId = u.pathname.replace(/^\/+/, "");
+    if (!u.username || !projectId) return null;
+    return `https://${u.host}/api/${projectId}/security/?sentry_key=${u.username}`;
+  } catch {
+    return null;
+  }
+}
+
+const cspReportUri = sentryCspReportUri();
+const cspHeaderValue = cspReportUri ? `${CSP_REPORT_ONLY}; report-uri ${cspReportUri}` : CSP_REPORT_ONLY;
+
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployments
   output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
@@ -15,14 +87,34 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-XSS-Protection", value: "1; mode=block" },
+          // X-XSS-Protection was removed: the header is deprecated, ignored by
+          // every current browser, and could itself introduce side-channels in
+          // old ones. CSP (below) is the modern replacement.
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Content-Security-Policy-Report-Only", value: cspHeaderValue },
           { key: "X-Powered-By", value: "ForThePeople.in" },
           { key: "X-Creator", value: "Jayanth M B" },
           { key: "X-Project-ID", value: "FTP-JMB-2026-IN" },
-          { key: "X-License", value: "MIT with Attribution - github.com/jayanthmb14/forthepeople" },
+          // Plain SPDX identifier so licence scanners (GitHub, FLOSS/fund,
+          // Sentry/Vercel OSS programmes) read it correctly.
+          { key: "X-License", value: "MIT" },
         ],
+      },
+      // Admin + payment JSON must NEVER be cached by the CDN. Vercel's edge
+      // cache does not key on cookies, so a cached admin response could be
+      // served to an anonymous visitor. `private, no-store` makes every layer
+      // (CDN, proxy, browser) skip caching.
+      //
+      // The API-key vault lives under /api/admin/vault/*, so it is covered by
+      // the first rule (there is no top-level /api/vault route).
+      {
+        source: "/api/admin/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/payment/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
       // Cache static GeoJSON files aggressively
       {

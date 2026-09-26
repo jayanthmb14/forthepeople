@@ -7,9 +7,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
 // POST: { token: "..." } — verify recovery token and disable 2FA
 export async function POST(req: NextRequest) {
+  // A 256-bit token cannot be guessed, but this is still an unauthenticated
+  // credential check, so keep it throttled (fail closed) like the others.
+  const rl = await rateLimit(`admin-2fa-recover-verify:${hashIp(getClientIp(req))}`, 10, 15 * 60, {
+    failClosed: true,
+  });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many attempts. Try again in 15 minutes." },
+      { status: 429, headers: { "Retry-After": "900" } }
+    );
+  }
+
   const { token } = await req.json() as { token: string };
   if (!token) return NextResponse.json({ error: "token required" }, { status: 400 });
 

@@ -10,11 +10,27 @@ import prisma from "@/lib/db";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
 const ABSOLUTE_MIN = 10;
 const ABSOLUTE_MAX = 500000;
 
+// Each call creates a Contribution row AND a Razorpay order, so cap it at
+// 10 per hour per hashed IP. Shared key with create-subscription so the two
+// endpoints cannot be alternated to double the budget. Fails open on a Redis
+// outage — a cache blip must not block donations.
+const ORDER_LIMIT = 10;
+const ORDER_WINDOW_SECONDS = 60 * 60;
+
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(`payment-order:${hashIp(getClientIp(req))}`, ORDER_LIMIT, ORDER_WINDOW_SECONDS);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many payment attempts. Please try again in an hour." },
+      { status: 429, headers: { "Retry-After": String(ORDER_WINDOW_SECONDS) } }
+    );
+  }
+
   try {
     const body = await req.json();
     const { amount, tier, name, email, phone, message, isPublic } = body as {
