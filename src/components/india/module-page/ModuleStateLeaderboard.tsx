@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * State leaderboard on the module deep-dive page. Wraps the shared
  * IndiaStateLeaderboard with mock state values for the module's

@@ -4,7 +4,7 @@
  * Original Creator: Jayanth M B
  * Inception: March 2026
  * Repository: github.com/jayanthmb14/forthepeople
- * License: MIT with Attribution
+ * License: MIT
  *
  * This project was conceived, designed, and built by Jayanth M B
  * from Karnataka, India. Any fork or derivative must retain this

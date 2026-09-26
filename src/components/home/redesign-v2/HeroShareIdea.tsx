@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Session 19 v13 Phase F (Fix #6) — thin expandable Share-Your-Idea
  * bar that lives directly under the hero "Explore the whole India"

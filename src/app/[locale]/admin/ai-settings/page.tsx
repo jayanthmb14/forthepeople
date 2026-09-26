@@ -127,9 +127,11 @@ export default function AISettingsPage() {
         <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", marginBottom: 8 }}>Model Routing</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
           {[
-            { purpose: "Classification / Summaries / Format", model: "openai/gpt-oss-20b:free", cost: "Free" },
-            { purpose: "District Insights / News / Documents", model: "google/gemini-2.5-pro", cost: "~$1.25/M tokens" },
-            { purpose: "Fact-check (critical accuracy)", model: "anthropic/claude-sonnet-4", cost: "~$3/M tokens" },
+            // Mirrors getModelForPurpose() in src/lib/ai-provider.ts — update both together.
+            { purpose: "Classification / Summaries / Format / News analysis", model: "google/gemma-4-31b-it:free", cost: "Free" },
+            { purpose: "District Insights / Documents", model: "google/gemini-2.5-flash-lite", cost: "~$0.10/M in · $0.40/M out" },
+            { purpose: "Large documents", model: "google/gemini-2.5-pro", cost: "~$1.25/M in · $10/M out" },
+            { purpose: "Fact-check (critical accuracy)", model: "anthropic/claude-sonnet-4", cost: "~$3/M in · $15/M out" },
           ].map((r) => (
             <div key={r.purpose} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "#FAFAF8", borderRadius: 6, fontSize: 12 }}>
               <span style={{ color: "#6B6B6B" }}>{r.purpose}</span>

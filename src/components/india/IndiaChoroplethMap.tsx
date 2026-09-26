@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * India choropleth that recolors by the active metric. Reuses the
  * existing public/geo/india-states.json (sourced from datameet/maps,

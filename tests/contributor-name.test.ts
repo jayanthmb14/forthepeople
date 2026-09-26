@@ -18,13 +18,24 @@ describe("validateContributorName", () => {
     expect(validateContributorName("Mary-Ann O'Neil Jr.").ok).toBe(true);
   });
 
-  // KNOWN BUG (found while writing these tests, 2026-09-27): NAME_REGEX only
-  // allows \p{L}, so any Indic name that uses a vowel sign / matra (\p{M}) —
-  // e.g. "ರವಿ" (ra + vi) or "राम" (ra + aa + ma) — is REJECTED with
-  // "Name can only contain letters…". Fix in src/lib/validators/contributor-name.ts:
-  //   const NAME_REGEX = /^[\p{L}\p{M}\s.\-']+$/u;
-  // Un-todo this test once that lands.
-  it.todo("accepts Indic names that use vowel signs (matras), e.g. ರವಿ ಕುಮಾರ್ / राम प्रसाद");
+  it("accepts Indic names that use vowel signs (matras), e.g. ರವಿ ಕುಮಾರ್ / राम प्रसाद", () => {
+    // Matras / vowel signs / virama are \p{M} (combining marks), not \p{L}.
+    // NAME_REGEX must allow both or these everyday names are rejected.
+    expect(validateContributorName("ರವಿ")).toEqual({ ok: true, cleaned: "ರವಿ" }); // Kannada: ra + i-sign
+    expect(validateContributorName("ರವಿ ಕುಮಾರ್").ok).toBe(true); // Kannada, with virama
+    expect(validateContributorName("राम")).toEqual({ ok: true, cleaned: "राम" }); // Devanagari: ra + aa-sign + ma
+    expect(validateContributorName("राम प्रसाद").ok).toBe(true); // Devanagari, with virama
+    expect(validateContributorName("தமிழ்").ok).toBe(true); // Tamil, with vowel sign + pulli
+    expect(validateContributorName("রবি").ok).toBe(true); // Bengali
+    expect(validateContributorName("రవి").ok).toBe(true); // Telugu
+  });
+
+  it("still rejects phone numbers and emails after allowing combining marks", () => {
+    expect(validateContributorName("+919876543210").ok).toBe(false); // digits + country code
+    expect(validateContributorName("ರವಿ +91 98765 43210").ok).toBe(false);
+    expect(validateContributorName("a@b.com").ok).toBe(false); // "@" fails the character regex
+    expect(validateContributorName("राम@example.com").ok).toBe(false);
+  });
 
   it("rejects non-string input", () => {
     expect(validateContributorName(42)).toEqual({ ok: false, reason: "Name must be text." });

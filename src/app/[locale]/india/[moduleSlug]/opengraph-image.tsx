@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Per-module OpenGraph image — generated server-side at build time
  * via next/og's ImageResponse. One image per /en/india/[moduleSlug].

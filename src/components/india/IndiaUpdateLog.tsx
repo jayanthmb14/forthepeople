@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Public-facing transparency feed: every IndiaIndicator update,
  * newest first, with filter chips by category and an expandable

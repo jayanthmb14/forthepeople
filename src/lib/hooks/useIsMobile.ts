@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Session M1: viewport hook for components that need to swap behaviour
  * (not just CSS) at the mobile breakpoint — e.g. DistrictBreadcrumb opens

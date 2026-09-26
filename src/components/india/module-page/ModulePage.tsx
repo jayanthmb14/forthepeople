@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Orchestrator for /[locale]/india/[moduleSlug] — the per-module
  * deep-dive dashboard. 11 sections, each in its own component for

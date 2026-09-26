@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  *
  * Session M1 Phase H: mobile-only sticky breadcrumb strip on district
  * pages. The desktop breadcrumb lives inside HeaderBar; that header is

@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  */
 
@@ -124,8 +124,8 @@ const KARNATAKA: StateConfig = {
   lastElectionYear: 2023,
   lastElectionType: "Karnataka assembly",
   dataSources: [
-    { module: "Power Outages", source: "BESCOM", type: "Collected", frequency: "Every 15 minutes", url: "https://bescom.karnataka.gov.in", status: "live" },
-    { module: "Dam Levels", source: "Karnataka Water Resources Department", type: "Collected", frequency: "Daily", url: null, status: "live" },
+    { module: "Power Outages", source: "BESCOM", type: "Collected", frequency: "When the source publishes", url: "https://bescom.karnataka.gov.in", status: "live" },
+    { module: "Dam Levels", source: "Karnataka Water Resources Department", type: "Collected", frequency: "Every 6 hours", url: null, status: "live" },
     { module: "Budget & Revenue", source: "Karnataka Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "Karnataka Information Commission", type: "Collected", frequency: "Annual", url: "https://kic.karnataka.gov.in", status: "static" },
     { module: "Transport", source: "KSRTC / IRCTC", type: "API", frequency: "Monthly", url: "https://ksrtc.in", status: "static" },
@@ -181,7 +181,7 @@ const TELANGANA: StateConfig = {
   lastElectionYear: 2023,
   lastElectionType: "Telangana assembly",
   dataSources: [
-    { module: "Power Outages", source: "TGSPDCL", type: "Collected", frequency: "Every 15 minutes", url: "https://tgsouthernpower.org", status: "static" },
+    { module: "Power Outages", source: "TGSPDCL", type: "Collected", frequency: "When the source publishes", url: "https://tgsouthernpower.org", status: "static" },
     { module: "Dam Levels", source: "Telangana Irrigation Department", type: "Collected", frequency: "Daily", url: "https://irrigation.telangana.gov.in", status: "static" },
     { module: "Budget & Revenue", source: "Telangana Finance Department", type: "Collected", frequency: "Quarterly", url: "https://finance.telangana.gov.in", status: "static" },
     { module: "RTI", source: "Telangana State Information Commission", type: "Collected", frequency: "Annual", url: "https://tsic.cgg.gov.in", status: "static" },
@@ -223,7 +223,7 @@ const DELHI: StateConfig = {
   lastElectionYear: 2025,
   lastElectionType: "Delhi assembly",
   dataSources: [
-    { module: "Power Outages", source: "BSES / TPDDL", type: "Collected", frequency: "Every 15 minutes", url: "https://www.bsesdelhi.com", status: "static" },
+    { module: "Power Outages", source: "BSES / TPDDL", type: "Collected", frequency: "When the source publishes", url: "https://www.bsesdelhi.com", status: "static" },
     { module: "Dam Levels", source: "Delhi Jal Board", type: "Collected", frequency: "Daily", url: "https://delhijalboard.delhi.gov.in", status: "static" },
     { module: "Budget & Revenue", source: "Delhi Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "Delhi Information Commission", type: "Collected", frequency: "Annual", url: "https://dic.delhi.gov.in", status: "static" },
@@ -265,7 +265,7 @@ const MAHARASHTRA: StateConfig = {
   lastElectionYear: 2024,
   lastElectionType: "Maharashtra assembly",
   dataSources: [
-    { module: "Power Outages", source: "BEST / Adani Electricity", type: "Collected", frequency: "Every 15 minutes", url: "https://www.bestundertaking.com", status: "static" },
+    { module: "Power Outages", source: "BEST / Adani Electricity", type: "Collected", frequency: "When the source publishes", url: "https://www.bestundertaking.com", status: "static" },
     { module: "Dam Levels", source: "Maharashtra Water Resources Department", type: "Collected", frequency: "Daily", url: "https://wrd.maharashtra.gov.in", status: "static" },
     { module: "Budget & Revenue", source: "Maharashtra Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "Maharashtra State Information Commission", type: "Collected", frequency: "Annual", url: "https://maic.gov.in", status: "static" },
@@ -307,7 +307,7 @@ const WEST_BENGAL: StateConfig = {
   lastElectionYear: 2021,
   lastElectionType: "West Bengal assembly",
   dataSources: [
-    { module: "Power Outages", source: "CESC / WBSEDCL", type: "Collected", frequency: "Every 15 minutes", url: "https://www.cesc.co.in", status: "static" },
+    { module: "Power Outages", source: "CESC / WBSEDCL", type: "Collected", frequency: "When the source publishes", url: "https://www.cesc.co.in", status: "static" },
     { module: "Dam Levels", source: "WB Irrigation & Waterways Department", type: "Collected", frequency: "Daily", url: "https://wbiwd.gov.in", status: "static" },
     { module: "Budget & Revenue", source: "West Bengal Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "West Bengal Information Commission", type: "Collected", frequency: "Annual", url: "https://wbic.gov.in", status: "static" },
@@ -349,7 +349,7 @@ const TAMIL_NADU: StateConfig = {
   lastElectionYear: 2021,
   lastElectionType: "Tamil Nadu assembly",
   dataSources: [
-    { module: "Power Outages", source: "TANGEDCO", type: "Collected", frequency: "Every 15 minutes", url: "https://www.tangedco.gov.in", status: "static" },
+    { module: "Power Outages", source: "TANGEDCO", type: "Collected", frequency: "When the source publishes", url: "https://www.tangedco.gov.in", status: "static" },
     { module: "Dam Levels", source: "TN Public Works Department (WRD)", type: "Collected", frequency: "Daily", url: null, status: "static" },
     { module: "Budget & Revenue", source: "Tamil Nadu Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "Tamil Nadu Information Commission", type: "Collected", frequency: "Annual", url: "https://www.tnic.gov.in", status: "static" },
@@ -391,7 +391,7 @@ const UTTAR_PRADESH: StateConfig = {
   lastElectionYear: 2022,
   lastElectionType: "Uttar Pradesh assembly",
   dataSources: [
-    { module: "Power Outages", source: "UPPCL / LESA", type: "Collected", frequency: "Every 15 minutes", url: "https://www.uppcl.org", status: "static" },
+    { module: "Power Outages", source: "UPPCL / LESA", type: "Collected", frequency: "When the source publishes", url: "https://www.uppcl.org", status: "static" },
     { module: "Dam Levels", source: "UP Jal Nigam / India-WRIS", type: "Collected", frequency: "Daily", url: "https://upjn.up.gov.in", status: "static" },
     { module: "Budget & Revenue", source: "UP Finance Department", type: "Collected", frequency: "Quarterly", url: "https://budget.up.nic.in", status: "static" },
     { module: "RTI", source: "UP State Information Commission", type: "Collected", frequency: "Annual", url: "https://upsic.up.nic.in", status: "static" },
@@ -414,7 +414,7 @@ const STATE_CONFIGS: Record<string, StateConfig> = {
 // ── Universal data sources (apply to ALL districts) ────────
 export const UNIVERSAL_DATA_SOURCES: DataSourceEntry[] = [
   { module: "Crop Prices", source: "AGMARKNET (Agricultural Marketing Information Network)", type: "API", frequency: "Daily (market days)", url: "https://agmarknet.gov.in", status: "live" },
-  { module: "Weather", source: "India Meteorological Department (IMD) / OpenWeatherMap", type: "API", frequency: "Every 5 minutes", url: "https://mausam.imd.gov.in", status: "live" },
+  { module: "Weather", source: "India Meteorological Department (IMD) / OpenWeatherMap", type: "API", frequency: "Every 30 minutes", url: "https://mausam.imd.gov.in", status: "live" },
   { module: "Schools", source: "UDISE+ (Unified District Information System for Education)", type: "API", frequency: "Annual", url: "https://udiseplus.gov.in", status: "static" },
   { module: "Elections", source: "Election Commission of India (ECI)", type: "Static", frequency: "Post-election", url: "https://eci.gov.in", status: "static" },
   { module: "Schemes", source: "MyScheme.gov.in / State scheme portals", type: "API", frequency: "Weekly", url: "https://myscheme.gov.in", status: "static" },
@@ -425,7 +425,7 @@ export const UNIVERSAL_DATA_SOURCES: DataSourceEntry[] = [
   { module: "Housing", source: "AwaasSoft (PMAY Dashboard)", type: "API", frequency: "Monthly", url: "https://pmayg.nic.in", status: "live" },
   { module: "Population", source: "Census of India 2011 + NFHS-5 (2019-21) + NITI MPI 2023 + SRS 2023 + PLFS (latest)", type: "Collected", frequency: "Census: decadal (2027 upcoming) · NFHS: 5-yearly · PLFS: quarterly · SRS: annual · BBMP municipal: ad-hoc", url: "https://censusindia.gov.in", status: "static" },
   { module: "Panchayats", source: "eGramSwaraj / PRIASoft", type: "API", frequency: "Monthly", url: "https://egramswaraj.gov.in", status: "static" },
-  { module: "News", source: "Google News RSS / Regional news aggregation", type: "RSS", frequency: "Every hour", url: null, status: "live" },
+  { module: "News", source: "Google News RSS / Regional news aggregation", type: "RSS", frequency: "Daily", url: null, status: "live" },
   { module: "Leaders", source: "Lok Sabha / State Legislature / District Administration", type: "Collected", frequency: "On-change", url: null, status: "static" },
   { module: "Famous Personalities", source: "Wikipedia (CC-BY-SA licensed)", type: "Static", frequency: "Static", url: null, status: "static" },
   { module: "Offices", source: "District NIC Portal / State Government Directory", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
@@ -439,20 +439,24 @@ export interface ModuleSourceInfo {
   isLive?: boolean;
 }
 
+// Honesty rule (Sept 2026 audit): `isLive` is true ONLY for modules that a
+// Vercel cron in vercel.json actually refreshes — weather (every 30 min) and
+// dams/water (every 6 h). Every other `frequency` describes when the upstream
+// source publishes, not a poller we run. Update this when vercel.json changes.
 export function getModuleSources(moduleName: string, stateSlug: string): ModuleSourceInfo {
   const config = getStateConfig(stateSlug);
   const map: Record<string, ModuleSourceInfo> = {
-    weather:           { sources: ["India Meteorological Department (IMD)", "OpenWeatherMap"], frequency: "Every 5 minutes", isLive: true },
-    crops:             { sources: ["AGMARKNET (Agricultural Marketing Information Network)"], frequency: "Daily (market days)", isLive: true },
-    water:             { sources: [config ? `${config.waterPortalName} / India-WRIS` : "India-WRIS (Water Resources Information System)"], frequency: "Every 30 minutes", isLive: true },
-    power:             { sources: [config?.discomFullName ?? "State Power Distribution Company"], frequency: "Every 15 minutes", isLive: true },
-    finance:           { sources: ["PFMS (Public Financial Management System)", "State Treasury / eGramSwaraj"], frequency: "Quarterly" },
+    weather:           { sources: ["India Meteorological Department (IMD)", "OpenWeatherMap"], frequency: "Every 30 minutes", isLive: true },
+    crops:             { sources: ["AGMARKNET (Agricultural Marketing Information Network)"], frequency: "Daily" },
+    water:             { sources: [config ? `${config.waterPortalName} / India-WRIS` : "India-WRIS (Water Resources Information System)"], frequency: "Every 6 hours", isLive: true },
+    power:             { sources: [config?.discomFullName ?? "State Power Distribution Company"], frequency: "When the source publishes" },
+    budget:            { sources: ["PFMS (Public Financial Management System)", "State Treasury / eGramSwaraj"], frequency: "When the source publishes" },
     police:            { sources: ["NCRB (National Crime Records Bureau)", "data.gov.in"], frequency: "Annual" },
     schools:           { sources: ["UDISE+ (Unified District Information System for Education)"], frequency: "Annual" },
     elections:         { sources: ["Election Commission of India (ECI)"], frequency: "Post-election" },
     transport:         { sources: [config?.stateTransportFullName ?? "State Transport Corporation", "IRCTC"], frequency: "Monthly" },
-    rti:               { sources: [config?.stateInformationCommission ?? "State Information Commission", "RTI Online Portal"], frequency: "Annual" },
-    courts:            { sources: ["NJDG (National Judicial Data Grid)"], frequency: "Weekly" },
+    rti:               { sources: [config?.stateInformationCommission ?? "State Information Commission", "RTI Online Portal"], frequency: "When the source publishes" },
+    courts:            { sources: ["NJDG (National Judicial Data Grid)"], frequency: "When the source publishes" },
     population:        {
       sources: [
         "Census of India 2011 (Office of the Registrar General & Census Commissioner)",
@@ -469,24 +473,24 @@ export function getModuleSources(moduleName: string, stateSlug: string): ModuleS
       isLive: false,
     },
     health:            { sources: ["National Health Mission", "State Health Department"], frequency: "Monthly" },
-    schemes:           { sources: ["MyScheme.gov.in", "State scheme portals"], frequency: "Weekly" },
-    jjm:               { sources: ["Jal Jeevan Mission National Dashboard (eJalShakti)"], frequency: "Weekly", isLive: true },
+    schemes:           { sources: ["MyScheme.gov.in", "State scheme portals"], frequency: "When the source publishes" },
+    jjm:               { sources: ["Jal Jeevan Mission National Dashboard (eJalShakti)"], frequency: "When the source publishes" },
     housing:           { sources: ["AwaasSoft (PMAY Dashboard)"], frequency: "Monthly" },
     industries:        { sources: ["District Industries Centre", "State Industrial Dev. Corp."], frequency: "Quarterly" },
-    infrastructure:    { sources: ["News articles (Google News RSS + regional media)", "Government press releases"], frequency: "Hourly (news cron)", isLive: true },
+    infrastructure:    { sources: ["News articles (Google News RSS + regional media)", "Government press releases"], frequency: "Daily" },
     farm:              { sources: ["Soil Health Card Portal", "KVK / ICAR"], frequency: "Seasonal" },
     "gram-panchayat":  { sources: ["eGramSwaraj", "NREGA.nic.in"], frequency: "Monthly" },
-    news:              { sources: ["Google News RSS", "Regional news aggregation"], frequency: "Every hour", isLive: true },
+    news:              { sources: ["Google News RSS", "Regional news aggregation"], frequency: "Daily" },
     "famous-personalities": { sources: ["Wikipedia (CC-BY-SA licensed)"], frequency: "Static" },
     offices:           { sources: ["District NIC Portal", "State Government Directory"], frequency: "Quarterly" },
-    exams:             { sources: ["UPSC", "SSC", "State PSC / Recruitment Boards"], frequency: "As announced" },
-    "data-sources":    { sources: ["ForThePeople.in transparency page"], frequency: "Real-time" },
+    exams:             { sources: ["UPSC", "SSC", "State PSC / Recruitment Boards"], frequency: "Daily" },
+    "data-sources":    { sources: ["ForThePeople.in transparency page"], frequency: "Updated with each release" },
     "citizen-corner":  { sources: ["District Administration", "Citizen feedback"], frequency: "Weekly" },
-    alerts:            { sources: ["IMD", "District Administration", "NDMA"], frequency: "Real-time", isLive: true },
+    alerts:            { sources: ["IMD", "District Administration", "NDMA"], frequency: "When the source publishes" },
     "responsibility":  { sources: ["District Administration"], frequency: "Quarterly" },
-    "update-log":      { sources: ["ForThePeople.in Admin & Data Refresh"], frequency: "Real-time", isLive: true },
-    services:          { sources: ["District NIC Portal", "State Government Directory", "MyScheme.gov.in"], frequency: "Quarterly" },
-    tenders:           { sources: ["KPPP (Karnataka eProc)", "CPPP (GePNIC)", "IREPS", "defproc.gov.in", "BEL eProc", "HAL TenderWizard"], frequency: "Every 30 minutes", isLive: true },
+    "update-log":      { sources: ["ForThePeople.in Admin & Data Refresh"], frequency: "When the source publishes" },
+    services:          { sources: ["District NIC Portal", "State Government Directory", "MyScheme.gov.in"], frequency: "When the source publishes" },
+    tenders:           { sources: ["KPPP (Karnataka eProc)", "CPPP (GePNIC)", "IREPS", "defproc.gov.in", "BEL eProc", "HAL TenderWizard"], frequency: "When the source publishes" },
   };
   return map[moduleName] ?? { sources: ["Government public data portals"], frequency: "Periodic" };
 }

@@ -1,6 +1,6 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
- * © 2026 Jayanth M B. MIT License with Attribution.
+ * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
  * Session 17 v11 Phase F (Fix #6) — compact "Share your thoughts" bar
