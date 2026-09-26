@@ -20,7 +20,7 @@ export const CREATOR = {
   inception: "2026-03-17",
   projectId: "FTP-JMB-2026-IN",
   repository: "github.com/jayanthmb14/forthepeople",
-  license: "MIT with Attribution",
+  license: "MIT",
 } as const;
 
 export function addWatermarkHeaders(headers: Headers): void {
@@ -29,7 +29,7 @@ export function addWatermarkHeaders(headers: Headers): void {
   headers.set("X-Project-ID", CREATOR.projectId);
   headers.set(
     "X-License",
-    "MIT with Attribution — github.com/jayanthmb14/forthepeople"
+    "MIT — github.com/jayanthmb14/forthepeople"
   );
 }
 
