@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
 
-const CACHE_KEY = "ftp:contributors:v6"; // bump: now surfaces isRecurring + subscriptionStatus
+const CACHE_KEY = "ftp:contributors:v7"; // bump: phone/email-looking names now masked as "Supporter"
 const CACHE_TTL = 60; // 60 seconds
 
 export interface ContributorItem {
@@ -35,15 +35,42 @@ export interface ContributorsResponse {
   count: number;
 }
 
+// Looks like a phone number: optional "+", then 8+ digits/spaces/dashes.
+// Catches "+91 98765 43210", "9876543210", "98765-43210".
+const PHONE_LIKE = /^\+?\d[\d\s-]{7,}$/;
+// Looks like an email address (loose on purpose — we only need "is this
+// probably an email", not RFC validation).
+const EMAIL_LIKE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * True when a stored name is really a phone number, an email address, or too
+ * short to be a name (< 2 letters). Such values must never be shown publicly.
+ * (Not exported — Next.js route files may only export route handlers. The
+ * same rule is mirrored in scripts/anonymize-supporter-names.ts.)
+ */
+function looksLikeContactInfo(raw: string): boolean {
+  const name = (raw || "").trim();
+  if (PHONE_LIKE.test(name)) return true;
+  if (EMAIL_LIKE.test(name)) return true;
+  const letters = name.match(/\p{L}/gu)?.length ?? 0;
+  return letters < 2;
+}
+
 // Session 14 v8.1 Fix #15: when the supporter has opted in to be public,
 // show the full name. Privacy theater (first + last initial) only applied
 // to people who specifically asked NOT to be displayed publicly — and for
 // those we still return "Anonymous", so the truncation form was never
 // the right balance.
+//
+// Sept 2026 (privacy audit): some old rows have a phone number or email in
+// the `name` column (early checkout form put the wrong field there). Those
+// are PII and must never reach the public API, so they render as "Supporter".
+// The email/phone columns are never selected by this route at all.
 function anonymizeName(raw: string, isPublic: boolean): string {
   if (!isPublic) return "Anonymous";
   const name = (raw || "").trim();
   if (!name) return "Anonymous";
+  if (looksLikeContactInfo(name)) return "Supporter";
   return name;
 }
 
