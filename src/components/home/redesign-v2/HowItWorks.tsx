@@ -20,6 +20,11 @@
 "use client";
 
 import React from "react";
+import { getPlatformFacts } from "@/lib/platform-facts";
+
+// Module count from the sidebar registry — the same number the stat tile
+// and the About page print (issue #36).
+const { modulesPerDistrict } = getPlatformFacts();
 
 // Mobile-revert: 3 steps to match the production layout — citizens read
 // these as the simple "input → output → for them" story. Source attribution
@@ -29,21 +34,21 @@ const STEPS = [
     num: "01",
     icon: "📡",
     title: "We Collect",
-    desc: "Data from official .gov.in portals every 5–30 minutes. NDSAP-licensed, traceable to the source.",
+    desc: "Data from official .gov.in portals, checked daily and stamped with the date the source published. NDSAP-licensed, traceable to the source.",
     accent: "blue" as const,
   },
   {
     num: "02",
     icon: "📊",
     title: "We Organize",
-    desc: "Into 29 dashboards per district with charts, maps, news, and live updates.",
+    desc: `Into ${modulesPerDistrict} dashboards per district with charts, maps, news and source links.`,
     accent: "purple" as const,
   },
   {
     num: "03",
     icon: "👁",
     title: "You See",
-    desc: "Real-time district data. Free. Open source. Yours.",
+    desc: "The latest district data, with an \"as of\" date on every figure. Free. Open source. Yours.",
     accent: "emerald" as const,
   },
 ];
@@ -230,7 +235,7 @@ export default function HowItWorks() {
       <div className="ftp-section-inner">
         <div className="ftp-how-header">
           <h2 id="how-heading" className="ftp-how-h2">How it works</h2>
-          <p className="ftp-how-subtitle">Real data. Real-time. Real-public.</p>
+          <p className="ftp-how-subtitle">Where the numbers come from</p>
         </div>
 
         <div className="ftp-how-pipeline">

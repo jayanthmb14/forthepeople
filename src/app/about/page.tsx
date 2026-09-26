@@ -6,6 +6,11 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
+
+// Every count on this page comes from the registry (issue #36) — never type
+// "9 districts" or "29 modules" by hand here again.
+const FACTS = getPlatformFacts();
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -23,9 +28,9 @@ export const metadata: Metadata = {
 
 const PILLARS = [
   { icon: "📊", title: "Real Data, Not Opinions", desc: "Every number comes from a government portal, official API, or publicly available document. We never fabricate or estimate data." },
-  { icon: "🌐", title: "Every District, Every State", desc: "Currently live across Karnataka, Delhi, Maharashtra, West Bengal, Tamil Nadu, Telangana, and Uttar Pradesh — expanding to all 780+ districts across India." },
+  { icon: "🌐", title: "Every District, Every State", desc: `Currently live in ${getCoveragePhrase()} — expanding to all ${FACTS.totalIndiaDistricts}+ districts across India.` },
   { icon: "🌍", title: "Local Languages First", desc: "Data is presented in English and the regional language of each state — Kannada, Tamil, Telugu, Hindi, and more." },
-  { icon: "⚡", title: "Live + Historical", desc: "Crop prices refresh every 15 minutes. Weather updates hourly. Budget data goes back years. Both matter." },
+  { icon: "⚡", title: "Current + Historical", desc: "Crop prices and news are refreshed whenever the source portal publishes; every reading shows the date it was recorded. Budget and census data go back years. Both matter." },
   { icon: "🔓", title: "Free Forever", desc: "No paywalls, no subscriptions. Government data belongs to citizens. We just make it accessible." },
   { icon: "🔍", title: "RTI Ready", desc: "Don't see what you need? We provide ready-to-send RTI templates so you can get any government information by right." },
 ];
@@ -55,7 +60,7 @@ export default function AboutPage() {
           ForThePeople.in is India&apos;s citizen transparency platform, launched in 2026. We aggregate
           district-level government data — budgets, crop prices, water levels, scheme coverage,
           infrastructure, and more — and present it in a clear, accessible interface for every Indian.
-          The platform covers 9 districts across 7 states and plans to expand to all 780+ Indian districts.
+          The platform covers {getCoveragePhrase()} and plans to expand to all {FACTS.totalIndiaDistricts}+ Indian districts.
         </p>
       </div>
 
@@ -87,11 +92,11 @@ export default function AboutPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 40 }}>
         {[
           { value: "2026", label: "Year launched" },
-          { value: "780+", label: "Districts planned" },
-          { value: "29", label: "Data modules / district" },
+          { value: `${FACTS.totalIndiaDistricts}+`, label: "Districts planned" },
+          { value: String(FACTS.modulesPerDistrict), label: "Data modules / district" },
           { value: "Free", label: "Cost to access" },
           { value: "NDSAP", label: "Legal data basis" },
-          { value: "9", label: "Live districts" },
+          { value: String(FACTS.activeDistricts), label: "Live districts" },
         ].map((s) => (
           <div key={s.label} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "16px 18px" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#2563EB", letterSpacing: "-0.5px" }}>{s.value}</div>

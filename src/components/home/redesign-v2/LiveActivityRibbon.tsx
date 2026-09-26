@@ -14,26 +14,38 @@
  * Drops the LIVE pill prefix entirely (last-updated tile carries that signal).
  *
  * Stats are passed in as props (server-fetched in [locale]/page.tsx)
- * to avoid a client roundtrip on first paint.
+ * to avoid a client roundtrip on first paint. Defaults come from
+ * src/lib/platform-facts.ts so a missing prop can never print a stale
+ * hand-typed number (issue #36).
+ *
+ * Audit 2026-09: the "Last refresh" tile now uses the shared timeAgoLabel
+ * (real "Xh ago" / "Xd ago", never "Live"); the green dot appears only for
+ * records under 30 minutes old. Cadence captions that promised
+ * "every 5–30 min" were replaced with what actually happens.
  */
 
 "use client";
 
 import { useCountUp } from "@/lib/hooks/useCountUp";
-import { timeAgoLabel } from "@/lib/utils/timeAgo";
+import { timeAgoLabel, type TimeAgoResult } from "@/lib/utils/timeAgo";
+import { getPlatformFacts } from "@/lib/platform-facts";
+
+const FACTS = getPlatformFacts();
 
 // Session 18 v12 Phase C (Fix #2): recency tier drives the green/blue/gray
 // dot indicator on the 5th StatsBar tile.
+//   fresh  — under 30 min (timeAgoLabel.isLive)
+//   recent — under 3 h
+//   stale  — older, or unknown
 type RecencyTier = "fresh" | "recent" | "stale";
 
-function recencyTier(mostRecentAt: string | null | undefined): RecencyTier {
+function recencyTier(updated: TimeAgoResult, mostRecentAt: string | null | undefined): RecencyTier {
+  if (updated.isLive) return "fresh";
   if (!mostRecentAt) return "stale";
   const ts = new Date(mostRecentAt).getTime();
   if (!Number.isFinite(ts)) return "stale";
   const ageMin = (Date.now() - ts) / 60_000;
-  if (ageMin < 30) return "fresh";
-  if (ageMin < 180) return "recent";
-  return "stale";
+  return ageMin < 180 ? "recent" : "stale";
 }
 
 export interface StatsBarProps {
@@ -67,19 +79,16 @@ function StatTile({
 }
 
 export default function StatsBar({
-  activeDistricts = 10,
-  dashboardsPerDistrict = 32,
+  activeDistricts = FACTS.activeDistricts,
+  dashboardsPerDistrict = FACTS.modulesPerDistrict,
   totalDataPoints = 0,
-  comingDistricts = 770,
+  comingDistricts = FACTS.comingDistricts,
   mostRecentAt,
 }: StatsBarProps) {
-  // Session 18.1 Phase B (Fix #1): always show the real Xm/Xh-ago label.
-  // Pass a very-large staleThreshold so timeAgoLabel never falls back to "Live"
-  // — the recency dot below already conveys staleness; Jayanth wants the
-  // raw timestamp string visible, not the friendly fallback.
-  const updated = timeAgoLabel(mostRecentAt ?? null, { staleThresholdMinutes: 60 * 24 * 365 });
-  const updatedDisplay = mostRecentAt ? updated.label : "—";
-  const tier = recencyTier(mostRecentAt ?? null);
+  // Real "Xm / Xh / Xd ago" label, or "—" when the timestamp is unknown.
+  const updated = timeAgoLabel(mostRecentAt ?? null);
+  const updatedDisplay = updated.label;
+  const tier = recencyTier(updated, mostRecentAt ?? null);
 
   return (
     <div className="ftp-stats-bar" role="status" aria-live="polite">
@@ -198,22 +207,22 @@ export default function StatsBar({
       <StatTile
         target={activeDistricts}
         label="Districts live"
-        refresh="as launched"
+        refresh="launched so far"
       />
       <StatTile
         target={dashboardsPerDistrict}
         label="Dashboards / district"
-        refresh="static"
+        refresh="in every district"
       />
       <StatTile
         target={totalDataPoints}
         label="Data points tracked"
-        refresh="every 5–30 min"
+        refresh="source-linked records"
       />
       <StatTile
         target={comingDistricts}
         label="Districts coming"
-        refresh="as launched"
+        refresh={`of ${FACTS.totalIndiaDistricts} in India`}
       />
 
       {/* Session 18 v12 Phase C: dynamic Xm-ago + recency dot indicator. */}
@@ -222,8 +231,8 @@ export default function StatsBar({
           <span className={`ftp-stat-dot ftp-stat-dot-${tier}`} aria-hidden="true" />
           <span className="ftp-stat-num-text">{updatedDisplay}</span>
         </div>
-        <div className="ftp-stat-label">Last refresh</div>
-        <div className="ftp-stat-refresh">every cron cycle</div>
+        <div className="ftp-stat-label">Refreshed</div>
+        <div className="ftp-stat-refresh">newest record</div>
       </div>
     </div>
   );
