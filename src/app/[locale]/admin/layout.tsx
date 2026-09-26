@@ -10,7 +10,6 @@ import AdminBot from "@/components/admin/AdminBot";
 import { loginAction, totpAction } from "./actions";
 import { requireAdmin } from "@/lib/admin-auth";
 
-const TOTP_PENDING_COOKIE = "admin_totp_pending";
 
 type Params = Promise<{ locale: string }>;
 
@@ -24,7 +23,7 @@ export default async function AdminLayout({
   const { locale } = await params;
   const jar = await cookies();
   const { ok: authed } = await requireAdmin();
-  const totpPending = jar.get(TOTP_PENDING_COOKIE)?.value === "ok";
+  const totpPending = Boolean(jar.get(TOTP_PENDING_TOKEN_COOKIE)?.value);
 
   if (!authed) {
     const showTOTP = totpPending;

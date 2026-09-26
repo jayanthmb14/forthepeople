@@ -38,7 +38,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       description,
       type: "website",
       url: canonicalUrl,
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
     },
     twitter: { card: "summary_large_image", title, description },
   };
@@ -113,6 +112,7 @@ export default async function DistrictLayout({
         districtName={districtData!.name}
       />
       <DistrictStatusBar
+        districtSlug={districtSlug}
         districtName={districtData!.name}
         stateName={stateData?.name ?? ""}
       />

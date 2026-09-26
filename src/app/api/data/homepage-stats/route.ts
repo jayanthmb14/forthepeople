@@ -10,6 +10,7 @@
 // Returns aggregated counts for hero stats bar
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
+import { DASHBOARDS_PER_DISTRICT } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
 
@@ -62,7 +63,7 @@ export async function GET() {
 
     const result = {
       activeDistricts,
-      modulesPerDistrict: 29,
+      modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
       totalDataPoints,
       mostRecentAt: mostRecentAt?.toISOString() ?? null,
       plannedDistricts: 780,
@@ -79,7 +80,7 @@ export async function GET() {
       const fallbackCount = await prisma.district.count({ where: { active: true } });
       return NextResponse.json({
         activeDistricts: fallbackCount,
-        modulesPerDistrict: 29,
+        modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
         totalDataPoints: 0,
         mostRecentAt: null,
         plannedDistricts: 780,
@@ -89,7 +90,7 @@ export async function GET() {
     } catch {
       return NextResponse.json({
         activeDistricts: 0,
-        modulesPerDistrict: 29,
+        modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
         totalDataPoints: 0,
         mostRecentAt: null,
         plannedDistricts: 780,

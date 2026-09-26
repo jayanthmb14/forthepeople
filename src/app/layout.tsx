@@ -5,13 +5,7 @@
  */
 
 import type { Metadata } from "next";
-import {
-  Plus_Jakarta_Sans,
-  JetBrains_Mono,
-  Noto_Sans_Kannada,
-  Noto_Sans_Devanagari,
-  Cormorant_Garamond,
-} from "next/font/google";
+import { fontVariableClasses } from "@/lib/fonts";
 import Script from "next/script";
 import {
   getCoveragePhrase,
@@ -20,45 +14,6 @@ import {
 } from "@/lib/platform-facts";
 import "./globals.css";
 import "./mobile.css";
-
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const jetBrains = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-});
-
-const notoKannada = Noto_Sans_Kannada({
-  variable: "--font-noto-kannada",
-  subsets: ["kannada"],
-  weight: ["400", "600"],
-  display: "swap",
-});
-
-// Devanagari script — covers Hindi (Delhi, UP), Marathi (Maharashtra).
-const notoDevanagari = Noto_Sans_Devanagari({
-  variable: "--font-noto-devanagari",
-  subsets: ["devanagari"],
-  weight: ["400", "600"],
-  display: "swap",
-});
-
-// Heritage display serif — used for the India hero title, motto, and the
-// English language name in the bilingual rotator.
-const cormorant = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -244,7 +199,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${jetBrains.variable} ${notoKannada.variable} ${notoDevanagari.variable} ${cormorant.variable}`}
+      className={fontVariableClasses}
     >
       <head>
         <meta name="theme-color" content="#2563EB" />
@@ -295,16 +250,7 @@ export default function RootLayout({
             __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); }); }`,
           }}
         />
-        {/* Session 7's inline hash-scroll Script was removed in Session 7.5.
-            Chrome MCP confirmed scrollIntoView({behavior:'smooth'}) was
-            being canceled by competing scroll-restoration / re-render.
-            Replaced by direct window.scrollTo({behavior:'smooth'}) in
-            src/lib/utils/scroll-to-request.ts, wired via onClick handlers
-            on each #request CTA plus a mount-time useEffect on /<locale>
-            (RequestScrollMount). The CSS html { scroll-behavior: smooth }
-            in globals.css is kept for any other anchor links across the
-            site. */}
-      </body>
+              </body>
     </html>
   );
 }
