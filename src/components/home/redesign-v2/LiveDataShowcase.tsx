@@ -3,15 +3,23 @@
  * © 2026 Jayanth M B. MIT License with Attribution.
  * https://github.com/jayanthmb14/forthepeople
  *
- * Session 11 redesign — LiveDataShowcase. District chip tabs + 4 module cards.
+ * Session 11 redesign — LiveDataShowcase. District chip tabs + module cards.
  *
- * Per slim-core scope:
- *   - District SVG slot at /districts/<slug>.svg with a generic fallback
- *     pin icon. Drop new SVGs in to upgrade. (See public/districts/.gitkeep)
- *   - 4 cards always render with skeletons; if a module API is offline,
- *     the card shows "Data temporarily unavailable" but the View-all link
- *     still routes to the district module page.
- *   - Cross-fade on tab switch (250ms; respects prefers-reduced-motion).
+ * Audit 2026-09 (finding 3.10) rewrite. What changed and why:
+ *   - DATA CONTRACT. The cards read `d.items ?? d.schemes` etc., but
+ *     /api/data/<module> returns `{ data: [...] }` (crops, schemes, news) and
+ *     `{ data: { entries, allocations } }` (budget). Three of four cards were
+ *     therefore permanently empty ("No active schemes listed") on the default
+ *     tab. Every summariser now reads the real shape.
+ *   - FRESHNESS GATE. A card renders only when its newest row is under
+ *     MAX_AGE_DAYS (30) old. Stale or failed modules render NOTHING — never an
+ *     empty-state card that says "Data syncing · refreshing every 5–30 min"
+ *     over data from April. If nothing qualifies, one honest sentence shows.
+ *   - CROPS. Rows are deduped by commodity (newest modal price wins) and show
+ *     the market and an "as of <date>" stamp.
+ *   - COPY. "Live data right now" → "Latest data"; the pulsing dot is gone.
+ *   - The HEAD probe for /districts/<slug>.svg is gone (one request per tab
+ *     that almost always 404'd). The icon registry + a generic pin cover it.
  */
 
 "use client";
@@ -19,6 +27,7 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { getDistrictIcon } from "@/components/district/icons";
+import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
 
 interface ActiveDistrict {
   slug: string;
@@ -34,57 +43,65 @@ export interface LiveDataShowcaseProps {
   districts: ActiveDistrict[];
 }
 
-type ModuleData = {
-  loading: boolean;
-  failed: boolean;
-  text: string;
-};
+/** Only rows newer than this many days earn a card. */
+const MAX_AGE_DAYS = 30;
 
-type DistrictModuleSet = {
-  crops: ModuleData;
-  schemes: ModuleData;
-  news: ModuleData;
-  budget: ModuleData;
-};
+type ModuleKey = "crops" | "schemes" | "news" | "budget";
+type AccentColor = "emerald" | "blue" | "amber" | "cyan";
 
-const EMPTY_SET: DistrictModuleSet = {
-  crops:   { loading: true, failed: false, text: "" },
-  schemes: { loading: true, failed: false, text: "" },
-  news:    { loading: true, failed: false, text: "" },
-  budget:  { loading: true, failed: false, text: "" },
-};
+/** One rendered card. `null` from a summariser means "do not render". */
+interface ModuleCard {
+  key: ModuleKey;
+  accent: AccentColor;
+  icon: string;
+  title: string;
+  /** Big first line, e.g. "Ragi ₹2,940 / quintal". */
+  headline: string;
+  /** Second line, e.g. "Mandya market · Beans ₹3,000". */
+  support: string;
+  /** ISO timestamp of the newest row — drives the "as of" stamp. */
+  newestAt: string;
+  /** Module page under the district. */
+  path: string;
+}
+
+type DistrictCards =
+  | { loading: true; cards: [] }
+  | { loading: false; cards: ModuleCard[] };
+
+const LOADING: DistrictCards = { loading: true, cards: [] };
+
+// Fixed slot order; summarisers that return null simply drop out.
+const MODULE_ORDER: ModuleKey[] = ["crops", "schemes", "news", "budget"];
 
 export default function LiveDataShowcase({ locale, districts }: LiveDataShowcaseProps) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [moduleData, setModuleData] = useState<Record<string, DistrictModuleSet>>({});
-  const [svgExists, setSvgExists] = useState<Record<string, boolean>>({});
+  const [byDistrict, setByDistrict] = useState<Record<string, DistrictCards>>({});
 
   const active = districts[activeIdx];
 
-  // Fetch the 4 modules for the active district when chip changes.
+  // Fetch the 4 modules for the active district when the chip changes.
+  // Results are cached per slug for the life of the page.
   useEffect(() => {
     if (!active) return;
-    if (moduleData[active.slug] && !moduleData[active.slug].crops.loading) return;
+    if (byDistrict[active.slug] && !byDistrict[active.slug].loading) return;
 
     let cancelled = false;
     const slug = active.slug;
     const stateSlug = active.stateSlug;
 
-    async function fetchModule(path: string): Promise<{ ok: boolean; data: unknown }> {
+    async function fetchModule(path: string): Promise<unknown> {
       try {
         const res = await fetch(`/api/data/${path}?state=${stateSlug}&district=${slug}`);
-        if (!res.ok) return { ok: false, data: null };
-        return { ok: true, data: await res.json() };
+        if (!res.ok) return null;
+        return await res.json();
       } catch {
-        return { ok: false, data: null };
+        return null;
       }
     }
 
     async function loadAll() {
-      // Session 19.2 Phase G: schemes + budget instead of weather + infrastructure-projects
-      // (weather and infra often empty for non-major districts; schemes & budget consistently
-      // have data across all 10 active districts).
-      const [cropsR, schemesR, newsR, budgetR] = await Promise.all([
+      const [crops, schemes, news, budget] = await Promise.all([
         fetchModule("crops"),
         fetchModule("schemes"),
         fetchModule("news"),
@@ -92,50 +109,43 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
       ]);
       if (cancelled) return;
 
-      const set: DistrictModuleSet = {
-        crops:   summarizeCrops(cropsR),
-        schemes: summarizeSchemes(schemesR),
-        news:    summarizeNews(newsR),
-        budget:  summarizeBudget(budgetR),
+      const now = Date.now();
+      const built: Record<ModuleKey, ModuleCard | null> = {
+        crops: summarizeCrops(crops, now),
+        schemes: summarizeSchemes(schemes, now),
+        news: summarizeNews(news, now),
+        budget: summarizeBudget(budget, now),
       };
-
-      setModuleData((prev) => ({ ...prev, [slug]: set }));
+      const cards = MODULE_ORDER.map((k) => built[k]).filter((c): c is ModuleCard => c !== null);
+      setByDistrict((prev) => ({ ...prev, [slug]: { loading: false, cards } }));
     }
 
     loadAll();
     return () => {
       cancelled = true;
     };
-  }, [active, moduleData]);
+  }, [active, byDistrict]);
 
-  // Probe whether per-district SVG exists (HEAD request to /districts/<slug>.svg).
-  useEffect(() => {
-    if (!active) return;
-    if (active.slug in svgExists) return;
-    let cancelled = false;
-    fetch(`/districts/${active.slug}.svg`, { method: "HEAD" })
-      .then((r) => {
-        if (cancelled) return;
-        setSvgExists((prev) => ({ ...prev, [active.slug]: r.ok }));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSvgExists((prev) => ({ ...prev, [active.slug]: false }));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [active, svgExists]);
+  const state = useMemo<DistrictCards>(() => {
+    if (!active) return LOADING;
+    return byDistrict[active.slug] ?? LOADING;
+  }, [active, byDistrict]);
 
-  const set = useMemo<DistrictModuleSet>(() => {
-    if (!active) return EMPTY_SET;
-    return moduleData[active.slug] ?? EMPTY_SET;
-  }, [active, moduleData]);
+  // Newest timestamp across the rendered cards → "Refreshed <as of>" in the
+  // header. Undefined while loading or when nothing qualifies.
+  const newestAsOf = useMemo(() => {
+    if (state.loading || state.cards.length === 0) return "";
+    const newest = state.cards
+      .map((c) => new Date(c.newestAt).getTime())
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => b - a)[0];
+    return newest ? asOfLabel(new Date(newest), { prefix: "Refreshed" }) : "";
+  }, [state]);
 
   if (!active) return null;
 
   const districtPageBase = `/${locale}/${active.stateSlug}/${active.slug}`;
-  const hasSvg = svgExists[active.slug] === true;
+  const cardCount = state.loading ? 4 : state.cards.length;
 
   return (
     <section
@@ -147,7 +157,6 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
         /* Session 19.8 Phase F: tighten bottom padding so the gap to
            the next section (HowItWorks) shrinks. */
         .ftp-livedata-wrap { padding-bottom: 12px; }
-        /* Session 16 v10 Phase G (Fix #8): rich card design with accent stripes */
         .ftp-livedata-header-row {
           display: flex;
           justify-content: space-between;
@@ -160,27 +169,18 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           font-size: 20px;
           font-weight: 700;
           color: #1A1A1A;
-          display: flex;
-          align-items: center;
-          gap: 8px;
           line-height: 1.2;
-        }
-        .ftp-live-pulse {
-          width: 8px; height: 8px;
-          background: #10B981;
-          border-radius: 50%;
-          flex-shrink: 0;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
-          animation: ftp-livedata-live-pulse 2s ease-in-out infinite;
-        }
-        @keyframes ftp-livedata-live-pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50%      { transform: scale(0.85); opacity: 0.6; }
         }
         .ftp-livedata-sub {
           font-size: 12px;
           color: #6B7280;
           margin: 4px 0 0;
+        }
+        .ftp-livedata-refreshed {
+          font-size: 11px;
+          color: #6B7280;
+          margin: 2px 0 0;
+          font-variant-numeric: tabular-nums;
         }
         .ftp-livedata-cta {
           font-size: 13px;
@@ -224,13 +224,10 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           color: #FFFFFF;
         }
 
-        /* Session 19.8 Phase F: Live Data row visually distinct from
-           "How it works" — sits on a soft blue tint, cards are flat
-           (no border, no top accent stripe) and shorter, so it reads as
-           a snapshot strip rather than a stack of feature cards. */
+        /* Grid width follows the number of qualifying cards (1–4). */
         .ftp-livedata-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(var(--ftp-card-count, 4), minmax(0, 1fr));
           gap: 8px;
           background: #F0F7FF;
           border: 1px solid #DBEAFE;
@@ -264,7 +261,7 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           display: flex;
           align-items: center;
           gap: 6px;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
         .ftp-data-card-icon { font-size: 18px; line-height: 1; }
         .ftp-data-card-title {
@@ -275,36 +272,59 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           letter-spacing: 0.5px;
           color: var(--card-accent);
         }
-        .ftp-data-card-body {
-          flex: 1;
-          font-size: 12px;
+        .ftp-data-card-headline {
+          font-size: 14px;
+          font-weight: 700;
           color: #1A1A1A;
-          line-height: 1.5;
+          line-height: 1.35;
+          font-variant-numeric: tabular-nums;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
         }
-        .ftp-data-card-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
+        .ftp-data-card-support {
           flex: 1;
-          text-align: center;
           font-size: 12px;
-          color: #9B9B9B;
-          gap: 2px;
+          color: #4B5563;
+          line-height: 1.5;
+          margin-top: 4px;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
         }
-        .ftp-data-card-empty-sub { font-size: 10px; color: #B5B5B5; }
+        .ftp-data-card-asof {
+          font-size: 10px;
+          color: #6B7280;
+          margin-top: 6px;
+          font-variant-numeric: tabular-nums;
+        }
         .ftp-data-card-loading {
+          flex: 1;
           color: #9B9B9B;
           font-style: italic;
+          font-size: 12px;
         }
         .ftp-data-card-footer {
-          margin-top: 12px;
+          margin-top: 10px;
           padding-top: 10px;
           border-top: 1px solid #E5E7EB;
           font-size: 11px;
           font-weight: 700;
           color: var(--card-accent);
         }
+        /* Shown instead of the grid when no module has rows under 30 days. */
+        .ftp-livedata-none {
+          font-size: 13px;
+          color: #6B7280;
+          background: #FAFAF8;
+          border: 1px solid #E8E8E4;
+          border-radius: 10px;
+          padding: 14px 16px;
+        }
+        .ftp-livedata-none a { color: #2563EB; font-weight: 600; text-decoration: none; }
+        .ftp-livedata-none a:hover { text-decoration: underline; }
 
         .ftp-livedata-fade { animation: ftp-livedata-fade 250ms ease-out; }
         @keyframes ftp-livedata-fade {
@@ -312,7 +332,7 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           to   { opacity: 1; }
         }
         @media (max-width: 767px) {
-          .ftp-livedata-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 8px; }
+          .ftp-livedata-grid { grid-template-columns: repeat(min(var(--ftp-card-count, 2), 2), minmax(0, 1fr)); gap: 6px; padding: 8px; }
           .ftp-livedata-header-row { flex-direction: column; align-items: flex-start; gap: 8px; }
           .ftp-data-card { padding: 10px; min-height: 110px; }
           .ftp-data-card-title { font-size: 10px; }
@@ -321,7 +341,6 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           .ftp-data-card { transition: none; }
           .ftp-data-card:hover { transform: none; }
           .ftp-livedata-fade { animation: none; }
-          .ftp-live-pulse { animation: none; }
         }
       `}</style>
 
@@ -329,11 +348,10 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
         {/* ── Header row ── */}
         <div className="ftp-livedata-header-row">
           <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            <DistrictAvatar slug={active.slug} hasSvg={hasSvg} />
+            <DistrictAvatar slug={active.slug} />
             <div style={{ minWidth: 0 }}>
               <h2 id="livedata-heading" className="ftp-livedata-title">
-                <span className="ftp-live-pulse" aria-hidden="true" />
-                Live data right now — {active.name}
+                Latest data — {active.name}
               </h2>
               <p className="ftp-livedata-sub">
                 {active.nameLocal && (
@@ -346,6 +364,9 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
                 {(active.nameLocal || active.tagline) && <span> · </span>}
                 <span>{active.stateName}</span>
               </p>
+              {newestAsOf && (
+                <p className="ftp-livedata-refreshed">{newestAsOf} · every figure links to its source</p>
+              )}
             </div>
           </div>
           <Link href={districtPageBase} className="ftp-livedata-cta">
@@ -369,37 +390,26 @@ export default function LiveDataShowcase({ locale, districts }: LiveDataShowcase
           ))}
         </div>
 
-        {/* ── 4 module cards (color-coded accents) ── */}
-        <div className="ftp-livedata-grid ftp-livedata-fade" key={active.slug}>
-          <DataCard
-            accent="emerald"
-            icon="🌾"
-            title="Crop prices"
-            data={set.crops}
-            href={`${districtPageBase}/crops`}
-          />
-          <DataCard
-            accent="blue"
-            icon="🏛️"
-            title="Schemes"
-            data={set.schemes}
-            href={`${districtPageBase}/schemes`}
-          />
-          <DataCard
-            accent="amber"
-            icon="📰"
-            title="Local news"
-            data={set.news}
-            href={`${districtPageBase}/news`}
-          />
-          <DataCard
-            accent="cyan"
-            icon="💰"
-            title="Budget"
-            data={set.budget}
-            href={`${districtPageBase}/finance`}
-          />
-        </div>
+        {/* ── Module cards: only modules with rows under 30 days old ── */}
+        {!state.loading && state.cards.length === 0 ? (
+          <p className="ftp-livedata-none ftp-livedata-fade" key={`${active.slug}-none`}>
+            Nothing new was published for {active.name} in the last {MAX_AGE_DAYS} days.
+            Older records are still available on the{" "}
+            <Link href={districtPageBase}>full district page →</Link>
+          </p>
+        ) : (
+          <div
+            className="ftp-livedata-grid ftp-livedata-fade"
+            key={active.slug}
+            style={{ "--ftp-card-count": cardCount } as React.CSSProperties}
+          >
+            {state.loading
+              ? MODULE_ORDER.map((k) => <SkeletonCard key={k} moduleKey={k} />)
+              : state.cards.map((c) => (
+                  <DataCard key={c.key} card={c} href={`${districtPageBase}/${c.path}`} />
+                ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -419,11 +429,8 @@ function ActiveDistrictRegistryIcon({ slug }: { slug: string }) {
   });
 }
 
-function DistrictAvatar({ slug, hasSvg }: { slug: string; hasSvg: boolean }) {
+function DistrictAvatar({ slug }: { slug: string }) {
   const SIZE = 56;
-  // Session 19.2 Phase F: prefer the per-district registry icon.
-  // Falls back to /districts/<slug>.svg file (if hosted) and finally
-  // to the generic location pin.
   if (getDistrictIcon(slug)) {
     return (
       <div
@@ -443,26 +450,6 @@ function DistrictAvatar({ slug, hasSvg }: { slug: string; hasSvg: boolean }) {
       >
         <ActiveDistrictRegistryIcon slug={slug} />
       </div>
-    );
-  }
-  if (hasSvg) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={`/districts/${slug}.svg`}
-        alt=""
-        width={SIZE}
-        height={SIZE}
-        style={{
-          width: SIZE,
-          height: SIZE,
-          borderRadius: "50%",
-          background: "#FAFAF8",
-          border: "1px solid #E8E8E4",
-          padding: 6,
-          flexShrink: 0,
-        }}
-      />
     );
   }
   // Fallback: generic location-pin SVG
@@ -489,126 +476,177 @@ function DistrictAvatar({ slug, hasSvg }: { slug: string; hasSvg: boolean }) {
   );
 }
 
-type AccentColor = "emerald" | "blue" | "amber" | "cyan";
+// Static per-module chrome (icon / colour / title / route), shared by the
+// skeleton and the real card so both look identical while loading.
+const MODULE_CHROME: Record<ModuleKey, { accent: AccentColor; icon: string; title: string; path: string }> = {
+  crops:   { accent: "emerald", icon: "🌾", title: "Crop prices", path: "crops" },
+  schemes: { accent: "blue",    icon: "🏛️", title: "Schemes",     path: "schemes" },
+  news:    { accent: "amber",   icon: "📰", title: "Local news",  path: "news" },
+  budget:  { accent: "cyan",    icon: "💰", title: "Budget",      path: "finance" },
+};
 
-function DataCard({
-  accent,
-  icon,
-  title,
-  data,
-  href,
-}: {
-  accent: AccentColor;
-  icon: string;
-  title: string;
-  data: ModuleData;
-  href: string;
-}) {
+function SkeletonCard({ moduleKey }: { moduleKey: ModuleKey }) {
+  const chrome = MODULE_CHROME[moduleKey];
   return (
-    <Link href={href} className={`ftp-data-card ftp-data-card-${accent}`}>
+    <div className={`ftp-data-card ftp-data-card-${chrome.accent}`} aria-busy="true">
       <div className="ftp-data-card-header">
-        <span className="ftp-data-card-icon" aria-hidden="true">{icon}</span>
-        <h3 className="ftp-data-card-title">{title}</h3>
+        <span className="ftp-data-card-icon" aria-hidden="true">{chrome.icon}</span>
+        <h3 className="ftp-data-card-title">{chrome.title}</h3>
       </div>
-      <div className="ftp-data-card-body">
-        {data.loading ? (
-          <span className="ftp-data-card-loading">Loading…</span>
-        ) : data.failed ? (
-          <div className="ftp-data-card-empty">
-            <span>📭 Data syncing</span>
-            <span className="ftp-data-card-empty-sub">Refreshing every 5–30 min</span>
-          </div>
-        ) : (
-          data.text
-        )}
+      <div className="ftp-data-card-loading">Loading…</div>
+    </div>
+  );
+}
+
+function DataCard({ card, href }: { card: ModuleCard; href: string }) {
+  return (
+    <Link href={href} className={`ftp-data-card ftp-data-card-${card.accent}`}>
+      <div className="ftp-data-card-header">
+        <span className="ftp-data-card-icon" aria-hidden="true">{card.icon}</span>
+        <h3 className="ftp-data-card-title">{card.title}</h3>
       </div>
+      <div className="ftp-data-card-headline">{card.headline}</div>
+      {card.support && <div className="ftp-data-card-support">{card.support}</div>}
+      <div className="ftp-data-card-asof">{asOfLabel(card.newestAt)}</div>
       <div className="ftp-data-card-footer">View all →</div>
     </Link>
   );
 }
 
-// ── Tolerant summarizers — each module endpoint shape varies; we render
-// the best summary we can from whatever the API returns. ──
+// ── Summarisers ─────────────────────────────────────────────
+// Each reads the REAL response shape of /api/data/<module> (see
+// src/app/api/data/[module]/route.ts) and returns a card, or null when the
+// request failed, the module is empty, or its newest row is older than
+// MAX_AGE_DAYS. Null means "render nothing" — never an empty-state card.
 
-type Maybe<T> = T | null | undefined;
-
-function summarizeCrops(r: { ok: boolean; data: unknown }): ModuleData {
-  if (!r.ok) return { loading: false, failed: true, text: "" };
-  const d = r.data as { items?: Array<{ commodity?: string; modalPrice?: number }>; data?: Array<{ commodity?: string; modalPrice?: number }> };
-  const list = d.items ?? d.data ?? [];
-  const top3 = list.slice(0, 3).filter((c) => c.commodity);
-  if (top3.length === 0) return { loading: false, failed: false, text: "No active commodities today." };
-  const text = top3
-    .map((c) =>
-      c.modalPrice
-        ? `${c.commodity} ₹${c.modalPrice.toLocaleString("en-IN")}`
-        : c.commodity ?? ""
-    )
-    .join(" · ");
-  return { loading: false, failed: false, text };
-}
-
-// Session 19.2 Phase G: schemes summarizer (replaces Infrastructure)
-function summarizeSchemes(r: { ok: boolean; data: unknown }): ModuleData {
-  if (!r.ok) return { loading: false, failed: true, text: "" };
-  const d = r.data as {
-    items?: Array<{ name?: string; title?: string; beneficiaries?: number }>;
-    schemes?: Array<{ name?: string; title?: string; beneficiaries?: number }>;
-    total?: number;
-  };
-  const list = d.items ?? d.schemes ?? [];
-  const total = d.total ?? list.length;
-  if (total === 0) return { loading: false, failed: false, text: "No active schemes listed." };
-  const top = list.slice(0, 2).map((s) => s.name ?? s.title).filter(Boolean) as string[];
-  if (top.length === 0) return { loading: false, failed: false, text: `${total} scheme${total === 1 ? "" : "s"} on record.` };
-  const truncated = top.map((t) => (t.length > 40 ? t.slice(0, 37) + "…" : t));
-  return { loading: false, failed: false, text: `${total} scheme${total === 1 ? "" : "s"} · ${truncated.join(" · ")}` };
-}
-
-function summarizeNews(r: { ok: boolean; data: unknown }): ModuleData {
-  if (!r.ok) return { loading: false, failed: true, text: "" };
-  const d = r.data as { items?: Array<{ title?: string }>; news?: Array<{ title?: string }> };
-  const items = d.items ?? d.news ?? [];
-  const top2 = items.slice(0, 2).map((n) => n.title).filter(Boolean) as string[];
-  if (top2.length === 0) return { loading: false, failed: false, text: "No fresh stories today." };
-  const truncated = top2.map((t) => (t.length > 50 ? t.slice(0, 47) + "…" : t));
-  return { loading: false, failed: false, text: `${items.length} stor${items.length === 1 ? "y" : "ies"} · ${truncated.join(" · ")}` };
-}
-
-// Session 19.2 Phase G: budget summarizer (replaces Weather)
-function summarizeBudget(r: { ok: boolean; data: unknown }): ModuleData {
-  if (!r.ok) return { loading: false, failed: true, text: "" };
-  const d = r.data as {
-    items?: Array<{ category?: string; allocated?: number; spent?: number }>;
-    entries?: Array<{ category?: string; allocated?: number; spent?: number }>;
-    totalAllocated?: number;
-    totalSpent?: number;
-  };
-  const list = d.items ?? d.entries ?? [];
-  if (list.length === 0 && d.totalAllocated == null) {
-    return { loading: false, failed: false, text: "No budget entries logged." };
+/** ISO string of the newest timestamp in a list, or null. */
+function newestOf(values: Array<string | null | undefined>): string | null {
+  let best: number | null = null;
+  for (const v of values) {
+    if (!v) continue;
+    const n = new Date(v).getTime();
+    if (Number.isFinite(n) && (best === null || n > best)) best = n;
   }
-  const totalAlloc = d.totalAllocated ?? list.reduce((s, e) => s + (e.allocated ?? 0), 0);
-  const totalSpent = d.totalSpent ?? list.reduce((s, e) => s + (e.spent ?? 0), 0);
-  const fmt = (n: number) =>
-    n >= 10_000_000 ? `₹${(n / 10_000_000).toFixed(1)}Cr` : n >= 100_000 ? `₹${(n / 100_000).toFixed(1)}L` : `₹${n.toLocaleString("en-IN")}`;
-  if (totalAlloc === 0) return { loading: false, failed: false, text: `${list.length} budget categor${list.length === 1 ? "y" : "ies"} tracked.` };
-  return { loading: false, failed: false, text: `${fmt(totalAlloc)} allocated · ${fmt(totalSpent)} spent` };
+  return best === null ? null : new Date(best).toISOString();
 }
 
-function summarizeWeather(r: { ok: boolean; data: unknown }): ModuleData {
-  if (!r.ok) return { loading: false, failed: true, text: "" };
-  const d = r.data as {
-    current?: { temperatureC?: number; humidity?: number; condition?: string };
-    temperatureC?: number;
-    humidity?: number;
+/** True when the timestamp is known and under MAX_AGE_DAYS old. */
+function isFresh(iso: string | null, nowMs: number): iso is string {
+  const days = ageInDays(iso, nowMs);
+  return days !== null && days <= MAX_AGE_DAYS;
+}
+
+const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+const clip = (t: string, max: number) => (t.length > max ? t.slice(0, max - 1) + "…" : t);
+
+interface CropRow { commodity?: string; modalPrice?: number; market?: string; date?: string }
+
+function summarizeCrops(raw: unknown, nowMs: number): ModuleCard | null {
+  const list = (raw as { data?: CropRow[] } | null)?.data;
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  // Newest date first, then keep the FIRST row per commodity (= newest
+  // modal price). Two markets reporting "Beans" no longer show twice.
+  const sorted = [...list]
+    .filter((c) => c.commodity && typeof c.modalPrice === "number")
+    .sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
+  const seen = new Set<string>();
+  const unique = sorted.filter((c) => {
+    const key = (c.commodity ?? "").trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (unique.length === 0) return null;
+
+  const newestAt = newestOf(unique.map((c) => c.date));
+  if (!isFresh(newestAt, nowMs)) return null;
+
+  const [top, second] = unique;
+  const support = [
+    top.market ? `${top.market} market` : null,
+    second ? `${second.commodity} ${inr(second.modalPrice as number)}` : null,
+  ].filter(Boolean).join(" · ");
+
+  return {
+    key: "crops",
+    ...MODULE_CHROME.crops,
+    headline: `${top.commodity} ${inr(top.modalPrice as number)} / quintal`,
+    support,
+    newestAt,
   };
-  const t = d.current?.temperatureC ?? d.temperatureC;
-  const h = d.current?.humidity ?? d.humidity;
-  const cond: Maybe<string> = d.current?.condition;
-  if (t == null && h == null) return { loading: false, failed: false, text: "Weather data warming up." };
-  const parts: string[] = [];
-  if (t != null) parts.push(`${Math.round(t)}°C${cond ? " " + cond : ""}`);
-  if (h != null) parts.push(`Humidity ${h}%`);
-  return { loading: false, failed: false, text: parts.join(" · ") };
+}
+
+interface SchemeRow { name?: string; nameLocal?: string; category?: string; updatedAt?: string; active?: boolean }
+
+function summarizeSchemes(raw: unknown, nowMs: number): ModuleCard | null {
+  const list = (raw as { data?: SchemeRow[] } | null)?.data;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const activeRows = list.filter((s) => s.active !== false);
+  if (activeRows.length === 0) return null;
+
+  const newestAt = newestOf(activeRows.map((s) => s.updatedAt));
+  if (!isFresh(newestAt, nowMs)) return null;
+
+  const names = activeRows.map((s) => s.name).filter((n): n is string => !!n);
+  const total = activeRows.length;
+  return {
+    key: "schemes",
+    ...MODULE_CHROME.schemes,
+    headline: `${total} active scheme${total === 1 ? "" : "s"}`,
+    support: names.slice(0, 2).map((n) => clip(n, 40)).join(" · "),
+    newestAt,
+  };
+}
+
+interface NewsRow { title?: string; headline?: string; source?: string; publishedAt?: string }
+
+function summarizeNews(raw: unknown, nowMs: number): ModuleCard | null {
+  const list = (raw as { data?: NewsRow[] } | null)?.data;
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  const newestAt = newestOf(list.map((n) => n.publishedAt));
+  if (!isFresh(newestAt, nowMs)) return null;
+
+  const titles = list.map((n) => n.title ?? n.headline).filter((t): t is string => !!t);
+  if (titles.length === 0) return null;
+  const [first, second] = titles;
+  return {
+    key: "news",
+    ...MODULE_CHROME.news,
+    headline: clip(first, 70),
+    support: [second ? clip(second, 60) : null, `${list.length} stor${list.length === 1 ? "y" : "ies"}`]
+      .filter(Boolean)
+      .join(" · "),
+    newestAt,
+  };
+}
+
+interface BudgetEntry { sector?: string; allocated?: number; spent?: number; fiscalYear?: string; fetchedAt?: string }
+
+function summarizeBudget(raw: unknown, nowMs: number): ModuleCard | null {
+  const entries = (raw as { data?: { entries?: BudgetEntry[] } } | null)?.data?.entries;
+  if (!Array.isArray(entries) || entries.length === 0) return null;
+
+  const newestAt = newestOf(entries.map((e) => e.fetchedAt));
+  if (!isFresh(newestAt, nowMs)) return null;
+
+  // Budget values are stored in Rupees (CLAUDE.md) — format to Cr / L here.
+  const fmt = (n: number) =>
+    n >= 10_000_000 ? `₹${(n / 10_000_000).toFixed(1)} Cr` : n >= 100_000 ? `₹${(n / 100_000).toFixed(1)} L` : inr(n);
+  const year = entries[0]?.fiscalYear;
+  const rows = year ? entries.filter((e) => e.fiscalYear === year) : entries;
+  const alloc = rows.reduce((s, e) => s + (e.allocated ?? 0), 0);
+  const spent = rows.reduce((s, e) => s + (e.spent ?? 0), 0);
+  if (alloc <= 0) return null;
+
+  return {
+    key: "budget",
+    ...MODULE_CHROME.budget,
+    headline: `${fmt(alloc)} allocated`,
+    support: [`${fmt(spent)} spent`, year ? `FY ${year}` : null, `${rows.length} sector${rows.length === 1 ? "" : "s"}`]
+      .filter(Boolean)
+      .join(" · "),
+    newestAt,
+  };
 }

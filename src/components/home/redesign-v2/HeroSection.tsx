@@ -19,8 +19,15 @@
  *   transform/z-index on hover guarantees no content bleed onto
  *   neighboring rows. Hover only changes border + bg + soft shadow.
  *
- * Live temperature + freshness still come from /api/data/homepage-preview
- * (existing 5-min cached endpoint, no schema/API change).
+ * Temperature + freshness come from /api/data/homepage-preview (existing
+ * 5-min cached endpoint, no schema/API change).
+ *
+ * Audit 2026-09 (findings 3.7 / 3.9): the "recent reading" dot used to
+ * render when `isLive` — which, under the old timeAgo, meant STALE — so
+ * every 5-month-old district got a green dot. It now shows only when the
+ * newest record is genuinely recent (`!isStale`). Temperatures carry an
+ * honest "as of <date>" tooltip instead of "Latest weather reading", and a
+ * district with no (or nulled-out stale) weather simply shows no temp.
  */
 
 "use client";
@@ -29,7 +36,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { DISTRICT_META } from "@/lib/data/district-meta";
-import { timeAgoLabel } from "@/lib/utils/timeAgo";
+import { asOfLabel, timeAgoLabel } from "@/lib/utils/timeAgo";
+import { getCoveragePhrase } from "@/lib/platform-facts";
 import { getDistrictIcon } from "@/components/district/icons";
 import HeroShareIdea from "./HeroShareIdea";
 
@@ -59,14 +67,20 @@ function isWithin30Days(date: string | null | undefined): boolean {
 }
 
 interface PreviewLive {
+  /** Latest temperature, or null when the district has no recent reading. */
   temp: number | null;
+  /** When that temperature was recorded (null if the API does not send it). */
+  tempRecordedAt: string | null;
+  /** Newest news timestamp — drives the "recent" dot. */
   mostRecentAt: string | null;
 }
 type PreviewMap = Record<string, PreviewLive>;
 
+// /api/data/homepage-preview row. `weather` is null when the district has
+// no reading, or when the API decided the reading is too old to show.
 interface HomepagePreviewRow {
   slug: string;
-  weather?: { temp: number | null } | null;
+  weather?: { temp: number | null; recordedAt?: string | null } | null;
   news?: { publishedAt: string } | null;
 }
 
@@ -106,6 +120,7 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
         for (const r of data.districtPreviews ?? []) {
           next[r.slug] = {
             temp: r.weather?.temp ?? null,
+            tempRecordedAt: r.weather?.recordedAt ?? null,
             mostRecentAt: r.news?.publishedAt ?? null,
           };
         }
@@ -289,23 +304,20 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
           padding-bottom: 12px;
           border-bottom: 1px solid #E5E7EB;
         }
+        /* "ACTIVE" = the district has launched. It is NOT a data-freshness
+           claim — that lives on the per-row dot and the district status bar. */
         .ftp-live-pill {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          background: #10B981;
-          color: #FFFFFF;
+          background: #ECFDF5;
+          color: #166534;
+          border: 1px solid #BBF7D0;
           padding: 2px 7px;
-          border-radius: 3px;
+          border-radius: 999px;
           font-size: 9px;
           font-weight: 700;
           letter-spacing: 0.5px;
-        }
-        .ftp-live-dot {
-          width: 5px; height: 5px;
-          background: #FFFFFF;
-          border-radius: 50%;
-          animation: ftp-pulse-dot 2s ease-in-out infinite;
         }
         @keyframes ftp-pulse-dot {
           0%, 100% { opacity: 1; transform: scale(1); }
@@ -489,7 +501,6 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
           .ftp-hero-banner-cta { transition: none; }
           .ftp-hero-banner-cta:hover { transform: none; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25); }
           .ftp-hero-banner-cta:hover .ftp-banner-arrow { transform: none; }
-          .ftp-live-dot,
           .ftp-district-row-live-dot { animation: none; }
           .ftp-district-row { transition: none; }
         }
@@ -503,7 +514,7 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
             <span className="ftp-h1-flag" aria-label="India">🇮🇳</span>
           </h1>
           <p className="ftp-hero-subtitle">
-            India&apos;s first free, real-time district transparency platform.
+            Free, source-linked government data for {getCoveragePhrase()}.
           </p>
           <Link href={`/${locale}/india`} className="ftp-hero-banner-cta">
             <span className="ftp-banner-icon" aria-hidden="true">🗺️</span>
@@ -532,9 +543,7 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
           {/* RIGHT — districts (50%, internal scroll + Vote-next CTA pinned) */}
           <div className="ftp-hero-districts-col">
             <div className="ftp-hero-districts-header">
-              <span className="ftp-live-pill">
-                <span className="ftp-live-dot" aria-hidden="true" /> LIVE
-              </span>
+              <span className="ftp-live-pill">ACTIVE</span>
               <span>{sortedDistricts.length} districts</span>
             </div>
 
@@ -543,7 +552,11 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
                 const meta = DISTRICT_META[d.slug];
                 const live = preview[d.slug];
                 const temp = live?.temp ?? null;
+                const tempAsOf = asOfLabel(live?.tempRecordedAt ?? null);
                 const isNew = isWithin30Days(d.goLiveDate);
+                // isStale = older than 2h (or unknown). The dot means
+                // "something was published recently", so it must be hidden
+                // for stale rows — the exact opposite of the old behaviour.
                 const updated = timeAgoLabel(live?.mostRecentAt ?? null);
                 const Icon = getDistrictIcon(d.slug);
                 return (
@@ -555,11 +568,11 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
                     <div className="ftp-district-row-head">
                       <div className="ftp-district-row-name-line">
                         {Icon && <Icon size={28} className="ftp-district-row-icon" />}
-                        {updated.isLive && (
+                        {!updated.isStale && (
                           <span
                             className="ftp-district-row-live-dot"
-                            aria-label="Live data"
-                            title="Live data — recent reading"
+                            aria-label={`Updated ${updated.label}`}
+                            title={`Updated ${updated.label}`}
                           />
                         )}
                         <span className="ftp-district-row-name">{d.name}</span>
@@ -573,7 +586,10 @@ export default function HeroSection({ locale, districts = [] }: HeroSectionProps
                         )}
                       </div>
                       {temp != null && (
-                        <span className="ftp-district-row-temp" title="Latest weather reading">
+                        <span
+                          className="ftp-district-row-temp"
+                          title={tempAsOf ? `Weather ${tempAsOf}` : "Weather reading"}
+                        >
                           🌡️ {temp}°C
                         </span>
                       )}

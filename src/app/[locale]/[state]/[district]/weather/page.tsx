@@ -10,6 +10,14 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Cloud, Download } from "lucide-react";
 import { useWeather, useRainfall } from "@/hooks/useRealtimeData";
 import { ModuleHeader, SectionLabel, LoadingShell, LiveBadge, DataTable, LastUpdatedBadge } from "@/components/district/ui";
+import { asOfLabel, isWithinMinutes } from "@/lib/utils/timeAgo";
+
+// A reading counts as "live" only when it was recorded in the last 6 hours.
+// Anything older gets an honest "as of <date>" stamp instead of the green
+// LIVE badge (audit 2026-09, finding 3.7 — the badge used to sit next to
+// readings from April).
+const LIVE_WINDOW_MINUTES = 6 * 60;
+
 import AIInsightCard from "@/components/common/AIInsightCard";
 import DataSourceBanner from "@/components/common/DataSourceBanner";
 import { getModuleSources } from "@/lib/constants/state-config";
@@ -27,6 +35,9 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   const readings = weatherData?.data ?? [];
   const latest = readings[0];
   const rainfallRows = rainfallData?.data ?? [];
+
+  const isRecent = isWithinMinutes(latest?.recordedAt ?? null, LIVE_WINDOW_MINUTES);
+  const latestAsOf = asOfLabel(latest?.recordedAt ?? null);
 
   // Monthly rainfall chart data (last 24 months)
   const chartData = rainfallRows.slice(0, 24).map((r) => ({
@@ -53,14 +64,14 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
   return (
     <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Cloud} title="Weather & Rainfall" description="Live weather readings and historical monsoon data" backHref={base} liveTag>
+      <ModuleHeader icon={Cloud} title="Weather & Rainfall" description="Weather readings and historical monsoon data" backHref={base} liveTag={isRecent}>
         <LastUpdatedBadge lastUpdated={weatherData?.meta?.lastUpdated } />
       </ModuleHeader>
 
 
       {/* AI-crawler readable summary */}
       <p style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.7, marginBottom: 16, padding: "12px 16px", background: "#FAFAF8", borderRadius: 8, borderLeft: "3px solid #2563EB" }}>
-        This page shows live weather readings and monthly rainfall history for this district, sourced from India Meteorological Department (IMD) and OpenWeatherMap. Temperature is in Celsius, rainfall in millimetres. Data is updated every 5 minutes during active monitoring.
+        This page shows weather readings and monthly rainfall history for this district, sourced from India Meteorological Department (IMD) and OpenWeatherMap. Temperature is in Celsius, rainfall in millimetres. Readings are updated when the source publishes; each one shows the time it was recorded.
       </p>
       {(() => { const _src = getModuleSources("weather", state); return <DataSourceBanner moduleName="weather" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
       <AIInsightCard module="weather" district={district} />
@@ -70,7 +81,17 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       {!wLoading && !latest && <NoDataCard module="weather" district={district} state={state} />}
       {!wLoading && latest && (
         <div style={{ marginBottom: 24 }}>
-          <SectionLabel action={<LiveBadge />}>Current Conditions</SectionLabel>
+          <SectionLabel
+            action={
+              isRecent ? (
+                <LiveBadge />
+              ) : (
+                <span style={{ fontSize: 11, color: "#9B9B9B" }}>{latestAsOf}</span>
+              )
+            }
+          >
+            {isRecent ? "Current Conditions" : "Last Recorded Conditions"}
+          </SectionLabel>
           <div style={{ background: "linear-gradient(135deg, #EFF6FF, #F0F9FF)", border: "1px solid #BFDBFE", borderRadius: 16, padding: 20, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
               <div>

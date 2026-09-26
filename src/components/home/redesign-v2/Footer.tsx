@@ -11,6 +11,11 @@
  * Personal Instagram (@jayanth_m_b) removed — only the brand
  * @forthepeople_in IG and the project GitHub remain. Mobile wraps
  * gracefully into stacked rows.
+ *
+ * Audit 2026-09 (finding 3.11): the footer used to say "Updated Live" for a
+ * 13-hour-old timestamp while the stat tile above said "13h ago". It now
+ * prints "Refreshed <real age>" from the shared timeAgoLabel formatter, and
+ * fetches once on mount instead of polling every 60 s.
  */
 
 "use client";
@@ -46,10 +51,8 @@ export default function Footer({ locale }: FooterProps) {
       }
     }
     load();
-    const t = setInterval(load, 60_000);
     return () => {
       cancelled = true;
-      clearInterval(t);
     };
   }, []);
 
@@ -194,8 +197,9 @@ export default function Footer({ locale }: FooterProps) {
         </div>
 
         <div className="ftp-footer-built">
-          Built by Jayanth M B · Updated{" "}
-          {updated.isLive ? "Live" : updated.label}
+          Built by Jayanth M B
+          {/* "—" until the stats request answers (or when it fails). */}
+          {updated.label !== "—" && <> · Refreshed {updated.label}</>}
         </div>
       </div>
     </footer>
