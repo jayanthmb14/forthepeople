@@ -404,7 +404,7 @@ export default function ExpenditureTab() {
               </div>
             ) : filtered.length === 0 ? (
               <div style={{ fontSize: 13, color: "#9B9B9B", textAlign: "center", padding: 16 }}>
-                No expenses recorded. Click "Add Expense" to start tracking.
+                No expenses recorded. Click &quot;Add Expense&quot; to start tracking.
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>

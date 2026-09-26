@@ -156,7 +156,7 @@ export default function SupportPageEditor() {
           Support Page Editor
         </h1>
         <p style={{ fontSize: 13, color: "#6B6B6B", marginTop: 6 }}>
-          Edit bio, photo, cost breakdown, and "other ways to help" items on{" "}
+          Edit bio, photo, cost breakdown, and &quot;other ways to help&quot; items on{" "}
           <a href="/en/support" target="_blank" rel="noopener noreferrer" style={{ color: "#2563EB" }}>/support</a>.
           Changes save to the DB and take effect on next page load.
         </p>

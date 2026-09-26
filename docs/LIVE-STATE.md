@@ -1,6 +1,45 @@
 # ForThePeople.in — Live State
 
 _Living document. Append new sections; don't rewrite history._
+_From 2026-09-27 onward, `CHANGELOG.md` (repo root) is the canonical "what shipped"
+record; this file keeps the long-form session narratives._
+
+---
+
+## 2026-09-27 — Correction + audit-fix branch `audit-fixes-2026-09` (PRE-PUSH)
+
+**Correction to every "PRE-PUSH / not pushed" note below:** the June sessions 1–5
+**are deployed**. Production has served commit `38df958` (the Session-5 merge, which
+contains `0ebd948`) since 2026-06-11 — verified from the `data-dpl-id` in the live
+HTML and Vercel's deployment list. There is no undeployed commit on `main`. The
+"changes not reflected on the website" worry was documentation drift, not a missing
+deploy.
+
+**What this branch does (all RESOLVED-local, pending review + push):**
+- Crons: `Bearer CRON_SECRET` auth fixed for the two crons that never ran; per-fetch
+  timeouts; new weather + dams crons; `/api/health` reports `degraded` on stale runs.
+- AI: new model chain (free Tier-1 for classification, flash-lite for insights,
+  paid fallback behind `AI_PAID_FALLBACK`).
+- Security: signed + rate-limited TOTP step, `no-store` on admin JSON (the blanket
+  `/api/(.*)` CDN rule no longer covers it), rate limits on header-auth path,
+  supporter anonymisation.
+- Honesty: real freshness pill, single source for platform facts, homepage cards
+  read the right API shape, SEO/routing fixes.
+- Dead code removed (unreachable v1/legacy components, snapshot files).
+- This work-stream: lint 0 errors; Node 24 (`.nvmrc`, `engines`, CI); CI gains a
+  Unit-tests job; `next ^16.3.4` + `sharp 0.35.4`; unused deps removed; verbatim MIT
+  `LICENSE`; `public/funding.json` + `.well-known/funding-manifest-urls` +
+  `.well-known/security.txt`; PR template + CODEOWNERS; README / CONTRIBUTING /
+  `.env.example` / `CLAUDE.md` rewritten; new `docs/ARCHITECTURE.md`; Vitest suites.
+
+**Verified locally:** `npx eslint .` 0 errors · `npx tsc --noEmit` 0 errors ·
+`npx vitest run` green · `npm ci --legacy-peer-deps` clean.
+
+**Manual actions pending (owner only):** unblock the Vercel account, set the
+required CI checks (`Type-check & Build`, `Lint`, `Unit tests`), confirm env vars
+(`CRON_SECRET`, `ADMIN_SESSION_SECRET`, `VOTE_IP_SALT`, `RAZORPAY_WEBHOOK_SECRET`,
+`AI_PAID_FALLBACK`), rotate the secrets that sit in vault notes 13/42, validate
+`funding.json` at floss.fund after deploy, reply to the open PRs.
 
 ---
 

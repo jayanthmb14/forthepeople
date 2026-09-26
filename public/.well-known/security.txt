@@ -1,0 +1,6 @@
+# ForThePeople.in security contact (RFC 9116)
+Contact: mailto:support@forthepeople.in
+Expires: 2027-09-27T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://forthepeople.in/.well-known/security.txt
+Policy: https://github.com/jayanthmb14/forthepeople/blob/main/SECURITY.md

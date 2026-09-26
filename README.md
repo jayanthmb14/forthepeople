@@ -4,13 +4,14 @@
 
 ### Your District. Your Data. Your Right.
 
-**India's first free, real-time, district-level civic transparency platform.**
+**India's free, open-source, district-level civic transparency platform.**
 
-[Live Site](https://forthepeople.in) · [Watch the Platform Walkthrough](https://www.instagram.com/reel/DW0UIkWvmxq/) · [Vote for Features](https://forthepeople.in/en/features) · [Support the Project](https://forthepeople.in/support)
+[Live Site](https://forthepeople.in) · [Watch the Platform Walkthrough](https://www.instagram.com/reel/DW0UIkWvmxq/) · [Vote for Features](https://forthepeople.in/en/features) · [Support the Project](https://forthepeople.in/en/support)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Districts](https://img.shields.io/badge/districts_live-10-green.svg)
-![Modules](https://img.shields.io/badge/dashboards-29_per_district-orange.svg)
+![Modules](https://img.shields.io/badge/dashboards-30%2B_per_district-orange.svg)
+![CI](https://github.com/jayanthmb14/forthepeople/actions/workflows/ci.yml/badge.svg)
 
 </div>
 
@@ -18,9 +19,11 @@
 
 ## What is ForThePeople.in?
 
-ForThePeople.in aggregates publicly available Indian government data into clean, citizen-friendly dashboards — one for every district. Instead of navigating 50+ government portals, citizens get a single platform with real-time data on crop prices, dam levels, budget spending, school performance, infrastructure projects, and 25+ more modules.
+ForThePeople.in aggregates publicly available Indian government data into clean, citizen-friendly dashboards — one for every district. Instead of navigating 50+ government portals, citizens get a single platform for crop prices, dam levels, budget spending, school performance, infrastructure projects, government schemes, tenders and more.
 
-**Currently live (10 districts across 7 states):**
+Data is **updated daily or when sources publish** — every module shows when its data was last refreshed, and nothing is invented when a source is down.
+
+**Currently live: 10 districts across 7 states** (see the [live site](https://forthepeople.in) for the current number — it changes as districts go live):
 - **Karnataka:** Mandya, Mysuru, Bengaluru Urban
 - **Tamil Nadu:** Chennai
 - **Maharashtra:** Mumbai, Pune
@@ -29,32 +32,41 @@ ForThePeople.in aggregates publicly available Indian government data into clean,
 - **Telangana:** Hyderabad
 - **Uttar Pradesh:** Lucknow
 
+There is also an [India-wide dashboard](https://forthepeople.in/en/india) that rolls the same modules up to the national level.
+
 **Goal:** All 780+ districts across 28 states and 8 UTs.
 
-## 29 Dashboard Modules
+## Dashboard Modules
+
+Each district has 30+ modules (the sidebar on any district page is the authoritative list). Grouped roughly:
 
 | Category | Modules |
 |----------|---------|
-| **Live Data** | Overview, Interactive Map, Water & Dams, Crop Prices, Weather & Rainfall, Finance & Budget |
-| **Governance** | Leadership, Police & Traffic, Schools, Courts, RTI Tracker, Gram Panchayat, Health |
-| **Services** | Gov. Schemes, Services Guide, Elections, Transport, JJM Water Supply, Housing, Power |
-| **Community** | Local Alerts, Offices, Citizen Corner, Famous Personalities, News, Data Sources |
+| **Data** | Overview, Interactive Map, Water & Dams, Crop Prices, Weather & Rainfall, Finance & Budget, Population, Power |
+| **Governance** | Leadership, Police & Traffic, Schools, Courts, RTI Tracker, Gram Panchayat, Health, Responsibility, Tenders |
+| **Services** | Gov. Schemes, Services Guide, Elections, Exams, Transport, JJM Water Supply, Housing, Industries, Farm |
+| **Community** | Local Alerts, Offices, Citizen Corner, Famous Personalities, News, Contributors, Data Sources, Update Log |
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Next.js 16, TypeScript, Tailwind CSS v4, react-simple-maps, Recharts |
-| Database | PostgreSQL (Neon), Prisma ORM (45+ models) |
-| Cache | Upstash Redis |
-| AI | OpenRouter (free models for news classification, paid for analysis) with multi-provider fallback |
-| Scraping | Railway.app (24/7), Google News RSS, Cheerio |
-| Hosting | Vercel Pro |
-| Payments | Razorpay (for supporter contributions) |
+| Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS v4, react-simple-maps, Recharts |
+| Database | PostgreSQL (Neon), Prisma ORM (108 models) |
+| Cache | Upstash Redis (REST) |
+| AI | OpenRouter (free-tier models for news classification, low-cost models for insights) with Anthropic fallback — see `src/lib/ai-provider.ts` |
+| Data collection | Vercel Cron jobs, Google News RSS, Cheerio |
+| Hosting | Vercel (Mumbai region) |
+| Payments | Razorpay (supporter contributions, India only) |
 | Monitoring | Sentry (errors), Plausible (analytics, cookieless) |
 | Email | Resend (admin alerts) |
+| Tests | Vitest (pure helpers), ESLint, TypeScript strict |
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together.
 
 ## Getting Started
+
+Requires **Node.js 24** (see `.nvmrc`; run `nvm use`).
 
 ```bash
 # Clone
@@ -64,36 +76,40 @@ cd forthepeople
 # Install
 npm install
 
-# Set up environment
+# Set up environment (see .env.example — it is the only list of variables)
 cp .env.example .env.local
-# Fill in your API keys in .env.local
+# Fill in DATABASE_URL at minimum
 
 # Database
 npx prisma generate
-npx prisma db push
+npx prisma db push          # your OWN dev database only
 
 # Run
 npm run dev
+
+# Checks
+npm run lint && npx tsc --noEmit && npm test
 ```
 
 ## Project Structure
 
 ```
-docs/                       # All documentation (blueprint, skills, guides)
+docs/                       # Architecture, runbooks, trackers (docs/ARCHITECTURE.md first)
 prompts/                    # Claude Code prompts archive (completed + pending)
+tests/                      # Vitest unit tests for pure helpers
 src/
 ├── app/                    # Next.js App Router pages + API routes
 │   ├── api/
-│   │   ├── data/[module]/  # 29-module unified data API
-│   │   ├── cron/           # Scheduled jobs (news, crops, insights)
-│   │   └── admin/          # Admin endpoints (health, alerts, analytics)
+│   │   ├── data/[module]/  # Unified per-module data API
+│   │   ├── cron/           # Scheduled jobs (news, crops, insights, exams, budget)
+│   │   └── admin/          # Admin endpoints (health, alerts, analytics, vault)
 │   └── [locale]/[state]/[district]/  # District dashboard pages
 ├── components/             # Reusable React components
-├── lib/                    # Core utilities (DB, Redis, AI, alerts, health score)
-└── scraper/                # Background data scrapers (Railway)
+├── lib/                    # Core utilities (DB, Redis, AI, alerts, health score, tenders)
+└── scraper/                # Background data collection jobs
 prisma/
-├── schema.prisma           # 45+ database models
-└── seed.ts                 # Seed data for Mandya district
+├── schema.prisma           # Database schema (108 models)
+└── seed*.ts                # Seed data per district / module
 ```
 
 ## Legal
@@ -110,29 +126,20 @@ Running this platform for all 780+ districts costs approximately ₹12 lakh/year
 - **All-India Patron** — ₹9,999/mo, featured on every district page
 - **Founding Builder** — ₹50,000/mo, permanent homepage spotlight
 
-[Support page →](https://forthepeople.in/support) · [Contributor leaderboard →](https://forthepeople.in/en/contributors)
+[Support page →](https://forthepeople.in/en/support) · [Contributor leaderboard →](https://forthepeople.in/en/contributors) · [funding.json →](https://forthepeople.in/funding.json)
 
 ## Contributing
 
 We welcome contributions from developers of all skill levels! Whether you want to add a new district, fix a bug, improve the UI, or add translations — every contribution helps.
 
 - Read the [Contributing Guide](CONTRIBUTING.md) to get started
-- Check out [`good-first-issue`](https://github.com/jayanthmb14/forthepeople/labels/good-first-issue) labeled issues
+- Check out [`good-first-issue`](https://github.com/jayanthmb14/forthepeople/labels/good-first-issue) and [`help-wanted`](https://github.com/jayanthmb14/forthepeople/labels/help-wanted) issues
 - Review our [Code of Conduct](CODE_OF_CONDUCT.md)
 - Report security issues privately via [SECURITY.md](SECURITY.md)
 
+Thank you to everyone who has opened a pull request or issue so far — including @AmanSurushe, @threatner, @joellui, @Ronithkumar, @tiwarikaran, @abhiprd2000 and @rigsutra. Open PRs are being reviewed in order; see the pinned STATUS issue for where things stand.
+
 **Goal:** Cover all 780+ districts across India. Currently at 10 — help us get there!
-
-## Active Contributors
-
-This project moves forward thanks to:
-- [@AmanSurushe](https://github.com/AmanSurushe) — Mobile responsiveness, Hindi translations
-- [@threatner](https://github.com/threatner) — UI fixes
-- [@joellui](https://github.com/joellui) — Prisma config
-- [@Ronithkumar](https://github.com/Ronithkumar) — Module bug fixes
-- [@tiwarikaran](https://github.com/tiwarikaran) — Ahmedabad district (in progress)
-
-Want to join? See [CONTRIBUTING.md](CONTRIBUTING.md) and check `good-first-issue` labels. CodeRabbit auto-reviews every PR.
 
 ## Creator
 
@@ -142,9 +149,16 @@ Built with the belief that every Indian citizen deserves free, transparent acces
 
 - Instagram: [@jayanth_m_b](https://www.instagram.com/jayanth_m_b/)
 - Project: [forthepeople.in](https://forthepeople.in)
+- Contact: support@forthepeople.in
 
 ## License
 
-MIT with Attribution — see [LICENSE](LICENSE) for details.
+[MIT](LICENSE) — Copyright (c) 2026 Jayanth M B. Use it, fork it, build on it.
 
-Any fork or derivative must retain attribution to the original creator (Jayanth M B).
+### Attribution (a request, not a licence condition)
+
+The MIT licence only requires you to keep the copyright notice. Beyond that, if you fork or deploy this project, the creator would appreciate — but does not legally require — that you:
+
+1. Keep the "Originally created by Jayanth M B" line in your README or About page.
+2. Link back to [github.com/jayanthmb14/forthepeople](https://github.com/jayanthmb14/forthepeople) so improvements can flow back upstream.
+3. Keep the platform free for citizens and never present it as an official government service.

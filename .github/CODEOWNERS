@@ -1,0 +1,7 @@
+# CODEOWNERS — who is automatically requested to review a PR.
+# Docs: https://docs.github.com/articles/about-code-owners
+#
+# Solo-maintained today. Add a second line (e.g. `src/dictionaries/ @handle`)
+# when a triage collaborator joins, so they get auto-requested on that area.
+
+* @jayanthmb14

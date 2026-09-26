@@ -531,7 +531,7 @@ export async function seedTendersKarnataka(prisma?: PrismaClient) {
         rawHtmlSnapshot: STUB_MARKER,
       };
 
-      let tender = existing
+      const tender = existing
         ? await client.tender.update({ where: { id: existing.id }, data: baseData })
         : await client.tender.create({ data: baseData });
 

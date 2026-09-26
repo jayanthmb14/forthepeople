@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import SecurityExtras from "./SessionInfoCard";
 
 function SecurityExtrasInline() {
@@ -166,7 +167,7 @@ export default function SecurityPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 820, margin: "0 auto" }}>
-      <a href="/en/admin" style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", display: "inline-block", marginBottom: 12 }}>&larr; Back to Admin Dashboard</a>
+      <Link href="/en/admin" style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", display: "inline-block", marginBottom: 12 }}>&larr; Back to Admin Dashboard</Link>
       {toast && (
         <div style={{
           position: "fixed", bottom: 24, right: 24, zIndex: 100,

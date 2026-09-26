@@ -54,7 +54,7 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
           </p>
 
           {isLoading && <div style={{ color: "#6B7280" }}>Loading…</div>}
-          {error && <div style={{ color: "#B91C1C" }}>Couldn't load flag data.</div>}
+          {error && <div style={{ color: "#B91C1C" }}>Couldn&apos;t load flag data.</div>}
           {data && data.totalTenders === 0 && (
             <div style={{ padding: 24, border: "1px dashed #86EFAC", borderRadius: 12, color: "#166534", background: "#F0FDF4", textAlign: "center" }}>
               ✓ No flagged tenders in {data.districtName} right now. Flags recompute every 2 hours.
