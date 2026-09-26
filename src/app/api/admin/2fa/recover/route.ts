@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
 // Lazy-init Resend to avoid build-time throw when key is not set
 function getResend() {
@@ -15,32 +16,33 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
-// Rate limit: max 3 recovery emails per hour per IP
-const recoveryAttempts = new Map<string, { count: number; resetAt: number }>();
+// Recovery is unauthenticated by design (the admin lost their phone), so it is
+// the most attractive endpoint to hammer. Limits live in Upstash Redis — the
+// previous in-memory Map reset on every serverless cold start and therefore
+// provided no real protection. Both limiters FAIL CLOSED.
+const PER_IP_LIMIT = 3; // recovery emails per hour per IP
+const GLOBAL_LIMIT = 10; // recovery emails per hour across all IPs
+const WINDOW_SECONDS = 60 * 60;
 
-function checkRecoveryRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = recoveryAttempts.get(ip);
-  if (!record || now > record.resetAt) {
-    recoveryAttempts.set(ip, { count: 1, resetAt: now + 3_600_000 });
-    return true;
-  }
-  if (record.count >= 3) return false;
-  record.count++;
-  return true;
+/** Mask a phone number for the email body: keep the last 4 digits only. */
+function maskPhone(phone: string): string | null {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 6) return null;
+  return `•••••${digits.slice(-4)}`;
 }
 
 // POST: { email: "..." } — send recovery email
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  const ipHash = hashIp(getClientIp(req));
 
-  if (!checkRecoveryRateLimit(ip)) {
+  const [perIp, global] = await Promise.all([
+    rateLimit(`admin-2fa-recover:${ipHash}`, PER_IP_LIMIT, WINDOW_SECONDS, { failClosed: true }),
+    rateLimit("admin-2fa-recover:global", GLOBAL_LIMIT, WINDOW_SECONDS, { failClosed: true }),
+  ]);
+  if (!perIp.success || !global.success) {
     return NextResponse.json(
       { error: "Too many recovery attempts. Try again in 1 hour." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": String(WINDOW_SECONDS) } }
     );
   }
 
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ sent: true, message: "If the email matches, a recovery link has been sent." });
   }
 
-  if (adminAuth.recoveryEmail.toLowerCase() !== email.toLowerCase()) {
+  if (!adminAuth.recoveryEmail || adminAuth.recoveryEmail.toLowerCase() !== email.toLowerCase()) {
     return NextResponse.json({ sent: true, message: "If the email matches, a recovery link has been sent." });
   }
 
@@ -66,6 +68,8 @@ export async function POST(req: NextRequest) {
     where: { id: "admin" },
     data: { recoveryToken: tokenHash, recoveryTokenExpiry: expiry },
   });
+
+  const maskedPhone = adminAuth.recoveryPhone ? maskPhone(adminAuth.recoveryPhone) : null;
 
   // Send email
   try {
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
         <p><a href="https://forthepeople.in/en/admin/recover?token=${token}" style="background:#2563eb;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Reset 2FA</a></p>
         <p>This link expires in 1 hour.</p>
         <p>If you didn't request this, ignore this email and consider changing your admin password immediately.</p>
-        <p style="color:#666;font-size:13px;">Recovery phone on file: +91 •••••72249</p>
+        ${maskedPhone ? `<p style="color:#666;font-size:13px;">Recovery phone on file: ${maskedPhone}</p>` : ""}
         <hr>
         <p style="color:#666;font-size:12px;">ForThePeople.in — Citizen Transparency Platform</p>
       `,

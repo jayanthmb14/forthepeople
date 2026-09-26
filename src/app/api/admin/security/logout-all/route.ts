@@ -6,22 +6,38 @@
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { requireAdmin } from "@/lib/admin-auth";
+import {
+  ADMIN_COOKIE,
+  TOTP_PENDING_COOKIE,
+  TOTP_PENDING_TOKEN_COOKIE,
+  requireAdminCookie,
+  revokeAllAdminSessions,
+} from "@/lib/admin-auth";
 
-const COOKIE = "ftp_admin_v1";
-const TOTP_PENDING = "admin_totp_pending";
-
+// Cookie-only: "log me out everywhere" must come from a browser that passed
+// 2FA, never from the password-only ops header.
 async function isAuthed() {
-  const { ok } = await requireAdmin();
+  const { ok } = await requireAdminCookie();
   return ok;
 }
 
+/**
+ * POST — revoke EVERY admin session (all devices) by deleting the Redis
+ * records, then clear this browser's cookies. Previously this only cleared the
+ * current browser's cookie, which is not "logout all".
+ */
 export async function POST() {
   if (!(await isAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const jar = await cookies();
-  jar.delete(COOKIE);
-  jar.delete(TOTP_PENDING);
+  const revoked = await revokeAllAdminSessions();
 
-  return NextResponse.json({ ok: true });
+  const jar = await cookies();
+  jar.delete(ADMIN_COOKIE);
+  jar.delete(TOTP_PENDING_TOKEN_COOKIE);
+  jar.delete(TOTP_PENDING_COOKIE);
+
+  return NextResponse.json(
+    { ok: true, revokedSessions: revoked.sessions, revokedPending: revoked.pending },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }

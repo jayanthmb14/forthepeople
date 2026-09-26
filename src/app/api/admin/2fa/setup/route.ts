@@ -5,12 +5,15 @@
  */
 
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminCookie } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { generateTOTPSecret, generateQRCode, generateBackupCodes } from "@/lib/totp";
 
+// 2FA management is COOKIE-ONLY: a session cookie means the caller already
+// passed password + (if enabled) 2FA in a browser. The ops header path
+// (x-admin-secret) is deliberately not enough to re-key 2FA.
 async function isAuthed() {
-  const { ok } = await requireAdmin();
+  const { ok } = await requireAdminCookie();
   return ok;
 }
 
@@ -35,9 +38,12 @@ export async function POST() {
     },
   });
 
-  return NextResponse.json({
-    qrCodeDataUrl,
-    secret, // plain text for manual entry
-    backupCodes: codes,
-  });
+  return NextResponse.json(
+    {
+      qrCodeDataUrl,
+      secret, // plain text for manual entry
+      backupCodes: codes,
+    },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }
