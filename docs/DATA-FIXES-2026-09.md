@@ -630,47 +630,77 @@ Not reached by the check (7): Ring Road Phase 2; Gomti Riverfront Development; S
 
 ---
 
-## 2. Population
+## 2. Population (PopulationHistory) — verified or hidden
 
 **No census was held in 2021.** It was postponed because of COVID-19 and
 became Census 2027: house-listing ran April–September 2026 and the
 population count's reference date is 00:00 on **1 March 2027** (1 Oct 2026
 for Ladakh and snow-bound areas) —
 [PIB, "Census 2027: India's First Digital Enumeration Exercise", 25 Apr 2026](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3).
-The Registrar General's official population projections (Technical Group,
-2020) are state-level only, so there is no official district figure after
-2011. The overview's "Population" tile picks the newest row whose source
-starts with "Census of India", so the Mandya and Bengaluru 2021 rows were
-being shown to citizens as census counts.
+The Registrar General's official projections (Technical Group, 2020) are
+state-level only, so there is no official district figure after 2011. The
+overview's "Population" tile picks the newest row whose source starts with
+"Census of India", so the Mandya and Bengaluru 2021 rows were being shown
+to citizens as census counts.
 
-| District | Row | What was wrong | Now | Source |
-|---|---|---|---|---|
-| Mandya | 2021 "Census of India", 21,80,000 | No 2021 census; not an official projection | **Deleted** | [PIB](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
-| Bengaluru Urban | 2021 "Census of India (Projected)", 1,27,65,000 | Same — shown as a census count | **Deleted** | PIB (above) |
-| Hyderabad | 2024 "Projected estimate based on Census 2011 growth rate", 45,00,000 | Home-made projection, no source | **Deleted** | PIB (above) |
-| Mysuru | 2024 "Projected estimate", 32,48,000 | Home-made projection, no source | **Deleted** | PIB (above) |
-| New Delhi | 2024 "Projected estimate", 1,50,000 | Home-made projection, no source | **Deleted** | PIB (above) |
-| Lucknow | 2024 "Estimate — Lucknow District Administration", 52,00,000 | lucknow.nic.in gives no such figure | **Deleted** | [lucknow.nic.in/demography](https://lucknow.nic.in/demography/) |
-| Pune | 2021 "Maharashtra State Evaluation Committee estimate", 1,08,00,000 | No such official estimate found | **Deleted** | PIB (above) |
-| Chennai | 2026 "Estimate — Chennai Metropolitan Area", 1,15,00,000 | Metro-area guess on a district chart (district: 46,46,732 in 2011) | **Deleted** | PIB (above) |
-| Mumbai | 2026 "Estimate — Mumbai Metropolitan Region", 2,10,00,000 | Region guess with made-up sex ratio/literacy (API already hid it) | **Deleted** | PIB (above) |
-| Mandya | Census 2011 row | Population 19,40,428 (real: **18,05,769**); sex ratio 982 (995); literacy 72.8% (70.40%); urban 27.3% (17.08%); density 391 (364) | Corrected | [Census DCHB Mandya](https://censusindia.gov.in/nada/index.php/catalog/625), figures as reproduced at [census2011.co.in](https://www.census2011.co.in/census/district/262-mandya.html) |
-| Bengaluru Urban | Census 2011 row | Density 12,988/km² and 97.4% urban (impossible for 2,196 km²); literacy 88.48% | Density **4,381**, urban **90.94%**, literacy **87.67%** | [DCHB Bangalore Part A](https://censusindia.gov.in/2011census/dchb/2918_PART_A_DCHB_BANGALORE.pdf), as reproduced at [census2011.co.in](https://www.census2011.co.in/census/district/242-bangalore.html) |
+Census 2011 and 2001 figures below are the Primary Census Abstract values
+as reproduced by census2011.co.in (the official District Census Handbook
+PDFs on censusindia.gov.in would not open for the checker — TLS error);
+the 2011 totals match the site's own `DemographicProfile` Census rows.
+"Greater Mumbai" = Mumbai City + Mumbai Suburban districts.
 
-Note: the official DCHB PDFs on censusindia.gov.in could not be opened by
-the checking tool (TLS certificate error), so the Census 2011 figures were
-read from census2011.co.in, which reproduces the Census Primary Census
-Abstract; the totals match the site's own `DemographicProfile` Census 2011
-rows.
+| Row | Change | Why / source |
+|---|---|---|
+| Bengaluru Urban · 1991 (Census of India) — 4,130,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Bengaluru Urban · 2001 (Census of India) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: literacy 83 → 82.96, density 8821 → 2985. Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/242-bangalore.html) |
+| Bengaluru Urban · 2011 (Census of India) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: literacy 88.48 → 87.67, urbanPct 97.4 → 90.94, density 12988 → 4381. [www.census2011.co.in](https://www.census2011.co.in/census/district/242-bangalore.html) |
+| Bengaluru Urban · 2021 row 'Census of India (Projected)' (12,765,000) | **Deleted** | Hidden: unverifiable. Labelled as a census but no 2021 census was held; no official district projection backs the number. It was shown as the census population on the overview. [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| Chennai · 1951 (Census of India 1951) — 1,416,056 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1951 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Chennai · 1961 (Census of India 1961) — 1,729,141 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1961 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Chennai · 1971 (Census of India 1971) — 2,469,449 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1971 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Chennai · 1981 (Census of India 1981) — 3,276,622 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1981 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Chennai · 1991 (Census of India 1991) — 3,841,396 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Chennai · 2001 (Census of India 2001) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 948 → 957, density 10197 → 24963. [www.census2011.co.in](https://www.census2011.co.in/census/district/21-chennai.html) |
+| Chennai · 2011 (Census of India 2011) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 951 → 989, literacy 90.33 → 90.18, density 10908 → 26553. [www.census2011.co.in](https://www.census2011.co.in/census/district/21-chennai.html) |
+| Chennai · 2026 'Estimate — Chennai Metropolitan Area' (11,500,000) | **Deleted** | Hidden: unverifiable. A metropolitan-area guess plotted on the Chennai district chart (district was 4,646,732 in 2011); no source. [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| Hyderabad · 1991 (Census of India 1991) — 3,145,939 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Hyderabad · 2001 (Census of India 2001) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: population 3637834 → 3829753, sexRatio 943 → 933, density 16763 → 17649. Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/122-hyderabad.html) |
+| Hyderabad · 2024 'Projected estimate based on Census 2011 growth rate' (4,500,000) | **Deleted** | Hidden: unverifiable. No official district-level projection exists (the RGI Technical Group projects states only); the row has no source. Census 2027 reference date is 1 Mar 2027 (PIB). [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| Kolkata · 1991 (Census of India 1991) — 4,399,819 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Kolkata · 2001 (Census of India 2001) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 828 → 829, literacy 81.31 → 80.86, density 24760 → 24718. Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/16-kolkata.html) |
+| Kolkata · 2011 (Census of India 2011) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: population 4486679 → 4496694, sexRatio 899 → 908, literacy 87.14 → 86.31, density 24252 → 24306. [www.census2011.co.in](https://www.census2011.co.in/census/district/16-kolkata.html) |
+| Lucknow · 1991 (Census of India 1991) — 1,669,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Lucknow · 2001 (Census of India 2001) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: population 2185927 → 3647834, sexRatio 893 → 888, literacy 74.1 → 68.71, density None → 1443. [www.census2011.co.in](https://www.census2011.co.in/census/district/528-lucknow.html) |
+| Lucknow · 2011 (Census of India 2011) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: literacy 79.33 → 77.29, urbanPct None → 66.21, density None → 1816. [www.census2011.co.in](https://www.census2011.co.in/census/district/528-lucknow.html) |
+| Lucknow · 2024 'Estimate — Lucknow District Administration (lucknow.nic.in)' (5,200,000) | **Deleted** | Hidden: unverifiable. lucknow.nic.in's demography page gives no 2024 estimate or 5.2 million figure; no official district projection exists. [lucknow.nic.in](https://lucknow.nic.in/demography/) |
+| Mandya · 1991 (Census of India) — 1,282,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mandya · 2001 (Census of India) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: population 1513000 → 1763705, sexRatio 980 → 986, literacy 65.9 → 61.05, density 304.9 → 356. Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/262-mandya.html) |
+| Mandya · 2011 (Census of India) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: population 1940428 → 1805769, sexRatio 982 → 995, literacy 72.8 → 70.4, urbanPct 27.3 → 17.08, density 391.2 → 364. [www.census2011.co.in](https://www.census2011.co.in/census/district/262-mandya.html) |
+| Mandya · 2021 row labelled 'Census of India' (2,180,000) | **Deleted** | Hidden: unverifiable. No census was held in 2021 (postponed; now Census 2027, reference date 1 Mar 2027). The number is not an official projection. [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| Mumbai · 1951 (Census of India 1951) — 2,994,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1951 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mumbai · 1961 (Census of India 1961) — 4,152,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1961 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mumbai · 1971 (Census of India 1971) — 5,971,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1971 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mumbai · 1981 (Census of India 1981) — 8,243,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1981 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mumbai · 1991 (Census of India 1991) — 9,926,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mumbai · 2001 (Census of India 2001) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 822 → 809, density 19864 → 19865. Hidden: unverifiable — literacy (not given for 2001 by the source or not computable for Greater Mumbai without the child population). [www.census2011.co.in](https://www.census2011.co.in/census/district/357-mumbai-city.html) |
+| Mumbai · 2011 (Census of India 2011) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 832 → 853. Hidden: unverifiable — literacy (not given for 2011 by the source or not computable for Greater Mumbai without the child population). [www.census2011.co.in](https://www.census2011.co.in/census/district/357-mumbai-city.html) |
+| Mumbai · 2026 'Estimate — Mumbai Metropolitan Region' (21,000,000) | **Deleted** | Hidden: unverifiable. A metropolitan-region guess (with made-up sex ratio and literacy) stored under the Mumbai district; no source. The API already hides it. [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| Mysuru · 1991 (Census of India) — 2,388,000 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Mysuru · 2001 (Census of India) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: population 2624900 → 2641027, sexRatio 975 → 964, literacy 66 → 63.48, density 383 → 385. Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/263-mysore.html) |
+| Mysuru · 2011 (Census of India) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 984 → 985, literacy 72.6 → 72.79, urbanPct 43.8 → 41.5, density 438 → 476. [www.census2011.co.in](https://www.census2011.co.in/census/district/263-mysore.html) |
+| Mysuru · 2024 'Projected estimate' (3,248,000) | **Deleted** | Hidden: unverifiable. No official district-level projection exists (the RGI Technical Group projects states only); the row has no source. Census 2027 reference date is 1 Mar 2027 (PIB). [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| New Delhi · 2001 (Census of India) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: population 171806 → 179112, sexRatio 866 → 792, literacy 85.2 → 83.24, density 4909 → 5117. Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/172-new-delhi.html) |
+| New Delhi · 2011 (Census of India) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: sexRatio 902 → 822, literacy 89.38 → 88.34. [www.census2011.co.in](https://www.census2011.co.in/census/district/172-new-delhi.html) |
+| New Delhi · 2024 'Projected estimate' (150,000) | **Deleted** | Hidden: unverifiable. No official district-level projection exists (the RGI Technical Group projects states only); the row has no source. Census 2027 reference date is 1 Mar 2027 (PIB). [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
+| Pune · 1991 (Census of India 1991) — 5,532,532 | **Deleted** | Hidden: unverifiable. No official or reputed page for the 1991 district figure could be read (the Census DCHB PDFs would not open for the checker); several pre-2001 seed values were wrong (Mandya 1991 12.8 lakh vs 16.4 lakh in the Census, Lucknow 1991 was a city figure), so none is kept unconfirmed. none — see docs/DATA-FIXES-2026-09.md §2 |
+| Pune · 2001 (Census of India 2001) | corrected | Census 2001 values from the Primary Census Abstract as reproduced by census2011.co.in: . Hidden: unverifiable — urbanPct (not given for 2001 by the source). [www.census2011.co.in](https://www.census2011.co.in/census/district/359-pune.html) |
+| Pune · 2011 (Census of India 2011) | corrected | Census 2011 values from the Primary Census Abstract as reproduced by census2011.co.in: urbanPct 60.9 → 60.99. [www.census2011.co.in](https://www.census2011.co.in/census/district/359-pune.html) |
+| Pune · 2021 'Maharashtra State Evaluation Committee estimate' (10,800,000) | **Deleted** | Hidden: unverifiable. No such official estimate could be found; 2021 has no census. No official district-level projection exists (the RGI Technical Group projects states only); the row has no source. Census 2027 reference date is 1 Mar 2027 (PIB). [www.pib.gov.in](https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=158344&ModuleId=3) |
 
-**Left alone (small or needs a decision):**
-- Mysuru Census 2011 row: literacy 72.6% vs 72.79% and sex ratio 984 vs 985
-  — minor; not changed.
-- `DemographicProfile` (the v2 population module) has Mandya sex ratio 985,
-  literacy 70.14%, urban 16.08% — these disagree with the Census PCA
-  reproduction (995, 70.40%, 17.08%). Not changed here (outside this pass);
-  worth re-reading from the PCA file.
-- Pre-1991 rows (Chennai, Mumbai 1951–1981) were not re-checked.
+**Left alone:** `DemographicProfile` (the v2 population module) has Mandya
+sex ratio 985, literacy 70.14%, urban 16.08% — these disagree with the
+Census values above (995, 70.40%, 17.08%). That table was not part of
+this pass; worth re-reading from the PCA file.
 
 ---
 
