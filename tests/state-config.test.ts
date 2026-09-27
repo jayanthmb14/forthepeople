@@ -55,3 +55,17 @@ describe("getModuleSources links", () => {
     expect(getModuleSources("unknown-module", "karnataka").links).toBeUndefined();
   });
 });
+
+// Sept 2026 audit: the population page lists only the sources it shows, and
+// New Delhi district is not run by MCD alone.
+describe("audit 2026-09 — people and services", () => {
+  it("population sources name only the Census and the NITI MPI", () => {
+    const s = getModuleSources("population", "karnataka", "mandya").sources.join(" | ");
+    expect(s).toMatch(/Census of India 2011/);
+    expect(s).not.toMatch(/NFHS|SRS|PLFS|Municipal/);
+  });
+  it("New Delhi's civic bodies are NDMC, the Cantonment Board and part of MCD", () => {
+    expect(getStateConfig("delhi", "new-delhi")?.municipalBody).toMatch(/NDMC/);
+    expect(getStateConfig("delhi")?.municipalBody).toBe("MCD");
+  });
+});
