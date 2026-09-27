@@ -110,6 +110,22 @@ describe("parseStateInfoboxOffices (real infoboxes)", () => {
     expect(o.governor?.map((p) => p.name)).toEqual(["Anandiben Patel"]);
     expect(o["deputy-cm"]?.map((p) => p.name)).toEqual(["Keshav Prasad Maurya", "Brajesh Pathak"]);
   });
+  it("India — Infobox country leader pairs (Vice President is not an office we check)", () => {
+    const wikitext = [
+      "{{Infobox country",
+      "| leader_title1 = [[President of India|President]]",
+      "| leader_name1 = [[Droupadi Murmu]]",
+      "| leader_title2 = [[Vice President of India|Vice President]]",
+      "| leader_name2 = [[C. P. Radhakrishnan]]",
+      "| leader_title3 = [[Prime Minister of India|Prime Minister]]",
+      "| leader_name3 = [[Narendra Modi]]",
+      "}}",
+    ].join("\n");
+    const o = parseStateInfoboxOffices(wikitext);
+    expect(o.president?.map((p) => p.name)).toEqual(["Droupadi Murmu"]);
+    expect(o["prime-minister"]?.map((p) => p.name)).toEqual(["Narendra Modi"]);
+    expect(Object.keys(o).sort()).toEqual(["president", "prime-minister"]);
+  });
   it("no infobox → nothing", () => {
     expect(parseStateInfoboxOffices("'''X''' is a place.")).toEqual({});
     expect(parseLeadReply({ query: { pages: [{ title: "X", missing: true }] } })).toBeNull();

@@ -170,6 +170,9 @@ const OFFICE_KEYS: Record<StateOffice, string[]> = {
   "deputy-cm": ["deputy_cm", "deputy_chief_minister", "deputy chief minister", "deputy_cms"],
   governor: ["governor"],
   "lieutenant-governor": ["lieutenant_governor", "lt_governor", "lieutenant governor", "lt governor"],
+  // India's {{Infobox country}} only has leader_title / leader_name pairs.
+  "prime-minister": [],
+  president: [],
 };
 
 /**

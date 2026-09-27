@@ -74,7 +74,9 @@ export async function GET(request: Request) {
       districtSlugs: districtSlugs.length ? districtSlugs : undefined,
     });
 
-    const status = report.written === 0 ? "error" : report.errors.length > 0 ? "partial" : "ok";
+    // Nothing written: an error if something failed, otherwise there was nothing to check.
+    const status =
+      report.written === 0 ? (report.errors.length > 0 ? "error" : "skipped") : report.errors.length > 0 ? "partial" : "ok";
     await cronFinished(CRON_NAME, runStart, {
       status,
       count: report.written,

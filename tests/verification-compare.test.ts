@@ -207,6 +207,11 @@ describe("state offices", () => {
     ["Principal Secretary to Chief Minister", null],
     ["Governor, Reserve Bank of India", null],
     ["District Collector, Mandya", null],
+    ["Prime Minister", "prime-minister"],
+    ["President of India", "president"],
+    ["President, Mysuru Zilla Panchayat", null],
+    ["Vice President of India", null],
+    ["Principal Secretary to the Prime Minister", null],
   ])("%s → %s", (role, office) => {
     expect(classifyStateOffice(role)).toBe(office);
   });

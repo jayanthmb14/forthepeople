@@ -8,8 +8,9 @@
 // Verifier: leaders (state offices + placeholder names)
 //
 // 1. State offices — Chief Minister, Deputy Chief Minister(s), Governor or
-//    Lieutenant Governor. Every Leader row that names one of them is
-//    compared with TWO outside sources:
+//    Lieutenant Governor — and the Prime Minister and President (checked
+//    against India's article and item). Every Leader row that names one of
+//    them is compared with TWO outside sources:
 //      a. Wikipedia: the infobox of the state's article (one request per
 //         state, lead section only);
 //      b. Wikidata: the state item's P6 / P35 statements with their start
@@ -40,7 +41,7 @@ import {
   wikipediaUrl,
   type WikidataOfficeAnswer,
 } from "./leaders-check";
-import { classifyStateOffice, coreOffices, officeTitle, roleIsForState, type StateOffice } from "./offices";
+import { classifyStateOffice, coreOffices, isNationalOffice, officeTitle, roleIsForState, type StateOffice } from "./offices";
 import type { DistrictRef, VerificationRecord, VerifierOutput, VerifyContext } from "./types";
 import {
   currentHolders,
@@ -67,12 +68,25 @@ const WIKIPEDIA_STATE_TITLES: Record<string, string> = {
   puducherry: "Puducherry (union territory)",
 };
 
-/** Wikidata property on the state item for each office (P39 SPARQL is the fallback). */
+/** The Union, checked like a state: India's article and item (Q668). */
+const INDIA = "india";
+
+/** Wikidata property on the state (or India) item for each office (P39 SPARQL is the fallback). */
 const STATE_ITEM_PROPERTY: Partial<Record<StateOffice, string>> = {
   "chief-minister": "P6",
   governor: "P35",
   "lieutenant-governor": "P35",
+  "prime-minister": "P6",
+  president: "P35",
 };
+
+/** Which offices a jurisdiction's P6/P35 stand for. */
+function itemOffices(st: { slug: string; wiki: Partial<Record<StateOffice, WikiPerson[]>> | null }): StateOffice[] {
+  if (st.slug === INDIA) return ["prime-minister", "president"];
+  // P35 is the Governor for a state, the Lieutenant Governor for a UT: use whichever the infobox has.
+  const lg = !!st.wiki?.["lieutenant-governor"] && !st.wiki?.governor;
+  return ["chief-minister", lg ? "lieutenant-governor" : "governor"];
+}
 
 interface StateAnswer {
   slug: string;
@@ -88,6 +102,7 @@ interface StateAnswer {
 export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput> {
   const out: VerifierOutput = { records: [], reviews: [], errors: [] };
   const states = new Map<string, StateAnswer>();
+  states.set(INDIA, { slug: INDIA, name: "India", wikiUrl: null, wikiRevisedAt: null, wiki: null, qid: null, wd: {} });
   for (const d of ctx.districts) {
     if (!states.has(d.stateSlug)) {
       states.set(d.stateSlug, { slug: d.stateSlug, name: d.stateName, wikiUrl: null, wikiRevisedAt: null, wiki: null, qid: null, wd: {} });
@@ -96,6 +111,10 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
 
   // ── a. Wikipedia: one lead-section read per state ──
   for (const st of states.values()) {
+    if (Date.now() > ctx.deadlineMs - 20_000) {
+      out.errors.push(`wikipedia/${st.slug}: time budget used up`);
+      continue;
+    }
     const title = WIKIPEDIA_STATE_TITLES[st.slug] ?? st.name;
     const url =
       `${WP_API}?action=query&prop=revisions%7Cpageprops&rvprop=content%7Ctimestamp&rvslots=main&rvsection=0` +
@@ -123,10 +142,8 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
       const pending: Array<{ st: StateAnswer; office: StateOffice; qid: string; start: Date | null }> = [];
       for (const st of states.values()) {
         if (!st.qid) continue;
-        for (const [office, prop] of Object.entries(STATE_ITEM_PROPERTY) as Array<[StateOffice, string]>) {
-          // P35 is the Governor for a state, the Lieutenant Governor for a UT: use whichever the infobox has.
-          if (office === "lieutenant-governor" && !st.wiki?.["lieutenant-governor"]) continue;
-          if (office === "governor" && st.wiki?.["lieutenant-governor"] && !st.wiki?.governor) continue;
+        for (const office of itemOffices(st)) {
+          const prop = STATE_ITEM_PROPERTY[office] as string;
           for (const h of currentHolders(claims, st.qid, prop, ctx.now)) pending.push({ st, office, qid: h.qid, start: h.start });
         }
       }
@@ -150,6 +167,7 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
   // ── b2. Wikidata P39 (SPARQL) for offices the state item does not carry ──
   const labels = new Map<string, { st: StateAnswer; office: StateOffice }>();
   for (const st of states.values()) {
+    if (st.slug === INDIA) continue;
     const wanted: StateOffice[] = ["deputy-cm"];
     if (!st.wd.governor && !st.wd["lieutenant-governor"]) wanted.push(st.wiki?.["lieutenant-governor"] ? "lieutenant-governor" : "governor");
     for (const office of wanted) labels.set(officeTitle(office, st.name), { st, office });
@@ -217,14 +235,17 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
       continue;
     }
 
-    // State offices
+    // State (or national) offices
     const office = classifyStateOffice(l.role);
-    if (!office || !st || !roleIsForState(l.role, d.stateName)) continue;
+    if (!office) continue;
+    const national = isNationalOffice(office);
+    const jur = national ? states.get(INDIA) : st;
+    if (!jur || (!national && !roleIsForState(l.role, d.stateName))) continue;
     const shownSet = officesShown.get(d.id) ?? new Set<StateOffice>();
     shownSet.add(office);
     officesShown.set(d.id, shownSet);
 
-    const checks = officeChecks(l.name, { people: st.wiki?.[office], url: st.wikiUrl }, st.wd[office]);
+    const checks = officeChecks(l.name, { people: jur.wiki?.[office], url: jur.wikiUrl }, jur.wd[office]);
     const verdict = decideStatus(checks, { primaryCounts: false, noAnswerReason: "second-source-no-data" });
     const key = `leaders:${d.slug}:${office}:${l.id}`;
     out.records.push({
@@ -243,18 +264,19 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
       tolerance: "same person",
       status: verdict.status,
       reason: verdict.reason,
-      notes: `${officeTitle(office, d.stateName)} — ${checks.map((c) => `${c.source}: ${c.value ?? "no answer"}${c.agreed === null ? "" : c.agreed ? " ✓" : " ✗"}`).join("; ")}`,
+      notes: `${officeTitle(office, jur.name)} — ${checks.map((c) => `${c.source}: ${c.value ?? "no answer"}${c.agreed === null ? "" : c.agreed ? " ✓" : " ✗"}`).join("; ")}`,
     });
     if (verdict.status === "disagreement") {
-      const gk = `${d.stateSlug}|${office}|${nameTokens(l.name).join("")}`;
-      const g = mismatchGroups.get(gk) ?? { st, office, shown: l.name, checks, rows: [] };
+      const gk = `${jur.slug}|${office}|${nameTokens(l.name).join("")}`;
+      const g = mismatchGroups.get(gk) ?? { st: jur, office, shown: l.name, checks, rows: [] };
       g.rows.push({ d, leaderId: l.id, name: l.name, role: l.role, key });
       mismatchGroups.set(gk, g);
     }
   }
 
-  // ── Coverage: the head of government and head of state on every district page ──
+  // ── Coverage: the state's head of government and head of state on every district page ──
   for (const st of states.values()) {
+    if (st.slug === INDIA) continue;
     const found = new Set<StateOffice>(
       (Object.keys({ ...(st.wiki ?? {}), ...st.wd }) as StateOffice[]).filter(
         (o) => (st.wiki?.[o]?.length ?? 0) > 0 || (st.wd[o]?.holders.length ?? 0) > 0,
