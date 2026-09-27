@@ -5,35 +5,39 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Finance & Budget — module page (Design v4 "Rang", the reference page)
+//  Budget — "Where does the money go?"
 // ═══════════════════════════════════════════════════════════════════════
-//  Order on the page (same for every module page):
-//    PageHeader → one-paragraph summary → AI insight → StatStrip → the
-//    picture (coins + dial) → "how each ₹100 is shared" ring → sector
-//    chart → lapsed funds → allocations table → revenue chart →
-//    SourcesFooter → ModuleNews → Toolbar
-//
-//  Data comes from the same hooks as before (useBudget, useRevenue,
-//  useAIInsight). Every word is in the "page_finance" messages; numbers
-//  and dates go through useFormat / useMoney, so the page reads the same
-//  in every language. Every total carries the fiscal year plus an "As of"
-//  date taken from when we fetched the rows.
+//  The answer in one line: "Out of every ₹100 given to Mandya in FY
+//  2024-25, about ₹82 was spent."
+//  Page recipe (docs/LAYOUT.md):
+//    ModulePage → PageHeader → Explainer → 4 StatTiles (total, spent,
+//    utilisation, lapsed) → the picture (10 coins + a dial) → departments
+//    as cards (year chips, "money lapsed" chip); tapping a card opens a
+//    DetailSheet with that department's full numbers, notes and source →
+//    charts two or three to a row (how each ₹100 is shared, where the
+//    money went, revenue each month) → AI insight → plain summary →
+//    sources → news → Download / Share / Compare.
+//  Data: useBudget, useRevenue, useAIInsight (unchanged). Amounts are
+//  stored in whole rupees and formatted at render (useMoney). Every total
+//  carries the fiscal year and an "As of" date from when the rows were
+//  fetched. Words live in "page_finance".
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useTranslations } from "next-intl";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { PiggyBank } from "lucide-react";
-import { useBudget, useRevenue, useAIInsight } from "@/hooks/useRealtimeData";
+import { ExternalLink, PiggyBank } from "lucide-react";
+import { useBudget, useRevenue, useAIInsight, type BudgetAllocation } from "@/hooks/useRealtimeData";
 import {
+  ModulePage,
   PageHeader,
   StatStrip,
   StatTile,
   Section,
   Card,
+  Chips,
   LoadingShell,
-  DataTable,
   ProgressBar,
   EmptyState,
   AIInsightBanner,
@@ -41,13 +45,15 @@ import {
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { getModuleSources } from "@/lib/constants/state-config";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { hueClass } from "@/lib/design/hues";
 import ModuleNews from "@/components/district/ModuleNews";
-import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
+import { useDistrictName, useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import { ShareDonut, type DonutSlice } from "@/components/money/visuals";
 import { useMoney, useSourceText } from "@/components/money/useMoney";
 import MoneyToolbar, { NotOfficialNote, downloadCsv } from "@/components/money/MoneyToolbar";
+import { CardHead, SheetHighlight, SheetLink, TapCard, safeUrl } from "@/components/money/TapCard";
 import knDict from "@/dictionaries/kn.json";
 
 /** 1 crore = 10 million rupees. Amounts in the database are in rupees. */
@@ -58,6 +64,16 @@ const LAKH = 100_000;
 const SOURCE_URLS: Record<string, string> = {
   "PFMS (Public Financial Management System)": "https://pfms.nic.in",
   "State Treasury / eGramSwaraj": "https://egramswaraj.gov.in",
+};
+const PFMS = { label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] };
+
+/** An allocation row as the API sends it (the hook type plus the fields it leaves out). */
+type AllocationRow = BudgetAllocation & {
+  source?: string | null;
+  sourceUrl?: string | null;
+  remarks?: string | null;
+  quarter?: number | null;
+  fetchedAt?: string | null;
 };
 
 /** The newest timestamp in a list of rows (rows carry `fetchedAt` from the API). */
@@ -79,27 +95,30 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const f = useFormat();
   const m = useMoney();
   const st = useSourceText();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
   const { data: budgetData, isLoading: bLoading } = useBudget(district, state);
   const { data: revenueData, isLoading: rLoading } = useRevenue(district, state);
   const { data: aiInsight } = useAIInsight(district, "finance");
+  const [pickedYear, setPickedYear] = useState<string | null>(null);
+  const [show, setShow] = useState<"all" | "lapsed">("all");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const entries = budgetData?.data?.entries ?? [];
-  const allocations = budgetData?.data?.allocations ?? [];
+  const allocations = (budgetData?.data?.allocations ?? []) as AllocationRow[];
   const collections = revenueData?.data?.collections ?? [];
 
-  const latestYear = entries.length > 0 ? entries[0].fiscalYear : null;
+  const latestYear = entries.length > 0 ? entries[0].fiscalYear : allocations[0]?.fiscalYear ?? null;
   const latestEntries = entries.filter((e) => e.fiscalYear === latestYear);
   const latestAllocations = allocations.filter((a) => a.fiscalYear === latestYear);
-  const totalAllocated = latestEntries.reduce((s, e) => s + e.allocated, 0);
-  const totalSpent = latestEntries.reduce((s, e) => s + e.spent, 0);
+  // Totals come from the sector rows; a district with only department rows uses those.
+  const totalsFrom = latestEntries.length > 0 ? latestEntries : latestAllocations;
+  const totalAllocated = totalsFrom.reduce((s, e) => s + e.allocated, 0);
+  const totalSpent = totalsFrom.reduce((s, e) => s + e.spent, 0);
   const totalLapsed = latestAllocations.reduce((s, a) => s + a.lapsed, 0);
 
   // When did we last fetch these rows? Shown as "As of …" beside the totals.
-  const asOf = latestFetchedAt([
-    ...(entries as Array<{ fetchedAt?: string | null }>),
-    ...(allocations as Array<{ fetchedAt?: string | null }>),
-  ]);
+  const asOf = latestFetchedAt([...(entries as Array<{ fetchedAt?: string | null }>), ...allocations]);
   const revenueAsOf = latestFetchedAt(collections as Array<{ fetchedAt?: string | null }>);
 
   const budgetChart = latestEntries.map((e) => ({
@@ -108,11 +127,10 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
     sector: e.sector.length > 22 ? e.sector.slice(0, 21) + "…" : e.sector,
     allocated: Math.round(e.allocated / CRORE),
     spent: Math.round(e.spent / CRORE),
-    utilPct: e.allocated > 0 ? Math.round((e.spent / e.allocated) * 100) : 0,
   }));
 
   // "How each ₹100 is shared": the five biggest sectors, the rest as "Other".
-  const bySize = [...latestEntries].sort((a, b) => b.allocated - a.allocated);
+  const bySize = [...latestEntries].sort((a, c) => c.allocated - a.allocated);
   const shareSlices: DonutSlice[] = bySize.slice(0, 5).map((e) => ({
     key: e.sector,
     label: e.sector,
@@ -136,7 +154,13 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
     }))
     .reverse();
 
-  const lapsedRows = allocations.filter((a) => a.lapsed > 0).sort((a, b) => b.lapsed - a.lapsed);
+  // Department cards: one financial year at a time, newest first.
+  const years = Array.from(new Set(allocations.map((a) => a.fiscalYear)));
+  const year = pickedYear && years.includes(pickedYear) ? pickedYear : years[0] ?? null;
+  const yearRows = allocations.filter((a) => a.fiscalYear === year).sort((a, c) => c.allocated - a.allocated);
+  const lapsedCount = yearRows.filter((a) => a.lapsed > 0).length;
+  const deptRows = show === "lapsed" ? yearRows.filter((a) => a.lapsed > 0) : yearRows;
+  const open = openId ? allocations.find((a) => a.id === openId) ?? null : null;
 
   // Sources: the same list the old DataSourceBanner showed, now as a footer.
   const src = getModuleSources("budget", state);
@@ -148,7 +172,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const titleLocal = state === "karnataka" ? knDict.moduleNames.finance : undefined;
   const fyLabel = latestYear ? t("fy", { year: latestYear }) : undefined;
   const pctSpent = totalAllocated > 0 ? Math.round((totalSpent / totalAllocated) * 100) : 0;
-  const cr2 = (rupees: number) => m.num(rupees / CRORE, 2);
+  const hasBudget = entries.length > 0 || allocations.length > 0;
 
   const onCsv = () =>
     downloadCsv(
@@ -159,93 +183,71 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
         allocated_cr: (a.allocated / CRORE).toFixed(2),
         spent_cr: (a.spent / CRORE).toFixed(2),
         lapsed_cr: (a.lapsed / CRORE).toFixed(2),
-      }))
+      })),
     );
 
   return (
-    <div className="module-page" style={{ padding: 24, maxWidth: "var(--ftp-reading-max)" }}>
+    <ModulePage>
       <PageHeader
         icon={PiggyBank}
-        accent={getModuleAccent("finance")}
         title={title}
         titleLocal={titleLocal}
         description={t("description")}
         backHref={base}
         freshness={asOf ? { asOf } : undefined}
-        source={{ label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] }}
+        source={PFMS}
       />
-
-      {/* AI-crawler readable summary — plain body text. */}
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
-        {t("summary", { sources: stateFinSource })}
-      </p>
-
-      {aiInsight && (
-        <div style={{ marginBottom: 16 }}>
-          <AIInsightBanner
-            headline={aiInsight.headline}
-            summary={aiInsight.summary}
-            sentiment={aiInsight.sentiment}
-            confidence={aiInsight.confidence}
-            sourceUrls={aiInsight.sourceUrls}
-            createdAt={aiInsight.createdAt}
-          />
-        </div>
-      )}
-      <AIInsightCard module="budget" district={district} />
 
       {bLoading && <LoadingShell rows={4} />}
 
-      {!bLoading && entries.length === 0 && allocations.length === 0 && (
-        <EmptyState emoji="💰" title={t("empty.title")} body={t("empty.body")} />
-      )}
+      {!bLoading && !hasBudget && <EmptyState emoji="💰" title={t("empty.title")} body={t("empty.body")} />}
 
-      {!bLoading && (entries.length > 0 || allocations.length > 0) && (
+      {!bLoading && hasBudget && (
         <>
-          <div style={{ marginBottom: 8 }}>
-            <StatStrip cols={4}>
-              <StatTile emoji="💰" label={t("tiles.total")} value={m.num(Math.round(totalAllocated / CRORE))} unit={t("tiles.unitCr")} sub={fyLabel} asOf={asOf} />
-              <StatTile
-                emoji="🧾"
-                label={t("tiles.spent")}
-                value={totalSpent === 0 && totalAllocated > 0 ? t("tiles.dataPending") : m.num(Math.round(totalSpent / CRORE))}
-                unit={totalSpent === 0 && totalAllocated > 0 ? undefined : t("tiles.unitCr")}
-                sub={fyLabel}
-                asOf={asOf}
-              />
-              <StatTile
-                emoji="📈"
-                label={t("tiles.utilisation")}
-                value={totalAllocated > 0 ? (totalSpent === 0 ? t("tiles.pending") : m.num(pctSpent)) : "—"}
-                unit={totalAllocated > 0 && totalSpent > 0 ? "%" : undefined}
-                sub={fyLabel}
-                asOf={asOf}
-              />
-              <StatTile
-                emoji="⏳"
-                label={t("tiles.lapsed")}
-                value={totalSpent === 0 && totalLapsed === 0 ? "—" : m.num(totalLapsed / CRORE, 1)}
-                unit={totalSpent === 0 && totalLapsed === 0 ? undefined : t("tiles.unitCr")}
-                sub={t("tiles.lapsedSub")}
-                asOf={asOf}
-              />
-            </StatStrip>
-          </div>
-
-          {totalSpent === 0 && totalAllocated > 0 && (
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "8px 0 0" }}>
-              {t("allocationOnly")}
-            </p>
+          {/* 1. The answer in one sentence. */}
+          {totalAllocated > 0 && latestYear && (
+            <Explainer emoji="🪙">
+              {totalSpent > 0
+                ? t.rich("explainer", { district: districtName, year: latestYear, pct: pctSpent, b })
+                : t.rich("explainerAllocOnly", { district: districtName, year: latestYear, amount: m.short(totalAllocated, 0), b })}
+              {allocations.length > 0 && <> {t("explainerTap")}</>}
+            </Explainer>
           )}
 
-          {/* The picture: 10 coins, one per ₹10 of every ₹100, lit for what
-              was spent; plus a dial. Same numbers as the tiles above. */}
+          {/* 2. Four big numbers. */}
+          <StatStrip cols={4}>
+            <StatTile emoji="💰" label={t("tiles.total")} value={m.num(Math.round(totalAllocated / CRORE))} unit={t("tiles.unitCr")} sub={fyLabel} asOf={asOf} />
+            <StatTile
+              emoji="🧾"
+              label={t("tiles.spent")}
+              value={totalSpent === 0 && totalAllocated > 0 ? t("tiles.dataPending") : m.num(Math.round(totalSpent / CRORE))}
+              unit={totalSpent === 0 && totalAllocated > 0 ? undefined : t("tiles.unitCr")}
+              sub={fyLabel}
+              asOf={asOf}
+            />
+            <StatTile
+              emoji="📈"
+              label={t("tiles.utilisation")}
+              value={totalAllocated > 0 ? (totalSpent === 0 ? t("tiles.pending") : m.num(pctSpent)) : "—"}
+              unit={totalAllocated > 0 && totalSpent > 0 ? "%" : undefined}
+              sub={fyLabel}
+              asOf={asOf}
+            />
+            <StatTile
+              emoji="⏳"
+              label={t("tiles.lapsed")}
+              value={totalSpent === 0 && totalLapsed === 0 ? "—" : m.num(totalLapsed / CRORE, 1)}
+              unit={totalSpent === 0 && totalLapsed === 0 ? undefined : t("tiles.unitCr")}
+              sub={t("tiles.lapsedSub")}
+              asOf={asOf}
+            />
+          </StatStrip>
+
+          {/* 3. The picture: 10 coins, one per ₹10 of every ₹100, lit for
+              what was spent; plus a dial. Same numbers as the tiles. */}
           {totalAllocated > 0 && totalSpent > 0 && (
             <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-              <Card tinted padding={18}>
-                <Explainer emoji="🪙">
-                  {t.rich("explainer", { year: latestYear ?? "", pct: pctSpent, b })}
-                </Explainer>
+              <Card tinted padding={18} style={{ display: "flex", alignItems: "center" }}>
                 <Pictogram
                   filled={(totalSpent / totalAllocated) * 10}
                   emoji="💰"
@@ -258,186 +260,275 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
             </div>
           )}
 
-          {/* How each ₹100 is shared between sectors — a different question
-              from "how much was spent". Needs at least two sectors. */}
-          {shareSlices.length >= 2 && totalAllocated > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("share.title", { year: latestYear ?? "" })}
-                emoji="🍰"
-                units={t("share.units")}
-                simple={t.rich("share.simple", { sector: bySize[0].sector, n: topShare, b })}
-                source={{ label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] }}
-                asOf={asOf}
-                table={shareSlices.map((s) => ({ label: s.label, value: `${s.display} (${m.pct(s.value / totalAllocated)})` }))}
-              >
-                <ShareDonut
-                  slices={shareSlices}
-                  centerValue={m.short(totalAllocated, 0)}
-                  centerLabel={t("share.center")}
-                  ariaLabel={t("share.aria", {
-                    year: latestYear ?? "",
-                    list: shareSlices.map((s) => `${s.label} ${m.pct(s.value / totalAllocated)}`).join(", "),
-                  })}
-                  formatPct={(p) => m.pct(p)}
-                />
-              </ChartCard>
-            </div>
-          )}
-
-          {/* Sector-wise chart */}
-          {budgetChart.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("sectors.title", { year: latestYear ?? "" })}
-                emoji="🏗️"
-                units={t("sectors.units")}
-                simple={(() => {
-                  const top = [...budgetChart].sort((a, b) => b.allocated - a.allocated)[0];
-                  return top
-                    ? t.rich("sectors.simple", { sector: top.sectorFull, given: m.crore(top.allocated), spent: m.crore(top.spent), b })
-                    : null;
-                })()}
-                legend={[
-                  { label: t("sectors.legendGiven"), swatch: "#D8D5CB" },
-                  { label: t("sectors.legendSpent"), swatch: "var(--hue)" },
-                ]}
-                source={{ label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] }}
-                asOf={asOf}
-                table={budgetChart.map((r) => ({ label: r.sectorFull, value: t("sectors.row", { spent: m.crore(r.spent), given: m.crore(r.allocated) }) }))}
-              >
-                {/* Height follows the number of sectors (44 px each) so every
-                    sector gets a readable label instead of every other one. */}
-                <ResponsiveContainer width="100%" height={Math.max(200, budgetChart.length * 44 + 40)}>
-                  <BarChart data={budgetChart} margin={{ top: 5, right: 16, bottom: 8, left: 0 }} layout="vertical" barGap={3}>
-                    <ChartGradients />
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                    <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => m.crore(Number(v))} />
-                    <YAxis type="category" dataKey="sector" tick={CHART_AXIS} width={150} interval={0} />
-                    <Tooltip
-                      formatter={(v, name) => [m.crore(Number(v)), name]}
-                      labelFormatter={(_, payload) => payload?.[0]?.payload?.sectorFull ?? ""}
-                      contentStyle={chartTooltipStyle}
-                      cursor={{ fill: "var(--hue-tint)" }}
+          {/* 4. Departments as cards; tap one for all its numbers. */}
+          <Section emoji="🏢" title={t("depts.title")}>
+            {allocations.length === 0 ? (
+              <EmptyState emoji="🏢" title={t("depts.empty")} />
+            ) : (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                  {years.length > 1 && (
+                    <Chips
+                      label={t("depts.yearAria")}
+                      value={year ?? ""}
+                      onChange={(v) => setPickedYear(v)}
+                      items={years.map((y) => ({ value: y, label: t("fy", { year: y }), count: allocations.filter((a) => a.fiscalYear === y).length }))}
                     />
-                    <Bar dataKey="allocated" fill="url(#ftpMutedFill)" radius={[0, 6, 6, 0]} name={t("sectors.given")} />
-                    <Bar dataKey="spent" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name={t("sectors.spent")} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
-          )}
-
-          {/* Lapsed funds — money that was allocated but NOT spent */}
-          {lapsedRows.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <Section emoji="⏳" title={t("lapsed.title")}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {lapsedRows.map((a) => (
-                    <Card key={a.id} padding={14}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 15, borderRadius: 10 }}>
-                            🏢
-                          </span>
-                          <div className="ftp-title">{a.department}</div>
-                        </div>
-                        <div className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-danger)" }}>
-                          {t("lapsed.amount", { amount: m.crore(a.lapsed / CRORE, 2) })}
-                        </div>
-                      </div>
-                      <ProgressBar
-                        value={a.spent}
-                        max={a.allocated}
-                        label={t("lapsed.bar", { year: a.fiscalYear, amount: m.crore(a.allocated / CRORE, 1) })}
-                        tone="danger"
-                      />
-                    </Card>
-                  ))}
+                  )}
+                  {lapsedCount > 0 && (
+                    <Chips
+                      label={t("depts.showAria")}
+                      value={show}
+                      onChange={(v) => setShow(v as "all" | "lapsed")}
+                      items={[
+                        { value: "all", label: t("depts.all"), count: yearRows.length },
+                        { value: "lapsed", label: `⏳ ${t("depts.lapsedOnly")}`, count: lapsedCount },
+                      ]}
+                    />
+                  )}
                 </div>
-              </Section>
-            </div>
-          )}
-
-          {/* Allocations table */}
-          <div style={{ marginTop: 24 }}>
-            <Section emoji="📒" title={t("table.title")}>
-              <DataTable
-                caption={t("table.caption")}
-                emptyText={t("table.empty")}
-                columns={[
-                  { key: "fy", label: t("table.fy") },
-                  { key: "dept", label: t("table.department") },
-                  { key: "alloc", label: t("table.allocated"), numeric: true },
-                  { key: "spent", label: t("table.spent"), numeric: true },
-                  { key: "lapsed", label: t("table.lapsed"), numeric: true },
-                ]}
-                rows={allocations.map((a) => ({
-                  fy: a.fiscalYear,
-                  dept: a.department,
-                  alloc: cr2(a.allocated),
-                  spent: cr2(a.spent),
-                  // Lapsed money is the one number we colour: danger text, no fill.
-                  lapsed: (
-                    <span style={{ color: a.lapsed > 0 ? "var(--ftp-danger)" : "var(--ftp-text)" }}>
-                      {cr2(a.lapsed)}
-                    </span>
-                  ),
-                }))}
-              />
-            </Section>
-          </div>
+                {deptRows.length === 0 ? (
+                  <EmptyState emoji="🔍" title={t("depts.noMatch")} />
+                ) : (
+                  <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
+                    {deptRows.map((a) => (
+                      <DeptCard key={a.id} a={a} onOpen={() => setOpenId(a.id)} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </Section>
         </>
       )}
 
-      {/* Revenue collections */}
-      {!rLoading && revChart.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <ChartCard
-            title={t("revenue.title")}
-            emoji="🧾"
-            units={t("revenue.units")}
-            legend={[
-              { label: t("revenue.collected"), swatch: "var(--hue)" },
-              { label: t("revenue.target"), swatch: "#D8D5CB" },
-            ]}
-            asOf={revenueAsOf}
-            table={revChart.map((r) => ({
-              label: r.label,
-              value: r.target
-                ? t("revenue.rowWithTarget", { amount: m.lakh(r.amount), target: m.lakh(r.target) })
-                : m.lakh(r.amount),
-            }))}
-          >
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={revChart} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                <ChartGradients />
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
-                <XAxis dataKey="label" tick={CHART_AXIS} />
-                <YAxis tick={CHART_AXIS} tickFormatter={(v) => m.num(Number(v))} />
-                <Tooltip formatter={(v, name) => [m.lakh(Number(v)), name]} contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} />
-                <Bar dataKey="amount" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name={t("revenue.collected")} />
-                <Bar dataKey="target" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} name={t("revenue.target")} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
+      {/* 5. Charts, two or three to a row on wide screens. */}
+      {((!bLoading && (shareSlices.length >= 2 || budgetChart.length > 0)) || (!rLoading && revChart.length > 0)) && (
+        <div className="ftp-grid" style={{ marginTop: 28, alignItems: "start", ["--ftp-grid-min" as string]: "360px" } as React.CSSProperties}>
+          {/* How each ₹100 is shared between sectors. Needs two sectors. */}
+          {shareSlices.length >= 2 && totalAllocated > 0 && (
+            <ChartCard
+              title={t("share.title", { year: latestYear ?? "" })}
+              emoji="🍰"
+              units={t("share.units")}
+              simple={t.rich("share.simple", { sector: bySize[0].sector, n: topShare, b })}
+              source={PFMS}
+              asOf={asOf}
+              table={shareSlices.map((s) => ({ label: s.label, value: `${s.display} (${m.pct(s.value / totalAllocated)})` }))}
+            >
+              <ShareDonut
+                slices={shareSlices}
+                centerValue={m.short(totalAllocated, 0)}
+                centerLabel={t("share.center")}
+                ariaLabel={t("share.aria", {
+                  year: latestYear ?? "",
+                  list: shareSlices.map((s) => `${s.label} ${m.pct(s.value / totalAllocated)}`).join(", "),
+                })}
+                formatPct={(p) => m.pct(p)}
+              />
+            </ChartCard>
+          )}
+
+          {/* Where the money went, sector by sector. */}
+          {budgetChart.length > 0 && (
+            <ChartCard
+              title={t("sectors.title", { year: latestYear ?? "" })}
+              emoji="🏗️"
+              units={t("sectors.units")}
+              simple={(() => {
+                const top = [...budgetChart].sort((a, c) => c.allocated - a.allocated)[0];
+                return top ? t.rich("sectors.simple", { sector: top.sectorFull, given: m.crore(top.allocated), spent: m.crore(top.spent), b }) : null;
+              })()}
+              legend={[
+                { label: t("sectors.legendGiven"), swatch: "#D8D5CB" },
+                { label: t("sectors.legendSpent"), swatch: "var(--hue)" },
+              ]}
+              source={PFMS}
+              asOf={asOf}
+              table={budgetChart.map((r) => ({ label: r.sectorFull, value: t("sectors.row", { spent: m.crore(r.spent), given: m.crore(r.allocated) }) }))}
+            >
+              {/* 44 px per sector so every sector gets a readable label. */}
+              <ResponsiveContainer width="100%" height={Math.max(200, budgetChart.length * 44 + 40)}>
+                <BarChart data={budgetChart} margin={{ top: 5, right: 16, bottom: 8, left: 0 }} layout="vertical" barGap={3}>
+                  <ChartGradients />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
+                  <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => m.crore(Number(v))} />
+                  <YAxis type="category" dataKey="sector" tick={CHART_AXIS} width={120} interval={0} />
+                  <Tooltip
+                    formatter={(v, name) => [m.crore(Number(v)), name]}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.sectorFull ?? ""}
+                    contentStyle={chartTooltipStyle}
+                    cursor={{ fill: "var(--hue-tint)" }}
+                  />
+                  <Bar dataKey="allocated" fill="url(#ftpMutedFill)" radius={[0, 6, 6, 0]} name={t("sectors.given")} />
+                  <Bar dataKey="spent" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name={t("sectors.spent")} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+
+          {/* Revenue collected each month. */}
+          {!rLoading && revChart.length > 0 && (
+            <ChartCard
+              title={t("revenue.title")}
+              emoji="🧾"
+              units={t("revenue.units")}
+              legend={[
+                { label: t("revenue.collected"), swatch: "var(--hue)" },
+                { label: t("revenue.target"), swatch: "#D8D5CB" },
+              ]}
+              asOf={revenueAsOf}
+              table={revChart.map((r) => ({
+                label: r.label,
+                value: r.target ? t("revenue.rowWithTarget", { amount: m.lakh(r.amount), target: m.lakh(r.target) }) : m.lakh(r.amount),
+              }))}
+            >
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={revChart} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <ChartGradients />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                  <XAxis dataKey="label" tick={CHART_AXIS} />
+                  <YAxis tick={CHART_AXIS} tickFormatter={(v) => m.num(Number(v))} width={44} />
+                  <Tooltip formatter={(v, name) => [m.lakh(Number(v)), name]} contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} />
+                  <Bar dataKey="amount" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name={t("revenue.collected")} />
+                  <Bar dataKey="target" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} name={t("revenue.target")} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
         </div>
       )}
 
-      <SourcesFooter
-        sources={src.sources.map((name) => ({ name: st.name(name), url: SOURCE_URLS[name], frequency: st.freq(src.frequency) }))}
-      />
+      {aiInsight && (
+        <div style={{ marginTop: 24 }}>
+          <AIInsightBanner
+            headline={aiInsight.headline}
+            summary={aiInsight.summary}
+            sentiment={aiInsight.sentiment}
+            confidence={aiInsight.confidence}
+            sourceUrls={aiInsight.sourceUrls}
+            createdAt={aiInsight.createdAt}
+          />
+        </div>
+      )}
+      <div style={{ marginTop: 16 }}>
+        <AIInsightCard module="budget" district={district} />
+      </div>
+
+      {/* Plain summary for search engines and screen readers. */}
+      <p className="ftp-body ftp-prose" style={{ color: "var(--ftp-text-2)", marginTop: 24 }}>
+        {t("summary", { sources: stateFinSource })}
+      </p>
+
+      <SourcesFooter sources={src.sources.map((name) => ({ name: st.name(name), url: SOURCE_URLS[name], frequency: st.freq(src.frequency) }))} />
       <NotOfficialNote />
 
       <ModuleNews district={district} state={state} locale={locale} module="budget" />
 
-      <MoneyToolbar
-        shareTitle={title}
-        onCsv={onCsv}
-        csvDisabled={allocations.length === 0}
-        compareHref={`/${locale}/compare?module=finance&a=${district}`}
+      <MoneyToolbar shareTitle={title} onCsv={onCsv} csvDisabled={allocations.length === 0} compareHref={`/${locale}/compare?module=finance&a=${district}`} />
+
+      <DetailSheet
+        open={!!open}
+        onClose={() => setOpenId(null)}
+        title={open?.department ?? ""}
+        subtitle={open ? t("fy", { year: open.fiscalYear }) : undefined}
+        emoji="🏢"
+        hueClassName={hueClass("finance")}
+        footer={
+          open && safeUrl(open.sourceUrl) ? (
+            <SheetLink href={safeUrl(open.sourceUrl)!} icon={<ExternalLink size={16} aria-hidden />}>
+              {t("sheet.openSource")}
+            </SheetLink>
+          ) : undefined
+        }
+      >
+        {open && <DeptSheet a={open} />}
+      </DetailSheet>
+    </ModulePage>
+  );
+}
+
+/** One department: given, spent, a bar, and lapsed money in red. */
+function DeptCard({ a, onOpen }: { a: AllocationRow; onOpen: () => void }) {
+  const t = useTranslations("page_finance");
+  const m = useMoney();
+  return (
+    <TapCard onOpen={onOpen} ariaLabel={t("depts.cardAria", { name: a.department })} more={t("depts.more")}>
+      <CardHead emoji="🏢" title={a.department} titleLocal={a.departmentLocal} />
+      <span style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <span>
+          <span className="ftp-label" style={{ display: "block" }}>{t("depts.given")}</span>
+          <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650, color: "var(--hue-deep)" }}>{m.short(a.allocated, 1)}</span>
+        </span>
+        <span>
+          <span className="ftp-label" style={{ display: "block" }}>{t("depts.spent")}</span>
+          <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650, color: "var(--ftp-text)" }}>
+            {a.spent > 0 ? m.short(a.spent, 1) : "—"}
+          </span>
+        </span>
+      </span>
+      {a.spent > 0 && a.allocated > 0 ? (
+        <ProgressBar value={a.spent} max={a.allocated} label={t("depts.spent")} />
+      ) : (
+        <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{t("depts.notSpentYet")}</span>
+      )}
+      {a.lapsed > 0 && (
+        <span className="ftp-num" style={{ fontSize: 14, fontWeight: 650, color: "var(--ftp-danger)" }}>
+          <span className="ftp-emoji" aria-hidden>⏳ </span>
+          {t("depts.lapsed", { amount: m.short(a.lapsed, 1) })}
+        </span>
+      )}
+    </TapCard>
+  );
+}
+
+/** Everything about one department's money for one year. */
+function DeptSheet({ a }: { a: AllocationRow }) {
+  const t = useTranslations("page_finance");
+  const f = useFormat();
+  const m = useMoney();
+  const used = a.allocated > 0 && a.spent > 0 ? Math.round((a.spent / a.allocated) * 100) : null;
+  const url = safeUrl(a.sourceUrl);
+  return (
+    <>
+      <SheetHighlight emoji="🪙" label={t("sheet.storyLabel")}>
+        {a.spent > 0
+          ? t("sheet.story", { dept: a.department, given: m.short(a.allocated, 2), year: a.fiscalYear, spent: m.short(a.spent, 2) })
+          : t("sheet.storyNoSpend", { dept: a.department, given: m.short(a.allocated, 2), year: a.fiscalYear })}
+      </SheetHighlight>
+      {used !== null && <ProgressBar pct={used} label={t("sheet.used")} height={10} />}
+      <DetailList
+        rows={[
+          { emoji: "📅", label: t("sheet.fy"), value: a.fiscalYear },
+          { emoji: "🗂️", label: t("sheet.category"), value: a.category || null },
+          { emoji: "📋", label: t("sheet.scheme"), value: a.scheme || null },
+          { emoji: "💰", label: t("sheet.allocated"), value: m.short(a.allocated, 2) },
+          { emoji: "📤", label: t("sheet.released"), value: a.released > 0 ? m.short(a.released, 2) : null },
+          { emoji: "🧾", label: t("sheet.spent"), value: a.spent > 0 ? m.short(a.spent, 2) : null },
+          {
+            emoji: "⏳",
+            label: t("sheet.lapsed"),
+            value: a.lapsed > 0 ? <span style={{ color: "var(--ftp-danger)", fontWeight: 600 }}>{m.short(a.lapsed, 2)}</span> : null,
+          },
+          { emoji: "📆", label: t("sheet.period"), value: a.quarter ? t("sheet.quarter", { n: a.quarter }) : null },
+          { emoji: "📝", label: t("sheet.remarks"), value: a.remarks || null, lang: "en" },
+          {
+            emoji: "🔗",
+            label: t("sheet.source"),
+            value: a.source ? (
+              url ? (
+                <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
+                  {a.source}
+                </a>
+              ) : (
+                a.source
+              )
+            ) : null,
+          },
+          { emoji: "🕒", label: t("sheet.asOf"), value: a.fetchedAt ? f.date(a.fetchedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
+        ]}
       />
-    </div>
+    </>
   );
 }
 

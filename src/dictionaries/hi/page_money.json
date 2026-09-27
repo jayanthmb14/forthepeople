@@ -1,0 +1,32 @@
+{
+  "unit": {
+    "crore": "₹{n} करोड़",
+    "lakh": "₹{n} लाख",
+    "lakhCrore": "₹{n} लाख करोड़",
+    "rupees": "₹{n}"
+  },
+  "actions": {
+    "label": "पेज के विकल्प",
+    "csv": "CSV डाउनलोड करें",
+    "share": "साझा करें",
+    "shareAria": "यह पेज साझा करें",
+    "copied": "लिंक कॉपी हो गया",
+    "compare": "दूसरे जिले से तुलना करें"
+  },
+  "source": {
+    "stateSchemePortals": "राज्य के योजना पोर्टल",
+    "newsArticles": "समाचार लेख (Google News RSS + क्षेत्रीय मीडिया)",
+    "pressReleases": "सरकारी प्रेस विज्ञप्तियाँ",
+    "stateIndustrialCorp": "राज्य औद्योगिक विकास निगम",
+    "stateTreasury": "राज्य कोषागार / eGramSwaraj"
+  },
+  "freq": {
+    "whenPublished": "जब स्रोत प्रकाशित करे",
+    "daily": "रोज़",
+    "monthly": "हर महीने",
+    "quarterly": "हर तिमाही",
+    "annual": "हर साल"
+  },
+  "other": "अन्य",
+  "notOfficial": "ForThePeople.in कोई आधिकारिक सरकारी वेबसाइट नहीं है। यह जानकारी भारत की ओपन डेटा नीति (NDSAP) के तहत सार्वजनिक सरकारी पोर्टलों से एकत्र की गई है।"
+}
