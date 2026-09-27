@@ -6,6 +6,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_contribute",
   "page_contributors",
   "page_features",
+  "page_feedback",
   "page_site",
   "page_state",
   "page_taluk",
