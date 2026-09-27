@@ -11,7 +11,7 @@
   "urbanSource": "Data sourced from the District NIC portal and the Municipal Corporation website.",
   "urbanNaTitle": "Not applicable for urban districts",
   "emptyTitle": "No panchayat data yet for {district}.",
-  "emptyBody": "We are collecting village-level MGNREGA works and fund utilisation data from eGramSwaraj.",
+  "emptyBody": "We have not added village council records for this district yet. eGramSwaraj publishes works and funds for every gram panchayat.",
   "answer": "{district} has <b>{n}</b> {n, plural, one {gram panchayat} other {gram panchayats}} (village councils) on our records.",
   "answerFunds": "Out of every <b>₹100</b> given to them, about <b>₹{used}</b> has been used.",
   "answerNoSpend": "No spending has been reported yet for the money they were given.",
