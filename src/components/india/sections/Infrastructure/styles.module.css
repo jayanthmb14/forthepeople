@@ -30,15 +30,14 @@
   overflow: hidden;
 }
 .sectionLabel {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-family: var(--ftp-font-sans);
+  font-size: 11px;
   opacity: 0.7;
-  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 6px;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 .sectionLabelDot {
   display: inline-block;
@@ -49,9 +48,9 @@
   animation: ftp-pulse 2s ease-in-out infinite;
 }
 .identityTitle {
-  font-family: var(--font-jakarta);
+  font-family: var(--ftp-font-display);
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.01em;
   margin: 5px 0 2px;
@@ -73,19 +72,20 @@
   align-items: baseline;
 }
 .modulesCountLabel {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   opacity: 0.65;
   font-size: 10px;
-  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }
 .modulesCountValue {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   font-size: 11px;
   font-weight: 500;
   color: #D3D1C7;
   display: flex;
   align-items: center;
   gap: 5px;
+  font-variant-numeric: tabular-nums;
 }
 .modulesCountValue::before {
   content: "●";
@@ -119,11 +119,12 @@
   align-items: center;
   padding: 0;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   transition: background 200ms;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
+  font-variant-numeric: tabular-nums;
 }
 .directoryRow:last-child {
   border-bottom: none;
@@ -163,18 +164,17 @@
   justify-content: center;
   gap: 6px;
   padding: 0;
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   opacity: 0.4;
   border-top: 0.5px dashed rgba(255, 255, 255, 0.25);
   border-bottom: 0.5px dashed rgba(255, 255, 255, 0.25);
+  font-variant-numeric: tabular-nums;
 }
 .repeatsDividerIcon {
   font-size: 11px;
 }
 .repeatsDividerLabel {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 10px;
 }
 
 /* ─── Browse button ─── */
@@ -183,11 +183,10 @@
   background: rgba(255, 255, 255, 0.16);
   border: 0.5px solid rgba(255, 255, 255, 0.32);
   color: #FFFFFF;
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   font-size: 11px;
   padding: 8px 14px;
   border-radius: 999px;
-  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -195,6 +194,7 @@
   text-decoration: none;
   font-weight: 500;
   transition: background 200ms, transform 200ms;
+  font-variant-numeric: tabular-nums;
 }
 .browseBtn:hover {
   background: rgba(255, 255, 255, 0.24);
@@ -239,14 +239,15 @@
 }
 .featuredTitle {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #2C2C2A;
+  font-family: var(--ftp-font-display);
 }
 .featuredSourceInline {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--ftp-font-sans);
+  font-size: 10px;
   color: rgba(95, 94, 90, 0.65);
-  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }
 .livePill {
   display: inline-block;
@@ -254,12 +255,11 @@
   border-radius: 3px;
   background: #F1EFE8;
   color: #2C2C2A;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--ftp-font-sans);
+  font-size: 11px;
   font-weight: 500;
   animation: ftp-fade-up 0.4s 0.5s both;
+  font-variant-numeric: tabular-nums;
 }
 
 .headlineRow {
@@ -269,13 +269,14 @@
   margin-top: 6px;
 }
 .headlineMajor {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-display);
   font-size: 64px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 0.95;
   color: #444441;
   letter-spacing: -0.025em;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .headlineMinorBlock {
   display: flex;
@@ -307,10 +308,11 @@
   animation: ftp-pulse-up 2s ease-in-out infinite;
 }
 .growthValue {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--ftp-font-sans);
+  font-size: 10px;
   color: #2C2C2A;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .rightCallout {
@@ -318,25 +320,27 @@
   text-align: right;
 }
 .rightCalloutLabel {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--ftp-font-sans);
+  font-size: 10px;
   color: rgba(95, 94, 90, 0.55);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 .rightCalloutValue {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-display);
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 600;
   color: #444441;
   line-height: 1;
   margin-top: 2px;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
 }
 .rightCalloutSubtitle {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--ftp-font-sans);
+  font-size: 10px;
   color: rgba(95, 94, 90, 0.55);
   margin-top: 1px;
+  font-variant-numeric: tabular-nums;
 }
 
 .featuredDesc {
@@ -368,24 +372,26 @@
   background: rgba(95, 94, 90, 0.02);
 }
 .featuredCellLabel {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--ftp-font-sans);
+  font-size: 10px;
   color: rgba(95, 94, 90, 0.65);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 .featuredCellValue {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-display);
   font-size: 16px;
   color: #2C2C2A;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
 }
 .featuredCellSub {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--ftp-font-sans);
+  font-size: 10px;
   color: rgba(95, 94, 90, 0.65);
   margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .featuredBottom {
@@ -398,17 +404,17 @@
   font-size: 10px;
 }
 .featuredSources {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   color: rgba(95, 94, 90, 0.65);
-  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 .openModuleLink {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   color: #5F5E5A;
   font-weight: 500;
-  letter-spacing: 0.04em;
   text-decoration: none;
   transition: transform 200ms, color 200ms;
+  font-variant-numeric: tabular-nums;
 }
 .openModuleLink:hover {
   color: #2C2C2A;
@@ -441,12 +447,11 @@
   justify-content: space-between;
 }
 .rightCardTitle {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--ftp-font-sans);
+  font-size: 11px;
   font-weight: 500;
   color: #2C2C2A;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 .rightCardIcon {
   font-size: 11px;
@@ -464,9 +469,10 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   font-size: 10px;
   gap: 6px;
+  font-variant-numeric: tabular-nums;
 }
 .rightCardListEntryLeft {
   display: flex;
@@ -488,15 +494,15 @@
 }
 
 .rightCardLink {
-  font-family: var(--font-mono);
+  font-family: var(--ftp-font-sans);
   margin-top: auto;
   padding-top: 6px;
   font-size: 10px;
   color: #5F5E5A;
-  letter-spacing: 0.04em;
   font-weight: 500;
   text-decoration: none;
   transition: transform 200ms, color 200ms;
+  font-variant-numeric: tabular-nums;
 }
 .rightCardLink:hover {
   color: #2C2C2A;

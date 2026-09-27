@@ -72,7 +72,7 @@ export const INF_DIRECTORY: DirectoryRow[] = [
 export const FEATURED_HEADLINE_LABEL = "km of NH";
 export const FEATURED_DESCRIPTION =
   "National Highway network from MoRTH and NHAI dashboards.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "TARGET";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Target";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "Bharatmala 2027";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "infra-roads",
@@ -111,7 +111,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "km · MoRTH" },
   },
   {
-    label: "expressway",
+    label: "Expressway",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "infra-roads", metricKey: "expressway_km" },
@@ -120,12 +120,12 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "km · NHAI" },
   },
   {
-    label: "top state",
+    label: "Top state",
     primary: { kind: "static", value: "MH" },
     sub: { kind: "static", text: "wheat NH leader" },
   },
   {
-    label: "year",
+    label: "Year",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "infra-roads", metricKey: "data_year" },
@@ -151,7 +151,7 @@ export const TOP_HIGHWAY_STATES: TopHighwayStateEntry[] = [
   { rank: 5, state: "Karnataka",   valueRef: { moduleSlug: "infra-roads", metricKey: "top_state_ka_nh_km" } },
 ];
 
-export const TOP_HIGHWAY_STATES_FOOTER_LABEL = "All 36 states/UTs →";
+export const TOP_HIGHWAY_STATES_FOOTER_LABEL = "All 36 states/UTs";
 
 // ── FLAGSHIP PROJECTS right card ──
 
@@ -184,7 +184,7 @@ export const FLAGSHIP_PROJECTS: FlagshipProjectEntry[] = [
   },
 ];
 
-export const FLAGSHIP_PROJECTS_FOOTER_LABEL = "All flagship projects →";
+export const FLAGSHIP_PROJECTS_FOOTER_LABEL = "All flagship projects";
 
 // ── Step-12 timing constants ──
 export const HERO_ANIMATION_DURATION_MS = 1500;

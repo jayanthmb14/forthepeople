@@ -72,7 +72,7 @@ export const CUL_DIRECTORY: DirectoryRow[] = [
 export const FEATURED_HEADLINE_LABEL = "monuments";
 export const FEATURED_DESCRIPTION =
   "Centrally protected monuments and World Heritage Sites.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "GLOBAL RANK";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Global rank";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "most UNESCO sites";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "tourism-heritage",
@@ -120,7 +120,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "monuments" },
   },
   {
-    label: "tourism",
+    label: "Tourism",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "tourism-overview", metricKey: "international_arrivals_lakh" },
@@ -129,7 +129,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "lakh FTA" },
   },
   {
-    label: "source",
+    label: "Source",
     primary: { kind: "static", value: "ASI" },
     sub: { kind: "static", text: "+ UNESCO 2024" },
   },
@@ -151,7 +151,7 @@ export const WORLD_HERITAGE_SITES: WorldHeritageEntry[] = [
   { name: "Sundarbans",  state: "West Bengal",  yearRef: { moduleSlug: "tourism-heritage", metricKey: "unesco_sundarbans_year" } },
 ];
 
-export const WORLD_HERITAGE_SITES_FOOTER_LABEL = "All 43 sites →";
+export const WORLD_HERITAGE_SITES_FOOTER_LABEL = "All 43 sites";
 
 // ── CULTURAL OUTPUT right card ──
 
@@ -184,7 +184,7 @@ export const CULTURAL_OUTPUT: CulturalOutputEntry[] = [
   },
 ];
 
-export const CULTURAL_OUTPUT_FOOTER_LABEL = "All cultural data →";
+export const CULTURAL_OUTPUT_FOOTER_LABEL = "All cultural data";
 
 // ── Timing constants (kept here so the .tsx is value-free) ──
 export const HERO_ANIMATION_DURATION_MS = 1500;

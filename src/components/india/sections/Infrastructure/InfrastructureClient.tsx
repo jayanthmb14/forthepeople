@@ -150,7 +150,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -222,7 +222,7 @@ function TopHighwayStatesCard({ data }: { data: InfrastructureData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Top Highway States</span>
+        <span className={styles.rightCardTitle}>Top highway states</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🛣
         </span>
@@ -270,7 +270,7 @@ function FlagshipProjectsCard({ data }: { data: InfrastructureData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Flagship Projects</span>
+        <span className={styles.rightCardTitle}>Flagship projects</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🚧
         </span>
@@ -328,9 +328,7 @@ export function InfrastructureClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {data.totalSuperCategories}
+              Section {data.superCategory.displayOrder} of {data.totalSuperCategories}
             </div>
             <h2 id="infrastructure-title" className={styles.identityTitle}>
               {data.superCategory.title}
@@ -377,9 +375,6 @@ export function InfrastructureClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -400,12 +395,12 @@ export function InfrastructureClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -473,7 +468,7 @@ export function InfrastructureClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>

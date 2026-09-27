@@ -207,7 +207,7 @@ function WorldHeritageSitesCard({ data }: { data: CultureData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>World Heritage Sites</span>
+        <span className={styles.rightCardTitle}>World heritage sites</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🏛
         </span>
@@ -255,7 +255,7 @@ function CulturalOutputCard({ data }: { data: CultureData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Cultural Output</span>
+        <span className={styles.rightCardTitle}>Cultural output</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🎭
         </span>
@@ -313,9 +313,7 @@ export function CultureClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {data.totalSuperCategories}
+              Section {data.superCategory.displayOrder} of {data.totalSuperCategories}
             </div>
             <h2 id="culture-title" className={styles.identityTitle}>
               {data.superCategory.title}
@@ -349,9 +347,6 @@ export function CultureClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -372,12 +367,12 @@ export function CultureClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -445,7 +440,7 @@ export function CultureClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>

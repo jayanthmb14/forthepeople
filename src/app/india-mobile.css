@@ -125,3 +125,12 @@
     margin-bottom: 1rem !important;
   }
 }
+
+/* Design v4: on narrow phones three quick-access tiles per row clipped
+   their labels ("Scheme…", "Budget ₹47…"); two per row keeps every
+   label and meta line whole. */
+@media (max-width: 479px) {
+  [data-ftp-kpi-quickactions="1"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

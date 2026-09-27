@@ -67,7 +67,7 @@ export const INTERSECTION_THRESHOLD = 0.15;
 export const INTERSECTION_ROOT_MARGIN = "0px 0px -10% 0px";
 export const FEATURED_DESCRIPTION =
   "Total installed power generation capacity, by source.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "TARGET";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Target";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "RE 2030";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "energy-power",
@@ -95,7 +95,7 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "coal",
+    label: "Coal",
     primary: { moduleSlug: "energy-power", metricKey: "coal_capacity_gw" },
     primaryFormat: "gw_integer",
     sub: {
@@ -113,7 +113,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     },
   },
   {
-    label: "hydro",
+    label: "Hydro",
     primary: { moduleSlug: "energy-power", metricKey: "hydro_capacity_gw" },
     primaryFormat: "gw_integer",
     sub: {
@@ -122,7 +122,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     },
   },
   {
-    label: "nuclear",
+    label: "Nuclear",
     primary: { moduleSlug: "energy-power", metricKey: "nuclear_capacity_gw" },
     primaryFormat: "gw_decimal_1",
     sub: {
@@ -149,7 +149,7 @@ export const TOP_POWER_STATES: TopPowerStateEntry[] = [
   { rank: 5, state: "Karnataka",   valueRef: { moduleSlug: "energy-power", metricKey: "top_state_kn_capacity_gw" } },
 ];
 
-export const TOP_POWER_STATES_FOOTER_LABEL = "All state capacities →";
+export const TOP_POWER_STATES_FOOTER_LABEL = "All state capacities";
 
 // ── ENERGY MIX right card ──
 
@@ -184,7 +184,7 @@ export const ENERGY_MIX: EnergyMixEntry[] = [
   },
 ];
 
-export const ENERGY_MIX_FOOTER_LABEL = "Full source breakdown →";
+export const ENERGY_MIX_FOOTER_LABEL = "Full source breakdown";
 
 // ── Helpers ──
 

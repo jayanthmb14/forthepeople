@@ -48,17 +48,19 @@ const KPI_TILES: KpiTileSpec[] = [
   { id: "population", icon: Users,        label: "Population",   value: 1.43, decimals: 2, unit: "billion", meta: "↑ 0.8% YoY",        source: "UN · 2024 est.", accent: "blue",         numColor: "#082F58", iconColor: "#185FA5" },
   { id: "area",       icon: Square,       label: "Area",         value: 3.29, decimals: 2, unit: "M km²",   meta: "7th largest country", source: "Survey of India", accent: "forest-green", numColor: "#27500A", iconColor: "#5A8F2E" },
   { id: "gdp",        icon: IndianRupee,  label: "Nominal GDP",  value: 4.1,  decimals: 1, prefix: "$", suffix: "T", meta: "↑ 6.5% projected", source: "IMF · FY26",     accent: "amber",        numColor: "#633806", iconColor: "#BA7517" },
-  { id: "states",     icon: Building2,    label: "States · UTs", valueRaw: "28 · 8",         meta: "780 districts",   source: "MHA · 2024",      accent: "indigo",       numColor: "#26215C", iconColor: "#534AB7" },
+  { id: "states",     icon: Building2,    label: "States and UTs", valueRaw: "28 + 8",         meta: "780 districts",   source: "MHA · 2024",      accent: "indigo",       numColor: "#26215C", iconColor: "#534AB7" },
   { id: "languages",  icon: LanguagesIcon, label: "Languages",   value: 22,   decimals: 0, unit: "scheduled", meta: "+ 100s of dialects", source: "Schedule 8",      accent: "pink",         numColor: "#4D182A", iconColor: "#993556" },
 ];
 
 function KpiTileV5({ tile }: { tile: KpiTileSpec }) {
   const Icon = tile.icon;
   const accentRgb = ACCENT_RGB[tile.accent];
+  // Design v4: big numbers in the display face with lining tabular figures.
   const numStyle: React.CSSProperties = {
-    fontFamily: "var(--font-mono)",
-    fontSize: "22px",
-    fontWeight: 500,
+    fontFamily: "var(--ftp-font-display)",
+    fontSize: "24px",
+    fontWeight: 650,
+    fontVariantNumeric: "tabular-nums lining-nums",
     letterSpacing: "-0.02em",
     lineHeight: 1,
     color: tile.numColor,
@@ -85,12 +87,12 @@ function KpiTileV5({ tile }: { tile: KpiTileSpec }) {
       />
       <div
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "9.5px",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: "var(--color-text-tertiary)",
-          fontWeight: 500,
+          fontFamily: "var(--ftp-font-sans)",
+          fontSize: "12px",
+          lineHeight: "16px",
+          color: "var(--ftp-text-2)",
+          fontWeight: 600,
+          paddingRight: "18px",
         }}
       >
         {tile.label}
@@ -109,11 +111,13 @@ function KpiTileV5({ tile }: { tile: KpiTileSpec }) {
           </>
         )}
       </div>
-      <div style={{ fontSize: "10px", color: "var(--color-text-tertiary)", marginTop: "1px" }}>{tile.meta}</div>
+      <div style={{ fontSize: "11px", lineHeight: "15px", color: "var(--ftp-text-2)", marginTop: "1px" }}>{tile.meta}</div>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "9px",
+          fontFamily: "var(--ftp-font-sans)",
+          fontSize: "10px",
+          lineHeight: "15px",
+          fontVariantNumeric: "tabular-nums",
           padding: "1px 6px",
           background: "rgba(0,0,0,0.04)",
           color: "var(--color-text-secondary)",
@@ -162,9 +166,13 @@ export function IndiaKpiStrip({ freshnessLine }: IndiaKpiStripProps = {}) {
           color: "var(--color-text-secondary)",
         }}
       >
-        <span>{freshnessLine ?? "● Live"}</span>
+        {/* Design v4 honesty rule: nothing says "Live" unless the data is
+            under 30 minutes old. These figures are yearly releases, each
+            with its source on the tile; the dated freshness pill sits in
+            the LiveStrip above. */}
+        <span>{freshnessLine ?? "Each figure names its source"}</span>
         <span style={{ color: "var(--color-text-tertiary)" }}>
-          Independent · Sourced from .gov.in &amp; NDSAP
+          Independent. Sourced from .gov.in and NDSAP
         </span>
       </div>
 

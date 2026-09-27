@@ -118,13 +118,13 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "density",
+    label: "Density",
     primary: { moduleSlug: "demographics-population", metricKey: "population_density_per_sq_km" },
     primaryFormat: "with_suffix",
     sub: { kind: "static_label", text: "/ km²" },
   },
   {
-    label: "workforce",
+    label: "Workforce",
     primary: { moduleSlug: "economy-employment", metricKey: "workforce_size" },
     primaryFormat: "millions_people",
     sub: {
@@ -135,7 +135,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     },
   },
   {
-    label: "states · UTs",
+    label: "States and UTs",
     primary: { moduleSlug: "national-snapshot", metricKey: "states_count" },
     primaryFormat: "states_uts_combined",
     companion: { moduleSlug: "national-snapshot", metricKey: "uts_count" },
@@ -147,7 +147,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     },
   },
   {
-    label: "languages",
+    label: "Languages",
     primary: { moduleSlug: "national-snapshot", metricKey: "scheduled_languages" },
     primaryFormat: "count",
     sub: { kind: "static_label", text: "scheduled · Sch. 8" },
@@ -200,12 +200,12 @@ export const WORLD_RANKINGS: RankEntry[] = [
   },
 ];
 
-/** Total ranks tracked across the platform — drives the "View all N ranks →" CTA. */
+/** Total ranks tracked across the platform — drives the "View all N ranks" CTA. */
 export const WORLD_RANK_TOTAL_COUNT = 12;
 
 // ── Editorial copy (structural strings, never numeric data) ──
 export const SECTION_LABEL = "section";
-export const FEATURED_RANK_LABEL = "global rank";
+export const FEATURED_RANK_LABEL = "Global rank";
 export const FEATURED_RANK_SUBTITLE = "most populous";
 export const FEATURED_DESCRIPTION =
   "Population, density, fertility, life expectancy — the demographic shape of India today.";

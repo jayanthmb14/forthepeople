@@ -12,6 +12,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { getPlatformFacts } from "@/lib/platform-facts";
 import {
   Building2,
   FileText,
@@ -36,13 +37,16 @@ interface QuickAccessStripProps {
 export function QuickAccessStrip({ locale }: QuickAccessStripProps) {
   // TODO Phase 5+: routes for Elections / RTI Toolkit / Budget don't exist yet;
   // clicking will 404 until the corresponding pages ship.
+  // District and state coverage come from the registry (issue #36: never
+  // hand-type platform counts). 36 = 28 states + 8 union territories.
+  const { activeDistricts, activeStates, totalIndiaDistricts } = getPlatformFacts();
   const cards: QuickAccessCard[] = [
-    { icon: MapPin,      label: "Districts",   meta: "10 of 780 live",        href: `/${locale}/india/districts` },
-    { icon: Square,      label: "States",      meta: "7 of 36 covered",       href: `/${locale}/india/states` },
+    { icon: MapPin,      label: "Districts",   meta: `${activeDistricts} of ${totalIndiaDistricts} live`, href: `/${locale}/india/districts` },
+    { icon: Square,      label: "States",      meta: `${activeStates} of 36 covered`, href: `/${locale}/india/states` },
     { icon: Building2,   label: "Schemes",     meta: "50+ central",           href: `/${locale}/india/category/governance` },
-    { icon: ShieldAlert, label: "Elections",   meta: "Lok Sabha · Vidhan",    href: `/${locale}/india/elections` },
-    { icon: FileText,    label: "RTI Toolkit", meta: "File · track · escalate", href: `/${locale}/india/rti-toolkit` },
-    { icon: IndianRupee, label: "Budget",      meta: "FY26 · ₹47.6L cr",      href: `/${locale}/india/budget` },
+    { icon: ShieldAlert, label: "Elections",   meta: "Lok Sabha and Vidhan Sabha", href: `/${locale}/india/elections` },
+    { icon: FileText,    label: "RTI toolkit", meta: "File, track, escalate", href: `/${locale}/india/rti-toolkit` },
+    { icon: IndianRupee, label: "Budget",      meta: "₹47.6L cr, FY26",       href: `/${locale}/india/budget` },
   ];
 
   return (
@@ -85,9 +89,11 @@ export function QuickAccessStrip({ locale }: QuickAccessStripProps) {
             </div>
             <span
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "9.5px",
-                color: "var(--color-text-tertiary)",
+                fontFamily: "var(--ftp-font-sans)",
+                fontSize: "10.5px",
+                lineHeight: "14px",
+                fontVariantNumeric: "tabular-nums",
+                color: "var(--ftp-text-2)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",

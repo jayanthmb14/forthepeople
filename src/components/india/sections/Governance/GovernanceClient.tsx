@@ -162,7 +162,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -236,7 +236,7 @@ function JusticeSystemCard({ data }: { data: GovernanceData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Justice System</span>
+        <span className={styles.rightCardTitle}>Justice system</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⚖
         </span>
@@ -284,7 +284,7 @@ function DefenceElectionsCard({ data }: { data: GovernanceData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Defence &amp; Elections</span>
+        <span className={styles.rightCardTitle}>Defence and elections</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🛡
         </span>
@@ -342,9 +342,7 @@ export function GovernanceClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {data.totalSuperCategories}
+              Section {data.superCategory.displayOrder} of {data.totalSuperCategories}
             </div>
             <h2 id="governance-title" className={styles.identityTitle}>
               {data.superCategory.title}
@@ -391,9 +389,6 @@ export function GovernanceClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -414,12 +409,12 @@ export function GovernanceClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -487,7 +482,7 @@ export function GovernanceClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>

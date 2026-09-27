@@ -184,7 +184,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -230,7 +230,7 @@ function DraftingTimelineCard() {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Drafting Timeline</span>
+        <span className={styles.rightCardTitle}>Drafting timeline</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⏳
         </span>
@@ -244,7 +244,7 @@ function DraftingTimelineCard() {
         ))}
       </div>
       <a href="#" className={styles.rightCardLink}>
-        Full timeline →
+        Full timeline
       </a>
     </div>
   );
@@ -254,7 +254,7 @@ function NotableArticlesCard() {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Notable Articles</span>
+        <span className={styles.rightCardTitle}>Notable articles</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⚖
         </span>
@@ -272,7 +272,7 @@ function NotableArticlesCard() {
         ))}
       </div>
       <a href="#" className={styles.rightCardLink}>
-        All {TOTAL_ARTICLE_COUNT_LABEL} articles →
+        All {TOTAL_ARTICLE_COUNT_LABEL} articles
       </a>
     </div>
   );
@@ -325,9 +325,7 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {INDIA_SUPER_CATEGORIES.length}
+              Section {data.superCategory.displayOrder} of {INDIA_SUPER_CATEGORIES.length}
             </div>
             <h2
               id="know-about-india-title"
@@ -375,9 +373,6 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -398,12 +393,12 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
                 </span>
                 {featuredHeadlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {featuredHeadlineInd.source}
+                    {featuredHeadlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "planned" && (
-                <span className={styles.plannedPill}>planned</span>
+                <span className={styles.plannedPill}>Planned</span>
               )}
             </div>
 
@@ -449,7 +444,7 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>
