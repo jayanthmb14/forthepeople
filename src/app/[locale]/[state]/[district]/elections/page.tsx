@@ -227,13 +227,18 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
   const turnoutCount = latestResults.filter((r) => r.turnoutPct).length;
   const hasTurnout = turnoutCount > 0;
 
-  const turnoutChart = filtered
-    .filter((r) => r.turnoutPct)
-    .slice(0, 12)
+  const withTurnout = filtered.filter((r) => r.turnoutPct).slice(0, 12);
+  // The same constituency can appear for several years (Mandya 2019 and
+  // 2024); add the year to those labels so the bars and the "highest /
+  // lowest" sentence don't read "Mandya … Mandya".
+  const repeated = new Set(
+    withTurnout.map((r) => r.constituency).filter((c, i, all) => all.indexOf(c) !== i),
+  );
+  const turnoutChart = withTurnout
     .map((r) => ({
-      name: r.constituency.slice(0, 12),
+      name: repeated.has(r.constituency) ? `${r.constituency.slice(0, 9)} ${r.year}` : r.constituency.slice(0, 12),
       // Full name, type and year for the tooltip and the table view.
-      nameFull: r.constituency,
+      nameFull: repeated.has(r.constituency) ? `${r.constituency} ${r.year}` : r.constituency,
       type: typeLabel(r.electionType),
       year: r.year,
       turnout: r.turnoutPct ?? 0,
