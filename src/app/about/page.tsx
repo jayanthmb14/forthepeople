@@ -4,22 +4,22 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  /about — Design v4 "Rang"
+// ═══════════════════════════════════════════════════════════════════════
+//  SiteHeader band (brand blue) → the long-form introduction (kept word for
+//  word: search engines and AI crawlers quote it) → mission → builder →
+//  "Platform at a glance" emoji tiles + an "In simple words" line built
+//  from the same registry counts → what we stand for (one colour per
+//  pillar) → sources → pledge → disclaimer → two buttons.
+
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  BarChart3,
-  ExternalLink,
-  FileSearch,
-  History,
-  Languages,
-  MapPinned,
-  Unlock,
-  UserRound,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { AlertTriangle, ExternalLink, Info } from "lucide-react";
 import { Card, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
+import SiteHeader from "@/components/site/SiteHeader";
+import type { Hue } from "@/lib/design/hues";
 import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
 
 // Every count on this page comes from the registry (issue #36) — never type
@@ -40,16 +40,15 @@ export const metadata: Metadata = {
   },
 };
 
-// Each pillar carries a Lucide icon component. This file is a server
-// component and renders the icon itself (<p.Icon />), so no function is ever
-// passed as a prop to a client component.
-const PILLARS: { Icon: LucideIcon; title: string; desc: string }[] = [
-  { Icon: BarChart3, title: "Real Data, Not Opinions", desc: "Every number comes from a government portal, official API, or publicly available document. We never fabricate or estimate data." },
-  { Icon: MapPinned, title: "Every District, Every State", desc: `Currently live in ${getCoveragePhrase()} — expanding to all ${FACTS.totalIndiaDistricts}+ districts across India.` },
-  { Icon: Languages, title: "Local Languages First", desc: "Data is presented in English and the regional language of each state — Kannada, Tamil, Telugu, Hindi, and more." },
-  { Icon: History, title: "Current + Historical", desc: "Crop prices and news are refreshed whenever the source portal publishes; every reading shows the date it was recorded. Budget and census data go back years. Both matter." },
-  { Icon: Unlock, title: "Free Forever", desc: "No paywalls, no subscriptions. Government data belongs to citizens. We just make it accessible." },
-  { Icon: FileSearch, title: "RTI Ready", desc: "Don't see what you need? We provide ready-to-send RTI templates so you can get any government information by right." },
+// Each pillar has one emoji and its own hue, so the six cards read as a
+// colourful set rather than six identical boxes.
+const PILLARS: { emoji: string; hue: Hue; title: string; desc: string }[] = [
+  { emoji: "📊", hue: "blue", title: "Real data, not opinions", desc: "Every number comes from a government portal, official API, or publicly available document. We never fabricate or estimate data." },
+  { emoji: "🗺️", hue: "green", title: "Every district, every state", desc: `Currently live in ${getCoveragePhrase()} — expanding to all ${FACTS.totalIndiaDistricts}+ districts across India.` },
+  { emoji: "🗣️", hue: "violet", title: "Local languages first", desc: "Data is presented in English and the regional language of each state — Kannada, Tamil, Telugu, Hindi, and more." },
+  { emoji: "🕰️", hue: "amber", title: "Current and historical", desc: "Crop prices and news are refreshed whenever the source portal publishes; every reading shows the date it was recorded. Budget and census data go back years. Both matter." },
+  { emoji: "🔓", hue: "teal", title: "Free forever", desc: "No paywalls, no subscriptions. Government data belongs to citizens. We just make it accessible." },
+  { emoji: "📜", hue: "indigo", title: "RTI ready", desc: "Don't see what you need? We provide ready-to-send RTI templates so you can get any government information by right." },
 ];
 
 const DATA_SOURCES = [
@@ -66,64 +65,62 @@ const DATA_SOURCES = [
 /** Body text at the reading size used across this page (15/24, text-2). */
 const READ: React.CSSProperties = { fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", margin: 0 };
 
-/** Inline text link in the brand colour. */
-const INLINE_LINK: React.CSSProperties = { color: "var(--ftp-brand)", textDecoration: "underline", textUnderlineOffset: 2 };
+/** Inline text link in the page hue. */
+const INLINE_LINK: React.CSSProperties = { color: "var(--hue-deep)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 };
+
+/** Shared button box (height, padding, radius, type). */
+const BUTTON: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  minHeight: 44,
+  padding: "0 20px",
+  borderRadius: "var(--ftp-radius-tile)",
+  fontSize: 14,
+  fontWeight: 600,
+  textDecoration: "none",
+};
 
 export default function AboutPage() {
   return (
-    <main style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
-      <div className="ftp-container" style={{ paddingTop: 32, paddingBottom: 64 }}>
-        {/* Reading column: long-form page, so it stays at a comfortable 720 px. */}
-        <div style={{ maxWidth: 720 }}>
+    <main className="ftp-hue-blue" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 64 }}>
+        {/* Reading column: long-form page, so it stays at a comfortable 760 px. */}
+        <div style={{ maxWidth: 760 }}>
           {/* ── Header ─────────────────────────────────────────────── */}
-          <header style={{ borderBottom: "1px solid var(--ftp-border)", paddingBottom: 24 }}>
-            <Link
-              href="/"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, color: "var(--ftp-text-2)", textDecoration: "none" }}
-            >
-              <ArrowLeft size={14} aria-hidden /> ForThePeople.in
-            </Link>
-            <h1 className="ftp-h1" style={{ marginTop: 4 }}>
-              Your District. Your Data. <span style={{ color: "var(--ftp-brand)" }}>Your Right.</span>
-            </h1>
-            <p style={{ ...READ, marginTop: 12 }}>
-              ForThePeople.in is India&apos;s citizen transparency platform, launched in 2026. We aggregate
-              district-level government data — budgets, crop prices, water levels, scheme coverage,
-              infrastructure, and more — and present it in a clear, accessible interface for every Indian.
-              The platform covers {getCoveragePhrase()} and plans to expand to all {FACTS.totalIndiaDistricts}+ Indian districts.
-            </p>
-          </header>
+          <SiteHeader
+            emoji="📖"
+            icon={Info}
+            title="Your District. Your Data. Your Right."
+            description="Free district-level government data for every Indian citizen."
+            backHref="/"
+          />
+
+          <p style={READ}>
+            ForThePeople.in is India&apos;s citizen transparency platform, launched in 2026. We aggregate
+            district-level government data — budgets, crop prices, water levels, scheme coverage,
+            infrastructure, and more — and present it in a clear, accessible interface for every Indian.
+            The platform covers {getCoveragePhrase()} and plans to expand to all {FACTS.totalIndiaDistricts}+ Indian districts.
+          </p>
 
           {/* ── Mission ────────────────────────────────────────────── */}
-          <Card padding={24} style={{ marginTop: 24 }}>
-            <p className="ftp-label">Our mission</p>
-            <p className="ftp-title" style={{ marginTop: 8, fontSize: 17, lineHeight: "26px" }}>
-              To make government data as easy to access as checking the weather — so that every citizen,
-              journalist, researcher, and elected representative can engage with governance based on facts.
-            </p>
-          </Card>
+          <Section title="Our mission" emoji="🎯">
+            <Card tinted padding={24}>
+              <p className="ftp-display" style={{ margin: 0, fontSize: 19, lineHeight: "28px", fontWeight: 600, color: "var(--hue-deep)" }}>
+                To make government data as easy to access as checking the weather — so that every citizen,
+                journalist, researcher, and elected representative can engage with governance based on facts.
+              </p>
+            </Card>
+          </Section>
 
           {/* ── Builder — E-E-A-T expertise signal ─────────────────── */}
-          <Section title="Who built this?">
+          <Section title="Who built this?" emoji="🧑‍💻">
             <Card padding={20} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-              <div
-                aria-hidden
-                style={{
-                  flexShrink: 0,
-                  width: 40,
-                  height: 40,
-                  borderRadius: "var(--ftp-radius-tile)",
-                  background: "var(--ftp-brand-tint)",
-                  color: "var(--ftp-brand)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <UserRound size={20} />
-              </div>
+              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
+                👤
+              </span>
               <div style={{ minWidth: 0 }}>
-                <p className="ftp-title">Jayanth M B</p>
+                <p className="ftp-title" style={{ fontWeight: 600 }}>Jayanth M B</p>
                 <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>
                   Entrepreneur and civic-tech advocate based in India. Built ForThePeople.in in 2026 as an independent
                   public-interest project to help citizens, journalists, researchers, and elected representatives
@@ -135,37 +132,48 @@ export default function AboutPage() {
 
           {/* ── Platform stats — citability block. Counts come from
                  getPlatformFacts() (registry-derived), never typed here. ── */}
-          <Section title="Platform at a glance">
+          <Section title="Platform at a glance" emoji="📊">
+            <Explainer title="In simple words">
+              Today ForThePeople.in is live in <strong>{FACTS.activeDistricts}</strong> district{FACTS.activeDistricts === 1 ? "" : "s"}{" "}
+              across <strong>{FACTS.activeStates}</strong> state{FACTS.activeStates === 1 ? "" : "s"}. India has{" "}
+              <strong>{FACTS.totalIndiaDistricts}+</strong> districts, and the plan is to cover every one of them.
+            </Explainer>
             <StatStrip cols={3}>
-              <StatTile label="Year launched" value="2026" />
-              <StatTile label="Live districts" value={FACTS.activeDistricts} sub={`Across ${FACTS.activeStates} state${FACTS.activeStates === 1 ? "" : "s"}`} />
-              <StatTile label="Districts planned" value={`${FACTS.totalIndiaDistricts}+`} />
-              <StatTile label="Data modules / district" value={FACTS.modulesPerDistrict} />
-              <StatTile label="Cost to access" value="Free" />
-              <StatTile label="Legal data basis" value="NDSAP" />
+              <StatTile emoji="🚀" label="Year launched" value="2026" countUp={false} />
+              <StatTile emoji="🏙️" label="Live districts" value={FACTS.activeDistricts} sub={`Across ${FACTS.activeStates} state${FACTS.activeStates === 1 ? "" : "s"}`} />
+              <StatTile emoji="🗺️" label="Districts planned" value={`${FACTS.totalIndiaDistricts}+`} />
+              <StatTile emoji="🧩" label="Data modules per district" value={FACTS.modulesPerDistrict} />
+              <StatTile emoji="🆓" label="Cost to access" value="Free" />
+              <StatTile emoji="⚖️" label="Legal data basis" value="NDSAP" />
             </StatStrip>
           </Section>
 
           {/* ── Pillars ────────────────────────────────────────────── */}
-          <Section title="What we stand for">
+          <Section title="What we stand for" emoji="🧭">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
               {PILLARS.map((p) => (
-                <Card key={p.title} as="article" padding={20}>
-                  <p.Icon size={20} aria-hidden style={{ color: "var(--ftp-brand)" }} />
-                  <h3 className="ftp-title" style={{ marginTop: 10 }}>{p.title}</h3>
-                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{p.desc}</p>
-                </Card>
+                <div key={p.title} className={`ftp-hue-${p.hue}`}>
+                  <Card as="article" tinted padding={20} style={{ height: "100%" }}>
+                    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
+                      {p.emoji}
+                    </span>
+                    <h3 className="ftp-display" style={{ margin: "12px 0 0", fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
+                      {p.title}
+                    </h3>
+                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6 }}>{p.desc}</p>
+                  </Card>
+                </div>
               ))}
             </div>
           </Section>
 
           {/* ── Data sources ───────────────────────────────────────── */}
-          <Section title="Data sources & methodology">
+          <Section title="Data sources and methodology" emoji="🏛️">
             <p style={{ ...READ, marginBottom: 16 }}>
               ForThePeople.in is an independent citizen transparency platform built on India&apos;s
               Right to Information principles (Article 19(1)(a) of the Constitution). Data is
               aggregated from official Government of India portals released under the{" "}
-              <strong style={{ color: "var(--ftp-text)", fontWeight: 500 }}>National Data Sharing and Accessibility Policy (NDSAP) 2012</strong>,
+              <strong style={{ color: "var(--ftp-text)", fontWeight: 600 }}>National Data Sharing and Accessibility Policy (NDSAP) 2012</strong>,
               accredited research institutions (IIPS for NFHS, ICMR, IMD), and publicly accessible
               verified sources (weather APIs, news headlines under fair use). We do not claim
               affiliation with any government body. Every numeric value is traceable to its
@@ -179,7 +187,7 @@ export default function AboutPage() {
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 140, minHeight: 32, fontSize: 13, fontWeight: 500, color: "var(--ftp-brand)", textDecoration: "none" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 140, minHeight: 32, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
                   >
                     {s.name}
                     <ExternalLink size={12} aria-hidden />
@@ -191,7 +199,7 @@ export default function AboutPage() {
           </Section>
 
           {/* ── Data pledge ────────────────────────────────────────── */}
-          <Section title="Our data pledge">
+          <Section title="Our data pledge" emoji="🤝">
             <p style={{ ...READ, marginBottom: 12 }}>
               Every data point is sourced from official government portals, public APIs, and gazetted documents.
               We document every source on our{" "}
@@ -204,13 +212,13 @@ export default function AboutPage() {
             </p>
           </Section>
 
-          {/* ── Disclaimer (warning shown as an icon + text, no tinted box) ── */}
-          <Card padding={20} style={{ marginTop: 32, display: "flex", gap: 12, alignItems: "flex-start" }}>
+          {/* ── Disclaimer (a warning keeps the semantic warn colour) ── */}
+          <Card padding={20} style={{ marginTop: 32, display: "flex", gap: 12, alignItems: "flex-start", borderColor: "color-mix(in srgb, var(--ftp-warn) 35%, var(--ftp-border))" }}>
             <AlertTriangle size={18} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 1 }} />
             <div>
               <p className="ftp-label" style={{ color: "var(--ftp-warn)" }}>Important disclaimer</p>
               <p className="ftp-body" style={{ color: "var(--ftp-text)", marginTop: 6 }}>
-                ForThePeople.in is an <strong style={{ fontWeight: 500 }}>independent, non-governmental initiative</strong>. It is NOT an official government website.
+                ForThePeople.in is an <strong style={{ fontWeight: 600 }}>independent, non-governmental initiative</strong>. It is NOT an official government website.
                 Data is sourced from public government portals under NDSAP and is provided for informational purposes only.
                 For official records, always refer to the original government source.
               </p>
@@ -219,17 +227,16 @@ export default function AboutPage() {
 
           {/* ── Calls to action ────────────────────────────────────── */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 32 }}>
-            <Link
-              href="/"
-              style={{ display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 20px", background: "var(--ftp-brand)", color: "var(--ftp-surface)", borderRadius: "var(--ftp-radius-tile)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}
-            >
+            <Link href="/" className="ftp-btn ftp-btn-primary" style={{ ...BUTTON, border: "1px solid var(--hue)", color: "#fff" }}>
+              <span className="ftp-emoji" aria-hidden>📍</span>
               Explore your district
             </Link>
             <Link
               href="/contribute"
-              className="ftp-btn-secondary"
-              style={{ display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 20px", background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", color: "var(--ftp-text)", borderRadius: "var(--ftp-radius-tile)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}
+              className="ftp-btn ftp-btn-secondary"
+              style={{ ...BUTTON, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", color: "var(--ftp-text)" }}
             >
+              <span className="ftp-emoji" aria-hidden>🙌</span>
               Contribute
             </Link>
           </div>
