@@ -22,7 +22,7 @@ import { ChevronRight, CloudLightning, CloudRain, CloudRainWind, Droplets, Info,
 import { CountUp } from "@/components/district/ui";
 import { ReadingAge, ageInDays } from "@/components/district/page-kit";
 import type { WeatherKind } from "@/lib/weather/codes";
-import { dayTip, type DayCheck, type DayTip, type ForecastDay, type ForecastSourceKey } from "@/lib/weather/forecast";
+import { AGREE_TOLERANCE_C, dayTip, type DayCheck, type DayTip, type ForecastDay, type ForecastSourceKey } from "@/lib/weather/forecast";
 import { WeatherArt } from "./WeatherArt";
 import { useWeatherText } from "./useWeatherText";
 import s from "./weather.module.css";
@@ -109,10 +109,13 @@ export function NowCard({
   view,
   today,
   oldStoredAt,
+  second,
   now,
   maxAgeHours,
 }: {
   view: NowView;
+  /** A second source's value for about the same time, to check ours against. */
+  second?: { temp: number; time: string; source: string } | null;
   /** Today's forecast row: adds today's high/low, rain and sunrise/sunset. */
   today?: ForecastDay | null;
   /** When the live value is shown because our stored reading is old: that reading's time. */
@@ -217,6 +220,22 @@ export function NowCard({
       ) : (
         <p className={s.meta} suppressHydrationWarning>
           {view.origin === "live" ? t.rich("now.live", { source: view.source.label, time: w.when(view.time), a }) : t("now.stored", { source: view.source.label, time: w.when(view.time) })}
+        </p>
+      )}
+      {!old && second && view.temp !== null && (
+        <p className={s.check} data-agree={String(Math.abs(second.temp - view.temp) <= AGREE_TOLERANCE_C)} suppressHydrationWarning>
+          {Math.abs(second.temp - view.temp) <= AGREE_TOLERANCE_C ? (
+            <ShieldCheck size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+          ) : (
+            <Scale size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+          )}
+          <span>
+            {t(Math.abs(second.temp - view.temp) <= AGREE_TOLERANCE_C ? "now.checkAgree" : "now.checkDiffer", {
+              source: second.source,
+              temp: w.degExact(second.temp),
+              time: w.time(second.time),
+            })}
+          </span>
         </p>
       )}
       {view.origin === "live" && oldStoredAt && now > 0 && (

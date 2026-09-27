@@ -1,5 +1,5 @@
 {
-  "description": "The latest weather reading with its time, and whether rain is above or below normal",
+  "description": "Weather now, tomorrow and the next 7 days, and whether rain is above or below normal",
   "mm": "{v} mm",
   "kmh": "km/h",
   "mmUnit": "mm",
@@ -215,11 +215,14 @@
       "snow": "it is snowing",
       "unknown": "the sky is not known"
     },
-    "explain": "Right now it is <b>{temp}</b> and {sky}."
+    "explain": "Right now it is <b>{temp}</b> and {sky}.",
+    "checkAgree": "Checked with a second source, {source}: {temp} at {time} IST. The two agree within 3°.",
+    "checkDiffer": "A second source, {source}, says {temp} at {time} IST. They differ by more than 3°, so take this as a rough guide."
   },
   "readingsOld": {
-    "summary": "Show the older readings we stored (newest from {date})",
-    "hint": "These came from our own weather collector, which has not stored a new reading since {date}. The weather above comes from the forecast service."
+    "summary": "Show older readings we stored (newest from {date})",
+    "hint": "These came from our own weather collector, which has not stored a new reading since {date}. The weather above comes from the forecast service.",
+    "hintHistory": "Readings more than two days old, kept for reference. They are not today's weather."
   },
   "shareTomorrow": "{district} tomorrow: {max} / {min}, {chance} chance of rain",
   "tile": {

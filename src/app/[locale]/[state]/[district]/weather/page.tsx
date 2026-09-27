@@ -91,6 +91,8 @@ const STALE_ROW_MINUTES = 24 * 60;
 const TREND_POINTS = 24;
 /** How many readings the list shows. */
 const LIST_POINTS = 12;
+/** Readings newer than this are "recent" (the list and the temperature line). */
+const RECENT_HOURS = 48;
 
 // English month names for the CSV file only (spreadsheets read it).
 const MONTHS_LONG_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -293,14 +295,20 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   const rainIsThisYear = Boolean(latestRain && now > 0 && latestRain.year === new Date(now).getUTCFullYear());
 
   // The temperature line: newest distinct readings that carry a temperature.
-  const trend = useMemo(() => distinctReadings(readings).filter((r) => r.temperature !== null && r.temperature !== undefined).slice(0, TREND_POINTS).reverse(), [readings]);
+  // Recent = the last 48 hours; anything older is history and folds away
+  // (the collector stopped for months, so a list can mix today and April).
+  const distinct = useMemo(() => distinctReadings(readings), [readings]);
+  const isRecentRow = (r: WeatherReading) => now > 0 && now - new Date(r.recordedAt).getTime() <= RECENT_HOURS * 3_600_000;
+  const recentRows = distinct.filter(isRecentRow);
+  const olderRows = now > 0 ? distinct.filter((r) => !isRecentRow(r)).slice(0, LIST_POINTS) : [];
+  const trend = recentRows.filter((r) => r.temperature !== null && r.temperature !== undefined).slice(0, TREND_POINTS).reverse();
   const trendData = trend.map((r) => ({ label: f.time(r.recordedAt, { hour: "numeric", minute: "2-digit" }), full: when(r.recordedAt), temp: r.temperature as number }));
   const coolest = trendData.length > 0 ? trendData.reduce((a, b) => (b.temp < a.temp ? b : a)) : null;
   const warmest = trendData.length > 0 ? trendData.reduce((a, b) => (b.temp > a.temp ? b : a)) : null;
-  const listRows = distinctReadings(readings).slice(0, LIST_POINTS);
-  // The temperature line only for current readings: its axis shows times of
+  const listRows = recentRows.slice(0, LIST_POINTS);
+  // The temperature line only from recent readings: its axis shows times of
   // day, so April readings would look like today's.
-  const showTrend = trendData.length >= 3 && !isOld;
+  const showTrend = trendData.length >= 3;
 
   function handleDownload() {
     downloadCSV(
@@ -343,9 +351,9 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   const openDay = opened?.kind === "day" ? primary?.days.find((d) => d.date === opened.date) ?? null : null;
   const monthLong = (r: RainfallHistory) => monthOf(r.year, r.month, { month: "long", year: "numeric" });
 
-  const readingList = (
+  const readingList = (rows: WeatherReading[]) => (
     <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, gap: 8, ["--ftp-grid-min" as string]: "300px" }}>
-      {listRows.map((r) => {
+      {rows.map((r) => {
         const stale = now > 0 && now - new Date(r.recordedAt).getTime() > STALE_ROW_MINUTES * 60_000;
         const temp = r.temperature !== null && r.temperature !== undefined ? deg(r.temperature) : "—";
         return (
@@ -448,8 +456,18 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* 3 + 4. Right now, and tomorrow — side by side on wider screens. */}
       {(nowView || tomorrow) && (
-        <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "300px" }}>
-          {nowView && <NowCard view={nowView} today={today} oldStoredAt={showingLive && isOld && latest ? latest.recordedAt : null} now={now} maxAgeHours={MAX_AGE_HOURS} />}
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
+          {nowView && (
+            <NowCard
+              view={nowView}
+              today={today}
+              oldStoredAt={showingLive && isOld && latest ? latest.recordedAt : null}
+              // Our fresh reading, checked against the forecast service's value for about the same time.
+              second={nowView.origin === "stored" && live && primary ? { temp: live.temperature, time: live.time, source: FORECAST_SOURCES[primary.source].label } : null}
+              now={now}
+              maxAgeHours={MAX_AGE_HOURS}
+            />
+          )}
           {tomorrow && primary && forecast && (
             <TomorrowCard
               day={tomorrow}
@@ -670,23 +688,25 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       {/* Recent readings: tap one for every detail. Rows older than a day are
           greyed. When even the newest is old, the list folds away under one
           line that says how old it is. */}
-      {!wLoading && listRows.length > 1 && !isOld && (
+      {!wLoading && listRows.length > 1 && (
         <Section title={t("readings.title")}>
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px" }}>
             {t("readings.hint")}
           </p>
-          {readingList}
+          {readingList(listRows)}
         </Section>
       )}
-      {!wLoading && listRows.length > 0 && isOld && latest && (
+      {!wLoading && olderRows.length > 0 && (
         <details style={{ marginTop: 8 }}>
           <summary style={{ cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }} suppressHydrationWarning>
-            {t("readingsOld.summary", { date: f.date(latest.recordedAt, { day: "numeric", month: "short", year: "numeric" }) })}
+            {t("readingsOld.summary", { date: f.date(olderRows[0].recordedAt, { day: "numeric", month: "short", year: "numeric" }) })}
           </summary>
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 12px" }} suppressHydrationWarning>
-            {t("readingsOld.hint", { date: f.date(latest.recordedAt, { day: "numeric", month: "short", year: "numeric" }) })}
+            {isOld && latest
+              ? t("readingsOld.hint", { date: f.date(latest.recordedAt, { day: "numeric", month: "short", year: "numeric" }) })
+              : t("readingsOld.hintHistory")}
           </p>
-          {readingList}
+          {readingList(olderRows)}
         </details>
       )}
 
