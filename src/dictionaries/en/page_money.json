@@ -18,7 +18,13 @@
     "newsArticles": "News articles (Google News RSS + regional media)",
     "pressReleases": "Government press releases",
     "stateIndustrialCorp": "State Industrial Development Corporation",
-    "stateTreasury": "State Treasury / eGramSwaraj"
+    "stateTreasury": "State Treasury / eGramSwaraj",
+    "districtAdmin": "District administration",
+    "districtNic": "District NIC portal",
+    "stateDirectory": "State government directory",
+    "districtIndustries": "District Industries Centre",
+    "statePsc": "State PSC and recruitment boards",
+    "govPortals": "Government public data portals"
   },
   "freq": {
     "whenPublished": "When the source publishes",

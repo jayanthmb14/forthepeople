@@ -46,3 +46,12 @@ describe("getStateConfig per district", () => {
     expect(getModuleSources("power", "maharashtra", "mumbai").sources[0]).toMatch(/BEST/);
   });
 });
+
+describe("getModuleSources links", () => {
+  it("gives official links for known source names and the district's power company", () => {
+    expect(getModuleSources("courts", "karnataka").links?.["NJDG (National Judicial Data Grid)"]).toBe("https://njdg.ecourts.gov.in");
+    const power = getModuleSources("power", "maharashtra", "pune");
+    expect(power.links?.[power.sources[0]]).toBe("https://www.mahadiscom.in");
+    expect(getModuleSources("unknown-module", "karnataka").links).toBeUndefined();
+  });
+});

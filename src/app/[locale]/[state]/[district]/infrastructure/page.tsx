@@ -11,8 +11,8 @@
  * construction, 9 announced or approved and 1 completed. 5 are late or
  * stalled."
  * Page recipe (docs/LAYOUT.md, v5 calm):
- *   ModulePage → PageHeader → "N days old" note when the newest update is
- *   stale → Explainer → 4 StatTiles (followed, late or stalled, completed,
+ *   ModulePage → PageHeader (the district shell adds the "N days old" note
+ *   above it when the list is stale) → Explainer → 4 StatTiles (followed, late or stalled, completed,
  *   money announced) → the picture (one stage bar) → one provenance line →
  *   filters + descriptive project cards (what it is, kind, where, stage,
  *   budget in rupees, finish date, our own points, last update); tapping a
@@ -70,7 +70,7 @@ import ProjectCard, { budgetOf } from "./components/ProjectCard";
 import ProjectSheet from "./components/ProjectSheet";
 import LegalFooter from "./components/LegalFooter";
 import DisclaimerBanner from "./components/DisclaimerBanner";
-import DataFreshnessIndicator, { NEWS_MAX_DAYS, newestUpdate } from "./components/DataFreshnessIndicator";
+import { NEWS_MAX_DAYS, newestUpdate } from "./components/DataFreshnessIndicator";
 
 type StageFilter = "all" | "building" | "planned" | "late" | "completed";
 type SortOption = "stage" | "latest" | "budget" | "progress";
@@ -226,9 +226,6 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
 
       {!isLoading && projects.length > 0 && (
         <>
-          {/* Old list? Say so plainly, first. */}
-          <DataFreshnessIndicator projects={projects} />
-
           {/* 1. The answer in one sentence (plus what needs attention). */}
           <Explainer>
             {t.rich("v5.explainer", { district: districtName, total: counts.total, building: counts.building, planned: counts.planned, done: counts.completed, num })}{" "}

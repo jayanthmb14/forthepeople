@@ -20,9 +20,10 @@
 //    least of their funds used) → Share / Compare. Urban districts (from
 //    the per-district config, so Pune is not treated like Mumbai) get
 //    their municipal body instead of an empty page. Sources, the "not an
-//    official website" line and "report a mistake" live in the district
-//    shell's verification panel, not here (v5: no repetition, no emoji
-//    except the module's own in the header).
+//    official website" line, "report a mistake" and the "N days old" note
+//    live in the district shell (verification panel, stale notice), not
+//    here (v5: no repetition, no emoji except the module's own in the
+//    header).
 //
 //  Data: usePanchayats() (every column of the district's GramPanchayat
 //  rows) and useOverview() for taluk names. Amounts are whole rupees and
@@ -52,7 +53,7 @@ import {
   EmptyState,
 } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
-import { IconPictogram, StaleNote } from "@/components/district/calm-parts";
+import { IconPictogram } from "@/components/district/calm-parts";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { HueBarList, HueDonut, namePair, useDistrictName } from "@/components/land-water/visuals";
@@ -73,7 +74,7 @@ const WATER_BANDS: Array<{ key: "full" | "most" | "half" | "low"; min: number }>
   { key: "half", min: 50 },
   { key: "low", min: 0 },
 ];
-/** eGramSwaraj publishes monthly; a record older than this gets the calm "N days old" note. */
+/** eGramSwaraj publishes monthly; older records count as late (header colour). */
 const MAX_AGE_DAYS = 90;
 
 /** How many panchayats the "used the least" bars show. */
@@ -210,9 +211,6 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
 
       {hasData && (
         <>
-          {/* Old records say so plainly. */}
-          <StaleNote asOf={lastUpdated} maxAgeDays={MAX_AGE_DAYS} style={{ marginBottom: 16 }} />
-
           {/* 1 · The answer in plain words. */}
           <Explainer>
             {t.rich("answer", { b: bold, district: districtName, n: gps.length })}{" "}

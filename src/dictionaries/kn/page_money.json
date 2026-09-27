@@ -18,7 +18,13 @@
     "newsArticles": "ಸುದ್ದಿ ಲೇಖನಗಳು (Google News RSS ಮತ್ತು ಪ್ರಾದೇಶಿಕ ಮಾಧ್ಯಮ)",
     "pressReleases": "ಸರ್ಕಾರಿ ಪತ್ರಿಕಾ ಪ್ರಕಟಣೆಗಳು",
     "stateIndustrialCorp": "ರಾಜ್ಯ ಕೈಗಾರಿಕಾ ಅಭಿವೃದ್ಧಿ ನಿಗಮ",
-    "stateTreasury": "ರಾಜ್ಯ ಖಜಾನೆ / eGramSwaraj"
+    "stateTreasury": "ರಾಜ್ಯ ಖಜಾನೆ / eGramSwaraj",
+    "districtAdmin": "ಜಿಲ್ಲಾಡಳಿತ",
+    "districtNic": "ಜಿಲ್ಲಾ NIC ಪೋರ್ಟಲ್",
+    "stateDirectory": "ರಾಜ್ಯ ಸರ್ಕಾರದ ಮಾಹಿತಿ ಕೋಶ",
+    "districtIndustries": "ಜಿಲ್ಲಾ ಕೈಗಾರಿಕಾ ಕೇಂದ್ರ",
+    "statePsc": "ರಾಜ್ಯ ಲೋಕಸೇವಾ ಆಯೋಗ ಮತ್ತು ನೇಮಕಾತಿ ಮಂಡಳಿಗಳು",
+    "govPortals": "ಸರ್ಕಾರಿ ಸಾರ್ವಜನಿಕ ಡೇಟಾ ಪೋರ್ಟಲ್‌ಗಳು"
   },
   "freq": {
     "whenPublished": "ಮೂಲದಲ್ಲಿ ಪ್ರಕಟವಾದಾಗ",

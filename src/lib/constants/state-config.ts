@@ -501,7 +501,33 @@ export interface ModuleSourceInfo {
   sources: string[];
   frequency: string;
   isLive?: boolean;
+  /** Official website for a source name in `sources`, when there is one (for the verification panel). */
+  links?: Record<string, string>;
 }
+
+/** Official websites for source names used in getModuleSources(). */
+const SOURCE_LINKS: Record<string, string> = {
+  "PFMS (Public Financial Management System)": "https://pfms.nic.in",
+  "State Treasury / eGramSwaraj": "https://egramswaraj.gov.in",
+  "NCRB (National Crime Records Bureau)": "https://ncrb.gov.in",
+  "data.gov.in": "https://data.gov.in",
+  "Election Commission of India (ECI)": "https://eci.gov.in",
+  "NJDG (National Judicial Data Grid)": "https://njdg.ecourts.gov.in",
+  "MyScheme.gov.in": "https://www.myscheme.gov.in",
+  "AwaasSoft (PMAY Dashboard)": "https://pmayg.nic.in",
+  eGramSwaraj: "https://egramswaraj.gov.in",
+  "NREGA.nic.in": "https://nrega.nic.in",
+  UPSC: "https://upsc.gov.in",
+  SSC: "https://ssc.gov.in",
+  "KPPP (Karnataka eProc)": "https://kppp.karnataka.gov.in",
+  "CPPP (GePNIC)": "https://eprocure.gov.in/cppp/",
+  IREPS: "https://www.ireps.gov.in",
+  "defproc.gov.in": "https://defproc.gov.in",
+  "Jal Jeevan Mission National Dashboard (eJalShakti)": "https://ejalshakti.gov.in/jjmreport",
+  "UDISE+ (Unified District Information System for Education)": "https://udiseplus.gov.in",
+  "AGMARKNET (Agricultural Marketing Information Network)": "https://agmarknet.gov.in",
+  "India Meteorological Department (IMD)": "https://mausam.imd.gov.in",
+};
 
 // Honesty rule (Sept 2026 audit): `isLive` is true ONLY for modules that a
 // Vercel cron in vercel.json actually refreshes — weather (every 30 min) and
@@ -558,7 +584,7 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     news:              { sources: ["Google News RSS", "Regional news aggregation"], frequency: "Daily" },
     "famous-personalities": { sources: ["Wikipedia (CC-BY-SA licensed)"], frequency: "Static" },
     offices:           { sources: ["District NIC Portal", "State Government Directory"], frequency: "Quarterly" },
-    exams:             { sources: ["UPSC", "SSC", "State PSC / Recruitment Boards"], frequency: "Daily" },
+    exams:             { sources: ["UPSC", "SSC", "State PSC / Recruitment Boards", "News articles (Google News RSS + regional media)"], frequency: "When the source publishes" },
     "data-sources":    { sources: ["ForThePeople.in transparency page"], frequency: "Updated with each release" },
     "citizen-corner":  { sources: ["District Administration", "Citizen feedback"], frequency: "Weekly" },
     alerts:            { sources: ["IMD", "District Administration", "NDMA"], frequency: "When the source publishes" },
@@ -567,7 +593,13 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     services:          { sources: ["District NIC Portal", "State Government Directory", "MyScheme.gov.in"], frequency: "When the source publishes" },
     tenders:           { sources: ["KPPP (Karnataka eProc)", "CPPP (GePNIC)", "IREPS", "defproc.gov.in", "BEL eProc", "HAL TenderWizard"], frequency: "When the source publishes" },
   };
-  return map[moduleName] ?? { sources: ["Government public data portals"], frequency: "Periodic" };
+  const info = map[moduleName] ?? { sources: ["Government public data portals"], frequency: "Periodic" };
+  const links: Record<string, string> = {};
+  for (const name of info.sources) if (SOURCE_LINKS[name]) links[name] = SOURCE_LINKS[name];
+  // The state's own portals (power company, water department) where the registry names them.
+  if (config?.discomPortalUrl && info.sources.includes(config.discomFullName)) links[config.discomFullName] = config.discomPortalUrl;
+  if (config?.stateTransportUrl && info.sources.includes(config.stateTransportFullName)) links[config.stateTransportFullName] = config.stateTransportUrl;
+  return Object.keys(links).length ? { ...info, links } : info;
 }
 
 // ── AI insight update frequency by module ───────────────────
