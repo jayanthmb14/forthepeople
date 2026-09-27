@@ -82,7 +82,7 @@
     "updated": "Updated"
   },
   "footer": {
-    "disclaimer": "Independent citizen initiative. NOT an official government website. Data under NDSAP.",
+    "disclaimer": "Independent citizen initiative. Not a government website. Data from government portals (NDSAP), research institutions and other reputed sources.",
     "builtBy": "An independent citizen-transparency initiative"
   },
   "india": {
@@ -481,23 +481,28 @@
   },
   "footer2": {
     "tagline": "Your district. Your data. Your right.",
-    "note": "An independent citizen project. Not a government website. Data from official portals under NDSAP; always verify at the source.",
+    "note": "An independent citizen project, not a government website. Data from government portals (NDSAP), research institutions and other reputed sources — each figure shows its source and date. Please check the source before you rely on a figure.",
     "explore": "Explore",
     "involved": "Get involved",
     "about": "About",
     "indiaDashboard": "India dashboard",
     "voteDistrict": "Vote for a district",
     "compare": "Compare districts",
+    "pricesToday": "Prices today",
     "contribute": "Contribute",
+    "suggestFeature": "Suggest a feature",
     "voteFeatures": "Vote on features",
     "feedback": "Feedback",
     "supportProject": "Support the project",
+    "github": "Code on GitHub",
     "aboutUs": "About",
     "privacy": "Privacy",
     "disclaimer": "Disclaimer",
+    "connectName": "ForThePeople Connect:",
+    "connectSoon": "Coming soon",
+    "connectBody": "report local problems like potholes and garbage.",
     "builtBy": "Built by Jayanth M B in Mandya",
-    "article": "Free expression under Article 19(1)(a)",
-    "refreshed": "Data refreshed {ago}"
+    "article": "Free expression under Article 19(1)(a)"
   },
   "errors": {
     "notFoundTitle": "We couldn't find that page",
@@ -545,27 +550,6 @@
     "spent": "{amount} spent",
     "sectors": "{n, plural, one {# sector} other {# sectors}}",
     "nothingNew": "Nothing new was published for {name} in the last {days} days. Older records are still on the <link>full district page</link>."
-  },
-  "citizens": {
-    "title": "Built with citizens",
-    "loadingSupporters": "Loading supporters…",
-    "beFirst": "Be the first to back this project",
-    "backedBy": "Backed by <num>{n}</num> {n, plural, one {citizen} other {citizens}}",
-    "noCorporate": "No corporate funding. No ads. Citizens backing citizens.",
-    "anonymousTitle": "Supporters who chose not to show their name",
-    "anonymous": "Anonymous",
-    "more": "+{n} more",
-    "viewAll": "View all and how to join",
-    "sponsor": "Sponsor a district",
-    "topVoted": "Top voted features",
-    "votesIdeas": "{votes, plural, one {# vote} other {# votes}}, {ideas, plural, one {# idea} other {# ideas}}",
-    "votesAria": "{n} votes",
-    "noIdeas": "No ideas yet. Be the first.",
-    "thanks": "Thanks. Your idea has been received.",
-    "shareYourIdea": "Share your idea",
-    "cancel": "Cancel",
-    "shareIdea": "Share an idea",
-    "viewFeatures": "View all features"
   },
   "sidebar": {
     "navigation": "District navigation",
