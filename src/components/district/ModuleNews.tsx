@@ -4,12 +4,27 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  ModuleNews — "Related news" block at the bottom of every module page
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Design v3 "Civic Ledger" (CONCEPT-v3 §5, Module page). Fetches the
+//  district's news once and keeps only the articles the AI news pipeline
+//  tagged for THIS module (targetModule === module). Renders nothing when
+//  there are none — an empty "Related news" heading helps no one.
+//
+//  Each article is a quiet Card: source + date on top (so a reader knows
+//  where and when it came from), the headline below. The whole card is the
+//  link to the original article when we have one (big touch target on
+//  phones). No emoji, no colours other than tokens.
+//
 "use client";
 
 import { useState, useEffect } from "react";
-import { Newspaper, ExternalLink, Clock } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { SectionLabel } from "@/components/district/ui";
+import { Section, Card } from "@/components/district/ui";
+import { timeAgoLabel, asOfLabel } from "@/lib/utils/timeAgo";
 
 interface NewsItem {
   id: string;
@@ -22,16 +37,17 @@ interface NewsItem {
   targetModule?: string | null;
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(diff / 86400000);
-  if (h < 1) return "Just now";
-  if (h < 24) return `${h}h ago`;
-  if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+/**
+ * How old an article is, in words. Under a week we say "5h ago" / "3d ago";
+ * older articles get their date ("12 Sep") because "41d ago" is hard to read.
+ */
+function publishedLabel(iso: string): string {
+  const { label } = timeAgoLabel(iso);
+  const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
+  return days < 7 ? label : asOfLabel(iso, { prefix: "" });
 }
 
+/** News feeds sometimes leave HTML entities in headlines — tidy them up. */
 function cleanHtml(text: string): string {
   return text
     .replace(/&nbsp;/g, " ")
@@ -46,7 +62,9 @@ interface ModuleNewsProps {
   district: string;
   state: string;
   locale: string;
+  /** Module slug, e.g. "crops". Only articles tagged for it are shown. */
   module: string;
+  /** Maximum number of articles (default 5). */
   limit?: number;
 }
 
@@ -68,48 +86,78 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
       .catch(() => setLoaded(true));
   }, [district, state, module, limit]);
 
+  // Nothing tagged for this module (or still loading) → render nothing.
   if (!loaded || news.length === 0) return null;
 
   const base = `/${locale}/${state}/${district}`;
 
   return (
-    <div style={{ marginTop: 32 }}>
-      <SectionLabel>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <Newspaper size={14} /> Related News
-        </span>
-      </SectionLabel>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {news.map((n) => (
-          <div key={n.id} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, color: "#9B9B9B", display: "flex", alignItems: "center", gap: 3 }}>
-                    <Clock size={10} />{timeAgo(n.publishedAt)}
-                  </span>
-                  <span style={{ fontSize: 11, color: "#9B9B9B" }}>{n.source}</span>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", lineHeight: 1.4 }}>
-                  {cleanHtml(n.headline)}
-                </div>
-              </div>
-              {n.url && (
-                <a href={n.url} target="_blank" rel="noopener noreferrer" style={{
-                  display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: "#2563EB", textDecoration: "none", flexShrink: 0,
-                }}>
-                  <ExternalLink size={13} />
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ marginTop: 8 }}>
-        <Link href={`${base}/news`} style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", fontWeight: 500 }}>
+    <Section
+      title="Related news"
+      action={
+        <Link
+          href={`${base}/news`}
+          style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-brand)", textDecoration: "none", fontWeight: 500 }}
+        >
           View all news →
         </Link>
-      </div>
-    </div>
+      }
+    >
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        {news.map((n) => {
+          // Card body: "Source · 5h ago" line, then the headline.
+          const body = (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minHeight: 44 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="ftp-label" style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
+                  <span>{n.source}</span>
+                  <span aria-hidden> · </span>
+                  <time dateTime={n.publishedAt} className="ftp-num" style={{ fontWeight: 400 }}>
+                    {publishedLabel(n.publishedAt)}
+                  </time>
+                </p>
+                <p className="ftp-title" style={{ fontSize: 13, lineHeight: "20px", marginTop: 2 }}>
+                  {cleanHtml(n.headline)}
+                </p>
+              </div>
+              {n.url && (
+                <ExternalLink size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
+              )}
+            </div>
+          );
+
+          return (
+            <li key={n.id}>
+              {n.url ? (
+                // External article: the whole card is the link. Uses a plain
+                // <a> (not Card href) because it leaves the site in a new tab.
+                <a
+                  href={n.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ftp-card-link"
+                  style={{
+                    display: "block",
+                    textDecoration: "none",
+                    color: "inherit",
+                    background: "var(--ftp-surface)",
+                    border: "1px solid var(--ftp-border)",
+                    borderRadius: "var(--ftp-radius-card)",
+                    padding: "12px 16px",
+                  }}
+                >
+                  {body}
+                  <span className="sr-only"> (opens the original article in a new tab)</span>
+                </a>
+              ) : (
+                <Card padding={12} style={{ padding: "12px 16px" }}>
+                  {body}
+                </Card>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
   );
 }

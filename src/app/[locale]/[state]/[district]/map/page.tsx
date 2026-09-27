@@ -4,12 +4,26 @@
  * https://github.com/jayanthmb14/forthepeople
 */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  District Map — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  PageHeader (data accent: blue) → StatStrip (taluks, villages, area,
+//  population) → the interactive taluk map when our boundary file covers
+//  every taluk, otherwise an honest note + a card grid → the list of
+//  taluks with village counts → SourcesFooter → Toolbar.
+//
+//  Map behaviour (click a taluk to open it) is unchanged; only the chrome
+//  around it uses the v3 tokens and kit.
+//
 "use client";
 import { use, useState, useEffect } from "react";
-import { Map, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { Map, ChevronRight, Share2 } from "lucide-react";
 import { useTaluks, useOverview } from "@/hooks/useRealtimeData";
-import { ModuleHeader, StatCard, SectionLabel, LoadingShell } from "@/components/district/ui";
+import {
+  PageHeader, StatStrip, StatTile, Section, Card, LoadingShell,
+  SourcesFooter, Toolbar, ToolbarButton,
+} from "@/components/district/ui";
 import TalukMap from "@/components/map/TalukMap";
 import { getStateConfig } from "@/lib/constants/state-config";
 
@@ -82,7 +96,7 @@ function DistrictMapArea({
 
   if (coverage.status === "loading") return <LoadingShell rows={2} />;
 
-  // Render the interactive D3 map only when the GeoJSON covers every DB taluk.
+  // Render the interactive map only when the GeoJSON covers every DB taluk.
   if (coverage.status === "full") {
     const mapTaluks = talukList.map((t) => ({
       slug: t.slug,
@@ -91,13 +105,13 @@ function DistrictMapArea({
       villageCount: t.villageCount,
     }));
     return (
-      <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 14, padding: 16, marginBottom: 24 }}>
+      <Card>
         <TalukMap locale={locale} state={state} district={district} taluks={mapTaluks} />
-      </div>
+      </Card>
     );
   }
 
-  // Fallback: card grid covering every DB taluk.
+  // Fallback: an honest one-line note, then a card grid covering every DB taluk.
   const headline =
     coverage.status === "partial"
       ? `Boundary data covers ${coverage.features} of ${talukList.length} ${urbanLabel ? "zones" : "taluks"} — showing the full list below.`
@@ -105,80 +119,55 @@ function DistrictMapArea({
 
   return (
     <>
-      <div
-        style={{
-          background: "#FFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 12,
-          padding: "12px 14px",
-          marginBottom: 12,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          fontSize: 12,
-          color: "#6B6B6B",
-        }}
-      >
-        <Map size={14} style={{ color: "#9B9B9B", flexShrink: 0 }} />
+      <p style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "0 0 12px" }}>
+        <Map size={16} aria-hidden style={{ flexShrink: 0 }} />
         <span>{headline}</span>
-      </div>
+      </p>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: 10,
-          marginBottom: 24,
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))",
+          gap: 12,
         }}
       >
         {talukList.map((t) => (
-          <Link
-            key={t.slug}
-            href={`/${locale}/${state}/${district}/${t.slug}`}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 8,
-              padding: "12px 14px",
-              background: "#FFF",
-              border: "1px solid #E8E8E4",
-              borderRadius: 12,
-              textDecoration: "none",
-              transition: "border-color 150ms, box-shadow 150ms",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = "#2563EB";
-              (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(37,99,235,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = "#E8E8E4";
-              (e.currentTarget as HTMLElement).style.boxShadow = "none";
-            }}
-          >
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{t.name}</div>
-              {t.nameLocal && (
-                <div style={{ fontSize: 12, color: "#9B9B9B", fontFamily: "var(--font-regional)", marginTop: 2 }}>
-                  {t.nameLocal}
-                </div>
-              )}
-              {(t.population != null || t.area != null) && (
-                <div style={{ fontSize: 11, color: "#6B6B6B", marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {t.population != null && (
-                    <span style={{ fontFamily: "var(--font-mono)" }}>{t.population.toLocaleString("en-IN")} pop</span>
-                  )}
-                  {t.area != null && (
-                    <span style={{ fontFamily: "var(--font-mono)" }}>· {t.area} km²</span>
-                  )}
-                </div>
-              )}
+          <Card key={t.slug} href={`/${locale}/${state}/${district}/${t.slug}`} padding={14}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>{t.name}</div>
+                {t.nameLocal && (
+                  <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", marginTop: 2 }}>
+                    {t.nameLocal}
+                  </div>
+                )}
+                {(t.population != null || t.area != null) && (
+                  <div className="ftp-num" style={{ fontSize: 11, lineHeight: "16px", fontWeight: 400, color: "var(--ftp-text-2)", marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {t.population != null && <span>{t.population.toLocaleString("en-IN")} pop</span>}
+                    {t.area != null && <span>· {t.area} km²</span>}
+                  </div>
+                )}
+              </div>
+              <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
             </div>
-            <ChevronRight size={15} style={{ color: "#C0C0C0", flexShrink: 0, marginTop: 2 }} />
-          </Link>
+          </Card>
         ))}
       </div>
     </>
   );
+}
+
+/** Share button: the phone's share sheet when available, else copy the link. */
+function SharePageButton() {
+  const [copied, setCopied] = useState(false);
+  function share() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: document.title, url }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
+    }
+  }
+  return <ToolbarButton icon={Share2} onClick={share}>{copied ? "Link copied" : "Share"}</ToolbarButton>;
 }
 
 export default function MapPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -194,6 +183,8 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
   const taluks = taluksData?.data ?? [];
   const overview = overviewData?.data;
   const isLoading = taluksLoading || overviewLoading;
+  // Data date of the overview record (area / population), when the API has one.
+  const overviewAsOf = overviewData?.meta?.lastUpdated ?? null;
 
   const talukList: TalukCard[] = taluks.map((t) => ({
     slug: t.slug,
@@ -204,14 +195,17 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
     villageCount: t._count.villages,
   }));
 
-  const mapSectionLabel = hideVillages ? "Urban Zones" : `${subUnit} Map`;
+  const mapSectionLabel = hideVillages ? "Urban zones" : `${subUnit} map`;
   const listSectionLabel = hideVillages
     ? `Zones in ${overview?.name ?? "this district"}`
-    : `${subUnitPlural}${hideVillages ? "" : " & Villages"}`;
+    : `${subUnitPlural}${hideVillages ? "" : " & villages"}`;
+
+  // StatStrip wants 2–4 tiles; count the ones we will render.
+  const tileCount = 1 + (hideVillages ? 0 : 1) + (overview?.area ? 1 : 0) + (overview?.population ? 1 : 0);
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader
+    <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
+      <PageHeader
         icon={Map}
         title="District Map"
         description={
@@ -220,58 +214,77 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
             : `Interactive ${subUnit.toLowerCase()} map — click to explore each ${subUnit.toLowerCase()}`
         }
         backHref={base}
+        accent="blue"
+        source={{ label: "OpenStreetMap", href: "https://www.openstreetmap.org/copyright" }}
       />
       {isLoading && <LoadingShell rows={4} />}
 
       {!isLoading && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-            <StatCard label={hideVillages ? "Zones" : subUnitPlural} value={taluks.length} icon={Map} />
-            {!hideVillages && <StatCard label="Villages" value={taluks.reduce((s, t) => s + t._count.villages, 0).toLocaleString("en-IN")} />}
-            {overview?.area && <StatCard label="Area" value={`${overview.area.toLocaleString("en-IN")} km²`} />}
-            {overview?.population && <StatCard label="Population" value={`${(overview.population / 1000000).toFixed(2)}M`} />}
-          </div>
+          <StatStrip cols={Math.min(4, Math.max(2, tileCount)) as 2 | 3 | 4}>
+            <StatTile label={hideVillages ? "Zones" : subUnitPlural} value={taluks.length} icon={Map} />
+            {!hideVillages && (
+              <StatTile label="Villages" value={taluks.reduce((s, t) => s + t._count.villages, 0).toLocaleString("en-IN")} />
+            )}
+            {overview?.area && (
+              <StatTile label="Area" value={overview.area.toLocaleString("en-IN")} unit="km²" asOf={overviewAsOf} />
+            )}
+            {overview?.population && (
+              <StatTile label="Population" value={(overview.population / 1000000).toFixed(2)} unit="M" asOf={overviewAsOf} />
+            )}
+          </StatStrip>
 
           {/* Map or card-grid fallback */}
-          <SectionLabel>{mapSectionLabel}</SectionLabel>
-          <DistrictMapArea
-            locale={locale}
-            state={state}
-            district={district}
-            talukList={talukList}
-            urbanLabel={hideVillages}
-          />
+          <Section title={mapSectionLabel}>
+            <DistrictMapArea
+              locale={locale}
+              state={state}
+              district={district}
+              talukList={talukList}
+              urbanLabel={hideVillages}
+            />
+          </Section>
 
-          {/* Optional: duplicated list with village counts for rural districts */}
+          {/* List with village counts for rural districts */}
           {!hideVillages && (
-            <>
-              <SectionLabel>{listSectionLabel}</SectionLabel>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Section title={listSectionLabel}>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                 {taluks.map((t) => (
-                  <div key={t.id} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, overflow: "hidden" }}>
-                    <Link
-                      href={`/${locale}/${state}/${district}/${t.slug}`}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "12px 16px", textDecoration: "none",
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{t.name}</div>
-                        {t.nameLocal && <div style={{ fontSize: 12, color: "#9B9B9B", fontFamily: "var(--font-regional)" }}>{t.nameLocal}</div>}
+                  <li key={t.id}>
+                    <Card href={`/${locale}/${state}/${district}/${t.slug}`} padding={0}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 16px", minHeight: 56 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>{t.name}</div>
+                          {t.nameLocal && (
+                            <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t.nameLocal}</div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+                            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{t._count.villages}</span> villages
+                          </span>
+                          <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 13, color: "#6B6B6B" }}>{t._count.villages} villages</span>
-                        <ChevronRight size={16} style={{ color: "#C0C0C0" }} />
-                      </div>
-                    </Link>
-                  </div>
+                    </Card>
+                  </li>
                 ))}
-              </div>
-            </>
+              </ul>
+            </Section>
           )}
         </>
       )}
+
+      {/* Taluk boundaries are built from OpenStreetMap (scripts/build-mandya-taluks.mjs).
+          If a district's boundary file comes from elsewhere, add it here. */}
+      <SourcesFooter
+        sources={[
+          { name: "OpenStreetMap contributors (taluk boundaries)", url: "https://www.openstreetmap.org/copyright", licence: "ODbL" },
+        ]}
+      />
+      <Toolbar>
+        <SharePageButton />
+      </Toolbar>
     </div>
   );
 }

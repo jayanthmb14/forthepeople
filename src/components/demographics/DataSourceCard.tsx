@@ -1,5 +1,12 @@
 "use client";
 
+// Source line at the bottom of every Population chart card:
+//   Source name ↗ · Ref year 2011 · [age pill] · licence · Retrieved 2026-04-23 · Boundary …
+// Design v3: no nested tinted box — a hairline border separates it from
+// the chart above. The source name is a mono link like the kit's
+// SourcePill, composed inline because SourcePill never wraps and long
+// Census source names must wrap at 375 px instead of scrolling sideways.
+import { Database, ExternalLink } from "lucide-react";
 import DataAgeChip from "./DataAgeChip";
 
 interface DataSourceCardProps {
@@ -15,6 +22,11 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Middle-dot separator between items. */
+function Dot() {
+  return <span aria-hidden style={{ color: "var(--ftp-border-strong)" }}>·</span>;
+}
+
 export default function DataSourceCard({
   source,
   sourceUrl,
@@ -26,75 +38,54 @@ export default function DataSourceCard({
   return (
     <div
       style={{
-        background: "#FAFAF8",
-        border: "1px solid #E8E8E4",
-        borderRadius: 10,
-        padding: "8px 12px",
-        margin: "8px 0 16px",
-        fontSize: 12,
-        color: "#6B6B6B",
+        borderTop: "1px solid var(--ftp-border)",
+        paddingTop: 10,
+        marginTop: 12,
+        fontSize: 11,
+        lineHeight: "16px",
+        color: "var(--ftp-text-2)",
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
         gap: 6,
-        lineHeight: 1.6,
       }}
     >
-      <span>📊</span>
-      <span>
-        Source: <strong style={{ color: "#4B4B4B" }}>{source}</strong>
-      </span>
-      <span style={{ color: "#D0D0D0" }}>•</span>
-      <span>
-        Ref year: <strong style={{ color: "#4B4B4B" }}>{referenceYear}</strong>
-      </span>
-      <span style={{ color: "#D0D0D0" }}>•</span>
-      <DataAgeChip referenceYear={referenceYear} />
-      {license && (
-        <>
-          <span style={{ color: "#D0D0D0" }}>•</span>
-          <span
-            title={`License: ${license}`}
-            style={{
-              fontSize: 10,
-              padding: "1px 6px",
-              border: "1px solid #E8E8E4",
-              borderRadius: 4,
-              color: "#9B9B9B",
-              cursor: "help",
-            }}
-          >
-            {license}
-          </span>
-        </>
-      )}
-      <span style={{ color: "#D0D0D0" }}>•</span>
-      <span style={{ fontSize: 11, color: "#9B9B9B" }}>
-        Retrieved: {formatDate(retrievedAt)}
-      </span>
-      {boundaryVintage && (
-        <>
-          <span style={{ color: "#D0D0D0" }}>•</span>
-          <span style={{ fontSize: 11, color: "#9B9B9B" }}>
-            Boundary: {boundaryVintage}
-          </span>
-        </>
-      )}
-      {sourceUrl && (
+      <Database size={14} aria-hidden style={{ flexShrink: 0 }} />
+      <span className="sr-only">Source:</span>
+      {sourceUrl ? (
         <a
           href={sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            marginLeft: "auto",
-            color: "#2563EB",
-            textDecoration: "none",
-            fontWeight: 500,
-          }}
-          aria-label="Open source"
+          className="ftp-num"
+          style={{ color: "var(--ftp-text)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, overflowWrap: "anywhere" }}
         >
-          ↗
+          {source}
+          <ExternalLink size={11} aria-hidden style={{ flexShrink: 0 }} />
         </a>
+      ) : (
+        <span className="ftp-num" style={{ color: "var(--ftp-text)", overflowWrap: "anywhere" }}>{source}</span>
+      )}
+      <Dot />
+      <span>
+        Ref year <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{referenceYear}</span>
+      </span>
+      <DataAgeChip referenceYear={referenceYear} />
+      {license && (
+        <>
+          <Dot />
+          <span title={`Licence: ${license}`}>{license}</span>
+        </>
+      )}
+      <Dot />
+      <span>
+        Retrieved <span className="ftp-num" suppressHydrationWarning>{formatDate(retrievedAt)}</span>
+      </span>
+      {boundaryVintage && (
+        <>
+          <Dot />
+          <span>Boundary: {boundaryVintage}</span>
+        </>
       )}
     </div>
   );

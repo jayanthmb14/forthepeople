@@ -1,13 +1,16 @@
 "use client";
 
+// Main / marginal / non-workers as one stacked bar. Worker series use the
+// colour-blind-safe Okabe-Ito palette (../types); "Non-workers" is a
+// neutral token. Chrome comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import EmptyBlock from "../../common/EmptyBlock";
 import {
   OKABE_ITO,
   isNonEmptyObject,
   type EmploymentData,
   type ProfileLike,
 } from "../types";
+import { AXIS_LINE, AXIS_TICK, CATEGORY_TICK, ChartEmpty, ChartNote, LEGEND_STYLE, NEUTRAL_SERIES, TOOLTIP_PROPS } from "../chartKit";
 
 interface Props {
   employment: EmploymentData | null | undefined;
@@ -27,7 +30,7 @@ export function canRenderEmploymentStackedBar(
 
 export default function EmploymentStackedBar({ employment }: Props) {
   if (!employment) {
-    return <EmptyBlock icon="📊" message="Employment data not available for this district yet" />;
+    return <ChartEmpty message="Employment data is not available for this district yet." />;
   }
 
   const data = [
@@ -44,33 +47,23 @@ export default function EmploymentStackedBar({ employment }: Props) {
       <div style={{ width: "100%", height: 180 }}>
         <ResponsiveContainer>
           <BarChart data={data} layout="vertical" margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <YAxis type="category" dataKey="name" width={140} style={{ fontSize: 11 }} />
-            <Tooltip formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar
-              dataKey="mainWorkers"
-              name="Main workers"
-              stackId="w"
-              fill={OKABE_ITO.bluishGreen}
-            />
-            <Bar
-              dataKey="marginalWorkers"
-              name="Marginal workers"
-              stackId="w"
-              fill={OKABE_ITO.yellow}
-            />
-            <Bar dataKey="nonWorkers" name="Non-workers" stackId="w" fill="#D1D5DB" />
+            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
+            <YAxis type="category" dataKey="name" width={110} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
+            <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+            <Legend wrapperStyle={LEGEND_STYLE} />
+            <Bar dataKey="mainWorkers" name="Main workers" stackId="w" fill={OKABE_ITO.bluishGreen} />
+            <Bar dataKey="marginalWorkers" name="Marginal workers" stackId="w" fill={OKABE_ITO.yellow} />
+            <Bar dataKey="nonWorkers" name="Non-workers" stackId="w" fill={NEUTRAL_SERIES.mid} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       {typeof employment.workerParticipationRate === "number" && (
-        <div style={{ fontSize: 12, color: "#6B6B6B", marginTop: 6 }}>
+        <ChartNote>
           Worker Participation Rate (WPR):{" "}
-          <strong style={{ color: OKABE_ITO.vermillion }}>
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
             {employment.workerParticipationRate.toFixed(2)}%
-          </strong>
-        </div>
+          </span>
+        </ChartNote>
       )}
     </div>
   );

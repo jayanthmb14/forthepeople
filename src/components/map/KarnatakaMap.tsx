@@ -9,7 +9,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import { Lock } from "lucide-react";
+import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 
 interface KarnatakaMapProps {
   locale: string;
@@ -58,27 +58,8 @@ export default function KarnatakaMap({ locale, activeDistricts }: KarnatakaMapPr
                     }
                   }}
                   onMouseLeave={() => setTooltip(null)}
-                  style={{
-                    default: {
-                      fill: isActive ? "rgba(37,99,235,0.18)" : "#E8E8E4",
-                      stroke: isActive ? "#2563EB" : "#FFFFFF",
-                      strokeWidth: isActive ? 1.5 : 0.8,
-                      outline: "none",
-                      cursor: isActive ? "pointer" : "default",
-                      transition: "fill 150ms",
-                    },
-                    hover: {
-                      fill: isActive ? "#EFF6FF" : "#D4D4D0",
-                      stroke: isActive ? "#1D4ED8" : "#FFFFFF",
-                      strokeWidth: isActive ? 2 : 0.8,
-                      outline: "none",
-                      cursor: isActive ? "pointer" : "not-allowed",
-                    },
-                    pressed: {
-                      fill: isActive ? "rgba(37,99,235,0.45)" : "#D4D4D0",
-                      outline: "none",
-                    },
-                  }}
+                  // Colours come from the shared map theme (design tokens).
+                  style={geoStyle(isActive)}
                 />
               );
             })
@@ -88,51 +69,11 @@ export default function KarnatakaMap({ locale, activeDistricts }: KarnatakaMapPr
 
       {/* Tooltip */}
       {tooltip && (
-        <div
-          style={{
-            position: "absolute",
-            left: Math.min(tooltip.x + 10, 260),
-            top: Math.max(tooltip.y - 36, 4),
-            background: "#1A1A1A",
-            color: "#FFFFFF",
-            padding: "4px 10px",
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 500,
-            pointerEvents: "none",
-            whiteSpace: "nowrap",
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-          }}
-        >
-          {!tooltip.active && <Lock size={10} style={{ opacity: 0.7 }} />}
-          {tooltip.name}
-          {tooltip.active && <span style={{ color: "#93C5FD", marginLeft: 4 }}>→ Explore</span>}
-          {!tooltip.active && <span style={{ color: "#9B9B9B", marginLeft: 4 }}>Coming soon</span>}
-        </div>
+        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} />
       )}
 
       {/* Legend */}
-      <div
-        style={{
-          position: "absolute", bottom: 8, right: 8,
-          display: "flex", flexDirection: "column", gap: 4,
-          background: "rgba(255,255,255,0.92)", border: "1px solid #E8E8E4",
-          borderRadius: 8, padding: "5px 9px", fontSize: 10, color: "#6B6B6B",
-          pointerEvents: "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 12, height: 8, background: "rgba(37,99,235,0.18)", border: "1px solid #2563EB", borderRadius: 2 }} />
-          Active
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 12, height: 8, background: "#E8E8E4", border: "1px solid #CCCCCC", borderRadius: 2 }} />
-          Coming Soon
-        </div>
-      </div>
+      <MapLegend liveLabel="Active" lockedLabel="Coming soon" />
     </div>
   );
 }

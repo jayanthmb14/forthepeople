@@ -1,8 +1,11 @@
 "use client";
 
+// Age structure in four Census groups (0–6, 7–14, 15–59, 60+) as horizontal
+// bars. Series colour is from the colour-blind-safe Viridis ramp (../types);
+// axes and tooltip use design tokens (../chartKit).
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import EmptyBlock from "../../common/EmptyBlock";
 import { VIRIDIS, type ProfileLike } from "../types";
+import { AXIS_LINE, AXIS_TICK, CATEGORY_TICK, ChartEmpty, TOOLTIP_PROPS } from "../chartKit";
 
 interface Props {
   pop_0_6?: number | null;
@@ -34,16 +37,25 @@ export default function AgePyramidStacked({
   ].filter((r) => r.value > 0);
 
   if (rows.length === 0) {
-    return <EmptyBlock icon="📊" message="Age-band data not available for this district yet" />;
+    return <ChartEmpty message="Age-band data is not available for this district yet." />;
   }
 
   return (
     <div style={{ width: "100%", height: 240 }}>
       <ResponsiveContainer>
         <BarChart data={rows} layout="vertical" margin={{ left: 10, right: 10 }}>
-          <XAxis type="number" tickFormatter={(v) => new Intl.NumberFormat("en-IN").format(v)} />
-          <YAxis type="category" dataKey="band" width={60} style={{ fontSize: 11 }} />
-          <Tooltip formatter={(v) => (typeof v === "number" ? new Intl.NumberFormat("en-IN").format(v) : "—")} />
+          <XAxis
+            type="number"
+            tick={AXIS_TICK}
+            axisLine={AXIS_LINE}
+            tickLine={AXIS_LINE}
+            tickFormatter={(v) => new Intl.NumberFormat("en-IN").format(v)}
+          />
+          <YAxis type="category" dataKey="band" width={60} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
+          <Tooltip
+            {...TOOLTIP_PROPS}
+            formatter={(v) => (typeof v === "number" ? new Intl.NumberFormat("en-IN").format(v) : "—")}
+          />
           <Bar dataKey="value" name="Population" fill={VIRIDIS[3]} />
         </BarChart>
       </ResponsiveContainer>

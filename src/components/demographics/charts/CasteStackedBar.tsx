@@ -1,8 +1,11 @@
 "use client";
 
+// Share of Scheduled Caste / Scheduled Tribe / Other as one stacked bar.
+// Colours are neutral greys built from design tokens (../types) — no
+// category gets a saturated colour. Chrome comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import EmptyBlock from "../../common/EmptyBlock";
 import { CASTE_COLORS, isNonEmptyObject, type CasteMap, type ProfileLike } from "../types";
+import { AXIS_LINE, AXIS_TICK, ChartEmpty, ChartNote, LEGEND_STYLE, TOOLTIP_PROPS } from "../chartKit";
 
 interface Props {
   caste: CasteMap | null | undefined;
@@ -20,9 +23,7 @@ export default function CasteStackedBar({ caste }: Props) {
       typeof caste.Other === "number");
 
   if (!hasAny) {
-    return (
-      <EmptyBlock icon="📊" message="Caste-category data not available for this district yet" />
-    );
+    return <ChartEmpty message="Caste-category data is not available for this district yet." />;
   }
 
   const data = [
@@ -39,21 +40,21 @@ export default function CasteStackedBar({ caste }: Props) {
       <div style={{ width: "100%", height: 140 }}>
         <ResponsiveContainer>
           <BarChart data={data} layout="vertical" margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
             <YAxis type="category" dataKey="name" hide />
-            <Tooltip formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+            <Legend wrapperStyle={LEGEND_STYLE} />
             <Bar dataKey="SC" name="Scheduled Caste" stackId="c" fill={CASTE_COLORS.SC} />
             <Bar dataKey="ST" name="Scheduled Tribe" stackId="c" fill={CASTE_COLORS.ST} />
             <Bar dataKey="Other" name="Other" stackId="c" fill={CASTE_COLORS.Other} />
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 6, lineHeight: 1.5 }}>
+      <ChartNote>
         Constitutional categories only (Scheduled Caste, Scheduled Tribe, Other). Sub-caste / jati
         data is not displayed — see the &quot;Caste-category data&quot; section of the disclosure
         panel above.
-      </div>
+      </ChartNote>
     </div>
   );
 }

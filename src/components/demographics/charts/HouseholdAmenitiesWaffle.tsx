@@ -1,12 +1,16 @@
 "use client";
 
-import EmptyBlock from "../../common/EmptyBlock";
+// Household amenities (electricity, tap water, toilet, clean cooking fuel)
+// as 10 × 10 "waffles": each square is 1 % of households. Filled squares use
+// the colour-blind-safe Okabe-Ito palette (../types); empty squares and text
+// use design tokens. The grid wraps on phones so nothing scrolls sideways.
 import {
   OKABE_ITO,
   isNonEmptyObject,
   type HouseholdAmenitiesData,
   type ProfileLike,
 } from "../types";
+import { ChartEmpty } from "../chartKit";
 
 interface Props {
   amenities: HouseholdAmenitiesData | null | undefined;
@@ -34,6 +38,7 @@ function Waffle({ pct, color, label }: { pct: number; color: string; label: stri
   return (
     <div style={{ textAlign: "center" }}>
       <div
+        role="img"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(10, 1fr)",
@@ -48,37 +53,33 @@ function Waffle({ pct, color, label }: { pct: number; color: string; label: stri
             key={i}
             style={{
               aspectRatio: "1",
-              background: i < filled ? color : "#E8E8E4",
+              background: i < filled ? color : "var(--ftp-surface-2)",
               borderRadius: 2,
             }}
           />
         ))}
       </div>
-      <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, color: "#4B4B4B" }}>
+      <div className="ftp-num" style={{ marginTop: 8, fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
         {pct.toFixed(1)}%
       </div>
-      <div style={{ fontSize: 11, color: "#9B9B9B" }}>{label}</div>
+      <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{label}</div>
     </div>
   );
 }
 
 export default function HouseholdAmenitiesWaffle({ amenities }: Props) {
   if (!amenities) {
-    return (
-      <EmptyBlock icon="📊" message="Household amenities not available for this district yet" />
-    );
+    return <ChartEmpty message="Household amenities are not available for this district yet." />;
   }
   const available = AMENITIES.filter((a) => typeof amenities[a.key] === "number");
   if (available.length === 0) {
-    return (
-      <EmptyBlock icon="📊" message="Household amenities not available for this district yet" />
-    );
+    return <ChartEmpty message="Household amenities are not available for this district yet." />;
   }
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${available.length}, 1fr)`,
+        gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
         gap: 20,
         padding: "12px 0",
       }}

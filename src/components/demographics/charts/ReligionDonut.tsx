@@ -1,7 +1,9 @@
 "use client";
 
+// Religion shares as a donut, categories in alphabetical order. Slice
+// colours come from the colour-blind-safe Okabe-Ito palette (../types);
+// tooltip and legend use design tokens (../chartKit).
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import EmptyBlock from "../../common/EmptyBlock";
 import {
   ALPHABETICAL_RELIGIONS,
   RELIGION_COLORS,
@@ -9,6 +11,7 @@ import {
   type ReligionMap,
   type ProfileLike,
 } from "../types";
+import { ChartEmpty, LEGEND_STYLE, NEUTRAL_SERIES, TOOLTIP_PROPS } from "../chartKit";
 
 interface Props {
   religion: ReligionMap | null | undefined;
@@ -20,7 +23,7 @@ export function canRenderReligionDonut(profile: ProfileLike | null | undefined):
 
 export default function ReligionDonut({ religion }: Props) {
   if (!religion || Object.keys(religion).length === 0) {
-    return <EmptyBlock icon="📊" message="Religion data not available for this district yet" />;
+    return <ChartEmpty message="Religion data is not available for this district yet." />;
   }
 
   const data = ALPHABETICAL_RELIGIONS.filter((k) => typeof religion[k] === "number").map((k) => ({
@@ -30,7 +33,7 @@ export default function ReligionDonut({ religion }: Props) {
   }));
 
   if (data.length === 0) {
-    return <EmptyBlock icon="📊" message="Religion data not available for this district yet" />;
+    return <ChartEmpty message="Religion data is not available for this district yet." />;
   }
 
   return (
@@ -44,13 +47,14 @@ export default function ReligionDonut({ religion }: Props) {
             innerRadius={60}
             outerRadius={110}
             paddingAngle={1}
+            stroke="var(--ftp-surface)"
           >
             {data.map((d) => (
-              <Cell key={d.key} fill={RELIGION_COLORS[d.key] ?? "#9CA3AF"} />
+              <Cell key={d.key} fill={RELIGION_COLORS[d.key] ?? NEUTRAL_SERIES.mid} />
             ))}
           </Pie>
-          <Tooltip formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
-          <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: 11 }} />
+          <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+          <Legend verticalAlign="bottom" height={36} wrapperStyle={LEGEND_STYLE} />
         </PieChart>
       </ResponsiveContainer>
     </div>

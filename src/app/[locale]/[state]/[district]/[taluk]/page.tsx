@@ -4,12 +4,27 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Taluk overview — Design v3 "Civic Ledger"
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  PageHeader (taluk name + local-script name, back to the district) →
+//  StatStrip (villages, population, area) → "View data for this taluk"
+//  module links (Lucide icons) → village list as link cards.
+//  The labels ("Taluk", "Villages", …) still come from the state config,
+//  so a state that calls them "Tehsil" or "Zone" reads correctly.
+//
 "use client";
 import { use } from "react";
 import Link from "next/link";
-import { MapPin, Users, Home, ChevronRight, ArrowLeft } from "lucide-react";
+import {
+  MapPin, Users, Home, ChevronRight, ArrowLeft,
+  Wheat, Waves, GraduationCap, Building, Droplets, LayoutDashboard,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTaluks, useOverview } from "@/hooks/useRealtimeData";
 import { getStateConfig } from "@/lib/constants/state-config";
+import { PageHeader, StatStrip, StatTile, Section, Card, LoadingShell } from "@/components/district/ui";
 
 // Taluk overview page — shows taluk stats + village list
 export default function TalukPage({
@@ -30,14 +45,22 @@ export default function TalukPage({
 
   const talukData = (taluksData?.data ?? []).find((t) => t.slug === talukSlug);
   const districtName = overviewData?.data?.name ?? district;
+  // Data date of the taluk records, when the API reports one.
+  const asOf = taluksData?.meta?.lastUpdated ?? null;
+
+  const pageStyle: React.CSSProperties = { maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 };
 
   if (!talukData) {
     return (
-      <div style={{ padding: 24 }}>
-        <Link href={districtBase} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9B9B9B", textDecoration: "none", marginBottom: 16 }}>
-          <ArrowLeft size={13} /> Back to {districtName}
+      <div className="ftp-container" style={pageStyle}>
+        <Link
+          href={districtBase}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, color: "var(--ftp-text-2)", textDecoration: "none" }}
+        >
+          <ArrowLeft size={14} aria-hidden /> Back to {districtName}
         </Link>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#1A1A1A" }}>Loading {subUnit.toLowerCase()}...</div>
+        <h1 className="ftp-h2" style={{ margin: "4px 0 16px" }}>Loading {subUnit.toLowerCase()}…</h1>
+        <LoadingShell rows={3} />
       </div>
     );
   }
@@ -48,123 +71,98 @@ export default function TalukPage({
   const villageSum = villages.reduce((s, v) => s + (v.population ?? 0), 0);
   const talukPopulation = talukData.population ?? (villageSum > 0 ? villageSum : null);
 
-  const moduleLinks: Array<{ label: string; href: string; icon: string }> = [
-    { label: "Crop Prices", href: `${districtBase}/crops?taluk=${talukSlug}`, icon: "🌾" },
-    { label: "Water & Dams", href: `${districtBase}/water?taluk=${talukSlug}`, icon: "💧" },
-    { label: "Schools", href: `${districtBase}/schools?taluk=${talukSlug}`, icon: "🎓" },
+  const moduleLinks: Array<{ label: string; href: string; icon: LucideIcon }> = [
+    { label: "Crop Prices", href: `${districtBase}/crops?taluk=${talukSlug}`, icon: Wheat },
+    { label: "Water & Dams", href: `${districtBase}/water?taluk=${talukSlug}`, icon: Waves },
+    { label: "Schools", href: `${districtBase}/schools?taluk=${talukSlug}`, icon: GraduationCap },
   ];
   if (gramPanchayatApplicable) {
-    moduleLinks.push({ label: "Gram Panchayats", href: `${districtBase}/gram-panchayat?taluk=${talukSlug}`, icon: "🏘️" });
+    moduleLinks.push({ label: "Gram Panchayats", href: `${districtBase}/gram-panchayat?taluk=${talukSlug}`, icon: Building });
   }
   if (jjmApplicable) {
-    moduleLinks.push({ label: "JJM Coverage", href: `${districtBase}/jjm?taluk=${talukSlug}`, icon: "🚰" });
+    moduleLinks.push({ label: "JJM Coverage", href: `${districtBase}/jjm?taluk=${talukSlug}`, icon: Droplets });
   }
-  moduleLinks.push({ label: "Overview", href: districtBase, icon: "📊" });
+  moduleLinks.push({ label: "Overview", href: districtBase, icon: LayoutDashboard });
 
   const metaLine = hasVillages
     ? `Part of ${districtName} District · ${villages.length} ${villageLabel.toLowerCase()}`
     : `Part of ${districtName} District · Urban zone`;
 
-  return (
-    <div style={{ padding: 24 }}>
-      {/* Breadcrumb */}
-      <Link href={districtBase} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9B9B9B", textDecoration: "none", marginBottom: 16 }}>
-        <ArrowLeft size={13} /> {districtName}
-      </Link>
+  const tileCount = (showVillages ? 1 : 0) + 1 + (talukData.area != null ? 1 : 0);
 
-      {/* Header */}
-      <div style={{ marginBottom: 24, borderBottom: "1px solid #E8E8E4", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <div style={{ width: 40, height: 40, background: "#EFF6FF", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <MapPin size={20} style={{ color: "#2563EB" }} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.4px" }}>{talukData.name} {subUnit}</h1>
-            {talukData.nameLocal && <div style={{ fontSize: 14, color: "#9B9B9B", fontFamily: "var(--font-regional)" }}>{talukData.nameLocal}</div>}
-          </div>
-        </div>
-        <div style={{ fontSize: 13, color: "#6B6B6B", marginTop: 6 }}>
-          {metaLine}
-        </div>
-      </div>
+  return (
+    <div className="ftp-container" style={pageStyle}>
+      <PageHeader
+        icon={MapPin}
+        title={`${talukData.name} ${subUnit}`}
+        titleLocal={talukData.nameLocal ?? undefined}
+        description={metaLine}
+        backHref={districtBase}
+        backLabel={`Back to ${districtName}`}
+        accent="blue"
+        freshness={asOf ? { asOf } : undefined}
+      />
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-        {showVillages && (
-          <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 6 }}>
-              <Home size={13} style={{ color: "#2563EB" }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", textTransform: "uppercase", letterSpacing: "0.05em" }}>{villageLabel}</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{talukData._count.villages}</div>
-          </div>
-        )}
-        <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-          <div style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 6 }}>
-            <Users size={13} style={{ color: "#16A34A" }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Population</span>
-          </div>
-          <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-            {talukPopulation != null ? talukPopulation.toLocaleString("en-IN") : "—"}
-          </div>
-        </div>
+      <StatStrip cols={Math.max(2, tileCount) as 2 | 3}>
+        {showVillages && <StatTile icon={Home} label={villageLabel} value={talukData._count.villages} />}
+        <StatTile
+          icon={Users}
+          label="Population"
+          value={talukPopulation != null ? talukPopulation.toLocaleString("en-IN") : "—"}
+          asOf={asOf}
+        />
         {talukData.area != null && (
-          <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 6 }}>
-              <MapPin size={13} style={{ color: "#D97706" }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Area</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-              {talukData.area.toLocaleString("en-IN")} km²
-            </div>
-          </div>
+          <StatTile icon={MapPin} label="Area" value={talukData.area.toLocaleString("en-IN")} unit="km²" />
         )}
-      </div>
+      </StatStrip>
 
-      {/* District module links */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9B9B9B", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-        View Data for This {subUnit}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: 28 }}>
-        {moduleLinks.map(({ label, href, icon }) => (
-          <Link key={label} href={href} style={{
-            display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
-            background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, textDecoration: "none",
-          }}>
-            <span style={{ fontSize: 16 }}>{icon}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#1A1A1A" }}>{label}</span>
-            <ChevronRight size={12} style={{ color: "#C0C0C0", marginLeft: "auto" }} />
-          </Link>
-        ))}
-      </div>
+      {/* District module links, filtered to this taluk */}
+      <Section title={`View data for this ${subUnit.toLowerCase()}`}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(160px, 100%), 1fr))", gap: 8 }}>
+          {moduleLinks.map(({ label, href, icon: Icon }) => (
+            <Card key={label} href={href} padding={0}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minHeight: 48 }}>
+                <Icon size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text)" }}>{label}</span>
+                <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-text-2)", marginLeft: "auto", flexShrink: 0 }} />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Section>
 
       {/* Village list — only for districts where villages are meaningful */}
       {hasVillages && (
-        <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#9B9B9B", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-            {villageLabel} in {talukData.name} ({villages.length})
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
+        <Section
+          title={
+            <>
+              {villageLabel} in {talukData.name}{" "}
+              <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>({villages.length})</span>
+            </>
+          }
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 8 }}>
             {villages.map((v) => (
-              <Link
-                key={v.id}
-                href={`/${locale}/${state}/${district}/${talukSlug}/${v.id}`}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "10px 14px", background: "#FFF", border: "1px solid #E8E8E4",
-                  borderRadius: 10, textDecoration: "none",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>{v.name}</div>
-                  {v.nameLocal && <div style={{ fontSize: 11, color: "#9B9B9B", fontFamily: "var(--font-regional)" }}>{v.nameLocal}</div>}
-                  {v.population && <div style={{ fontSize: 11, color: "#9B9B9B" }}>{v.population.toLocaleString("en-IN")} pop</div>}
+              <Card key={v.id} href={`/${locale}/${state}/${district}/${talukSlug}/${v.id}`} padding={0}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", minHeight: 48 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text)" }}>{v.name}</div>
+                    {v.nameLocal && (
+                      <div lang="und" style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{v.nameLocal}</div>
+                    )}
+                    {v.population && (
+                      <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                        <span className="ftp-num" style={{ fontWeight: 400 }}>{v.population.toLocaleString("en-IN")}</span> pop
+                      </div>
+                    )}
+                  </div>
+                  <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
                 </div>
-                <ChevronRight size={13} style={{ color: "#C0C0C0" }} />
-              </Link>
+              </Card>
             ))}
           </div>
-        </>
+        </Section>
       )}
     </div>
   );
