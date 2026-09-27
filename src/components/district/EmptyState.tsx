@@ -1,5 +1,13 @@
-// ── ForThePeople.in — Graceful Empty State Component ───────
+// ── ForThePeople.in — Module empty state (Design v3) ─────────
+//
+// Thin wrapper that looks up the honest per-module message in
+// src/lib/empty-states.ts and renders it with the kit:
+//   compact → one line of text-2 (for small tiles)
+//   default → the kit <EmptyState> card (title + message)
+// The registry's emoji `icon` field is intentionally not rendered
+// (Design v3: no emoji in the page chrome).
 import { getEmptyState } from "@/lib/empty-states";
+import { EmptyState as KitEmptyState } from "@/components/district/ui";
 
 interface EmptyStateProps {
   module: string;
@@ -7,33 +15,15 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({ module, compact = false }: EmptyStateProps) {
-  const { title, message, icon } = getEmptyState(module);
+  const { title, message } = getEmptyState(module);
 
   if (compact) {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0" }}>
-        <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
-        <span style={{ fontSize: 12, color: "#9B9B9B", lineHeight: 1.4 }}>{message}</span>
-      </div>
+      <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: 0, padding: "8px 0" }}>
+        {message}
+      </p>
     );
   }
 
-  return (
-    <div
-      style={{
-        background: "#F9F9F7",
-        border: "1px dashed #D0D0CC",
-        borderRadius: 12,
-        padding: "24px 20px",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontSize: 36, marginBottom: 10 }}>{icon}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: "#6B6B6B", marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 13, color: "#9B9B9B", lineHeight: 1.6, maxWidth: 320, margin: "0 auto" }}>
-        {message}
-      </div>
-      <div style={{ marginTop: 12, fontSize: 11, color: "#C0C0BA" }}>Expected: Within 1 week</div>
-    </div>
-  );
+  return <KitEmptyState title={title} body={message} />;
 }
