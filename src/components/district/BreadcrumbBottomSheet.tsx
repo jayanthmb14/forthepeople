@@ -2,17 +2,22 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Session M1 Phase H: bottom-sheet variant of the breadcrumb dropdown
- * for mobile. Portal-rendered to body so it sits above the sticky
- * header + status bar without z-index gymnastics.
+ * BreadcrumbBottomSheet — bottom-sheet version of the breadcrumb dropdowns
+ * on phones ("switch state / district / taluk"). Portal-rendered to body so
+ * it sits above the sticky header and status strip.
+ *
+ * Design v3: tokens only, inline styles (so the older mobile.css rules do
+ * not apply), 44 px rows, a 6 px live dot or a Lucide lock for "coming
+ * soon", no slide animation, no shadow. Esc or tapping outside closes it.
  */
 
 "use client";
 
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Lock } from "lucide-react";
+import { Pill } from "@/components/district/ui";
 
 export interface SheetItem {
   slug: string;
@@ -30,10 +35,13 @@ interface Props {
 }
 
 export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
-  // Lock body scroll while the sheet is open.
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  // Lock body scroll while the sheet is open; move focus into the sheet.
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    cancelRef.current?.focus();
     return () => {
       document.body.style.overflow = prev;
     };
@@ -52,49 +60,85 @@ export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
 
   return createPortal(
     <div
-      className="ftp-m-sheet-backdrop"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "flex-end",
+        background: "color-mix(in srgb, var(--ftp-text) 45%, transparent)",
+      }}
     >
-      <div className="ftp-m-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="ftp-m-sheet-handle" aria-hidden="true" />
-        <h3 className="ftp-m-sheet-title">{title}</h3>
-        <ul className="ftp-m-sheet-list">
-          {items.map((item) => (
-            <li key={item.slug}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxHeight: "75vh",
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--ftp-surface)",
+          borderTop: "1px solid var(--ftp-border)",
+          borderRadius: "var(--ftp-radius-card) var(--ftp-radius-card) 0 0",
+          padding: "12px 16px max(12px, env(safe-area-inset-bottom))",
+        }}
+      >
+        <h3 className="ftp-label" style={{ margin: "0 0 8px" }}>{title}</h3>
+        <ul style={{ listStyle: "none", padding: 0, margin: "0 0 12px", flex: 1, overflowY: "auto" }}>
+          {items.map((item, i) => (
+            <li key={item.slug} style={{ borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
               <Link
                 href={item.href}
                 onClick={onClose}
-                className={`ftp-m-sheet-item${item.isCurrent ? " is-current" : ""}${!item.isLive ? " is-soon" : ""}`}
                 aria-current={item.isCurrent ? "page" : undefined}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  minHeight: 44,
+                  padding: "0 8px",
+                  textDecoration: "none",
+                  fontSize: 15,
+                  lineHeight: "22px",
+                  color: item.isLive ? "var(--ftp-text)" : "var(--ftp-text-2)",
+                  background: item.isCurrent ? "var(--ftp-surface-2)" : "transparent",
+                  borderRadius: "var(--ftp-radius-tile)",
+                  pointerEvents: item.isCurrent ? "none" : undefined,
+                }}
               >
                 {item.isLive ? (
-                  <span className="ftp-m-sheet-dot" aria-hidden="true" />
+                  <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)", flexShrink: 0 }} />
                 ) : (
-                  <Lock
-                    size={12}
-                    className="ftp-m-sheet-lock"
-                    aria-hidden="true"
-                  />
+                  <Lock size={12} aria-label="Coming soon" style={{ flexShrink: 0 }} />
                 )}
-                <span className="ftp-m-sheet-name">{item.name}</span>
-                {item.nameLocal &&
-                  item.nameLocal.trim() !== item.name.trim() && (
-                    <span className="ftp-m-sheet-local">{item.nameLocal}</span>
-                  )}
-                {item.isCurrent && (
-                  <span className="ftp-m-sheet-current-badge">Current</span>
+                <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
+                {item.nameLocal && item.nameLocal.trim() !== item.name.trim() && (
+                  <span lang="und" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{item.nameLocal}</span>
                 )}
+                {item.isCurrent && <Pill tone="brand">Current</Pill>}
               </Link>
             </li>
           ))}
         </ul>
         <button
+          ref={cancelRef}
           type="button"
-          className="ftp-m-sheet-cancel"
           onClick={onClose}
+          className="ftp-btn-secondary"
+          style={{
+            minHeight: 44,
+            border: "1px solid var(--ftp-border)",
+            borderRadius: "var(--ftp-radius-tile)",
+            background: "var(--ftp-surface)",
+            color: "var(--ftp-text)",
+            fontFamily: "var(--ftp-font-sans)",
+            fontSize: 15,
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
         >
           Cancel
         </button>

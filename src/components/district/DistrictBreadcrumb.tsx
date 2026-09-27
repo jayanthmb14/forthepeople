@@ -4,7 +4,7 @@
  *
  * Session 19.3 Phase B — visual breadcrumb + peer switcher.
  *
- * Pattern: 🇮🇳 India ▼ › 🟢 Karnataka ▼ › 🟢 Mandya ▼ › Select sub-district ▼
+ * Pattern: India › (dot) Karnataka [v] › (dot) Mandya [v] › Select sub-district [v]
  *
  * Each crumb is BOTH a clickable link (jump to that level) AND a caret
  * dropdown for switching to peer entities at the same level — so a user
@@ -16,6 +16,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronDown, Lock } from "lucide-react";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { BreadcrumbBottomSheet, type SheetItem } from "./BreadcrumbBottomSheet";
 
@@ -34,7 +35,7 @@ export interface DistrictBreadcrumbProps {
   districtSlug: string;
   districtName: string;
   /** All states (Session 19.8 restoration: live + coming-soon). Live ones get
-   *  a green dot; coming-soon get a 🔒 lock icon. Sorted live-first by caller. */
+   *  a green dot; coming-soon get a lock icon. Sorted live-first by caller. */
   peerLiveStates: Peer[];
   /** All districts in the current state (Session 19.5: live + coming-soon). */
   peerLiveDistricts: Peer[];
@@ -157,10 +158,10 @@ export default function DistrictBreadcrumb({
           flex-wrap: nowrap;
           gap: 4px;
           padding: 10px 16px;
-          background: #FFFFFF;
-          border-bottom: 1px solid #E8E8E4;
+          background: var(--ftp-surface);
+          border-bottom: 1px solid var(--ftp-border);
           font-size: 13px;
-          color: #1A1A1A;
+          color: var(--ftp-text);
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
@@ -194,14 +195,14 @@ export default function DistrictBreadcrumb({
           border: none;
           cursor: pointer;
         }
-        .ftp-breadcrumb-link:hover { background: #F4F4F0; }
+        .ftp-breadcrumb-link:hover { background: var(--ftp-surface-2); }
         .ftp-breadcrumb-link[data-placeholder="true"] { cursor: pointer; }
         .ftp-breadcrumb-link[data-current="true"] {
-          color: #047857;
-          font-weight: 600;
+          color: var(--ftp-brand-deep);
+          font-weight: 500;
         }
         .ftp-breadcrumb-link[data-placeholder="true"] {
-          color: #6B6B6B;
+          color: var(--ftp-text-2);
           font-weight: 500;
         }
         .ftp-breadcrumb-emoji { font-size: 14px; line-height: 1; }
@@ -209,12 +210,11 @@ export default function DistrictBreadcrumb({
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #22C55E;
-          box-shadow: 0 0 0 2px rgba(34,197,94,0.18);
+          background: var(--ftp-live);
           flex-shrink: 0;
         }
         /* Session 19.8 Phase E: coming-soon items in dropdown menus
-           render a 🔒 emoji instead of a grey dot. */
+           render a Lucide lock icon instead of a grey dot. */
         .ftp-breadcrumb-lock {
           font-size: 11px;
           line-height: 1;
@@ -233,23 +233,23 @@ export default function DistrictBreadcrumb({
           border: none;
           border-radius: 4px;
           background: transparent;
-          color: #6B6B6B;
+          color: var(--ftp-text-2);
           font-size: 10px;
           line-height: 1;
           cursor: pointer;
           transition: background 150ms ease, color 150ms ease;
         }
         .ftp-breadcrumb-caret:hover {
-          background: #F0F0EB;
-          color: #1A1A1A;
+          background: var(--ftp-surface-2);
+          color: var(--ftp-text);
         }
         .ftp-breadcrumb-caret[aria-expanded="true"] {
-          background: #E8F5EF;
-          color: #047857;
+          background: var(--ftp-brand-tint);
+          color: var(--ftp-brand-deep);
         }
 
         .ftp-breadcrumb-sep {
-          color: #C8C8C2;
+          color: var(--ftp-border-strong);
           font-size: 12px;
           padding: 0 2px;
           flex-shrink: 0;
@@ -269,10 +269,9 @@ export default function DistrictBreadcrumb({
              coords landed on the page content beneath. */
           max-height: min(70vh, 560px);
           overflow-y: auto;
-          background: #FFFFFF;
-          border: 1px solid #E5E5E0;
+          background: var(--ftp-surface);
+          border: 1px solid var(--ftp-border);
           border-radius: 10px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.10);
           padding: 4px;
           /* Always show scrollbar on long menus (e.g. all-states list at
              36 items) so users know they can scroll for more. */
@@ -280,7 +279,7 @@ export default function DistrictBreadcrumb({
         }
         .ftp-breadcrumb-menu::-webkit-scrollbar { width: 6px; }
         .ftp-breadcrumb-menu::-webkit-scrollbar-thumb {
-          background: #D1D5DB;
+          background: var(--ftp-border-strong);
           border-radius: 3px;
         }
         .ftp-breadcrumb-menu-item {
@@ -289,7 +288,7 @@ export default function DistrictBreadcrumb({
           gap: 8px;
           padding: 8px 10px;
           border-radius: 6px;
-          color: #1A1A1A;
+          color: var(--ftp-text);
           text-decoration: none;
           font-size: 13px;
           line-height: 1.2;
@@ -302,35 +301,35 @@ export default function DistrictBreadcrumb({
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .ftp-breadcrumb-menu-item:hover { background: #F4F4F0; }
+        .ftp-breadcrumb-menu-item:hover { background: var(--ftp-surface-2); }
         /* Session 19.5: coming-soon items render in the same list, muted.
            Click still routes to the locked-district preview page. */
         .ftp-breadcrumb-menu-item[data-live="false"] {
-          color: #9CA3AF;
+          color: var(--ftp-text-2);
         }
         /* Session 19.5/19.7: current item — muted with inline "Current" badge,
            no click. The ::after pseudo-element was replaced by an inline
            <span> so it composes with the new nameLocal label without
            fighting for the same margin-left:auto slot. */
         .ftp-breadcrumb-menu-item[data-current="true"] {
-          background: #F9FAFB;
-          color: #6B7280;
+          background: var(--ftp-surface-2);
+          color: var(--ftp-text-2);
           cursor: default;
           pointer-events: none;
         }
         /* Session 19.7: native-script label rendered alongside English. */
         .ftp-breadcrumb-menu-item-local {
           font-size: 11px;
-          color: #9CA3AF;
+          color: var(--ftp-text-2);
           font-weight: 400;
           flex-shrink: 0;
           margin-left: 8px;
         }
         .ftp-breadcrumb-menu-item[data-current="true"] .ftp-breadcrumb-menu-item-local {
-          color: #D1D5DB;
+          color: var(--ftp-border-strong);
         }
         .ftp-breadcrumb-menu-item[data-live="false"] .ftp-breadcrumb-menu-item-local {
-          color: #D1D5DB;
+          color: var(--ftp-border-strong);
         }
         /* "Current" badge — replaces the old ::after rule so it composes
            with the optional nameLocal span. */
@@ -338,14 +337,14 @@ export default function DistrictBreadcrumb({
           font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #2563EB;
-          font-weight: 700;
+          color: var(--ftp-brand);
+          font-weight: 500;
           flex-shrink: 0;
           margin-left: 8px;
         }
         .ftp-breadcrumb-menu-empty {
           padding: 10px 12px;
-          color: #9B9B9B;
+          color: var(--ftp-text-2);
           font-size: 12px;
         }
 
@@ -398,7 +397,6 @@ export default function DistrictBreadcrumb({
           on the State crumb below. Matches production parity (S19.7). */}
       <span className="ftp-breadcrumb-crumb ftp-breadcrumb-crumb-static">
         <Link href={`/${locale}`} className="ftp-breadcrumb-link">
-          <span className="ftp-breadcrumb-emoji" aria-hidden="true">🇮🇳</span>
           <span>India</span>
         </Link>
       </span>
@@ -566,9 +564,7 @@ function PeerMenuItem({
       {isLive ? (
         <span className="ftp-breadcrumb-dot" aria-hidden="true" />
       ) : (
-        <span className="ftp-breadcrumb-lock" aria-label="Coming soon">
-          🔒
-        </span>
+        <Lock size={11} className="ftp-breadcrumb-lock" aria-label="Coming soon" />
       )}
       <span className="ftp-breadcrumb-menu-item-label">{children}</span>
       {showLocal && (
@@ -632,7 +628,7 @@ function BreadcrumbCrumb({
       ) : (
         // Session 19.10: placeholder crumb (e.g. "Select Taluka") is now a
         // BUTTON that opens the menu when clicked anywhere on its label.
-        // Previously the only hit-target was the 18×18 ▼ caret next to it,
+        // Previously the only hit-target was the 18×18 caret next to it,
         // which was almost impossible to hit precisely.
         <button
           type="button"
@@ -654,7 +650,7 @@ function BreadcrumbCrumb({
         aria-haspopup="menu"
         onClick={onCaretClick}
       >
-        ▼
+        <ChevronDown size={12} aria-hidden="true" />
       </button>
       {menuOpen && (
         <div className="ftp-breadcrumb-menu" role="menu">
