@@ -24,11 +24,22 @@
 //  - Every record passes the price checks in src/scraper/lib/agmarknet.ts
 //    (no zero prices, min ≤ modal ≤ max, nothing absurd); rejects are
 //    counted, never "fixed".
+//
+// Sept 2026 audit:
+//  - Only crops priced per quintal are stored: livestock (an ox shown as
+//    "₹800/kg"), coconut (per 1,000 nuts), cut flowers (per stem) and
+//    prices under ₹1 a kg (per bunch) are rejected by toCropRow().
+//  - Only mandis inside the district are stored: AGMARKNET's "Bangalore"
+//    and "Delhi" are bigger than Bengaluru Urban and New Delhi
+//    (isMarketInDistrict, src/scraper/lib/district-aliases.ts).
+//  - arrivalQty is never written here. The only rows that carry it are
+//    hand-typed seed rows, which the data API hides (SHOWN_CROP_PRICE in
+//    src/lib/data-filters.ts) — keep it that way or update that filter.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
 import { logUpdate } from "@/lib/update-log";
-import { agmarknetDistrictNames } from "../lib/district-aliases";
+import { agmarknetDistrictNames, isMarketInDistrict } from "../lib/district-aliases";
 import { isRetryableStatus, toCropRow, type AgmarkRecord } from "../lib/agmarknet";
 
 const API_KEY = process.env.DATA_GOV_API_KEY;
@@ -145,6 +156,11 @@ export async function collectCrops(ctx: JobContext, opts: CropsCollectOptions = 
         continue;
       }
       const row = checked.row;
+      if (!isMarketInDistrict(ctx.districtSlug, row.market)) {
+        const why = "mandi is outside the district";
+        rejectedBy.set(why, (rejectedBy.get(why) ?? 0) + 1);
+        continue;
+      }
       const key = `${row.commodity}|${row.market}|${row.date.toISOString()}`;
       if (seen.has(key)) continue; // already in DB, or duplicate within this batch
       seen.add(key);

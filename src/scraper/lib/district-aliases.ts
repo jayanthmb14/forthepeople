@@ -22,6 +22,14 @@ interface AliasEntry {
   weatherCity?: string;
   /** AGMARKNET `district` values to try, in order. */
   agmarknet?: string[];
+  /**
+   * Only for districts whose AGMARKNET district is bigger than ours: the
+   * mandis inside our district, matched as a whole-word part of the
+   * AGMARKNET market name. An empty list means none of the source
+   * district's mandis is in ours. Leave it out when the AGMARKNET
+   * district is the same as ours (every mandi counts).
+   */
+  agmarknetMarkets?: string[];
   /** Names that identify this district in an alert text (whole words). */
   alertNames?: string[];
 }
@@ -30,6 +38,13 @@ const ALIASES: Record<string, AliasEntry> = {
   "bengaluru-urban": {
     weatherCity: "Bangalore",
     agmarknet: ["Bangalore", "Bengaluru Urban", "Bangalore Urban", "Bengaluru"],
+    // AGMARKNET's "Bangalore" is the old undivided district. Sept 2026
+    // audit: 94 of its 100 rows came from Ramanagara and Kanakapura APMCs
+    // (Bengaluru South district, https://bengalurusouth.nic.in) and from
+    // Doddaballapur and Hoskote APMCs (Bengaluru Rural district,
+    // https://bangalorerural.nic.in/en/subdivision-blocks/). Only the
+    // Bangalore APMC (Yeshwanthpur / Binny Mill) is in Bengaluru Urban.
+    agmarknetMarkets: ["Bangalore", "Bengaluru", "Binny Mill"],
     alertNames: ["Bengaluru Urban", "Bangalore Urban", "Bengaluru", "Bangalore"],
   },
   mysuru: {
@@ -44,6 +59,11 @@ const ALIASES: Record<string, AliasEntry> = {
   "new-delhi": {
     weatherCity: "New Delhi",
     agmarknet: ["Delhi", "New Delhi"],
+    // AGMARKNET's "Delhi" covers all 11 Delhi districts. New Delhi
+    // district (Chanakyapuri, Delhi Cantonment, Vasant Vihar tehsils) has
+    // no APMC: Azadpur, Gazipur and Keshopur are in other districts
+    // (Sept 2026 audit). So no AGMARKNET mandi counts as New Delhi's.
+    agmarknetMarkets: [],
     // "Delhi" alone covers all 11 Delhi districts, so only the district's own name.
     alertNames: ["New Delhi"],
   },
@@ -97,6 +117,22 @@ export function weatherCityName(slug: string, districtName: string): string {
 /** AGMARKNET district names to try, in order, ending with the district's own name. */
 export function agmarknetDistrictNames(slug: string, districtName: string): string[] {
   return unique([...(ALIASES[slug]?.agmarknet ?? []), districtName]);
+}
+
+/**
+ * Mandis of the AGMARKNET district that are inside this district, as name
+ * parts (see AliasEntry.agmarknetMarkets), or null when every mandi of the
+ * matched AGMARKNET district is ours.
+ */
+export function agmarknetMarketsInDistrict(slug: string): readonly string[] | null {
+  return ALIASES[slug]?.agmarknetMarkets ?? null;
+}
+
+/** True when an AGMARKNET market (mandi) is inside this district. */
+export function isMarketInDistrict(slug: string, market: string): boolean {
+  const names = agmarknetMarketsInDistrict(slug);
+  if (names === null) return true;
+  return names.some((n) => mentionsName(market, n));
 }
 
 /** Names that mark an alert as being about this district (whole-word match). */

@@ -9,10 +9,15 @@
 //
 // Prices are rupees per quintal. A record is stored only when:
 //   - commodity, market and a valid arrival date are present,
+//   - the commodity is a crop priced per quintal (not livestock, fish or
+//     produce AGMARKNET prices per head, per 1,000 nuts or per stem —
+//     see NOT_PER_QUINTAL_COMMODITIES),
 //   - min, max and modal prices are all published and above zero,
 //   - min ≤ modal ≤ max,
-//   - no price is absurd (> ₹10,00,000 per quintal) and the spread is
-//     not wild (max more than 20 × min is almost always a typo),
+//   - no price is below ₹1 a kg (₹100 a quintal: such a figure is per
+//     bunch or per piece, not per quintal) or absurd (> ₹10,00,000 per
+//     quintal), and the spread is not wild (max more than 20 × min is
+//     almost always a typo),
 //   - the arrival date is not in the future.
 // Rejected records are counted and logged, never "fixed".
 // ═══════════════════════════════════════════════════════════
@@ -44,6 +49,46 @@ export interface CropRow {
 
 /** Highest believable price, rupees per quintal. */
 export const MAX_PRICE_PER_QUINTAL = 1_000_000;
+/**
+ * Lowest believable wholesale price, rupees per quintal (₹1 a kg).
+ * Sept 2026 audit: Pune spinach (3–10), mint (7–8), rajgir (4–8) and
+ * Mysuru ash gourd (10–12) were stored as "per quintal" and shown as
+ * ₹0/kg; those figures are per bunch or mis-keyed. The lowest real
+ * vegetable price we hold is ~₹300 a quintal (bottle gourd).
+ */
+export const MIN_PRICE_PER_QUINTAL = 100;
+
+/**
+ * AGMARKNET commodities that are not crops priced per quintal, so they
+ * can never be shown as ₹/kg or ₹/quintal (exact AGMARKNET names).
+ * Sept 2026 audit, checked against the Karnataka APMC portal
+ * (https://krama.karnataka.gov.in, commodity list read 2026-09-28):
+ *   - livestock, poultry and fish are priced per animal / bird, and are
+ *     not crops ("Ox (For Each)", "Cow (For Each)", "Sheep (For Each)");
+ *     an ox at Nanjangud was stored as 80,000 and shown as "₹800/kg";
+ *   - coconut is priced per 1,000 nuts ("Coconut (Per 1000)") and tender
+ *     coconut by the nut, in a unit the record does not state;
+ *   - cut flowers are sold by the stem or bunch (Delhi's Gazipur flower
+ *     market: tulip 1,30,000, lotus 8, gerbera 25–45).
+ * Loose flowers sold by weight (marigold, jasmine, loose rose …) stay.
+ */
+export const NOT_PER_QUINTAL_COMMODITIES: readonly string[] = [
+  // Livestock, poultry, fish
+  "Ox", "Cow", "Bull", "Buffalo", "He Buffalo", "She Buffalo", "Calf", "Goat", "Sheep", "Pig",
+  "Hen", "Cock", "Duck", "Poultry Bird", "Egg", "Fish", "Prawn",
+  // Sold by count
+  "Coconut", "Tender Coconut",
+  // Cut flowers, sold by the stem or bunch
+  "Tulip", "Lotus", "Jarbara", "Gerbera", "Anthorium", "Orchid", "Carnation", "Lilly", "Rose(Local)",
+  "Chrysanthemum", "Gladiolus Cut Flower", "Tube Rose(Single)", "Tube Rose(Double)",
+];
+
+const NOT_PER_QUINTAL = new Set(NOT_PER_QUINTAL_COMMODITIES.map((c) => c.trim().toLowerCase()));
+
+/** True when AGMARKNET prices this commodity per quintal (it can be shown as ₹/kg). */
+export function isPricedPerQuintal(commodity: string): boolean {
+  return !NOT_PER_QUINTAL.has(commodity.trim().toLowerCase());
+}
 /** Highest believable max ÷ min ratio within one record. */
 export const MAX_PRICE_SPREAD = 20;
 
@@ -66,6 +111,7 @@ export function cropPriceProblems(min: number | null, max: number | null, modal:
   if (min > modal || modal > max) p.push("min ≤ modal ≤ max does not hold");
   if (max > MAX_PRICE_PER_QUINTAL) p.push("price is absurdly high");
   if (min > 0 && max / min > MAX_PRICE_SPREAD) p.push("spread between min and max is absurd");
+  if (min > 0 && min < MIN_PRICE_PER_QUINTAL) p.push("price is below ₹1 a kg (not a per-quintal price)");
   return p;
 }
 
@@ -77,6 +123,7 @@ export function toCropRow(r: AgmarkRecord, nowMs: number): { row: CropRow } | { 
   const commodity = (r.commodity ?? "").trim();
   const market = (r.market ?? "").trim();
   if (!commodity || !market) return { reason: "no commodity or market" };
+  if (!isPricedPerQuintal(commodity)) return { reason: "not priced per quintal (livestock, by count or by stem)" };
   const date = parseArrivalDate(r.arrival_date);
   if (!date) return { reason: "no valid arrival date" };
   if (date.getTime() > nowMs + 36 * 3600_000) return { reason: "arrival date is in the future" };

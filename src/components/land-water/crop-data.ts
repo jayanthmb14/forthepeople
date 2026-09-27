@@ -50,23 +50,47 @@ export function latestPerMarket(prices: CropPrice[], key: string): CropPrice[] {
   return Array.from(seen.values());
 }
 
-/** The same commodity at the same mandi on the market day before `row`. */
-export function previousDay(prices: CropPrice[], row: CropPrice): CropPrice | undefined {
-  const key = commodityKey(row.commodity);
-  return prices.find((x) => commodityKey(x.commodity) === key && x.market === row.market && dayOf(x.date) < dayOf(row.date));
+/** Variety names sometimes differ only by case/spaces; a missing variety is "". */
+function varietyKey(v: string | null | undefined): string {
+  return (v ?? "").trim().toLowerCase();
+}
+
+/** Same commodity, same mandi and same variety (a price comparison must compare like with like). */
+function sameLot(a: CropPrice, b: CropPrice): boolean {
+  return commodityKey(a.commodity) === commodityKey(b.commodity) && a.market === b.market && varietyKey(a.variety) === varietyKey(b.variety);
 }
 
 /**
- * The same commodity at the same mandi about a week before `row`: the row
- * closest to 7 days earlier, between 5 and 10 days earlier. Undefined when
- * the mandi has no price in that window.
+ * Most days back that still count as "the market day before": a weekend
+ * plus a holiday. Sept 2026 audit: with no limit, Mumbai's green peas
+ * were compared with a price from two months earlier (the collector was
+ * down) and called "down 56.5% since the last market day".
+ */
+export const MAX_PREVIOUS_DAY_GAP = 4;
+
+/**
+ * The same commodity and variety at the same mandi on the market day
+ * before `row`, at most MAX_PREVIOUS_DAY_GAP days earlier. Undefined when
+ * there is none (then nothing is compared).
+ */
+export function previousDay(prices: CropPrice[], row: CropPrice): CropPrice | undefined {
+  return prices.find((x) => {
+    if (!sameLot(x, row)) return false;
+    const back = daysBetween(x.date, row.date);
+    return back >= 1 && back <= MAX_PREVIOUS_DAY_GAP;
+  });
+}
+
+/**
+ * The same commodity and variety at the same mandi about a week before
+ * `row`: the row closest to 7 days earlier, between 5 and 10 days
+ * earlier. Undefined when the mandi has no price in that window.
  */
 export function weekBefore(prices: CropPrice[], row: CropPrice): CropPrice | undefined {
-  const key = commodityKey(row.commodity);
   let best: CropPrice | undefined;
   let bestGap = Infinity;
   for (const x of prices) {
-    if (commodityKey(x.commodity) !== key || x.market !== row.market) continue;
+    if (!sameLot(x, row)) continue;
     const back = daysBetween(x.date, row.date);
     if (back < 5 || back > 10) continue;
     const gap = Math.abs(back - 7);

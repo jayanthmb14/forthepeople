@@ -810,32 +810,13 @@ async function main() {
   }
   console.log("✓ Sugar factories (5 with season data)");
 
-  // ── 9. Crop Prices (recent AGMARKNET data) ───────────────
-  const crops = [
-    { commodity: "Sugarcane", variety: "Co-86032", market: "Mandya APMC", min: 285, max: 340, modal: 330, qty: 12500 },
-    { commodity: "Paddy",     variety: "IR-64",    market: "Maddur APMC", min: 2100, max: 2350, modal: 2250, qty: 850 },
-    { commodity: "Ragi",      variety: "GPU-28",   market: "Nagamangala", min: 3500, max: 3850, modal: 3700, qty: 420 },
-    { commodity: "Maize",     variety: "Hybrid",   market: "K R Pete",    min: 1800, max: 2100, modal: 1950, qty: 320 },
-    { commodity: "Areca",     variety: "Local",    market: "Mandya APMC", min: 32000, max: 38000, modal: 35000, qty: 45 },
-    { commodity: "Coconut",   variety: "Local",    market: "Srirangapatna", min: 8500, max: 11000, modal: 9800, qty: 180 },
-    { commodity: "Banana",    variety: "Robusta",  market: "Maddur APMC", min: 1200, max: 1600, modal: 1400, qty: 95 },
-    { commodity: "Tomato",    variety: "Local",    market: "Mandya APMC", min: 400, max: 1200, modal: 800, qty: 220 },
-  ];
-
-  for (const c of crops) {
-    await prisma.cropPrice.create({
-      data: {
-        districtId: mandya.id,
-        commodity: c.commodity, variety: c.variety, market: c.market,
-        minPrice: c.min, maxPrice: c.max, modalPrice: c.modal,
-        arrivalQty: c.qty,
-        date: new Date(),
-        source: "AGMARKNET / data.gov.in",
-        fetchedAt: new Date(),
-      },
-    });
-  }
-  console.log("✓ Crop prices (8 commodities)");
+  // ── 9. Crop Prices ───────────────────────────────────────
+  // None. Crop prices come only from the AGMARKNET collector
+  // (src/scraper/jobs/crops.ts). The 8 hand-typed Mandya rows that were here
+  // were labelled "AGMARKNET / data.gov.in" with today's date, and showed on
+  // the live site as real mandi prices ("Areca ₹350/kg", "Sugarcane ₹3/kg")
+  // — removed in the Sept 2026 audit. SHOWN_CROP_PRICE (src/lib/data-filters.ts)
+  // hides any such seed row (they carry an arrival quantity).
 
   // ── 10. Budget Data ──────────────────────────────────────
   // Values stored in Rupees (display layer divides by 1e7 to show Crores)
