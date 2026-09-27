@@ -10,7 +10,7 @@
 //
 //   • every call has a hard timeout (AbortSignal.timeout);
 //   • one retry, after a short pause, on a network error or a
-//     502 / 503 / 504 (government portals blip);
+//     500 / 502 / 503 / 504 (government portals blip);
 //   • at most one request every `minGapMs` (default 2.5 s) per host,
 //     as CLAUDE.md asks ("one request every 2–3 s per source domain");
 //   • never throws: the caller gets { ok:false, error } and writes
@@ -45,7 +45,8 @@ export interface SourceFetchResult {
 
 const lastHit = new Map<string, number>();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const RETRY_STATUS = new Set([502, 503, 504]);
+// 500 too: the NIC portals (GePNIC, NREGA) return a stray 500 now and then.
+const RETRY_STATUS = new Set([500, 502, 503, 504]);
 
 async function waitForHost(host: string, minGapMs: number): Promise<void> {
   const last = lastHit.get(host);
@@ -71,7 +72,14 @@ export async function fetchSource(url: string, opts: SourceFetchOptions = {}): P
     try {
       const res = await fetch(url, {
         method,
-        headers: { "User-Agent": COLLECTOR_UA, ...headers },
+        // Node's fetch sends "Accept-Language: *", which makes the GePNIC
+        // (Java/Tapestry) portals answer 500; send what a browser sends.
+        headers: {
+          "User-Agent": COLLECTOR_UA,
+          Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-IN,en;q=0.9",
+          ...headers,
+        },
         body,
         redirect: "follow",
         signal: AbortSignal.timeout(timeoutMs),
@@ -95,5 +103,37 @@ export function parseJsonSafe<T = unknown>(text: string): T | null {
     return JSON.parse(text) as T;
   } catch {
     return null;
+  }
+}
+
+/**
+ * A cookie-keeping client for portals that tie links to a session
+ * (ASP.NET, Tapestry/GePNIC). Same politeness as fetchSource(); throws
+ * on failure so a collector can stop that portal and write nothing.
+ */
+export class CookieSession {
+  private jar = new Map<string, string>();
+  constructor(private readonly opts: { deadlineMs?: number; referer?: string } = {}) {}
+
+  private cookieHeader(): Record<string, string> {
+    return this.jar.size ? { Cookie: Array.from(this.jar, ([k, v]) => `${k}=${v}`).join("; ") } : {};
+  }
+
+  private keep(pairs: string[]) {
+    for (const p of pairs) {
+      const i = p.indexOf("=");
+      if (i > 0) this.jar.set(p.slice(0, i).trim(), p.slice(i + 1).trim());
+    }
+  }
+
+  async request(url: string, init: Omit<SourceFetchOptions, "deadlineMs"> = {}): Promise<string> {
+    const res = await fetchSource(url, {
+      ...init,
+      headers: { ...(this.opts.referer ? { Referer: this.opts.referer } : {}), ...this.cookieHeader(), ...(init.headers ?? {}) },
+      deadlineMs: this.opts.deadlineMs,
+    });
+    this.keep(res.cookies);
+    if (!res.ok) throw new Error(`${new URL(url).host}: ${res.error ?? `HTTP ${res.status}`}`);
+    return res.text;
   }
 }
