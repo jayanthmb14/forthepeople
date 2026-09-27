@@ -14,7 +14,7 @@ Prisma + Neon PostgreSQL + Upstash Redis, hosted on Vercel.
 1. `docs/BLUEPRINT-UNIFIED.md` — the one-page overview: vision, who it is for,
    modules, design, data honesty rules, crons, languages.
 2. `docs/ARCHITECTURE.md` — routes, crons, data flow, auth, AI, where state lives.
-3. For any UI work: `docs/DESIGN-SYSTEM.md` (v5 "Calm"), `docs/LAYOUT.md`,
+3. For any UI work: `docs/DESIGN-SYSTEM.md` (v5.1 "Warm Calm"), `docs/LAYOUT.md`,
    `docs/MODULE-MAP.md`, `docs/I18N.md`.
 4. `CHANGELOG.md` — the top "Unreleased" entry is the live work-in-progress.
 5. `.env.example` — the ONLY list of environment variables the code reads.
