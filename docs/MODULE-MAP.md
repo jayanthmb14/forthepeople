@@ -27,6 +27,8 @@ says what each is for, and each links to the other. Routes do not change.
 | Gov. Schemes vs Housing Schemes | Both are in *Help for you*. Housing links to Schemes for everything else. |
 | Crop Prices vs Farm Advisory (same 🌾) | Crop prices 🌾, Farm & soil advice 🚜. |
 | Elections vs Overview (same 📊) | Elections 🗳️. |
+| Tap water vs Dams (both 💧/🚰) | Tap water 🚰, Dams & rivers 🌊. |
+| Citizen Corner vs Contributors (same 🤝) | Helplines & your rights 📞. |
 | Gov. Schemes vs Services Guide (same 📋) | Schemes 📋, certificates 🧾. |
 | File RTI vs RTI Tracker | Both are in *You can help*, next to each other; each links to the other. |
 | News vs Alerts | News = what the papers say. Alerts = official warnings to act on. |
@@ -34,3 +36,7 @@ says what each is for, and each links to the other. Routes do not change.
 Labels, descriptions and group names live in `moduleNames`,
 `moduleDescriptions` and `moduleGroups` (en/kn/hi); `SIDEBAR_MODULES` in
 `src/lib/constants/sidebar-modules.ts` holds the order and the group.
+
+"See also" tiles for these pairs are rendered by the district layout
+(`src/components/layout/RelatedModules.tsx`, from each module's `related`
+list in the registry). Pages must not add their own "See also" links.

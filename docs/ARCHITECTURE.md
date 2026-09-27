@@ -77,6 +77,16 @@ local/legacy runner for the same job modules, not part of the deployed system.
    (`src/lib/cache.ts`, short TTL) and returns `{ data, updatedAt, source }`.
    Pages are server components that call the same loaders directly; client
    components (charts, tickers) use React Query hooks in `src/hooks/`.
+   Smaller read-only routes sit beside it for single features:
+   - `election-events` (election calendar)
+   - `leader-news` (headlines naming a leader, for the leader detail sheet)
+   - `responsibility-news` (this fortnight's news topics, which drive "What
+     you can do")
+   - `exam-news`
+   - `scheme-coverage`
+   - `dam-history`
+
+   None of them writes.
 5. **Freshness** — every payload carries its `updatedAt`; the UI pill
    (`src/lib/utils/timeAgo.ts` and friends) derives "Xh ago / stale" from it.
    Nothing is labelled live by default.
