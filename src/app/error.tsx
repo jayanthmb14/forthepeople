@@ -1,12 +1,17 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
- * https://github.com/jayanthmb14/forthepeople
  */
 
+// Segment error boundary. It renders INSIDE the root layout, so it must
+// not output <html>/<body> (only global-error.tsx does that). The old
+// version did, which nested a second document inside the page whenever a
+// page threw ("<html> cannot be a child of <body>").
 "use client";
 
-export default function GlobalError({
+import Link from "next/link";
+
+export default function ErrorPage({
   error,
   reset,
 }: {
@@ -14,81 +19,70 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <div
+    <div
+      role="alert"
+      style={{
+        minHeight: "70vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        textAlign: "center",
+      }}
+    >
+      <div className="ftp-pop ftp-emoji" aria-hidden style={{ fontSize: 64, lineHeight: 1, marginBottom: 12 }}>
+        🛠️
+      </div>
+      <h1 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 28, lineHeight: 1.15, fontWeight: 700, color: "var(--ftp-text)" }}>
+        Something went wrong on this page
+      </h1>
+      <p style={{ margin: "0 0 8px", fontSize: 15, lineHeight: "23px", color: "var(--ftp-text-2)", maxWidth: 420 }}>
+        The error has been logged. Try again, or go back to the home page.
+      </p>
+      {error.digest && (
+        <p className="ftp-num" style={{ margin: "0 0 20px", fontSize: 12, color: "var(--ftp-text-2)" }}>
+          Error ID: {error.digest}
+        </p>
+      )}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+        <button
+          type="button"
+          onClick={reset}
           style={{
-            minHeight: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#FAFAF8",
-            padding: 24,
-            textAlign: "center",
-            fontFamily: "system-ui, sans-serif",
+            height: 44,
+            padding: "0 20px",
+            background: "#2563EB",
+            color: "#FFF",
+            border: "none",
+            borderRadius: 12,
+            fontSize: 15,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "var(--ftp-font-sans)",
           }}
         >
-          <div
-            style={{
-              fontSize: 64,
-              fontWeight: 800,
-              color: "#FEE2E2",
-              lineHeight: 1,
-              marginBottom: 16,
-            }}
-          >
-            500
-          </div>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: "#1A1A1A",
-              marginBottom: 8,
-            }}
-          >
-            Something went wrong
-          </h1>
-          <p
-            style={{
-              fontSize: 14,
-              color: "#6B6B6B",
-              marginBottom: 8,
-              maxWidth: 360,
-            }}
-          >
-            An unexpected error occurred. Our team has been notified.
-          </p>
-          {error.digest && (
-            <p
-              style={{
-                fontSize: 11,
-                color: "#9B9B9B",
-                fontFamily: "monospace",
-                marginBottom: 24,
-              }}
-            >
-              Error ID: {error.digest}
-            </p>
-          )}
-          <button
-            onClick={reset}
-            style={{
-              padding: "10px 20px",
-              background: "#2563EB",
-              color: "#FFF",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Try again
-          </button>
-        </div>
-      </body>
-    </html>
+          Try again
+        </button>
+        <Link
+          href="/en"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            height: 44,
+            padding: "0 20px",
+            background: "#fff",
+            color: "var(--ftp-text)",
+            border: "1px solid var(--ftp-border-strong)",
+            borderRadius: 12,
+            fontSize: 15,
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          Go to the home page
+        </Link>
+      </div>
+    </div>
   );
 }
