@@ -8,7 +8,7 @@
 
 // ═══════════════════════════════════════════════════════════
 //  StateVoteList — "Vote for the next district" on a state page
-//  (Design v3, CONCEPT-v3 §5 "State").
+//  (Design v4 "Rang").
 // ═══════════════════════════════════════════════════════════
 //
 //  Lists the most-requested districts of ONE state that are not live
@@ -16,11 +16,15 @@
 //  GET /api/district-request?all=1 (the list the vote-district page
 //  uses). Each row links to that district's preview page, which has the
 //  vote button. When nobody has asked yet, one honest sentence says so.
+//
+//  v4: each row carries a bar in the page hue, sized against the
+//  most-requested district, so the ranking reads at a glance. The state
+//  page wraps this list in the vote colour (.ftp-hue-yellow).
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
-import { Card, EmptyState, LoadingShell } from "@/components/district/ui";
+import { Card, EmptyState, LoadingShell, ProgressBar } from "@/components/district/ui";
 
 interface DistrictRequestRow {
   stateName: string;
@@ -37,6 +41,16 @@ interface Props {
   /** How many rows to show (default 8). */
   limit?: number;
 }
+
+const ALL_STATES_LINK: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: "var(--hue-deep)",
+  textDecoration: "none",
+  minHeight: 44,
+  display: "inline-flex",
+  alignItems: "center",
+};
 
 export default function StateVoteList({ locale, stateSlug, stateName, lockedDistricts, limit = 8 }: Props) {
   const { data, isLoading } = useQuery<{ all: DistrictRequestRow[] }>({
@@ -57,16 +71,19 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
   if (rows.length === 0) {
     return (
       <EmptyState
+        emoji="🗳️"
         title={`No one has asked for a ${stateName} district yet.`}
         body="Open any district below that is not live and tap Vote — the most-requested districts go live first."
         action={
-          <Link href={`/${locale}/vote-district`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}>
+          <Link href={`/${locale}/vote-district`} style={ALL_STATES_LINK}>
             See requests from all states
           </Link>
         }
       />
     );
   }
+
+  const top = rows[0].requestCount;
 
   return (
     <Card padding={0}>
@@ -78,22 +95,45 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
               <Link
                 href={`/${locale}/${stateSlug}/${slug}`}
                 className="ftp-rail-item"
-                style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, padding: "0 16px", textDecoration: "none", color: "var(--ftp-text)" }}
+                style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 16px", textDecoration: "none", color: "var(--ftp-text)" }}
               >
-                <span className="ftp-num" style={{ fontSize: 11, color: "var(--ftp-text-2)", width: 20 }}>{i + 1}</span>
-                <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500 }}>{r.districtName}</span>
-                <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{r.requestCount.toLocaleString("en-IN")}</span>{" "}
+                <span
+                  className="ftp-num"
+                  aria-hidden
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    background: i === 0 ? "var(--hue)" : "var(--hue-tint)",
+                    color: i === 0 ? "#fff" : "var(--hue-deep)",
+                  }}
+                >
+                  {i + 1}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 14, lineHeight: "20px", fontWeight: 600 }}>{r.districtName}</span>
+                  {/* The bar repeats the count beside it, so screen readers skip it. */}
+                  <span aria-hidden style={{ display: "block", marginTop: 4 }}>
+                    <ProgressBar value={r.requestCount} max={top} height={6} />
+                  </span>
+                </span>
+                <span style={{ fontSize: 13, color: "var(--ftp-text-2)", whiteSpace: "nowrap" }}>
+                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{r.requestCount.toLocaleString("en-IN")}</span>{" "}
                   {r.requestCount === 1 ? "vote" : "votes"}
                 </span>
-                <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+                <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
               </Link>
             </li>
           );
         })}
       </ol>
       <div style={{ borderTop: "1px solid var(--ftp-border)", padding: "0 16px" }}>
-        <Link href={`/${locale}/vote-district`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+        <Link href={`/${locale}/vote-district`} style={ALL_STATES_LINK}>
           See requests from all states
         </Link>
       </div>
