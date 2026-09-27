@@ -25,11 +25,18 @@
 //   5. Sub-districts, supporters and "Report an issue" as quiet links.
 //
 //  All data hooks are unchanged from v2; only the layout changed.
+//
+//  v4.1: the page sits in the shared ModulePage frame (up to 1320 px on
+//  laptop/PC, 20 px sides on tablet, 16 px on phone — docs/LAYOUT.md).
+//  District and taluk names follow the page language (मंड्या on /hi) via
+//  the registry's names map; taluk taglines, alert severity and units come
+//  from page_overview.json.
 "use client";
 
 import { useTranslations } from "next-intl";
-import { scriptLang } from "@/lib/utils/script-lang";
 import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
+import { placeName, placeNamePair } from "@/i18n/place-name";
+import { getDistrict } from "@/lib/constants/districts";
 import Link from "next/link";
 import { MessageSquareWarning } from "lucide-react";
 import {
@@ -43,7 +50,7 @@ import { getTieredModules } from "@/lib/constants/sidebar-modules";
 import { hueClass } from "@/lib/design/hues";
 import { ageInDays, isWithinMinutes } from "@/lib/utils/timeAgo";
 import {
-  AsOfText, Card, EmptyState, FreshnessPill, LoadingShell, Pill, ProgressBar, Section,
+  AsOfText, Card, EmptyState, FreshnessPill, LoadingShell, ModulePage, Pill, ProgressBar, Section,
   SourcePill,
 } from "@/components/district/ui";
 import { weatherEmoji } from "@/components/district/visuals";
@@ -128,8 +135,9 @@ function pickAlert(alerts: LocalAlert[]): LocalAlert | null {
   return active[0] ?? null;
 }
 
-function shortDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+/** "12 Sep" / "12 सित॰" in the page language (IST). */
+function shortDay(iso: string, intl: string): string {
+  return new Date(iso).toLocaleDateString(intl, { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 }
 
 // ── Today tile ─────────────────────────────────────────────
@@ -218,11 +226,18 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const stateConfig = getStateConfig(stateSlug);
   const subUnitEn = stateConfig?.subDistrictUnitPlural ?? "Taluks";
   const subUnitPlural = tu.has(subUnitEn) ? tu(subUnitEn) : subUnitEn;
-  // In sentences, use the district's local name when the UI is in its language.
-  const displayName =
-    districtData.nameLocal && districtData.nameLocal !== districtData.name && scriptLang(districtData.nameLocal) === locale
-      ? districtData.nameLocal
-      : districtData.name;
+  const to = useTranslations("page_overview");
+  const tl = useTranslations("latest");
+  // Registry entry: carries names[locale] for the district and its taluks.
+  const reg = getDistrict(stateSlug, districtSlug);
+  // In sentences, the district's name in the page language (मंड्या on /hi,
+  // ಮಂಡ್ಯ on /kn, Mandya on /en).
+  const displayName = placeName(
+    { name: districtData.name, nameLocal: districtData.nameLocal, names: reg?.names },
+    locale,
+  );
+  const stateLabel = place.state(stateSlug, stateName);
+  const talukTagline = (text: string) => (to.has(`taglines.${text}`) ? to(`taglines.${text}`) : text);
 
   // ── Data (same hooks and API calls as v2) ──
   const { data: overview } = useOverview(districtSlug, stateSlug);
@@ -281,15 +296,16 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const groups = getTieredModules();
 
   return (
-    // Side padding 24 px on desktop, 16 px on phones (CONCEPT-v3 §2.2);
-    // content capped at the 960 px reading width.
-    <div className="px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: "calc(var(--ftp-reading-max) + 48px)" }}>
+    // The shared frame (docs/LAYOUT.md): full width with 16 px sides on a
+    // phone, 20 px on a tablet, up to 1320 px centred on laptop and PC.
+    <ModulePage>
 
       {/* ═══ 1. Identity card ═══════════════════════════════ */}
       <DistrictIdentityCard
         districtSlug={districtSlug}
         name={districtData.name}
         nameLocal={districtData.nameLocal}
+        names={reg?.names}
         stateName={stateName}
         tagline={districtData.tagline}
         badges={districtData.badges}
@@ -333,7 +349,9 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(150px, 100%), 1fr))",
+            // auto-fit + 136 px: 2 tiles per row on a 320 px phone, all five
+            // in one row on a PC with no empty band on the right.
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(136px, 100%), 1fr))",
             gap: 12,
           }}
         >
@@ -365,8 +383,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               emoji="🌾"
               hue="green"
               label={t("mandi")}
-              value={`₹${Math.round(latestCrop.modalPrice / 100).toLocaleString("en-IN")}`}
-              unit="/kg"
+              value={`₹${f.number(Math.round(latestCrop.modalPrice / 100))}`}
+              unit={to("perKg")}
               sub={`${latestCrop.commodity} · ${latestCrop.market}`}
               asOf={latestCrop.date}
               source={latestCrop.source}
@@ -399,8 +417,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10 }}>⚠️</span>
                 <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>{t("alert")}</span>
-                <Pill tone={topAlert.severity === "critical" || topAlert.severity === "high" ? "danger" : "warn"} style={{ marginLeft: "auto", textTransform: "capitalize" }}>
-                  {topAlert.severity}
+                <Pill tone={topAlert.severity === "critical" || topAlert.severity === "high" ? "danger" : "warn"} style={{ marginLeft: "auto" }}>
+                  {to.has(`severity.${topAlert.severity}`) ? to(`severity.${topAlert.severity}`) : topAlert.severity}
                 </Pill>
               </div>
               <p className="ftp-body" style={{ fontWeight: 500, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
@@ -419,7 +437,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               emoji="📝"
               hue="violet"
               label={nextExam.kind === "Exam" ? t("nextExam") : t("applyBy")}
-              value={shortDay(nextExam.date)}
+              value={shortDay(nextExam.date, f.intl)}
               sub={nextExam.exam.title}
               asOfText={nextExam.exam.department}
             />
@@ -440,7 +458,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               unit="%"
               sub={t("spentOf", { spent: f.number(Math.round(totalSpent / 1e7)), total: f.number(Math.round(totalAllocated / 1e7)) })}
               visual={<ProgressBar pct={spentPct} height={8} />}
-              asOfText={latestFY ? `FY ${latestFY}` : undefined}
+              asOfText={latestFY ? tl("fy", { year: latestFY }) : undefined}
               source={budgetSource}
             />
           ) : (
@@ -503,7 +521,11 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))",
+            // 320 px minimum: 1 column on a phone, 2 on a tablet or a
+            // laptop beside the sidebar, 3 on a PC (was 360 px: one lonely
+            // column on a 768 px tablet). auto-fit: when snippets hide
+            // themselves, the rest widen instead of leaving a gap.
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
             gap: 12,
             alignItems: "start",
           }}
@@ -512,7 +534,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             stateSlug={stateSlug}
             districtSlug={districtSlug}
             districtName={displayName}
-            stateName={place.state(stateSlug, stateName)}
+            stateName={stateLabel}
           />
           <LeadersSnippet district={districtSlug} state={stateSlug} base={base} />
           <PopulationSnippet district={districtSlug} state={stateSlug} base={base} />
@@ -533,19 +555,31 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 8,
             }}
           >
-            {districtData.taluks.map((t) => (
-              <li key={t.slug}>
-                <Card href={`${base}/${t.slug}`} padding={12} style={{ minHeight: 44 }}>
-                  <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                    <span className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>{t.name}</span>
-                    {t.nameLocal && t.nameLocal !== t.name && (
-                      <span lang="und" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{t.nameLocal}</span>
+            {districtData.taluks.map((tal) => {
+              // Name in the page language first (मद्दूर on /hi), English or
+              // the local script beside it; tagline from page_overview.
+              const names = placeNamePair(
+                { name: tal.name, nameLocal: tal.nameLocal, names: reg?.taluks.find((x) => x.slug === tal.slug)?.names },
+                locale,
+              );
+              return (
+                <li key={tal.slug}>
+                  <Card href={`${base}/${tal.slug}`} padding={12} style={{ minHeight: 44 }}>
+                    <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                      <span lang={names.primaryLang} className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>{names.primary}</span>
+                      {names.secondary && (
+                        <span lang={names.secondaryLang} style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{names.secondary}</span>
+                      )}
+                    </span>
+                    {tal.tagline && (
+                      <span style={{ display: "block", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>
+                        {talukTagline(tal.tagline)}
+                      </span>
                     )}
-                  </span>
-                  {t.tagline && <span style={{ display: "block", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{t.tagline}</span>}
-                </Card>
-              </li>
-            ))}
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         </Section>
       )}
@@ -580,6 +614,6 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
           />
         </div>
       )}
-    </div>
+    </ModulePage>
   );
 }
