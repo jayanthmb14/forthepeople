@@ -27,8 +27,8 @@
 //  and Apply / Official notice / Syllabus buttons.
 //  → charts (ChartCard, 2 per row on laptop/PC): who runs the exams, and
 //  government posts filled in the district → AI insight → Share / Compare
-//  → related news. Sources and "report a mistake" live in the district
-//  shell's verification panel.
+//  → related news. Sources live in the district shell's verification
+//  panel; reports go through the site-wide "Report a problem" button.
 //
 //  Honesty (v5): dates are the boards' dates as stored; a missing date says
 //  "Not announced yet". An exam shows as "open", and gets a countdown, only

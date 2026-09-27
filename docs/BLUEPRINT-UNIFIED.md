@@ -202,8 +202,9 @@ PC, page recipe, DetailSheet).
    time or late), how we know (automatic feed / entered by hand / from news /
    estimate), whether a second source agreed ("Double-checked", "One source
    only", "Sources disagree", "Not double-checked yet"), a direct "check it
-   yourself" link, one "report a mistake" button, and the "not a government
-   website" line — once.
+   yourself" link and the "not a government website" line — once. Mistakes
+   are reported with the floating "Report a problem" button, which knows
+   the district and module.
 5. **Never fabricate.** When a source fails, write nothing and show the empty
    state. No invented, interpolated or padded numbers; no fake zeros.
    Estimates are always labelled as estimates.

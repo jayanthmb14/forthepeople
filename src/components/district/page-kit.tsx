@@ -22,8 +22,8 @@
 //                   has rows), Share (the phone's share sheet, else copy
 //                   the link) and Compare with another district.
 //
-//  Sources, the "not an official website" line and "report a mistake"
-//  are NOT here: the district layout adds one verification panel at the
+//  Sources and the "not an official website" line are NOT here: the
+//  district layout adds one verification panel at the
 //  bottom of every page, so pages must not repeat them.
 //
 //  Words: src/dictionaries/<locale>/page_pagekit.json (en / hi / kn).

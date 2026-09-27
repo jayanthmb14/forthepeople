@@ -24,9 +24,9 @@
  * cards, the sheet and both charts.
  * Stage and kind come from src/lib/civic/project-facts (closed lists), and
  * rows that are clearly not building projects (a renaming, a railway
- * maintenance block) are left out and counted in one quiet line. Sources,
- * "not an official website" and "report a mistake" live in the district
- * shell's verification panel.
+ * maintenance block) are left out and counted in one quiet line. Sources
+ * and "not an official website" live in the district shell's
+ * verification panel.
  */
 
 "use client";

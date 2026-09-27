@@ -74,12 +74,10 @@ old Docker files are archived in `docs/archive/docker/`.
     existing `/api/feedback`; a 429 gets its own message.
   - Hidden on admin pages and on India module pages, which keep
     `IndiaReportIssueButton` in the same corner.
-  - District pages also have "Report a mistake" inside "Check this data"
-    (`shell/ReportMistake.tsx`). While it is mounted it sets
-    `<html data-ftp-report="district">` and opens on the window event
-    `ftp:open-report` or the hash `#report-mistake`. The global button does
-    not hand over to it yet; it opens its own form, already filled in with
-    the district.
+  - It is the only report form on district pages too (v5.3 removed the
+    separate "Report a mistake" button from "Check this data"):
+    `reportContext()` sends the state, district and module (or taluk) with
+    every report made there.
 - `src/app/[locale]/[state]/[district]/<module>/page.tsx` — one folder per
   module. The district layout renders the sidebar from the module registry, so
   adding a folder plus a registry entry adds a module.
@@ -96,7 +94,7 @@ old Docker files are archived in `docs/archive/docker/`.
   - `StaleNotice` / `StaleDataNotice`: "this data is N days old", from each
     module's expected max age in the registry.
   - `VerifyPanel`: "Check this data" at the bottom: source, data date, last
-    checked, how it is collected, and report a mistake. It also shows each
+    checked and how it is collected. It also shows each
     dataset's double-check status from `/api/data/verification`
     (`shell/useVerification.ts`, parsing in `shell/verification.ts`). If that
     route fails or answers something unknown, the panel stays as before.

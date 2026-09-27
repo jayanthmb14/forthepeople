@@ -404,8 +404,9 @@ Built in `src/components/home/` (`chrome.module.css`) and
 - **Report button:** a pill "Report a problem" in the bottom-right corner on
   PC and tablet; a 44 px round flag on phones. It opens a short form (kind of
   problem, what is wrong, optional email). Focus stays inside, Escape closes.
-  Hidden on admin pages and India module pages. District pages also keep one
-  "Report a mistake" in "Check this data".
+  Hidden on admin pages and India module pages. On district pages it is the
+  only report form (v5.3): it sends the state, district and module with the
+  report.
 - **Footer:** light, with the same ribbon and a coloured icon chip on each
   column title; links include Prices today, Vote for a district, Vote on
   features and GitHub stars; a "Coming soon from ForThePeople" row shows

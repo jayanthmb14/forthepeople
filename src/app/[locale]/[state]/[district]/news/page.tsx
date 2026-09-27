@@ -22,8 +22,8 @@
 //  Compare. No emoji: each topic has its own crafted glyph and pastel
 //  colour (src/components/graphics), on its tile, its group heading and
 //  every story card, so crime, weather and farming look different at a
-//  glance. Sources and "report a mistake" are in the layout's
-//  verification panel.
+//  glance. Sources are in the layout's verification panel; reports go
+//  through the site-wide "Report a problem" button.
 //
 //  Every story says WHERE it came from and WHEN. Headlines and summaries are
 //  live data (translated once in the backend when a translation exists; the

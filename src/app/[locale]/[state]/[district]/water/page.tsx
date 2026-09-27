@@ -23,8 +23,8 @@
 //  numbers. Older than the dams max age (3 days,
 //  src/lib/constants/dataset-collection.ts) it turns amber — "N days old;
 //  we could not find newer data" — the big percentages turn grey, and the
-//  simple-words line says so. Sources and "report a mistake" are in the
-//  layout's verification panel.
+//  simple-words line says so. Sources are in the layout's verification
+//  panel; reports go through the site-wide "Report a problem" button.
 //
 //  Data: useWater() → { dams (newest 20 readings), canals (newest 20) }
 //  and /api/data/dam-history (every stored reading, for the trends).

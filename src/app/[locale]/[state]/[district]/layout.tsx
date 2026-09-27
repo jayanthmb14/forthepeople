@@ -102,9 +102,9 @@ export default async function DistrictLayout({
                              glance tiles are overview-only since v5.1)
               the page
               See also     — modules people mix up with this one
-              ShellBottom  — "Check this data" (#verify) with the one
-                             "Report a mistake" button (it replaces the
-                             floating "Report issue" pill)
+              ShellBottom  — "Check this data" (#verify). Reports go
+                             through the site-wide floating "Report a
+                             problem" button (it knows the district).
             The overview places its own glance row and verification panel. */}
         <main
           className="ftp-dshell-main"

@@ -57,21 +57,5 @@
     "late": "Data is late",
     "allTopics": "All topics",
     "allTopicsFor": "All topics for {district}"
-  },
-  "report": {
-    "button": "Report a mistake",
-    "title": "Report a mistake",
-    "intro": "Tell us what is wrong on this page. We read every report.",
-    "about": "About: {page}, {district}",
-    "what": "What is wrong?",
-    "whatHint": "For example: the Collector's name has changed.",
-    "email": "Your email (optional, for a reply)",
-    "send": "Send report",
-    "sending": "Sending…",
-    "thanks": "Thank you. We will check it.",
-    "failed": "Could not send. Please try again.",
-    "cancel": "Cancel",
-    "close": "Close",
-    "tooShort": "Please write a few words about what is wrong."
   }
 }

@@ -23,8 +23,8 @@
 //    when the module's main dataset is late; the name muted with "Coming
 //    soon" when nothing is collected for this district yet.
 //  • v5: no utility links here (compare, support, vote, "spot something
-//    wrong") — they live in the header, the footer and the "Report a
-//    mistake" button at the bottom of every page.
+//    wrong") — they live in the header, the footer and the floating
+//    "Report a problem" button on every page.
 //  • Every colour is a `var(--ftp-…)` token. No hex in this file.
 //
 "use client";
