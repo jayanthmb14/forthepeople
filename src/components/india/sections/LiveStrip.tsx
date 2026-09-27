@@ -12,6 +12,15 @@
  *     sideways inside its own box (the page itself never scrolls sideways).
  *   • District and state coverage counts come from the registry
  *     (getPlatformFacts), never typed by hand.
+ *   • Module and source counts (2026-09-27) are counted from the India
+ *     registries instead of the old typed placeholders (320 / 53 / 6):
+ *       - Modules: INDIA_MODULES grouped by `status` (live, beta,
+ *         coming soon, planned) — see countModulesByStatus below.
+ *       - Sources: distinct INDIA_SOURCES entries cited by at least one
+ *         module (a module citing a key missing from the registry is
+ *         not counted, so the number can only under-state).
+ *       - States/UTs: 36 is a constitutional fact (28 states + 8 union
+ *         territories), kept as the named constant STATES_AND_UTS_OF_INDIA.
  *
  * Server Component (reads Prisma). The FreshnessPill it renders is a client
  * component; the date is passed as an ISO string so it serialises cleanly.
@@ -25,12 +34,44 @@ import * as React from "react";
 import { prisma } from "@/lib/db";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { FreshnessPill } from "@/components/district/ui";
+import { INDIA_MODULES } from "@/lib/india/india-modules";
+import type { IndiaModuleStatus } from "@/lib/india/india-modules";
+import { INDIA_SOURCES } from "@/lib/india/india-sources";
 
-interface LiveStripProps {
-  sourceCount?: number;
-  liveModuleCount?: number;
-  editorialModuleCount?: number;
-  totalStates?: number;
+/**
+ * India has 28 states and 8 union territories (Constitution, First
+ * Schedule, as amended in 2020). A fixed fact, not a platform count, so it
+ * is a named constant rather than something derived from our registry.
+ */
+const STATES_AND_UTS_OF_INDIA = 36;
+
+/** Display words for each module status, in the order they are listed. */
+const STATUS_WORDS: Array<[IndiaModuleStatus, string]> = [
+  ["live", "live"],
+  ["beta", "beta"],
+  ["coming_soon", "coming soon"],
+  ["planned", "planned"],
+];
+
+/**
+ * "31 live · 22 coming soon · 6 planned" — counted from INDIA_MODULES.
+ * Statuses with zero modules are left out.
+ */
+function countModulesByStatus(): string {
+  const counts = new Map<IndiaModuleStatus, number>();
+  for (const m of INDIA_MODULES) counts.set(m.status, (counts.get(m.status) ?? 0) + 1);
+  return STATUS_WORDS.filter(([s]) => (counts.get(s) ?? 0) > 0)
+    .map(([s, word]) => `${counts.get(s)} ${word}`)
+    .join(" · ");
+}
+
+/** Number of distinct registered sources that at least one module cites. */
+function countCitedSources(): number {
+  const cited = new Set<string>();
+  for (const m of INDIA_MODULES) {
+    for (const s of m.sources) if (s.sourceKey in INDIA_SOURCES) cited.add(s.sourceKey);
+  }
+  return cited.size;
 }
 
 /** One "LABEL value" pair. Label 11 px uppercase, value in JetBrains Mono. */
@@ -49,14 +90,11 @@ function Divider() {
   return <span aria-hidden style={{ width: 1, height: 12, background: "var(--ftp-border)", flexShrink: 0 }} />;
 }
 
-export async function LiveStrip({
-  // TODO Phase 5+: derive from DB (INDIA_SOURCES count, INDIA_MODULES live/editorial split,
-  // State table count). These drift slowly so placeholder is acceptable for now.
-  sourceCount = 320,
-  liveModuleCount = 53,
-  editorialModuleCount = 6,
-  totalStates = 36,
-}: LiveStripProps = {}) {
+export async function LiveStrip() {
+  // Registry-derived counts (see the header comment). Cheap: plain array walks.
+  const moduleSummary = countModulesByStatus();
+  const sourceCount = countCitedSources();
+
   // The honest freshness signal is the most recent source asOfDate across
   // all India indicators. Phase D 2026-05-21 replaced the misleading
   // "LAST SYNC X h ago" (seed-placeholder timestamps) with this.
@@ -101,13 +139,13 @@ export async function LiveStrip({
         <Item label="Data as of" value="—" />
       )}
       <Divider />
-      <Item label="Sources" value={`${sourceCount} .gov.in`} />
+      <Item label="Sources" value={`${sourceCount} cited`} />
       <Divider />
-      <Item label="Modules" value={`${liveModuleCount} live · ${editorialModuleCount} editorial`} />
+      <Item label="Modules" value={moduleSummary} />
       <Divider />
       <Item label="Districts" value={`${activeDistricts} of ${totalIndiaDistricts}`} />
       <Divider />
-      <Item label="States" value={`${activeStates} of ${totalStates}`} />
+      <Item label="States" value={`${activeStates} of ${STATES_AND_UTS_OF_INDIA}`} />
     </div>
   );
 }

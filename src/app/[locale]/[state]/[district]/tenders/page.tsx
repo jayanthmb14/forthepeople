@@ -244,7 +244,8 @@ export default function TendersPage({
             {listQuery.error && <ErrorBlock message="Couldn't load tenders — please try again in a moment." />}
             {!listQuery.isLoading && !listQuery.error && tenders.length === 0 && (
               <EmptyState title={tab === "LIVE"
-                ? "No tenders match your filters. Try switching tabs or loosening filters. New tenders ingest every 30 minutes."
+                // Honest cadence: no tender cron is scheduled, so we do not promise a refresh interval.
+                ? "No tenders match your filters. Try switching tabs or loosening filters. Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive."
                 : "No tenders match your filters. Try the Live tab for current opportunities."}
               />
             )}

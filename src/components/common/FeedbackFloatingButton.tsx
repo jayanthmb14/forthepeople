@@ -5,6 +5,11 @@
  */
 
 "use client";
+
+// The floating "Report issue" pill on every district page. This file only
+// works out which module the visitor is on (so the report carries context);
+// the pill itself (Lucide Flag icon, 44 px, token colours, no shadow) and
+// the form it opens are drawn by FeedbackModal with `floating` set.
 import { usePathname } from "next/navigation";
 import FeedbackModal from "./FeedbackModal";
 

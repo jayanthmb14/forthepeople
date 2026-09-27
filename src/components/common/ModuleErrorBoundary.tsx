@@ -8,9 +8,16 @@
 // ═══════════════════════════════════════════════════════════
 // ForThePeople.in — Module-level Error Boundary
 // Wraps any district module page to catch render errors.
+//
+// Design v3 (2026-09-27): a calm token-only card (no red fill, no left
+// stripe; the danger colour appears only on the icon), honest copy that
+// does not promise cached data, and the kit's secondary "Try again"
+// button. Behaviour is unchanged: "Try again" clears the error state so
+// React renders the children again.
 // ═══════════════════════════════════════════════════════════
 import React from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { ToolbarButton } from "@/components/district/ui";
 
 interface Props {
   children: React.ReactNode;
@@ -46,47 +53,32 @@ export default class ModuleErrorBoundary extends React.Component<Props, State> {
         aria-live="assertive"
         style={{
           margin: 24,
-          padding: "20px 24px",
-          background: "#FEF2F2",
-          border: "1px solid #FECACA",
-          borderLeft: "4px solid #DC2626",
-          borderRadius: 12,
+          padding: 16,
+          background: "var(--ftp-surface)",
+          border: "1px solid var(--ftp-border)",
+          borderRadius: "var(--ftp-radius-card)",
           display: "flex",
           flexDirection: "column",
           gap: 12,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <AlertCircle size={18} style={{ color: "#DC2626", flexShrink: 0 }} aria-hidden="true" />
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <AlertCircle size={18} style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A" }}>
-              Couldn&apos;t load {this.props.moduleName ?? "this section"}
-            </div>
-            <div style={{ fontSize: 13, color: "#6B6B6B", marginTop: 3 }}>
-              There was an error loading this module. Cached data may be shown below.
-            </div>
+            <p className="ftp-title">
+              Couldn&apos;t show {this.props.moduleName ?? "this section"}
+            </p>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>
+              Something went wrong while drawing this part of the page. The rest of the site still works.
+              Try again, or reload the page if it keeps happening.
+            </p>
           </div>
         </div>
-        <button
-          onClick={() => this.setState({ hasError: false, errorMessage: "" })}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "7px 14px",
-            background: "#DC2626",
-            color: "#FFF",
-            border: "none",
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            alignSelf: "flex-start",
-          }}
-        >
-          <RefreshCw size={13} aria-hidden="true" />
-          Try again
-        </button>
+        <div>
+          <ToolbarButton icon={RefreshCw} onClick={() => this.setState({ hasError: false, errorMessage: "" })}>
+            Try again
+          </ToolbarButton>
+        </div>
       </div>
     );
   }

@@ -2,21 +2,29 @@
  * ForThePeople.in — Election section for the leadership page.
  *
  * Renders all elections relevant to the district's state (national +
- * state-level rows). Cards are colour-coded by urgency:
- *   PAST (date < today)              → grey ✅ Completed
- *   < 14 days                        → red 🔴 LIVE / VOTING IN N DAYS
- *   < 6 months                       → amber 🟠 APPROACHING
- *   < 2 years                        → yellow 🟡 UPCOMING
- *   ≥ 2 years                        → grey ⚪ SCHEDULED
+ * state-level rows). Each card carries a status Pill based on how far away
+ * the polling (or next expected) date is:
+ *   date < today      → neutral  "Completed"
+ *   ≤ 14 days         → danger   "Voting in N days"
+ *   ≤ 6 months        → warn     "Approaching"
+ *   ≤ 2 years         → brand    "Upcoming"
+ *   otherwise / none  → neutral  "Scheduled"
+ *
+ * Design v3 (2026-09-27): kit Section + Card + Pill, Lucide icons instead of
+ * emoji, dates / days / seats in mono, multi-phase polling as a DataTable.
+ * The old pulsing glow on imminent elections is gone (v3 allows no pulse
+ * except the live-data dot). Data fetching and the date maths are unchanged.
  *
  * Includes a footer disclaimer clarifying that ForThePeople.in is not
- * affiliated with the ECI or any political party.
+ * affiliated with the ECI or any political party (text unchanged).
  */
 
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Vote, AlertTriangle } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarDays, Landmark, Vote } from "lucide-react";
+import { Card, DataTable, Pill, Section, SourcePill } from "@/components/district/ui";
+import type { Tone } from "@/components/district/ui";
 
 interface PollingPhase { phase: number; date: string }
 export interface ElectionEvent {
@@ -38,14 +46,15 @@ export interface ElectionEvent {
   isActive: boolean;
 }
 
-interface UrgencyTone { bg: string; border: string; text: string; label: string }
-function urgencyTone(daysAway: number | null, isPast: boolean): UrgencyTone {
-  if (isPast) return { bg: "#F3F4F6", border: "#D1D5DB", text: "#6B7280", label: "✅ Completed" };
-  if (daysAway == null) return { bg: "#F3F4F6", border: "#D1D5DB", text: "#6B7280", label: "⚪ Scheduled" };
-  if (daysAway <= 14) return { bg: "#FEF2F2", border: "#DC2626", text: "#991B1B", label: `🔴 VOTING IN ${daysAway} DAY${daysAway === 1 ? "" : "S"}` };
-  if (daysAway <= 180) return { bg: "#FFFBEB", border: "#F59E0B", text: "#92400E", label: "🟠 APPROACHING" };
-  if (daysAway <= 730) return { bg: "#FEFCE8", border: "#CA8A04", text: "#854D0E", label: "🟡 UPCOMING" };
-  return { bg: "#F3F4F6", border: "#D1D5DB", text: "#6B7280", label: "⚪ SCHEDULED" };
+/** Status label + Pill tone for an election, from days until its date. */
+interface Urgency { tone: Tone; label: string }
+function urgencyTone(daysAway: number | null, isPast: boolean): Urgency {
+  if (isPast) return { tone: "neutral", label: "Completed" };
+  if (daysAway == null) return { tone: "neutral", label: "Scheduled" };
+  if (daysAway <= 14) return { tone: "danger", label: `Voting in ${daysAway} day${daysAway === 1 ? "" : "s"}` };
+  if (daysAway <= 180) return { tone: "warn", label: "Approaching" };
+  if (daysAway <= 730) return { tone: "brand", label: "Upcoming" };
+  return { tone: "neutral", label: "Scheduled" };
 }
 
 function formatFullDate(iso: string | null): string {
@@ -65,86 +74,116 @@ function daysFromToday(iso: string | null): number | null {
   return Math.round((t - Date.now()) / 86_400_000);
 }
 
+/** One line of the card: 14 px icon + label + value (value may contain mono spans). */
+function Row({ icon: Icon, label, children }: { icon: typeof Vote; label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
+      <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 3 }} />
+      <span>
+        <span style={{ color: "var(--ftp-text-2)" }}>{label}: </span>
+        {children}
+      </span>
+    </div>
+  );
+}
+
 function ElectionCard({ e }: { e: ElectionEvent }) {
   const target = e.pollingDate ?? e.nextExpected;
   const days = daysFromToday(target);
   const isPast = days != null && days < 0;
   const tone = urgencyTone(days, isPast);
   const isLive = !isPast && days != null && days <= 14;
+  const phases = e.pollingPhases && e.pollingPhases.length > 1 ? e.pollingPhases : null;
+
   return (
-    <div
-      style={{
-        background: "#FFF",
-        border: `1px solid ${tone.border}`,
-        borderTop: `4px solid ${tone.border}`,
-        borderRadius: 12,
-        padding: "14px 16px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        position: "relative",
-      }}
+    <Card
+      as="article"
+      // A multi-phase election needs room for its table, so it spans the full row.
+      style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: phases ? "1 / -1" : undefined }}
     >
-      <div
-        style={{
-          display: "inline-block",
-          padding: "2px 10px",
-          fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
-          background: tone.bg, color: tone.text, border: `1px solid ${tone.border}`,
-          borderRadius: 20, marginBottom: 8,
-          animation: isLive ? "ftpPulse 1.6s ease-in-out infinite" : undefined,
-        }}
-      >
-        {tone.label}
+      <div>
+        <Pill tone={tone.tone}>{tone.label}</Pill>
       </div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A", marginBottom: 6 }}>
-        🗳 {e.label}
-      </div>
+      <h3 className="ftp-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <Vote size={16} aria-hidden style={{ color: "var(--accent-purple-700)", flexShrink: 0 }} />
+        {e.label}
+      </h3>
+
       {e.pollingDate && (
-        <div style={{ fontSize: 12, color: "#374151", marginBottom: 3 }}>
-          📅 Polling: <strong>{formatFullDate(e.pollingDate)}</strong>
-          {days != null && !isPast ? <> — <span style={{ color: tone.text, fontWeight: 600 }}>{days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} away`}</span></> : null}
-        </div>
+        <Row icon={CalendarDays} label="Polling">
+          <span className="ftp-num">{formatFullDate(e.pollingDate)}</span>
+          {days != null && !isPast ? (
+            <span style={{ color: "var(--ftp-text-2)" }}>
+              {" · "}
+              {days === 0 ? "today" : <><span className="ftp-num">{days}</span> day{days === 1 ? "" : "s"} away</>}
+            </span>
+          ) : null}
+        </Row>
       )}
-      {e.pollingPhases && e.pollingPhases.length > 1 && (
-        <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 3 }}>
-          {e.pollingPhases.map((p) => `Phase ${p.phase}: ${formatFullDate(p.date)}`).join(" · ")}
-        </div>
+
+      {phases && (
+        <DataTable
+          dense
+          caption={`${e.label} polling phases`}
+          columns={[
+            { key: "phase", label: "Phase", numeric: true, width: 80 },
+            { key: "date", label: "Polling date", numeric: true },
+          ]}
+          rows={phases.map((p) => ({ phase: p.phase, date: formatFullDate(p.date) }))}
+        />
       )}
+
       {e.resultDate && (
-        <div style={{ fontSize: 12, color: "#374151", marginBottom: 3 }}>
-          📊 Results: <strong>{formatFullDate(e.resultDate)}</strong>
-        </div>
+        <Row icon={BarChart3} label="Results">
+          <span className="ftp-num">{formatFullDate(e.resultDate)}</span>
+        </Row>
       )}
       {e.lastHeld && !e.pollingDate && (
-        <div style={{ fontSize: 12, color: "#374151", marginBottom: 3 }}>
-          Last held: <strong>{formatMonthYear(e.lastHeld)}</strong>
-        </div>
+        <Row icon={CalendarDays} label="Last held">
+          <span className="ftp-num">{formatMonthYear(e.lastHeld)}</span>
+        </Row>
       )}
       {e.nextExpected && !e.pollingDate && (
-        <div style={{ fontSize: 12, color: "#374151", marginBottom: 3 }}>
-          Next expected: <strong>~{formatMonthYear(e.nextExpected)}</strong>
-          {days != null ? <span style={{ color: tone.text }}> ({Math.abs(Math.round(days / 30))} months away)</span> : null}
-        </div>
+        <Row icon={CalendarDays} label="Next expected">
+          <span className="ftp-num">~{formatMonthYear(e.nextExpected)}</span>
+          {days != null ? (
+            <span style={{ color: "var(--ftp-text-2)" }}>
+              {" "}(<span className="ftp-num">{Math.abs(Math.round(days / 30))}</span> months away)
+            </span>
+          ) : null}
+        </Row>
       )}
-      <div style={{ fontSize: 11, color: "#6B7280", marginTop: 6 }}>
-        🏛 {e.totalSeats ? `${e.totalSeats} seats · ` : ""}{e.body}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>
+        <Landmark size={12} aria-hidden style={{ flexShrink: 0 }} />
+        <span>
+          {e.totalSeats ? <><span className="ftp-num">{e.totalSeats}</span> seats · </> : ""}
+          {e.body}
+        </span>
       </div>
       {e.note && (
-        <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4, fontStyle: "italic" }}>{e.note}</div>
+        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{e.note}</p>
       )}
       {isLive && (
         <div
+          role="note"
           style={{
-            display: "flex", alignItems: "flex-start", gap: 6,
-            marginTop: 10, paddingTop: 8,
-            borderTop: `1px dashed ${tone.border}`,
-            fontSize: 11, color: tone.text, lineHeight: 1.5,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 6,
+            marginTop: 6,
+            paddingTop: 8,
+            borderTop: "1px solid var(--ftp-border)",
+            fontSize: 11,
+            lineHeight: "16px",
+            color: "var(--ftp-text)",
           }}
         >
-          <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+          <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2, color: "var(--ftp-danger)" }} />
           <span>During the election period, leadership data may change rapidly. Party affiliations and positions shown are as last reported.</span>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -157,34 +196,32 @@ export default function ElectionSection({ stateSlug }: { stateSlug: string }) {
   if (isLoading || !data?.data?.length) return null;
   const events = data.data;
   return (
-    <section style={{ marginTop: 32, marginBottom: 24 }}>
-      <style>{`@keyframes ftpPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.45); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }`}</style>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <Vote size={16} style={{ color: "#7C3AED" }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          Elections
-        </span>
-        <div style={{ flex: 1, height: 1, background: "#E0E7FF", marginLeft: 8 }} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
-        {events.map((e) => <ElectionCard key={e.id} e={e} />)}
-      </div>
-      <div
-        role="note"
-        style={{
-          background: "#F9F9F7", border: "1px solid #E8E8E4", borderRadius: 8,
-          padding: 14, marginTop: 16,
-          fontSize: 11, color: "#4B5563", lineHeight: 1.6,
-        }}
-      >
-        Election dates and schedules are sourced from the Election Commission of India (eci.gov.in).
-        ForThePeople.in is an independent citizen transparency platform and is not affiliated with,
-        endorsed by, or acting on behalf of the Election Commission of India or any political party.
-        This is not an official election information portal. For official election information, visit{" "}
-        <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "#2563EB" }}>eci.gov.in</a>{" "}
-        or contact your local District Election Officer.
-      </div>
-    </section>
+    <div style={{ marginTop: 32, marginBottom: 24 }}>
+      <Section title="Elections" action={<SourcePill label="ECI" href="https://eci.gov.in" />}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
+          {events.map((e) => <ElectionCard key={e.id} e={e} />)}
+        </div>
+        <p
+          role="note"
+          style={{
+            background: "var(--ftp-surface-2)",
+            borderRadius: "var(--ftp-radius-tile)",
+            padding: 14,
+            margin: "16px 0 0",
+            fontSize: 11,
+            lineHeight: "18px",
+            color: "var(--ftp-text-2)",
+          }}
+        >
+          Election dates and schedules are sourced from the Election Commission of India (eci.gov.in).
+          ForThePeople.in is an independent citizen transparency platform and is not affiliated with,
+          endorsed by, or acting on behalf of the Election Commission of India or any political party.
+          This is not an official election information portal. For official election information, visit{" "}
+          <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ftp-brand)" }}>eci.gov.in</a>{" "}
+          or contact your local District Election Officer.
+        </p>
+      </Section>
+    </div>
   );
 }
 

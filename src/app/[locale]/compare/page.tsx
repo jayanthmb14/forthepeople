@@ -13,13 +13,49 @@
 // kit; token colours only; every number in JetBrains Mono. The "better /
 // lower" comparison colours are shown as TEXT colour plus a 6 px dot in
 // the legend (never a filled box). Data hooks and URL handling unchanged.
+//
+// ?module=<slug> (2026-09-27): every module page's Toolbar links here as
+// /<locale>/compare?module=<slug>&a=<district>. When `module` names a
+// district module:
+//   • if this page has a matching group (see MODULE_TO_GROUP) we scroll
+//     to it once the numbers load and tag it "From <module>";
+//   • if not, a one-line note says so, and the two "View …" links at the
+//     bottom open that module's page for each district.
+// Changing a district keeps the module parameter. When only `a` is given,
+// B defaults to the first other active district (never A against itself).
 // ═══════════════════════════════════════════════════════════
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, use, useState } from "react";
+import { Suspense, use, useEffect, useRef, useState } from "react";
 import { ArrowRight, GitCompare, Lock, ChevronDown } from "lucide-react";
-import { Card, FreshnessPill, LoadingShell, PageHeader } from "@/components/district/ui";
+import { Card, FreshnessPill, LoadingShell, PageHeader, Pill } from "@/components/district/ui";
 import { INDIA_STATES } from "@/lib/constants/districts";
+import { SIDEBAR_MODULES } from "@/lib/constants/sidebar-modules";
 import { useOverview, useBudget, useWeather } from "@/hooks/useRealtimeData";
+
+// ── Module → comparison group ──────────────────────────────
+// The four groups this page compares. Each has an element id so a
+// ?module= link can scroll to it.
+type CompareGroup = "demographics" | "infrastructure" | "finance" | "weather";
+const GROUP_TITLES: Record<CompareGroup, string> = {
+  demographics: "Demographics",
+  infrastructure: "Infrastructure",
+  finance: "Finance",
+  weather: "Latest weather reading",
+};
+/** Which group answers a module's question. Modules not listed have no group here yet. */
+const MODULE_TO_GROUP: Record<string, CompareGroup> = {
+  overview: "demographics",
+  population: "demographics",
+  "gram-panchayat": "demographics",
+  map: "demographics",
+  infrastructure: "infrastructure",
+  schemes: "infrastructure",
+  schools: "infrastructure",
+  police: "infrastructure",
+  finance: "finance",
+  weather: "weather",
+};
+const groupId = (g: CompareGroup) => `compare-${g}`;
 
 // ── Active districts list ──────────────────────────────────
 const ACTIVE_DISTRICTS = INDIA_STATES.flatMap((s) =>
@@ -76,11 +112,24 @@ function MetricRow({
   );
 }
 
-/** Small uppercase group heading inside the comparison card. */
-function GroupLabel({ children }: { children: React.ReactNode }) {
+/**
+ * Small uppercase group heading inside the comparison card.
+ * @prop group      Gives the heading its scroll-target id.
+ * @prop fromLabel  When set (the visitor came from that module), shows a "From …" Pill.
+ */
+function GroupLabel({ children, group, fromLabel }: { children: React.ReactNode; group?: CompareGroup; fromLabel?: string | null }) {
   return (
-    <h2 className="ftp-label" style={{ padding: "16px 0 4px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+    <h2
+      id={group ? groupId(group) : undefined}
+      className="ftp-label"
+      style={{ padding: "16px 0 4px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", scrollMarginTop: 96 }}
+    >
       {children}
+      {fromLabel && (
+        <Pill tone="brand" style={{ textTransform: "none", letterSpacing: 0 }}>
+          From {fromLabel}
+        </Pill>
+      )}
     </h2>
   );
 }
@@ -199,20 +248,28 @@ function CompareContent({ locale }: { locale: string }) {
   const router = useRouter();
 
   const defaultA = ACTIVE_DISTRICTS[0]?.district.slug ?? "mandya";
-  const defaultB = ACTIVE_DISTRICTS[1]?.district.slug ?? "mysuru";
 
   const slugA = searchParams.get("a") ?? defaultA;
+  // B defaults to the first active district that is not A (a Toolbar link
+  // only sends `a`, and comparing a district with itself says nothing).
+  const defaultB = ACTIVE_DISTRICTS.find((x) => x.district.slug !== slugA)?.district.slug ?? "mysuru";
   const slugB = searchParams.get("b") ?? defaultB;
+
+  // ?module=<slug> — accepted only when it is a real district module slug,
+  // because it is also used to build links to that module's pages.
+  const moduleParam = searchParams.get("module");
+  const fromModule = SIDEBAR_MODULES.find((m) => m.slug === moduleParam) ?? null;
+  const focusGroup: CompareGroup | null = fromModule ? MODULE_TO_GROUP[fromModule.slug] ?? null : null;
 
   const stateA = ACTIVE_DISTRICTS.find((x) => x.district.slug === slugA)?.state.slug ?? "karnataka";
   const stateB = ACTIVE_DISTRICTS.find((x) => x.district.slug === slugB)?.state.slug ?? "karnataka";
 
   const { data: overviewA, isLoading: loA } = useOverview(slugA, stateA);
   const { data: overviewB, isLoading: loB } = useOverview(slugB, stateB);
-  const { data: budgetA } = useBudget(slugA, stateA);
-  const { data: budgetB } = useBudget(slugB, stateB);
-  const { data: weatherA } = useWeather(slugA, stateA);
-  const { data: weatherB } = useWeather(slugB, stateB);
+  const { data: budgetA, isLoading: lbA } = useBudget(slugA, stateA);
+  const { data: budgetB, isLoading: lbB } = useBudget(slugB, stateB);
+  const { data: weatherA, isLoading: lwA } = useWeather(slugA, stateA);
+  const { data: weatherB, isLoading: lwB } = useWeather(slugB, stateB);
 
   const dA = overviewA?.data;
   const dB = overviewB?.data;
@@ -229,16 +286,46 @@ function CompareContent({ locale }: { locale: string }) {
   const weatherReadA = weatherA?.data?.[0];
   const weatherReadB = weatherB?.data?.[0];
 
+  /** Build the compare URL, keeping ?module= so the focus survives a district change. */
+  function compareUrl(a: string, b: string) {
+    const url = new URLSearchParams({ a, b });
+    if (fromModule) url.set("module", fromModule.slug);
+    return `/${locale}/compare?${url.toString()}`;
+  }
   function setA(slug: string) {
-    const url = new URLSearchParams({ a: slug, b: slugB });
-    router.replace(`/${locale}/compare?${url.toString()}`);
+    router.replace(compareUrl(slug, slugB));
   }
   function setB(slug: string) {
-    const url = new URLSearchParams({ a: slugA, b: slug });
-    router.replace(`/${locale}/compare?${url.toString()}`);
+    router.replace(compareUrl(slugA, slug));
   }
 
   const isLoading = loA || loB;
+
+  // Finance and weather groups only render when there is data, so the
+  // focused group may be absent; the note above the table covers that case
+  // (but only once that group's own data has finished loading).
+  const focusGroupShown =
+    !!focusGroup &&
+    (focusGroup !== "finance" || totalBudA > 0 || totalBudB > 0) &&
+    (focusGroup !== "weather" || !!(weatherReadA || weatherReadB));
+  const focusGroupPending =
+    (focusGroup === "finance" && (lbA || lbB)) || (focusGroup === "weather" && (lwA || lwB));
+
+  // Scroll to the module's group once, as soon as both districts have
+  // loaded AND the group itself is on the page (weather/finance arrive later).
+  const scrolledFor = useRef<string | null>(null);
+  const tableReady = !isLoading && !!dA && !!dB;
+  useEffect(() => {
+    if (!tableReady || !focusGroup || !focusGroupShown || scrolledFor.current === focusGroup) return;
+    const el = document.getElementById(groupId(focusGroup));
+    if (!el) return;
+    scrolledFor.current = focusGroup;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [tableReady, focusGroup, focusGroupShown]);
+
+  /** "From Weather & Rainfall" tag for the focused group only. */
+  const fromFor = (g: CompareGroup) => (focusGroup === g && fromModule ? fromModule.label : null);
 
   // Honest period label for the budget rows: one FY if both match, else both.
   const fyLabel = latYrA && latYrB && latYrA !== latYrB ? `FY ${latYrA} vs FY ${latYrB}` : latYrA || latYrB ? `FY ${latYrA ?? latYrB}` : null;
@@ -292,6 +379,17 @@ function CompareContent({ locale }: { locale: string }) {
             </div>
           </Card>
 
+          {/* Came from a module this page has no group for (or whose group
+              has no data for these two districts): say so plainly. */}
+          {fromModule && !isLoading && !focusGroupShown && !focusGroupPending && (
+            <p role="note" className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>
+              {focusGroup
+                ? `No ${GROUP_TITLES[focusGroup].toLowerCase()} figures are available for both districts yet.`
+                : `${fromModule.label} is not part of the side-by-side comparison yet. This page compares demographics, infrastructure, finance and weather.`}{" "}
+              The links at the bottom open {fromModule.label} for each district.
+            </p>
+          )}
+
           {isLoading && <LoadingShell rows={6} />}
 
           {!isLoading && dA && dB && (
@@ -313,7 +411,7 @@ function CompareContent({ locale }: { locale: string }) {
 
               <div className="ftp-compare-body">
                 {/* Demographics */}
-                <GroupLabel>Demographics</GroupLabel>
+                <GroupLabel group="demographics" fromLabel={fromFor("demographics")}>{GROUP_TITLES.demographics}</GroupLabel>
                 <MetricRow label="Population" valA={dA.population?.toLocaleString("en-IN")} valB={dB.population?.toLocaleString("en-IN")} />
                 <MetricRow label="Area (sq km)" valA={dA.area?.toLocaleString("en-IN")} valB={dB.area?.toLocaleString("en-IN")} />
                 <MetricRow label="Density (per sq km)" valA={dA.density} valB={dB.density} />
@@ -323,7 +421,7 @@ function CompareContent({ locale }: { locale: string }) {
                 <MetricRow label="Villages" valA={dA.villageCount} valB={dB.villageCount} />
 
                 {/* Infrastructure */}
-                <GroupLabel>Infrastructure</GroupLabel>
+                <GroupLabel group="infrastructure" fromLabel={fromFor("infrastructure")}>{GROUP_TITLES.infrastructure}</GroupLabel>
                 <MetricRow label="Active Projects" valA={dA._count?.infraProjects} valB={dB._count?.infraProjects} />
                 <MetricRow label="Government Schemes" valA={dA._count?.schemes} valB={dB._count?.schemes} />
                 <MetricRow label="Schools" valA={dA._count?.schools} valB={dB._count?.schools} />
@@ -332,8 +430,8 @@ function CompareContent({ locale }: { locale: string }) {
                 {/* Finance */}
                 {(totalBudA > 0 || totalBudB > 0) && (
                   <>
-                    <GroupLabel>
-                      Finance
+                    <GroupLabel group="finance" fromLabel={fromFor("finance")}>
+                      {GROUP_TITLES.finance}
                       {fyLabel && <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>· {fyLabel}</span>}
                     </GroupLabel>
                     <MetricRow label="Total Budget (₹ Cr)" valA={totalBudA > 0 ? (totalBudA / 1e7).toFixed(0) : null} valB={totalBudB > 0 ? (totalBudB / 1e7).toFixed(0) : null} />
@@ -349,7 +447,7 @@ function CompareContent({ locale }: { locale: string }) {
                 {/* Weather — each side carries the date its reading was taken */}
                 {(weatherReadA || weatherReadB) && (
                   <>
-                    <GroupLabel>Latest weather reading</GroupLabel>
+                    <GroupLabel group="weather" fromLabel={fromFor("weather")}>{GROUP_TITLES.weather}</GroupLabel>
                     <div className="ftp-compare-row">
                       <div style={{ display: "flex", justifyContent: "flex-end" }}>
                         <FreshnessPill asOf={weatherReadA?.recordedAt} />
@@ -386,10 +484,14 @@ function CompareContent({ locale }: { locale: string }) {
           {/* Links to full dashboards */}
           {!isLoading && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 12, marginTop: 20 }}>
+              {/* With ?module= these open that module's page; otherwise the district overview. */}
               {[
                 { href: `/${locale}/${stateA}/${slugA}`, name: dA?.name ?? slugA },
                 { href: `/${locale}/${stateB}/${slugB}`, name: dB?.name ?? slugB },
-              ].map((l) => (
+              ].map((l) => ({
+                ...l,
+                href: fromModule && fromModule.slug !== "overview" ? `${l.href}/${fromModule.slug}` : l.href,
+              })).map((l) => (
                 <Card
                   key={l.href}
                   href={l.href}
@@ -397,7 +499,8 @@ function CompareContent({ locale }: { locale: string }) {
                   style={{ textAlign: "center", minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-brand)" }}
                 >
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    View {l.name} dashboard <ArrowRight size={14} aria-hidden="true" />
+                    {fromModule && fromModule.slug !== "overview" ? `View ${l.name} ${fromModule.label}` : `View ${l.name} dashboard`}{" "}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </span>
                 </Card>
               ))}

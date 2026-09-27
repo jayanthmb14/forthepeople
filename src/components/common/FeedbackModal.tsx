@@ -9,14 +9,15 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  FeedbackModal — bottom-sheet feedback form (POST /api/feedback)
 //
-//  Two triggers: `floating` (the "Report Issue" pill on district pages,
+//  Two triggers: `floating` (the "Report issue" pill on district pages,
 //  via FeedbackFloatingButton) or an inline text button with `label`.
-//  Design v3 (2026-09-27): tokens only, no shadows, kit Chips for the
-//  type picker (no emoji), 44 px targets, role="dialog". The submit logic
-//  and request body are unchanged.
+//  Design v3 (2026-09-27): tokens only, no shadows or glow, kit Chips for
+//  the type picker (no emoji), a Lucide Flag on the floating pill, every
+//  field has a visible <label htmlFor>, 44 px targets, role="dialog" and
+//  focus outlines left on. The submit logic and request body are unchanged.
 // ═══════════════════════════════════════════════════════════════════════
-import { useState } from "react";
-import { CheckCircle2, MessageSquare, X } from "lucide-react";
+import { useId, useState } from "react";
+import { CheckCircle2, Flag, X } from "lucide-react";
 import { Chips } from "@/components/district/ui";
 
 const TYPES = [
@@ -51,6 +52,14 @@ export default function FeedbackModal({
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  // Unique ids so each <label> points at its field (safe if two modals mount).
+  const uid = useId();
+  const ids = {
+    subject: `${uid}-subject`,
+    message: `${uid}-message`,
+    name: `${uid}-name`,
+    email: `${uid}-email`,
+  };
 
   function reset() {
     setType("bug");
@@ -92,7 +101,8 @@ export default function FeedbackModal({
     <button
       type="button"
       onClick={() => setOpen(true)}
-      title="Report issue or send feedback"
+      title="Report an issue or send feedback"
+      aria-haspopup="dialog"
       style={{
         position: "fixed", bottom: 24, right: 24, zIndex: 90,
         background: "var(--ftp-brand)", color: "var(--ftp-surface)",
@@ -102,8 +112,8 @@ export default function FeedbackModal({
         fontSize: 13, fontWeight: 500, cursor: "pointer",
       }}
     >
-      <MessageSquare size={14} aria-hidden />
-      Report Issue
+      <Flag size={14} aria-hidden />
+      Report issue
     </button>
   ) : (
     <button
@@ -130,8 +140,9 @@ export default function FeedbackModal({
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
           style={{
             position: "fixed", inset: 0, zIndex: 1000,
-            // Scrim behind the sheet (a neutral dim, not a brand colour).
-            background: "rgba(0, 0, 0, 0.45)",
+            // Scrim behind the sheet: the text colour at 45 %, so it follows
+            // light and dark themes without a hard-coded colour.
+            background: "color-mix(in srgb, var(--ftp-text) 45%, transparent)",
             display: "flex", alignItems: "flex-end", justifyContent: "center",
           }}
         >
@@ -175,40 +186,49 @@ export default function FeedbackModal({
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {/* Feedback type */}
-                <Chips
-                  label="Feedback type"
-                  items={TYPES.map((t) => ({ value: t.value, label: t.label }))}
-                  value={type}
-                  onChange={setType}
-                />
+                {/* Feedback type (kit Chips; the visible label names the group) */}
+                <div>
+                  <p aria-hidden style={FIELD_LABEL}>Type</p>
+                  <Chips
+                    label="Feedback type"
+                    items={TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                    value={type}
+                    onChange={setType}
+                  />
+                </div>
 
-                <input
-                  required maxLength={200}
-                  placeholder="Subject *"
-                  aria-label="Subject (required)"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  style={FIELD}
-                />
+                <div>
+                  <label htmlFor={ids.subject} style={FIELD_LABEL}>Subject (required)</label>
+                  <input
+                    id={ids.subject}
+                    required maxLength={200}
+                    placeholder="One line about the issue"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    style={{ ...FIELD, width: "100%" }}
+                  />
+                </div>
 
-                <textarea
-                  required maxLength={2000}
-                  placeholder="Describe the issue or suggestion… (max 2000 chars)"
-                  aria-label="Message (required)"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  style={{ ...FIELD, resize: "vertical" }}
-                />
+                <div>
+                  <label htmlFor={ids.message} style={FIELD_LABEL}>Message (required, up to 2000 characters)</label>
+                  <textarea
+                    id={ids.message}
+                    required maxLength={2000}
+                    placeholder="Describe the issue or suggestion…"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                    style={{ ...FIELD, width: "100%", resize: "vertical" }}
+                  />
+                </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {/* Two columns on wider sheets, stacked on phones */}
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 180px" }}>
-                      <label htmlFor="fm-name" style={FIELD_LABEL}>Your Name (optional)</label>
+                      <label htmlFor={ids.name} style={FIELD_LABEL}>Your Name (optional)</label>
                       <input
-                        id="fm-name"
+                        id={ids.name}
                         maxLength={100} placeholder="So we know who to thank"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -216,9 +236,9 @@ export default function FeedbackModal({
                       />
                     </div>
                     <div style={{ flex: "1 1 180px" }}>
-                      <label htmlFor="fm-email" style={FIELD_LABEL}>Your Email (optional)</label>
+                      <label htmlFor={ids.email} style={FIELD_LABEL}>Your Email (optional)</label>
                       <input
-                        id="fm-email"
+                        id={ids.email}
                         type="email" maxLength={200} placeholder="Add your email to receive a reply"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -280,7 +300,6 @@ const FIELD: React.CSSProperties = {
   color: "var(--ftp-text)",
   fontSize: 15,
   lineHeight: "22px",
-  outline: "none",
   fontFamily: "inherit",
   boxSizing: "border-box",
 };

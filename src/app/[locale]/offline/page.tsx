@@ -4,9 +4,15 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+import { WifiOff } from "lucide-react";
+
 // Lives under [locale] (route: /en/offline) so the service worker can
 // precache a real 200 page; see public/sw.js. Rendered inside the locale
 // layout (header + footer), hence 60vh rather than a full-screen block.
+//
+// Design v3 (2026-09-27): token colours and fonts, a Lucide icon in the
+// usual 40 px tinted square instead of an emoji, and honest copy (the site
+// shows published government data with dates, not "live" data).
 export default function OfflinePage() {
   return (
     <div
@@ -16,19 +22,33 @@ export default function OfflinePage() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "#FAFAF8",
-        padding: 24,
+        background: "var(--ftp-bg)",
+        padding: "24px 16px",
         textAlign: "center",
-        fontFamily: "system-ui, sans-serif",
       }}
     >
-      <div style={{ fontSize: 56, marginBottom: 16 }}>📡</div>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 }}>
+      <div
+        aria-hidden
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: "var(--ftp-radius-tile)",
+          background: "var(--ftp-surface-2)",
+          color: "var(--ftp-text-2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 16,
+        }}
+      >
+        <WifiOff size={20} />
+      </div>
+      <h1 className="ftp-h2" style={{ marginBottom: 8 }}>
         You are offline
       </h1>
-      <p style={{ fontSize: 14, color: "#6B6B6B", maxWidth: 320 }}>
-        ForThePeople.in needs an internet connection to load live government data.
-        Check your connection and try again.
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", maxWidth: 360 }}>
+        ForThePeople.in needs an internet connection to load district data.
+        Pages you opened recently may still work. Check your connection and try again.
       </p>
     </div>
   );
