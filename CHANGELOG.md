@@ -139,6 +139,10 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   Examples were "Prime Minister of India" stored as a leader's name, any number in a headline stored
   as an NCRB count, and "Factories go fully solar" stored as an outage. The news engine now sends
   these three modules to the admin review queue instead of writing them.
+- 2026-09-27: News lists no longer repeat one story from several outlets. Mandya showed the same
+  Lokayukta raid 3 times and one car accident 4 times. `src/lib/news-dedupe.ts` collapses reworded
+  copies within 48 hours and prefers the outlet's own headline over an "India News | …" aggregator
+  copy.
 - 2026-09-27: **The Elections page shows results again.** A static calendar route at
   `/api/data/elections` shadowed the module route. The calendar moved to
   `/api/data/election-events`.

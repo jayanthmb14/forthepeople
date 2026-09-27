@@ -16,6 +16,7 @@ import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
 import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { dedupeStories } from "@/lib/news-dedupe";
 
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
@@ -321,9 +322,13 @@ async function fetchModule(
       const rows = await prisma.newsItem.findMany({
         where: { districtId: did, duplicateOf: null },
         orderBy: { publishedAt: "desc" },
-        take: 30,
+        take: 60,
       });
-      const data = rows.map((r) => ({ ...r, headline: r.title }));
+      // The same story from several outlets, reworded, slips past the
+      // ingest-time prefix check; collapse it here (src/lib/news-dedupe.ts).
+      const data = dedupeStories(rows, [districtSlug, district.name])
+        .slice(0, 30)
+        .map((r) => ({ ...r, headline: r.title }));
       return { data, meta };
     }
 
