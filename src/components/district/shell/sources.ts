@@ -16,9 +16,14 @@ const SOURCE_KEY: Record<string, string> = {
   "file-rti": "rti",
 };
 
-/** Official source names for a module in a state (English proper names). */
-export function moduleSourceNames(module: string, stateSlug: string): string[] {
-  return getModuleSources(SOURCE_KEY[module] ?? module, stateSlug).sources;
+/**
+ * Official source names for a module in a district (English proper names).
+ * Pass the district: its own values (power company, water board) override
+ * the state's — Sept 2026 audit: Mandya's panel named BESCOM although
+ * CESC Mysore supplies it, and Mumbai's named MSEDCL instead of BEST / Adani.
+ */
+export function moduleSourceNames(module: string, stateSlug: string, districtSlug?: string): string[] {
+  return getModuleSources(SOURCE_KEY[module] ?? module, stateSlug, districtSlug).sources;
 }
 
 /** An official portal to check a module's figures, state-specific where one exists. */

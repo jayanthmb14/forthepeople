@@ -23,8 +23,37 @@ export type VerificationStatus = "verified" | "single-source" | "disagreement" |
 
 export interface VerificationCheck {
   source: string;
-  agreed: boolean;
+  /**
+   * true / false once compared; null when there was nothing to compare
+   * (the second source had no data). Sept 2026 audit: null used to become
+   * false and the panel said "AGMARKNET does not agree".
+   */
+  agreed: boolean | null;
   checkedAt: string | null;
+  /** false when this check re-read the same publisher ("… (read again)"), so it is not a second source. */
+  independent: boolean;
+  /** "shown" = the source whose figures the page shows; "check" = the one compared with it. */
+  role: "shown" | "check" | null;
+}
+
+/** How the panel words one check. */
+export type CheckKind = "agrees" | "disagrees" | "noData" | "sameSource" | "shownOnly";
+
+/**
+ * One check in plain words:
+ *  - shownOnly   the source whose figures the page shows, when nothing
+ *                independent was compared with it (it cannot "agree"
+ *                with itself);
+ *  - noData      the check had nothing to compare (no figure);
+ *  - sameSource  the same data read again (a re-read or a mirror) — not
+ *                an independent second source;
+ *  - agrees / disagrees for a real comparison.
+ */
+export function checkKind(c: VerificationCheck, status: VerificationStatus): CheckKind {
+  if (c.role === "shown" && (c.agreed === null || status === "single-source")) return "shownOnly";
+  if (c.agreed === null) return "noData";
+  if (!c.independent) return "sameSource";
+  return c.agreed ? "agrees" : "disagrees";
 }
 
 export interface DatasetVerification {
@@ -60,7 +89,9 @@ function normaliseCheck(raw: unknown): VerificationCheck | null {
   if (!source) return null;
   const checkedAt =
     typeof raw.checkedAt === "string" && !Number.isNaN(new Date(raw.checkedAt).getTime()) ? raw.checkedAt : null;
-  return { source, agreed: raw.agreed === true, checkedAt };
+  const agreed = raw.agreed === true ? true : raw.agreed === false ? false : null;
+  const role = raw.role === "shown" || raw.role === "check" ? raw.role : null;
+  return { source, agreed, checkedAt, independent: raw.independent !== false, role };
 }
 
 /**

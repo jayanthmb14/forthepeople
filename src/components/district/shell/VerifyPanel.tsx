@@ -34,7 +34,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertTriangle, BadgeCheck, CircleDashed, CircleHelp, Check, ExternalLink, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CircleDashed, CircleHelp, Check, ExternalLink, Minus, ShieldCheck, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useFreshness, type DatasetFreshness } from "@/hooks/useFreshness";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -45,6 +45,7 @@ import { districtRoute } from "./path";
 import { modulePortal, moduleSourceNames } from "./sources";
 import { useVerification } from "./useVerification";
 import {
+  checkKind,
   newestCheck,
   summariseVerification,
   verificationFor,
@@ -86,7 +87,7 @@ function VerifyChip({ v, td }: { v: DatasetVerification; td: Tv }) {
 function DoubleCheck({ v, td }: { v: DatasetVerification; td: Tv }) {
   const f = useFormat();
   const day = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
-  const agreed = v.checks.filter((c) => c.agreed).length;
+  const agreed = v.checks.filter((c) => c.agreed === true && c.independent).length;
   const newest = newestCheck(v);
   const text =
     v.status === "verified"
@@ -103,15 +104,19 @@ function DoubleCheck({ v, td }: { v: DatasetVerification; td: Tv }) {
       <p className="ftp-vblock-text">{text}</p>
       {v.checks.length > 0 && (
         <ul className="ftp-vchecks">
-          {v.checks.map((c, i) => (
-            <li key={`${c.source}-${i}`} data-agreed={c.agreed ? "true" : "false"}>
-              {c.agreed ? <Check size={14} aria-hidden /> : <X size={14} aria-hidden />}
-              <span>
-                {c.agreed ? td("verify.agrees", { source: c.source }) : td("verify.disagrees", { source: c.source })}
-                {c.checkedAt && <span className="ftp-vchecks-when"> · {td("verify.checkedOn", { date: day(c.checkedAt) })}</span>}
-              </span>
-            </li>
-          ))}
+          {v.checks.map((c, i) => {
+            // Only a real comparison says "agrees" / "does not agree" (Sept 2026 audit).
+            const kind = checkKind(c, v.status);
+            return (
+              <li key={`${c.source}-${i}`} data-agreed={kind === "agrees" ? "true" : kind === "disagrees" ? "false" : "none"}>
+                {kind === "agrees" ? <Check size={14} aria-hidden /> : kind === "disagrees" ? <X size={14} aria-hidden /> : <Minus size={14} aria-hidden />}
+                <span>
+                  {td(`verify.${kind}`, { source: c.source })}
+                  {c.checkedAt && <span className="ftp-vchecks-when"> · {td("verify.checkedOn", { date: day(c.checkedAt) })}</span>}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -158,7 +163,7 @@ export default function VerifyPanel({
   // Known from the registry, so the intro does not flicker while loading.
   const hasDatasets = isOverview || DATASETS.some((d) => d.module === moduleSlug);
   const portal = moduleSlug && !isOverview ? modulePortal(moduleSlug, stateSlug, districtSlug) : null;
-  const sources = moduleSlug && !isOverview ? moduleSourceNames(moduleSlug, stateSlug).map(src.name).join(", ") : "";
+  const sources = moduleSlug && !isOverview ? moduleSourceNames(moduleSlug, stateSlug, districtSlug).map(src.name).join(", ") : "";
 
   const methodText = (d: DatasetFreshness) =>
     d.status === "not_collected"
