@@ -5,7 +5,7 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Housing — Design v3 module page (CONCEPT-v3 §5)
+//  Housing — Design v4 "Rang" module page (see docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Data: useHousing() → one row per housing scheme per fiscal year
@@ -13,6 +13,11 @@
 //  fiscal year rather than a timestamp, so the tiles name the fiscal
 //  year(s) they cover. Funds are stored in whole rupees and only turned
 //  into crores for display.
+//
+//  Order: PageHeader → summary → AI insight → emoji StatTiles → picture
+//  (10 houses, N finished, plus a dial) → scheme chart in a ChartCard →
+//  one card per scheme → sources → news → toolbar. Colours come from the
+//  page hue (orange for housing), set by HueScope in the district layout.
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
@@ -32,9 +37,11 @@ import {
   LoadingShell,
   ErrorBlock,
 } from "@/components/district/ui";
-import { ModulePage, ModuleSources, ModuleToolbar, ChartLegend } from "@/components/district/daily-services/ModuleShell";
-import { CHART, CHART_TOOLTIP } from "@/components/district/daily-services/chart-tokens";
+import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+
+const AWAASSOFT = { label: "AwaasSoft", href: "https://pmayg.nic.in" };
 
 /** Whole rupees → "₹12.3Cr" for display only. */
 function crore(rupees: number): string {
@@ -69,21 +76,32 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
 
   const chartData = schemes.map((h) => ({
     name: h.schemeName.replace("Pradhan Mantri", "PM").replace("Awaas Yojana", "AY").slice(0, 16),
+    // Full name + year for the tooltip and the "Show as table" view.
+    full: `${h.schemeName} (FY ${h.fiscalYear})`,
+    target: h.targetHouses,
     completed: h.completed,
     inProgress: h.inProgress,
     remaining: Math.max(0, h.targetHouses - h.sanctioned),
   }));
+  // The scheme with the most finished houses, for the chart's one-line summary.
+  const topScheme = [...chartData].sort((a, b) => b.completed - a.completed)[0];
 
   return (
     <ModulePage>
       <PageHeader
         icon={Home}
         title="Housing"
-        description="PMAY and housing scheme progress — houses sanctioned, completed, in-progress"
+        description="PMAY and housing scheme progress: houses sanctioned, completed and in progress"
         backHref={base}
         accent={getModuleAccent("housing")}
-        source={{ label: "AwaasSoft", href: "https://pmayg.nic.in" }}
+        source={AWAASSOFT}
       />
+
+      <ModuleSummary>
+        This page tracks government housing schemes such as PMAY in this district: how many houses were planned,
+        sanctioned, finished and are still being built, and how much money was allocated, released and spent. Figures
+        come from AwaasSoft and are grouped by fiscal year.
+      </ModuleSummary>
 
       <AIInsightCard module="housing" district={district} />
       {isLoading && <LoadingShell rows={4} />}
@@ -93,47 +111,88 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
       {!isLoading && schemes.length > 0 && (
         <>
           <StatStrip cols={4}>
-            <StatTile label="Target houses" value={totalTarget.toLocaleString("en-IN")} icon={Home} sub={fyLabel} />
-            <StatTile label="Sanctioned" value={totalSanctioned.toLocaleString("en-IN")} sub={fyLabel} />
-            <StatTile label="Completed" value={totalCompleted.toLocaleString("en-IN")} sub={fyLabel} />
-            <StatTile label="In progress" value={totalInProgress.toLocaleString("en-IN")} sub={fyLabel} />
+            <StatTile emoji="🎯" label="Target houses" value={totalTarget.toLocaleString("en-IN")} sub={fyLabel} />
+            <StatTile emoji="📝" label="Sanctioned" value={totalSanctioned.toLocaleString("en-IN")} sub={fyLabel} />
+            <StatTile emoji="🏠" label="Completed" value={totalCompleted.toLocaleString("en-IN")} sub={fyLabel} />
+            <StatTile emoji="🏗️" label="In progress" value={totalInProgress.toLocaleString("en-IN")} sub={fyLabel} />
           </StatStrip>
 
-          {/* Overall progress. */}
-          <Section title="Overall completion">
-            <Card>
-              <ProgressBar label="Houses completed against target" pct={overallPct} tone="teal" />
-            </Card>
-          </Section>
+          {/* The picture: 10 houses, one per tenth of the target, lit for
+              the share already finished; plus a dial. Same totals as above. */}
+          {totalTarget > 0 && (
+            <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+              <Card tinted padding={18}>
+                <Explainer title="In simple words" emoji="🏠">
+                  <strong>{totalCompleted.toLocaleString("en-IN")}</strong> of the{" "}
+                  <strong>{totalTarget.toLocaleString("en-IN")}</strong> houses planned{fyLabel ? ` in ${fyLabel}` : ""} are
+                  finished, and <strong>{totalInProgress.toLocaleString("en-IN")}</strong> more are being built.
+                </Explainer>
+                <Pictogram
+                  filled={(totalCompleted / totalTarget) * 10}
+                  emoji="🏠"
+                  label={`About ${Math.round(Math.min(10, (totalCompleted / totalTarget) * 10))} of every 10 planned houses are finished.`}
+                />
+              </Card>
+              <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Gauge
+                  value={overallPct}
+                  label="Houses completed against target"
+                  caption={fyLabel ? `Houses finished, ${fyLabel}` : "Houses finished"}
+                />
+              </Card>
+            </div>
+          )}
 
           {/* Stacked bar chart per scheme. */}
           {chartData.length > 0 && (
-            <Section title="Scheme-wise progress">
-              <Card>
-                <ResponsiveContainer width="100%" height={240}>
+            <div style={{ marginTop: 24 }}>
+              <ChartCard
+                title="Progress by scheme"
+                emoji="🏗️"
+                units="Number of houses in each scheme"
+                simple={
+                  topScheme && topScheme.target > 0 ? (
+                    <>
+                      <strong>{topScheme.full}</strong> has the most finished houses:{" "}
+                      {topScheme.completed.toLocaleString("en-IN")} of {topScheme.target.toLocaleString("en-IN")} planned.
+                    </>
+                  ) : undefined
+                }
+                legend={[
+                  { label: "Completed", swatch: "var(--hue)" },
+                  { label: "In progress", swatch: "var(--hue-pop)" },
+                  { label: "Not yet sanctioned", swatch: "#D8D5CB" },
+                ]}
+                source={AWAASSOFT}
+                asOfPeriod={fyLabel}
+                table={chartData.map((r) => ({
+                  label: r.full,
+                  value: `${r.completed.toLocaleString("en-IN")} done, ${r.inProgress.toLocaleString("en-IN")} in progress, of ${r.target.toLocaleString("en-IN")}`,
+                }))}
+              >
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 40, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-                    <XAxis dataKey="name" tick={{ ...CHART.tick, fontSize: 10 }} stroke={CHART.axis} angle={-25} textAnchor="end" interval={0} />
-                    <YAxis tick={CHART.tick} stroke={CHART.axis} width={48} />
-                    <Tooltip {...CHART_TOOLTIP} cursor={{ fill: "var(--ftp-surface-2)" }} />
-                    <Bar dataKey="completed" name="Completed" stackId="a" fill={CHART.primary} />
-                    <Bar dataKey="inProgress" name="In Progress" stackId="a" fill={CHART.secondary} />
-                    <Bar dataKey="remaining" name="Remaining" stackId="a" fill={CHART.tertiary} radius={[4, 4, 0, 0]} />
+                    <ChartGradients />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ ...CHART_AXIS, fontSize: 10 }} angle={-25} textAnchor="end" interval={0} />
+                    <YAxis tick={CHART_AXIS} width={48} tickFormatter={(v) => Number(v).toLocaleString("en-IN")} />
+                    <Tooltip
+                      contentStyle={chartTooltipStyle}
+                      cursor={{ fill: "var(--hue-tint)" }}
+                      formatter={(v, name) => [Number(v).toLocaleString("en-IN"), name]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.full ?? ""}
+                    />
+                    <Bar dataKey="completed" name="Completed" stackId="a" fill="url(#ftpHueFill)" />
+                    <Bar dataKey="inProgress" name="In progress" stackId="a" fill="var(--hue-pop)" />
+                    <Bar dataKey="remaining" name="Not yet sanctioned" stackId="a" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-                <ChartLegend
-                  entries={[
-                    { label: "Completed", color: CHART.primary },
-                    { label: "In progress", color: CHART.secondary },
-                    { label: "Remaining", color: CHART.tertiary },
-                  ]}
-                />
-              </Card>
-            </Section>
+              </ChartCard>
+            </div>
           )}
 
           {/* One card per scheme. */}
-          <Section title="Scheme details">
+          <Section title="Scheme details" emoji="📋">
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {schemes.map((h) => {
                 const completedPct = h.targetHouses > 0 ? (h.completed / h.targetHouses) * 100 : 0;
@@ -143,9 +202,9 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
                       <div style={{ minWidth: 0 }}>
                         <h3 className="ftp-title">{h.schemeName}</h3>
-                        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>FY {h.fiscalYear}</div>
+                        <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>FY {h.fiscalYear}</div>
                       </div>
-                      <div className="ftp-num" style={{ fontSize: 22, lineHeight: "28px", color: "var(--ftp-text)", flexShrink: 0 }}>
+                      <div className="ftp-bignum" style={{ fontSize: 24, lineHeight: "28px", color: "var(--hue-deep)", flexShrink: 0 }}>
                         {completedPct.toFixed(0)}%
                       </div>
                     </div>
@@ -155,7 +214,7 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
                       <Figure label="Completed" value={h.completed.toLocaleString("en-IN")} />
                       <Figure label="In progress" value={h.inProgress.toLocaleString("en-IN")} />
                     </div>
-                    <ProgressBar label="Houses completed" pct={completedPct} tone="teal" />
+                    <ProgressBar label="Houses completed" pct={completedPct} />
                     {h.fundsAllocated ? (
                       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                         <Figure label="Allocated" value={crore(h.fundsAllocated)} />
@@ -165,7 +224,7 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
                     ) : null}
                     {h.fundsAllocated && h.fundsSpent ? (
                       <div style={{ marginTop: 10 }}>
-                        <ProgressBar label="Funds utilization" pct={fundsSpentPct} />
+                        <ProgressBar label="Funds utilisation" pct={fundsSpentPct} />
                       </div>
                     ) : null}
                   </Card>
