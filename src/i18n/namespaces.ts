@@ -5,5 +5,6 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_data-sources",
   "page_file-rti",
   "page_police",
-  "page_rti"
+  "page_rti",
+  "page_update-log"
 ];
