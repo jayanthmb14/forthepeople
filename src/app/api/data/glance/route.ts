@@ -30,18 +30,16 @@ import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERT } from "@/lib/data-filters";
 import type { GlanceData } from "@/components/district/shell/glance-types";
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
+import { isCollectorRole } from "@/lib/leader-roles";
 
 export const runtime = "nodejs";
 
 const CACHE_SECONDS = 600;
 
 
-// The district head goes by several titles: Collector, District Collector,
-// Deputy Commissioner (Karnataka) and District Magistrate (UP, Delhi) —
-// but never "Deputy Commissioner of Police" or an "Additional" post.
-const isCollector = (role: string) =>
-  /^(district collector|collector\b|deputy commissioner(?!\s+of\s+police)|district magistrate)/i.test(role) &&
-  !/additional/i.test(role);
+// The district head goes by several titles (src/lib/leader-roles.ts — the
+// same rule as the overview's "District leaders" card).
+const isCollector = isCollectorRole;
 const isMP = (role: string) => /\bmp\b|member of parliament/i.test(role);
 
 // Same ranking as the alerts page (/api/data/alerts).
