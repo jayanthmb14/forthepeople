@@ -447,6 +447,46 @@ export function ThenNowPicture({
 }
 
 // ─────────────────────────────────────────────────────────────────────
+//  Refresh cadence in the reader's language
+// ─────────────────────────────────────────────────────────────────────
+
+/** Registry cadence text (state-config.ts) → message key under "freq". */
+const FREQ_KEY: Record<string, string> = {
+  "Every 30 minutes": "every30min",
+  "Every 6 hours": "every6h",
+  Daily: "daily",
+  "Daily (market days)": "dailyMarket",
+  Weekly: "weekly",
+  Monthly: "monthly",
+  Quarterly: "quarterly",
+  Seasonal: "seasonal",
+  Annual: "annual",
+  Periodic: "periodic",
+  "Post-election": "postElection",
+  "On-change": "onChange",
+  "As announced": "asAnnounced",
+  "When the source publishes": "whenPublished",
+  "Updated with each release": "withRelease",
+  Static: "static",
+};
+
+/**
+ * Translates a registry cadence ("Monthly", "When the source publishes")
+ * into the page language. Census-style mixed cadences get one plain
+ * sentence; anything unknown is shown as written.
+ */
+export function useCadence() {
+  const t = useTranslations("page_accountability");
+  return (freq: string | null | undefined): string => {
+    if (!freq) return "";
+    const key = FREQ_KEY[freq];
+    if (key) return t(`freq.${key}`);
+    if (/census|decadal/i.test(freq)) return t("freq.censusMix");
+    return freq;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────
 //  AccountabilityFooter
 // ─────────────────────────────────────────────────────────────────────
 
@@ -476,9 +516,10 @@ export function AccountabilityFooter({
   children?: React.ReactNode;
 }) {
   const t = useTranslations("page_accountability");
+  const cadence = useCadence();
   const info = getModuleSources(moduleSlug, state);
   const sources: SourceEntry[] = [
-    ...info.sources.map((name) => ({ name, url: sourceUrls[name], frequency: info.frequency })),
+    ...info.sources.map((name) => ({ name, url: sourceUrls[name], frequency: cadence(info.frequency) })),
     ...extraSources,
   ];
   const [copied, setCopied] = useState(false);
