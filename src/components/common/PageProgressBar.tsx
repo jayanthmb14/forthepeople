@@ -5,9 +5,10 @@
  *
  * Session 12 v7 Phase P — NProgress-style top-of-viewport progress bar.
  *
- * Slim emerald (#10B981) bar at the very top of the viewport, fixed
- * position, that animates 0 → ~80% on Next.js client navigation start
- * and snaps to 100% (then fades) when the new route's children render.
+ * Slim 2 px bar in the brand colour (var(--ftp-brand)) at the very top of
+ * the viewport, fixed position, that animates 0 → ~80% on Next.js client
+ * navigation start and snaps to 100% (then fades) when the new route's
+ * children render. Design v3: token colour, no glow shadow.
  *
  * Implementation:
  *   - Listens for `<a>` clicks on same-origin internal links and starts
@@ -16,8 +17,9 @@
  *     pathname matches the in-flight href) — bar snaps to 100% + fades.
  *   - Safety net: if a navigation hasn't completed in 8s, the bar resets
  *     so it can't get stuck visible after a failed nav.
- *   - prefers-reduced-motion: bar still appears for accessibility but
- *     skips the easing curve and fade-out.
+ *   - prefers-reduced-motion: bar still appears (it tells you something is
+ *     loading) but the width/opacity transitions are switched off by the
+ *     small <style> block in the markup below.
  *
  * No third-party dependency (no `nprogress` package). One small client
  * component mounted once in [locale]/layout.tsx.
@@ -164,6 +166,7 @@ export default function PageProgressBar() {
   return (
     <div
       aria-hidden="true"
+      className="ftp-progress"
       style={{
         position: "fixed",
         top: 0,
@@ -176,12 +179,13 @@ export default function PageProgressBar() {
         transition: "opacity 200ms ease",
       }}
     >
+      {/* Reduced motion: keep the bar, drop the animation. */}
+      <style>{`@media (prefers-reduced-motion: reduce) { .ftp-progress, .ftp-progress > div { transition: none !important; } }`}</style>
       <div
         style={{
           height: "100%",
           width: `${progress}%`,
-          background: "#10B981",
-          boxShadow: "0 0 8px rgba(16, 185, 129, 0.55)",
+          background: "var(--ftp-brand)",
           transition: "width 180ms ease-out",
         }}
       />
