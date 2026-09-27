@@ -12,5 +12,13 @@
     "districtAny": "District Champion",
     "chai": "Chai Supporter",
     "supporter": "Supporter"
+  },
+  "nameError": {
+    "text": "Name must be text.",
+    "short": "Name must be at least {n} characters.",
+    "long": "Name must be under {n} characters.",
+    "letters": "Name can only contain letters, spaces, hyphens, apostrophes and full stops.",
+    "business": "Please enter a personal name (first and last), not a business name.",
+    "spam": "Please enter your name only: no phone numbers, business names or promotional text."
   }
 }
