@@ -19,6 +19,7 @@ import {
   NOT_FROM_NEWS,
   NOT_FROM_NEWS_OPTIONAL,
   NOT_SEEDED_RAINFALL,
+  OFFICIAL_ALERT,
   SHOWN_CRIME,
   VERIFIED_PANCHAYAT,
 } from "@/lib/data-filters";
@@ -58,8 +59,8 @@ export async function collectDatasetDates(
     profiles, popHistory, famous, insights, courtsSnapshot, udise, nrega,
   ] = await Promise.all([
     prisma.newsItem.aggregate({ where: d, _count: { _all: true }, _max: { publishedAt: true } }),
-    prisma.localAlert.aggregate({ where: d, _count: { _all: true }, _max: { createdAt: true } }),
-    prisma.localAlert.count({ where: { ...d, active: true } }),
+    prisma.localAlert.aggregate({ where: { ...d, ...OFFICIAL_ALERT }, _count: { _all: true }, _max: { createdAt: true } }),
+    prisma.localAlert.count({ where: { ...d, active: true, ...OFFICIAL_ALERT } }),
     prisma.weatherReading.aggregate({ where: d, _count: { _all: true }, _max: { recordedAt: true } }),
     prisma.rainfallHistory.findFirst({ where: { ...d, ...NOT_SEEDED_RAINFALL }, orderBy: [{ year: "desc" }, { month: "desc" }], select: { year: true, month: true } }),
     prisma.rainfallHistory.count({ where: d }),

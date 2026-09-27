@@ -27,7 +27,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
-import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERT } from "@/lib/data-filters";
 import type { GlanceData } from "@/components/district/shell/glance-types";
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 
@@ -125,8 +125,9 @@ export async function GET(req: NextRequest) {
       where: { districtId: did },
       select: { grade: true, overallScore: true, generatedAt: true, expiresAt: true },
     }),
+    // Official warnings only (OFFICIAL_ALERT): news stories are not warnings.
     prisma.localAlert.findMany({
-      where: { districtId: did, active: true },
+      where: { districtId: did, active: true, ...OFFICIAL_ALERT },
       select: { severity: true, title: true },
       take: 50,
     }),
