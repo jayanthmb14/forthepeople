@@ -1,187 +1,39 @@
 /* ============================================================
- * ForThePeople.in — Mobile-only stylesheet
+ * ForThePeople.in — mobile.css (Design v3, rewritten 2026-09-27)
  *
- * Strategy: lean on the existing desktop components (HeaderBar,
- * StatsBar, HeroSection, LiveDataShowcase, HowItWorks, CommunitySection,
- * SupportBanner, etc.) and let them flow as a single column on mobile
- * via responsive overrides here. Earlier M1 mobile-only homepage
- * components were removed in favour of this approach.
+ * What is left here, and why:
+ *   The home page and the site header/footer now carry their own
+ *   phone layouts in CSS modules (src/components/home/*.module.css),
+ *   so every home/header override that used to live here — and the
+ *   dozens of !important rules they needed — is gone.
  *
- * Desktop (viewport ≥ 768px) MUST remain pixel-identical to baseline.
+ *   What remains is ONLY what district pages still use:
+ *     1. The phone breadcrumb strip under the header (MobileBreadcrumbStrip).
+ *     2. Breadcrumb dropdowns → bottom sheet on phones (BreadcrumbBottomSheet).
+ *     3. The district status bar scrolling away on phones (DistrictStatusBar).
+ *     4. The left slide-in module drawer (MobileDistrictDrawer).
+ *
+ *   Colours are v3 tokens (var(--ftp-*)) — no hex. Weights 400/500.
+ *   Sheets and drawers keep a short slide so people can see where the
+ *   panel came from; reduced motion turns it off.
  * ============================================================ */
 
-/* ---------- Default-hidden mobile-only chrome ---------- */
+/* ---------- 1. Phone breadcrumb strip: hidden on desktop ---------- */
 .ftp-m-breadcrumb-strip {
   display: none;
 }
 
-/* ===================================================
- * MOBILE BREAKPOINT
- * =================================================== */
 @media (max-width: 767px) {
-
-  /* ============================================================
-   * StatsBar — proper 2×2 grid on mobile:
-   *   row 1:  Districts LIVE  |  Dashboards / district
-   *   row 2:  Data Points     |  Last Refresh
-   * (Districts Coming tile hidden — covered by the prominent
-   *  Expanding-to-780 widget further down the page.)
-   * ============================================================ */
-  .ftp-stats-bar {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-  /* Hide the 4th StatTile ("Districts coming") so Last Refresh auto-places
-     into the empty row-2 right slot. */
-  .ftp-stats-bar > .ftp-stat-tile:nth-child(5) { display: none !important; }
-
-  /* ============================================================
-   * HeroSection — single column, map full-width above district list.
-   * Grid items default to min-width:auto (= content size) which lets
-   * a wide SVG map blow out the row. Pin to 0 so they shrink.
-   * ============================================================ */
-  .ftp-hero-row {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
-  }
-  .ftp-hero-map-col,
-  .ftp-hero-districts-col {
-    min-width: 0 !important;
-  }
-  .ftp-hero-map-frame {
-    aspect-ratio: 4 / 3 !important;
-    max-height: 360px !important;
-    width: 100% !important;
-  }
-  .ftp-hero-titleblock {
-    padding: 0 4px !important;
-  }
-  .ftp-hero-h1 { font-size: 28px !important; }
-
-  /* ============================================================
-   * LiveDistrictsList — vertical stack, full width.
-   * ============================================================ */
-  .ftp-hero-districts-scroll {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-  .ftp-district-row {
-    min-height: auto !important;
-  }
-
-  /* ============================================================
-   * LiveDataShowcase — collapse 4-card grid to 2 cards per row,
-   * keep horizontal scroll feel.
-   * ============================================================ */
-  .ftp-livedata-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
-    padding: 8px !important;
-  }
-  .ftp-data-card {
-    min-height: 140px !important;
-    padding: 12px !important;
-  }
-
-  /* ============================================================
-   * CommunitySection — single column.
-   * ============================================================ */
-  .ftp-community-grid {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
-  }
-
-  /* ============================================================
-   * HeaderBar mobile layout
-   *
-   * Target row at ≤767px:
-   *   ForThePeople.in ▼  |  [search input flex:1 in centre]  |  GH Vote Globe Heart Theme
-   *
-   * Override HeaderBar's built-in mobile rule that abbreviates the logo
-   * to "FTP.in" — user wants the full text on mobile too.
-   * ============================================================ */
-  /* ============================================================
-   * HeaderBar — single row on mobile, ordered:
-   *   ForThePeople.in  [search input]  GH  Vote  Globe  Theme  Heart
-   *
-   * The full wordmark override lives inside HeaderBar's scoped style
-   * block (it has to — the scoped style runs after the global stylesheet
-   * so anything in mobile.css gets overridden). Here we just compact
-   * the spacing so all 7 items fit at 375px.
-   * ============================================================ */
-  .ftp-header-bar {
-    padding: 8px !important;
-    gap: 4px !important;
-    flex-wrap: nowrap !important;
-  }
-  /* Tighter logo so it shares the row with search + 5 icons */
-  .ftp-header-bar .ftp-logo-link { padding: 4px 4px !important; font-size: 12px !important; gap: 4px !important; }
-  .ftp-header-bar .ftp-logo-icon { width: 14px !important; height: 14px !important; }
-  .ftp-header-bar .ftp-product-trigger { padding: 0 2px !important; }
-  .ftp-header-bar .ftp-product-caret { width: 10px !important; height: 10px !important; }
-
-  /* Search input takes the centre flex space (NOT a full second row) */
-  .ftp-header-bar .ftp-search-shell {
-    flex: 1 1 60px !important;
-    min-width: 60px !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-  }
-  .ftp-header-bar .ftp-search-input {
-    padding: 5px 8px 5px 24px !important;
-    font-size: 11px !important;
-    height: 28px !important;
-  }
-  .ftp-header-bar .ftp-search-icon { left: 6px !important; width: 11px !important; height: 11px !important; }
-  .ftp-header-bar .ftp-search-kbd { display: none !important; }
-
-  /* All right-side icons sized to 28×28 to fit the row */
-  .ftp-github-link.ftp-mobile-compact,
-  .ftp-vote-features-link.ftp-mobile-compact,
-  .ftp-mobile-compact > .ftp-language-btn,
-  .ftp-theme-locked.ftp-mobile-compact,
-  .ftp-header-bar .ftp-support-btn {
-    width: 28px !important;
-    min-width: 28px !important;
-    height: 28px !important;
-    padding: 0 !important;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-left: 0 !important;
-  }
-  /* Hide labels — keep just the icon */
-  .ftp-github-link.ftp-mobile-compact .ftp-github-stars,
-  .ftp-vote-features-link.ftp-mobile-compact > span:not(.ftp-vote-features-emoji),
-  .ftp-mobile-compact > .ftp-language-btn > span:not(.ftp-language-icon),
-  .ftp-mobile-compact > .ftp-language-btn > .ftp-language-chevron {
-    display: none !important;
-  }
-
-  /* ============================================================
-   * Supporters marquee — slower on mobile so pills are readable.
-   * ============================================================ */
-  .ftp-supporter-marquee-track {
-    animation-duration: 60s !important;
-  }
-
-  /* ============================================================
-   * Breadcrumb dropdowns — replaced by bottom sheet on mobile.
-   * Hide the desktop floating menu so only the sheet shows.
-   * ============================================================ */
+  /* The desktop floating breadcrumb menu is replaced by the bottom sheet. */
   .ftp-breadcrumb-menu { display: none !important; }
 
-  /* ============================================================
-   * District page sticky bars — make them non-sticky on mobile so
-   * they scroll away with content (no z-fight, no blocking).
-   * Locked decision in the plan.
-   * ============================================================ */
   .ftp-m-breadcrumb-strip {
     display: flex;
     align-items: center;
     gap: 4px;
     position: static !important;
-    background: white;
-    border-bottom: 1px solid #E5E7EB;
+    background: var(--ftp-surface);
+    border-bottom: 1px solid var(--ftp-border);
     padding: 6px 8px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -195,49 +47,40 @@
     flex: 1;
     min-width: 0;
   }
-  /* Hamburger trigger inside the strip — opens MobileDistrictDrawer
-     (Phase I). Dispatches the OPEN_MODULES_EVENT, which the drawer
-     host (MobileDistrictChrome) listens for. */
+  /* Hamburger inside the strip — opens MobileDistrictDrawer via the
+     OPEN_MODULES_EVENT that MobileDistrictChrome listens for. */
   .ftp-m-breadcrumb-strip-hamburger {
-    width: 36px;
-    height: 36px;
-    border: 1px solid #E5E7EB;
-    background: #F9FAFB;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--ftp-border);
+    background: var(--ftp-surface-2);
+    border-radius: var(--ftp-radius-tile);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    color: #1A1A1A;
+    color: var(--ftp-text);
   }
-  .ftp-m-breadcrumb-strip-hamburger:active {
-    background: #F3F4F6;
-  }
-  /* DistrictStatusBar uses Tailwind sticky top-[92px] md:top-[56px].
-     Override it to static on mobile so it scrolls naturally. */
+  .ftp-m-breadcrumb-strip-hamburger:active { background: var(--ftp-border); }
+
+  /* ---------- 3. DistrictStatusBar ----------
+     It uses Tailwind `sticky top-[92px] md:top-[56px]`. On phones it
+     scrolls away with the content instead of covering it. */
   div[class*="sticky top-["] {
     position: static !important;
-  }
-
-  /* ============================================================
-   * Hide desktop district sidebar on mobile (drawer takes over).
-   * ============================================================ */
-  aside.hidden.md\:block {
-    /* Tailwind already does this — defensive. */
-    display: none !important;
   }
 }
 
 /* ============================================================
- * Bottom sheet (breadcrumb dropdowns on mobile)
- * Portaled to body, so rules live OUTSIDE @media — the component
- * only mounts on mobile via JS.
+ * 2. Bottom sheet (breadcrumb dropdowns on phones)
+ * Portaled to <body>, so these rules live outside the media query —
+ * the component itself only mounts on phones.
  * ============================================================ */
 .ftp-m-sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--ftp-text) 45%, transparent);
   z-index: 200;
   display: flex;
   align-items: flex-end;
@@ -246,26 +89,27 @@
 .ftp-m-sheet {
   width: 100%;
   max-height: 75vh;
-  background: white;
-  border-radius: 20px 20px 0 0;
+  background: var(--ftp-surface);
+  border-radius: var(--ftp-radius-card) var(--ftp-radius-card) 0 0;
   padding: 8px 16px max(20px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  animation: ftp-m-slide-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: ftp-m-slide-up 240ms ease-out;
 }
 .ftp-m-sheet-handle {
   width: 40px;
   height: 4px;
-  background: #D1D5DB;
-  border-radius: 2px;
+  background: var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-pill);
   margin: 8px auto 12px;
 }
 .ftp-m-sheet-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #6B7280;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   margin: 0 0 12px;
 }
 .ftp-m-sheet-list {
@@ -276,52 +120,52 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-.ftp-m-sheet-list li { border-bottom: 1px solid #F3F4F6; }
+.ftp-m-sheet-list li { border-bottom: 1px solid var(--ftp-border); }
 .ftp-m-sheet-list li:last-child { border-bottom: none; }
 .ftp-m-sheet-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 12px;
+  padding: 12px;
   text-decoration: none;
-  color: #1A1A1A;
+  color: var(--ftp-text);
   font-size: 15px;
+  line-height: 22px;
   min-height: 52px;
 }
-.ftp-m-sheet-item:active { background: #F4F3FE; }
-.ftp-m-sheet-item.is-soon { color: #9CA3AF; }
+.ftp-m-sheet-item:active { background: var(--ftp-brand-tint); }
+.ftp-m-sheet-item.is-soon { color: var(--ftp-text-2); }
 .ftp-m-sheet-item.is-current {
-  background: #F9FAFB;
+  background: var(--ftp-surface-2);
   pointer-events: none;
 }
 .ftp-m-sheet-dot {
   width: 6px;
   height: 6px;
-  background: #10B981;
+  background: var(--ftp-live);
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
 }
-.ftp-m-sheet-lock { color: #9CA3AF; flex-shrink: 0; }
+.ftp-m-sheet-lock { color: var(--ftp-text-2); flex-shrink: 0; }
 .ftp-m-sheet-name { flex: 1; }
-.ftp-m-sheet-local { font-size: 12px; color: #9CA3AF; }
+.ftp-m-sheet-local { font-size: 12px; color: var(--ftp-text-2); }
 .ftp-m-sheet-current-badge {
-  font-size: 10px;
-  color: #2563EB;
-  font-weight: 700;
+  font-size: 11px;
+  color: var(--ftp-brand-deep);
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 .ftp-m-sheet-cancel {
   padding: 14px;
-  background: #F3F4F6;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
+  background: var(--ftp-surface-2);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+  font-weight: 500;
   font-size: 15px;
   min-height: 52px;
   cursor: pointer;
-  color: #1A1A1A;
+  color: var(--ftp-text);
 }
 
 @keyframes ftp-m-slide-up {
@@ -334,13 +178,13 @@
 }
 
 /* ============================================================
- * MobileDistrictDrawer (LEFT slide-in, all 32 modules grouped)
- * Portaled to body — outside @media.
+ * 4. MobileDistrictDrawer (left slide-in with every module, grouped)
+ * Portaled to <body> — outside the media query.
  * ============================================================ */
 .ftp-m-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--ftp-text) 45%, transparent);
   z-index: 200;
   animation: ftp-m-fade-in 200ms ease-out;
 }
@@ -348,42 +192,45 @@
   width: 84vw;
   max-width: 320px;
   height: 100vh;
-  background: white;
+  background: var(--ftp-surface);
+  border-right: 1px solid var(--ftp-border);
   display: flex;
   flex-direction: column;
-  animation: ftp-m-slide-right 280ms cubic-bezier(0.32, 0.72, 0, 1);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  animation: ftp-m-slide-right 240ms ease-out;
 }
 .ftp-m-drawer-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 18px 16px;
-  border-bottom: 1px solid #E5E7EB;
+  padding: 16px;
+  border-bottom: 1px solid var(--ftp-border);
 }
 .ftp-m-drawer-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #1A1A1A;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--ftp-text);
 }
 .ftp-m-drawer-sub {
   font-size: 11px;
-  color: #6B7280;
+  line-height: 16px;
+  color: var(--ftp-text-2);
   margin-top: 2px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 .ftp-m-drawer-close {
-  width: 36px;
-  height: 36px;
-  background: #F3F4F6;
+  width: 44px;
+  height: 44px;
+  background: var(--ftp-surface-2);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--ftp-radius-tile);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+  color: var(--ftp-text);
 }
 .ftp-m-drawer-list {
   flex: 1;
@@ -392,31 +239,33 @@
   -webkit-overflow-scrolling: touch;
 }
 .ftp-m-drawer-group-label {
-  font-size: 10px;
-  color: #9CA3AF;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-weight: 500;
   padding: 14px 12px 6px;
 }
 .ftp-m-drawer-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   text-decoration: none;
-  color: #1A1A1A;
+  color: var(--ftp-text);
   font-size: 14px;
-  font-weight: 500;
-  border-radius: 10px;
+  line-height: 20px;
+  font-weight: 400;
+  border-radius: var(--ftp-radius-tile);
   margin-bottom: 2px;
   min-height: 44px;
 }
-.ftp-m-drawer-item:active { background: #F4F3FE; }
+.ftp-m-drawer-item:active { background: var(--ftp-surface-2); }
 .ftp-m-drawer-item.is-active {
-  background: #EFF6FF;
-  color: #2563EB;
-  font-weight: 700;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-weight: 500;
 }
 .ftp-m-drawer-item-icon {
   font-size: 18px;
@@ -431,13 +280,9 @@
   to { transform: translateX(0); }
 }
 
-/* ============================================================
- * Supporter pill platform icon (small lucide icon next to name)
- * Lives outside @media so it shows on both desktop and mobile.
- * ============================================================ */
-.ftp-sup-platform-icon {
-  margin-left: 4px;
-  opacity: 0.7;
-  flex-shrink: 0;
+@media (prefers-reduced-motion: reduce) {
+  .ftp-m-sheet-backdrop,
+  .ftp-m-sheet,
+  .ftp-m-drawer-backdrop,
+  .ftp-m-drawer { animation: none; }
 }
-.ftp-sup-pill-clickable:hover .ftp-sup-platform-icon { opacity: 1; }
