@@ -2,5 +2,6 @@
 // One entry per src/dictionaries/en/<name>.json (page-level messages).
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_jjm",
-  "page_power"
+  "page_power",
+  "page_transport"
 ];
