@@ -6,15 +6,50 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useContext } from "react";
+// ═══════════════════════════════════════════════════════════════════════
+//  SupportCheckout — a plan card's amount + button, and the checkout popup
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  On the card:   [−] ₹ 99 [+]   [ Subscribe ₹99/mo ]
+//  Pressing the button opens a POPUP (the kit DetailSheet: right panel on
+//  laptops, bottom sheet on tablets, full screen on phones). In it, top to
+//  bottom:
+//    1. the amount (still adjustable) and, for monthly plans, "cancel any time";
+//    2. where your name goes — state / district, only when the plan needs it;
+//    3. about you — your name (required unless anonymous), email for the
+//       receipt, and a mobile number for monthly plans (UPI AutoPay needs it);
+//    4. "Keep me anonymous";
+//    5. on the supporters wall — the name to show, a link (monthly plans; the
+//       one-time API has no link field) and a short message, with a live
+//       preview of the wall card;
+//    6. "Continue to pay ₹99 a month" → Razorpay, as before.
+//  After paying, the same popup says thank you; if it fails, it says so and
+//  keeps everything typed. Escape, the ✕ and the backdrop close it (not
+//  while Razorpay is open). Errors appear politely: after leaving a field,
+//  or all at once (with a short amber summary) when Continue is pressed,
+//  and the first one gets the focus.
+//
+//  The money flow is UNCHANGED: the same endpoints (create-order / verify,
+//  create-subscription / verify-subscription), the same body fields and the
+//  same Razorpay options. The popup's answers are turned into those fields
+//  by resolveCheckout() in checkout-form.ts (one `name` + `isPublic`). The
+//  English tier `label` is still the Razorpay description, and `accent` is
+//  still Razorpay's theme colour. `?tier=&state=&district=` still opens the
+//  right plan, now straight into its popup.
+//
+//  Languages: every word comes from "page_support" (co_* keys); name errors
+//  from "page_site.nameError". Validator and link-check messages from the
+//  shared libraries are mapped to translated text below.
+
+import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   ExternalLink,
   Github,
   Instagram,
@@ -23,16 +58,29 @@ import {
   Minus,
   Plus,
   Share2,
+  ShieldCheck,
   Twitter,
   XCircle,
 } from "lucide-react";
+import { QueryClientContext } from "@tanstack/react-query";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { validateSocialLink } from "@/lib/social-detect";
-import { validateContributorName } from "@/lib/validators/contributor-name";
-import { validateSupporterMessage } from "@/lib/validators/supporter-message";
-import { QueryClientContext } from "@tanstack/react-query";
 import { useFormat, usePlaceText } from "@/i18n/client";
 import { nameErrorText } from "@/components/site/name-error";
+import { DetailSheet } from "@/components/district/DetailSheet";
+import TierArt from "./TierArt";
+import SupporterAvatar from "./SupporterAvatar";
+import { tierHueClass, tierKeyOf } from "./tier-look";
+import {
+  checkCheckout,
+  firstProblem,
+  resolveCheckout,
+  type CheckoutField,
+  type CheckoutFields,
+  type FieldProblem,
+} from "./checkout-form";
+import look from "./look.module.css";
+import css from "./checkout.module.css";
 
 declare global {
   interface Window {
@@ -41,27 +89,15 @@ declare global {
   }
 }
 
-// Design v4 note: this component's LOOK uses --ftp-* tokens and the page hue
-// (--hue / --hue-deep; the /support page is rose). Two props are kept for
-// compatibility but are not drawn here:
-//   • `emoji`  — the /support page shows the tier emoji on the tier card.
-//   • `accent` — still passed to Razorpay as `theme.color` (Razorpay needs a
-//                real colour string, not a CSS variable); on-page buttons use
-//                the page hue instead.
-// The payment flow itself (create → Razorpay → verify) is unchanged.
-//
-// Languages: every word on screen comes from the "page_support" messages
-// (co_* keys); name errors from "page_site.nameError". The English tier
-// `label` is still what Razorpay receives as the payment description, so
-// payment records read the same in every language. Validator and link-check
-// messages from the shared libraries are mapped to translated text below.
 export interface TierConfig {
+  /** Kept for compatibility; the card shows a drawn picture (TierArt), never the emoji. */
   emoji: string;
   label: string;
   defaultAmount: number;
   minAmount: number;
   maxAmount: number;
   step: number;
+  /** Razorpay's theme colour (Razorpay needs a real colour string). */
   accent: string;
   isMonthly?: boolean;
   isCustom?: boolean;
@@ -71,9 +107,10 @@ export interface TierConfig {
   hookLine?: string;
 }
 
-type Step = "idle" | "form" | "processing" | "success" | "error";
+type Step = "form" | "processing" | "success" | "error";
 
 const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+const MESSAGE_MAX = 280;
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -115,7 +152,7 @@ type SupportT = (key: string, values?: Record<string, string | number>) => strin
 function messageErrorText(t: SupportT, reason: string): string {
   if (reason.startsWith("Message must be text")) return t("co_msgText");
   if (reason.startsWith("Message too short")) return t("co_msgShort");
-  if (reason.startsWith("Maximum")) return t("co_msgLong", { n: Number(reason.match(/\d+/)?.[0] ?? 280) });
+  if (reason.startsWith("Maximum")) return t("co_msgLong", { n: Number(reason.match(/\d+/)?.[0] ?? MESSAGE_MAX) });
   if (reason.startsWith("Messages can't contain")) return t("co_msgSpam");
   return reason;
 }
@@ -128,13 +165,23 @@ function socialWarningText(t: SupportT, warning: string): string {
   return warning;
 }
 
+/** False on the server and while hydrating, true after — so the popup never renders during SSR. */
+const noopSubscribe = () => () => {};
+function useHydrated(): boolean {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
+}
+
 export default function SupportCheckout({ tier }: Props) {
   const t = useTranslations("page_support");
   const ts = useTranslations("page_site");
   const locale = useLocale();
   const { number } = useFormat();
   const place = usePlaceText();
+  const hydrated = useHydrated();
+  const uid = useId();
+  const fieldId = (k: string) => `${uid}-${k}`;
   const inr = (n: number) => `₹${number(n)}`;
+  const tierKey = tierKeyOf(tier.tierKey);
   // Tier name on screen (the English `tier.label` still goes to Razorpay).
   const tierName = t.has(`tier_${tier.tierKey}_name`) ? t(`tier_${tier.tierKey}_name`) : tier.label;
   // React Query client, if this component is rendered inside <QueryProvider>.
@@ -152,28 +199,42 @@ export default function SupportCheckout({ tier }: Props) {
     queryClient.invalidateQueries({ queryKey: ["district-sponsors"] });
     queryClient.invalidateQueries({ queryKey: ["homepage-preview"] });
   }
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [amount, setAmount] = useState(tier.defaultAmount);
-  const [amountStr, setAmountStr] = useState(String(tier.defaultAmount));
-  const [step, setStep] = useState<Step>("idle");
-  const [scriptReady, setScriptReady] = useState(false);
 
-  // Form fields
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
-  const [socialLink, setSocialLink] = useState("");
-
-  // District/State selection
+  // `?tier=district&state=karnataka&district=mandya` opens this plan's popup
+  // with the place already chosen. This component sits inside <Suspense>
+  // (useSearchParams), so these first values are read in the browser.
   const searchParams = useSearchParams();
   const paramTier = searchParams.get("tier");
   const paramState = searchParams.get("state");
   const paramDistrict = searchParams.get("district");
+  const autoOpen = paramTier === tier.tierKey;
 
-  const [selectedState, setSelectedState] = useState(paramTier === tier.tierKey && paramState ? paramState : "");
-  const [selectedDistrict, setSelectedDistrict] = useState(paramTier === tier.tierKey && paramDistrict ? paramDistrict : "");
+  const [amount, setAmount] = useState(tier.defaultAmount);
+  const [amountStr, setAmountStr] = useState(String(tier.defaultAmount));
+  const [open, setOpen] = useState(autoOpen);
+  const [step, setStep] = useState<Step>("form");
+  const [scriptReady, setScriptReady] = useState(false);
+  const [fields, setFields] = useState<CheckoutFields>(() => ({
+    name: "",
+    email: "",
+    phone: "",
+    displayName: "",
+    message: "",
+    socialLink: "",
+    anonymous: false,
+    state: autoOpen && paramState ? paramState : "",
+    district: autoOpen && paramDistrict ? paramDistrict : "",
+  }));
+  const setField = <K extends keyof CheckoutFields>(k: K, v: CheckoutFields[K]) => setFields((f) => ({ ...f, [k]: v }));
+  // Polite validation: a field shows its problem after the visitor leaves
+  // it, or after they press Continue.
+  const [touched, setTouched] = useState<Partial<Record<CheckoutField, boolean>>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const touch = (k: CheckoutField) => setTouched((m) => (m[k] ? m : { ...m, [k]: true }));
+
+  // True from "Continue" until Razorpay closes: the popup must stay open
+  // underneath so it can show the thank-you (or the failure) afterwards.
+  const busyRef = useRef(false);
 
   // Success data
   const [paidAmount, setPaidAmount] = useState(0);
@@ -182,17 +243,10 @@ export default function SupportCheckout({ tier }: Props) {
     loadRazorpayScript().then(setScriptReady);
   }, []);
 
-  // Auto-open form if URL params match this tier, then scroll into view
-  useEffect(() => {
-    if (paramTier === tier.tierKey) {
-      setStep("form");
-      setTimeout(() => {
-        containerRef.current?.scrollIntoView({ block: "center" });
-      }, 300);
-    }
-  }, [paramTier, tier.tierKey]);
+  const selectedState = fields.state;
+  const selectedDistrict = fields.district;
 
-  const socialDetect = useMemo(() => validateSocialLink(socialLink), [socialLink]);
+  const socialDetect = useMemo(() => validateSocialLink(fields.socialLink), [fields.socialLink]);
   const detectedPlatform = socialDetect.platform;
   const SocialIcon = detectedPlatform ? SOCIAL_ICONS[detectedPlatform] : null;
   const isVerified = !!detectedPlatform && !socialDetect.warning;
@@ -238,34 +292,62 @@ export default function SupportCheckout({ tier }: Props) {
     setAmountStr(String(next));
   }
 
-  const showDistrictSelector = tier.requiresDistrict || (!tier.isMonthly && !tier.isCustom);
-  const showStateSelector = tier.requiresState || tier.requiresDistrict || (!tier.isMonthly && !tier.isCustom);
   const districtRequired = !!tier.requiresDistrict;
-  const stateRequired = !!tier.requiresState;
-
-  // Phone: digits only, 10-digit Indian number (or +91 prefix stripped).
-  // Required for subscription tiers (UPI AutoPay / bank e-mandate needs contact).
-  const phoneDigits = phone.replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
-  const phoneValid = phoneDigits.length === 10;
+  const stateRequired = !!tier.requiresState || districtRequired;
+  const showPlace = stateRequired;
+  // Phone: required for subscription tiers (UPI AutoPay / bank e-mandate
+  // needs a contact). One-time payments never sent it to the API, and
+  // Razorpay asks for it on its own page, so the popup does not ask.
   const phoneRequired = !!tier.isMonthly;
+  const rules = useMemo(
+    () => ({ phoneRequired, stateRequired, districtRequired }),
+    [phoneRequired, stateRequired, districtRequired],
+  );
 
-  const nameCheck = useMemo(() => validateContributorName(name), [name]);
-  const nameError = name.length > 0 && !nameCheck.ok ? nameErrorText(ts, nameCheck.reason) : null;
+  const problems = useMemo(() => checkCheckout(fields, rules), [fields, rules]);
+  const problemCount = Object.keys(problems).length;
+  const shown = (k: CheckoutField): FieldProblem | undefined => (submitted || touched[k] ? problems[k] : undefined);
 
-  const messageCheck = useMemo(() => validateSupporterMessage(message), [message]);
-  const messageError = message.length > 0 && !messageCheck.ok ? messageErrorText(t, messageCheck.reason) : null;
+  /** Translated text for one field problem. */
+  function problemText(k: CheckoutField, p: FieldProblem): string {
+    switch (p.kind) {
+      case "name":
+        return nameErrorText(ts, p.reason);
+      case "message":
+        return messageErrorText(t, p.reason);
+      case "email":
+        return t("co_emailInvalid");
+      case "phone":
+        return t("co_phoneInvalid");
+      case "required":
+        if (k === "name") return t("co_errNameReq");
+        if (k === "phone") return t("co_errPhoneReq");
+        if (k === "state") return t("co_errStateReq");
+        if (k === "district") return t("co_errDistrictReq");
+        return t("co_errNameReq");
+    }
+  }
 
-  const canSubmit =
-    nameCheck.ok &&
-    messageCheck.ok &&
-    scriptReady &&
-    (!districtRequired || selectedDistrict) &&
-    (!stateRequired || selectedState) &&
-    (!phoneRequired || phoneValid);
+  function openCheckout() {
+    setStep("form");
+    setOpen(true);
+  }
+
+  const closeSheet = useCallback(() => {
+    // Not while the payment is being created or Razorpay is open on top.
+    if (busyRef.current) return;
+    setOpen(false);
+    setStep("form");
+    setSubmitted(false);
+  }, []);
 
   async function handlePay() {
-    if (!canSubmit) return;
+    const r = resolveCheckout(fields);
+    busyRef.current = true;
     setStep("processing");
+    const done = () => {
+      busyRef.current = false;
+    };
 
     try {
       if (tier.isMonthly) {
@@ -276,13 +358,13 @@ export default function SupportCheckout({ tier }: Props) {
           body: JSON.stringify({
             tier: tier.tierKey,
             amount, // user-chosen amount from +/- buttons
-            name: name.trim(),
-            email: email.trim() || undefined,
-            phone: phoneDigits || undefined,
+            name: r.name,
+            email: r.email,
+            phone: r.phone,
             districtId: districtDbId || undefined,
             stateId: stateDbId || undefined,
-            socialLink: socialLink.trim() || undefined,
-            message: message.trim() || undefined,
+            socialLink: r.socialLink,
+            message: r.message,
           }),
         });
 
@@ -295,52 +377,64 @@ export default function SupportCheckout({ tier }: Props) {
           name: "ForThePeople.in",
           description: tier.label,
           prefill: {
-            name: name.trim(),
-            email: email.trim(),
-            contact: phoneDigits ? `+91${phoneDigits}` : undefined,
+            name: r.prefillName || undefined,
+            email: r.email ?? "",
+            contact: r.phone ? `+91${r.phone}` : undefined,
           },
           theme: { color: tier.accent },
           modal: {
-            ondismiss: () => setStep("form"),
+            ondismiss: () => {
+              done();
+              setStep("form");
+            },
           },
           handler: async (response: {
             razorpay_subscription_id: string;
             razorpay_payment_id: string;
             razorpay_signature: string;
           }) => {
-            const verifyRes = await fetch("/api/payment/verify-subscription", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_subscription_id: response.razorpay_subscription_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                name: name.trim(),
-                email: email.trim() || undefined,
-                phone: phoneDigits || undefined,
-                tier: tier.tierKey,
-                amount,
-                districtId: districtDbId || undefined,
-                stateId: stateDbId || undefined,
-                socialLink: socialLink.trim() || undefined,
-                message: message.trim() || undefined,
-                isPublic,
-              }),
-            });
-            const data = await verifyRes.json();
-            if (data.success) {
-              setPaidAmount(amount);
-              setStep("success");
-              // Instantly invalidate all contributor queries so walls refresh
-              invalidateContributorQueries();
-            } else {
+            try {
+              const verifyRes = await fetch("/api/payment/verify-subscription", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_subscription_id: response.razorpay_subscription_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  name: r.name,
+                  email: r.email,
+                  phone: r.phone,
+                  tier: tier.tierKey,
+                  amount,
+                  districtId: districtDbId || undefined,
+                  stateId: stateDbId || undefined,
+                  socialLink: r.socialLink,
+                  message: r.message,
+                  isPublic: r.isPublic,
+                }),
+              });
+              const data = await verifyRes.json();
+              if (data.success) {
+                setPaidAmount(amount);
+                setStep("success");
+                // Instantly invalidate all contributor queries so walls refresh
+                invalidateContributorQueries();
+              } else {
+                setStep("error");
+              }
+            } catch {
               setStep("error");
+            } finally {
+              done();
             }
           },
         };
 
         const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", () => setStep("error"));
+        rzp.on("payment.failed", () => {
+          done();
+          setStep("error");
+        });
         rzp.open();
         setStep("form");
       } else {
@@ -351,10 +445,10 @@ export default function SupportCheckout({ tier }: Props) {
           body: JSON.stringify({
             amount,
             tier: tier.tierKey || tier.label,
-            name: name.trim(),
-            email: email.trim() || undefined,
-            message: message.trim() || undefined,
-            isPublic,
+            name: r.name,
+            email: r.email,
+            message: r.message,
+            isPublic: r.isPublic,
           }),
         });
 
@@ -369,479 +463,563 @@ export default function SupportCheckout({ tier }: Props) {
           description: tier.label,
           order_id: orderId,
           prefill: {
-            name: name.trim(),
-            email: email.trim(),
-            contact: phoneDigits ? `+91${phoneDigits}` : undefined,
+            name: r.prefillName || undefined,
+            email: r.email ?? "",
+            contact: r.phone ? `+91${r.phone}` : undefined,
           },
           theme: { color: tier.accent },
           modal: {
-            ondismiss: () => setStep("form"),
+            ondismiss: () => {
+              done();
+              setStep("form");
+            },
           },
           handler: async (response: {
             razorpay_order_id: string;
             razorpay_payment_id: string;
             razorpay_signature: string;
           }) => {
-            const verifyRes = await fetch("/api/payment/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                contributionId,
-              }),
-            });
-            const verifyData = await verifyRes.json();
-            if (verifyData.success) {
-              setPaidAmount(amount);
-              setStep("success");
-              // Instantly invalidate all contributor queries so walls refresh
-              invalidateContributorQueries();
-            } else {
+            try {
+              const verifyRes = await fetch("/api/payment/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  contributionId,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (verifyData.success) {
+                setPaidAmount(amount);
+                setStep("success");
+                // Instantly invalidate all contributor queries so walls refresh
+                invalidateContributorQueries();
+              } else {
+                setStep("error");
+              }
+            } catch {
               setStep("error");
+            } finally {
+              done();
             }
           },
         };
 
         const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", () => setStep("error"));
+        rzp.on("payment.failed", () => {
+          done();
+          setStep("error");
+        });
         rzp.open();
         setStep("form");
       }
     } catch {
+      done();
       setStep("error");
     }
   }
 
-  // ── SUCCESS SCREEN ────────────────────────────────────────
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (step === "processing" || busyRef.current) return;
+    const first = firstProblem(problems);
+    if (first) {
+      setSubmitted(true);
+      // Move to the first field that needs attention.
+      window.setTimeout(() => document.getElementById(fieldId(first))?.focus(), 0);
+      return;
+    }
+    if (!scriptReady) return;
+    handlePay();
+  }
+
+  // ── Pieces ────────────────────────────────────────────────
+  const atMin = amount <= tier.minAmount;
+  const atMax = amount >= tier.maxAmount;
+  const stepper = (idSuffix: string) => (
+    <div className={css.stepper}>
+      <button
+        type="button"
+        onClick={() => adjust(-tier.step)}
+        disabled={atMin}
+        aria-label={t("co_decrease", { amount: inr(tier.step) })}
+        className={css.stepBtn}
+      >
+        <Minus size={16} aria-hidden />
+      </button>
+      <div className={css.amountBox}>
+        <span className={`ftp-num ${css.rupee}`} aria-hidden>₹</span>
+        <input
+          id={fieldId(`amount-${idSuffix}`)}
+          type="number"
+          inputMode="numeric"
+          min={tier.minAmount}
+          max={tier.maxAmount}
+          step={tier.step}
+          value={amountStr}
+          aria-label={t("co_amountAria", { tier: tierName })}
+          onChange={(e) => setAmountStr(e.target.value)}
+          onBlur={handleAmountBlur}
+          onKeyDown={(e) => {
+            // Enter settles the amount; it never jumps straight to payment.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAmountBlur();
+            }
+          }}
+          className={css.amountInput}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={() => adjust(tier.step)}
+        disabled={atMax}
+        aria-label={t("co_increase", { amount: inr(tier.step) })}
+        className={css.stepBtn}
+      >
+        <Plus size={16} aria-hidden />
+      </button>
+    </div>
+  );
+
+  /** Label + control + hint + (polite) error for one field. */
+  const field = (
+    k: CheckoutField,
+    label: string,
+    control: (a11y: { id: string; "aria-invalid": boolean; "aria-describedby": string | undefined }) => React.ReactNode,
+    opts: { optional?: boolean; hint?: React.ReactNode; aside?: React.ReactNode } = {},
+  ) => {
+    const id = fieldId(k);
+    const problem = shown(k);
+    const hintId = opts.hint ? `${id}-hint` : undefined;
+    const errId = problem ? `${id}-err` : undefined;
+    return (
+      <div className={css.field}>
+        <label htmlFor={id} className={css.label}>
+          {label}
+          {opts.optional && <span className={css.optional}>({t("co_optional")})</span>}
+        </label>
+        {control({ id, "aria-invalid": !!problem, "aria-describedby": [errId, hintId].filter(Boolean).join(" ") || undefined })}
+        {problem && (
+          <p id={errId} className={css.error}>
+            <AlertCircle size={14} aria-hidden />
+            {problemText(k, problem)}
+          </p>
+        )}
+        {(opts.hint || opts.aside) && (
+          <div className={css.hintRow}>
+            {opts.hint ? (
+              <p id={hintId} className={css.hint}>
+                {opts.hint}
+              </p>
+            ) : (
+              <span />
+            )}
+            {opts.aside}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const lockedDistrictPicked = !!selectedDistrict && !!districtOptions.find((d) => d.slug === selectedDistrict && !d.active);
+  const previewName = fields.anonymous
+    ? t("anonymous")
+    : (fields.displayName.trim() || fields.name.trim() || t("co_previewYou"));
+  const previewMessage = !fields.anonymous && fields.message.trim() ? fields.message.trim() : "";
+
+  // ── Popup content per step ────────────────────────────────
+  let body: React.ReactNode;
+  let footer: React.ReactNode;
+
   if (step === "success") {
     const shareText = tier.isMonthly ? t("co_shareSubscribed") : t("co_shareContributed", { amount: inr(paidAmount) });
     const shareUrl = `https://forthepeople.in/${locale}/support`;
     const whatsappHref = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
     const twitterHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-
-    // Build contributors page URL if district context available
+    // The district's supporters page when a district was chosen, else everyone.
     const contributorsUrl = selectedState && selectedDistrict
       ? `/${locale}/${selectedState}/${selectedDistrict}/contributors?just_paid=true`
-      : `/${locale}`;
+      : `/${locale}/contributors`;
 
-    return (
-      <div role="status" style={{ textAlign: "center", padding: "16px 0" }}>
-        <CheckCircle2 size={32} aria-hidden style={{ color: "var(--ftp-live)", margin: "0 auto 8px", display: "block" }} />
-        <p className="ftp-title" style={{ marginBottom: 6 }}>{t("co_thanks")}</p>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 12 }}>
+    body = (
+      <div role="status" className={css.result}>
+        <TierArt tier={tierKey} size={76} />
+        <p className={css.resultTitle}>{t("co_thanks")}</p>
+        <p className={css.resultBody}>
           {tier.isMonthly ? t("co_activeMonthly", { amount: inr(paidAmount) }) : t("co_oneTimeThanks", { amount: inr(paidAmount) })}
         </p>
-        <p className="ftp-body" style={{ ...NOTE, color: "var(--ftp-live-text)", marginBottom: 8 }}>{t("co_nameSoon")}</p>
-        <p style={{ ...NOTE, fontSize: 11, lineHeight: 1.5, color: "var(--ftp-text-2)", marginBottom: 16 }}>
-          {t.rich("co_updateLater", {
-            link: (c) => (
-              <a href="mailto:support@forthepeople.in" style={{ color: "var(--hue-deep)", textDecoration: "none", fontWeight: 600 }}>
-                {c}
-              </a>
-            ),
-          })}
-        </p>
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
-          <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={SECONDARY_BTN}>
-            <Share2 size={14} aria-hidden /> {t("co_shareWhatsApp")}
+        <p className={css.resultNote}>{fields.anonymous ? t("co_anonSoon") : t("co_nameSoon")}</p>
+        <div className={css.row}>
+          <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className={css.quietBtn}>
+            <Share2 size={15} aria-hidden /> {t("co_shareWhatsApp")}
           </a>
-          <a href={twitterHref} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={SECONDARY_BTN}>
-            <Twitter size={14} aria-hidden /> {t("co_shareX")}
+          <a href={twitterHref} target="_blank" rel="noopener noreferrer" className={css.quietBtn}>
+            <Twitter size={15} aria-hidden /> {t("co_shareX")}
           </a>
         </div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href={contributorsUrl} style={{ ...TEXT_LINK, color: "var(--hue-deep)", fontWeight: 600 }}>
+        <div className={css.row}>
+          <Link href={contributorsUrl} className={css.quietBtn} style={{ color: "var(--hue-deep)" }}>
             {t("co_viewContributors")}
           </Link>
-          <Link href={`/${locale}`} style={{ ...TEXT_LINK, color: "var(--ftp-text-2)" }}>
+          <Link href={`/${locale}`} className={css.quietBtn}>
             {t("co_backHome")}
           </Link>
         </div>
-      </div>
-    );
-  }
-
-  // ── FORM STEP ─────────────────────────────────────────────
-  if (step === "form" || step === "processing") {
-    const isLoading = step === "processing";
-    const lockedDistrictPicked =
-      !!selectedDistrict && !!districtOptions.find((d) => d.slug === selectedDistrict && !d.active);
-    return (
-      <div ref={containerRef} style={{ paddingTop: 4 }}>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginBottom: 12 }}>{t("co_almost")}</p>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <input
-            type="text" placeholder={t("co_namePh")} value={name} aria-label={t("co_nameAria")}
-            onChange={(e) => setName(e.target.value)} maxLength={40}
-            aria-invalid={!!nameError}
-            style={{ ...INPUT, borderColor: nameError ? "var(--ftp-danger)" : "var(--ftp-border)" }}
-          />
-          {nameError && <FieldError>{nameError}</FieldError>}
-          <input
-            type="email" placeholder={t("co_emailPh")} value={email} aria-label={t("co_emailAria")}
-            onChange={(e) => setEmail(e.target.value)}
-            style={INPUT}
-          />
-
-          {/* NPCI UPI AutoPay cap is ₹15,000 per debit. For higher subscription
-              amounts (Founder tier is ₹50k+), users must use card or netbanking. */}
-          {tier.isMonthly && amount > 15000 && (
-            <div style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
-              <AlertTriangle size={14} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 1 }} />
-              <span>{t.rich("co_upiNote", { b: (c) => <strong style={{ fontWeight: 500 }}>{c}</strong> })}</span>
-            </div>
-          )}
-
-          {/* Phone — required for subscriptions (UPI AutoPay / bank e-mandate),
-              optional for one-time contributions. Auto-fills Razorpay checkout. */}
-          <div>
-            <input
-              type="tel"
-              inputMode="numeric"
-              placeholder={phoneRequired ? t("co_phoneReqPh") : t("co_phoneOptPh")}
-              aria-label={phoneRequired ? t("co_phoneReqAria") : t("co_phoneOptAria")}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.slice(0, 14))}
-              aria-invalid={phoneRequired && !!phone && !phoneValid}
-              style={{
-                ...INPUT,
-                width: "100%",
-                borderColor: phoneRequired && phone && !phoneValid ? "var(--ftp-danger)" : "var(--ftp-border)",
-              }}
-            />
-            {phoneRequired && phone && !phoneValid && (
-              <FieldError>{t("co_phoneInvalid")}</FieldError>
-            )}
-            {phoneRequired && !phone && (
-              <p style={HINT}>{t("co_phoneWhy")}</p>
-            )}
-          </div>
-
-          {/* Social link */}
-          <label htmlFor={`social-${tier.tierKey}`} className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginTop: 2 }}>
-            {t("co_socialLabel")}
-          </label>
-          <div style={{ position: "relative" }}>
-            <input
-              id={`social-${tier.tierKey}`}
-              type="url" placeholder={t("co_socialPh")} value={socialLink}
-              onChange={(e) => setSocialLink(e.target.value)}
-              style={{ ...INPUT, paddingRight: SocialIcon ? 36 : 12, width: "100%" }}
-            />
-            {SocialIcon && (
-              <SocialIcon
-                size={16}
-                aria-hidden
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ftp-text-2)" }}
-              />
-            )}
-          </div>
-          <p
-            style={{
-              ...HINT,
-              marginTop: -6,
-              display: "flex",
-              gap: 4,
-              alignItems: "flex-start",
-              color: isVerified
-                ? "var(--ftp-live-text)"
-                : hasWarning
-                  ? "var(--ftp-warn)"
-                  : !socialDetect.valid
-                    ? "var(--ftp-danger)"
-                    : "var(--ftp-text-2)",
-            }}
-          >
-            {isVerified && detectedPlatform ? (
-              <>
-                <CheckCircle2 size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-                {t("co_socialDetected", { platform: detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1) })}
-              </>
-            ) : hasWarning ? (
-              <>
-                <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-                {socialWarningText(t, socialDetect.warning ?? "")}
-              </>
-            ) : !socialDetect.valid ? (
-              <>
-                <XCircle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-                {t("co_socialInvalid")}
-              </>
-            ) : (
-              t("co_socialHint")
-            )}
-          </p>
-
-          {/* Helper text explaining required fields for this tier */}
-          {districtRequired && (
-            <p style={{ ...NOTE, fontSize: 11, lineHeight: 1.5, color: "var(--ftp-text)" }}>{t("co_pickDistrict")}</p>
-          )}
-
-          {/* State selector (for district/state tiers, optional for others) */}
-          {showStateSelector && (
-            <select
-              value={selectedState}
-              aria-label={stateRequired ? t("co_stateReqAria") : t("co_stateOptAria")}
-              onChange={(e) => { setSelectedState(e.target.value); setSelectedDistrict(""); }}
-              style={{ ...INPUT, color: selectedState ? "var(--ftp-text)" : "var(--ftp-text-2)" }}
-            >
-              <option value="">{stateRequired ? t("co_stateReqPh") : t("co_stateOptPh")}</option>
-              {stateOptions.map((s) => (
-                <option key={s.slug} value={s.slug}>{place.state(s.slug, s.name)}</option>
-              ))}
-            </select>
-          )}
-
-          {/* District selector — always shown when required, disabled until state picked */}
-          {showDistrictSelector && (
-            <select
-              value={selectedDistrict}
-              aria-label={districtRequired ? t("co_districtReqAria") : t("co_districtOptAria")}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              disabled={!selectedState}
-              style={{
-                ...INPUT,
-                background: !selectedState ? "var(--ftp-surface-2)" : "var(--ftp-surface)",
-                color: selectedDistrict ? "var(--ftp-text)" : "var(--ftp-text-2)",
-                cursor: !selectedState ? "not-allowed" : "pointer",
-              }}
-            >
-              <option value="">
-                {!selectedState
-                  ? t("co_districtFirst")
-                  : districtRequired
-                    ? t("co_districtReqPh")
-                    : t("co_districtOptPh")}
-              </option>
-              {/* Plain-text markers only: ● live, ○ coming soon (no emoji). */}
-              {selectedState && districtOptions.map((d) => (
-                <option key={d.slug} value={d.slug}>
-                  {d.active ? "● " : "○ "}{d.active ? d.name : t("co_districtSoon", { name: d.name })}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {/* Show message for locked districts */}
-          {lockedDistrictPicked && (
-            <p style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ftp-text)" }} className="ftp-body">
-              <Lock size={14} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
-              <span>{t("co_lockedNote")}</span>
-            </p>
-          )}
-
-          <input
-            type="text" placeholder={t("co_msgPh")} value={message} aria-label={t("co_msgAria")}
-            onChange={(e) => setMessage(e.target.value.slice(0, 280))}
-            aria-invalid={!!messageError}
-            style={{ ...INPUT, borderColor: messageError ? "var(--ftp-danger)" : "var(--ftp-border)" }}
-          />
-          {messageError && <FieldError>{messageError}</FieldError>}
-
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", minHeight: 44 }}>
-            <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, width: 16, height: 16 }} />
-            <span style={{ fontSize: 11, lineHeight: 1.5, color: "var(--ftp-text)" }}>
-              {t("co_public")}<br />
-              <span style={{ color: "var(--ftp-text-2)" }}>{t("co_publicHint")}</span>
-            </span>
-          </label>
-        </div>
-
-        {tier.isMonthly && (
-          <p style={{ ...HINT, marginTop: 8 }}>{t("co_autoDebit")}</p>
-        )}
-
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button
-            type="button"
-            onClick={() => setStep("idle")} disabled={isLoading}
-            className="ftp-btn-secondary"
-            style={{ ...SECONDARY_BTN, flexShrink: 0 }}>
-            <ArrowLeft size={14} aria-hidden /> {t("co_back")}
-          </button>
-          <button
-            type="button"
-            onClick={handlePay}
-            disabled={!canSubmit || isLoading}
-            style={{ ...primaryBtn(!canSubmit || isLoading), flex: 1 }}>
-            {isLoading
-              ? t("co_opening")
-              : tier.isMonthly
-                ? t("co_subscribeMonth", { amount: inr(amount) })
-                : t("co_contribute", { amount: inr(amount) })}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── ERROR STEP ────────────────────────────────────────────
-  if (step === "error") {
-    return (
-      <div role="alert" style={{ textAlign: "center", paddingTop: 4 }}>
-        <p className="ftp-body" style={{ color: "var(--ftp-danger)", marginBottom: 12, display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
-          <AlertCircle size={14} aria-hidden /> {t("co_failed")}
+        <p className={css.resultSmall}>
+          {t.rich("co_updateLater", { link: (c) => <a href="mailto:support@forthepeople.in">{c}</a> })}
         </p>
-        <button type="button" onClick={() => setStep("idle")} style={{ ...primaryBtn(false), width: "100%" }}>
+      </div>
+    );
+    footer = (
+      <div className={css.foot}>
+        <button type="button" onClick={closeSheet} className={css.mainBtn}>
+          {t("co_done")}
+        </button>
+      </div>
+    );
+  } else if (step === "error") {
+    body = (
+      <div role="alert" className={css.result}>
+        <XCircle size={40} aria-hidden className={css.failIcon} />
+        <p className={css.resultTitle} style={{ color: "var(--ftp-text)" }}>{t("co_failed")}</p>
+        <p className={css.resultBody}>
+          {t.rich("co_failedHelp", { link: (c) => <a href="mailto:support@forthepeople.in">{c}</a> })}
+        </p>
+      </div>
+    );
+    footer = (
+      <div className={css.foot}>
+        <button type="button" onClick={() => setStep("form")} className={css.mainBtn}>
           {t("co_tryAgain")}
         </button>
       </div>
     );
+  } else {
+    const isLoading = step === "processing";
+    body = (
+      <form id={fieldId("form")} onSubmit={onSubmit} noValidate className={css.form}>
+        {/* 1. The amount */}
+        <div className={css.summary}>
+          <p className={css.summaryLabel}>{tier.isMonthly ? t("co_youGiveMonthly") : t("co_youGiveOnce")}</p>
+          {stepper("sheet")}
+          {tier.isMonthly && <p className={css.hint}>{t("co_autoDebit")}</p>}
+          {/* NPCI UPI AutoPay cap is ₹15,000 per debit. For higher subscription
+              amounts (Founder tier is ₹50k+), users must use card or netbanking. */}
+          {tier.isMonthly && amount > 15000 && (
+            <p className={`${css.note} ${css.warnNote}`}>
+              <AlertTriangle size={15} aria-hidden />
+              <span>{t.rich("co_upiNote", { b: (c) => <strong style={{ fontWeight: 650 }}>{c}</strong> })}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Polite summary, read out when Continue finds something to fix. */}
+        <div aria-live="polite">
+          {submitted && problemCount > 0 && (
+            <p className={css.errorSummary}>
+              <AlertCircle size={16} aria-hidden />
+              {t("co_errSummary", { n: problemCount })}
+            </p>
+          )}
+        </div>
+
+        {/* 2. Where the name goes — only for plans tied to a place */}
+        {showPlace && (
+          <fieldset className={css.group}>
+            <legend className={css.legend}>{t("co_placeTitle")}</legend>
+            {districtRequired && <p className={css.hint}>{t("co_pickDistrict")}</p>}
+            {field("state", t("co_stateLabel"), (a) => (
+              <div className={css.selectWrap}>
+                <select
+                  {...a}
+                  value={selectedState}
+                  onChange={(e) => setFields((f) => ({ ...f, state: e.target.value, district: "" }))}
+                  onBlur={() => touch("state")}
+                  className={css.input}
+                  style={{ color: selectedState ? undefined : "var(--ftp-text-2)" }}
+                >
+                  <option value="">{t("co_statePick")}</option>
+                  {stateOptions.map((s) => (
+                    <option key={s.slug} value={s.slug}>{place.state(s.slug, s.name)}</option>
+                  ))}
+                </select>
+                <ChevronDown size={18} aria-hidden />
+              </div>
+            ))}
+            {districtRequired &&
+              field("district", t("co_districtLabel"), (a) => (
+                <div className={css.selectWrap}>
+                  <select
+                    {...a}
+                    value={selectedDistrict}
+                    onChange={(e) => setField("district", e.target.value)}
+                    onBlur={() => touch("district")}
+                    disabled={!selectedState}
+                    className={css.input}
+                    style={{ color: selectedDistrict ? undefined : "var(--ftp-text-2)" }}
+                  >
+                    <option value="">{!selectedState ? t("co_districtFirst") : t("co_districtPick")}</option>
+                    {/* Plain-text markers only: ● live, ○ coming soon (no emoji). */}
+                    {selectedState && districtOptions.map((d) => (
+                      <option key={d.slug} value={d.slug}>
+                        {d.active ? "● " : "○ "}{d.active ? d.name : t("co_districtSoon", { name: d.name })}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} aria-hidden />
+                </div>
+              ))}
+            {lockedDistrictPicked && (
+              <p className={css.note}>
+                <Lock size={15} aria-hidden />
+                <span>{t("co_lockedNote")}</span>
+              </p>
+            )}
+          </fieldset>
+        )}
+
+        {/* 3. About you */}
+        <fieldset className={css.group}>
+          <legend className={css.legend}>{t("co_aboutTitle")}</legend>
+          {field(
+            "name",
+            t("co_nameLabel"),
+            (a) => (
+              <input
+                {...a}
+                type="text"
+                autoComplete="name"
+                maxLength={40}
+                value={fields.name}
+                onChange={(e) => setField("name", e.target.value)}
+                onBlur={() => touch("name")}
+                className={css.input}
+              />
+            ),
+            { optional: fields.anonymous, hint: t("co_nameHint") },
+          )}
+          {field(
+            "email",
+            t("co_emailLabel"),
+            (a) => (
+              <input
+                {...a}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={fields.email}
+                onChange={(e) => setField("email", e.target.value)}
+                onBlur={() => touch("email")}
+                className={css.input}
+              />
+            ),
+            { optional: true, hint: t("co_emailHint") },
+          )}
+          {phoneRequired &&
+            field(
+              "phone",
+              t("co_phoneLabel"),
+              (a) => (
+                <input
+                  {...a}
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  value={fields.phone}
+                  onChange={(e) => setField("phone", e.target.value.slice(0, 14))}
+                  onBlur={() => touch("phone")}
+                  className={css.input}
+                />
+              ),
+              { hint: t("co_phoneWhy") },
+            )}
+        </fieldset>
+
+        {/* 4. Anonymous */}
+        <label className={css.anonRow}>
+          <input
+            type="checkbox"
+            checked={fields.anonymous}
+            onChange={(e) => setField("anonymous", e.target.checked)}
+          />
+          <span className={css.anonText}>
+            <span className={css.anonTitle}>{t("co_anonLabel")}</span>
+            <span className={css.hint}>{t("co_anonHint")}</span>
+          </span>
+        </label>
+
+        {/* 5. On the supporters wall */}
+        {!fields.anonymous && (
+          <fieldset className={css.group}>
+            <legend className={css.legend}>{t("co_wallTitle")}</legend>
+            {field(
+              "displayName",
+              t("co_displayLabel"),
+              (a) => (
+                <input
+                  {...a}
+                  type="text"
+                  autoComplete="nickname"
+                  maxLength={40}
+                  placeholder={fields.name.trim() || t("co_displayPh")}
+                  value={fields.displayName}
+                  onChange={(e) => setField("displayName", e.target.value)}
+                  onBlur={() => touch("displayName")}
+                  className={css.input}
+                />
+              ),
+              { optional: true, hint: t("co_displayHint") },
+            )}
+            {/* The link is stored for monthly supporters only (the one-time API has no link field). */}
+            {tier.isMonthly && (
+              <div className={css.field}>
+                <label htmlFor={fieldId("social")} className={css.label}>
+                  {t("co_linkLabel")}
+                  <span className={css.optional}>({t("co_optional")})</span>
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    id={fieldId("social")}
+                    type="url"
+                    inputMode="url"
+                    autoComplete="url"
+                    placeholder={t("co_socialPh")}
+                    value={fields.socialLink}
+                    onChange={(e) => setField("socialLink", e.target.value)}
+                    aria-describedby={fieldId("social-hint")}
+                    className={css.input}
+                    style={{ paddingRight: SocialIcon ? 40 : undefined }}
+                  />
+                  {SocialIcon && (
+                    <SocialIcon
+                      size={16}
+                      aria-hidden
+                      style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "var(--ftp-text-2)" }}
+                    />
+                  )}
+                </div>
+                <p
+                  id={fieldId("social-hint")}
+                  className={css.hint}
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    alignItems: "flex-start",
+                    color: isVerified
+                      ? "var(--ftp-live-text)"
+                      : hasWarning
+                        ? "var(--ftp-warn-text)"
+                        : !socialDetect.valid
+                          ? "var(--ftp-danger)"
+                          : undefined,
+                  }}
+                >
+                  {isVerified && detectedPlatform ? (
+                    <>
+                      <CheckCircle2 size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+                      {t("co_socialDetected", { platform: detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1) })}
+                    </>
+                  ) : hasWarning ? (
+                    <>
+                      <AlertTriangle size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+                      {socialWarningText(t, socialDetect.warning ?? "")}
+                    </>
+                  ) : !socialDetect.valid ? (
+                    <>
+                      <XCircle size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+                      {t("co_socialInvalid")}
+                    </>
+                  ) : (
+                    t("co_socialHint")
+                  )}
+                </p>
+              </div>
+            )}
+            {field(
+              "message",
+              t("co_msgLabel"),
+              (a) => (
+                <textarea
+                  {...a}
+                  rows={3}
+                  maxLength={MESSAGE_MAX}
+                  value={fields.message}
+                  onChange={(e) => setField("message", e.target.value.slice(0, MESSAGE_MAX))}
+                  onBlur={() => touch("message")}
+                  className={css.input}
+                />
+              ),
+              {
+                optional: true,
+                hint: t("co_msgHint"),
+                aside: (
+                  <span className={css.count} aria-hidden>
+                    {t("co_msgCount", { n: number(fields.message.length), max: number(MESSAGE_MAX) })}
+                  </span>
+                ),
+              },
+            )}
+          </fieldset>
+        )}
+
+        {/* How it will look on the wall — updates as they type. */}
+        <div className={css.group}>
+          <p className={css.summaryLabel} style={{ color: "var(--ftp-text-2)" }}>{t("co_previewTitle")}</p>
+          <div className={css.preview}>
+            <SupporterAvatar name={previewName} tier={tierKey} size={44} anonymous={fields.anonymous || (!fields.displayName.trim() && !fields.name.trim())} />
+            <span className={css.previewText}>
+              <span className={css.previewName}>{previewName}</span>
+              <span className={css.tierTag}>{tierName}</span>
+              {previewMessage && <span className={css.previewMsg}>&ldquo;{previewMessage}&rdquo;</span>}
+            </span>
+          </div>
+        </div>
+      </form>
+    );
+    footer = (
+      <div className={css.foot}>
+        <button type="submit" form={fieldId("form")} disabled={isLoading || !scriptReady} className={css.mainBtn}>
+          <Lock size={16} aria-hidden />
+          {isLoading
+            ? t("co_opening")
+            : !scriptReady
+              ? t("co_loadingPay")
+              : tier.isMonthly
+                ? t("co_continueMonthly", { amount: inr(amount) })
+                : t("co_continueOnce", { amount: inr(amount) })}
+        </button>
+        <p className={css.secure}>
+          <ShieldCheck size={14} aria-hidden />
+          {t("co_secure")}
+        </p>
+      </div>
+    );
   }
 
-  // ── IDLE STEP (amount input + contribute button) ───────────
-  const atMin = amount <= tier.minAmount;
-  const atMax = amount >= tier.maxAmount;
+  // ── On the plan card: amount + one button ─────────────────
   return (
-    <div>
-      {/* Editable amount row: [−] ₹ [amount] [+] — 44 px targets for thumbs */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <button
-          type="button"
-          onClick={() => adjust(-tier.step)} disabled={atMin}
-          aria-label={t("co_decrease", { amount: inr(tier.step) })}
-          className="ftp-btn-secondary"
-          style={{ ...STEPPER_BTN, cursor: atMin ? "not-allowed" : "pointer", opacity: atMin ? 0.5 : 1 }}>
-          <Minus size={16} aria-hidden />
-        </button>
-        {/* The "/mo" hint lives on the card and the button, not in here:
-            inside the box it squeezed 5-digit amounts until they clipped. */}
-        <div style={{ ...INPUT, display: "flex", alignItems: "center", flex: 1, padding: "0 8px", minWidth: 0 }}>
-          <span className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-text-2)", marginRight: 4 }}>₹</span>
-          <input
-            type="number" min={tier.minAmount} max={tier.maxAmount} step={tier.step} value={amountStr}
-            aria-label={t("co_amountAria", { tier: tierName })}
-            onChange={(e) => setAmountStr(e.target.value)}
-            onBlur={handleAmountBlur}
-            className="ftp-num ftp-no-spin"
-            style={{ flex: 1, border: "none", background: "transparent", fontSize: 16, color: "var(--ftp-text)", outline: "none", minWidth: 0, height: 42 }}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => adjust(tier.step)} disabled={atMax}
-          aria-label={t("co_increase", { amount: inr(tier.step) })}
-          className="ftp-btn-secondary"
-          style={{ ...STEPPER_BTN, cursor: atMax ? "not-allowed" : "pointer", opacity: atMax ? 0.5 : 1 }}>
-          <Plus size={16} aria-hidden />
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setStep("form")} disabled={!scriptReady}
-        style={{ ...primaryBtn(false), width: "100%", opacity: scriptReady ? 1 : 0.7 }}>
+    <div className={css.cardAction}>
+      {stepper("card")}
+      <button type="button" onClick={openCheckout} aria-haspopup="dialog" className={css.mainBtn}>
         {tier.isMonthly
           ? t("co_subscribeMo", { amount: inr(amount) })
           : t("co_contribute", { amount: inr(amount) })}
       </button>
+
+      <DetailSheet
+        open={open && hydrated}
+        onClose={closeSheet}
+        title={tierName}
+        subtitle={tier.isMonthly ? t("co_sheetSubMonthly", { amount: inr(amount) }) : t("co_sheetSubOnce", { amount: inr(amount) })}
+        media={<TierArt tier={tierKey} size={48} />}
+        hueClassName={`${tierHueClass(tierKey)} ${look.metal} ${css.sheet}`}
+        footer={footer}
+      >
+        {body}
+      </DetailSheet>
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-//  Presentation helpers (Design v3 tokens only — no hex colours here)
-// ─────────────────────────────────────────────────────────────────────
-
-/** Text inputs and selects: 44 px tall, 1 px border, 8 px radius. */
-const INPUT: React.CSSProperties = {
-  minHeight: 44,
-  padding: "10px 12px",
-  border: "1px solid var(--ftp-border)",
-  borderRadius: "var(--ftp-radius-tile)",
-  fontSize: 13,
-  lineHeight: "20px",
-  outline: "none",
-  background: "var(--ftp-surface)",
-  color: "var(--ftp-text)",
-  boxSizing: "border-box",
-};
-
-/** Quiet grey note box (surface-2, no coloured border). */
-const NOTE: React.CSSProperties = {
-  margin: 0,
-  padding: "8px 12px",
-  background: "var(--ftp-surface-2)",
-  borderRadius: "var(--ftp-radius-tile)",
-};
-
-/** 11 px helper line under a field. */
-const HINT: React.CSSProperties = {
-  margin: "4px 0 0",
-  fontSize: 11,
-  lineHeight: "16px",
-  color: "var(--ftp-text-2)",
-};
-
-/** Secondary (quiet) button: bordered surface, 44 px tall. */
-const SECONDARY_BTN: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  minHeight: 44,
-  padding: "0 14px",
-  background: "var(--ftp-surface)",
-  border: "1px solid var(--ftp-border)",
-  borderRadius: "var(--ftp-radius-tile)",
-  fontSize: 13,
-  fontWeight: 500,
-  color: "var(--ftp-text)",
-  textDecoration: "none",
-  cursor: "pointer",
-};
-
-/** Square 44 px −/+ buttons beside the amount. */
-const STEPPER_BTN: React.CSSProperties = {
-  ...SECONDARY_BTN,
-  width: 44,
-  padding: 0,
-  flexShrink: 0,
-  color: "var(--ftp-text-2)",
-};
-
-/** Plain text link with a 44 px hit area. */
-const TEXT_LINK: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 4,
-  minHeight: 44,
-  fontSize: 13,
-  fontWeight: 500,
-  textDecoration: "none",
-};
-
-/**
- * Primary (filled) button in the page hue with white text (v4: the hue is
- * always a deep enough shade for white type).
- */
-function primaryBtn(disabled: boolean): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    minHeight: 44,
-    padding: "0 14px",
-    background: disabled ? "var(--ftp-border-strong)" : "var(--hue)",
-    color: disabled ? "var(--ftp-text-2)" : "#fff",
-    border: "none",
-    borderRadius: "var(--ftp-radius-tile)",
-    boxShadow: disabled ? "none" : "0 6px 16px -8px color-mix(in srgb, var(--hue) 70%, transparent)",
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: disabled ? "default" : "pointer",
-  };
-}
-
-/** Red 11 px validation message under a field. */
-function FieldError({ children }: { children: React.ReactNode }) {
-  return (
-    <p role="alert" style={{ ...HINT, marginTop: -4, color: "var(--ftp-danger)" }}>
-      {children}
-    </p>
   );
 }
