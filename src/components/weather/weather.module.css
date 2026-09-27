@@ -1,0 +1,164 @@
+/*
+ * ForThePeople.in — weather pictures and forecast cards (v5.1 "Warm Calm").
+ * Colours come from tokens and hue variables only (set in the components).
+ * Motion is gentle and only on the big pictures (sun turning slowly, rain
+ * falling, a cloud drifting); prefers-reduced-motion turns all of it off.
+ */
+
+/* ── Picture motion ───────────────────────────────────────── */
+@keyframes wx-spin { to { transform: rotate(360deg); } }
+@keyframes wx-bob { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(1.5px); } }
+@keyframes wx-fall { 0% { transform: translateY(-1px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(5px); opacity: 0; } }
+@keyframes wx-flash { 0%, 42%, 50%, 100% { opacity: 1; } 46% { opacity: 0.45; } }
+@keyframes wx-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes wx-drift { 0%, 100% { transform: translateX(-1.5px); } 50% { transform: translateX(1.5px); } }
+
+.spin { transform-box: fill-box; transform-origin: center; animation: wx-spin 48s linear infinite; }
+.bob { animation: wx-bob 6s ease-in-out infinite; }
+.fall { animation: wx-fall 1.6s ease-in infinite; }
+.flash { animation: wx-flash 4.2s ease-in-out infinite; }
+.twinkle { transform-box: fill-box; transform-origin: center; animation: wx-twinkle 3.2s ease-in-out infinite; }
+.drift { animation: wx-drift 7s ease-in-out infinite; }
+
+/* ── Forecast strip ───────────────────────────────────────
+   Wide (≥ 620 px of room): 7 tiles in a row. Narrow (phones, and the
+   narrow content column beside a sidebar): one row per day —
+   day · picture · high/low · bar · rain — so nothing wraps awkwardly. */
+.stripWrap { container-type: inline-size; }
+.strip {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.day {
+  width: 100%;
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--ftp-border);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.day:hover { border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border)); box-shadow: var(--ftp-shadow-2); transform: translateY(-1px); }
+.day[data-when="tomorrow"] {
+  border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border));
+  background: linear-gradient(180deg, var(--hue-tint), var(--ftp-surface));
+}
+.dayHead { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.dayName { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--hue-deep); }
+.dayDate { font-size: 12px; line-height: 16px; color: var(--ftp-text-2); }
+.dayArt svg { width: 46px; height: 46px; }
+.temps { display: flex; gap: 6px; align-items: baseline; justify-content: center; font-variant-numeric: tabular-nums; }
+.tMax { font-size: 17px; line-height: 22px; font-weight: 700; color: var(--ftp-text); }
+.tMin { font-size: 14px; line-height: 20px; color: var(--ftp-text-2); }
+.rain { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; color: var(--ftp-text-2); }
+.rain[data-wet="true"] { color: var(--hue-deep); font-weight: 600; }
+
+@container (max-width: 619px) {
+  .strip { grid-template-columns: 1fr; gap: 6px; }
+  .day {
+    min-height: 56px;
+    display: grid;
+    grid-template-columns: minmax(64px, 88px) 38px auto minmax(40px, 1fr) 52px;
+    align-items: center;
+    column-gap: 10px;
+    padding: 6px 12px;
+    text-align: start;
+  }
+  .dayHead { align-items: flex-start; }
+  .dayArt svg { width: 38px; height: 38px; }
+  .temps { justify-content: flex-start; }
+  .rangeTrack { width: 100%; margin: 0; }
+  .rain { justify-content: flex-end; }
+}
+
+/* Min–max bar on the week's scale: cool pastel sky → warm pastel amber. */
+.rangeTrack { position: relative; width: 78%; height: 6px; border-radius: 999px; background: var(--ftp-surface-2); margin: 2px 0; }
+.rangeFill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--wx-cool), var(--wx-warm));
+}
+
+/* ── Tomorrow / now cards ─────────────────────────────────── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ftp-radius-card);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+  padding: 18px;
+  min-width: 0;
+}
+.heroNow { background: linear-gradient(160deg, var(--ftp-surface) 30%, var(--hue-tint)); }
+.heroTomorrow { background: linear-gradient(160deg, var(--hue-tint), color-mix(in srgb, var(--hue-pop) 35%, var(--ftp-surface))); }
+.heroOld { background: var(--ftp-surface); }
+.heroTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.heroLabel { margin: 0; font-size: 13px; line-height: 18px; font-weight: 700; color: var(--hue-deep); }
+.heroDate { margin: 0; font-size: 13px; line-height: 18px; color: var(--ftp-text-2); font-variant-numeric: tabular-nums; }
+.heroBody { display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+.heroTemp { font-size: 48px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums lining-nums; color: var(--hue-deep); }
+.heroTempMin { font-size: 26px; font-weight: 600; color: var(--ftp-text-2); }
+.heroSky { font-size: 16px; line-height: 22px; color: var(--ftp-text); margin-top: 2px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 20px; color: var(--ftp-text-2); }
+.facts li { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.facts strong { color: var(--ftp-text); font-weight: 650; }
+.tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ftp-surface) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ftp-text);
+}
+.meta { margin: 10px 0 0; font-size: 12px; line-height: 18px; color: var(--ftp-text-2); }
+.meta a { color: var(--hue-deep); }
+.check { display: inline-flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; font-size: 12px; line-height: 18px; color: var(--ftp-text-2); }
+.check[data-agree="true"] svg { color: var(--ftp-live); }
+.check[data-agree="false"] svg { color: var(--ftp-warn); }
+
+/* Rain-chance meter inside the tomorrow card. */
+.meter { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ftp-surface) 70%, var(--hue-pop)); overflow: hidden; margin-top: 6px; max-width: 260px; }
+.meterFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--hue-pop), var(--hue)); transform-origin: left center; animation: wx-grow 800ms var(--ftp-ease-out, ease-out) both; }
+@keyframes wx-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Loading: a cloud drifting across a soft sky. */
+.loading { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.loadingCard {
+  min-height: 190px;
+  border-radius: var(--ftp-radius-card);
+  border: 1px solid var(--ftp-border);
+  background: linear-gradient(160deg, var(--ftp-surface), var(--hue-tint));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ftp-text-2);
+  font-size: 13px;
+}
+.loadingCloud { animation: wx-drift 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .spin, .bob, .fall, .flash, .twinkle, .drift, .loadingCloud, .meterFill { animation: none !important; }
+  .day, .day:hover { transition: none; transform: none; }
+}

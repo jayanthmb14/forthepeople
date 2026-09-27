@@ -9,34 +9,39 @@
 //  rain this year?"  (docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  The answer: "Right now it is 27°C with some clouds. Rain this year so
-//  far: 84% of normal (Jan–Aug 2026)."
+//  The answer: "Right now it is 25°C and the sky is mostly clear. Tomorrow
+//  in Mandya: 31° / 21°, 94% chance of rain. Rain this year so far: 84% of
+//  normal (Jan–Aug 2026)."
 //
-//  Order: PageHeader → Explainer → TODAY's weather picture first (a plain
-//  sky icon, temperature, sky, plus four tiles: feels like, humidity,
-//  wind, rain) → rain vs normal (a drop per month — tap one for that
-//  month — and a ring) → charts (monthly rain vs normal, difference from
-//  normal, temperature) → recent readings (tap one for every detail) → AI
-//  insight → news → Share / CSV. Sources and "report a mistake" are in the
-//  layout's verification panel.
+//  Order (v5.1): PageHeader → Explainer → "Right now" and "Tomorrow in
+//  <district>" side by side (crafted weather pictures, src/components/
+//  weather) → the next 7 days (tap a day for every detail) → rain vs
+//  normal (a drop per month — tap one — and a ring) → charts (monthly rain
+//  vs normal, difference from normal, temperature) → recent readings (tap
+//  one for every detail) → AI insight → news → Share / CSV. Sources and
+//  "report a mistake" are in the layout's verification panel.
 //
 //  Honesty rules on this page:
-//   • "Right now" only when the newest reading is under 6 hours old;
-//     otherwise "Last recorded" with its date. Older than the weather
-//     max age (1 day, src/lib/constants/dataset-collection.ts) the number
-//     turns grey under "Last reading we have", with its date and "N days
-//     old; we could not find newer data". The header pill is fed by that
-//     reading's time and says "Live" only under 30 minutes.
-//   • Live readings come from OpenWeatherMap with metric units: wind is
-//     metres per second there, so it is shown ×3.6 as km/h, and rain is
-//     the last hour's rain, so it is labelled that way. Readings from
-//     other sources are shown as stored.
+//   • ONE "right now" (chooseCurrent, src/lib/weather/forecast.ts): our
+//     stored reading when it is at most 3 hours old; otherwise the live
+//     forecast service's current value, labelled with its source and
+//     time; otherwise our old reading in grey with "N days old; we could
+//     not find newer data" and the header's stale notice (maxAgeDays 1).
+//     An old stored reading is never shown as today's weather.
+//   • The forecast (GET /api/data/forecast) is Open-Meteo, checked against
+//     OpenWeather's forecast when the key is set: each day says whether
+//     the two agree within 3°. Source, licence and fetch time are shown
+//     under the cards and the strip. No forecast → one plain line, no
+//     numbers.
+//   • Stored OpenWeather readings use metric units: wind is metres per
+//     second there, so it is shown ×3.6 as km/h, and rain is the last
+//     hour's rain, so it is labelled that way.
 //   • Rain adds up only the months the source has published for the
 //     latest year, and names them; it says "this year" only when that year
 //     is the current one, otherwise "Rain in 2024" and "we could not find
 //     newer monthly rain figures". Charts need at least two months;
-//     the temperature line needs three different readings. A missing
-//     figure shows "—", never a zero.
+//     the temperature line needs three different CURRENT readings (its
+//     axis shows times of day). A missing figure shows "—", never a zero.
 //
 //  Every word is in page_weather (en / kn / hi). Month and day names come
 //  from Intl in the reader's language. Condition words from the feed are
@@ -47,25 +52,7 @@
 import { use, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from "recharts";
-import {
-  Cloud,
-  CloudDrizzle,
-  CloudFog,
-  CloudLightning,
-  CloudMoon,
-  CloudRain,
-  CloudSnow,
-  CloudSun,
-  Cloudy,
-  Droplet,
-  Droplets,
-  Haze,
-  Moon,
-  Sun,
-  Thermometer,
-  Wind,
-  type LucideIcon,
-} from "lucide-react";
+import { Cloud, CloudRain, Droplet, Droplets } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -73,14 +60,22 @@ import ModuleNews from "@/components/district/ModuleNews";
 import { useWeather, useRainfall } from "@/hooks/useRealtimeData";
 import type { RainfallHistory, WeatherReading } from "@/hooks/useRealtimeData";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
-import { Card, LoadingShell, ModulePage, PageHeader, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { Card, LoadingShell, ModulePage, PageHeader, Section } from "@/components/district/ui";
 import { ChartCard, ChartGradients, Explainer, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { ProgressRing } from "@/components/district/daily-services/HueCharts";
 import { SheetNote, SheetSmall, useNow } from "@/components/services-2/kit";
-import { PageActions, ReadingAge, ageInDays, isOlderThan } from "@/components/district/page-kit";
+import { PageActions, ageInDays, isOlderThan } from "@/components/district/page-kit";
 import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { downloadCSV, todayISO } from "@/lib/csv";
+import { kindFromText } from "@/lib/weather/codes";
+import { FORECAST_SOURCES, chooseCurrent, todayOf, tomorrowOf, upcomingDays, wholeDays } from "@/lib/weather/forecast";
+import { useForecast } from "@/lib/weather/use-forecast";
+import { WeatherArt } from "@/components/weather/WeatherArt";
+import { NowCard, SourceLine, TomorrowCard, type NowView } from "@/components/weather/ForecastCards";
+import { ForecastLoading, ForecastStrip } from "@/components/weather/ForecastStrip";
+import { ForecastDaySheet } from "@/components/weather/ForecastDaySheet";
+import { useWeatherText } from "@/components/weather/useWeatherText";
 
 /** A reading counts as "now" only when it is at most this old. */
 const FRESH_HOURS = 6;
@@ -96,6 +91,8 @@ const STALE_ROW_MINUTES = 24 * 60;
 const TREND_POINTS = 24;
 /** How many readings the list shows. */
 const LIST_POINTS = 12;
+/** Readings newer than this are "recent" (the list and the temperature line). */
+const RECENT_HOURS = 48;
 
 // English month names for the CSV file only (spreadsheets read it).
 const MONTHS_LONG_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -148,34 +145,11 @@ function hourIST(iso: string): number {
   return d.getUTCHours();
 }
 
-/** A plain Lucide picture of the sky (a pictogram that encodes the reading, not decoration). */
-function weatherIcon(conditions: string | null | undefined, hour: number): LucideIcon {
-  const night = hour < 6 || hour >= 19;
-  switch (conditionKey(conditions)) {
-    case "storm":
-      return CloudLightning;
-    case "drizzle":
-      return CloudDrizzle;
-    case "rain":
-      return CloudRain;
-    case "snow":
-      return CloudSnow;
-    case "fog":
-      return CloudFog;
-    case "haze":
-      return Haze;
-    case "overcast":
-      return Cloudy;
-    case "partlyCloudy":
-      return night ? CloudMoon : CloudSun;
-    case "cloudy":
-      return Cloud;
-    case "clear":
-      return night ? Moon : Sun;
-    default:
-      return Cloud;
-  }
-}
+/** Night by the clock (India time), for the moon picture on stored readings. */
+const isNightHour = (hour: number) => hour < 6 || hour >= 19;
+
+/** Stored sources whose `rainfall` is the last hour's rain (src/scraper/lib/weather-sources.ts). */
+const isHourlyRain = (source: string | null | undefined) => /openweather|open-meteo/i.test(source ?? "");
 
 /**
  * The feed is polled every few minutes but the observation changes less
@@ -193,7 +167,7 @@ function distinctReadings<T extends { temperature?: number | null; humidity?: nu
   return out;
 }
 
-type Opened = { kind: "reading"; id: string } | { kind: "month"; year: number; month: number } | null;
+type Opened = { kind: "reading"; id: string } | { kind: "month"; year: number; month: number } | { kind: "day"; date: string } | null;
 
 function WeatherPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -205,11 +179,12 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   const now = useNow();
   const { data: weatherData, isLoading: wLoading } = useWeather(district, state);
   const { data: rainfallData, isLoading: rLoading } = useRainfall(district, state);
+  const { data: forecast, isLoading: fLoading } = useForecast(state, district);
+  const w = useWeatherText();
   const [opened, setOpened] = useState<Opened>(null);
 
   // ── Formatters (all in the reader's language) ──
   const num = (v: number, digits = 1) => f.number(v, { maximumFractionDigits: digits });
-  const orDash = (v: number | null | undefined, digits = 1) => (v === null || v === undefined ? "—" : num(v, digits));
   const deg = (v: number) => `${num(v)}°C`;
   const mm = (v: number) => t("mm", { v: f.number(v, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
   const signedMm = (v: number) => t("mm", { v: f.number(v, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" }) });
@@ -233,6 +208,55 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   // Too old to be today's weather: grey the number and say how old it is.
   const isOld = latest ? isOlderThan(latest.recordedAt, MAX_AGE_HOURS, now) : false;
   const oldDays = latest && isOld ? ageInDays(latest.recordedAt, now) : 0;
+
+  // ── Forecast (Open-Meteo, checked against OpenWeather when configured) ──
+  const primary = forecast?.primary ?? null;
+  const live = primary?.current ?? null;
+  const whole = useMemo(() => (primary ? wholeDays(primary.days) : []), [primary]);
+  const days = useMemo(() => (now > 0 ? upcomingDays(whole, now, 7) : []), [whole, now]);
+  const today = now > 0 ? todayOf(whole, now) : null;
+  const tomorrow = now > 0 ? tomorrowOf(whole, now) : null;
+  const checkFor = (date: string) => forecast?.checks.find((c) => c.date === date) ?? null;
+  const checkDayFor = (date: string) => (forecast?.check ? wholeDays(forecast.check.days) : []).find((d) => d.date === date) ?? null;
+  const checkSource = forecast?.check?.source ?? null;
+
+  // ── Which "right now": our stored reading when fresh (≤ 3 h), else the
+  //    live value from the forecast service, else our old reading (grey). ──
+  const choice = now > 0 ? chooseCurrent(latest?.recordedAt, live, now) : "none";
+  // While the forecast is still loading, don't flash our old reading (and
+  // the stale notice) for a second before the live value replaces it.
+  const waitingForLive = fLoading && choice === "storedOld";
+  let nowView: NowView | null = null;
+  if (choice === "live" && live && primary) {
+    const src = FORECAST_SOURCES[primary.source];
+    nowView = {
+      origin: "live",
+      time: live.time,
+      temp: live.temperature,
+      feels: live.feelsLike,
+      humidity: live.humidity,
+      windKmh: live.windKmh,
+      windDir: live.windDir,
+      kind: live.kind,
+      night: live.isDay === false,
+      source: { label: src.label, href: src.url },
+    };
+  } else if ((choice === "stored" || (choice === "storedOld" && !waitingForLive)) && latest) {
+    nowView = {
+      origin: choice,
+      time: latest.recordedAt,
+      temp: latest.temperature ?? null,
+      feels: latest.feelsLike ?? null,
+      humidity: latest.humidity ?? null,
+      windKmh: windKmh(latest),
+      windDir: latest.windDir ?? null,
+      kind: kindFromText(latest.conditions),
+      night: isNightHour(hourIST(latest.recordedAt)),
+      source: sourceOf(latest.source) ?? { label: latest.source },
+      rainHourMm: isHourlyRain(latest.source) ? latest.rainfall ?? null : null,
+    };
+  }
+  const showingLive = nowView?.origin === "live";
 
   // Rainfall rows, newest month first (the API sorts months ascending inside each year).
   const rainfallRows = useMemo(() => [...(rainfallData?.data ?? [])].sort((a, b) => b.year - a.year || b.month - a.month), [rainfallData]);
@@ -275,11 +299,20 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   const rainIsThisYear = Boolean(latestRain && now > 0 && latestRain.year === new Date(now).getUTCFullYear());
 
   // The temperature line: newest distinct readings that carry a temperature.
-  const trend = useMemo(() => distinctReadings(readings).filter((r) => r.temperature !== null && r.temperature !== undefined).slice(0, TREND_POINTS).reverse(), [readings]);
+  // Recent = the last 48 hours; anything older is history and folds away
+  // (the collector stopped for months, so a list can mix today and April).
+  const distinct = useMemo(() => distinctReadings(readings), [readings]);
+  const isRecentRow = (r: WeatherReading) => now > 0 && now - new Date(r.recordedAt).getTime() <= RECENT_HOURS * 3_600_000;
+  const recentRows = distinct.filter(isRecentRow);
+  const olderRows = now > 0 ? distinct.filter((r) => !isRecentRow(r)).slice(0, LIST_POINTS) : [];
+  const trend = recentRows.filter((r) => r.temperature !== null && r.temperature !== undefined).slice(0, TREND_POINTS).reverse();
   const trendData = trend.map((r) => ({ label: f.time(r.recordedAt, { hour: "numeric", minute: "2-digit" }), full: when(r.recordedAt), temp: r.temperature as number }));
   const coolest = trendData.length > 0 ? trendData.reduce((a, b) => (b.temp < a.temp ? b : a)) : null;
   const warmest = trendData.length > 0 ? trendData.reduce((a, b) => (b.temp > a.temp ? b : a)) : null;
-  const listRows = distinctReadings(readings).slice(0, LIST_POINTS);
+  const listRows = recentRows.slice(0, LIST_POINTS);
+  // The temperature line only from recent readings: its axis shows times of
+  // day, so April readings would look like today's.
+  const showTrend = trendData.length >= 3;
 
   function handleDownload() {
     downloadCSV(
@@ -296,26 +329,86 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   }
 
   const hasTemp = latest?.temperature !== null && latest?.temperature !== undefined;
-  const hasHumidity = latest?.humidity !== null && latest?.humidity !== undefined;
   const hasFeels = latest?.feelsLike !== null && latest?.feelsLike !== undefined;
   const latestCond = condText(latest?.conditions);
-  const latestWind = latest ? windKmh(latest) : null;
   const rainLabel = (r: WeatherReading) => (isOWM(r.source) ? t("tiles.rainHour") : t("tiles.rain"));
 
   // "In simple words": the newest reading, then rain this year.
   const explainKey = latest ? `${isRecent ? "now" : "then"}${hasTemp && latestCond ? "TempCond" : hasTemp ? "Temp" : "Cond"}` : null;
 
-  const shareText =
-    latest && hasTemp
-      ? latestCond && hasHumidity
-        ? t("share", { district: districtName, temp: deg(latest.temperature as number), cond: latestCond, humidity: `${num(latest.humidity as number, 0)}%` })
-        : t("shareTemp", { district: districtName, temp: deg(latest.temperature as number) })
+  // Share: what the page shows as "now" (never an old reading as if current),
+  // then tomorrow.
+  const shareNow =
+    nowView && nowView.origin !== "storedOld" && nowView.temp !== null
+      ? nowView.humidity !== null
+        ? t("share", { district: districtName, temp: deg(nowView.temp), cond: showingLive ? w.kindLabel(nowView.kind, nowView.night) : latestCond ?? w.kindLabel(nowView.kind, nowView.night), humidity: `${num(nowView.humidity, 0)}%` })
+        : t("shareTemp", { district: districtName, temp: deg(nowView.temp) })
       : t("shareEmpty", { district: districtName });
+  const shareText =
+    tomorrow && tomorrow.tMax !== null && tomorrow.tMin !== null && tomorrow.rainChance !== null
+      ? `${shareNow}. ${t("shareTomorrow", { district: districtName, max: w.deg(tomorrow.tMax), min: w.deg(tomorrow.tMin), chance: w.pct(tomorrow.rainChance) })}`
+      : shareNow;
 
   // What the sheet shows.
   const openReading = opened?.kind === "reading" ? readings.find((r) => r.id === opened.id) ?? null : null;
   const openMonth: RainfallHistory | null = opened?.kind === "month" ? rainfallRows.find((r) => r.year === opened.year && r.month === opened.month) ?? null : null;
+  const openDay = opened?.kind === "day" ? whole.find((d) => d.date === opened.date) ?? null : null;
   const monthLong = (r: RainfallHistory) => monthOf(r.year, r.month, { month: "long", year: "numeric" });
+
+  const readingList = (rows: WeatherReading[]) => (
+    <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, gap: 8, ["--ftp-grid-min" as string]: "300px" }}>
+      {rows.map((r) => {
+        const stale = now > 0 && now - new Date(r.recordedAt).getTime() > STALE_ROW_MINUTES * 60_000;
+        const temp = r.temperature !== null && r.temperature !== undefined ? deg(r.temperature) : "—";
+        return (
+          <li key={r.id}>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setOpened({ kind: "reading", id: r.id })}
+              className="ftp-card-link"
+              style={{
+                width: "100%",
+                minHeight: 48,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                flexWrap: "wrap",
+                padding: "8px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--ftp-border)",
+                background: "var(--ftp-surface)",
+                color: stale ? "var(--ftp-text-2)" : "var(--ftp-text)",
+                cursor: "pointer",
+                font: "inherit",
+                textAlign: "start",
+              }}
+            >
+              <span suppressHydrationWarning style={{ fontSize: 13, minWidth: 104, flex: "1 1 104px" }}>
+                {when(r.recordedAt)}
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+                <span style={stale ? { filter: "grayscale(0.85)", opacity: 0.8 } : undefined}>
+                  <WeatherArt kind={kindFromText(r.conditions)} night={isNightHour(hourIST(r.recordedAt))} size={22} />
+                </span>
+                <span className="ftp-num">{temp}</span>
+              </span>
+              <span className="ftp-num" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                <Droplets size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+                <span className="sr-only">{t("tiles.humidity")}</span>
+                {r.humidity !== null && r.humidity !== undefined ? `${num(r.humidity, 0)}%` : "—"}
+              </span>
+              <span className="ftp-num" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                <CloudRain size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+                <span className="sr-only">{rainLabel(r)}</span>
+                {r.rainfall !== null && r.rainfall !== undefined ? mm(r.rainfall) : "—"}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <ModulePage>
@@ -324,22 +417,40 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         title={mt.label("weather")}
         description={t("description")}
         backHref={base}
-        source={sourceOf(latest?.source) ?? IMD}
-        freshness={latest ? { asOf: latest.recordedAt, thresholdHours: FRESH_HOURS } : undefined}
+        source={nowView ? nowView.source : IMD}
+        freshness={nowView ? { asOf: nowView.time, thresholdHours: FRESH_HOURS, maxAgeDays: 1 } : undefined}
       />
 
-      {(wLoading || rLoading) && !latest && rainfallRows.length === 0 && <LoadingShell rows={4} />}
-      {!wLoading && !rLoading && !latest && rainfallRows.length === 0 && <NoDataCard module="weather" district={district} state={state} />}
+      {fLoading && !primary && !nowView && <ForecastLoading />}
+      {!fLoading && (wLoading || rLoading) && !latest && !primary && rainfallRows.length === 0 && <LoadingShell rows={4} />}
+      {!wLoading && !rLoading && !fLoading && !latest && !primary && rainfallRows.length === 0 && <NoDataCard module="weather" district={district} state={state} />}
 
-      {/* 2. The answer in one sentence. */}
-      {(latest || showYear) && (
+      {/* 2. The answer in one sentence: now, tomorrow, rain this year. */}
+      {(nowView || tomorrow || showYear) && (
         <Explainer>
           <span suppressHydrationWarning>
-            {latest && explainKey && (
+            {showingLive && nowView && nowView.temp !== null && (
+              <>
+                {t.rich("now.explain", { temp: deg(nowView.temp), sky: t(`now.sky.${nowView.kind}`), b: bold })}
+                {nowView.feels !== null ? <> {t.rich("explain.feelsNow", { feels: deg(nowView.feels), b: bold })}</> : null}{" "}
+              </>
+            )}
+            {!showingLive && !waitingForLive && latest && explainKey && (
               <>
                 {t.rich(`explain.${explainKey}`, { temp: hasTemp ? deg(latest.temperature as number) : "", cond: latestCond ?? "", when: when(latest.recordedAt), b: bold })}
                 {hasFeels ? <> {t.rich(isRecent ? "explain.feelsNow" : "explain.feelsThen", { feels: deg(latest.feelsLike as number), b: bold })}</> : null}
                 {isOld ? <> {t.rich("explain.oldNote", { n: oldDays, b: bold })}</> : null}{" "}
+              </>
+            )}
+            {tomorrow && tomorrow.tMax !== null && tomorrow.tMin !== null && (
+              <>
+                {t.rich(tomorrow.rainChance !== null ? "forecast.explain" : "forecast.explainNoChance", {
+                  district: districtName,
+                  max: w.deg(tomorrow.tMax),
+                  min: w.deg(tomorrow.tMin),
+                  chance: w.pct(tomorrow.rainChance),
+                  b: bold,
+                })}{" "}
               </>
             )}
             {showYear && t.rich(rainIsThisYear ? "rainShort" : "rainShortPast", { pct: pct(yearShare), period: yearPeriod, b: bold })}
@@ -347,44 +458,50 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         </Explainer>
       )}
 
-      {/* 3 + 4. Today's weather picture first, with its four tiles. */}
-      {latest && (
-        <Card tinted padding={20}>
-          <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", minWidth: 0 }}>
-              {(() => {
-                const SkyIcon = weatherIcon(latest.conditions, hourIST(latest.recordedAt));
-                return (
-                  <span role="img" aria-label={latestCond ?? t("glyphAria")} style={{ display: "inline-flex", color: isOld ? "var(--ftp-text-2)" : "var(--hue)" }}>
-                    <SkyIcon size={72} strokeWidth={1.5} aria-hidden />
-                  </span>
-                );
-              })()}
-              <div style={{ minWidth: 0 }}>
-                <p className="ftp-label" style={{ margin: 0, color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }} suppressHydrationWarning>
-                  {isOld ? t("hero.old") : isRecent ? t("hero.now") : t("hero.last")}
-                </p>
-                <div className="ftp-bignum" style={{ fontSize: 56, lineHeight: 1.05, color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
-                  {hasTemp ? deg(latest.temperature as number) : "—"}
-                </div>
-                {latestCond && (
-                  <div style={{ fontSize: 17, lineHeight: "24px", color: "var(--ftp-text)", marginTop: 2, textTransform: f.locale === "en" ? "capitalize" : undefined }}>
-                    {latestCond}
-                  </div>
-                )}
-                <div style={{ marginTop: 8 }}>
-                  <ReadingAge at={latest.recordedAt} maxAgeHours={MAX_AGE_HOURS} withTime now={now} />
-                </div>
-              </div>
-            </div>
-            <StatStrip cols={2}>
-              <StatTile icon={Thermometer} label={t("tiles.feels")} value={orDash(latest.feelsLike)} unit="°C" />
-              <StatTile icon={Droplets} label={t("tiles.humidity")} value={orDash(latest.humidity, 0)} unit="%" />
-              <StatTile icon={Wind} label={t("tiles.wind")} value={orDash(latestWind, 0)} unit={t("kmh")} sub={latest.windDir ?? undefined} />
-              <StatTile icon={CloudRain} label={rainLabel(latest)} value={orDash(latest.rainfall)} unit={t("mmUnit")} />
-            </StatStrip>
-          </div>
-        </Card>
+      {/* 3 + 4. Right now, and tomorrow — side by side on wider screens. */}
+      {(nowView || tomorrow) && (
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
+          {nowView && (
+            <NowCard
+              view={nowView}
+              today={today}
+              oldStoredAt={showingLive && isOld && latest ? latest.recordedAt : null}
+              // Our fresh reading, checked against the forecast service's value for about the same time.
+              second={nowView.origin === "stored" && live && primary ? { temp: live.temperature, time: live.time, source: FORECAST_SOURCES[primary.source].label } : null}
+              now={now}
+              maxAgeHours={MAX_AGE_HOURS}
+            />
+          )}
+          {tomorrow && primary && forecast && (
+            <TomorrowCard
+              day={tomorrow}
+              district={districtName}
+              source={primary.source}
+              fetchedAt={forecast.fetchedAt}
+              check={checkFor(tomorrow.date)}
+              checkDay={checkDayFor(tomorrow.date)}
+              checkSource={checkSource}
+              onOpen={() => setOpened({ kind: "day", date: tomorrow.date })}
+            />
+          )}
+        </div>
+      )}
+      {forecast && !primary && (
+        <p role="note" className="ftp-stale" data-kind="unknown" style={{ margin: 0 }}>
+          <Cloud size={16} aria-hidden />
+          <span>{t("forecast.empty")}</span>
+        </p>
+      )}
+
+      {/* The next 7 days: tap a day for every detail. */}
+      {primary && forecast && days.length > 1 && (
+        <Section title={t("forecast.title")}>
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px" }}>
+            {t("forecast.hint")}
+          </p>
+          <ForecastStrip days={days} now={now} onOpen={(date) => setOpened({ kind: "day", date })} />
+          <SourceLine source={primary.source} fetchedAt={forecast.fetchedAt} />
+        </Section>
       )}
 
       {/* Rain this year vs normal: a drop per month (tap one) and a ring. */}
@@ -461,7 +578,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       )}
 
       {/* Charts, each with a one-line takeaway. */}
-      {(chartData.length > 1 || (trendData.length >= 3 && coolest && warmest)) && (
+      {(chartData.length > 1 || (showTrend && coolest && warmest)) && (
         <Section title={t("charts.title")}>
           <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
             {chartData.length > 1 && (
@@ -542,7 +659,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
               </ChartCard>
             )}
 
-            {latest && trendData.length >= 3 && coolest && warmest && (
+            {latest && showTrend && coolest && warmest && (
               <ChartCard
                 title={t("trend.title")}
                 units={t("trend.units")}
@@ -572,66 +689,29 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         </Section>
       )}
 
-      {/* Recent readings: tap one for every detail. Rows older than a day are greyed. */}
+      {/* Recent readings: tap one for every detail. Rows older than a day are
+          greyed. When even the newest is old, the list folds away under one
+          line that says how old it is. */}
       {!wLoading && listRows.length > 1 && (
         <Section title={t("readings.title")}>
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px" }}>
             {t("readings.hint")}
           </p>
-          <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, gap: 8, ["--ftp-grid-min" as string]: "300px" }}>
-            {listRows.map((r) => {
-              const stale = now > 0 && now - new Date(r.recordedAt).getTime() > STALE_ROW_MINUTES * 60_000;
-              const temp = r.temperature !== null && r.temperature !== undefined ? deg(r.temperature) : "—";
-              return (
-                <li key={r.id}>
-                  <button
-                    type="button"
-                    aria-haspopup="dialog"
-                    onClick={() => setOpened({ kind: "reading", id: r.id })}
-                    className="ftp-card-link"
-                    style={{
-                      width: "100%",
-                      minHeight: 48,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      padding: "8px 12px",
-                      borderRadius: 12,
-                      border: "1px solid var(--ftp-border)",
-                      background: "var(--ftp-surface)",
-                      color: stale ? "var(--ftp-text-2)" : "var(--ftp-text)",
-                      cursor: "pointer",
-                      font: "inherit",
-                      textAlign: "start",
-                    }}
-                  >
-                    <span suppressHydrationWarning style={{ fontSize: 13, minWidth: 104, flex: "1 1 104px" }}>
-                      {when(r.recordedAt)}
-                    </span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-                      {(() => {
-                        const RowIcon = weatherIcon(r.conditions, hourIST(r.recordedAt));
-                        return <RowIcon size={16} strokeWidth={1.75} aria-hidden style={{ color: "var(--ftp-text-2)" }} />;
-                      })()}
-                      <span className="ftp-num">{temp}</span>
-                    </span>
-                    <span className="ftp-num" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-                      <Droplets size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-                      <span className="sr-only">{t("tiles.humidity")}</span>
-                      {r.humidity !== null && r.humidity !== undefined ? `${num(r.humidity, 0)}%` : "—"}
-                    </span>
-                    <span className="ftp-num" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-                      <CloudRain size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-                      <span className="sr-only">{rainLabel(r)}</span>
-                      {r.rainfall !== null && r.rainfall !== undefined ? mm(r.rainfall) : "—"}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          {readingList(listRows)}
         </Section>
+      )}
+      {!wLoading && olderRows.length > 0 && (
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }} suppressHydrationWarning>
+            {t("readingsOld.summary", { date: f.date(olderRows[0].recordedAt, { day: "numeric", month: "short", year: "numeric" }) })}
+          </summary>
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 12px" }} suppressHydrationWarning>
+            {isOld && latest
+              ? t("readingsOld.hint", { date: f.date(latest.recordedAt, { day: "numeric", month: "short", year: "numeric" }) })
+              : t("readingsOld.hintHistory")}
+          </p>
+          {readingList(olderRows)}
+        </details>
       )}
 
       {latest && (
@@ -722,6 +802,20 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
           </>
         )}
       </DetailSheet>
+
+      {/* One forecast day. */}
+      {primary && forecast && (
+        <ForecastDaySheet
+          day={openDay}
+          now={now}
+          source={primary.source}
+          fetchedAt={forecast.fetchedAt}
+          check={openDay ? checkFor(openDay.date) : null}
+          checkDay={openDay ? checkDayFor(openDay.date) : null}
+          checkSource={checkSource}
+          onClose={() => setOpened(null)}
+        />
+      )}
     </ModulePage>
   );
 }
