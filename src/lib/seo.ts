@@ -31,7 +31,7 @@ import { getStateConfig } from "@/lib/constants/state-config";
 import { getModule } from "@/lib/constants/sidebar-modules";
 import { DEFAULT_LOCALE, getLanguage } from "@/i18n/languages";
 import { languageAlternates } from "@/i18n/seo";
-import { scriptLang } from "@/lib/utils/script-lang";
+import { placeName, type NamedPlace } from "@/i18n/place-name";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -229,9 +229,9 @@ const MODULE_META: Record<string, (c: MetaContext) => ModuleMeta> = {
  * written in that language's script (ಮಂಡ್ಯ on /kn, लखनऊ on /hi), else the
  * English registry name. Same rule as useDistrictName() on the client.
  */
-export function localName(locale: string, place: { name: string; nameLocal?: string | null }): string {
-  if (place.nameLocal && place.nameLocal !== place.name && scriptLang(place.nameLocal) === locale) return place.nameLocal;
-  return place.name;
+export function localName(locale: string, place: NamedPlace): string {
+  // names[locale] (e.g. मंड्या) → local script when it matches → English.
+  return placeName(place, locale);
 }
 
 /** Open Graph locale, e.g. "kn_IN". */

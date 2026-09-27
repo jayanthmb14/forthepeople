@@ -359,6 +359,7 @@ export function FreshnessPill({
  * @prop href   Link to the source. Omit to render a non-link pill.
  */
 export function SourcePill({ label, href }: { label: string; href?: string }) {
+  const tKit = useTranslations("kit");
   const base: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -392,7 +393,7 @@ export function SourcePill({ label, href }: { label: string; href?: string }) {
     );
   }
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" style={base} title={`Source: ${label}`}>
+    <a href={href} target="_blank" rel="noopener noreferrer" style={base} title={tKit("sourceTitle", { label })}>
       {text}
       <ExternalLink size={11} aria-hidden style={{ flexShrink: 0 }} />
     </a>
@@ -1044,7 +1045,7 @@ export function DataTable({
       className="data-table-scroll"
       tabIndex={0}
       role="region"
-      aria-label={caption ?? "Table"}
+      aria-label={caption ?? tk("table")}
       style={{
         overflowX: "auto",
         background: "var(--ftp-surface)",
@@ -1193,6 +1194,7 @@ export function KpiRing({
   size?: number;
   label?: string;
 }) {
+  const tKit = useTranslations("kit");
   const stroke = Math.max(5, Math.round(size / 11));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -1200,7 +1202,7 @@ export function KpiRing({
   return (
     <div
       role="img"
-      aria-label={`${label}: ${grade}, ${Math.round(pct)} out of 100`}
+      aria-label={`${label}: ${grade}, ${tKit("outOf100", { n: Math.round(pct) })}`}
       title={`${label}: ${Math.round(pct)}/100`}
       style={{ position: "relative", width: size, height: size, flexShrink: 0 }}
     >

@@ -39,5 +39,6 @@
   "noTaluksBody": "They appear here once the district list is added.",
   "mapNote": "Shapes are approximate. Tap a {unit} on the map to open its page.",
   "cardsHint": "Or tap a card to see a {unit} here:",
-  "chartsTitle": "The bigger picture"
+  "chartsTitle": "The bigger picture",
+  "mapHint": "Tap a {unit} on the map to explore it"
 }

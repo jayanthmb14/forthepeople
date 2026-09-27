@@ -335,7 +335,11 @@
     "justNow": "just now",
     "latestEstimate": "Latest available estimate",
     "howComputed": "How we compute these numbers",
-    "close": "Close"
+    "close": "Close",
+    "sourceTitle": "Source: {label}",
+    "outOf100": "{n} out of 100",
+    "percentFull": "{label}: {n}% full",
+    "table": "Table"
   },
   "header": {
     "search": "Search any district",

@@ -163,6 +163,7 @@ export function Gauge({
   caption?: string;
   size?: number;
 }) {
+  const tKit = useTranslations("kit");
   const v = Math.max(0, Math.min(100, value));
   const stroke = Math.round(size / 11);
   const r = size / 2 - stroke;
@@ -202,7 +203,7 @@ export function Gauge({
       </div>
       <figcaption style={{ marginTop: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
         {caption ?? label}
-        <span className="sr-only">: {Math.round(v)} out of 100</span>
+        <span className="sr-only">: {tKit("outOf100", { n: Math.round(v) })}</span>
       </figcaption>
     </figure>
   );
@@ -227,12 +228,13 @@ export function WaterTank({
   width?: number;
   height?: number;
 }) {
+  const tKit = useTranslations("kit");
   const p = Math.max(0, Math.min(100, pct));
   return (
     <figure style={{ margin: 0, display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
       <div
         role="img"
-        aria-label={`${label}: ${Math.round(p)}% full`}
+        aria-label={tKit("percentFull", { label, n: Math.round(p) })}
         style={{
           position: "relative",
           width,

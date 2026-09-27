@@ -25,6 +25,8 @@
 //  never typed by hand.
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { useDistrictName, useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { HandHeart, Lock, ThumbsUp } from "lucide-react";
@@ -32,7 +34,7 @@ import { getTieredModules } from "@/lib/constants/sidebar-modules";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { getStateConfig } from "@/lib/constants/state-config";
-import { Card, Pill, Section } from "@/components/district/ui";
+import { Card, ModulePage, Pill, Section } from "@/components/district/ui";
 import DistrictIdentityCard from "@/components/district/DistrictIdentityCard";
 
 interface Props {
@@ -60,8 +62,6 @@ interface DistrictRequestRow {
   districtName: string;
   requestCount: number;
 }
-
-const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function LockedDistrictPreview({
   locale,
@@ -122,12 +122,20 @@ export default function LockedDistrictPreview({
     }
   }
 
+  const t = useTranslations("page_locked");
+  const f = useFormat();
+  const mt = useModuleText();
+  const place = usePlaceText();
+  // Names in the page language (ಮಂಡ್ಯ / मंड्या); the English ones still go to the API.
+  const name = useDistrictName(stateSlug, districtSlug, districtName);
+  const stateLabel = place.state(stateSlug, stateName);
+  const monthly = `₹${f.number(TIER_CONFIG.district.amount)}`;
   const { modulesPerDistrict } = getPlatformFacts();
   const subUnitLabel = getStateConfig(stateSlug)?.subDistrictUnitPlural ?? "Taluks";
   const groups = getTieredModules();
 
   return (
-    <div className="px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: "calc(var(--ftp-reading-max) + 48px)" }}>
+    <ModulePage>
       {/* ═══ 1. Identity card ═══ */}
       <DistrictIdentityCard
         districtSlug={districtSlug}
@@ -140,7 +148,7 @@ export default function LockedDistrictPreview({
         literacy={literacy}
         subUnitCount={talukCount || null}
         subUnitLabel={subUnitLabel}
-        aside={<Pill tone="warn" icon={Lock}>Not live yet</Pill>}
+        aside={<Pill tone="warn" icon={Lock}>{t("notLive")}</Pill>}
       >
         {/* ═══ 2. Vote block ═══ */}
         <div
@@ -151,18 +159,15 @@ export default function LockedDistrictPreview({
         >
           <div style={{ minWidth: 0 }}>
             <p className="ftp-title">
-              Not live yet ·{" "}
+              {t("notLive")} ·{" "}
               {requestsLoading && votedCount === null ? (
-                <span style={{ color: "var(--ftp-text-2)" }}>counting requests…</span>
+                <span style={{ color: "var(--ftp-text-2)" }}>{t("counting")}</span>
               ) : (
-                <>
-                  <span className="ftp-num">{askedCount.toLocaleString("en-IN")}</span>{" "}
-                  {askedCount === 1 ? "person has" : "people have"} asked for it
-                </>
+                <span className="ftp-num">{t("asked", { n: askedCount })}</span>
               )}
             </p>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>
-              {modulesPerDistrict} data dashboards are waiting to be unlocked for {districtName}. The most-requested districts go live first.
+              {t("waiting", { n: modulesPerDistrict, name })}
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -181,30 +186,30 @@ export default function LockedDistrictPreview({
               }}
             >
               <ThumbsUp size={16} aria-hidden />
-              {voteState === "done" ? "Thanks — vote counted" : voteState === "sending" ? "Sending…" : `Vote for ${districtName}`}
+              {voteState === "done" ? t("thanks") : voteState === "sending" ? t("sending") : t("voteFor", { name })}
             </button>
             <Link
               href={`/${locale}/vote-district`}
               style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}
             >
-              See all requests
+              {t("seeAll")}
             </Link>
           </div>
         </div>
         <p role="status" aria-live="polite" style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "6px 0 0", minHeight: 16 }}>
           {voteState === "limited"
-            ? "Too many votes from this network in the last minute. Please try again shortly."
+            ? t("limited")
             : voteState === "error"
-              ? "Could not record the vote. Please try again."
+              ? t("voteError")
               : ""}
         </p>
       </DistrictIdentityCard>
 
       {/* ═══ 3. Sponsor ═══ */}
-      <Section title={`Help bring ${districtName} online`}>
+      <Section title={t("helpTitle", { name })} emoji="🤝">
         <Card>
           <p className="ftp-body" style={{ marginBottom: 8 }}>
-            Be the first to sponsor this district and your name will appear here when it launches.
+            {t("helpBody")}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <Link
@@ -212,20 +217,19 @@ export default function LockedDistrictPreview({
               style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-support)", textDecoration: "none" }}
             >
               <HandHeart size={16} aria-hidden />
-              Sponsor {districtName} — {inr(TIER_CONFIG.district.amount)}/mo
+              {t("sponsorDistrict", { name, amount: monthly })}
             </Link>
             <Link href={`/${locale}/support?tier=state&state=${stateSlug}`} style={{ fontSize: 13, color: "var(--ftp-text-2)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-              or sponsor all of {stateName}
+              {t("sponsorState", { state: stateLabel })}
             </Link>
             <Link href={`/${locale}/support?tier=patron`} style={{ fontSize: 13, color: "var(--ftp-text-2)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-              or all of India
+              {t("sponsorIndia")}
             </Link>
           </div>
 
           {sponsors.length > 0 && (
             <p className="ftp-body" style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ftp-border)", color: "var(--ftp-text-2)" }}>
-              <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{sponsors.length}</span>{" "}
-              sponsor{sponsors.length !== 1 ? "s" : ""} waiting for {districtName}:{" "}
+              {t("sponsorsWaiting", { n: sponsors.length, name })}{" "}
               <span style={{ color: "var(--ftp-text)" }}>{sponsors.map((s) => s.name).join(" · ")}</span>
             </p>
           )}
@@ -233,7 +237,7 @@ export default function LockedDistrictPreview({
       </Section>
 
       {/* ═══ 4. What will be here ═══ */}
-      <Section title="What you will get">
+      <Section title={t("whatYouGet")} emoji="🎁">
         <div
           style={{
             display: "grid",
@@ -246,16 +250,15 @@ export default function LockedDistrictPreview({
             const mods = group.modules.filter((m) => m.slug !== "overview" && m.slug !== "contributors");
             if (mods.length === 0) return null;
             return (
-              <Card key={group.label} as="section" padding={0} aria-label={group.label}>
-                <h3 className="ftp-label" style={{ padding: "12px 16px 4px" }}>{group.label}</h3>
+              <Card key={group.label} as="section" padding={0} aria-label={mt.group(group.label)}>
+                <h3 className="ftp-label" style={{ padding: "12px 16px 4px" }}>{mt.group(group.label)}</h3>
                 <ul style={{ listStyle: "none", margin: 0, padding: "0 0 8px" }}>
                   {mods.map((mod) => {
-                    const Icon = mod.icon;
                     return (
                       <li key={mod.slug} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 16px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                        <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
-                        <span style={{ flex: 1, minWidth: 0 }}>{mod.label}</span>
-                        <Lock size={12} aria-label="Locked" style={{ flexShrink: 0 }} />
+                        <span className="ftp-emoji" aria-hidden style={{ flexShrink: 0 }}>{mod.emoji}</span>
+                        <span style={{ flex: 1, minWidth: 0 }}>{mt.label(mod.slug)}</span>
+                        <Lock size={12} aria-label={t("locked")} style={{ flexShrink: 0 }} />
                       </li>
                     );
                   })}
@@ -265,6 +268,6 @@ export default function LockedDistrictPreview({
           })}
         </div>
       </Section>
-    </div>
+    </ModulePage>
   );
 }

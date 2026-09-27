@@ -330,7 +330,11 @@
     "justNow": "अभी-अभी",
     "latestEstimate": "नवीनतम उपलब्ध अनुमान",
     "howComputed": "हम ये आंकड़े कैसे निकालते हैं",
-    "close": "बंद करें"
+    "close": "बंद करें",
+    "sourceTitle": "स्रोत: {label}",
+    "outOf100": "100 में से {n}",
+    "percentFull": "{label}: {n}% भरा",
+    "table": "तालिका"
   },
   "header": {
     "search": "कोई भी जिला खोजें",

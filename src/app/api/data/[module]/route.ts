@@ -141,11 +141,14 @@ async function fetchModule(
         party: string | null; constituency: string | null; since: string | null;
         photoUrl: string | null; source: string | null; lastVerifiedAt: Date | null;
         active: boolean; roleDescription: string | null;
+        talukId: string | null; nameLocal: string | null; roleLocal: string | null;
+        phone: string | null; email: string | null; photoLicense: string | null;
       }[]>`
         SELECT DISTINCT ON (LOWER("name"), LOWER("role"))
           id, "districtId", name, role, tier,
           party, constituency, since, "photoUrl",
-          source, "lastVerifiedAt", active, "roleDescription"
+          source, "lastVerifiedAt", active, "roleDescription",
+          "talukId", "nameLocal", "roleLocal", phone, email, "photoLicense"
         FROM "Leader"
         WHERE "districtId" = ${did} AND active = true
           AND (source IS NULL OR source NOT LIKE 'http%')
@@ -154,12 +157,6 @@ async function fetchModule(
       const data = raw.map(r => ({
         ...r,
         lastVerifiedAt: r.lastVerifiedAt ? r.lastVerifiedAt.toISOString() : null,
-        talukId: null,
-        nameLocal: null,
-        roleLocal: null,
-        phone: null,
-        email: null,
-        photoLicense: null,
       }));
       return { data, meta };
     }
@@ -538,13 +535,19 @@ async function fetchModule(
     // 26. ALERTS (Local alerts)
     // ══════════════════════════════════════════════════
     case "alerts": {
-      const data = await prisma.localAlert.findMany({
+      const rows = await prisma.localAlert.findMany({
         where: {
           districtId: did,
           active: true,
         },
-        orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+        orderBy: { createdAt: "desc" },
       });
+      // Most serious first. Sorting the text column put "medium" before
+      // "critical"; rank it explicitly, newest first within a level.
+      const RANK: Record<string, number> = { critical: 0, high: 1, severe: 1, warning: 2, medium: 2, moderate: 2, low: 3, info: 4 };
+      const data = [...rows].sort(
+        (a, b) => (RANK[(a.severity ?? "").toLowerCase()] ?? 5) - (RANK[(b.severity ?? "").toLowerCase()] ?? 5),
+      );
       return { data, meta };
     }
 

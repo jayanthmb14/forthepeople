@@ -1,0 +1,20 @@
+{
+  "notLive": "Not live yet",
+  "counting": "counting requests…",
+  "asked": "{n, plural, one {# person has asked for it} other {# people have asked for it}}",
+  "waiting": "{n} data dashboards are waiting to be unlocked for {name}. The most-requested districts go live first.",
+  "voteFor": "Vote for {name}",
+  "sending": "Sending…",
+  "thanks": "Thanks, your vote is counted",
+  "seeAll": "See all requests",
+  "limited": "Too many votes from this network in the last minute. Please try again shortly.",
+  "voteError": "Could not record the vote. Please try again.",
+  "helpTitle": "Help bring {name} online",
+  "helpBody": "Be the first to sponsor this district and your name will appear here when it launches.",
+  "sponsorDistrict": "Sponsor {name}: {amount} a month",
+  "sponsorState": "or sponsor all of {state}",
+  "sponsorIndia": "or all of India",
+  "sponsorsWaiting": "{n, plural, one {# sponsor is waiting for {name}:} other {# sponsors are waiting for {name}:}}",
+  "whatYouGet": "What you will get",
+  "locked": "Locked"
+}
