@@ -208,7 +208,7 @@ export function TopBarList({ rows, max = 5 }: { rows: TopBarRow[]; max?: number 
                 width: `${Math.max(2, (r.value / top) * 100)}%`,
                 height: "100%",
                 borderRadius: 999,
-                background: i === 0 ? "linear-gradient(90deg, var(--hue) 0%, var(--hue-deep) 100%)" : "linear-gradient(90deg, var(--hue-pop) 0%, var(--hue) 100%)",
+                background: i === 0 ? "var(--hue-deep)" : "var(--hue)",
                 ["--i" as string]: i,
               }}
             />

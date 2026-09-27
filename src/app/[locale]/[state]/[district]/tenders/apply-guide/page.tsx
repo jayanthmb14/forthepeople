@@ -94,7 +94,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
         {/* Main list + reference cards: side by side when there is room, stacked on phones. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
           <div style={{ flex: "2 1 520px", minWidth: 0 }}>
-            <Card tinted padding={14} style={{ marginBottom: 16 }}>
+            <Card padding={14} style={{ marginBottom: 16 }}>
               <div className="ftp-title" style={{ marginBottom: 6 }}>{t("apply.filterTitle")}</div>
               <div style={{ display: "flex", flexWrap: "wrap", columnGap: 16 }}>
                 <label style={checkboxLabel}>

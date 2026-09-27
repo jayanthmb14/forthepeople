@@ -179,7 +179,7 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
           <span style={{ color: "var(--ftp-warn)" }}>{t.rich("card.corrigenda", { n: tender._count.corrigenda, num })}</span>
         )}
         {flagCount > 0 && (
-          <span style={{ color: "var(--ftp-danger)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ color: "var(--ftp-warn)", display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Flag size={12} aria-hidden /> {t.rich("card.flags", { n: flagCount, num })}
           </span>
         )}

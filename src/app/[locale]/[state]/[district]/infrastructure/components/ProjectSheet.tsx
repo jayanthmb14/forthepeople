@@ -129,7 +129,7 @@ export default function ProjectSheet({
         )}
         {cancelled && p.cancellationReason && (
           <p className="ftp-body" style={{ color: "var(--ftp-text)" }}>
-            <span style={{ fontWeight: 600, color: "var(--ftp-danger)" }}>{t("card.cancelReason")}</span> {p.cancellationReason}
+            <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{t("card.cancelReason")}</span> {p.cancellationReason}
           </p>
         )}
         <p className="ftp-body" style={{ color: verified === 1 ? "var(--ftp-warn)" : "var(--ftp-text-2)" }}>

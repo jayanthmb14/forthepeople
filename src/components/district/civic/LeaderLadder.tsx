@@ -79,7 +79,7 @@ export function LeaderLadder({
                   flexWrap: "wrap",
                   padding: "12px 14px",
                   borderRadius: 16,
-                  background: `linear-gradient(135deg, color-mix(in srgb, var(--hue) ${Math.max(4, 14 - i * 2)}%, #fff) 0%, #fff 90%)`,
+                  background: `color-mix(in srgb, var(--hue) ${Math.max(3, 9 - i * 1.5)}%, #fff)`,
                   border: "1px solid color-mix(in srgb, var(--hue) 26%, var(--ftp-border))",
                 }}
               >

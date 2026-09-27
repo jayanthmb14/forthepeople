@@ -92,7 +92,7 @@ export function TenderTapCard({ tender, onOpen }: { tender: TenderListRow; onOpe
       <span style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 2, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         <span suppressHydrationWarning>{t.rich("card.published", { n: daysSince(tender.publishedAt), num })}</span>
         {tender._count.corrigenda > 0 && <span style={{ color: "var(--ftp-warn)" }}>{t.rich("card.corrigenda", { n: tender._count.corrigenda, num })}</span>}
-        {flags > 0 && <span style={{ color: "var(--ftp-danger)" }}>{t.rich("card.flags", { n: flags, num })}</span>}
+        {flags > 0 && <span style={{ color: "var(--ftp-warn)" }}>{t.rich("card.flags", { n: flags, num })}</span>}
       </span>
     </TapCard>
   );

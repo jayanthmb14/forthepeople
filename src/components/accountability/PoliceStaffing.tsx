@@ -61,7 +61,7 @@ export default function PoliceStaffing({ district, state }: { district: string; 
 
   return (
     <Section title={t("staffTitle")}>
-      <Card tinted padding={18}>
+      <Card padding={18}>
         <div className="ftp-picture-row">
           <div style={{ minWidth: 0 }}>
             <p className="ftp-prose" style={{ margin: "0 0 14px", fontSize: 15, lineHeight: 1.6 }}>

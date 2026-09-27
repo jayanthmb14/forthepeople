@@ -188,7 +188,7 @@ export function SheetHighlight({
         alignItems: "flex-start",
         padding: "14px 16px",
         borderRadius: 16,
-        background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)",
+        background: "var(--hue-tint)",
         border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
       }}
     >

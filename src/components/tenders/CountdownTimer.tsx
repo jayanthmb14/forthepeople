@@ -39,7 +39,7 @@ export default function CountdownTimer({ deadline, compact = false }: { deadline
   const m = Math.floor((diff % 3600_000) / 60_000);
 
   const urgent = diff < 48 * 3600_000;
-  const color = urgent ? "var(--ftp-danger)" : "var(--ftp-text)";
+  const color = urgent ? "var(--ftp-warn)" : "var(--ftp-text)";
   if (compact) {
     return (
       <span suppressHydrationWarning style={{ ...mono, color, fontSize: 12 }}>

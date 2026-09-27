@@ -137,7 +137,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
           />
           <StatTile icon={Receipt} label={t("detail.tiles.fee")} value={m.short(td.tenderFeeInr)} countUp={false} />
           {/* The countdown ticks, so it is composed here instead of StatTile. */}
-          <div style={{ background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)", border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))", borderRadius: "var(--ftp-radius-tile)", padding: "14px 16px", minWidth: 0 }}>
+          <div style={{ background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", borderRadius: "var(--ftp-radius-tile)", padding: "14px 16px", minWidth: 0 }}>
             <div className="ftp-label" style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
               {t("detail.tiles.closesIn")}
             </div>
@@ -149,7 +149,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
         </StatStrip>
 
         {/* 3. The picture: how much of the bidding window has gone. */}
-        <Card tinted padding={16} style={{ marginTop: 16 }}>
+        <Card padding={16} style={{ marginTop: 16 }}>
           <CountdownBar
             start={td.publishedAt}
             target={td.bidSubmissionEnd}
@@ -225,7 +225,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
         <div className="ftp-grid" style={{ marginTop: 8, alignItems: "start", ["--ftp-grid-min" as string]: "340px" } as React.CSSProperties}>
           <Section title={t("detail.plainTitle")}>
             {td.aiSummary?.plainBullets && (td.aiSummary.plainBullets.what || td.aiSummary.plainBullets.whoCanApply || td.aiSummary.plainBullets.deadline) ? (
-              <Card tinted>
+              <Card>
                 <ul className="ftp-body" style={{ margin: 0, paddingInlineStart: 18, fontSize: 14, lineHeight: "22px" }}>
                   {td.aiSummary.plainBullets.what && <li>{t.rich("detail.what", { text: td.aiSummary.plainBullets.what, s })}</li>}
                   {td.aiSummary.plainBullets.whoCanApply && <li>{t.rich("detail.who", { text: td.aiSummary.plainBullets.whoCanApply, s })}</li>}

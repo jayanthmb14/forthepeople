@@ -70,7 +70,7 @@ function VoteSplit({ r }: { r: ElectionResult }) {
         aria-label={t("splitAria", { winner: r.winnerName, wv: f.number(wv), runner: r.runnerUpName, rv: f.number(rv) })}
         style={{ display: "flex", gap: 2, height: 10, borderRadius: "var(--ftp-radius-pill)", overflow: "hidden" }}
       >
-        <span className="ftp-grow-x" style={{ width: `${share * 100}%`, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
+        <span className="ftp-grow-x" style={{ width: `${share * 100}%`, background: "var(--hue)" }} />
         <span style={{ flex: 1, background: "color-mix(in srgb, var(--ftp-text-2) 28%, #fff)" }} />
       </div>
       <figcaption style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
@@ -171,11 +171,11 @@ export function ElectionResults({ results }: { results: ElectionResult[] }) {
     <Section title={t("results")}>
       {turnoutCount > 0 && (
         <div className="ftp-picture-row" style={{ marginBottom: 16 }}>
-          <Card tinted padding={18}>
+          <Card padding={18}>
             <Explainer>{t.rich("simple", { year: recentYear, pct: Math.round(avgTurnout), count: turnoutCount, b })}</Explainer>
             <IconPictogram filled={avgTurnout / 10} icon={Hand} label={t("pictogram", { n: Math.round(avgTurnout / 10), year: recentYear })} />
           </Card>
-          <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Card padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Gauge value={avgTurnout} label={t("gaugeLabel")} caption={t("gaugeCaption", { year: recentYear })} />
           </Card>
         </div>
@@ -194,7 +194,7 @@ export function ElectionResults({ results }: { results: ElectionResult[] }) {
               lowPct: pctText(chartLow.turnout),
               b: (c) => <strong>{c}</strong>,
             })}
-            legend={[{ label: t("chartLegend"), swatch: "linear-gradient(180deg, var(--hue), var(--hue-pop))" }]}
+            legend={[{ label: t("chartLegend"), swatch: "var(--hue)" }]}
             source={ECI}
             asOfPeriod={chartPeriod}
             table={turnoutChart.map((r) => ({ label: t("chartRow", { name: r.nameFull, type: r.type, year: r.year }), value: pctText(r.turnout) }))}

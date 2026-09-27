@@ -65,6 +65,7 @@ import {
 } from "@/components/accountability/AccountabilityKit";
 import { ListCard, SearchBox, ThenNowBars } from "@/components/district/calm-parts";
 import MoneyToolbar from "@/components/money/MoneyToolbar";
+import { OTHER_SHADE } from "@/components/money/visuals";
 import PoliceStaffing from "@/components/accountability/PoliceStaffing";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -474,7 +475,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                   units={t("trendUnits", { prev: String(prevYear) })}
                   simple={t.rich("trendSimple", { up: trendUp, n: trendRows.length, prev: String(prevYear), latest: String(latestYear), b: bold })}
                   legend={[
-                    { label: String(prevYear), swatch: "#D8D5CB" },
+                    { label: String(prevYear), swatch: OTHER_SHADE },
                     { label: String(latestYear), swatch: "var(--hue)" },
                   ]}
                   source={NCRB}
