@@ -1,4 +1,0 @@
-Drop per-district SVG illustrations here, named <district-slug>.svg
-(e.g., mandya.svg, bengaluru-urban.svg, pune.svg).
-LiveDataShowcase auto-loads /districts/<slug>.svg when present and
-falls back to a generic location-pin icon otherwise.

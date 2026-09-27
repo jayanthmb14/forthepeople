@@ -327,8 +327,11 @@ For EACH new district, seed ALL of these:
 ```
 Bengaluru Urban taluks: datameet.org or Survey of India
 Mysuru taluks: datameet.org or Survey of India
-Download and store in: public/geo/karnataka-bengaluru-urban-taluks.json
-                       public/geo/karnataka-mysuru-taluks.json
+Download and store in: public/geo/<district-slug>-taluks.json
+  (e.g. bengaluru-urban-taluks.json). The map loaders fetch exactly
+  /geo/<district-slug>-taluks.json. Run `npm run geo:rewind` after adding
+  a file (and bump GEO_VERSION in src/lib/geo/aliases.ts when you replace
+  a state's <state>-districts.json).
 ```
 
 ---
