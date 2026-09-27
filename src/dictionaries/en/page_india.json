@@ -768,7 +768,7 @@
     },
     "headlineUnit": "of the land under forest",
     "growth": "+{value} km² since 2021",
-    "calloutSub": "National Forest Policy, 1988",
+    "calloutSub": "Forest and tree cover goal, National Forest Policy 1988",
     "desc": "Forest cover from FSI's India State of Forest Report, published every two years.",
     "cells": {
       "forest": {
@@ -868,7 +868,7 @@
     },
     "headlineUnit": "GW of power plants",
     "growth": "+{value} GW in a year",
-    "calloutSub": "Clean power goal for 2030",
+    "calloutSub": "Non-fossil power goal for 2030 (renewables, hydro, nuclear)",
     "desc": "All the power plants India has, by the fuel they use.",
     "cells": {
       "coal": {

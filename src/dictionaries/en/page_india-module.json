@@ -31,7 +31,11 @@
     "goalSimple": "{label} has reached {pct} of its goal.",
     "goalLine": "Now {now}, goal {goal}",
     "trendTitle": "Change over time",
-    "trendSimple": "It went from {from} in {fromYear} to {to} in {toYear}."
+    "trendSimple": "It went from {from} in {fromYear} to {to} in {toYear}.",
+    "goalLabel": {
+      "nonFossil": "Non-fossil power (renewables, hydro and nuclear)",
+      "forestTree": "Forest and tree cover"
+    }
   },
   "parts": {
     "coal": "Coal",
@@ -275,7 +279,7 @@
       "cities_count": "Cities in the mission"
     },
     "infra-telecom": {
-      "subscribers_crore": "Mobile subscribers"
+      "subscribers_crore": "Telephone subscribers (mobile and landline)"
     },
     "justice-police": {
       "civil_police_total_lakh": "Civil police",

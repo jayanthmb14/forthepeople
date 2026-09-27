@@ -240,18 +240,6 @@ export function pickHeadline(headlineKey: string | undefined, rows: IndicatorRow
   );
 }
 
-/**
- * Published "now" rows paired with a published goal row of the same unit
- * (both come from IndiaIndicator). Drawn as "how close to the goal".
- */
-export const GOAL_PAIRS: Record<string, Array<[now: string, goal: string]>> = {
-  "wildlife-forests": [["forest_cover_pct", "forest_cover_target_pct"]],
-  "health-overview": [["life_expectancy_years", "life_expectancy_target_2030"]],
-  "energy-power": [["renewables_capacity_gw", "re_target_gw_2030"]],
-  "infra-roads": [["nh_length_km", "nh_target_km_2027"]],
-  "justice-police": [["police_per_lakh_population", "un_target_per_lakh"]],
-};
-
 export function groupIndicators(rows: IndicatorRow[]): IndicatorGroups {
   const withValue = rows.filter((r) => r.value !== null && Number.isFinite(r.value));
   const topStates: TopStateItem[] = [];

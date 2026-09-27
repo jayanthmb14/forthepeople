@@ -31,7 +31,11 @@
     "goalSimple": "{label} अपने लक्ष्य का {pct} पूरा कर चुका है।",
     "goalLine": "अभी {now}, लक्ष्य {goal}",
     "trendTitle": "समय के साथ बदलाव",
-    "trendSimple": "यह {fromYear} में {from} था और {toYear} में {to} हो गया।"
+    "trendSimple": "यह {fromYear} में {from} था और {toYear} में {to} हो गया।",
+    "goalLabel": {
+      "nonFossil": "गैर-जीवाश्म बिजली (नवीकरणीय, जल और परमाणु)",
+      "forestTree": "वन और वृक्ष आवरण"
+    }
   },
   "parts": {
     "coal": "कोयला",
@@ -275,7 +279,7 @@
       "cities_count": "मिशन में शामिल शहर"
     },
     "infra-telecom": {
-      "subscribers_crore": "मोबाइल ग्राहक"
+      "subscribers_crore": "टेलीफ़ोन ग्राहक (मोबाइल और लैंडलाइन)"
     },
     "justice-police": {
       "civil_police_total_lakh": "सिविल पुलिस",

@@ -31,7 +31,11 @@
     "goalSimple": "{label} ತನ್ನ ಗುರಿಯ {pct} ತಲುಪಿದೆ.",
     "goalLine": "ಈಗ {now}, ಗುರಿ {goal}",
     "trendTitle": "ಕಾಲಾನಂತರದ ಬದಲಾವಣೆ",
-    "trendSimple": "{fromYear}ರಲ್ಲಿ {from}, {toYear}ರಲ್ಲಿ {to}."
+    "trendSimple": "{fromYear}ರಲ್ಲಿ {from}, {toYear}ರಲ್ಲಿ {to}.",
+    "goalLabel": {
+      "nonFossil": "ಪಳೆಯುಳಿಕೆಯೇತರ ವಿದ್ಯುತ್ (ನವೀಕರಿಸಬಹುದಾದ, ಜಲ ಮತ್ತು ಪರಮಾಣು)",
+      "forestTree": "ಅರಣ್ಯ ಮತ್ತು ಮರಗಳ ಹೊದಿಕೆ"
+    }
   },
   "parts": {
     "coal": "ಕಲ್ಲಿದ್ದಲು",
@@ -275,7 +279,7 @@
       "cities_count": "ಮಿಷನ್‌ನಲ್ಲಿರುವ ನಗರಗಳು"
     },
     "infra-telecom": {
-      "subscribers_crore": "ಮೊಬೈಲ್ ಚಂದಾದಾರರು"
+      "subscribers_crore": "ದೂರವಾಣಿ ಚಂದಾದಾರರು (ಮೊಬೈಲ್ ಮತ್ತು ಲ್ಯಾಂಡ್‌ಲೈನ್)"
     },
     "justice-police": {
       "civil_police_total_lakh": "ನಾಗರಿಕ ಪೊಲೀಸರು",

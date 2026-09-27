@@ -45,8 +45,8 @@ import { TopStatesBars, MixDonut, PercentRings, GoalBars, type BarItem, type Mix
 import TrendLine from "./TrendLine";
 import IndiaReportIssueButton from "@/components/india/IndiaReportIssueButton";
 import { indiaCategoryHue } from "./v4";
+import { GOAL_PAIRS, goalProgress } from "./goals";
 import {
-  GOAL_PAIRS,
   getModuleIndicators,
   getModuleSeries,
   getModuleStates,
@@ -198,22 +198,18 @@ export default async function ModulePage({ locale, module }: Props) {
 
   // 3. Progress towards a published goal.
   const byKey = new Map(indicators.map((r) => [r.metricKey, r]));
+  // "now" can be a sum (non-fossil = renewables + hydro + nuclear); see ./goals.
   const goals = (GOAL_PAIRS[module.slug] ?? [])
-    .map(([nowKey, goalKey]) => ({ now: byKey.get(nowKey), goal: byKey.get(goalKey) }))
-    .filter((p): p is { now: IndicatorRow; goal: IndicatorRow } =>
-      Boolean(p.now && p.goal && p.now.value !== null && p.goal.value && p.goal.value > 0),
-    )
-    .map(({ now, goal }) => {
-      const pct = ((now.value ?? 0) / (goal.value ?? 1)) * 100;
-      return {
-        label: label(now),
-        pct,
-        pctText: `${fmtDecimal(locale, pct, 0)}%`,
-        line: t("vis.goalLine", { now: text(now.value ?? 0, now.unit), goal: text(goal.value ?? 0, goal.unit) }),
-        source: { label: goal.source, href: goal.sourceUrl || undefined },
-        asOf: now.asOf,
-      };
-    });
+    .map((pair) => goalProgress(pair, byKey))
+    .filter((g): g is NonNullable<typeof g> => g !== null)
+    .map((g) => ({
+      label: g.labelKey && t.has(g.labelKey) ? t(g.labelKey) : label(g.first),
+      pct: g.pct,
+      pctText: `${fmtDecimal(locale, g.pct, 0)}%`,
+      line: t("vis.goalLine", { now: text(g.nowValue, g.first.unit), goal: text(g.goal.value ?? 0, g.goal.unit) }),
+      source: { label: g.goal.source, href: g.goal.sourceUrl || undefined },
+      asOf: g.asOf,
+    }));
   if (goals.length > 0) {
     pictures.push(
       <GoalBars
