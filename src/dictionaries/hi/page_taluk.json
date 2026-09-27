@@ -1,0 +1,54 @@
+{
+  "backTo": "{name} पर वापस जाएँ",
+  "loading": "{unit} की जानकारी लोड हो रही है…",
+  "title": "{name} {unit}",
+  "descVillages": "{district} जिले का हिस्सा, जिसमें {n} {label} हैं।",
+  "descUrban": "{district} जिले का हिस्सा। यह एक शहरी क्षेत्र है।",
+  "tilePopulation": "जनसंख्या",
+  "tileArea": "क्षेत्रफल",
+  "unitKm2": "वर्ग कि.मी.",
+  "simplePeople": "{name} में लगभग <b>{pop}</b> लोग रहते हैं, कुल <b>{n}</b> {label} में।",
+  "simpleBiggestSome": "जिन {k} की जनसंख्या दर्ज है, उनमें सबसे बड़ा <b>{name}</b> है, जहाँ <b>{pop}</b> लोग रहते हैं।",
+  "simpleBiggestAll": "सबसे बड़ा <b>{name}</b> है, जहाँ <b>{pop}</b> लोग रहते हैं।",
+  "biggestTitle": "{n} सबसे बड़े {label}",
+  "biggestUnits": "हर एक में रहने वाले लोग",
+  "people": "{n} लोग",
+  "sizesTitle": "आकार के अनुसार {label}",
+  "sizesUnits": "हर जनसंख्या समूह में कितने हैं",
+  "sizesSimple": "जिन {total} {label} की जनसंख्या दर्ज है, उनमें से {count} एक ही समूह में आते हैं: <b>{band}</b>।",
+  "sizesAria": "{name} के {label}, उनमें रहने वाले लोगों की संख्या के अनुसार",
+  "bandUnder": "{max} से कम लोग",
+  "bandRange": "{min} से {max} लोग",
+  "bandTop": "{min} या उससे ज़्यादा लोग",
+  "sectionSee": "इस {unit} की जानकारी देखें",
+  "sectionVillages": "{name} के {label}",
+  "tapHint": "किसी भी नाम पर टैप करें और उसकी पूरी जानकारी देखें ({label})।",
+  "searchPlaceholder": "{label} खोजें…",
+  "noMatch": "“{q}” से मिलता कोई {label} नहीं मिला।",
+  "openVillage": "{name} की जानकारी",
+  "sheetSub": "{taluk} {unit}, {district} जिला।",
+  "openPage": "पूरा पेज खोलें",
+  "viewOnMaps": "नक्शे पर देखें",
+  "rowLocal": "स्थानीय नाम",
+  "rowHomes": "घर",
+  "rowPerHome": "हर घर में लोग",
+  "rowRank": "जनसंख्या में स्थान ({label} में)",
+  "rankValue": "{total} में से {rank}",
+  "rowShare": "{name} के लोगों में हिस्सा",
+  "rowPin": "पिन कोड",
+  "sheetNoNumbers": "इस जगह की जनसंख्या, घरों की संख्या या पिन कोड की जानकारी अभी हमारे पास नहीं है।",
+  "labels": {
+    "Villages": {
+      "title": "गाँव",
+      "inline": "गाँव"
+    },
+    "Localities": {
+      "title": "इलाके",
+      "inline": "इलाके"
+    },
+    "Wards": {
+      "title": "वार्ड",
+      "inline": "वार्ड"
+    }
+  }
+}

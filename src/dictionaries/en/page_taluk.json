@@ -22,9 +22,33 @@
   "bandTop": "{min} people or more",
   "sectionSee": "See data for this {unit}",
   "sectionVillages": "{label} in {name}",
+  "tapHint": "Tap any one of the {label} to see all its numbers.",
+  "searchPlaceholder": "Search {label}…",
+  "noMatch": "None of the {label} match “{q}”.",
+  "openVillage": "Details of {name}",
+  "sheetSub": "In {taluk} {unit}, {district} district.",
+  "openPage": "Open the full page",
+  "viewOnMaps": "View on maps",
+  "rowLocal": "Local name",
+  "rowHomes": "Homes",
+  "rowPerHome": "People in each home",
+  "rowRank": "Rank by people, among {label}",
+  "rankValue": "{rank} of {total}",
+  "rowShare": "Share of the people in {name}",
+  "rowPin": "PIN code",
+  "sheetNoNumbers": "We do not have the number of people, homes or the PIN code for this place yet.",
   "labels": {
-    "Villages": { "title": "Villages", "inline": "villages" },
-    "Localities": { "title": "Localities", "inline": "localities" },
-    "Wards": { "title": "Wards", "inline": "wards" }
+    "Villages": {
+      "title": "Villages",
+      "inline": "villages"
+    },
+    "Localities": {
+      "title": "Localities",
+      "inline": "localities"
+    },
+    "Wards": {
+      "title": "Wards",
+      "inline": "wards"
+    }
   }
 }

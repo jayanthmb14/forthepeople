@@ -22,9 +22,33 @@
   "bandTop": "{min} ಅಥವಾ ಹೆಚ್ಚು ಜನರು",
   "sectionSee": "{unit} ಮಟ್ಟದ ಮಾಹಿತಿ ನೋಡಿ",
   "sectionVillages": "{name}: {label}",
+  "tapHint": "ಪ್ರತಿಯೊಂದರ ಎಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ನೋಡಲು ಯಾವುದೇ ಹೆಸರಿನ ಮೇಲೆ ಒತ್ತಿ ({label}).",
+  "searchPlaceholder": "{label} ಹುಡುಕಿ…",
+  "noMatch": "“{q}” ಹೆಸರಿಗೆ ಹೊಂದುವ {label} ಇಲ್ಲ.",
+  "openVillage": "{name}: ವಿವರಗಳು",
+  "sheetSub": "{district} ಜಿಲ್ಲೆ, {taluk} {unit}.",
+  "openPage": "ಪೂರ್ಣ ಪುಟ ತೆರೆಯಿರಿ",
+  "viewOnMaps": "ನಕ್ಷೆಯಲ್ಲಿ ನೋಡಿ",
+  "rowLocal": "ಸ್ಥಳೀಯ ಹೆಸರು",
+  "rowHomes": "ಮನೆಗಳು",
+  "rowPerHome": "ಪ್ರತಿ ಮನೆಯಲ್ಲಿ ಜನರು",
+  "rowRank": "ಜನಸಂಖ್ಯೆಯಲ್ಲಿ ಸ್ಥಾನ ({label} ಪೈಕಿ)",
+  "rankValue": "{total} ಪೈಕಿ {rank}",
+  "rowShare": "{name} ಜನರಲ್ಲಿ ಪಾಲು",
+  "rowPin": "ಪಿನ್ ಕೋಡ್",
+  "sheetNoNumbers": "ಈ ಸ್ಥಳದ ಜನಸಂಖ್ಯೆ, ಮನೆಗಳು ಅಥವಾ ಪಿನ್ ಕೋಡ್ ಮಾಹಿತಿ ನಮ್ಮಲ್ಲಿ ಇನ್ನೂ ಇಲ್ಲ.",
   "labels": {
-    "Villages": { "title": "ಗ್ರಾಮಗಳು", "inline": "ಗ್ರಾಮಗಳು" },
-    "Localities": { "title": "ಬಡಾವಣೆಗಳು", "inline": "ಬಡಾವಣೆಗಳು" },
-    "Wards": { "title": "ವಾರ್ಡ್‌ಗಳು", "inline": "ವಾರ್ಡ್‌ಗಳು" }
+    "Villages": {
+      "title": "ಗ್ರಾಮಗಳು",
+      "inline": "ಗ್ರಾಮಗಳು"
+    },
+    "Localities": {
+      "title": "ಬಡಾವಣೆಗಳು",
+      "inline": "ಬಡಾವಣೆಗಳು"
+    },
+    "Wards": {
+      "title": "ವಾರ್ಡ್‌ಗಳು",
+      "inline": "ವಾರ್ಡ್‌ಗಳು"
+    }
   }
 }
