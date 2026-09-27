@@ -1,5 +1,5 @@
 {
-  "description": "The weather right now, and whether this year's rain is above or below normal",
+  "description": "The latest weather reading with its time, and whether rain is above or below normal",
   "mm": "{v} mm",
   "kmh": "km/h",
   "mmUnit": "mm",
