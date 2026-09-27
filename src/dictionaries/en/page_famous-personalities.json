@@ -1,6 +1,6 @@
 {
   "title": "Famous personalities",
-  "description": "Notable people from this district who shaped history, culture, science, and public life",
+  "description": "Well-known people born in or linked to this district: tap anyone to read their story",
   "fields": {
     "Politician": "Politics",
     "Scientist": "Science",
@@ -17,17 +17,13 @@
     "Other": "Other"
   },
   "yearsLived": "{from}–{to}",
-  "yearsPresent": "{from} to present",
   "readWiki": "Read on Wikipedia",
-  "photoCredit": "Photo: {credit}",
   "statPeople": "Personalities",
   "statBorn": "Born in {name}",
   "statFields": "Fields",
-  "simple": "We list <b>{count}</b> well-known people linked to {name}, and <b>{born}</b> of them {born, plural, one {was} other {were}} born here.",
+  "simple": "We list <b>{count}</b> well-known people linked to {name}; <b>{born}</b> of them {born, plural, one {was} other {were}} born here. Most are known for <b>{field}</b>.",
   "bornPicto": "About {n} of every 10 people listed here were born in {name}.",
   "knownFor": "What they are known for",
-  "fieldBar": "{field} ({n})",
-  "moreFields": "{n, plural, one {# more field} other {# more fields}} in the filter below.",
   "timelineTitle": "When they were born",
   "timelineUnits": "Each dot is one person, placed at the decade they were born",
   "timelineSimple": "The earliest was born in <b>{first}</b> ({firstName}) and the most recent in <b>{last}</b> ({lastName}).",
@@ -47,5 +43,24 @@
   "count": "({n})",
   "compare": "Compare with another district",
   "frequency": "Changes rarely",
-  "timelineUnitsCentury": "Each dot is one person, placed at the century they were born"
+  "timelineUnitsCentury": "Each dot is one person, placed at the century they were born",
+  "yearsBorn": "Born {from}",
+  "statYears": "Born between",
+  "statYearsSub": "For {n, plural, one {# person} other {# people}} with a birth year",
+  "noneListedBody": "People appear here once they are added from Wikipedia.",
+  "details": "Read their story",
+  "sheet": {
+    "born": "Born",
+    "died": "Died",
+    "birthPlace": "Birthplace",
+    "bornHere": "Born in {name}?",
+    "yes": "Yes",
+    "noLinked": "No, but linked to it",
+    "photo": "Photo",
+    "photoWiki": "Wikipedia",
+    "notRecorded": "Not recorded",
+    "license": "Text and photos from Wikipedia (CC-BY-SA), shown as written there."
+  },
+  "chartsTitle": "The bigger picture",
+  "timelineTap": "Tap a dot to see who it is."
 }
