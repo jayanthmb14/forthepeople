@@ -5,7 +5,7 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Jal Jeevan Mission — Design v3 module page (CONCEPT-v3 §5)
+//  Jal Jeevan Mission — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Data: useJJM() → one row per village (households, tap connections,
@@ -13,6 +13,10 @@
 //  newest one is the "as of" for the headline tiles.
 //  Urban districts in states where JJM does not apply get a short note
 //  pointing to the municipal water board instead of an empty table.
+//
+//  Picture: a water tank filled to the district's real tap coverage and
+//  ten houses with the same share lit. Both use the same totals as the
+//  tiles; with no households on record the picture is not drawn.
 "use client";
 import { use } from "react";
 import { AlertTriangle, CheckCircle2, Droplets } from "lucide-react";
@@ -24,20 +28,21 @@ import {
   Card,
   StatTile,
   StatStrip,
-  ProgressBar,
   DataTable,
   LoadingShell,
   ErrorBlock,
   AsOfText,
 } from "@/components/district/ui";
+import { ChartCard, ChartGradients, Explainer, Pictogram, WaterTank, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
-import { CHART, CHART_TOOLTIP } from "@/components/district/daily-services/chart-tokens";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+
+const EJALSHAKTI = { label: "eJalShakti", href: "https://ejalshakti.gov.in" };
 
 /** Coverage → text colour: 100 % green, 50 %+ amber, below that red. */
 function coverageColor(pct: number): string {
@@ -65,8 +70,14 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
     .slice(0, 20)
     .map((v) => ({
       name: (v.villageName ?? "Unknown").slice(0, 12),
+      nameFull: v.villageName ?? "Unknown village",
       coverage: Math.round(v.coveragePct),
+      full: v.coveragePct >= 100,
     }));
+  const fullInChart = chartData.filter((d) => d.full).length;
+
+  // Houses lit out of 10: the same share the tank shows.
+  const homesOfTen = Math.round(Math.min(100, overallCoverage) / 10);
 
   // Urban districts where JJM does not apply: point to the water board.
   const sc = getStateConfig(state);
@@ -82,7 +93,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
         backHref={base}
         accent={getModuleAccent("jjm")}
         freshness={asOf ? { asOf } : undefined}
-        source={{ label: "eJalShakti", href: "https://ejalshakti.gov.in" }}
+        source={EJALSHAKTI}
       />
 
       <AIInsightCard module="jjm" district={district} />
@@ -90,10 +101,12 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
       {error && <ErrorBlock />}
       {!isLoading && !error && villages.length === 0 && (
         urbanWaterBoard ? (
-          <Card style={{ marginTop: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <Droplets size={18} aria-hidden style={{ color: "var(--ftp-brand)" }} />
-              <h2 className="ftp-title">Municipal Water Supply</h2>
+          <Card tinted style={{ marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
+                🚰
+              </span>
+              <h2 className="ftp-title" style={{ fontWeight: 600 }}>Municipal water supply</h2>
             </div>
             <p className="ftp-body" style={{ margin: "0 0 8px" }}>
               Jal Jeevan Mission provides tap water connections to rural households. {districtName} is an urban district —
@@ -112,45 +125,87 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
       {!isLoading && villages.length > 0 && (
         <>
           <StatStrip cols={3}>
-            <StatTile label="Villages tracked" value={villages.length.toLocaleString("en-IN")} icon={Droplets} asOf={asOf} />
-            <StatTile label="Overall coverage" value={overallCoverage.toFixed(1)} unit="%" asOf={asOf} />
-            <StatTile label="Tap connections" value={totalTaps.toLocaleString("en-IN")} asOf={asOf} />
-            <StatTile label="Total households" value={totalHH.toLocaleString("en-IN")} asOf={asOf} />
-            <StatTile label="Fully covered" value={fullyConverted.toLocaleString("en-IN")} sub="villages at 100%" asOf={asOf} />
-            <StatTile label="Quality tested" value={testedPct.toFixed(0)} unit="%" sub="of villages" asOf={asOf} />
+            <StatTile emoji="🏘️" label="Villages tracked" value={villages.length.toLocaleString("en-IN")} asOf={asOf} />
+            <StatTile emoji="💧" label="Overall coverage" value={overallCoverage.toFixed(1)} unit="%" asOf={asOf} />
+            <StatTile emoji="🚰" label="Tap connections" value={totalTaps.toLocaleString("en-IN")} asOf={asOf} />
+            <StatTile emoji="🏠" label="Total households" value={totalHH.toLocaleString("en-IN")} asOf={asOf} />
+            <StatTile emoji="✅" label="Fully covered" value={fullyConverted.toLocaleString("en-IN")} sub="villages at 100%" asOf={asOf} />
+            <StatTile emoji="🧪" label="Quality tested" value={testedPct.toFixed(0)} unit="%" sub="of villages" asOf={asOf} />
           </StatStrip>
 
-          {/* District-wide progress. */}
-          <Section title="District-wide tap coverage" action={<AsOfText asOf={asOf} />}>
-            <Card>
-              <ProgressBar label="Households with a tap connection" pct={overallCoverage} tone="teal" />
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                <span><span className="ftp-num">{totalTaps.toLocaleString("en-IN")}</span> taps connected</span>
-                <span><span className="ftp-num">{totalHH.toLocaleString("en-IN")}</span> total households</span>
+          {/* The picture: a tank filled to the real coverage, and ten houses
+              with the same share lit. Only when households are on record. */}
+          {totalHH > 0 && (
+            <Section title="District-wide tap coverage" emoji="🚰" action={<AsOfText asOf={asOf} />}>
+              <div className="ftp-picture-row">
+                <Card tinted padding={18}>
+                  <Explainer title="In simple words" emoji="💧">
+                    In the {villages.length.toLocaleString("en-IN")} villages we track,{" "}
+                    <strong className="ftp-num">{totalTaps.toLocaleString("en-IN")}</strong> of{" "}
+                    <strong className="ftp-num">{totalHH.toLocaleString("en-IN")}</strong> homes have a tap connection at home.
+                  </Explainer>
+                  <Pictogram
+                    filled={Math.min(100, overallCoverage) / 10}
+                    emoji="🏠"
+                    label={`About ${homesOfTen} of every 10 homes have a tap connection.`}
+                  />
+                </Card>
+                <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <WaterTank pct={overallCoverage} label="Homes with a tap connection" />
+                </Card>
               </div>
-            </Card>
-          </Section>
-
-          {/* Bar chart of the 20 best-covered villages. */}
-          {chartData.length > 0 && (
-            <Section title="Village coverage % (top 20)">
-              <Card>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 40, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-                    <XAxis dataKey="name" tick={{ ...CHART.tick, fontSize: 10 }} stroke={CHART.axis} angle={-35} textAnchor="end" interval={0} />
-                    <YAxis tick={CHART.tick} stroke={CHART.axis} width={36} domain={[0, 100]} />
-                    <Tooltip {...CHART_TOOLTIP} cursor={{ fill: "var(--ftp-surface-2)" }} formatter={(v) => [`${Number(v)}%`, "Coverage"]} />
-                    <ReferenceLine y={100} stroke={CHART.secondary} strokeDasharray="4 4" />
-                    <Bar dataKey="coverage" fill={CHART.primary} radius={[4, 4, 0, 0]} name="Coverage" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
             </Section>
           )}
 
+          {/* Bar chart of the 20 best-covered villages. */}
+          {chartData.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <ChartCard
+                title={chartData.length < villages.length ? `The ${chartData.length} best-covered villages` : "Tap coverage in each village"}
+                emoji="🏘️"
+                units="Share of homes with a tap, per village (%). The dashed line is 100%: a tap in every home."
+                simple={
+                  fullInChart > 0 ? (
+                    <>
+                      <strong>{fullInChart === chartData.length ? `All ${chartData.length}` : `${fullInChart} of these ${chartData.length}`}</strong>{" "}
+                      {fullInChart === 1 ? "village has" : "villages have"} a tap in every home.
+                    </>
+                  ) : (
+                    <>
+                      The best-covered village, <strong>{chartData[0].nameFull}</strong>, has a tap in {chartData[0].coverage}% of homes.
+                    </>
+                  )
+                }
+                legend={[
+                  { label: "Homes with a tap", swatch: "linear-gradient(180deg, var(--hue), var(--hue-pop))" },
+                  { label: "Every home (100%)", swatch: "var(--hue-deep)" },
+                ]}
+                source={EJALSHAKTI}
+                asOf={asOf}
+                table={chartData.map((d) => ({ label: d.nameFull, value: `${d.coverage}%` }))}
+              >
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 40, left: 0 }}>
+                    <ChartGradients />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ ...CHART_AXIS, fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
+                    <YAxis tick={CHART_AXIS} width={40} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip
+                      contentStyle={chartTooltipStyle}
+                      cursor={{ fill: "var(--hue-tint)" }}
+                      formatter={(v) => [`${Number(v)}%`, "Homes with a tap"]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.nameFull ?? ""}
+                    />
+                    <ReferenceLine y={100} stroke="var(--hue-deep)" strokeDasharray="4 4" />
+                    <Bar dataKey="coverage" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name="Coverage" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+          )}
+
           {/* Village list. */}
-          <Section title="Village-wise status">
+          <Section title="Village-wise status" emoji="📋">
             <DataTable
               caption={`Jal Jeevan Mission status by village in ${districtName}`}
               columns={[
@@ -160,7 +215,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                 { key: "quality", label: "Water quality" },
               ]}
               rows={villages.map((v) => ({
-                village: v.villageName ?? "Unknown Village",
+                village: v.villageName ?? "Unknown village",
                 taps: `${v.tapConnections.toLocaleString("en-IN")} / ${v.totalHouseholds.toLocaleString("en-IN")}`,
                 coverage: <span style={{ color: coverageColor(v.coveragePct) }}>{Math.round(v.coveragePct)}%</span>,
                 quality: v.waterQualityTested ? (
@@ -170,7 +225,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                     </span>
                   ) : (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--ftp-warn)" }}>
-                      <AlertTriangle size={13} aria-hidden /> Quality Issue
+                      <AlertTriangle size={13} aria-hidden /> Quality issue
                     </span>
                   )
                 ) : (
