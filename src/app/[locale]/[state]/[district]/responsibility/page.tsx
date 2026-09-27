@@ -5,62 +5,74 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  My Responsibility — module page (Design v4 "Rang", docs/DESIGN-SYSTEM.md)
+//  What you can do — module page (v4.1, docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
-//  Two data paths, unchanged from v2:
-//    1. District-specific actions from /api/data/responsibility (researched
-//       per district, each with "report to" contacts and a source note).
-//    2. Otherwise the generic guide from getResponsibilityContent().
-//  Presentation: PageHeader → intro → StatStrip of emoji tiles → the
-//  pictures (an "In simple words" line with a pictogram of how many actions
-//  come with someone to report to, then a ring of how the actions spread
-//  across areas) → one emoji Section per group → SourcesFooter → Toolbar.
-//  Section emoji come from the research data (`sectionIcon`) when present,
-//  else from the group's title.
+//  The question: "What can I do for my district, right now?"
+//  The answer, in one sentence: "In the last 2 weeks most news about
+//  Mandya was about water (5 stories), so saving water is at the top."
 //
-//  Language: every interface string comes from the "page_responsibility"
-//  namespace. The actions themselves (research rows and the generic guide
-//  in responsibility-content.ts) are district reference data and are shown
-//  as written.
+//  ModulePage → PageHeader → Explainer → 4 StatTiles → the picture
+//  (TopicBars: this fortnight's news by topic) → "Because of what's in the
+//  news" (one action card per busy topic, with the headline that triggered
+//  it; tap → steps, why, the headlines, helpline) → all the things you can
+//  do, as tappable cards, with the areas that are in the news first (tap →
+//  why, who to tell, call / website, source) → areas ring + emergency card
+//  → sources → toolbar.
+//
+//  Responsibilities change with the news: /api/data/responsibility-news
+//  counts the district's last 14 days of news by topic with a plain rule
+//  table (src/lib/civic/news-topics.ts), no AI. When there is no news, the
+//  page says so and keeps its usual order.
+//
+//  Data paths for the actions, unchanged: researched district actions from
+//  /api/data/responsibility, else the general guide (responsibility-
+//  content.ts, English reference text). Interface text: the
+//  "page_responsibility" namespace.
 "use client";
 
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeftRight, Check, Download, ExternalLink, Flame, Megaphone, Phone, Share2, Sparkles } from "lucide-react";
+import { ArrowLeftRight, Download, Flame, Share2 } from "lucide-react";
 import {
+  Card,
+  Chips,
+  LoadingShell,
+  ModulePage,
   PageHeader,
+  Section,
+  SourcesFooter,
   StatStrip,
   StatTile,
-  Section,
-  Card,
-  LoadingShell,
-  SourcesFooter,
   Toolbar,
   ToolbarButton,
 } from "@/components/district/ui";
 import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import { HueDonut } from "@/components/district/civic/HueDonut";
-import { useFormat, useModuleText } from "@/i18n/client";
+import {
+  ActionCard,
+  ActionSheet,
+  AreaCard,
+  AreaSheet,
+  EmergencyCard,
+  TopicBars,
+  TopicCard,
+  TopicSheet,
+  useTopicText,
+  type ResearchItem,
+} from "@/components/district/civic/ResponsibilityParts";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { getResponsibilityContent } from "@/lib/constants/responsibility-content";
 import { getModuleSources } from "@/lib/constants/state-config";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { topicRule } from "@/lib/civic/news-topics";
+import type { NewsTopicCount, ResponsibilityNewsPayload } from "@/app/api/data/responsibility-news/route";
 import knDict from "@/dictionaries/kn.json";
 
 type DistrictSpecificSection = {
   section: string;
   icon: string;
   order: number;
-  items: Array<{
-    action: string;
-    whyRelevant: string;
-    reportTo: {
-      name: string | null;
-      url: string | null;
-      phone: string | null;
-    };
-    sourceNotes: string | null;
-  }>;
+  items: ResearchItem[];
 };
 
 type ResponsibilityApiResponse = {
@@ -76,6 +88,8 @@ type ResponsibilityApiResponse = {
 /** Source names and update frequencies from getModuleSources() that have a translation. */
 const SOURCE_KEY: Record<string, string> = { "District Administration": "districtAdministration" };
 const FREQ_KEY: Record<string, string> = { Quarterly: "quarterly" };
+/** Topic cards shown in "Because of what's in the news". */
+const TOP_TOPICS = 4;
 
 /** Turn rows into a CSV file and start a download in the browser. */
 function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
@@ -119,32 +133,6 @@ function groupEmoji(title: string, fromData?: string | null): string {
   return GROUP_EMOJI.find(([re]) => re.test(title))?.[1] ?? "🌱";
 }
 
-/** "Visit portal" and phone links: a hue pill, 32 px tall (44 px on phones via ftp-chip). */
-const CONTACT_LINK: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "0 12px",
-  borderRadius: "var(--ftp-radius-pill)",
-  background: "var(--hue-tint)",
-  border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
-  color: "var(--hue-deep)",
-  fontSize: 13,
-  lineHeight: "20px",
-  fontWeight: 500,
-  textDecoration: "none",
-};
-
-/** Small icon chip in the page hue that starts each action line. */
-function ItemChip({ icon: Icon }: { icon: typeof Check }) {
-  return (
-    <span aria-hidden className="ftp-icon-chip" style={{ width: 24, height: 24, borderRadius: 8, marginTop: 1 }}>
-      <Icon size={14} strokeWidth={2.5} />
-    </span>
-  );
-}
-
-/** Areas → donut slices + the one-line reading of the ring. */
 interface AreaCount {
   key: string;
   label: string;
@@ -152,76 +140,109 @@ interface AreaCount {
   value: number;
 }
 
-/**
- * The second picture: how the actions spread across areas, as a ring in
- * shades of the page hue with a legend of real counts. Hidden when there
- * are fewer than two areas (a ring of one slice says nothing).
- */
+/** Chart: how the actions spread across areas (hidden with fewer than two areas). */
 function AreasRing({ areas }: { areas: AreaCount[] }) {
   const t = useTranslations("page_responsibility");
   const f = useFormat();
-  if (areas.length < 2) return null;
   const total = areas.reduce((n, a) => n + a.value, 0);
-  if (total === 0) return null;
+  if (areas.length < 2 || total === 0) return null;
   const sorted = [...areas].sort((a, b) => b.value - a.value);
   const top = sorted[0];
   const tied = sorted.filter((a) => a.value === top.value).length;
-  const b = (c: React.ReactNode) => <strong>{c}</strong>;
   const simple =
     tied === sorted.length
       ? t("chartEven", { n: f.number(top.value) })
       : tied > 1
         ? t("chartTied", { count: f.number(tied), n: f.number(top.value) })
-        : t.rich("chartTop", { top: top.label, n: f.number(top.value), total: f.number(total), b });
+        : t.rich("chartTop", { top: top.label, n: f.number(top.value), total: f.number(total), b: (c) => <strong>{c}</strong> });
   const summary = sorted.map((a) => `${a.label}: ${f.number(a.value)}`).join(", ");
   return (
-    <div style={{ marginTop: 16 }}>
-      <ChartCard
-        title={t("chartTitle")}
-        emoji="🧩"
-        units={t("chartUnits")}
-        simple={simple}
-        table={sorted.map((a) => ({ label: a.label, value: f.number(a.value) }))}
-      >
-        <HueDonut
-          slices={areas.map((a) => ({ key: a.key, label: a.label, value: a.value, emoji: a.emoji }))}
-          centerValue={f.number(total)}
-          centerLabel={t("chartCenter", { n: total })}
-          ariaLabel={t("chartAria", { summary })}
-          otherLabel={t("otherAreas")}
-        />
-      </ChartCard>
-    </div>
+    <ChartCard
+      title={t("chartTitle")}
+      emoji="🧩"
+      units={t("chartUnits")}
+      simple={simple}
+      table={sorted.map((a) => ({ label: a.label, value: f.number(a.value) }))}
+    >
+      <HueDonut
+        slices={areas.map((a) => ({ key: a.key, label: a.label, value: a.value, emoji: a.emoji }))}
+        centerValue={f.number(total)}
+        centerLabel={t("chartCenter", { n: total })}
+        ariaLabel={t("chartAria", { summary })}
+        otherLabel={t("otherAreas")}
+      />
+    </ChartCard>
   );
 }
 
-export default function ResponsibilityPage({
-  params,
-}: {
-  params: Promise<{ locale: string; state: string; district: string }>;
-}) {
+export default function ResponsibilityPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const t = useTranslations("page_responsibility");
   const mt = useModuleText();
   const f = useFormat();
+  const topicText = useTopicText();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [area, setArea] = useState("all");
+  const [topicOpen, setTopicOpen] = useState<NewsTopicCount | null>(null);
+  const [actionOpen, setActionOpen] = useState<{ item: ResearchItem; area: string; emoji: string } | null>(null);
+  const [areaOpen, setAreaOpen] = useState<{ title: string; emoji: string; items: string[] } | null>(null);
+  const closeTopic = useCallback(() => setTopicOpen(null), []);
+  const closeAction = useCallback(() => setActionOpen(null), []);
+  const closeArea = useCallback(() => setAreaOpen(null), []);
 
   const { data: apiData, isLoading } = useQuery<ResponsibilityApiResponse>({
     queryKey: ["responsibility", state, district],
-    queryFn: () =>
-      fetch(`/api/data/responsibility?state=${state}&district=${district}`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/data/responsibility?state=${state}&district=${district}`).then((r) => r.json()),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: newsResp, isLoading: newsLoading, isError: newsError } = useQuery<{ data: ResponsibilityNewsPayload | null }>({
+    queryKey: ["responsibility-news", state, district, locale],
+    queryFn: () => fetch(`/api/data/responsibility-news?state=${state}&district=${district}&locale=${locale}`).then((r) => r.json()),
+    staleTime: 10 * 60 * 1000,
+  });
 
-  // Loading state — render nothing obvious (brief), then fallback or district-specific.
   const districtSpecific = apiData?.data && apiData.data.sections.length > 0 ? apiData.data : null;
   const genericContent = getResponsibilityContent(district);
   const src = getModuleSources("responsibility", state);
-  // Local-script title comes from the dictionary (Kannada only for now).
   const titleLocal = state === "karnataka" ? knDict.modules.responsibility : undefined;
   const moduleTitle = mt.label("responsibility");
-  const b = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
+  const b = (c: React.ReactNode) => <strong>{c}</strong>;
+
+  // ── News → topics ─────────────────────────────────────────────────
+  const news = newsResp?.data ?? null;
+  const newsFailed = newsError || (newsResp !== undefined && !news);
+  const topics = news?.topics ?? [];
+  const topTopics = topics.slice(0, TOP_TOPICS);
+  const lead = topTopics[0] ?? null;
+  // An area of actions is "in the news" when a busy topic points at it.
+  const areaInNews = (title: string) => topTopics.some((x) => topicRule(x.topic)?.areas?.test(title));
+  const newsRank = (title: string) => {
+    const i = topTopics.findIndex((x) => topicRule(x.topic)?.areas?.test(title));
+    return i === -1 ? TOP_TOPICS : i;
+  };
+
+  // ── Actions ───────────────────────────────────────────────────────
+  const specificSections = districtSpecific
+    ? [...districtSpecific.sections].sort((a, c) => newsRank(a.section) - newsRank(c.section) || a.order - c.order)
+    : [];
+  const specificItems = specificSections.flatMap((s) => s.items);
+  const withContact = specificItems.filter((item) => item.reportTo?.name).length;
+  const contactShare = specificItems.length > 0 ? withContact / specificItems.length : 0;
+
+  const genericActionSections = genericContent.sections
+    .filter((s) => !s.isProjection)
+    .map((s, i) => ({ ...s, i }))
+    .sort((a, c) => newsRank(a.title) - newsRank(c.title) || a.i - c.i);
+  const genericProjection = genericContent.sections.find((s) => s.isProjection) ?? null;
+  const genericActionCount = genericActionSections.reduce((n, s) => n + s.items.length, 0);
+
+  const actionCount = districtSpecific ? districtSpecific.itemCount : genericActionCount;
+  const areaCount = districtSpecific ? districtSpecific.sections.length : genericActionSections.length;
+  const areas: AreaCount[] = districtSpecific
+    ? specificSections.map((s) => ({ key: s.section, label: s.section, emoji: groupEmoji(s.section, s.icon), value: s.items.length }))
+    : genericActionSections.map((s) => ({ key: s.title, label: s.title, emoji: groupEmoji(s.title), value: s.items.length }));
 
   const onShare = async () => {
     const url = window.location.href;
@@ -238,7 +259,6 @@ export default function ResponsibilityPage({
     }
   };
 
-  // CSV = whatever list is on screen (district-specific actions or the generic guide).
   const onCsv = () =>
     districtSpecific
       ? downloadCsv(
@@ -252,267 +272,204 @@ export default function ResponsibilityPage({
               report_url: item.reportTo?.url ?? "",
               report_phone: item.reportTo?.phone ?? "",
               source: item.sourceNotes ?? "",
-            }))
-          )
+            })),
+          ),
         )
       : downloadCsv(
           `${district}-responsibility.csv`,
-          genericContent.sections.flatMap((s) => s.items.map((item) => ({ section: s.title, action: item })))
+          genericContent.sections.flatMap((s) => s.items.map((item) => ({ section: s.title, action: item }))),
         );
 
-  const genericItemCount = genericContent.sections.reduce((n, s) => n + s.items.length, 0);
-
-  // For the pictures: the generic guide's "can become" section is a vision,
-  // not a list of actions, so it is left out of the "things you can do" count.
-  const genericActionSections = genericContent.sections.filter((s) => !s.isProjection);
-  const genericActionCount = genericActionSections.reduce((n, s) => n + s.items.length, 0);
-
-  // For the pictures: how many researched actions name someone to report to.
-  const specificItems = districtSpecific ? districtSpecific.sections.flatMap((s) => s.items) : [];
-  const withContact = specificItems.filter((item) => item.reportTo?.name).length;
-  const contactShare = specificItems.length > 0 ? withContact / specificItems.length : 0;
-
-  const specificAreas: AreaCount[] = districtSpecific
-    ? districtSpecific.sections.map((s) => ({ key: s.section, label: s.section, emoji: groupEmoji(s.section, s.icon), value: s.items.length }))
-    : [];
-  const genericAreas: AreaCount[] = genericActionSections.map((s) => ({
-    key: s.title,
-    label: s.title,
-    emoji: groupEmoji(s.title),
-    value: s.items.length,
-  }));
+  const chipItems = [
+    { value: "all", label: t("all"), count: actionCount },
+    ...areas.map((a) => ({ value: a.key, label: a.label, count: a.value })),
+  ];
 
   return (
-    <div className="module-page" style={{ padding: 24, maxWidth: "var(--ftp-reading-max)" }}>
+    <ModulePage>
       <PageHeader
         icon={Flame}
-        accent={getModuleAccent("responsibility")}
         title={moduleTitle}
         titleLocal={titleLocal}
-        description={
-          districtSpecific
-            ? t("descSpecific", { name: districtSpecific.districtName })
-            : t("descGeneric", { name: genericContent.districtName })
-        }
+        description={districtSpecific ? t("descSpecific", { name: districtName }) : t("descGeneric", { name: districtName })}
         backHref={base}
+        freshness={news?.latestAt ? { asOf: news.latestAt, thresholdHours: 48 } : undefined}
       />
 
-      {/* Intro — shared for both branches. Plain body text. */}
-      <p className="ftp-body" style={{ fontSize: 15, lineHeight: "22px", marginBottom: 20 }}>
-        {t.rich("intro", { b: (c) => <span style={{ fontWeight: 600, color: "var(--hue-deep)" }}>{c}</span> })}
-      </p>
+      {!isLoading && !newsLoading && (
+        <Explainer emoji="🙋">
+          {lead
+            ? t.rich("simpleNews", {
+                name: districtName,
+                topic: topicText.label(lead.topic),
+                n: lead.count,
+                action: topicText.action(lead.topic),
+                b,
+              })
+            : districtSpecific
+              ? t.rich("simpleSpecific", { n: actionCount, areas: areaCount, name: districtName, b })
+              : t.rich("simpleGeneric", { n: genericActionCount, areas: areaCount, name: districtName, b })}
+        </Explainer>
+      )}
 
-      {/* Emergency disclaimer — only show on district-specific pages (where live phones exist) */}
-      {districtSpecific && (
-        <div style={{ marginBottom: 20 }}>
-          <Card padding={14}>
-            <p className="ftp-body" style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "var(--ftp-text)" }}>
-              <AlertTriangle size={16} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 2 }} />
-              <span>
-                {t.rich("emergency", {
-                  emergency: (c) => <a href="tel:112" className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{c}</a>,
-                  ambulance: (c) => <a href="tel:108" className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{c}</a>,
-                })}
-              </span>
-            </p>
+      {(isLoading || newsLoading) && <LoadingShell rows={3} />}
+
+      {!isLoading && (
+        <StatStrip>
+          {news && <StatTile emoji="📰" label={t("tileNews")} value={f.number(news.totalStories)} sub={t("tileNewsSub", { n: news.topicalStories })} />}
+          {lead && (
+            <StatTile
+              emoji={topicRule(lead.topic)?.emoji ?? "📰"}
+              label={t("tileTopTopic")}
+              value={topicText.label(lead.topic)}
+              sub={t("tileTopTopicSub", { n: lead.count })}
+              countUp={false}
+            />
+          )}
+          <StatTile emoji="✅" label={t("tileActions")} value={f.number(actionCount)} sub={t("tileActionsSub", { areas: areaCount })} />
+          {districtSpecific ? (
+            <StatTile emoji="📣" label={t("tileContacts")} value={f.number(withContact)} sub={t("tileContactsSub")} />
+          ) : (
+            <StatTile emoji="🗂️" label={t("tileAreas")} value={f.number(areaCount)} sub={t("tileAreasSub")} />
+          )}
+        </StatStrip>
+      )}
+
+      {/* The picture: what the news is about. Without news, the contact
+          pictogram (researched districts) explains the list instead. */}
+      {topics.length > 0 ? (
+        <div style={{ marginTop: 16 }}>
+          <Card tinted padding={18}>
+            <TopicBars topics={topics} name={districtName} latestAt={news?.latestAt ?? null} />
           </Card>
+        </div>
+      ) : (
+        districtSpecific &&
+        withContact > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Card tinted padding={18}>
+              <Pictogram filled={contactShare * 10} emoji="📣" label={t("pictogramContact", { n: Math.round(contactShare * 10) })} />
+            </Card>
+          </div>
+        )
+      )}
+
+      {/* Because of what's in the news */}
+      {!newsLoading && (
+        <Section title={t("newsTitle")} emoji="📰">
+          {topTopics.length > 0 ? (
+            <>
+              <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
+                {t("newsLead", { name: districtName })}
+              </p>
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
+                {topTopics.map((x) => (
+                  <TopicCard key={x.topic} x={x} onOpen={setTopicOpen} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
+              {newsFailed ? t("newsError") : t("newsNone", { name: districtName })}
+            </p>
+          )}
+        </Section>
+      )}
+
+      {/* All the things you can do */}
+      {!isLoading && (
+        <Section title={t("allTitle")} emoji="✅">
+          <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
+            {topTopics.length > 0 ? t("allLeadNews") : t("allLead")}
+          </p>
+          {districtSpecific ? (
+            <>
+              {areas.length > 1 && (
+                <div style={{ marginBottom: 12 }}>
+                  <Chips label={t("chipsLabel")} value={area} onChange={setArea} items={chipItems} />
+                </div>
+              )}
+              <div className="ftp-grid">
+                {specificSections
+                  .filter((s) => area === "all" || s.section === area)
+                  .flatMap((s) => {
+                    const emoji = groupEmoji(s.section, s.icon);
+                    const inNews = areaInNews(s.section);
+                    return s.items.map((item, idx) => (
+                      <ActionCard
+                        key={`${s.section}-${idx}`}
+                        item={item}
+                        area={s.section}
+                        emoji={emoji}
+                        inNews={inNews}
+                        onOpen={() => setActionOpen({ item, area: s.section, emoji })}
+                      />
+                    ));
+                  })}
+              </div>
+              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 16 }}>
+                {t("footSpecific")}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
+                {genericActionSections.map((s) => {
+                  const emoji = groupEmoji(s.title);
+                  return (
+                    <AreaCard
+                      key={s.title}
+                      title={s.title}
+                      emoji={emoji}
+                      items={s.items}
+                      inNews={areaInNews(s.title)}
+                      onOpen={() => setAreaOpen({ title: s.title, emoji, items: s.items })}
+                    />
+                  );
+                })}
+              </div>
+              {genericProjection && (
+                <div style={{ marginTop: 16 }}>
+                  <Card tinted padding={18}>
+                    <p className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
+                      <span aria-hidden>🌟 </span>
+                      {genericProjection.title}
+                    </p>
+                    <p className="ftp-body" style={{ margin: "4px 0 10px", color: "var(--ftp-text-2)" }}>
+                      {t("projectionLead", { name: districtName })}
+                    </p>
+                    <ul className="ftp-prose" style={{ margin: 0, paddingInlineStart: 20, display: "grid", gap: 6, fontSize: 14, lineHeight: "21px" }}>
+                      {genericProjection.items.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </Card>
+                </div>
+              )}
+              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 16 }}>
+                {t("footGeneric", { name: districtName })}
+              </p>
+            </>
+          )}
+        </Section>
+      )}
+
+      {/* Chart + the emergency numbers, side by side on wide screens. */}
+      {!isLoading && (
+        <div className={areas.length >= 2 ? "ftp-picture-row" : undefined} style={{ marginTop: 28 }}>
+          <AreasRing areas={areas} />
+          <EmergencyCard />
         </div>
       )}
 
-      {isLoading && <LoadingShell rows={4} />}
-
-      {/* District-specific render */}
-      {!isLoading && districtSpecific && (
-        <>
-          <StatStrip cols={3}>
-            <StatTile emoji="✅" label={t("tileActions")} value={f.number(districtSpecific.itemCount)} sub={t("tileActionsSub", { name: districtSpecific.districtName })} />
-            <StatTile emoji="🗂️" label={t("tileAreas")} value={f.number(districtSpecific.sections.length)} sub={t("tileAreasSub")} />
-            <StatTile emoji="📣" label={t("tileContacts")} value={f.number(withContact)} sub={t("tileContactsSub")} />
-          </StatStrip>
-
-          {/* Picture 1: one plain sentence with the real counts, and ten
-              megaphones lit for the share of actions that name someone to
-              report to. Same numbers as the tiles above. */}
-          {specificItems.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <Card tinted padding={18}>
-                <Explainer emoji="🙋">
-                  {t.rich("simpleSpecific", {
-                    n: districtSpecific.itemCount,
-                    areas: districtSpecific.sections.length,
-                    name: districtSpecific.districtName,
-                    b,
-                  })}
-                  {withContact > 0 && <> {t.rich("simpleContact", { n: withContact, b })}</>}
-                </Explainer>
-                {withContact > 0 && (
-                  <Pictogram
-                    filled={contactShare * 10}
-                    emoji="📣"
-                    label={t("pictogramContact", { n: Math.round(contactShare * 10) })}
-                  />
-                )}
-              </Card>
-            </div>
-          )}
-
-          {/* Picture 2: the same actions, spread across their areas. */}
-          <AreasRing areas={specificAreas} />
-
-          {districtSpecific.sections.map((section) => {
-            const emoji = groupEmoji(section.section, section.icon);
-            return (
-              <div key={section.section} style={{ marginTop: 8 }}>
-                <Section title={section.section} emoji={emoji}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {section.items.map((item, idx) => (
-                      <Card key={idx} as="article" padding={16}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                          <ItemChip icon={Check} />
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <h3 className="ftp-title">{item.action}</h3>
-                            <p className="ftp-body" style={{ margin: "6px 0 0", color: "var(--ftp-text-2)" }}>
-                              {item.whyRelevant}
-                            </p>
-                          </div>
-                        </div>
-
-                        {item.reportTo?.name && (
-                          <div
-                            style={{
-                              marginTop: 12,
-                              padding: "10px 12px",
-                              borderRadius: "var(--ftp-radius-tile)",
-                              background: "color-mix(in srgb, var(--hue-tint) 60%, #fff)",
-                              display: "flex",
-                              flexWrap: "wrap",
-                              alignItems: "center",
-                              gap: 8,
-                              columnGap: 12,
-                              fontSize: 13,
-                              lineHeight: "20px",
-                            }}
-                          >
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600, color: "var(--hue-deep)" }}>
-                              <Megaphone size={14} aria-hidden />
-                              {t("reportTo")}
-                            </span>
-                            <span style={{ color: "var(--ftp-text)" }}>{item.reportTo.name}</span>
-                            {item.reportTo.url && (
-                              <a
-                                href={item.reportTo.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ftp-chip"
-                                style={CONTACT_LINK}
-                                aria-label={t("portalAria", { name: item.reportTo.name })}
-                              >
-                                {t("visitPortal")} <ExternalLink size={12} aria-hidden />
-                              </a>
-                            )}
-                            {item.reportTo.phone && (
-                              <a
-                                href={`tel:${item.reportTo.phone}`}
-                                className="ftp-chip"
-                                style={CONTACT_LINK}
-                                aria-label={t("callAria", { phone: item.reportTo.phone })}
-                              >
-                                <Phone size={14} aria-hidden />
-                                <span className="ftp-num">{item.reportTo.phone}</span>
-                              </a>
-                            )}
-                          </div>
-                        )}
-
-                        {item.sourceNotes && (
-                          <details style={{ marginTop: 8, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                            <summary style={{ cursor: "pointer" }}>{t("source")}</summary>
-                            <p style={{ margin: "4px 0 0", lineHeight: "16px" }}>{item.sourceNotes}</p>
-                          </details>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
-                </Section>
-              </div>
-            );
-          })}
-
-          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 20 }}>
-            {t("footSpecific")}
-          </p>
-        </>
-      )}
-
-      {/* Generic fallback render (other districts) */}
-      {!isLoading && !districtSpecific && (
-        <>
-          <StatStrip cols={2}>
-            <StatTile emoji="💡" label={t("tileSuggestions")} value={f.number(genericItemCount)} sub={t("tileSuggestionsSub")} />
-            <StatTile emoji="🗂️" label={t("tileAreas")} value={f.number(genericContent.sections.length)} sub={t("tileAreasSub")} />
-          </StatStrip>
-
-          {/* Picture 1 for the generic guide is the plain sentence only:
-              there is no per-action contact data to draw a pictogram from. */}
-          {genericActionCount > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <Explainer emoji="🙋">
-                {t.rich("simpleGeneric", {
-                  n: genericActionCount,
-                  areas: genericActionSections.length,
-                  name: genericContent.districtName,
-                  b,
-                })}
-              </Explainer>
-            </div>
-          )}
-
-          {/* Picture 2: the suggestions spread across their areas. */}
-          <AreasRing areas={genericAreas} />
-
-          {genericContent.sections.map((section) => (
-            <div key={section.title} style={{ marginTop: 8 }}>
-              <Section title={section.title} emoji={groupEmoji(section.title)}>
-                <Card tinted={section.isProjection}>
-                  {section.isProjection ? (
-                    <p className="ftp-body" style={{ marginBottom: 10, color: "var(--ftp-text-2)" }}>
-                      {t("projectionLead", { name: genericContent.districtName })}
-                    </p>
-                  ) : null}
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      margin: 0,
-                      padding: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10,
-                    }}
-                  >
-                    {section.items.map((item, i) => (
-                      <li key={i} className="ftp-body" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        {/* A check (or a spark for the vision list) in the page hue. */}
-                        <ItemChip icon={section.isProjection ? Sparkles : Check} />
-                        <span style={{ paddingTop: 2 }}>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </Section>
-            </div>
-          ))}
-
-          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 20 }}>
-            {t("footGeneric", { name: genericContent.districtName })}
-          </p>
-        </>
-      )}
-
       <SourcesFooter
-        sources={src.sources.map((name) => ({
-          name: SOURCE_KEY[name] ? t(`sourceNames.${SOURCE_KEY[name]}`) : name,
-          frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
-        }))}
+        sources={[
+          ...src.sources.map((name) => ({
+            name: SOURCE_KEY[name] ? t(`sourceNames.${SOURCE_KEY[name]}`) : name,
+            frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
+          })),
+          { name: t("sourceNews"), frequency: t("freq.news") },
+        ]}
       />
 
       <Toolbar label={t("toolbar")}>
@@ -526,6 +483,10 @@ export default function ResponsibilityPage({
           {t("compare")}
         </ToolbarButton>
       </Toolbar>
-    </div>
+
+      <TopicSheet x={topicOpen} onClose={closeTopic} name={districtName} base={base} />
+      <ActionSheet open={actionOpen} onClose={closeAction} />
+      <AreaSheet open={areaOpen} onClose={closeArea} />
+    </ModulePage>
   );
 }
