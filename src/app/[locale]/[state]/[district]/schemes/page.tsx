@@ -24,7 +24,7 @@
 //  shown as "usually" with a pointer to the official site.
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
@@ -124,6 +124,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
   const f = useFormat();
   const m = useMoney();
   const st = useSourceText();
+  const mt = useModuleText();
   const place = usePlaceText();
   const districtName = useDistrictName(state, district);
   const stateName = place.state(state, state.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
@@ -135,6 +136,8 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
   const [kindFilter, setKindFilter] = useState<string>("all");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  // Stable, so the open sheet does not re-run its focus effect on every render.
+  const closeSheet = useCallback(() => setOpenId(null), []);
 
   const schemes = useMemo(() => (data?.data ?? []) as SchemeRow[], [data]);
   const views = useMemo(() => schemes.map(describe), [schemes]);
@@ -166,7 +169,8 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
     .sort((a, b2) => (b2.beneficiaryCount ?? 0) - (a.beneficiaryCount ?? 0));
 
   const src = getModuleSources("schemes", state);
-  const title = t("title");
+  // The module's own name (same as the sidebar), in the reader's language.
+  const title = mt.label("schemes");
   // Local-script title: the module name in the state's language (Kannada
   // only for now). PageHeader hides it when it is already the title.
   const titleLocal = state === "karnataka" ? knDict.moduleNames.schemes : undefined;
@@ -364,7 +368,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
 
       <DetailSheet
         open={!!open}
-        onClose={() => setOpenId(null)}
+        onClose={closeSheet}
         title={open?.s.name ?? ""}
         subtitle={open ? [t(`kind.${open.kind}`), open.level ? t(`runBy.${open.level}`) : null].filter(Boolean).join(" · ") : undefined}
         emoji={open ? KIND_EMOJI[open.kind] : undefined}

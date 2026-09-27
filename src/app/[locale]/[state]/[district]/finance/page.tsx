@@ -23,7 +23,7 @@
 //  fetched. Words live in "page_finance".
 "use client";
 
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -103,6 +103,8 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const [pickedYear, setPickedYear] = useState<string | null>(null);
   const [show, setShow] = useState<"all" | "lapsed">("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  // Stable, so the open sheet does not re-run its focus effect on every render.
+  const closeSheet = useCallback(() => setOpenId(null), []);
 
   const entries = budgetData?.data?.entries ?? [];
   const allocations = (budgetData?.data?.allocations ?? []) as AllocationRow[];
@@ -429,7 +431,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
 
       <DetailSheet
         open={!!open}
-        onClose={() => setOpenId(null)}
+        onClose={closeSheet}
         title={open?.department ?? ""}
         subtitle={open ? t("fy", { year: open.fiscalYear }) : undefined}
         emoji="🏢"
