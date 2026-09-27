@@ -34,6 +34,8 @@ export interface Fix {
   why: string;
   /** The page that backs the change. */
   source: string;
+  /** What that page says, briefly (paraphrase; quotes under 15 words). */
+  says?: string;
   /** Day the source was read (YYYY-MM-DD). */
   checked: string;
 }

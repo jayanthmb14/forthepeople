@@ -30,14 +30,18 @@ import "dotenv/config";
 import { DATE_FIELDS, type Fix, type FieldValue } from "./fix-records-2026-09/types";
 import { POPULATION_FIXES } from "./fix-records-2026-09/population";
 import { POLICE_FIXES } from "./fix-records-2026-09/police";
+import { INFRA_FIXES } from "./fix-records-2026-09/infra";
 
 const CONFIRM = process.argv.includes("--confirm");
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length) ?? null;
 
-const ALL_FIXES: Fix[] = [...POPULATION_FIXES, ...POLICE_FIXES];
+const ALL_FIXES: Fix[] = [...INFRA_FIXES, ...POPULATION_FIXES, ...POLICE_FIXES];
 
 /** Prisma delegate name for a table ("InfraProject" → "infraProject"). */
 const delegateName = (table: string) => table[0].toLowerCase() + table.slice(1);
+
+/** A stored timestamp as its IST calendar day, "YYYY-MM-DD". */
+const istDay = (d: Date) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10);
 
 /** "YYYY-MM-DD" → Date at IST midnight (how the seeds stored dates). */
 const istMidnight = (d: string) => new Date(`${d}T00:00:00+05:30`);
@@ -52,6 +56,8 @@ function same(field: string, current: unknown, planned: FieldValue): boolean {
   if (current === null || current === undefined) return planned === null;
   if (planned === null) return false;
   if (current instanceof Date) {
+    // Compare calendar days in IST: seeds stored IST midnight, news sync stored other times.
+    if (typeof planned === "string" && /^\d{4}-\d{2}-\d{2}$/.test(planned)) return istDay(current) === planned;
     const want = toDbValue(field, planned);
     return want instanceof Date && want.getTime() === current.getTime();
   }
@@ -61,7 +67,7 @@ function same(field: string, current: unknown, planned: FieldValue): boolean {
 
 function show(v: unknown): string {
   if (v === null || v === undefined) return "null";
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return istDay(v);
   if (typeof v === "string") return JSON.stringify(v.length > 70 ? v.slice(0, 67) + "…" : v);
   return String(v);
 }
@@ -97,6 +103,7 @@ async function main() {
       console.log(`\n• ${f.op.toUpperCase()} ${f.table} ${f.id} — ${f.label}`);
       console.log(`  why:    ${f.why}`);
       console.log(`  source: ${f.source} (checked ${f.checked})`);
+      if (f.says) console.log(`  says:   ${f.says}`);
       if (!row) {
         console.log("  → row not found (already deleted?) — skipped");
         tally(f.table).gone++;
