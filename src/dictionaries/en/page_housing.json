@@ -1,31 +1,106 @@
 {
-  "description": "PMAY and other housing schemes: houses planned, sanctioned, finished and still being built",
-  "summary": "This page tracks government housing schemes such as PMAY in {district}: how many houses were planned, sanctioned, finished and are still being built, and how much money was set aside, released and spent. Figures come from AwaasSoft and are grouped by financial year.",
+  "description": "Government housing schemes: what you get, who can get it, and how many houses are really built",
+  "summary": "This page tracks government housing schemes such as PMAY in {district}: what each scheme gives, who can get it, where it runs, how many houses were planned, sanctioned, finished and are still being built, and how much money was set aside, released and spent. Progress figures come from the scheme dashboards (such as AwaasSoft) and district records, grouped by financial year; each scheme names its own source.",
   "fy": "FY {year}",
   "fyRange": "FY {from} to {to}",
   "crore": "₹{n} Cr",
+  "answer": "In {district}, <b>{done}</b> of the <b>{target}</b> houses planned in {fy} are finished, and <b>{building}</b> more are being built.",
+  "answerNotStarted": "In {district}, <b>{target}</b> houses are planned in {fy}. None has been sanctioned or built yet.",
+  "answerNoRows": "We do not have progress numbers for {district} yet. The housing schemes listed for your district are below.",
   "tiles": {
     "target": "Houses planned",
     "sanctioned": "Sanctioned",
     "completed": "Finished",
     "inProgress": "Being built"
   },
-  "explainer": "<b>{done}</b> of the <b>{target}</b> houses planned are finished, and <b>{building}</b> more are being built.",
-  "explainerFy": "<b>{done}</b> of the <b>{target}</b> houses planned in {fy} are finished, and <b>{building}</b> more are being built.",
-  "pictogram": "{n, plural, =0 {Fewer than 1 in every 10 planned houses is finished.} other {About # of every 10 planned houses are finished.}}",
+  "picture": {
+    "title": "Out of every 10 planned houses",
+    "stagesTitle": "Where the {target} planned houses are now"
+  },
+  "pictogram": "{n, plural, =0 {Fewer than 1 in every 10 planned houses is finished.} one {About 1 in every 10 planned houses is finished.} other {About # of every 10 planned houses are finished.}}",
   "pictogramNone": "None of the planned houses is finished yet.",
-  "gaugeLabel": "Houses finished against the plan",
-  "gaugeCaption": "Houses finished",
-  "gaugeCaptionFy": "Houses finished, {fy}",
+  "stage": {
+    "done": "Finished",
+    "building": "Being built",
+    "waiting": "Sanctioned, not started",
+    "notSanctioned": "Not yet sanctioned"
+  },
+  "where": {
+    "india": "All India",
+    "state": "Across {state}",
+    "local": "Only in {district}"
+  },
+  "family": {
+    "pmayg": {
+      "what": "Money to build your own pucca house in a village, paid into your bank account in stages.",
+      "who": "Village families who have no house or live in a kutcha house, and whose names are on the Awaas+ list checked by the Gram Sabha.",
+      "by": "Ministry of Rural Development, Government of India",
+      "apply": "There is no form to fill. Names come from the Awaas+ survey, and the Gram Sabha checks the list. Ask your Gram Panchayat whether your name is on it. You can also search for your name on the PMAY-G website."
+    },
+    "pmayu": {
+      "what": "Help to build, buy or rent a pucca house in a town or city.",
+      "who": "Families in towns and cities with low or middle income who do not own a pucca house anywhere in India.",
+      "by": "Ministry of Housing and Urban Affairs, Government of India",
+      "apply": "Apply on the PMAY-Urban website, or at your city corporation or municipality office. Keep your Aadhaar and income details ready."
+    },
+    "state": {
+      "what": "Help from the state government to get a pucca house.",
+      "who": "The state government sets the rules. Ask at your Gram Panchayat or town office whether you can get it.",
+      "by": "{state} government",
+      "apply": "Ask at your Gram Panchayat (in a village) or your municipality office (in a town). They will tell you when applications open and what to bring."
+    },
+    "city": {
+      "what": "Homes or house sites from the city or its development authority.",
+      "who": "The city body sets the rules for each project. Its notice says who can apply.",
+      "by": "The city corporation or development authority",
+      "apply": "Watch for the city body's notice. It says when applications open, who can apply and how."
+    },
+    "other": {
+      "what": "Government help to get a pucca house.",
+      "who": "Ask at your Gram Panchayat or town office whether you can get it.",
+      "apply": "Ask at your Gram Panchayat or town office."
+    }
+  },
+  "card": {
+    "hint": "Who can get it and how to apply",
+    "ringAria": "{pct} of planned houses finished",
+    "amount": "{amount} help",
+    "progress": "<b>{done}</b> built of {sanctioned} sanctioned",
+    "progressPlanned": "<b>{target}</b> planned, none sanctioned yet",
+    "barAria": "{done} finished and {building} being built, out of {target} planned."
+  },
+  "list": {
+    "title": "Housing schemes in {district}"
+  },
+  "more": {
+    "title": "More housing schemes you can ask about",
+    "body": "These are listed for your district, but we do not have their progress numbers yet."
+  },
+  "how": {
+    "title": "How a housing scheme reaches you",
+    "pmaygNote": "In villages (PMAY-G) there is no form: names come from the Awaas+ list, and the Gram Sabha checks it.",
+    "apply": { "title": "Apply", "body": "Fill the form online or at the office" },
+    "list": { "title": "Name on the list", "body": "From the Awaas+ survey of families without a pucca house" },
+    "survey": { "title": "Checked", "body": "Officials check your details and your land" },
+    "gramSabha": { "title": "Gram Sabha checks", "body": "The village meeting confirms the list" },
+    "sanction": { "title": "Sanctioned", "body": "Your house is approved" },
+    "build": { "title": "Build in stages", "body": "Foundation, walls, roof: officials check each stage" },
+    "money": { "title": "Money released", "body": "Paid into your bank account after each stage" }
+  },
+  "otherSchemes": {
+    "title": "Looking for other help?",
+    "body": "Pensions, farm support, health cover and more: see all Govt schemes for your district."
+  },
+  "charts": {
+    "title": "Compare the schemes"
+  },
   "chart": {
-    "title": "Progress by scheme",
-    "units": "Number of houses in each scheme",
+    "title": "Houses in each scheme",
+    "units": "Each bar is as long as the scheme's plan, so bigger schemes have longer bars",
     "simple": "<b>{scheme}</b> has the most finished houses: {done} of {target} planned.",
-    "completed": "Finished",
-    "inProgress": "Being built",
-    "notSanctioned": "Not yet sanctioned",
     "schemeYear": "{scheme} ({fy})",
-    "tableRow": "{done} finished, {building} being built, of {target}"
+    "tableRow": "{done} finished, {building} being built, of {target}",
+    "barValue": "{done} of {target}"
   },
   "funds": {
     "title": "Money for housing",
@@ -40,17 +115,57 @@
     "aria": "Housing money: {spent} spent out of {alloc} set aside."
   },
   "details": {
-    "title": "Scheme details",
-    "target": "Planned",
-    "sanctioned": "Sanctioned",
-    "completed": "Finished",
-    "inProgress": "Being built",
     "allocated": "Set aside",
     "released": "Released",
     "spent": "Spent",
-    "fundsUsed": "Money spent out of what was set aside",
-    "ringAria": "{pct} of planned houses finished"
+    "fundsUsed": "Money spent out of what was set aside"
+  },
+  "sheet": {
+    "sub": "Progress in {district}, {fy}",
+    "subListed": "Listed for {district}",
+    "checkName": "Check your name",
+    "apply": "Apply or learn more",
+    "panchayat": "Your village council",
+    "offices": "Govt offices near you",
+    "where": "Where it runs",
+    "by": "Run by",
+    "who": "Who can get it",
+    "amount": "Help per family",
+    "amountValue": "{amount}",
+    "year": "Year",
+    "progress": "How far the houses have got",
+    "money": "Money",
+    "notReported": "Not reported",
+    "steps": "The steps",
+    "howApply": "How to apply",
+    "sourceRow": "Progress source: {source}",
+    "sourceList": "Scheme details source: {source}",
+    "sourceListNone": "Scheme details from the district's scheme list.",
+    "updated": "Updated {date}"
   },
   "share": "Housing in {district}: {done} of {target} planned houses finished ({pct})",
-  "shareEmpty": "Housing scheme data for {district}"
+  "shareEmpty": "Housing schemes in {district}",
+  "end": {
+    "about": "About this page",
+    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
+    "freq": {
+      "every30": "Checked every 30 minutes",
+      "every6h": "Checked every 6 hours",
+      "daily": "Updated every day",
+      "weekly": "Updated every week",
+      "monthly": "Updated every month",
+      "quarterly": "Updated every 3 months",
+      "annual": "Updated every year",
+      "whenPublished": "Updated when the source publishes"
+    },
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "csv": "Download CSV",
+    "shareHead": "{district} district update",
+    "shareSource": "Source: {url}",
+    "actions": "Page actions"
+  }
 }

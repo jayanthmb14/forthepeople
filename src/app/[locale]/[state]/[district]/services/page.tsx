@@ -5,64 +5,74 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Citizen Services — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
+//  How to get certificates — "How do I get this certificate or service,
+//  what do I carry, what does it cost, and where do I go?"
+//  (docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Data: useServices() → how-to guides (documents, fees, timeline, steps).
-//  Only active guides are listed. Each guide is an accordion row: a real
-//  <button> with aria-expanded that opens the detail below it.
+//  The answer: "We have 24 step-by-step guides for Mandya. 9 of them link
+//  to an official page where you can apply online; for the rest, go to the
+//  office named in the guide."
 //
-//  Order: PageHeader → summary → emoji StatTiles → picture (10 laptops,
-//  lit for the share of guides that have an online application link) →
-//  two charts (kinds of service as a ring; the documents asked for most as
-//  bars) → category chips + guides → sources → news → toolbar. Colours
-//  come from the page hue (teal for services), set by HueScope.
+//  Order: PageHeader → Explainer → 4 tiles → the picture (10 laptops, lit
+//  for the share you can start online, beside the four usual steps) →
+//  search + kind chips → one card per guide. Tapping a card opens a
+//  DetailSheet: where to go, fee, time taken, the guide's own steps as
+//  pictures, a documents checklist to tick, the tip, and Apply online /
+//  Find the office (Govt offices near you, searched for that office) →
+//  link to Govt offices → charts (kinds of service, documents asked for
+//  most) → news → sources.
 //
-//  Text: every word comes from the "page_services" messages. Guide names,
-//  categories, offices, documents and steps are data and stay as published.
+//  Deep link: ?open=<guide id> opens that guide's sheet (the Govt offices
+//  page links here). Data: useServices() (ServiceGuide rows; only active
+//  ones are shown). Every word is in page_services (en / kn / hi); guide
+//  names, offices, fees, documents and steps are data and stay as
+//  published.
 "use client";
+
 import { use, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Briefcase, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Briefcase } from "lucide-react";
+import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
+import NoDataCard from "@/components/common/NoDataCard";
+import ModuleNews from "@/components/district/ModuleNews";
 import { useServices } from "@/hooks/useRealtimeData";
 import type { ServiceGuide } from "@/hooks/useRealtimeData";
-import { useFormat, useModuleText } from "@/i18n/client";
-import { scriptLang } from "@/lib/utils/script-lang";
-import {
-  PageHeader,
-  Section,
-  Card,
-  Chips,
-  Pill,
-  PrimaryButton,
-  StatStrip,
-  StatTile,
-  LoadingShell,
-  ErrorBlock,
-} from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
-import NoDataCard from "@/components/common/NoDataCard";
-import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
-import ModuleNews from "@/components/district/ModuleNews";
-import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
+import { Card, Chips, EmptyState, ErrorBlock, LoadingShell, ModulePage, PageHeader, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { ChartCard, Explainer, HowItWorks, Pictogram } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { BarList, HueDonut, MUTED_SHADE, type DonutSegment } from "@/components/district/daily-services/HueCharts";
-import { useDistrictName } from "@/components/district/daily-services/useDistrictName";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import {
+  ActionLink,
+  Checklist,
+  Chip,
+  LinkCard,
+  MetaLine,
+  PageEnd,
+  SearchBox,
+  SheetBlock,
+  SheetNote,
+  SheetSmall,
+  TapCard,
+  dataLang,
+  extUrl,
+  hostOf,
+  searchRows,
+} from "@/components/services-2/kit";
 
-/** Pill colours taken from the page hue instead of the neutral grey. */
-const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
+/** The API sends every column; the shared type leaves a few out. */
+type Guide = ServiceGuide & { officeLocal?: string | null; onlinePortal?: string | null; updatedAt?: string | null };
 
-/** How many categories the ring shows by name before "Other kinds". */
+/** How many categories the ring names before "Other kinds". */
 const TOP_CATEGORIES = 5;
 /** How many documents the bar list shows. */
 const TOP_DOCUMENTS = 5;
 
 const bold = (c: React.ReactNode) => <strong>{c}</strong>;
 
-/**
- * One emoji per guide, picked from its category name. Categories are free
- * text in the database, so this matches on keywords and falls back to 📄.
- */
+/** One emoji per guide, from keywords in its free-text category; 📄 otherwise. */
 function categoryEmoji(category: string): string {
   const c = category.toLowerCase();
   if (/certif|caste|income|birth|death|domicile/.test(c)) return "📜";
@@ -77,16 +87,34 @@ function categoryEmoji(category: string): string {
   if (/police|safety/.test(c)) return "👮";
   if (/pension|welfare|social|ration/.test(c)) return "🤝";
   if (/tax|business|trade|shop/.test(c)) return "🧾";
+  if (/identity|aadhaar|passport|voter/.test(c)) return "🪪";
   return "📄";
+}
+
+/** One picture per step of a guide, from words in the step (the step text stays as published). */
+function stepEmoji(step: string): string {
+  const s = step.toLowerCase();
+  if (/\bpay|fee|₹|\brs\.?\s?\d|challan/.test(s)) return "💰";
+  if (/verif|inspect|enquir|field visit|scrutin|check/.test(s)) return "🔎";
+  if (/collect|issued|issue|deliver|receive|download|sms|certificate is|get your/.test(s)) return "✅";
+  if (/document|upload|attach|photo|proof|aadhaar|copy of/.test(s)) return "📄";
+  if (/online|website|portal|login|register|\bapp\b|seva|e-?district|mobile/.test(s)) return "💻";
+  if (/visit|go to|office|counter|nadakacheri|tahsil|centre|center/.test(s)) return "🏢";
+  if (/fill|form|apply|application/.test(s)) return "📝";
+  return "👣";
+}
+
+/** The fee as published says it costs nothing ("Free", "Nil", "No fee"). */
+function isFree(fees: string | null | undefined): boolean {
+  return /^\s*(free|nil|no fee|free of cost)\s*\.?\s*$/i.test(fees ?? "");
 }
 
 /**
  * The documents most guides ask for. Each guide counts a document once;
  * names are matched ignoring case and extra spaces, and shown the way
- * they were first written. Only documents asked for by 2+ guides count as
- * "asked for most" (a list of one-offs says nothing).
+ * they were first written. Only documents asked for by 2+ guides count.
  */
-function topDocuments(guides: ServiceGuide[]): Array<{ key: string; label: string; count: number }> {
+function topDocuments(guides: Guide[]): Array<{ key: string; label: string; count: number }> {
   const map = new Map<string, { label: string; count: number }>();
   for (const g of guides) {
     const seen = new Set<string>();
@@ -107,29 +135,6 @@ function topDocuments(guides: ServiceGuide[]): Array<{ key: string; label: strin
     .slice(0, TOP_DOCUMENTS);
 }
 
-/** A labelled block inside an open guide, with one emoji before the label. */
-function DetailBlock({ label, emoji, children }: { label: string; emoji: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginTop: 14 }}>
-      <div className="ftp-label" style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-        <span className="ftp-emoji" aria-hidden style={{ fontSize: 14 }}>{emoji}</span>
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/** A tiny "👣 4 steps" marker under a guide's name. */
-function MetaBit({ emoji, children }: { emoji: string; children: React.ReactNode }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 12 }}>{emoji}</span>
-      {children}
-    </span>
-  );
-}
-
 function ServicesPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const base = `/${locale}/${state}/${district}`;
@@ -137,288 +142,304 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
   const f = useFormat();
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data, isLoading, error } = useServices(district, state);
   const [filter, setFilter] = useState("all");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  // ?open=<id> from another page opens that guide straight away.
+  const [openId, setOpenId] = useState<string | null>(() => searchParams.get("open"));
 
   const n = (v: number) => f.number(v);
   const pct = (share: number) => f.number(share, { style: "percent", maximumFractionDigits: 0 });
 
-  const services = data?.data ?? [];
-  const active = services.filter((s) => s.active);
-  const filtered = filter === "all" ? active : active.filter((s) => s.category === filter);
-  // How many guides link to an official online application.
-  const onlineCount = active.filter((s) => Boolean(s.onlineUrl)).length;
-  const onlineTenths = active.length > 0 ? (onlineCount / active.length) * 10 : 0;
+  const guides: Guide[] = ((data?.data ?? []) as Guide[]).filter((s) => s.active);
+  const onlineCount = guides.filter((s) => Boolean(extUrl(s.onlineUrl))).length;
+  const freeCount = guides.filter((s) => isFree(s.fees)).length;
+  const officeCount = new Set(guides.map((s) => s.office.trim().toLowerCase()).filter(Boolean)).size;
+  const onlineTenths = guides.length > 0 ? (onlineCount / guides.length) * 10 : 0;
 
   // Guides per category, biggest first (also the chip order).
   const categoryCounts = Object.entries(
-    active.reduce<Record<string, number>>((acc, s) => {
+    guides.reduce<Record<string, number>>((acc, s) => {
       acc[s.category] = (acc[s.category] ?? 0) + 1;
       return acc;
     }, {}),
   ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const categories = categoryCounts.map(([c]) => c);
+
+  const byCategory = filter === "all" ? guides : guides.filter((s) => s.category === filter);
+  const shown = searchRows(byCategory, search, (s) => [s.serviceName, s.serviceNameLocal, s.category, s.office, s.officeLocal]);
 
   // The ring: the top categories by name, the rest folded into "Other kinds".
-  const topCats = categoryCounts.slice(0, TOP_CATEGORIES);
   const otherCount = categoryCounts.slice(TOP_CATEGORIES).reduce((s, [, c]) => s + c, 0);
   const catSegments: DonutSegment[] = [
-    ...topCats.map(([c, count]) => ({ key: c, label: c, value: count, display: n(count), emoji: categoryEmoji(c) })),
+    ...categoryCounts.slice(0, TOP_CATEGORIES).map(([c, count]) => ({ key: c, label: c, value: count, display: n(count), emoji: categoryEmoji(c) })),
     ...(otherCount > 0 ? [{ key: "__other", label: t("cats.other"), value: otherCount, display: n(otherCount), emoji: "🗂️", color: MUTED_SHADE }] : []),
   ];
   const topCat = categoryCounts[0];
+  const docs = topDocuments(guides);
 
-  const docs = topDocuments(active);
+  const open = guides.find((g) => g.id === openId) ?? null;
+  const closeSheet = () => {
+    setOpenId(null);
+    // Drop ?open= so a refresh does not reopen the sheet.
+    if (searchParams.get("open")) window.history.replaceState(null, "", pathname);
+  };
+
+  const openUrl = open ? extUrl(open.onlineUrl) : null;
+  const officesHref = (office: string) => `${base}/offices?q=${encodeURIComponent(office)}`;
 
   return (
     <ModulePage>
-      <PageHeader
-        icon={Briefcase}
-        title={mt.label("services")}
-        description={t("description")}
-        backHref={base}
-        accent={getModuleAccent("services")}
-      />
-
-      <ModuleSummary>{t("summary", { district: districtName })}</ModuleSummary>
+      <PageHeader icon={Briefcase} emoji="🧾" title={mt.label("services")} description={t("description")} backHref={base} />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
-      {!isLoading && !error && active.length === 0 && <NoDataCard module="services" district={district} state={state} />}
+      {!isLoading && !error && guides.length === 0 && <NoDataCard module="services" district={district} state={state} />}
 
-      {!isLoading && active.length > 0 && (
+      {!isLoading && !error && guides.length > 0 && (
         <>
-          <StatStrip cols={3}>
-            <StatTile emoji="📋" label={t("tiles.guides")} value={n(active.length)} sub={t("tiles.guidesSub")} />
-            <StatTile emoji="🗂️" label={t("tiles.categories")} value={n(categories.length)} sub={t("tiles.categoriesSub")} />
+          {/* 2. The answer in one sentence. */}
+          <Explainer emoji="🧭">
+            {t.rich(onlineCount > 0 ? "explainer" : "explainerNone", { total: guides.length, online: n(onlineCount), district: districtName, b: bold })}
+          </Explainer>
+
+          {/* 3. Four big numbers. */}
+          <StatStrip cols={4}>
+            <StatTile emoji="📋" label={t("tiles.guides")} value={n(guides.length)} sub={t("tiles.guidesSub")} />
             <StatTile emoji="💻" label={t("tiles.online")} value={n(onlineCount)} sub={t("tiles.onlineSub")} />
+            <StatTile emoji="🆓" label={t("tiles.free")} value={n(freeCount)} sub={t("tiles.freeSub")} />
+            <StatTile emoji="🏢" label={t("tiles.offices")} value={n(officeCount)} sub={t("tiles.officesSub")} />
           </StatStrip>
 
-          {/* The picture: 10 laptops, lit for the share of guides that can be
-              started online. Same counts as the tiles above. */}
-          <Card tinted padding={18} style={{ marginTop: 16 }}>
-            <Explainer emoji="🧭">
-              {t.rich(onlineCount > 0 ? "explainer" : "explainerNone", {
-                total: active.length,
-                online: n(onlineCount),
-                district: districtName,
-                b: bold,
-              })}
-            </Explainer>
-            <Pictogram
-              filled={onlineTenths}
-              emoji="💻"
-              label={onlineCount === 0 ? t("pictogramNone") : t("pictogram", { n: Math.round(onlineTenths) })}
-            />
-          </Card>
-
-          {/* Two charts: which kinds of service, and which papers to carry.
-              Each hides itself when there is not enough to compare. */}
-          {(catSegments.length > 1 || docs.length > 0) && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 16, marginTop: 24 }}>
-              {catSegments.length > 1 && topCat && (
-                <ChartCard
-                  title={t("cats.title")}
-                  emoji="🗂️"
-                  units={t("cats.units")}
-                  simple={t.rich("cats.simple", { category: topCat[0], n: n(topCat[1]), total: n(active.length), b: bold })}
-                  table={catSegments.map((s) => ({ label: s.label, value: s.display }))}
-                >
-                  <HueDonut
-                    segments={catSegments}
-                    center={n(active.length)}
-                    centerSub={t("tiles.guides")}
-                    ariaLabel={t("cats.aria", { total: active.length })}
-                    percentOf={pct}
-                  />
-                </ChartCard>
-              )}
-              {docs.length > 0 && (
-                <ChartCard
-                  title={t("docs.title")}
-                  emoji="📄"
-                  units={t("docs.units")}
-                  simple={t.rich("docs.simple", { doc: docs[0].label, n: n(docs[0].count), total: n(active.length), b: bold })}
-                  table={docs.map((d) => ({ label: d.label, value: t("docs.count", { n: n(d.count), total: n(active.length) }) }))}
-                >
-                  <BarList
-                    items={docs.map((d) => ({
-                      key: d.key,
-                      label: d.label,
-                      lang: scriptLang(d.label),
-                      value: d.count,
-                      display: t("docs.count", { n: n(d.count), total: n(active.length) }),
-                      emoji: "📄",
-                    }))}
-                  />
-                </ChartCard>
-              )}
-            </div>
-          )}
-
-          <Section title={t("list.title")} emoji="📋">
-            <div style={{ marginBottom: 12 }}>
-              <Chips
-                label={t("list.chipsLabel")}
-                value={filter}
-                onChange={setFilter}
-                items={[
-                  { value: "all", label: t("list.all"), count: active.length },
-                  ...categoryCounts.map(([c, count]) => ({ value: c, label: c, count })),
+          {/* 4. The picture: 10 laptops lit for the share you can start
+              online, beside the four usual steps for any certificate. */}
+          <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+            <Card tinted padding={18}>
+              <p className="ftp-label" style={{ margin: "0 0 10px", color: "var(--hue-deep)" }}>
+                {t("picture.title")}
+              </p>
+              <Pictogram filled={onlineTenths} emoji="💻" label={onlineCount === 0 ? t("pictogramNone") : t("pictogram", { n: Math.round(onlineTenths) })} />
+            </Card>
+            <Card tinted padding={18}>
+              <HowItWorks
+                title={t("usual.title")}
+                steps={[
+                  { emoji: "📄", title: t("usual.docs") },
+                  { emoji: "📝", title: t("usual.apply") },
+                  { emoji: "💰", title: t("usual.pay") },
+                  { emoji: "✅", title: t("usual.collect") },
                 ]}
               />
+            </Card>
+          </div>
+
+          {/* 5. Find a guide; tap a card for everything. */}
+          <Section title={t("list.title")} emoji="📋">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <SearchBox id="guide-search" label={t("list.searchLabel")} placeholder={t("list.searchPlaceholder")} value={search} onChange={setSearch} />
+              {categoryCounts.length > 1 && (
+                <Chips
+                  label={t("list.chipsLabel")}
+                  value={filter}
+                  onChange={setFilter}
+                  items={[{ value: "all", label: t("list.all"), count: guides.length }, ...categoryCounts.map(([c, count]) => ({ value: c, label: c, count }))]}
+                />
+              )}
             </div>
-
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              {filtered.map((s) => {
-                const isOpen = expanded === s.id;
-                const panelId = `service-${s.id}`;
-                return (
-                  <Card key={s.id} as="li" padding={0} tinted={isOpen} style={{ overflow: "hidden" }}>
-                    <button
-                      type="button"
-                      onClick={() => setExpanded(isOpen ? null : s.id)}
-                      aria-expanded={isOpen}
-                      aria-controls={panelId}
-                      style={{
-                        width: "100%",
-                        minHeight: 44,
-                        padding: "12px 16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        textAlign: "start",
-                        fontFamily: "var(--ftp-font-sans)",
-                        color: "var(--ftp-text)",
-                      }}
-                    >
-                      <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
-                          {categoryEmoji(s.category)}
-                        </span>
-                        <span style={{ minWidth: 0 }}>
-                          <span className="ftp-title" style={{ display: "block" }}>{s.serviceName}</span>
-                          {s.serviceNameLocal && (
-                            <span lang={scriptLang(s.serviceNameLocal)} style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>
-                              {s.serviceNameLocal}
-                            </span>
-                          )}
-                          {(s.steps.length > 0 || s.documentsNeeded.length > 0 || s.onlineUrl) && (
-                            <span style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
-                              {s.steps.length > 0 && <MetaBit emoji="👣">{t("list.steps", { n: s.steps.length })}</MetaBit>}
-                              {s.documentsNeeded.length > 0 && <MetaBit emoji="📄">{t("list.docs", { n: s.documentsNeeded.length })}</MetaBit>}
-                              {s.onlineUrl && <MetaBit emoji="💻">{t("list.online")}</MetaBit>}
-                            </span>
-                          )}
-                        </span>
-                      </span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0, maxWidth: "45%", justifyContent: "flex-end" }}>
-                        <Pill style={{ ...HUE_PILL, whiteSpace: "normal", height: "auto", minHeight: 24, padding: "3px 10px", textAlign: "end" }}>{s.office}</Pill>
-                        {isOpen ? (
-                          <ChevronUp size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0 }} />
-                        ) : (
-                          <ChevronDown size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
-                        )}
-                      </span>
-                    </button>
-
-                    {isOpen && (
-                      <div id={panelId} style={{ padding: "0 16px 16px", borderTop: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))" }}>
-                        {(s.fees || s.timeline) && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
-                            {s.fees && (
-                              <DetailBlock label={t("detail.fee")} emoji="💰">
-                                <div style={{ fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>{s.fees}</div>
-                              </DetailBlock>
-                            )}
-                            {s.timeline && (
-                              <DetailBlock label={t("detail.timeline")} emoji="⏱️">
-                                <div style={{ fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>{s.timeline}</div>
-                              </DetailBlock>
-                            )}
-                          </div>
-                        )}
-
-                        {s.documentsNeeded.length > 0 && (
-                          <DetailBlock label={t("detail.documents")} emoji="📄">
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                              {s.documentsNeeded.map((doc, i) => (
-                                <Pill key={i} style={{ ...HUE_PILL, whiteSpace: "normal", height: "auto", minHeight: 24, padding: "3px 10px" }}>
-                                  {doc}
-                                </Pill>
-                              ))}
-                            </div>
-                          </DetailBlock>
-                        )}
-
-                        {s.steps.length > 0 && (
-                          <DetailBlock label={t("detail.steps")} emoji="👣">
-                            {/* A real sequence, so numbered markers: hue circles. */}
-                            <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-                              {s.steps.map((step, i) => (
-                                <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                                  <span
-                                    aria-hidden
-                                    className="ftp-num"
-                                    style={{
-                                      width: 24,
-                                      height: 24,
-                                      flexShrink: 0,
-                                      borderRadius: "50%",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: 12,
-                                      background: "var(--hue)",
-                                      color: "#fff",
-                                    }}
-                                  >
-                                    {n(i + 1)}
-                                  </span>
-                                  <span className="ftp-body" style={{ fontSize: 14, lineHeight: "21px", paddingTop: 1 }}>{step}</span>
-                                </li>
-                              ))}
-                            </ol>
-                          </DetailBlock>
-                        )}
-
-                        {s.tips && (
-                          <DetailBlock label={t("detail.tip")} emoji="💡">
-                            <p className="ftp-body" style={{ margin: 0, fontSize: 14, lineHeight: "21px" }}>{s.tips}</p>
-                          </DetailBlock>
-                        )}
-
-                        {s.onlineUrl && (
-                          <div style={{ marginTop: 16 }}>
-                            <PrimaryButton icon={ExternalLink} href={s.onlineUrl} external>
-                              {t("detail.apply")}
-                            </PrimaryButton>
-                          </div>
-                        )}
-                      </div>
+            {shown.length === 0 ? (
+              <EmptyState emoji="🔍" title={t("list.noMatch")} body={t("list.noMatchBody")} />
+            ) : (
+              <div className="ftp-grid">
+                {shown.map((s) => (
+                  <TapCard
+                    key={s.id}
+                    emoji={categoryEmoji(s.category)}
+                    title={s.serviceName}
+                    titleLang={dataLang(s.serviceName, locale)}
+                    subtitle={s.serviceNameLocal ?? undefined}
+                    subtitleLang={dataLang(s.serviceNameLocal, locale)}
+                    hint={t("list.hint")}
+                    onOpen={() => setOpenId(s.id)}
+                  >
+                    <MetaLine emoji="🏢" lang={dataLang(s.office, locale)}>
+                      {s.office}
+                    </MetaLine>
+                    {s.fees && (
+                      <MetaLine emoji="💰" lang={dataLang(s.fees, locale)} clamp={2}>
+                        {s.fees}
+                      </MetaLine>
                     )}
-                  </Card>
-                );
-              })}
-            </ul>
+                    {s.timeline && (
+                      <MetaLine emoji="⏱️" lang={dataLang(s.timeline, locale)} clamp={2}>
+                        {s.timeline}
+                      </MetaLine>
+                    )}
+                    <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {extUrl(s.onlineUrl) && <Chip emoji="💻">{t("list.online")}</Chip>}
+                      {s.documentsNeeded.length > 0 && <Chip emoji="📄">{t("list.docs", { n: s.documentsNeeded.length })}</Chip>}
+                      {s.steps.length > 0 && <Chip emoji="👣">{t("list.steps", { n: s.steps.length })}</Chip>}
+                    </span>
+                  </TapCard>
+                ))}
+              </div>
+            )}
           </Section>
+
+          <div style={{ marginTop: 20 }}>
+            <LinkCard href={`${base}/offices`} emoji="🏢" title={t("toOffices.title")} body={t("toOffices.body")} />
+          </div>
+
+          {/* 6. Charts: which kinds of service, and which papers to carry. */}
+          {(catSegments.length > 1 || docs.length > 0) && (
+            <Section title={t("charts.title")} emoji="📊">
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
+                {catSegments.length > 1 && topCat && (
+                  <ChartCard
+                    title={t("cats.title")}
+                    emoji="🗂️"
+                    units={t("cats.units")}
+                    simple={t.rich("cats.simple", { category: topCat[0], n: n(topCat[1]), total: n(guides.length), b: bold })}
+                    table={catSegments.map((s) => ({ label: s.label, value: s.display }))}
+                  >
+                    <HueDonut segments={catSegments} center={n(guides.length)} centerSub={t("tiles.guides")} ariaLabel={t("cats.aria", { total: guides.length })} percentOf={pct} />
+                  </ChartCard>
+                )}
+                {docs.length > 0 && (
+                  <ChartCard
+                    title={t("docs.title")}
+                    emoji="📄"
+                    units={t("docs.units")}
+                    simple={t.rich("docs.simple", { doc: docs[0].label, n: n(docs[0].count), total: n(guides.length), b: bold })}
+                    table={docs.map((d) => ({ label: d.label, value: t("docs.count", { n: n(d.count), total: n(guides.length) }) }))}
+                  >
+                    <BarList
+                      items={docs.map((d) => ({
+                        key: d.key,
+                        label: d.label,
+                        lang: dataLang(d.label, locale),
+                        value: d.count,
+                        display: t("docs.count", { n: n(d.count), total: n(guides.length) }),
+                        emoji: "📄",
+                      }))}
+                    />
+                  </ChartCard>
+                )}
+              </div>
+            </Section>
+          )}
         </>
       )}
 
-      <ModuleSources module="services" state={state} />
       <ModuleNews district={district} state={state} locale={locale} module="services" />
-      <ModuleToolbar
-        locale={locale}
-        district={district}
+      <PageEnd
+        ns="page_services"
+        sourceModule="services"
         moduleSlug="services"
-        moduleLabel={mt.label("services")}
-        shareText={t("share", { district: districtName, n: active.length })}
+        state={state}
+        district={district}
+        locale={locale}
+        districtName={districtName}
+        about={t("summary", { district: districtName })}
+        shareText={t("share", { district: districtName, n: guides.length })}
       />
+
+      {/* Everything about one guide. */}
+      <DetailSheet
+        open={!!open}
+        onClose={closeSheet}
+        title={open?.serviceName ?? ""}
+        titleLang={open ? dataLang(open.serviceName, locale) : undefined}
+        subtitle={open?.serviceNameLocal ? <span lang={dataLang(open.serviceNameLocal, locale)}>{open.serviceNameLocal}</span> : undefined}
+        emoji={open ? categoryEmoji(open.category) : undefined}
+        footer={
+          open && (
+            <>
+              {openUrl && (
+                <ActionLink href={openUrl} emoji="💻" primary newTab>
+                  {t("sheet.apply")}
+                </ActionLink>
+              )}
+              <ActionLink href={officesHref(open.office)} emoji="🏢" internal primary={!openUrl}>
+                {t("sheet.findOffice")}
+              </ActionLink>
+            </>
+          )
+        }
+      >
+        {open && (
+          <>
+            <SheetNote emoji="🧭">
+              {t.rich(openUrl ? "sheet.noteOnline" : "sheet.noteOffice", { office: open.office, docs: open.documentsNeeded.length, b: bold })}
+            </SheetNote>
+            <DetailList
+              rows={[
+                {
+                  emoji: "🏢",
+                  label: t("sheet.where"),
+                  value: open.officeLocal && open.officeLocal !== open.office ? (
+                    <>
+                      {open.office}
+                      <br />
+                      <span lang={dataLang(open.officeLocal, locale)} style={{ color: "var(--hue-deep)" }}>
+                        {open.officeLocal}
+                      </span>
+                    </>
+                  ) : (
+                    open.office
+                  ),
+                  lang: dataLang(open.office, locale),
+                },
+                { emoji: "💰", label: t("sheet.fee"), value: open.fees, lang: dataLang(open.fees, locale) },
+                { emoji: "⏱️", label: t("sheet.time"), value: open.timeline, lang: dataLang(open.timeline, locale) },
+                {
+                  emoji: "💻",
+                  label: t("sheet.online"),
+                  value: openUrl ? (open.onlinePortal?.trim() || hostOf(openUrl)) : t("sheet.onlineNo"),
+                },
+                { emoji: "🗂️", label: t("sheet.kind"), value: open.category, lang: dataLang(open.category, locale) },
+              ]}
+            />
+
+            {open.steps.length > 0 && (
+              <SheetBlock emoji="👣" title={t("sheet.steps")}>
+                <div lang={dataLang(open.steps[0], locale)}>
+                  <HowItWorks steps={open.steps.map((s) => ({ emoji: stepEmoji(s), title: s }))} />
+                </div>
+              </SheetBlock>
+            )}
+
+            {open.documentsNeeded.length > 0 && (
+              <SheetBlock emoji="📄" title={t("sheet.docs")}>
+                <Checklist
+                  key={open.id}
+                  items={open.documentsNeeded}
+                  lang={dataLang(open.documentsNeeded[0], locale)}
+                  status={(done, total) => t("sheet.ready", { done, total })}
+                />
+              </SheetBlock>
+            )}
+
+            {open.tips && (
+              <SheetBlock emoji="💡" title={t("sheet.tip")}>
+                <p lang={dataLang(open.tips, locale)} className="ftp-body" style={{ margin: 0, fontSize: 14, lineHeight: "21px" }}>
+                  {open.tips}
+                </p>
+              </SheetBlock>
+            )}
+
+            <SheetSmall>
+              {t("sheet.check")}
+              {open.updatedAt && (
+                <>
+                  {" · "}
+                  <span suppressHydrationWarning>{t("sheet.updated", { date: f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) })}</span>
+                </>
+              )}
+            </SheetSmall>
+          </>
+        )}
+      </DetailSheet>
     </ModulePage>
   );
 }

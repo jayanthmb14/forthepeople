@@ -5,108 +5,127 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Local Alerts — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
+//  Alerts & warnings — "Is there a warning I should act on, and what do I
+//  do?"  (docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Data: useAlerts() → active alerts, most severe first, then newest.
-//  The old unconditional "Live" tag is gone: the header pill and the stat
-//  tiles use the newest alert's createdAt, and every alert shows when it
-//  was posted. Severity is shown as a Pill (colour as text on a tint),
-//  never as a coloured stripe or box.
+//  The answer: "3 warnings are active for Mandya. Red (act now): 1.
+//  Orange (be ready): 1."
 //
-//  v4 look: emoji StatTiles, then the picture — an "In simple words" line
-//  and one symbol per active alert (🚨 critical, ⚠️ high, 🔔 the rest), in
-//  the same most-severe-first order as the list — then a ring of the kinds
-//  of alert (weather, water, power…). Accents come from the page hue (rose
-//  for alerts); severity pills keep their semantic colours. With no active
-//  alert the page shows one honest empty state and no zero tiles.
+//  Order: PageHeader → Explainer → 4 tiles → the picture (one coloured
+//  circle per warning, and what each colour means) → one colour-coded card
+//  per warning, most serious first. Tapping a card opens a DetailSheet in
+//  that colour: what the colour means, the full notice, where and when,
+//  who reported it, WHAT TO DO (plain steps for that kind of warning) and
+//  tap-to-call emergency numbers → kinds of warning (ring) → AI insight →
+//  news → sources. With no warning the page says so and still shows the
+//  emergency numbers.
 //
-//  Text: every word comes from the "page_alerts" messages. Alert titles,
-//  descriptions and places are data and stay as published; alert kinds
-//  are free text, so known ones (water_supply, power_cut…) get a plain
-//  translated name (types.*) and the rest are shown as written.
+//  Colours follow the IMD idea: red = act now, orange = be ready, yellow =
+//  stay alert, green = low risk, blue = for your information. Each card is
+//  wrapped in that colour's hue class (ftp-hue-*), so no raw colours.
+//
+//  Honesty: the API sorts severity as text, so the page sorts by rank
+//  itself. Warnings whose end date has passed are marked "Ended" and go to
+//  the end. Warnings picked up from news reports say so; a source link is
+//  shown when there is one. Times use the shared minute clock (useNow), so
+//  nothing time-based is drawn on the server. Every word is in page_alerts
+//  (en / kn / hi); warning titles, descriptions and places are data and
+//  stay as published; kinds of warning get a plain name (types.*).
 "use client";
+
+import { use, useState } from "react";
+import { useTranslations } from "next-intl";
+import { Bell } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
-import { use } from "react";
-import { useTranslations } from "next-intl";
-import { Bell, CalendarDays, MapPin } from "lucide-react";
 import { useAlerts } from "@/hooks/useRealtimeData";
-import { useFormat, useModuleText } from "@/i18n/client";
-import { scriptLang } from "@/lib/utils/script-lang";
-import {
-  PageHeader,
-  Section,
-  Card,
-  Pill,
-  StatTile,
-  StatStrip,
-  LoadingShell,
-  ErrorBlock,
-  EmptyState,
-  AsOfText,
-  type Tone,
-} from "@/components/district/ui";
+import type { LocalAlert } from "@/hooks/useRealtimeData";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
+import { Card, EmptyState, ErrorBlock, LoadingShell, ModulePage, PageHeader, Section, StatStrip, StatTile } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
-import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { HueDonut, MUTED_SHADE, type DonutSegment } from "@/components/district/daily-services/HueCharts";
-import { useDistrictName } from "@/components/district/daily-services/useDistrictName";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { ActionLink, Chip, LinkCard, MetaLine, PageEnd, SheetBlock, SheetNote, SheetSmall, TapCard, dataLang, extUrl, hostOf, useNow } from "@/components/services-2/kit";
 
-/** Pill colours taken from the page hue instead of the neutral grey. */
-const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
+/** The API sends every column; the shared type leaves a few out. */
+type AlertRow = LocalAlert & { descriptionLocal?: string | null; sourceUrl?: string | null; autoGenerated?: boolean | null; updatedAt?: string | null };
 
-/** Severity → semantic pill tone (same mapping as the kit's SeverityBadge). */
-const SEVERITY_TONE: Record<string, Tone> = { critical: "danger", high: "warn", medium: "brand", low: "live", info: "neutral" };
+type Level = "critical" | "high" | "medium" | "low" | "info" | "other";
+
+const LEVEL_RANK: Record<Level, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4, other: 5 };
+/** Colour circle per level (IMD-style colours). */
+const LEVEL_DOT: Record<Level, string> = { critical: "🔴", high: "🟠", medium: "🟡", low: "🟢", info: "🔵", other: "⚪" };
+/** Hue class per level, so cards and sheets take that colour. */
+const LEVEL_HUE: Record<Level, string> = {
+  critical: "ftp-hue-rose",
+  high: "ftp-hue-orange",
+  medium: "ftp-hue-yellow",
+  low: "ftp-hue-green",
+  info: "ftp-hue-sky",
+  other: "ftp-hue-slate",
+};
+const LEGEND: Level[] = ["critical", "high", "medium", "low", "info"];
 
 /** How many kinds the ring names before "Other kinds". */
 const TOP_KINDS = 5;
+/** How many circles the picture draws before "+N more". */
+const MAX_SYMBOLS = 20;
 
 const bold = (c: React.ReactNode) => <strong>{c}</strong>;
+
+function levelOf(severity: string | null | undefined): Level {
+  const s = (severity ?? "").trim().toLowerCase();
+  return s === "critical" || s === "high" || s === "medium" || s === "low" || s === "info" ? s : "other";
+}
 
 /** "water_supply" / "Water Supply" → "water_supply" (the types.* key shape). */
 const typeKey = (raw: string) => raw.trim().toLowerCase().replace(/[\s-]+/g, "_");
 
-/** "water_supply" → "Water supply" for kinds with no translation (sentence case). */
+/** "water_supply" → "Water supply" for kinds with no translation. */
 const sentenceCase = (raw: string) => {
   const s = raw.replace(/[_-]+/g, " ").trim().toLowerCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-/** One emoji per alert, from its free-text type; 📢 when nothing matches. */
+/** One emoji per warning, from its free-text kind; 📢 when nothing matches. */
 function alertTypeEmoji(type: string): string {
   const t = type.toLowerCase();
   if (/flood|cyclone/.test(t)) return "🌊";
-  if (/rain|storm|thunder|weather|heat|cold/.test(t)) return "⛈️";
+  if (/heat/.test(t)) return "🥵";
+  if (/cold/.test(t)) return "🥶";
+  if (/rain|storm|thunder|weather/.test(t)) return "⛈️";
   if (/water/.test(t)) return "🚰";
   if (/power|electric/.test(t)) return "🔌";
   if (/traffic|road|transport/.test(t)) return "🚦";
+  if (/strike|bandh|shutdown/.test(t)) return "🚫";
   if (/health|disease|outbreak|dengue|covid/.test(t)) return "🏥";
-  if (/fire/.test(t)) return "🔥";
+  if (/fire|emergency/.test(t)) return "🔥";
+  if (/land|quake|disaster/.test(t)) return "⛰️";
   if (/exam|school/.test(t)) return "🏫";
+  if (/election/.test(t)) return "🗳️";
   return "📢";
 }
 
-/**
- * Symbol for one alert in the picture, by severity. Matches exactly the
- * same values the Critical / High priority tiles count, so the picture and
- * the tiles always agree.
- */
-const SEVERITY_SYMBOLS = [
-  { key: "critical", emoji: "🚨" },
-  { key: "high", emoji: "⚠️" },
-  { key: "other", emoji: "🔔" },
-] as const;
-
-function severityEmoji(severity: string): string {
-  if (severity === "critical") return SEVERITY_SYMBOLS[0].emoji;
-  if (severity === "high") return SEVERITY_SYMBOLS[1].emoji;
-  return SEVERITY_SYMBOLS[2].emoji;
+/** Which "what to do" list fits a kind of warning (todo.<group>.*). */
+function todoGroup(type: string, title: string): string {
+  const s = `${type} ${title}`.toLowerCase();
+  if (/flood|cyclone|inundat/.test(s)) return "flood";
+  if (/heat/.test(s)) return "heat";
+  if (/cold wave|cold/.test(s)) return "cold";
+  if (/rain|storm|thunder|lightning|weather/.test(s)) return "storm";
+  if (/land ?slide|earth ?quake|natural_disaster|disaster/.test(s)) return "quake";
+  if (/fire|emergency|collapse/.test(s)) return "fire";
+  if (/water/.test(s)) return "water";
+  if (/power|electric/.test(s)) return "power";
+  if (/health|disease|outbreak|dengue|malaria|cholera|covid/.test(s)) return "health";
+  if (/road|traffic|transport|strike|bandh|shutdown/.test(s)) return "travel";
+  return "general";
 }
 
-/** How many alert symbols the picture draws before "+N more". */
-const MAX_SYMBOLS = 20;
+/** Groups where the district disaster help line (1077) is worth showing. */
+const DISASTER_GROUPS = new Set(["flood", "storm", "quake", "heat", "cold"]);
 
 function AlertsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -115,128 +134,208 @@ function AlertsPageInner({ params }: { params: Promise<{ locale: string; state: 
   const f = useFormat();
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
+  const now = useNow();
   const { data, isLoading, error } = useAlerts(district, state);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const n = (v: number) => f.number(v);
   const pct = (share: number) => f.number(share, { style: "percent", maximumFractionDigits: 0 });
   const typeLabel = (raw: string) => (t.has(`types.${typeKey(raw)}`) ? t(`types.${typeKey(raw)}`) : sentenceCase(raw));
-  const severityLabel = (s: string) => (t.has(`severity.${s.toLowerCase()}`) ? t(`severity.${s.toLowerCase()}`) : s);
-  const shortDate = (iso: string) => f.date(iso, { day: "2-digit", month: "short" });
-  const dateRange = (start?: string | null, end?: string | null) => {
-    if (!start) return null;
-    return end ? t("list.range", { start: shortDate(start), end: shortDate(end) }) : t("list.from", { start: shortDate(start) });
+  const shortDate = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
+  const dateTime = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  /** In force / not started yet / ended, from the dates and the clock (null until the clock is known). */
+  const statusOf = (a: AlertRow): "ended" | "upcoming" | "now" | null => {
+    if (now <= 0) return null;
+    if (a.endDate && new Date(a.endDate).getTime() < now) return "ended";
+    if (a.startDate && new Date(a.startDate).getTime() > now) return "upcoming";
+    return "now";
   };
+  const whenText = (a: AlertRow) =>
+    a.startDate ? (a.endDate ? t("list.range", { start: shortDate(a.startDate), end: shortDate(a.endDate) }) : t("list.from", { start: shortDate(a.startDate) })) : null;
 
-  const alerts = data?.data ?? [];
-  const critical = alerts.filter((a) => a.severity === "critical").length;
-  const high = alerts.filter((a) => a.severity === "high").length;
+  // Most serious first; ended ones last; newest first inside a level.
+  const alerts: AlertRow[] = [...((data?.data ?? []) as AlertRow[])].sort((a, b) => {
+    const ea = statusOf(a) === "ended" ? 1 : 0;
+    const eb = statusOf(b) === "ended" ? 1 : 0;
+    return ea - eb || LEVEL_RANK[levelOf(a.severity)] - LEVEL_RANK[levelOf(b.severity)] || (b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0);
+  });
+  const live = alerts.filter((a) => statusOf(a) !== "ended");
+  const ended = alerts.length - live.length;
+  const red = live.filter((a) => levelOf(a.severity) === "critical").length;
+  const orange = live.filter((a) => levelOf(a.severity) === "high").length;
 
-  // Alerts per kind, biggest first.
+  // Warnings per kind, biggest first.
   const byType = Object.entries(
     alerts.reduce((acc: Record<string, number>, a) => {
       acc[a.type] = (acc[a.type] ?? 0) + 1;
       return acc;
     }, {}),
   ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
   const otherKinds = byType.slice(TOP_KINDS).reduce((s, [, c]) => s + c, 0);
   const kindSegments: DonutSegment[] = [
     ...byType.slice(0, TOP_KINDS).map(([type, count]) => ({ key: type, label: typeLabel(type), value: count, display: n(count), emoji: alertTypeEmoji(type) })),
     ...(otherKinds > 0 ? [{ key: "__other", label: t("kinds.other"), value: otherKinds, display: n(otherKinds), emoji: "📢", color: MUTED_SHADE }] : []),
   ];
 
-  // Newest alert posted (ISO strings sort correctly as text).
+  // Newest warning posted (ISO strings sort correctly as text).
   const newest = alerts.reduce<string | null>((m, a) => (!m || a.createdAt > m ? a.createdAt : m), null);
+
+  const open = alerts.find((a) => a.id === openId) ?? null;
+  const openLevel = open ? levelOf(open.severity) : "other";
+  const openGroup = open ? todoGroup(open.type, open.title) : "general";
+  const openSource = open ? extUrl(open.sourceUrl) : null;
+  const openStatus = open ? statusOf(open) : null;
+
+  /** Tap-to-call emergency numbers (112 always; 1077 for disasters; 101 for fire). */
+  const callButtons = (group: string) => (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <ActionLink href="tel:112" emoji="🚨" primary>
+        {t("call.n112")}
+      </ActionLink>
+      {DISASTER_GROUPS.has(group) && (
+        <ActionLink href="tel:1077" emoji="🆘">
+          {t("call.n1077")}
+        </ActionLink>
+      )}
+      {group === "fire" && (
+        <ActionLink href="tel:101" emoji="🚒">
+          {t("call.n101")}
+        </ActionLink>
+      )}
+    </div>
+  );
 
   return (
     <ModulePage>
-      <PageHeader
-        icon={Bell}
-        title={mt.label("alerts")}
-        description={t("description")}
-        backHref={base}
-        accent={getModuleAccent("alerts")}
-        freshness={newest ? { asOf: newest } : undefined}
-      />
+      <PageHeader icon={Bell} title={mt.label("alerts")} description={t("description")} backHref={base} freshness={newest ? { asOf: newest } : undefined} />
 
-      <ModuleSummary>{t("summary", { district: districtName })}</ModuleSummary>
-
-      <AIInsightCard module="alerts" district={district} />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
+      {/* No warning: say so, and still show who to call. */}
       {!isLoading && !error && alerts.length === 0 && (
-        <div style={{ marginTop: 8 }}>
-          <EmptyState emoji="🔕" title={t("empty.title")} body={t("empty.body")} />
-        </div>
+        <>
+          <EmptyState emoji="🔕" title={t("empty.title", { district: districtName })} body={t("empty.body")} />
+          <Card tinted padding={18} style={{ marginTop: 16 }}>
+            <p className="ftp-label" style={{ margin: "0 0 10px", color: "var(--hue-deep)" }}>
+              {t("call.title")}
+            </p>
+            {callButtons("flood")}
+          </Card>
+          <div style={{ marginTop: 16 }}>
+            <LinkCard href={`${base}/weather`} emoji="🌦️" title={t("toWeather.title")} body={t("toWeather.body")} />
+          </div>
+        </>
       )}
 
       {!isLoading && !error && alerts.length > 0 && (
         <>
+          {/* 2. The answer in one sentence. */}
+          <Explainer emoji="📢">
+            {t.rich("answer", { total: live.length, district: districtName, b: bold })}{" "}
+            {red + orange > 0 ? t.rich("answerSevere", { red: n(red), orange: n(orange), b: bold }) : t("answerCalm")}
+            {ended > 0 && <> {t("answerEnded", { ended })}</>}
+          </Explainer>
+
+          {/* 3. Four big numbers. */}
           <StatStrip cols={4}>
-            <StatTile emoji="🔔" label={t("tiles.active")} value={n(alerts.length)} asOf={newest} />
-            <StatTile emoji="🚨" label={t("tiles.critical")} value={n(critical)} asOf={newest} />
-            <StatTile emoji="⚠️" label={t("tiles.high")} value={n(high)} asOf={newest} />
-            <StatTile emoji="🗂️" label={t("tiles.types")} value={n(byType.length)} asOf={newest} />
+            <StatTile emoji="🔔" label={t("tiles.active")} value={n(live.length)} asOf={newest} />
+            <StatTile emoji="🔴" label={t("tiles.red")} value={n(red)} sub={t("level.critical.meaning")} />
+            <StatTile emoji="🟠" label={t("tiles.orange")} value={n(orange)} sub={t("level.high.meaning")} />
+            <StatTile emoji="🗂️" label={t("tiles.types")} value={n(byType.length)} />
           </StatStrip>
 
-          {/* The picture: one symbol per active alert, most severe first,
-              with the same counts as the tiles above in one sentence. */}
+          {/* 4. The picture: one coloured circle per warning, and what the colours mean. */}
           <Card tinted padding={18} style={{ marginTop: 16 }}>
-            <Explainer emoji="📢">
-              {t.rich("explainer", { total: alerts.length, district: districtName, b: bold })}{" "}
-              {critical + high > 0 ? t.rich("explainerSevere", { critical, high, b: bold }) : t("explainerCalm")}
-            </Explainer>
             <figure style={{ margin: 0 }}>
               <div
                 role="img"
-                aria-label={t("symbols.aria", { total: n(alerts.length), critical: n(critical), high: n(high), other: n(alerts.length - critical - high) })}
+                aria-label={t("symbols.aria", { total: n(live.length), red: n(red), orange: n(orange), other: n(live.length - red - orange) })}
                 style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}
               >
-                {alerts.slice(0, MAX_SYMBOLS).map((a, i) => (
+                {live.slice(0, MAX_SYMBOLS).map((a, i) => (
                   <span
                     key={a.id}
                     aria-hidden
                     className="ftp-pop"
-                    style={{
-                      display: "inline-flex",
-                      width: 38,
-                      height: 38,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 12,
-                      background: "var(--hue-tint)",
-                      ["--i" as string]: i,
-                    }}
+                    style={{ display: "inline-flex", width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 12, background: "var(--ftp-surface)", ["--i" as string]: i }}
                   >
-                    <span className="ftp-emoji" style={{ fontSize: 22 }}>
-                      {severityEmoji(a.severity)}
+                    <span className="ftp-emoji" style={{ fontSize: 24 }}>
+                      {LEVEL_DOT[levelOf(a.severity)]}
                     </span>
                   </span>
                 ))}
-                {alerts.length > MAX_SYMBOLS && (
+                {live.length > MAX_SYMBOLS && (
                   <span className="ftp-num" style={{ fontSize: 13, color: "var(--hue-deep)", marginInlineStart: 4 }}>
-                    {t("symbols.more", { n: n(alerts.length - MAX_SYMBOLS) })}
+                    {t("symbols.more", { n: n(live.length - MAX_SYMBOLS) })}
                   </span>
                 )}
               </div>
-              <figcaption style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 10, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                <span>{t("symbols.each")}</span>
-                {SEVERITY_SYMBOLS.map((s) => (
-                  <span key={s.key} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <span className="ftp-emoji" aria-hidden>
-                      {s.emoji}
-                    </span>
-                    {t(`symbols.${s.key}`)}
-                  </span>
-                ))}
+              <figcaption style={{ marginTop: 12 }}>
+                <p style={{ margin: "0 0 8px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("symbols.each")}</p>
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {LEGEND.map((l) => (
+                    <li key={l} className={LEVEL_HUE[l]}>
+                      <Chip emoji={LEVEL_DOT[l]}>
+                        {t("levelLabel", { name: t(`level.${l}.name`), meaning: t(`level.${l}.meaning`) })}
+                      </Chip>
+                    </li>
+                  ))}
+                </ul>
               </figcaption>
             </figure>
           </Card>
 
-          {/* Kinds of alert as a ring; needs two alerts of two kinds to say anything. */}
+          {/* 5. One colour-coded card per warning; tap for what to do. */}
+          <Section title={t("list.title")} emoji="📢">
+            <div className="ftp-grid">
+              {alerts.map((a) => {
+                const lv = levelOf(a.severity);
+                const st = statusOf(a);
+                const range = whenText(a);
+                return (
+                  <div key={a.id} className={LEVEL_HUE[lv]} style={{ display: "flex", minWidth: 0 }}>
+                    <TapCard
+                      emoji={alertTypeEmoji(a.type)}
+                      title={a.title}
+                      titleLang={dataLang(a.title, locale)}
+                      subtitle={a.titleLocal ?? undefined}
+                      subtitleLang={dataLang(a.titleLocal, locale)}
+                      hint={t("list.hint")}
+                      onOpen={() => setOpenId(a.id)}
+                      style={{
+                        background: st === "ended" ? "var(--ftp-surface)" : "linear-gradient(135deg, var(--hue-tint) 0%, #fff 80%)",
+                        border: `1px solid color-mix(in srgb, var(--hue) ${st === "ended" ? 15 : 45}%, var(--ftp-border))`,
+                        opacity: st === "ended" ? 0.75 : 1,
+                      }}
+                    >
+                      <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        <Chip emoji={LEVEL_DOT[lv]}>{t(`level.${lv}.name`)}</Chip>
+                        <Chip>{typeLabel(a.type)}</Chip>
+                        {st === "ended" && a.endDate && <Chip emoji="✅">{t("list.ended", { date: shortDate(a.endDate) })}</Chip>}
+                        {st === "upcoming" && a.startDate && <Chip emoji="⏳">{t("list.from", { start: shortDate(a.startDate) })}</Chip>}
+                        {st === "now" && range && <Chip emoji="📅">{range}</Chip>}
+                      </span>
+                      <MetaLine emoji="📝" lang={dataLang(a.description, locale)} clamp={3}>
+                        {a.description}
+                      </MetaLine>
+                      {a.location && (
+                        <MetaLine emoji="📍" lang={dataLang(a.location, locale)}>
+                          {a.location}
+                        </MetaLine>
+                      )}
+                      {a.autoGenerated && <MetaLine emoji="📰">{t("list.fromNews")}</MetaLine>}
+                    </TapCard>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+
+          {/* 6. Kinds of warning as a ring (needs two kinds to say anything). */}
           {byType.length > 1 && (
-            <div style={{ marginTop: 16 }}>
+            <Section title={t("charts.title")} emoji="📊">
               <ChartCard
                 title={t("kinds.title")}
                 emoji="🗂️"
@@ -245,75 +344,119 @@ function AlertsPageInner({ params }: { params: Promise<{ locale: string; state: 
                 asOf={newest}
                 table={kindSegments.map((s) => ({ label: s.label, value: s.display }))}
               >
-                <HueDonut
-                  segments={kindSegments}
-                  center={n(alerts.length)}
-                  centerSub={t("tiles.active")}
-                  ariaLabel={t("kinds.aria", { total: n(alerts.length) })}
-                  percentOf={pct}
-                />
+                <HueDonut segments={kindSegments} center={n(alerts.length)} centerSub={t("kinds.center")} ariaLabel={t("kinds.aria", { total: n(alerts.length) })} percentOf={pct} />
               </ChartCard>
-            </div>
+            </Section>
           )}
 
-          <Section title={t("list.title")} emoji="📢">
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              {alerts.map((a) => {
-                const range = dateRange(a.startDate, a.endDate);
-                return (
-                  <Card key={a.id} as="li">
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
-                        {alertTypeEmoji(a.type)}
-                      </span>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                          <Pill tone={SEVERITY_TONE[a.severity.toLowerCase()] ?? "neutral"}>{severityLabel(a.severity)}</Pill>
-                          <Pill style={HUE_PILL}>{typeLabel(a.type)}</Pill>
-                          {range && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                              <CalendarDays size={12} aria-hidden style={{ color: "var(--hue)" }} /> {range}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="ftp-title">{a.title}</h3>
-                        {a.titleLocal && (
-                          <div lang={scriptLang(a.titleLocal)} style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>
-                            {a.titleLocal}
-                          </div>
-                        )}
-                        <p className="ftp-body" style={{ margin: "4px 0 0", fontSize: 14, lineHeight: "21px" }}>{a.description}</p>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
-                          {a.location && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                              <MapPin size={12} aria-hidden style={{ color: "var(--hue)" }} /> {a.location}
-                            </span>
-                          )}
-                          <AsOfText asOf={a.createdAt} prefix="Published" />
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </ul>
-          </Section>
+          <div style={{ marginTop: 20 }}>
+            <LinkCard href={`${base}/weather`} emoji="🌦️" title={t("toWeather.title")} body={t("toWeather.body")} />
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <AIInsightCard module="alerts" district={district} />
+          </div>
         </>
       )}
 
-      <ModuleSources module="alerts" state={state} />
       <ModuleNews district={district} state={state} locale={locale} module="alerts" />
-      <ModuleToolbar
-        locale={locale}
-        district={district}
+      <PageEnd
+        ns="page_alerts"
+        sourceModule="alerts"
         moduleSlug="alerts"
-        moduleLabel={mt.label("alerts")}
+        state={state}
+        district={district}
+        locale={locale}
+        districtName={districtName}
+        about={t("summary", { district: districtName })}
         shareText={
-          alerts.length > 0
-            ? t("share", { district: districtName, total: n(alerts.length), critical: n(critical), high: n(high) })
+          live.length > 0
+            ? t("share", { district: districtName, total: n(live.length), red: n(red), orange: n(orange) })
             : t("shareEmpty", { district: districtName })
         }
       />
+
+      {/* Everything about one warning, in its colour. */}
+      <DetailSheet
+        open={!!open}
+        onClose={() => setOpenId(null)}
+        hueClassName={LEVEL_HUE[openLevel]}
+        title={open?.title ?? ""}
+        titleLang={open ? dataLang(open.title, locale) : undefined}
+        subtitle={open?.titleLocal ? <span lang={dataLang(open.titleLocal, locale)}>{open.titleLocal}</span> : undefined}
+        emoji={open ? alertTypeEmoji(open.type) : undefined}
+        footer={
+          open && (
+            <>
+              {openSource && (
+                <ActionLink href={openSource} emoji="📄" newTab>
+                  {t("sheet.readNotice")}
+                </ActionLink>
+              )}
+              <ActionLink href="tel:112" emoji="🚨" primary>
+                {t("call.n112")}
+              </ActionLink>
+            </>
+          )
+        }
+      >
+        {open && (
+          <>
+            <SheetNote emoji={LEVEL_DOT[openLevel]}>
+              {t.rich("sheet.levelNote", { level: t(`level.${openLevel}.name`), meaning: t(`level.${openLevel}.meaning`), b: bold })}
+              {openStatus === "ended" && open.endDate && <> {t("sheet.endedNote", { date: shortDate(open.endDate) })}</>}
+            </SheetNote>
+
+            <div>
+              <p lang={dataLang(open.description, locale)} className="ftp-body" style={{ margin: 0, fontSize: 15, lineHeight: "23px" }}>
+                {open.description}
+              </p>
+              {open.descriptionLocal && (
+                <p lang={dataLang(open.descriptionLocal, locale)} className="ftp-body" style={{ margin: "8px 0 0", fontSize: 15, lineHeight: "24px", color: "var(--hue-deep)" }}>
+                  {open.descriptionLocal}
+                </p>
+              )}
+            </div>
+
+            <SheetBlock emoji="✅" title={t("sheet.whatToDo")}>
+              <ol style={{ margin: 0, paddingInlineStart: 22, display: "flex", flexDirection: "column", gap: 6, fontSize: 15, lineHeight: "22px" }}>
+                {["a", "b", "c", "d"]
+                  .filter((k) => t.has(`todo.${openGroup}.${k}`))
+                  .map((k) => (
+                    <li key={k}>{t(`todo.${openGroup}.${k}`)}</li>
+                  ))}
+              </ol>
+            </SheetBlock>
+
+            <DetailList
+              rows={[
+                { emoji: LEVEL_DOT[openLevel], label: t("sheet.level"), value: t("levelLabel", { name: t(`level.${openLevel}.name`), meaning: t(`level.${openLevel}.meaning`) }) },
+                { emoji: alertTypeEmoji(open.type), label: t("sheet.kind"), value: typeLabel(open.type) },
+                { emoji: "📍", label: t("sheet.where"), value: open.location, lang: dataLang(open.location, locale) },
+                { emoji: "📅", label: t("sheet.when"), value: whenText(open) },
+                { emoji: "🕒", label: t("sheet.posted"), value: <span suppressHydrationWarning>{dateTime(open.createdAt)}</span> },
+                {
+                  emoji: "🔎",
+                  label: t("sheet.source"),
+                  value: openSource ? (
+                    <a href={openSource} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)" }}>
+                      {hostOf(openSource)}
+                    </a>
+                  ) : open.autoGenerated ? (
+                    t("list.fromNews")
+                  ) : null,
+                },
+              ]}
+            />
+
+            <SheetBlock emoji="📞" title={t("call.title")}>
+              {callButtons(openGroup)}
+            </SheetBlock>
+
+            <SheetSmall>{t("sheet.follow")}</SheetSmall>
+          </>
+        )}
+      </DetailSheet>
     </ModulePage>
   );
 }

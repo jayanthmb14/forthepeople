@@ -1,21 +1,53 @@
 {
-  "description": "Step-by-step guides for government services: documents needed, fees and how long each one takes",
-  "summary": "Step-by-step guides for common government services in {district}: which office handles each one, which documents to carry, the fee, how long it usually takes, and where you can apply online.",
+  "description": "Step-by-step guides: which office to go to, the documents to carry, the fee and how long it takes",
+  "summary": "Step-by-step guides for common certificates and government services in {district}: which office handles each one, which documents to carry, the fee, how long it usually takes, and where you can apply online.",
+  "explainer": "We have {total, plural, one {<b>#</b> step-by-step guide} other {<b>#</b> step-by-step guides}} for {district}. <b>{online}</b> of them link to an official page where you can apply online. For the rest, go to the office named in the guide.",
+  "explainerNone": "We have {total, plural, one {<b>#</b> step-by-step guide} other {<b>#</b> step-by-step guides}} for {district}. None of them has an online link yet, so each one names the office to go to.",
   "tiles": {
-    "guides": "Service guides",
+    "guides": "Guides",
     "guidesSub": "Step-by-step how-tos",
-    "categories": "Kinds of service",
-    "categoriesSub": "Categories covered",
-    "online": "Apply online",
-    "onlineSub": "Guides with an official link"
+    "online": "Start online",
+    "onlineSub": "With an official link",
+    "free": "Free",
+    "freeSub": "Fee listed as free",
+    "offices": "Offices",
+    "officesSub": "Where you apply in person"
   },
-  "explainer": "We have {total, plural, one {<b>#</b> guide} other {<b>#</b> guides}} for {district}. <b>{online}</b> of them link to an official page where you can apply online. For the rest, visit the office named in the guide.",
-  "explainerNone": "We have {total, plural, one {<b>#</b> guide} other {<b>#</b> guides}} for {district}. None of them has an online application link yet, so each one names the office to visit.",
-  "pictogram": "{n, plural, =0 {Fewer than 1 in every 10 guides can be started online.} other {About # of every 10 guides can be started online.}}",
+  "picture": {
+    "title": "Out of every 10 guides, you can start online"
+  },
+  "pictogram": "{n, plural, =0 {Fewer than 1 in every 10 guides can be started online.} one {About 1 in every 10 guides can be started online.} other {About # of every 10 guides can be started online.}}",
   "pictogramNone": "None of the guides can be started online yet.",
+  "usual": {
+    "title": "Getting any certificate",
+    "docs": "Collect your documents",
+    "apply": "Apply online or at the office",
+    "pay": "Pay the fee, keep the receipt",
+    "collect": "Collect your certificate"
+  },
+  "list": {
+    "title": "Find your certificate or service",
+    "searchLabel": "What do you need?",
+    "searchPlaceholder": "For example: caste, birth, land record",
+    "chipsLabel": "Kind of service",
+    "all": "All",
+    "noMatch": "No guide matches your search.",
+    "noMatchBody": "Try a shorter word, or pick All.",
+    "hint": "See steps and documents",
+    "online": "Apply online",
+    "docs": "{n, plural, one {# document} other {# documents}}",
+    "steps": "{n, plural, one {# step} other {# steps}}"
+  },
+  "toOffices": {
+    "title": "Where are these offices?",
+    "body": "Addresses, phone numbers and opening hours: see Govt offices near you."
+  },
+  "charts": {
+    "title": "At a glance"
+  },
   "cats": {
     "title": "Kinds of service",
-    "units": "Number of guides in each category",
+    "units": "Number of guides of each kind",
     "simple": "Most guides are about <b>{category}</b>: {n} of {total}.",
     "other": "Other kinds",
     "aria": "{total, plural, one {# guide} other {# guides}}, split by the kind of service."
@@ -26,21 +58,46 @@
     "simple": "<b>{doc}</b> is asked for in {n} of the {total} guides. Keep a copy ready.",
     "count": "{n} of {total}"
   },
-  "list": {
-    "title": "Service guides",
-    "chipsLabel": "Service category",
-    "all": "All",
-    "steps": "{n, plural, one {# step} other {# steps}}",
-    "docs": "{n, plural, one {# document} other {# documents}}",
-    "online": "Apply online"
-  },
-  "detail": {
+  "sheet": {
+    "apply": "Apply online",
+    "findOffice": "Find the office",
+    "noteOnline": "You can start this online. Or go to <b>{office}</b> with {docs, plural, =0 {your details} one {# document} other {# documents}}.",
+    "noteOffice": "Go to <b>{office}</b> with {docs, plural, =0 {your details} one {# document} other {# documents}}.",
+    "where": "Where to go",
     "fee": "Fee",
-    "timeline": "How long it takes",
-    "documents": "Documents needed",
-    "steps": "Steps",
+    "time": "Time taken",
+    "online": "Apply online",
+    "onlineNo": "Not listed: apply at the office",
+    "kind": "Kind of service",
+    "steps": "Step by step",
+    "docs": "Documents to carry",
+    "ready": "{done} of {total} ready",
     "tip": "Tip",
-    "apply": "Apply online"
+    "check": "Fees and papers can change: confirm at the office before you go.",
+    "updated": "Guide updated {date}"
   },
-  "share": "How to get government services in {district}: {n, plural, one {# step-by-step guide} other {# step-by-step guides}}"
+  "share": "How to get certificates and services in {district}: {n, plural, one {# step-by-step guide} other {# step-by-step guides}}",
+  "end": {
+    "about": "About this page",
+    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
+    "freq": {
+      "every30": "Checked every 30 minutes",
+      "every6h": "Checked every 6 hours",
+      "daily": "Updated every day",
+      "weekly": "Updated every week",
+      "monthly": "Updated every month",
+      "quarterly": "Updated every 3 months",
+      "annual": "Updated every year",
+      "whenPublished": "Updated when the source publishes"
+    },
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "csv": "Download CSV",
+    "shareHead": "{district} district update",
+    "shareSource": "Source: {url}",
+    "actions": "Page actions"
+  }
 }

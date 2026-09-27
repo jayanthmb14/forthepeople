@@ -1,45 +1,154 @@
 {
-  "description": "Warnings and advisories in force for the district",
-  "summary": "Active alerts and advisories for {district}, such as weather warnings, water or power cuts and public health notices. Each alert shows how serious it is, where it applies, the dates it covers and when it was posted.",
-  "tiles": {
-    "active": "Active alerts",
-    "critical": "Critical",
-    "high": "High priority",
-    "types": "Kinds of alert"
-  },
+  "description": "Warnings in force for the district, colour-coded, with what to do",
+  "summary": "Active warnings and advisories for {district}, such as heavy rain, floods, heat, water or power cuts and health notices. Each warning shows its colour (how serious it is), where it applies, the dates it covers, when it was posted, who reported it, and what to do.",
   "empty": {
-    "title": "No active alerts right now.",
-    "body": "Advisories from IMD, the district administration and NDMA appear here when they are published."
+    "title": "No active warnings for {district} right now.",
+    "body": "Warnings from IMD, the district administration and NDMA appear here when they are published."
   },
-  "explainer": "{total, plural, one {<b>#</b> alert is} other {<b>#</b> alerts are}} active in {district}.",
-  "explainerSevere": "{critical, plural, one {<b>#</b> is} other {<b>#</b> are}} critical and {high, plural, one {<b>#</b> is} other {<b>#</b> are}} high priority.",
-  "explainerCalm": "None of them is critical or high priority.",
+  "call": {
+    "title": "Emergency numbers",
+    "n112": "Call 112 (emergency)",
+    "n1077": "Call 1077 (district disaster help)",
+    "n101": "Call 101 (fire)"
+  },
+  "toWeather": {
+    "title": "Check the weather and rain",
+    "body": "Today's weather, and this year's rain against normal."
+  },
+  "answer": "{total, plural, =0 {No warning is in force for {district} now.} one {<b>#</b> warning is in force for {district}.} other {<b>#</b> warnings are in force for {district}.}}",
+  "answerSevere": "Red (act now): <b>{red}</b>. Orange (be ready): <b>{orange}</b>.",
+  "answerCalm": "None of them is red or orange.",
+  "answerEnded": "{ended, plural, one {# more has already ended.} other {# more have already ended.}}",
+  "tiles": {
+    "active": "Warnings in force",
+    "red": "Red",
+    "orange": "Orange",
+    "types": "Kinds of warning"
+  },
+  "level": {
+    "critical": {
+      "name": "Red",
+      "meaning": "act now"
+    },
+    "high": {
+      "name": "Orange",
+      "meaning": "be ready"
+    },
+    "medium": {
+      "name": "Yellow",
+      "meaning": "stay alert"
+    },
+    "low": {
+      "name": "Green",
+      "meaning": "low risk"
+    },
+    "info": {
+      "name": "Blue",
+      "meaning": "for your information"
+    },
+    "other": {
+      "name": "Notice",
+      "meaning": "read the details"
+    }
+  },
+  "levelLabel": "{name}: {meaning}",
   "symbols": {
-    "aria": "{total} active alerts: {critical} critical, {high} high priority, {other} other.",
+    "aria": "{total} warnings in force: {red} red, {orange} orange, {other} other.",
     "more": "+{n} more",
-    "each": "Each symbol is one alert.",
-    "critical": "Critical",
-    "high": "High priority",
-    "other": "Other"
-  },
-  "kinds": {
-    "title": "Kinds of alert",
-    "units": "Active alerts of each kind",
-    "simple": "Most alerts are about <b>{type}</b>: {n} of {total}.",
-    "aria": "{total} active alerts, split by kind.",
-    "other": "Other kinds"
+    "each": "Each circle is one warning. What the colours mean:"
   },
   "list": {
-    "title": "Active alerts",
+    "title": "Warnings for your district",
+    "hint": "What to do",
     "from": "From {start}",
-    "range": "{start} to {end}"
+    "range": "{start} to {end}",
+    "ended": "Ended {date}",
+    "fromNews": "Picked up from news reports"
   },
-  "severity": {
-    "critical": "Critical",
-    "high": "High",
-    "medium": "Medium",
-    "low": "Low",
-    "info": "Information"
+  "charts": {
+    "title": "At a glance"
+  },
+  "kinds": {
+    "title": "Kinds of warning",
+    "units": "Warnings of each kind",
+    "simple": "Most warnings are about <b>{type}</b>: {n} of {total}.",
+    "aria": "{total} warnings, split by kind.",
+    "other": "Other kinds",
+    "center": "warnings"
+  },
+  "sheet": {
+    "readNotice": "Read the full notice",
+    "levelNote": "<b>{level}</b>: {meaning}.",
+    "endedNote": "This warning ended on {date}.",
+    "whatToDo": "What to do",
+    "level": "Colour",
+    "kind": "Kind",
+    "where": "Where",
+    "when": "When",
+    "posted": "Posted",
+    "source": "Reported by",
+    "follow": "Always follow instructions from the district administration, the police and IMD."
+  },
+  "todo": {
+    "flood": {
+      "a": "Stay away from rivers, lakes, drains and low-lying roads.",
+      "b": "Do not walk or drive through flood water.",
+      "c": "Keep your phone charged, and drinking water and medicines ready.",
+      "d": "Move to higher ground if officials ask you to."
+    },
+    "storm": {
+      "a": "Stay indoors during thunder and lightning.",
+      "b": "Keep away from trees, electric poles and hanging wires.",
+      "c": "Do not go near rivers or drains in heavy rain.",
+      "d": "Keep your phone charged."
+    },
+    "heat": {
+      "a": "Drink water often, even if you are not thirsty.",
+      "b": "Stay out of the sun between 12 noon and 3 pm.",
+      "c": "Wear light, loose cotton clothes and cover your head.",
+      "d": "Check on old people, small children and animals."
+    },
+    "cold": {
+      "a": "Wear warm clothes in layers and cover your head.",
+      "b": "Keep old people and small children warm.",
+      "c": "Never keep a coal or wood fire burning in a closed room."
+    },
+    "quake": {
+      "a": "Stay away from slopes, cracked buildings and fallen wires.",
+      "b": "Follow instructions from the district administration.",
+      "c": "Keep an emergency bag: water, medicines, a torch and your documents."
+    },
+    "fire": {
+      "a": "Keep away from the place and let rescue teams work.",
+      "b": "Call 101 for fire, or 112 for any emergency.",
+      "c": "Do not forward messages you have not checked."
+    },
+    "water": {
+      "a": "Store enough water for drinking and cooking.",
+      "b": "Use water carefully until the supply is back.",
+      "c": "Boil or filter water before drinking."
+    },
+    "power": {
+      "a": "Charge your phone and power bank.",
+      "b": "Keep a torch ready.",
+      "c": "Switch off appliances so they are safe when power comes back."
+    },
+    "health": {
+      "a": "Wash your hands with soap often.",
+      "b": "Drink boiled or clean water.",
+      "c": "See a doctor early if you have fever, cough or loose motions.",
+      "d": "Do not let water collect around your home: mosquitoes breed in it."
+    },
+    "travel": {
+      "a": "Roads, buses or shops may be closed: plan ahead.",
+      "b": "Take another route if you can.",
+      "c": "Follow what the police tell you."
+    },
+    "general": {
+      "a": "Read the full notice and follow official instructions.",
+      "b": "Share it with the people it concerns; do not forward rumours.",
+      "c": "In an emergency, call 112."
+    }
   },
   "types": {
     "weather": "Weather",
@@ -51,6 +160,7 @@
     "heatwave": "Heatwave",
     "heat_wave": "Heatwave",
     "cold": "Cold",
+    "cold_wave": "Cold wave",
     "thunderstorm": "Thunderstorm",
     "water": "Water supply",
     "water_supply": "Water supply",
@@ -60,14 +170,45 @@
     "traffic": "Traffic",
     "road": "Roads",
     "road_closure": "Road closure",
+    "strike": "Strike or bandh",
+    "bandh": "Bandh",
     "health": "Health",
+    "health_advisory": "Health advice",
     "disease": "Disease outbreak",
     "fire": "Fire",
+    "emergency": "Emergency",
+    "natural_disaster": "Natural disaster",
+    "landslide": "Landslide",
+    "earthquake": "Earthquake",
     "exam": "Exams",
     "school": "Schools",
+    "election": "Election",
     "general": "General",
     "advisory": "Advisory"
   },
-  "share": "{district} alerts: {total} active ({critical} critical, {high} high priority)",
-  "shareEmpty": "No active alerts for {district}"
+  "share": "{district} warnings: {total} in force ({red} red, {orange} orange)",
+  "shareEmpty": "No active warnings for {district}",
+  "end": {
+    "about": "About this page",
+    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
+    "freq": {
+      "every30": "Checked every 30 minutes",
+      "every6h": "Checked every 6 hours",
+      "daily": "Updated every day",
+      "weekly": "Updated every week",
+      "monthly": "Updated every month",
+      "quarterly": "Updated every 3 months",
+      "annual": "Updated every year",
+      "whenPublished": "Updated when the source publishes"
+    },
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "csv": "Download CSV",
+    "shareHead": "{district} district update",
+    "shareSource": "Source: {url}",
+    "actions": "Page actions"
+  }
 }
