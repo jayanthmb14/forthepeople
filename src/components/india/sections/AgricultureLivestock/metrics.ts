@@ -1,224 +1,71 @@
 /**
- * Metric KEY registry + editorial constants for the agriculture-livestock
- * "Agriculture & Livestock" v1 band (Section 05).
- *
- * State names + scheme labels live as editorial config; numeric values
- * come from IndiaIndicator.
+ * "Agriculture and livestock" band (Section 05) as a BandSpec.
+ * Numbers from IndiaIndicator; words from page_india "agri.*".
  */
 
-export type MetricRef = { moduleSlug: string; metricKey: string };
+import { indicatorKey, specRefs, type BandSpec, type MetricRef } from "../band-spec";
 
-// ── DIRECTORY ──
+export { indicatorKey };
+export type { MetricRef };
 
-export type DirectoryFormat =
-  | "mt_simple"
-  | "crore_with_label"
-  | "million_kg"
-  | "million_simple"
-  | "lakh_tonnes";
+const P = "agriculture-production";
+const K = "agriculture-pmkisan";
 
-export type DirectoryRow = {
-  moduleSlug: string;
-  emoji: string;
-  headlineRef: MetricRef;
-  format: DirectoryFormat;
-  labelSuffix?: string;
-  isFeatured?: boolean;
-};
-
-export const AL_DIRECTORY: DirectoryRow[] = [
-  {
-    moduleSlug: "agriculture-production",
+export const AGRI_SPEC: BandSpec = {
+  group: "agri",
+  slug: "agriculture-livestock",
+  tintId: "agriculture",
+  titleId: "agriculture-livestock-title",
+  watermarkClass: "wheatWatermark",
+  dotsAccent: "#B58A1E",
+  directory: [
+    { moduleSlug: P, emoji: "🌾", featured: true, value: { ref: { moduleSlug: P, metricKey: "foodgrain_output_million_tonnes" }, decimals: 1, fmt: "fmt.mt" } },
+    { moduleSlug: K, emoji: "💰", value: { ref: { moduleSlug: K, metricKey: "farmers_count_crore" }, fmt: "agri.fmt.crFarmers" } },
+    { moduleSlug: "agriculture-plantation", emoji: "🍃", value: { ref: { moduleSlug: "agriculture-plantation", metricKey: "tea_production_million_kg" }, fmt: "agri.fmt.tea" } },
+    { moduleSlug: "livestock-census", emoji: "🐄", value: { ref: { moduleSlug: "livestock-census", metricKey: "livestock_total_million" }, fmt: "agri.fmt.livestock" } },
+    { moduleSlug: "livestock-fisheries", emoji: "🐟", value: { ref: { moduleSlug: "livestock-fisheries", metricKey: "fish_production_lakh_tonnes" }, fmt: "agri.fmt.fish" } },
+  ],
+  featured: {
+    moduleSlug: P,
     emoji: "🌾",
-    headlineRef: { moduleSlug: "agriculture-production", metricKey: "foodgrain_output_million_tonnes" },
-    format: "mt_simple",
-    isFeatured: true,
+    headline: { ref: { moduleSlug: P, metricKey: "foodgrain_output_million_tonnes" }, decimals: 1 },
+    growth: { ref: { moduleSlug: P, metricKey: "foodgrain_change_yoy_mt" }, fmt: "agri.growth" },
+    callout: { label: "calloutLabel", valueText: "calloutValue", subValue: { ref: { moduleSlug: P, metricKey: "top_producer_state_pct" }, fmt: "agri.fmt.share" } },
+    cells: [
+      { key: "rice", value: { ref: { moduleSlug: P, metricKey: "rice_production_million_tonnes" } }, sub: { text: "sub" } },
+      { key: "wheat", value: { ref: { moduleSlug: P, metricKey: "wheat_production_million_tonnes" } }, sub: { text: "sub" } },
+      { key: "topState", value: { text: "value" }, sub: { text: "sub" } },
+      { key: "source", value: { text: "value" }, sub: { ref: { moduleSlug: P, metricKey: "estimate_year" }, year: true, fmt: "agri.fmt.estimate" } },
+    ],
   },
-  {
-    moduleSlug: "agriculture-pmkisan",
-    emoji: "💰",
-    headlineRef: { moduleSlug: "agriculture-pmkisan", metricKey: "farmers_count_crore" },
-    format: "crore_with_label",
-    labelSuffix: "cr farmers",
-  },
-  {
-    moduleSlug: "agriculture-plantation",
-    emoji: "🍃",
-    headlineRef: { moduleSlug: "agriculture-plantation", metricKey: "tea_production_million_kg" },
-    format: "million_kg",
-    labelSuffix: "mn kg tea",
-  },
-  {
-    moduleSlug: "livestock-census",
-    emoji: "🐄",
-    headlineRef: { moduleSlug: "livestock-census", metricKey: "livestock_total_million" },
-    format: "million_simple",
-    labelSuffix: "mn livestock",
-  },
-  {
-    moduleSlug: "livestock-fisheries",
-    emoji: "🐟",
-    headlineRef: { moduleSlug: "livestock-fisheries", metricKey: "fish_production_lakh_tonnes" },
-    format: "lakh_tonnes",
-    labelSuffix: "lakh t fish",
-  },
-];
-
-// ── FEATURED zone (Crop Production) ──
-
-export const FEATURED_HEADLINE_LABEL = "million tonnes";
-/** CountUpNumber duration for the featured hero (kept here so the .tsx doesn't carry numeric literals). */
-export const HERO_ANIMATION_DURATION_MS = 1500;
-/** IntersectionObserver options reused across the band. */
-export const INTERSECTION_THRESHOLD = 0.15;
-export const INTERSECTION_ROOT_MARGIN = "0px 0px -10% 0px";
-export const FEATURED_DESCRIPTION =
-  "Foodgrain output, rice and wheat estimates from DA&FW.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "Top state";
-export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "Uttar Pradesh";
-export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
-  moduleSlug: "agriculture-production",
-  metricKey: "top_producer_state_pct",
-};
-export const FEATURED_HEADLINE_REF: MetricRef = {
-  moduleSlug: "agriculture-production",
-  metricKey: "foodgrain_output_million_tonnes",
-};
-export const FEATURED_GROWTH_PILL_REF: MetricRef = {
-  moduleSlug: "agriculture-production",
-  metricKey: "foodgrain_change_yoy_mt",
-};
-export const FEATURED_GROWTH_PILL_FORMAT = "+{value} MT YoY";
-
-// ── FEATURED CELLS ──
-
-export type FeaturedCellPrimary =
-  | { kind: "ref"; ref: MetricRef; primaryFormat: "integer_mt" }
-  | { kind: "static"; value: string };
-
-export type FeaturedCellSub =
-  | { kind: "static"; text: string };
-
-export type FeaturedCell = {
-  label: string;
-  primary: FeaturedCellPrimary;
-  sub: FeaturedCellSub;
-};
-
-export const FEATURED_CELLS: FeaturedCell[] = [
-  {
-    label: "Rice",
-    primary: {
-      kind: "ref",
-      ref: { moduleSlug: "agriculture-production", metricKey: "rice_production_million_tonnes" },
-      primaryFormat: "integer_mt",
+  cards: [
+    {
+      key: "topCrops",
+      emoji: "🌾",
+      href: "/india/agriculture-production",
+      bars: true,
+      rows: [
+        { key: "up", rank: 1, state: "uttar-pradesh", note: { text: "wheat" }, value: { ref: { moduleSlug: P, metricKey: "top_state_up_wheat_mt" }, fmt: "fmt.mt" } },
+        { key: "mp", rank: 2, state: "madhya-pradesh", note: { text: "wheat" }, value: { ref: { moduleSlug: P, metricKey: "top_state_mp_wheat_mt" }, fmt: "fmt.mt" } },
+        { key: "pb", rank: 3, state: "punjab", note: { text: "wheat" }, value: { ref: { moduleSlug: P, metricKey: "top_state_pb_wheat_mt" }, fmt: "fmt.mt" } },
+        { key: "wb", rank: 4, state: "west-bengal", note: { text: "rice" }, value: { ref: { moduleSlug: P, metricKey: "top_state_wb_rice_mt" }, fmt: "fmt.mt" } },
+        { key: "ap", rank: 5, state: "andhra-pradesh", note: { text: "rice" }, value: { ref: { moduleSlug: P, metricKey: "top_state_ap_rice_mt" }, fmt: "fmt.mt" } },
+      ],
     },
-    sub: { kind: "static", text: "MT · DA&FW" },
-  },
-  {
-    label: "Wheat",
-    primary: {
-      kind: "ref",
-      ref: { moduleSlug: "agriculture-production", metricKey: "wheat_production_million_tonnes" },
-      primaryFormat: "integer_mt",
+    {
+      key: "schemes",
+      emoji: "🌱",
+      href: "/india/agriculture-pmkisan",
+      rows: [
+        { key: "pmkisan", value: { ref: { moduleSlug: K, metricKey: "farmers_count_crore" }, fmt: "agri.fmt.crFarmers" } },
+        { key: "pmfby", value: { ref: { moduleSlug: K, metricKey: "pmfby_insured_crore" }, decimals: 1, fmt: "agri.fmt.crInsured" } },
+        { key: "kcc", value: { ref: { moduleSlug: K, metricKey: "kcc_active_cards_crore" }, fmt: "agri.fmt.crCards" } },
+        { key: "soilHealth", value: { ref: { moduleSlug: K, metricKey: "soil_health_cards_crore" }, fmt: "agri.fmt.crCards" } },
+      ],
     },
-    sub: { kind: "static", text: "MT · DA&FW" },
-  },
-  {
-    label: "Top state",
-    primary: { kind: "static", value: "UP" },
-    sub: { kind: "static", text: "wheat leader" },
-  },
-  {
-    label: "Source",
-    primary: { kind: "static", value: "DA&FW" },
-    sub: { kind: "static", text: "AY 2024 · 4th est." },
-  },
-];
-
-// ── TOP CROP STATES right card ──
-
-export type TopCropStateEntry = {
-  rank: number;
-  state: string;
-  crop: string;
-  valueRef: MetricRef;
+  ],
 };
-
-export const TOP_CROP_STATES: TopCropStateEntry[] = [
-  { rank: 1, state: "UP",          crop: "Wheat", valueRef: { moduleSlug: "agriculture-production", metricKey: "top_state_up_wheat_mt" } },
-  { rank: 2, state: "MP",          crop: "Wheat", valueRef: { moduleSlug: "agriculture-production", metricKey: "top_state_mp_wheat_mt" } },
-  { rank: 3, state: "Punjab",      crop: "Wheat", valueRef: { moduleSlug: "agriculture-production", metricKey: "top_state_pb_wheat_mt" } },
-  { rank: 4, state: "West Bengal", crop: "Rice",  valueRef: { moduleSlug: "agriculture-production", metricKey: "top_state_wb_rice_mt" } },
-  { rank: 5, state: "Andhra",      crop: "Rice",  valueRef: { moduleSlug: "agriculture-production", metricKey: "top_state_ap_rice_mt" } },
-];
-
-export const TOP_CROP_STATES_FOOTER_LABEL = "All major producers";
-
-// ── FARMER SCHEMES right card ──
-
-export type FarmerSchemeEntry = {
-  label: string;
-  valueRef: MetricRef;
-  valueSuffix: string;
-  decimals?: number;
-};
-
-export const FARMER_SCHEMES: FarmerSchemeEntry[] = [
-  {
-    label: "PM-KISAN",
-    valueRef: { moduleSlug: "agriculture-pmkisan", metricKey: "farmers_count_crore" },
-    valueSuffix: " cr farmers",
-  },
-  {
-    label: "PMFBY",
-    valueRef: { moduleSlug: "agriculture-pmkisan", metricKey: "pmfby_insured_crore" },
-    valueSuffix: " cr insured",
-    decimals: 1,
-  },
-  {
-    label: "KCC active",
-    valueRef: { moduleSlug: "agriculture-pmkisan", metricKey: "kcc_active_cards_crore" },
-    valueSuffix: " cr cards",
-  },
-  {
-    label: "Soil Health",
-    valueRef: { moduleSlug: "agriculture-pmkisan", metricKey: "soil_health_cards_crore" },
-    valueSuffix: " cr cards",
-  },
-];
-
-export const FARMER_SCHEMES_FOOTER_LABEL = "All farmer schemes";
-
-// ── Helpers ──
-
-export function indicatorKey(ref: MetricRef): string {
-  return `${ref.moduleSlug}::${ref.metricKey}`;
-}
 
 export function allAgricultureLivestockRefs(): MetricRef[] {
-  const refs: MetricRef[] = [
-    FEATURED_HEADLINE_REF,
-    FEATURED_GROWTH_PILL_REF,
-    FEATURED_RIGHT_CALLOUT_REF,
-  ];
-  for (const row of AL_DIRECTORY) {
-    refs.push(row.headlineRef);
-  }
-  for (const cell of FEATURED_CELLS) {
-    if (cell.primary.kind === "ref") refs.push(cell.primary.ref);
-  }
-  for (const entry of TOP_CROP_STATES) {
-    refs.push(entry.valueRef);
-  }
-  for (const entry of FARMER_SCHEMES) {
-    refs.push(entry.valueRef);
-  }
-  const seen = new Set<string>();
-  return refs.filter((r) => {
-    const k = indicatorKey(r);
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+  return specRefs(AGRI_SPEC);
 }

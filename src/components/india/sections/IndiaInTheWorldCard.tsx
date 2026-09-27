@@ -18,6 +18,7 @@
  */
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import {
   Award,
   Film,
@@ -35,6 +36,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import rawRankings from "@/data/india-world-rankings.json";
+import { INDIA_NS } from "../i18n";
+
+type Tr = ReturnType<typeof useTranslations>;
 
 type TrendKind = "up" | "down" | "stable" | "new";
 
@@ -135,7 +139,7 @@ function rowClass(rank: number): string {
   return "ftp-rank-row";
 }
 
-function TrendNode({ movement }: { movement: Ranking["movement"] }) {
+function TrendNode({ movement, t }: { movement: Ranking["movement"]; t: Tr }) {
   if (movement.kind === "up") {
     return (
       <span
@@ -147,7 +151,7 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
           fontSize: "11px",
         }}
       >
-        ↑ from #{movement.from}
+        {t("up", { from: movement.from ?? 0 })}
       </span>
     );
   }
@@ -162,7 +166,7 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
           fontSize: "11px",
         }}
       >
-        ↓ from #{movement.from}
+        {t("down", { from: movement.from ?? 0 })}
       </span>
     );
   }
@@ -179,7 +183,7 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
           fontFamily: "var(--ftp-font-sans)",
         }}
       >
-        New
+        {t("new")}
       </span>
     );
   }
@@ -191,13 +195,15 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
         fontSize: "11px",
       }}
     >
-      — stable
+      {t("stable")}
     </span>
   );
 }
 
-function RankRow({ ranking }: { ranking: Ranking }) {
+function RankRow({ ranking, t }: { ranking: Ranking; t: Tr }) {
   const Icon = ICON_BY_CATEGORY[ranking.category] ?? Trophy;
+  const title = t.has(`titles.${ranking.category}`) ? t(`titles.${ranking.category}`) : ranking.title;
+  const note = ranking.annotation ? (t.has(`notes.${ranking.category}`) ? t(`notes.${ranking.category}`) : ranking.annotation) : null;
   const numColor = medalNumColor(ranking.rank);
 
   return (
@@ -207,7 +213,7 @@ function RankRow({ ranking }: { ranking: Ranking }) {
         background: rowBackground(ranking.rank),
         padding: "9px 14px 9px 10px",
         display: "grid",
-        gridTemplateColumns: "36px 1fr 84px",
+        gridTemplateColumns: "36px minmax(0, 1fr) auto",
         gap: "10px",
         alignItems: "center",
         transition: "background 150ms",
@@ -243,10 +249,11 @@ function RankRow({ ranking }: { ranking: Ranking }) {
       </div>
       <div style={{ minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <Icon size={11} style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} />
-          <span style={{ fontSize: "13px", fontWeight: 500, lineHeight: 1.2 }}>
-            {ranking.title}
-            {ranking.annotation && (
+          <Icon size={12} aria-hidden style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} />
+          <span style={{ fontSize: "13px", fontWeight: 600, lineHeight: 1.3 }}>
+            <span className="sr-only">{t("rankSr", { rank: ranking.rank })} </span>
+            {title}
+            {note && (
               <span
                 style={{
                   fontSize: "11px",
@@ -255,7 +262,7 @@ function RankRow({ ranking }: { ranking: Ranking }) {
                   fontWeight: 400,
                 }}
               >
-                {ranking.annotation}
+                {note}
               </span>
             )}
           </span>
@@ -270,11 +277,11 @@ function RankRow({ ranking }: { ranking: Ranking }) {
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          {ranking.source}, {ranking.year}
+          {t("source", { source: ranking.source, year: ranking.year })}
         </div>
       </div>
-      <div style={{ textAlign: "right" }}>
-        <TrendNode movement={ranking.movement} />
+      <div style={{ textAlign: "end" }}>
+        <TrendNode movement={ranking.movement} t={t} />
       </div>
     </div>
   );
@@ -283,18 +290,21 @@ function RankRow({ ranking }: { ranking: Ranking }) {
 const DEFAULT_VISIBLE_COUNT = 8;
 
 export function IndiaInTheWorldCard() {
+  const t = useTranslations(`${INDIA_NS}.world`);
   const [expanded, setExpanded] = React.useState(false);
   const total = rankings.length;
   const collapsedCount = Math.min(DEFAULT_VISIBLE_COUNT, total);
   const visibleRankings = expanded ? rankings : rankings.slice(0, collapsedCount);
-  const footerCount = expanded
-    ? `All ${total} ranks shown`
-    : `${collapsedCount} of ${total} ranks shown`;
-  const toggleLabel = expanded ? "Show fewer" : "View all rankings";
+  const footerCount = expanded ? t("allShown", { total }) : t("someShown", { shown: collapsedCount, total });
+  const toggleLabel = expanded ? t("showFewer") : t("viewAll");
 
   return (
     <section
+      id="india-in-the-world"
+      aria-labelledby="india-in-the-world-title"
       style={{
+        // Land below the sticky header, breadcrumb and strip when linked to.
+        scrollMarginTop: "140px",
         // Step 11: 1px peacock-blue border at 30% opacity, transparent fill.
         // Background fill is intentionally NOT applied — the inner ranking
         // grid carries its own subtle dividers that read better against
@@ -319,23 +329,26 @@ export function IndiaInTheWorldCard() {
         }}
       >
         <h2
+          id="india-in-the-world-title"
           style={{
             fontFamily: "var(--ftp-font-display)",
             fontSize: "24px",
             fontWeight: 600,
             margin: 0,
             letterSpacing: "-0.02em",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
           }}
         >
-          India in the world
+          <span className="ftp-emoji" aria-hidden style={{ fontSize: 22 }}>
+            🌏
+          </span>
+          {t("title")}
         </h2>
-        <span style={{ fontSize: "12px", color: "var(--color-text-tertiary)" }}>
-          Where India ranks globally
-        </span>
+        <span style={{ fontSize: "12px", color: "var(--color-text-tertiary)" }}>{t("subtitle")}</span>
       </div>
-      <p style={{ fontSize: "12px", color: "var(--color-text-secondary)", margin: "0 0 12px" }}>
-        Each rank cites the issuing authority and report year.
-      </p>
+      <p style={{ fontSize: "12px", color: "var(--color-text-secondary)", margin: "0 0 12px" }}>{t("note")}</p>
 
       <div
         style={{
@@ -350,8 +363,8 @@ export function IndiaInTheWorldCard() {
         }}
         className="india-rankings-grid"
       >
-        {visibleRankings.map((r, i) => (
-          <RankRow key={i} ranking={r} />
+        {visibleRankings.map((r) => (
+          <RankRow key={`${r.category}-${r.rank}`} ranking={r} t={t} />
         ))}
       </div>
 

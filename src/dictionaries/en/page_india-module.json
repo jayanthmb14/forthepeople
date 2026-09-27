@@ -1,0 +1,431 @@
+{
+  "meta": {
+    "title": "{module}: India statistics",
+    "description": "{tagline} Figures from {sources}, each with its date. A free, independent citizen platform."
+  },
+  "crumbs": {
+    "aria": "Breadcrumb"
+  },
+  "hero": {
+    "figures": "Latest published figures",
+    "emptyTitle": "No published figures for this module yet.",
+    "emptyBody": "Figures appear here as soon as {source} publishes them and we record them with their date."
+  },
+  "soon": {
+    "title": "This module is still being set up.",
+    "body": "Automatic updates for {module} are not connected yet. Once {source} is connected, new figures will appear here as soon as they are published. The sources we plan to use are listed below.",
+    "theSource": "the official source"
+  },
+  "vis": {
+    "heading": "In pictures",
+    "topTitle": "Top states",
+    "topSimple": "{first} is on top with {value}. Each bar shows a state next to the leader.",
+    "mixTitle": "Where the power comes from",
+    "mixSimple": "{part} gives {pct} of the total.",
+    "mixCenter": "from {part}",
+    "mixOther": "Other sources",
+    "ringsTitle": "Out of every 100",
+    "ringsSimple": "Each ring fills up to its share out of 100.",
+    "goalTitle": "How close to the goal",
+    "goalSimple": "{label} has reached {pct} of its goal.",
+    "goalLine": "Now {now}, goal {goal}",
+    "trendTitle": "Change over time",
+    "trendSimple": "It went from {from} in {fromYear} to {to} in {toYear}."
+  },
+  "parts": {
+    "coal": "Coal",
+    "renewables": "Renewables",
+    "hydro": "Hydro",
+    "nuclear": "Nuclear"
+  },
+  "crop": {
+    "wheat": "{state} (wheat)",
+    "rice": "{state} (rice)"
+  },
+  "news": {
+    "title": "News on {module}",
+    "emptyTitle": "No news about {module} yet.",
+    "emptyBody": "We collect district news today; national news is not connected yet.",
+    "india": "India"
+  },
+  "next": {
+    "title": "Coming next to {module}",
+    "tag": "Planned",
+    "f1": "A longer history, back to 2016",
+    "f2": "Each state compared with similar states",
+    "f3": "Download as a spreadsheet or through an open API"
+  },
+  "related": {
+    "title": "Related modules"
+  },
+  "sources": {
+    "title": "Sources for {module}",
+    "type": {
+      "API": "Live data link",
+      "Static": "Fixed reference",
+      "Collected": "Collected from reports",
+      "RSS": "News feed",
+      "Institutional": "Institution"
+    },
+    "refresh": {
+      "Daily": "Daily",
+      "Weekly": "Weekly",
+      "Monthly": "Monthly",
+      "Quarterly": "Every three months",
+      "Annual": "Yearly",
+      "Event-driven": "When something happens",
+      "Manual": "Updated by hand"
+    }
+  },
+  "metric": {
+    "wildlife-tigers": {
+      "tiger_population_total": "Tigers in the wild",
+      "tiger_reserves_count": "Tiger reserves",
+      "reserve_area_protected_sqkm": "Area under tiger reserves"
+    },
+    "demographics-population": {
+      "population_total": "Population",
+      "population_growth_yoy": "Growth in a year",
+      "population_density_per_sq_km": "People per km²",
+      "global_rank": "World rank by population"
+    },
+    "economy-gdp": {
+      "gdp_nominal_usd_trillion": "GDP in US dollars",
+      "gdp_growth_yoy": "GDP growth in a year",
+      "gdp_per_capita_inr": "Income per person",
+      "gdp_ppp_usd_trillion": "GDP at purchasing power",
+      "world_rank_gdp_nominal": "World rank: GDP",
+      "world_rank_gdp_ppp": "World rank: GDP at purchasing power",
+      "remittances_usd_billion": "Money sent home from abroad",
+      "world_rank_remittances": "World rank: money sent home"
+    },
+    "economy-inflation": {
+      "cpi_inflation": "Consumer price inflation",
+      "rbi_target_midpoint": "RBI inflation target"
+    },
+    "national-snapshot": {
+      "states_count": "States",
+      "uts_count": "Union territories",
+      "scheduled_languages": "Scheduled languages",
+      "smartphone_users_millions": "Smartphone users",
+      "world_rank_smartphone_users": "World rank: smartphone users"
+    },
+    "economy-employment": {
+      "workforce_size": "Workforce"
+    },
+    "budget-union": {
+      "total_outlay_inr_lakh_crore": "Total budget"
+    },
+    "budget-gst": {
+      "monthly_collection_inr_lakh_crore": "GST collected in a month"
+    },
+    "know-india-constitution": {
+      "articles_count": "Articles",
+      "schedules_count": "Schedules",
+      "parts_count": "Parts",
+      "adopted_year": "Came into force"
+    },
+    "know-india-history-timeline": {
+      "civilization_span_years": "Years of civilisation"
+    },
+    "know-india-geography-physical": {
+      "area_total_million_km2": "Total area",
+      "world_rank_by_area": "World rank by area"
+    },
+    "know-india-parliament": {
+      "lok_sabha_seats": "Lok Sabha seats",
+      "rajya_sabha_seats": "Rajya Sabha seats"
+    },
+    "know-india-elections": {
+      "registered_voters_millions": "Registered voters"
+    },
+    "know-india-budget": {
+      "budget_process_stages": "Stages in the budget process"
+    },
+    "health-overview": {
+      "life_expectancy_years": "Life expectancy",
+      "life_expectancy_target_2030": "Life expectancy goal",
+      "life_expectancy_change_1990": "Years gained since 1990",
+      "infant_mortality_rate": "Infant deaths",
+      "doctors_per_1000": "Doctors",
+      "state_leader_kerala_imr": "Kerala: infant deaths",
+      "state_leader_kerala_life_exp": "Kerala: life expectancy",
+      "state_leader_delhi_doctors": "Delhi: doctors",
+      "state_leader_manipur_imm_cov": "Manipur: vaccination coverage",
+      "state_leader_tn_hosp_per_1000": "Tamil Nadu: hospitals"
+    },
+    "health-pmjay": {
+      "cards_issued_crore": "Ayushman cards issued",
+      "empanelled_hospitals_thousands": "Hospitals on the scheme"
+    },
+    "health-immunisation": {
+      "doses_administered_crore": "Doses given on U-WIN"
+    },
+    "education-skills": {
+      "pmkvy_trained_crore": "People trained under PMKVY"
+    },
+    "education-schools": {
+      "schools_total_lakh": "Schools"
+    },
+    "education-higher": {
+      "higher_ed_enrolment_crore": "Students in higher education"
+    },
+    "wildlife-forests": {
+      "forest_cover_pct": "Forest cover",
+      "forest_cover_change_2021": "Forest added since 2021",
+      "forest_cover_target_pct": "Forest cover goal",
+      "forest_cover_lakh_km2": "Forest area",
+      "tree_cover_pct": "Tree cover outside forests",
+      "top_state_pct": "Madhya Pradesh's share of India's forest",
+      "elephants_count": "Elephants",
+      "rhinos_count": "One-horned rhinos",
+      "isfr_edition": "Forest report edition",
+      "isfr_year": "Forest report year",
+      "top_state_mizoram_pct": "Mizoram: forest cover",
+      "top_state_arunachal_pct": "Arunachal Pradesh: forest cover",
+      "top_state_meghalaya_pct": "Meghalaya: forest cover",
+      "top_state_manipur_pct": "Manipur: forest cover",
+      "top_state_nagaland_pct": "Nagaland: forest cover"
+    },
+    "wildlife-protected-areas": {
+      "parks_count_total": "Parks and sanctuaries"
+    },
+    "agriculture-production": {
+      "foodgrain_output_million_tonnes": "Foodgrain output",
+      "rice_production_million_tonnes": "Rice",
+      "wheat_production_million_tonnes": "Wheat",
+      "foodgrain_change_yoy_mt": "Change in a year",
+      "top_producer_state_pct": "Top state's share",
+      "estimate_year": "Estimate year",
+      "top_state_up_wheat_mt": "Uttar Pradesh: wheat",
+      "top_state_pb_wheat_mt": "Punjab: wheat",
+      "top_state_wb_rice_mt": "West Bengal: rice",
+      "top_state_mp_wheat_mt": "Madhya Pradesh: wheat",
+      "top_state_ap_rice_mt": "Andhra Pradesh: rice"
+    },
+    "agriculture-pmkisan": {
+      "farmers_count_crore": "Farmers on PM-KISAN",
+      "pmfby_insured_crore": "Farmers insured (PMFBY)",
+      "kcc_active_cards_crore": "Kisan Credit Cards in use",
+      "soil_health_cards_crore": "Soil Health Cards issued"
+    },
+    "agriculture-plantation": {
+      "tea_production_million_kg": "Tea produced"
+    },
+    "livestock-census": {
+      "livestock_total_million": "Livestock"
+    },
+    "livestock-fisheries": {
+      "fish_production_lakh_tonnes": "Fish produced"
+    },
+    "energy-power": {
+      "installed_capacity_gw": "Installed capacity",
+      "capacity_change_yoy_gw": "Added in a year",
+      "re_target_gw_2030": "Clean power goal for 2030",
+      "coal_capacity_gw": "Coal",
+      "renewables_capacity_gw": "Renewables",
+      "hydro_capacity_gw": "Hydro",
+      "nuclear_capacity_gw": "Nuclear",
+      "mix_pct_coal": "Share of coal",
+      "mix_pct_renewables": "Share of renewables",
+      "mix_pct_hydro": "Share of hydro",
+      "mix_pct_nuclear": "Share of nuclear",
+      "top_state_mh_capacity_gw": "Maharashtra: capacity",
+      "top_state_gj_capacity_gw": "Gujarat: capacity",
+      "top_state_tn_capacity_gw": "Tamil Nadu: capacity",
+      "top_state_rj_capacity_gw": "Rajasthan: capacity",
+      "top_state_kn_capacity_gw": "Karnataka: capacity"
+    },
+    "energy-renewables": {
+      "renewable_installed_gw": "Renewable capacity"
+    },
+    "energy-coal": {
+      "coal_production_million_tonnes": "Coal mined"
+    },
+    "energy-fuels": {
+      "crude_imports_million_tonnes": "Crude oil imported"
+    },
+    "infra-roads": {
+      "nh_length_km": "National highways",
+      "nh_target_km_2027": "Highway goal for 2027",
+      "nh_change_yoy_km": "Added in a year",
+      "expressway_km": "Expressways",
+      "bharatmala_nh_km": "Built under Bharatmala",
+      "sagarmala_ports_count": "Sagarmala major ports",
+      "udan_airports_count": "UDAN airports",
+      "gatishakti_projects_count": "GatiShakti projects",
+      "data_year": "Data year",
+      "top_state_mh_nh_km": "Maharashtra: national highways",
+      "top_state_up_nh_km": "Uttar Pradesh: national highways",
+      "top_state_rj_nh_km": "Rajasthan: national highways",
+      "top_state_mp_nh_km": "Madhya Pradesh: national highways",
+      "top_state_ka_nh_km": "Karnataka: national highways"
+    },
+    "infra-railways": {
+      "route_km": "Railway route length"
+    },
+    "infra-aviation": {
+      "airports_operational_count": "Working airports"
+    },
+    "infra-ports": {
+      "major_ports_count": "Major ports"
+    },
+    "infra-smart-cities": {
+      "cities_count": "Cities in the mission"
+    },
+    "infra-telecom": {
+      "subscribers_crore": "Mobile subscribers"
+    },
+    "justice-police": {
+      "civil_police_total_lakh": "Civil police",
+      "police_per_lakh_population": "Police per lakh people",
+      "un_target_per_lakh": "Level the UN suggests",
+      "change_yoy_lakh": "Change in a year"
+    },
+    "justice-pendency": {
+      "total_pending_crore_cases": "Cases pending"
+    },
+    "justice-prisons": {
+      "prison_population_lakh": "People in prison"
+    },
+    "justice-crime": {
+      "ipc_cases_per_year_lakh": "Crime cases a year",
+      "conviction_rate_pct": "Conviction rate"
+    },
+    "defence-budget": {
+      "defence_allocation_lakh_cr": "Defence allocation"
+    },
+    "defence-exports": {
+      "defence_exports_thousand_cr": "Defence exports"
+    },
+    "defence-dpsu": {
+      "dpsu_count": "Defence PSUs"
+    },
+    "elections-loksabha": {
+      "loksabha_seats_total": "Lok Sabha seats"
+    },
+    "elections-rajyasabha": {
+      "rajyasabha_seats_total": "Rajya Sabha seats"
+    },
+    "elections-turnout": {
+      "ge_2024_turnout_pct": "Turnout in the 2024 general election"
+    },
+    "science-startups": {
+      "dpiit_recognised_lakh": "Recognised startups",
+      "unicorns_count": "Unicorns",
+      "change_yoy_lakh": "Added in a year",
+      "data_year": "Data year",
+      "top_state_ka_startups_thousand": "Karnataka: startups",
+      "top_state_mh_startups_thousand": "Maharashtra: startups",
+      "top_state_dl_startups_thousand": "Delhi: startups",
+      "top_state_tn_startups_thousand": "Tamil Nadu: startups",
+      "top_state_tg_startups_thousand": "Telangana: startups"
+    },
+    "science-digital": {
+      "upi_txn_per_month_billion": "UPI payments a month",
+      "aadhaar_enrolled_crore": "Aadhaar holders",
+      "digilocker_users_crore": "DigiLocker users",
+      "fastag_active_crore": "FASTags in use"
+    },
+    "science-isro": {
+      "satellites_launched_count": "Satellites launched"
+    },
+    "science-rd": {
+      "rd_pct_gdp": "Research spending, share of GDP"
+    },
+    "trade-overview": {
+      "exports_annual_lakh_cr": "Goods exported in a year"
+    },
+    "trade-fdi": {
+      "fdi_equity_inflow_billion_usd": "Foreign investment in a year"
+    },
+    "trade-diaspora": {
+      "remittances_annual_billion_usd": "Money sent home in a year"
+    },
+    "tourism-heritage": {
+      "asi_monuments_count": "Protected monuments",
+      "unesco_sites_count": "UNESCO World Heritage Sites",
+      "global_rank_unesco": "World rank: UNESCO sites",
+      "bollywood_films_per_year": "Films certified a year",
+      "scheduled_languages_count": "Scheduled languages",
+      "museums_count": "Museums",
+      "data_year": "Data year",
+      "unesco_taj_mahal_year": "Taj Mahal: World Heritage since",
+      "unesco_ajanta_year": "Ajanta Caves: World Heritage since",
+      "unesco_khajuraho_year": "Khajuraho: World Heritage since",
+      "unesco_hampi_year": "Hampi: World Heritage since",
+      "unesco_sundarbans_year": "Sundarbans: World Heritage since"
+    },
+    "tourism-gi-tags": {
+      "gi_tags_count": "GI tags"
+    },
+    "tourism-overview": {
+      "international_arrivals_lakh": "Foreign tourist arrivals"
+    },
+    "sports-olympics": {
+      "olympic_medals_total": "Olympic medals, all time"
+    },
+    "sports-khelo-india": {
+      "khelo_athletes_thousand": "Khelo India athletes"
+    }
+  },
+  "data": {
+    "sourceLine": "Source: <a>{source}</a>, {date}",
+    "recorded": "Recorded {ago}",
+    "methodology": "How it is measured",
+    "sources": "Sources",
+    "changeYear": "{dir, select, up {Up} down {Down} other {Same}} {pct} since {year}",
+    "changePrior": "{dir, select, up {Up} down {Down} other {Same}} {pct} since the last count",
+    "points": "{n, plural, one {# count so far} other {# counts so far}}",
+    "topTitle": "Top 5 states",
+    "methodTitle": "How the count is done",
+    "viewPdf": "Open the source PDF",
+    "cadenceLine": "{refresh}, {type}",
+    "differ": "Do sources disagree?",
+    "differYes": "{n, plural, one {# source differs} other {# sources differ}}",
+    "differNo": "No differences found",
+    "updateLog": "Update log",
+    "continue": "Keep exploring",
+    "allIn": "All {category} modules",
+    "news": {
+      "title": "Related news",
+      "ai": "AI summaries",
+      "readAt": "Read the original at {site}",
+      "about": "About these summaries: AI writes them for quick context; they are not the original article. Follow the link to read the full report. ForThePeople is not the author of the original news."
+    },
+    "health": {
+      "firstLoad": "First dataset, entered by hand. Automatic updates are planned.",
+      "onTime": "Updated on its expected {cadence} schedule.",
+      "late": "The source is a little late.",
+      "veryLate": "The source is more than twice as late as expected.",
+      "aria": "How fresh the source is: {status}"
+    },
+    "cadence": {
+      "daily": "daily",
+      "weekly": "weekly",
+      "monthly": "monthly",
+      "quarterly": "three-monthly",
+      "annual": "yearly",
+      "quadrennial": "four-yearly",
+      "event-driven": "as-it-happens"
+    }
+  },
+  "tigers": {
+    "camera": {
+      "title": "How the camera-trap count works",
+      "body": "NTCA's All India Tiger Estimation places camera traps across tiger habitats in the country. Each tiger is identified by its stripe pattern. The estimate combines tigers seen on camera with density estimates from sign surveys in areas without cameras. The 2022 round used cameras at 32,588 locations in 20 tiger states."
+    },
+    "meaning": {
+      "title": "What the tiger number means",
+      "body": "The headline figure, 3,682, is the average estimate of the All India Tiger Estimation 2022. NTCA publishes a range around it, from 3,167 to 3,925; 3,167 is the minimum number of tigers actually photographed by camera traps. The methodology PDF explains the full range."
+    },
+    "gaps": {
+      "title": "Uncertainty and known gaps",
+      "body": "Areas with few cameras carry more uncertainty. The Northeast and parts of central India are sampled less densely. Because the count happens every four years, the change between two counts reflects both real change in tiger numbers and better counting methods."
+    },
+    "report": {
+      "title": "The full report",
+      "body": "NTCA, Status of Tigers in India 2022: the official report (PDF)."
+    }
+  }
+}

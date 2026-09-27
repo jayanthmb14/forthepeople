@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "title": "India update log",
+    "description": "Every recent change to a figure on the India dashboard, with its source and reporting date."
+  },
+  "back": "Back to the India dashboard",
+  "chip": "Update log",
+  "title": "Every change, with its source.",
+  "lead": "The latest updates to any figure on the India dashboard. Each row shows what changed, where the value came from and when. Pick a topic to see one area.",
+  "filterAria": "Filter the update log by topic",
+  "all": "All",
+  "loadError": "Could not load the update log. Please try again.",
+  "networkError": "Network problem. Please try again.",
+  "pending": "The update log fills in once the first data sync finishes.",
+  "asOf": "As of {date}",
+  "recorded": "Recorded {ago}",
+  "details": "Details for {metric}",
+  "sourceLink": "Source link",
+  "module": "Module",
+  "metricKey": "Metric key",
+  "note": "Note",
+  "emptyTitle": "No updates yet. The first sync is still pending.",
+  "emptyBody": "Once data starts arriving from the official portals, every change will appear here with its source link and reporting date.",
+  "chart": {
+    "title": "What changed, by topic",
+    "units": "{total, plural, one {The latest update} other {The latest # updates}}",
+    "simple": "{top} has the most recent updates: {n} of the last {total}.",
+    "center": "updates",
+    "other": "Other topics"
+  }
+}

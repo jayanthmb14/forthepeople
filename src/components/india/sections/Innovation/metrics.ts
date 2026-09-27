@@ -1,233 +1,76 @@
 /**
- * Metric KEY registry + editorial constants for the innovation
- * "Innovation & Industry" v1 band (Section 09).
- *
- * Featured = Startups & Unicorns. Right-column cards split into
- * TOP STARTUP HUBS (5 ranked states) + DIGITAL STACK (UPI / Aadhaar /
- * DigiLocker / FASTag / ISRO satellites).
+ * "Innovation and industry" band (Section 09) as a BandSpec.
+ * Numbers from IndiaIndicator; words from page_india "innov.*". The old
+ * "Top sector: IT" cell had no source; it now shows the startups added in
+ * a year (a stored row).
  */
 
-export type MetricRef = { moduleSlug: string; metricKey: string };
+import { indicatorKey, specRefs, type BandSpec, type MetricRef } from "../band-spec";
 
-// ── DIRECTORY (7 modules) ──
+export { indicatorKey };
+export type { MetricRef };
 
-export type DirectoryFormat =
-  | "lakh_with_label"
-  | "count_with_label"
-  | "crore_simple"
-  | "pct_decimal_2"
-  | "lakhcr_simple"
-  | "billion_usd_simple";
+const S = "science-startups";
+const D = "science-digital";
 
-export type DirectoryRow = {
-  moduleSlug: string;
-  emoji: string;
-  headlineRef: MetricRef;
-  format: DirectoryFormat;
-  labelSuffix?: string;
-  isFeatured?: boolean;
-};
-
-export const INN_DIRECTORY: DirectoryRow[] = [
-  {
-    moduleSlug: "science-startups",
+export const INNOV_SPEC: BandSpec = {
+  group: "innov",
+  slug: "innovation",
+  tintId: "innovation",
+  titleId: "innovation-title",
+  watermarkClass: "rocketWatermark",
+  dotsAccent: "#993C1D",
+  directory: [
+    { moduleSlug: S, emoji: "🚀", featured: true, value: { ref: { moduleSlug: S, metricKey: "dpiit_recognised_lakh" }, decimals: 1, fmt: "fmt.lakh" } },
+    { moduleSlug: "science-isro", emoji: "🛰", value: { ref: { moduleSlug: "science-isro", metricKey: "satellites_launched_count" }, fmt: "innov.fmt.satellites" } },
+    { moduleSlug: D, emoji: "📱", value: { ref: { moduleSlug: D, metricKey: "upi_txn_per_month_billion" }, fmt: "innov.fmt.upi" } },
+    { moduleSlug: "science-rd", emoji: "🔬", value: { ref: { moduleSlug: "science-rd", metricKey: "rd_pct_gdp" }, decimals: 2, fmt: "fmt.pct" } },
+    { moduleSlug: "trade-overview", emoji: "📦", value: { ref: { moduleSlug: "trade-overview", metricKey: "exports_annual_lakh_cr" }, fmt: "fmt.inrLakhCr" } },
+    { moduleSlug: "trade-fdi", emoji: "💰", value: { ref: { moduleSlug: "trade-fdi", metricKey: "fdi_equity_inflow_billion_usd" }, fmt: "fmt.usdB" } },
+    { moduleSlug: "trade-diaspora", emoji: "🌐", value: { ref: { moduleSlug: "trade-diaspora", metricKey: "remittances_annual_billion_usd" }, fmt: "fmt.usdB" } },
+  ],
+  featured: {
+    moduleSlug: S,
     emoji: "🚀",
-    headlineRef: { moduleSlug: "science-startups", metricKey: "dpiit_recognised_lakh" },
-    format: "lakh_with_label",
-    labelSuffix: "lakh",
-    isFeatured: true,
+    headline: { ref: { moduleSlug: S, metricKey: "dpiit_recognised_lakh" }, decimals: 1 },
+    growth: { ref: { moduleSlug: S, metricKey: "change_yoy_lakh" }, decimals: 1, fmt: "innov.growth" },
+    callout: { label: "calloutLabel", value: { ref: { moduleSlug: S, metricKey: "unicorns_count" }, fmt: "fmt.plus" }, sub: "calloutSub" },
+    cells: [
+      { key: "dpiit", value: { ref: { moduleSlug: S, metricKey: "dpiit_recognised_lakh" }, decimals: 1 }, sub: { text: "sub" } },
+      { key: "unicorns", value: { ref: { moduleSlug: S, metricKey: "unicorns_count" } }, sub: { text: "sub" } },
+      { key: "added", value: { ref: { moduleSlug: S, metricKey: "change_yoy_lakh" }, decimals: 1 }, sub: { text: "sub" } },
+      { key: "source", value: { text: "value" }, sub: { text: "sub" } },
+    ],
   },
-  {
-    moduleSlug: "science-isro",
-    emoji: "🛰",
-    headlineRef: { moduleSlug: "science-isro", metricKey: "satellites_launched_count" },
-    format: "count_with_label",
-    labelSuffix: "satellites",
-  },
-  {
-    moduleSlug: "science-digital",
-    emoji: "📱",
-    headlineRef: { moduleSlug: "science-digital", metricKey: "upi_txn_per_month_billion" },
-    format: "count_with_label",
-    labelSuffix: "B UPI/mo",
-  },
-  {
-    moduleSlug: "science-rd",
-    emoji: "🔬",
-    headlineRef: { moduleSlug: "science-rd", metricKey: "rd_pct_gdp" },
-    format: "pct_decimal_2",
-  },
-  {
-    moduleSlug: "trade-overview",
-    emoji: "📦",
-    headlineRef: { moduleSlug: "trade-overview", metricKey: "exports_annual_lakh_cr" },
-    format: "lakhcr_simple",
-  },
-  {
-    moduleSlug: "trade-fdi",
-    emoji: "💰",
-    headlineRef: { moduleSlug: "trade-fdi", metricKey: "fdi_equity_inflow_billion_usd" },
-    format: "billion_usd_simple",
-  },
-  {
-    moduleSlug: "trade-diaspora",
-    emoji: "🌐",
-    headlineRef: { moduleSlug: "trade-diaspora", metricKey: "remittances_annual_billion_usd" },
-    format: "billion_usd_simple",
-  },
-];
-
-// ── FEATURED zone (Startups & Unicorns) ──
-
-export const FEATURED_HEADLINE_LABEL = "DPIIT-recognised";
-export const FEATURED_DESCRIPTION =
-  "India's startup ecosystem from the Startup India dashboard.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "Unicorns";
-export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "as of 2024";
-export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
-  moduleSlug: "science-startups",
-  metricKey: "unicorns_count",
-};
-export const FEATURED_HEADLINE_REF: MetricRef = {
-  moduleSlug: "science-startups",
-  metricKey: "dpiit_recognised_lakh",
-};
-export const FEATURED_GROWTH_PILL_REF: MetricRef = {
-  moduleSlug: "science-startups",
-  metricKey: "change_yoy_lakh",
-};
-export const FEATURED_GROWTH_PILL_FORMAT = "+{value} lakh YoY";
-
-// ── FEATURED CELLS ──
-
-export type FeaturedCellPrimary =
-  | { kind: "ref"; ref: MetricRef; primaryFormat: "decimal_1" | "integer" }
-  | { kind: "static"; value: string };
-
-export type FeaturedCell = {
-  label: string;
-  primary: FeaturedCellPrimary;
-  sub: { kind: "static"; text: string };
-};
-
-export const FEATURED_CELLS: FeaturedCell[] = [
-  {
-    label: "DPIIT",
-    primary: {
-      kind: "ref",
-      ref: { moduleSlug: "science-startups", metricKey: "dpiit_recognised_lakh" },
-      primaryFormat: "decimal_1",
+  cards: [
+    {
+      key: "hubs",
+      emoji: "🚀",
+      href: "/india/science-startups",
+      bars: true,
+      rows: [
+        { key: "ka", rank: 1, state: "karnataka", note: { text: "bengaluru" }, value: { ref: { moduleSlug: S, metricKey: "top_state_ka_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "mh", rank: 2, state: "maharashtra", note: { text: "mumbai" }, value: { ref: { moduleSlug: S, metricKey: "top_state_mh_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "dl", rank: 3, state: "delhi", value: { ref: { moduleSlug: S, metricKey: "top_state_dl_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "tn", rank: 4, state: "tamil-nadu", note: { text: "chennai" }, value: { ref: { moduleSlug: S, metricKey: "top_state_tn_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "tg", rank: 5, state: "telangana", note: { text: "hyderabad" }, value: { ref: { moduleSlug: S, metricKey: "top_state_tg_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+      ],
     },
-    sub: { kind: "static", text: "lakh · 2024" },
-  },
-  {
-    label: "Unicorns",
-    primary: {
-      kind: "ref",
-      ref: { moduleSlug: "science-startups", metricKey: "unicorns_count" },
-      primaryFormat: "integer",
+    {
+      key: "digital",
+      emoji: "🔌",
+      href: "/india/science-digital",
+      rows: [
+        { key: "upi", value: { ref: { moduleSlug: D, metricKey: "upi_txn_per_month_billion" }, fmt: "innov.fmt.upiRow" } },
+        { key: "aadhaar", value: { ref: { moduleSlug: D, metricKey: "aadhaar_enrolled_crore" }, fmt: "fmt.crore" } },
+        { key: "digilocker", value: { ref: { moduleSlug: D, metricKey: "digilocker_users_crore" }, fmt: "innov.fmt.crUsers" } },
+        { key: "fastag", value: { ref: { moduleSlug: D, metricKey: "fastag_active_crore" }, fmt: "innov.fmt.crActive" } },
+        { key: "isro", value: { ref: { moduleSlug: "science-isro", metricKey: "satellites_launched_count" }, fmt: "innov.fmt.launched" } },
+      ],
     },
-    sub: { kind: "static", text: "DPIIT list" },
-  },
-  {
-    label: "Top sector",
-    primary: { kind: "static", value: "IT" },
-    sub: { kind: "static", text: "Software · Services" },
-  },
-  {
-    label: "Source",
-    primary: { kind: "static", value: "DPIIT" },
-    sub: { kind: "static", text: "Startup India" },
-  },
-];
-
-// ── TOP STARTUP HUBS right card ──
-
-export type TopStartupHubEntry = {
-  rank: number;
-  state: string;
-  city: string;
-  valueRef: MetricRef;
+  ],
 };
-
-export const TOP_STARTUP_HUBS: TopStartupHubEntry[] = [
-  { rank: 1, state: "Karnataka",  city: "Bangalore",  valueRef: { moduleSlug: "science-startups", metricKey: "top_state_ka_startups_thousand" } },
-  { rank: 2, state: "Maharashtra", city: "Mumbai",    valueRef: { moduleSlug: "science-startups", metricKey: "top_state_mh_startups_thousand" } },
-  { rank: 3, state: "Delhi NCR",  city: "",            valueRef: { moduleSlug: "science-startups", metricKey: "top_state_dl_startups_thousand" } },
-  { rank: 4, state: "Tamil Nadu", city: "Chennai",     valueRef: { moduleSlug: "science-startups", metricKey: "top_state_tn_startups_thousand" } },
-  { rank: 5, state: "Telangana",  city: "Hyderabad",   valueRef: { moduleSlug: "science-startups", metricKey: "top_state_tg_startups_thousand" } },
-];
-
-export const TOP_STARTUP_HUBS_FOOTER_LABEL = "All startup hubs";
-
-// ── DIGITAL STACK right card ──
-
-export type DigitalStackEntry = {
-  label: string;
-  valueRef: MetricRef;
-  valueSuffix: string;
-};
-
-export const DIGITAL_STACK: DigitalStackEntry[] = [
-  {
-    label: "UPI/mo",
-    valueRef: { moduleSlug: "science-digital", metricKey: "upi_txn_per_month_billion" },
-    valueSuffix: " B txn",
-  },
-  {
-    label: "Aadhaar",
-    valueRef: { moduleSlug: "science-digital", metricKey: "aadhaar_enrolled_crore" },
-    valueSuffix: " cr",
-  },
-  {
-    label: "DigiLocker",
-    valueRef: { moduleSlug: "science-digital", metricKey: "digilocker_users_crore" },
-    valueSuffix: " cr users",
-  },
-  {
-    label: "FASTag",
-    valueRef: { moduleSlug: "science-digital", metricKey: "fastag_active_crore" },
-    valueSuffix: " cr active",
-  },
-  {
-    label: "ISRO sats",
-    valueRef: { moduleSlug: "science-isro", metricKey: "satellites_launched_count" },
-    valueSuffix: " launched",
-  },
-];
-
-export const DIGITAL_STACK_FOOTER_LABEL = "Digital stack";
-
-// ── Timing constants (kept here so the .tsx is value-free) ──
-export const HERO_ANIMATION_DURATION_MS = 1500;
-/** Default per-row CountUp duration. */
-export const ROW_ANIMATION_DURATION_MS = 1200;
-export const INTERSECTION_THRESHOLD = 0.15;
-export const INTERSECTION_ROOT_MARGIN = "0px 0px -10% 0px";
-
-// ── Helpers ──
-
-export function indicatorKey(ref: MetricRef): string {
-  return `${ref.moduleSlug}::${ref.metricKey}`;
-}
 
 export function allInnovationRefs(): MetricRef[] {
-  const refs: MetricRef[] = [
-    FEATURED_HEADLINE_REF,
-    FEATURED_GROWTH_PILL_REF,
-    FEATURED_RIGHT_CALLOUT_REF,
-  ];
-  for (const row of INN_DIRECTORY) refs.push(row.headlineRef);
-  for (const cell of FEATURED_CELLS) {
-    if (cell.primary.kind === "ref") refs.push(cell.primary.ref);
-  }
-  for (const entry of TOP_STARTUP_HUBS) refs.push(entry.valueRef);
-  for (const entry of DIGITAL_STACK) refs.push(entry.valueRef);
-  const seen = new Set<string>();
-  return refs.filter((r) => {
-    const k = indicatorKey(r);
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+  return specRefs(INNOV_SPEC);
 }

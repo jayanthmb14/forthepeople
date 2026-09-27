@@ -40,6 +40,8 @@ export type MacroModuleRef = {
 
 export type LatestUpdate = {
   moduleSlug: string;
+  /** Lets the band show a translated label (page_india-module "metric.*"). */
+  metricKey: string;
   label: string;
   value: number | null;
   unit: string;
@@ -163,6 +165,7 @@ export async function getMacroSnapshotData(): Promise<MacroSnapshotData> {
 
   const latestUpdates: LatestUpdate[] = latestUpdatesRaw.map((u) => ({
     moduleSlug: u.moduleSlug,
+    metricKey: u.metricKey,
     label: u.metricLabel ?? u.metricKey,
     value: u.numericValue == null ? null : Number(u.numericValue),
     unit: u.unit ?? "",

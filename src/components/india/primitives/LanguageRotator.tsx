@@ -1,126 +1,114 @@
 "use client";
 
 /**
- * LanguageRotator — cycles a bilingual subtitle through all 22 scheduled
- * languages of India (Schedule 8 of the Constitution).
+ * LanguageRotator — "India" in each of the 22 scheduled languages
+ * (Eighth Schedule of the Constitution), beside the hero title.
  *
- * File 48 §4.7.3 + Section 2 polish: smooth keyframe-based fade/slide instead
- * of the abrupt setState swap. The fixed-height wrapper prevents layout shift,
- * and the keyframe runs every 3s — synchronized with a setInterval that
- * advances the language index at the same cadence so the rendered language
- * always matches the animation cycle.
+ * Motion (Design v4: nothing moves forever): it starts on the page's own
+ * language when that is in the list, steps through all 22 once, every
+ * 2.4 s, and stops back where it started. prefers-reduced-motion keeps it
+ * still. Screen readers hear one static label instead of 22 live updates
+ * (the old aria-live region announced a new language every 3 s).
  *
- * `prefers-reduced-motion: reduce` halts on the first language (Hindi) and
- * disables the keyframe entirely.
+ * Language names are translated (page_india "langs.*"); each script is
+ * tagged with its language code so the right font and voice are used.
  */
 
 import * as React from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { INDIA_NS } from "../i18n";
 
 const LANGUAGES = [
-  { script: "भारत", name: "Hindi" },
-  { script: "অসমীয়া", name: "Assamese" },
-  { script: "ভারত", name: "Bengali" },
-  { script: "भारत", name: "Bodo" },
-  { script: "भारत", name: "Dogri" },
-  { script: "ભારત", name: "Gujarati" },
-  { script: "ಭಾರತ", name: "Kannada" },
-  { script: "بھارت", name: "Kashmiri" },
-  { script: "भारत", name: "Konkani" },
-  { script: "भारत", name: "Maithili" },
-  { script: "ഇന്ത്യ", name: "Malayalam" },
-  { script: "ꯏꯟꯗꯤꯌꯥ", name: "Manipuri" },
-  { script: "भारत", name: "Marathi" },
-  { script: "भारत", name: "Nepali" },
-  { script: "ଭାରତ", name: "Odia" },
-  { script: "ਭਾਰਤ", name: "Punjabi" },
-  { script: "भारतम्", name: "Sanskrit" },
-  { script: "ᱥᱤᱧᱚᱛ", name: "Santali" },
-  { script: "भारत", name: "Sindhi" },
-  { script: "இந்தியா", name: "Tamil" },
-  { script: "భారత్", name: "Telugu" },
-  { script: "بھارت", name: "Urdu" },
+  { code: "hi", script: "भारत" },
+  { code: "as", script: "ভাৰত" },
+  { code: "bn", script: "ভারত" },
+  { code: "brx", script: "भारत" },
+  { code: "doi", script: "भारत" },
+  { code: "gu", script: "ભારત" },
+  { code: "kn", script: "ಭಾರತ" },
+  { code: "ks", script: "بھارت" },
+  { code: "kok", script: "भारत" },
+  { code: "mai", script: "भारत" },
+  { code: "ml", script: "ഇന്ത്യ" },
+  { code: "mni", script: "ꯏꯟꯗꯤꯌꯥ" },
+  { code: "mr", script: "भारत" },
+  { code: "ne", script: "भारत" },
+  { code: "or", script: "ଭାରତ" },
+  { code: "pa", script: "ਭਾਰਤ" },
+  { code: "sa", script: "भारतम्" },
+  { code: "sat", script: "ᱥᱤᱧᱚᱛ" },
+  { code: "sd", script: "भारत" },
+  { code: "ta", script: "இந்தியா" },
+  { code: "te", script: "భారత్" },
+  { code: "ur", script: "بھارت" },
 ] as const;
 
-const ROTATION_INTERVAL_MS = 3000;
+const STEP_MS = 2400;
 
 export function LanguageRotator() {
-  const [index, setIndex] = React.useState(0);
-  const [reduceMotion, setReduceMotion] = React.useState(false);
+  const t = useTranslations(INDIA_NS);
+  const locale = useLocale();
+  const startIndex = Math.max(0, LANGUAGES.findIndex((l) => l.code === locale));
+  const [steps, setSteps] = React.useState(0);
+  const timer = React.useRef<number | null>(null);
 
   React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduceMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    timer.current = window.setInterval(() => setSteps((s) => s + 1), STEP_MS);
+    return () => {
+      if (timer.current !== null) window.clearInterval(timer.current);
+    };
   }, []);
 
+  // One full round, then stop back on the starting language.
   React.useEffect(() => {
-    if (reduceMotion) return;
-    const tick = setInterval(() => {
-      setIndex((i) => (i + 1) % LANGUAGES.length);
-    }, ROTATION_INTERVAL_MS);
-    return () => clearInterval(tick);
-  }, [reduceMotion]);
+    if (steps >= LANGUAGES.length && timer.current !== null) {
+      window.clearInterval(timer.current);
+      timer.current = null;
+    }
+  }, [steps]);
 
-  const current = LANGUAGES[index];
+  const current = LANGUAGES[(startIndex + Math.min(steps, LANGUAGES.length)) % LANGUAGES.length];
 
   return (
     <span
+      role="img"
+      aria-label={t("langs.aria", { n: LANGUAGES.length })}
       style={{
         display: "inline-flex",
         alignItems: "center",
-        height: "24px",
-        minWidth: "180px",
-        overflow: "hidden",
+        minHeight: 28,
+        minWidth: 180,
       }}
-      aria-live="polite"
-      aria-atomic="true"
     >
       <span
-        // The `key` resets the animation each time the index changes, so each
-        // new language plays the keyframe from the start.
-        key={index}
-        className={reduceMotion ? "ftp-rotator ftp-rotator--reduced" : "ftp-rotator"}
+        aria-hidden
+        // The key restarts the fade for each new language.
+        key={current.code}
+        className="ftp-rotator"
         style={{
-          fontFamily: "var(--font-serif), Georgia, serif",
-          fontStyle: "italic",
           fontSize: "19px",
-          lineHeight: 1,
+          lineHeight: 1.3,
           color: "var(--color-text-primary)",
           display: "inline-flex",
           alignItems: "baseline",
-          gap: "8px",
-          willChange: reduceMotion ? "auto" : "opacity, transform",
+          gap: "10px",
         }}
       >
-        <span
-          style={{
-            fontStyle: "normal",
-            fontFamily: "var(--font-jakarta), system-ui, sans-serif",
-          }}
-        >
+        <span lang={current.code} dir={current.code === "ur" || current.code === "ks" ? "rtl" : undefined} style={{ fontWeight: 600 }}>
           {current.script}
         </span>
-        <span style={{ opacity: 0.5 }}>·</span>
-        <span style={{ fontSize: "15px" }}>{current.name}</span>
+        <span style={{ fontSize: "14px", color: "var(--ftp-text-2)" }}>{t(`langs.${current.code}`)}</span>
       </span>
 
       <style>{`
-        @keyframes ftp-rotator-cycle {
-          0%   { opacity: 0; transform: translateY(8px); }
-          12%  { opacity: 1; transform: translateY(0); }
-          88%  { opacity: 1; transform: translateY(0); }
-          100% { opacity: 0; transform: translateY(-8px); }
+        @keyframes ftp-rotator-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .ftp-rotator {
-          animation: ftp-rotator-cycle ${ROTATION_INTERVAL_MS}ms ease-in-out forwards;
-        }
-        .ftp-rotator--reduced {
-          animation: none !important;
-          opacity: 1;
-          transform: none;
+        .ftp-rotator { animation: ftp-rotator-in 360ms ease-out both; }
+        @media (prefers-reduced-motion: reduce) {
+          .ftp-rotator { animation: none; }
         }
       `}</style>
     </span>

@@ -110,8 +110,8 @@
   }
   /* Slightly tighter per-tile padding on mobile so 3 tiles per row
      fit inside ~110 px each without wrapping the label. */
-  [data-ftp-national-symbols="1"] > div,
-  [data-ftp-kpi-quickactions="1"] > a {
+  [data-ftp-national-symbols="1"] > li,
+  [data-ftp-kpi-quickactions="1"] > li > a {
     padding: 6px 8px !important;
   }
 

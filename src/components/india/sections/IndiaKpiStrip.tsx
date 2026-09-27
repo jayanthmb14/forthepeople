@@ -1,42 +1,38 @@
 /**
- * IndiaKpiStrip — 5-tile per-cell-accent KPI strip rendered below the hero
- * (file 48 §4.7.4 + Section 2.1 v10 — extracted out of IndiaHero so the
- * tricolor badges panel can sit between hero and KPI strip per spec order).
+ * IndiaKpiStrip — five KPI tiles under the hero (file 48 §4.7.4).
  *
- * Each cell uses an accent ramp from :root (Phase 4.6.9):
- * blue / forest-green / amber / indigo / pink. Lucide icon top-right at 70%
- * opacity. Number uses CountUpNumber with the accent's "800" stop.
+ * Each tile has its own accent, an emoji chip, a number that counts up
+ * once (and is correct in the server HTML), one line of context and the
+ * source with its year. These are reference facts with a named source and
+ * year, typed here on purpose; the district count comes from the registry
+ * (getPlatformFacts) — never typed by hand (it used to say "780").
+ *
+ * i18n (Sep 2026): labels, units and lines from page_india "kpi.*";
+ * numbers formatted in the page language by CountUpNumber.
+ *
+ * Sync server component (useTranslations).
  */
 
 import * as React from "react";
-import {
-  Building2,
-  IndianRupee,
-  Languages as LanguagesIcon,
-  Square,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { useTranslations } from "next-intl";
 import { CountUpNumber } from "@/components/india/primitives/CountUpNumber";
+import { getPlatformFacts } from "@/lib/platform-facts";
+import { INDIA_NS } from "../i18n";
+
+type Accent = "blue" | "forest-green" | "amber" | "indigo" | "pink";
 
 interface KpiTileSpec {
-  id: string;
-  icon: LucideIcon;
-  label: string;
+  id: "population" | "area" | "gdp" | "states" | "languages";
+  emoji: string;
   value?: number;
-  valueRaw?: string;
   decimals?: number;
-  unit?: string;
-  prefix?: string;
-  suffix?: string;
-  meta: string;
-  source: string;
-  accent: "blue" | "forest-green" | "amber" | "indigo" | "pink";
+  /** Two numbers shown as "{a} + {b}" (states + union territories). */
+  pair?: [number, number];
+  accent: Accent;
   numColor: string;
-  iconColor: string;
 }
 
-const ACCENT_RGB: Record<KpiTileSpec["accent"], string> = {
+const ACCENT_RGB: Record<Accent, string> = {
   blue: "24, 95, 165",
   "forest-green": "90, 143, 46",
   amber: "186, 117, 23",
@@ -44,116 +40,105 @@ const ACCENT_RGB: Record<KpiTileSpec["accent"], string> = {
   pink: "153, 53, 86",
 };
 
+/** Reference values (source and year are in the messages, kpi.<id>.source). */
 const KPI_TILES: KpiTileSpec[] = [
-  { id: "population", icon: Users,        label: "Population",   value: 1.43, decimals: 2, unit: "billion", meta: "↑ 0.8% YoY",        source: "UN · 2024 est.", accent: "blue",         numColor: "#082F58", iconColor: "#185FA5" },
-  { id: "area",       icon: Square,       label: "Area",         value: 3.29, decimals: 2, unit: "M km²",   meta: "7th largest country", source: "Survey of India", accent: "forest-green", numColor: "#27500A", iconColor: "#5A8F2E" },
-  { id: "gdp",        icon: IndianRupee,  label: "Nominal GDP",  value: 4.1,  decimals: 1, prefix: "$", suffix: "T", meta: "↑ 6.5% projected", source: "IMF · FY26",     accent: "amber",        numColor: "#633806", iconColor: "#BA7517" },
-  { id: "states",     icon: Building2,    label: "States and UTs", valueRaw: "28 + 8",         meta: "780 districts",   source: "MHA · 2024",      accent: "indigo",       numColor: "#26215C", iconColor: "#534AB7" },
-  { id: "languages",  icon: LanguagesIcon, label: "Languages",   value: 22,   decimals: 0, unit: "scheduled", meta: "+ 100s of dialects", source: "Schedule 8",      accent: "pink",         numColor: "#4D182A", iconColor: "#993556" },
+  { id: "population", emoji: "👥", value: 1.43, decimals: 2, accent: "blue", numColor: "#082F58" },
+  { id: "area", emoji: "🗺️", value: 3.29, decimals: 2, accent: "forest-green", numColor: "#27500A" },
+  { id: "gdp", emoji: "💹", value: 4.1, decimals: 1, accent: "amber", numColor: "#633806" },
+  { id: "states", emoji: "🏛️", pair: [28, 8], accent: "indigo", numColor: "#26215C" },
+  { id: "languages", emoji: "🗣️", value: 22, decimals: 0, accent: "pink", numColor: "#4D182A" },
 ];
 
-function KpiTileV5({ tile }: { tile: KpiTileSpec }) {
-  const Icon = tile.icon;
-  const accentRgb = ACCENT_RGB[tile.accent];
-  // Design v4: big numbers in the display face with lining tabular figures.
-  const numStyle: React.CSSProperties = {
-    fontFamily: "var(--ftp-font-display)",
-    fontSize: "24px",
-    fontWeight: 650,
-    fontVariantNumeric: "tabular-nums lining-nums",
-    letterSpacing: "-0.02em",
-    lineHeight: 1,
-    color: tile.numColor,
-  };
+const numStyle = (color: string): React.CSSProperties => ({
+  fontFamily: "var(--ftp-font-display)",
+  fontSize: "26px",
+  fontWeight: 650,
+  fontVariantNumeric: "tabular-nums lining-nums",
+  letterSpacing: "-0.02em",
+  lineHeight: 1,
+  color,
+});
+
+export function IndiaKpiStrip() {
+  const t = useTranslations(`${INDIA_NS}.kpi`);
+  const { totalIndiaDistricts } = getPlatformFacts();
 
   return (
-    <div
-      style={{
-        border: `0.5px solid rgba(${accentRgb}, 0.20)`,
-        background: `linear-gradient(135deg, rgba(${accentRgb}, 0.06) 0%, rgba(${accentRgb}, 0.01) 100%)`,
-        borderRadius: "var(--border-radius-md)",
-        padding: "11px 13px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "3px",
-        position: "relative",
-        overflow: "hidden",
-        transition: "border-color 200ms",
-      }}
-    >
-      <Icon
-        size={14}
-        style={{ position: "absolute", right: "8px", top: "8px", color: tile.iconColor, opacity: 0.7 }}
-      />
-      <div
-        style={{
-          fontFamily: "var(--ftp-font-sans)",
-          fontSize: "12px",
-          lineHeight: "16px",
-          color: "var(--ftp-text-2)",
-          fontWeight: 600,
-          paddingRight: "18px",
-        }}
-      >
-        {tile.label}
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginTop: "1px" }}>
-        {tile.valueRaw ? (
-          <span style={numStyle}>{tile.valueRaw}</span>
-        ) : (
-          <>
-            {tile.prefix && <span style={numStyle}>{tile.prefix}</span>}
-            <CountUpNumber target={tile.value ?? 0} decimals={tile.decimals} inlineStyle={numStyle} />
-            {tile.suffix && <span style={numStyle}>{tile.suffix}</span>}
-            {tile.unit && (
-              <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>{tile.unit}</span>
-            )}
-          </>
-        )}
-      </div>
-      <div style={{ fontSize: "11px", lineHeight: "15px", color: "var(--ftp-text-2)", marginTop: "1px" }}>{tile.meta}</div>
-      <span
-        style={{
-          fontFamily: "var(--ftp-font-sans)",
-          fontSize: "10px",
-          lineHeight: "15px",
-          fontVariantNumeric: "tabular-nums",
-          padding: "1px 6px",
-          background: "rgba(0,0,0,0.04)",
-          color: "var(--color-text-secondary)",
-          borderRadius: "3px",
-          display: "inline-block",
-          marginTop: "5px",
-          width: "fit-content",
-        }}
-      >
-        {tile.source}
-      </span>
-    </div>
-  );
-}
-
-interface IndiaKpiStripProps {
-  freshnessLine?: string;
-}
-
-export function IndiaKpiStrip({ freshnessLine }: IndiaKpiStripProps = {}) {
-  return (
-    <section style={{ padding: "0" }}>
-      <div
+    <section aria-label={t("aria")} style={{ padding: 0 }}>
+      <ul
         className="india-hero-kpi-strip"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-          gap: "6px",
-        }}
+        style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "8px" }}
       >
-        {KPI_TILES.map((tile) => (
-          <KpiTileV5 key={tile.id} tile={tile} />
-        ))}
-      </div>
+        {KPI_TILES.map((tile) => {
+          const rgb = ACCENT_RGB[tile.accent];
+          const meta = tile.id === "states" ? t("states.meta", { n: totalIndiaDistricts }) : t(`${tile.id}.meta`);
+          return (
+            <li
+              key={tile.id}
+              style={{
+                border: `1px solid rgba(${rgb}, 0.22)`,
+                background: `linear-gradient(135deg, rgba(${rgb}, 0.10) 0%, rgba(${rgb}, 0.02) 100%)`,
+                borderRadius: "var(--ftp-radius-tile)",
+                padding: "11px 13px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                minWidth: 0,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  className="ftp-emoji"
+                  aria-hidden
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 9,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 15,
+                    background: `rgba(${rgb}, 0.14)`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {tile.emoji}
+                </span>
+                <span style={{ fontSize: "12px", lineHeight: "16px", color: "var(--ftp-text-2)", fontWeight: 600 }}>{t(`${tile.id}.label`)}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "5px", flexWrap: "wrap", marginTop: 2 }}>
+                {tile.pair ? (
+                  <span style={numStyle(tile.numColor)}>{t("states.value", { a: tile.pair[0], b: tile.pair[1] })}</span>
+                ) : (
+                  <>
+                    {tile.id === "gdp" ? <span style={numStyle(tile.numColor)}>$</span> : null}
+                    <CountUpNumber target={tile.value ?? 0} decimals={tile.decimals} inlineStyle={numStyle(tile.numColor)} />
+                    <span style={{ fontSize: "12px", color: "var(--ftp-text-2)" }}>{t(`${tile.id}.unit`)}</span>
+                  </>
+                )}
+              </div>
+              <div style={{ fontSize: "12px", lineHeight: "16px", color: "var(--ftp-text-2)" }}>{meta}</div>
+              <span
+                style={{
+                  fontSize: "11px",
+                  lineHeight: "15px",
+                  padding: "1px 7px",
+                  background: "rgba(255,255,255,0.7)",
+                  border: `1px solid rgba(${rgb}, 0.18)`,
+                  color: "var(--ftp-text-2)",
+                  borderRadius: 999,
+                  display: "inline-block",
+                  marginTop: "4px",
+                  width: "fit-content",
+                }}
+              >
+                {t(`${tile.id}.source`)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
 
-      {/* Freshness strip */}
       <div
         style={{
           borderTop: "0.5px solid var(--color-border-tertiary)",
@@ -162,28 +147,22 @@ export function IndiaKpiStrip({ freshnessLine }: IndiaKpiStripProps = {}) {
           marginTop: "1rem",
           display: "flex",
           justifyContent: "space-between",
-          fontSize: "11px",
+          gap: "4px 16px",
+          flexWrap: "wrap",
+          fontSize: "12px",
           color: "var(--color-text-secondary)",
         }}
       >
-        {/* Design v4 honesty rule: nothing says "Live" unless the data is
-            under 30 minutes old. These figures are yearly releases, each
-            with its source on the tile; the dated freshness pill sits in
-            the LiveStrip above. */}
-        <span>{freshnessLine ?? "Each figure names its source"}</span>
-        <span style={{ color: "var(--color-text-tertiary)" }}>
-          Independent. Sourced from .gov.in and NDSAP
-        </span>
+        {/* Nothing says "Live" unless the data is under 30 minutes old; these
+            are yearly releases, each with its source on the tile. */}
+        <span>{t("footLeft")}</span>
+        <span style={{ color: "var(--color-text-tertiary)" }}>{t("footRight")}</span>
       </div>
 
       <style>{`
         @media (max-width: 768px) {
-          .india-hero-kpi-strip {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-          .india-hero-kpi-strip > :nth-child(5) {
-            grid-column: span 2;
-          }
+          .india-hero-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .india-hero-kpi-strip > :nth-child(5) { grid-column: span 2; }
         }
       `}</style>
     </section>

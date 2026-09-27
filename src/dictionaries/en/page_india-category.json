@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "title": "{category}: India dashboards",
+    "description": "{tagline} Free dashboards from official sources, each figure with its date."
+  },
+  "crumbs": {
+    "aria": "Breadcrumb"
+  },
+  "hero": {
+    "count": "{n, plural, one {# module} other {# modules}}",
+    "figures": "Headline figures",
+    "ringLabel": "{live} of {total} modules are live",
+    "ringLive": "live",
+    "legendLive": "Live",
+    "legendSoon": "Coming soon"
+  },
+  "rail": {
+    "aria": "Modules in {category}",
+    "summary": "{total, plural, one {# module} other {# modules}}, {live} live, {soon} coming soon"
+  },
+  "grid": {
+    "title": "All modules",
+    "noFigure": "No published figure yet",
+    "open": "Open {module}",
+    "figureLine": "{label}, as of {date}"
+  },
+  "soonNote": {
+    "title": "{n, plural, one {# module is} other {# modules are}} still being set up.",
+    "body": "Tell us which one you want first. Your feedback decides what we connect next.",
+    "cta": "Share feedback"
+  },
+  "election": {
+    "onTitle": "Election period: the Model Code of Conduct is in force",
+    "onBody": "Decisions that touch electoral data are paused under the Election Commission of India's Model Code of Conduct. During this time ForThePeople shows Election Commission press releases only.",
+    "pendingTitle": "Election period coming up",
+    "pendingBody": "The Election Commission may announce the Model Code of Conduct soon. Once it does, some governance modules will use Election Commission sources only."
+  }
+}

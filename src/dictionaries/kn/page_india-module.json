@@ -1,0 +1,431 @@
+{
+  "meta": {
+    "title": "{module}: ಭಾರತದ ಅಂಕಿಅಂಶಗಳು",
+    "description": "{tagline} {sources} ಮೂಲಗಳಿಂದ ಅಂಕಿಅಂಶಗಳು, ಪ್ರತಿಯೊಂದೂ ದಿನಾಂಕದೊಂದಿಗೆ. ಉಚಿತ, ಸ್ವತಂತ್ರ ನಾಗರಿಕ ವೇದಿಕೆ."
+  },
+  "crumbs": {
+    "aria": "ಪುಟದ ದಾರಿ"
+  },
+  "hero": {
+    "figures": "ಇತ್ತೀಚಿನ ಪ್ರಕಟಿತ ಅಂಕಿಅಂಶಗಳು",
+    "emptyTitle": "ಈ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಇನ್ನೂ ಪ್ರಕಟಿತ ಅಂಕಿಅಂಶಗಳಿಲ್ಲ.",
+    "emptyBody": "ಮೂಲ ({source}) ಅಂಕಿಅಂಶಗಳನ್ನು ಪ್ರಕಟಿಸಿದ ತಕ್ಷಣ, ದಿನಾಂಕದೊಂದಿಗೆ ದಾಖಲಿಸಿ ಇಲ್ಲಿ ತೋರಿಸುತ್ತೇವೆ."
+  },
+  "soon": {
+    "title": "ಈ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಇನ್ನೂ ಸಿದ್ಧವಾಗುತ್ತಿದೆ.",
+    "body": "{module}: ಸ್ವಯಂಚಾಲಿತ ನವೀಕರಣ ಇನ್ನೂ ಜೋಡಣೆಯಾಗಿಲ್ಲ. {source} ಜೋಡಣೆಯಾದ ಬಳಿಕ, ಹೊಸ ಅಂಕಿಅಂಶಗಳು ಪ್ರಕಟವಾದ ತಕ್ಷಣ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ. ನಾವು ಬಳಸಲು ಯೋಜಿಸಿರುವ ಮೂಲಗಳ ಪಟ್ಟಿ ಕೆಳಗಿದೆ.",
+    "theSource": "ಅಧಿಕೃತ ಮೂಲ"
+  },
+  "vis": {
+    "heading": "ಚಿತ್ರಗಳಲ್ಲಿ",
+    "topTitle": "ಮುಂಚೂಣಿ ರಾಜ್ಯಗಳು",
+    "topSimple": "{first} ಮೊದಲ ಸ್ಥಾನದಲ್ಲಿದೆ: {value}. ಪ್ರತಿ ಪಟ್ಟಿ ಮೊದಲ ಸ್ಥಾನದ ರಾಜ್ಯಕ್ಕೆ ಹೋಲಿಸಿ ಒಂದು ರಾಜ್ಯವನ್ನು ತೋರಿಸುತ್ತದೆ.",
+    "mixTitle": "ವಿದ್ಯುತ್ ಎಲ್ಲಿಂದ ಬರುತ್ತದೆ",
+    "mixSimple": "ಒಟ್ಟು ವಿದ್ಯುತ್‌ನಲ್ಲಿ {part} ಪಾಲು {pct}.",
+    "mixCenter": "{part}",
+    "mixOther": "ಇತರ ಮೂಲಗಳು",
+    "ringsTitle": "ಪ್ರತಿ 100ರಲ್ಲಿ",
+    "ringsSimple": "ಪ್ರತಿ ಉಂಗುರ 100ರಲ್ಲಿ ತನ್ನ ಪಾಲಿನಷ್ಟು ತುಂಬುತ್ತದೆ.",
+    "goalTitle": "ಗುರಿಗೆ ಎಷ್ಟು ಹತ್ತಿರ",
+    "goalSimple": "{label} ತನ್ನ ಗುರಿಯ {pct} ತಲುಪಿದೆ.",
+    "goalLine": "ಈಗ {now}, ಗುರಿ {goal}",
+    "trendTitle": "ಕಾಲಾನಂತರದ ಬದಲಾವಣೆ",
+    "trendSimple": "{fromYear}ರಲ್ಲಿ {from}, {toYear}ರಲ್ಲಿ {to}."
+  },
+  "parts": {
+    "coal": "ಕಲ್ಲಿದ್ದಲು",
+    "renewables": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನ",
+    "hydro": "ಜಲವಿದ್ಯುತ್",
+    "nuclear": "ಅಣುಶಕ್ತಿ"
+  },
+  "crop": {
+    "wheat": "{state} (ಗೋಧಿ)",
+    "rice": "{state} (ಭತ್ತ)"
+  },
+  "news": {
+    "title": "{module} ಕುರಿತು ಸುದ್ದಿ",
+    "emptyTitle": "{module} ಕುರಿತು ಇನ್ನೂ ಸುದ್ದಿ ಇಲ್ಲ.",
+    "emptyBody": "ಸದ್ಯಕ್ಕೆ ನಾವು ಜಿಲ್ಲಾ ಸುದ್ದಿಗಳನ್ನು ಸಂಗ್ರಹಿಸುತ್ತೇವೆ; ರಾಷ್ಟ್ರೀಯ ಸುದ್ದಿ ಇನ್ನೂ ಜೋಡಣೆಯಾಗಿಲ್ಲ.",
+    "india": "ಭಾರತ"
+  },
+  "next": {
+    "title": "ಮುಂದೆ ಬರಲಿರುವುದು: {module}",
+    "tag": "ಯೋಜಿತ",
+    "f1": "2016ರಿಂದ ಈವರೆಗಿನ ದೀರ್ಘ ಇತಿಹಾಸ",
+    "f2": "ಪ್ರತಿ ರಾಜ್ಯವನ್ನು ಅದರಂತಹ ರಾಜ್ಯಗಳೊಂದಿಗೆ ಹೋಲಿಕೆ",
+    "f3": "ಸ್ಪ್ರೆಡ್‌ಶೀಟ್ ಅಥವಾ ಮುಕ್ತ ಎಪಿಐ ಮೂಲಕ ಡೌನ್‌ಲೋಡ್"
+  },
+  "related": {
+    "title": "ಸಂಬಂಧಿತ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗಳು"
+  },
+  "sources": {
+    "title": "ಮೂಲಗಳು: {module}",
+    "type": {
+      "API": "ನೇರ ಡೇಟಾ ಸಂಪರ್ಕ",
+      "Static": "ಸ್ಥಿರ ಉಲ್ಲೇಖ",
+      "Collected": "ವರದಿಗಳಿಂದ ಸಂಗ್ರಹ",
+      "RSS": "ಸುದ್ದಿ ಫೀಡ್",
+      "Institutional": "ಸಂಸ್ಥೆ"
+    },
+    "refresh": {
+      "Daily": "ಪ್ರತಿದಿನ",
+      "Weekly": "ವಾರಕ್ಕೊಮ್ಮೆ",
+      "Monthly": "ತಿಂಗಳಿಗೊಮ್ಮೆ",
+      "Quarterly": "ಮೂರು ತಿಂಗಳಿಗೊಮ್ಮೆ",
+      "Annual": "ವರ್ಷಕ್ಕೊಮ್ಮೆ",
+      "Event-driven": "ಘಟನೆ ನಡೆದಾಗ",
+      "Manual": "ಕೈಯಾರೆ ನವೀಕರಣ"
+    }
+  },
+  "metric": {
+    "wildlife-tigers": {
+      "tiger_population_total": "ಕಾಡಿನಲ್ಲಿರುವ ಹುಲಿಗಳು",
+      "tiger_reserves_count": "ಹುಲಿ ಮೀಸಲು ಪ್ರದೇಶಗಳು",
+      "reserve_area_protected_sqkm": "ಹುಲಿ ಮೀಸಲು ಪ್ರದೇಶಗಳ ವಿಸ್ತೀರ್ಣ"
+    },
+    "demographics-population": {
+      "population_total": "ಜನಸಂಖ್ಯೆ",
+      "population_growth_yoy": "ಒಂದು ವರ್ಷದ ಬೆಳವಣಿಗೆ",
+      "population_density_per_sq_km": "ಪ್ರತಿ ಚ.ಕಿ.ಮೀ.ಗೆ ಜನರು",
+      "global_rank": "ಜನಸಂಖ್ಯೆಯಲ್ಲಿ ವಿಶ್ವ ಸ್ಥಾನ"
+    },
+    "economy-gdp": {
+      "gdp_nominal_usd_trillion": "ಅಮೆರಿಕನ್ ಡಾಲರ್‌ನಲ್ಲಿ ಜಿಡಿಪಿ",
+      "gdp_growth_yoy": "ಒಂದು ವರ್ಷದ ಜಿಡಿಪಿ ಬೆಳವಣಿಗೆ",
+      "gdp_per_capita_inr": "ತಲಾ ಆದಾಯ",
+      "gdp_ppp_usd_trillion": "ಖರೀದಿ ಸಾಮರ್ಥ್ಯದ ಆಧಾರದ ಜಿಡಿಪಿ",
+      "world_rank_gdp_nominal": "ವಿಶ್ವ ಸ್ಥಾನ: ಜಿಡಿಪಿ",
+      "world_rank_gdp_ppp": "ವಿಶ್ವ ಸ್ಥಾನ: ಖರೀದಿ ಸಾಮರ್ಥ್ಯದ ಜಿಡಿಪಿ",
+      "remittances_usd_billion": "ವಿದೇಶದಿಂದ ಮನೆಗೆ ಕಳುಹಿಸಿದ ಹಣ",
+      "world_rank_remittances": "ವಿಶ್ವ ಸ್ಥಾನ: ಮನೆಗೆ ಕಳುಹಿಸಿದ ಹಣ"
+    },
+    "economy-inflation": {
+      "cpi_inflation": "ಗ್ರಾಹಕ ಬೆಲೆ ಹಣದುಬ್ಬರ",
+      "rbi_target_midpoint": "ಆರ್‌ಬಿಐ ಹಣದುಬ್ಬರ ಗುರಿ"
+    },
+    "national-snapshot": {
+      "states_count": "ರಾಜ್ಯಗಳು",
+      "uts_count": "ಕೇಂದ್ರಾಡಳಿತ ಪ್ರದೇಶಗಳು",
+      "scheduled_languages": "ಅನುಸೂಚಿತ ಭಾಷೆಗಳು",
+      "smartphone_users_millions": "ಸ್ಮಾರ್ಟ್‌ಫೋನ್ ಬಳಕೆದಾರರು",
+      "world_rank_smartphone_users": "ವಿಶ್ವ ಸ್ಥಾನ: ಸ್ಮಾರ್ಟ್‌ಫೋನ್ ಬಳಕೆದಾರರು"
+    },
+    "economy-employment": {
+      "workforce_size": "ದುಡಿಯುವ ಜನರು"
+    },
+    "budget-union": {
+      "total_outlay_inr_lakh_crore": "ಒಟ್ಟು ಬಜೆಟ್"
+    },
+    "budget-gst": {
+      "monthly_collection_inr_lakh_crore": "ಒಂದು ತಿಂಗಳ ಜಿಎಸ್‌ಟಿ ಸಂಗ್ರಹ"
+    },
+    "know-india-constitution": {
+      "articles_count": "ವಿಧಿಗಳು",
+      "schedules_count": "ಅನುಸೂಚಿಗಳು",
+      "parts_count": "ಭಾಗಗಳು",
+      "adopted_year": "ಜಾರಿಗೆ ಬಂದ ವರ್ಷ"
+    },
+    "know-india-history-timeline": {
+      "civilization_span_years": "ನಾಗರಿಕತೆಯ ವರ್ಷಗಳು"
+    },
+    "know-india-geography-physical": {
+      "area_total_million_km2": "ಒಟ್ಟು ವಿಸ್ತೀರ್ಣ",
+      "world_rank_by_area": "ವಿಸ್ತೀರ್ಣದಲ್ಲಿ ವಿಶ್ವ ಸ್ಥಾನ"
+    },
+    "know-india-parliament": {
+      "lok_sabha_seats": "ಲೋಕಸಭೆ ಸ್ಥಾನಗಳು",
+      "rajya_sabha_seats": "ರಾಜ್ಯಸಭೆ ಸ್ಥಾನಗಳು"
+    },
+    "know-india-elections": {
+      "registered_voters_millions": "ನೋಂದಾಯಿತ ಮತದಾರರು"
+    },
+    "know-india-budget": {
+      "budget_process_stages": "ಬಜೆಟ್ ಪ್ರಕ್ರಿಯೆಯ ಹಂತಗಳು"
+    },
+    "health-overview": {
+      "life_expectancy_years": "ಜೀವಿತಾವಧಿ",
+      "life_expectancy_target_2030": "ಜೀವಿತಾವಧಿ ಗುರಿ",
+      "life_expectancy_change_1990": "1990ರಿಂದ ಹೆಚ್ಚಾದ ವರ್ಷಗಳು",
+      "infant_mortality_rate": "ಶಿಶು ಮರಣ",
+      "doctors_per_1000": "ವೈದ್ಯರು",
+      "state_leader_kerala_imr": "ಕೇರಳ: ಶಿಶು ಮರಣ",
+      "state_leader_kerala_life_exp": "ಕೇರಳ: ಜೀವಿತಾವಧಿ",
+      "state_leader_delhi_doctors": "ದೆಹಲಿ: ವೈದ್ಯರು",
+      "state_leader_manipur_imm_cov": "ಮಣಿಪುರ: ಲಸಿಕೆ ವ್ಯಾಪ್ತಿ",
+      "state_leader_tn_hosp_per_1000": "ತಮಿಳುನಾಡು: ಆಸ್ಪತ್ರೆಗಳು"
+    },
+    "health-pmjay": {
+      "cards_issued_crore": "ವಿತರಿಸಿದ ಆಯುಷ್ಮಾನ್ ಕಾರ್ಡ್‌ಗಳು",
+      "empanelled_hospitals_thousands": "ಯೋಜನೆಗೆ ಸೇರಿದ ಆಸ್ಪತ್ರೆಗಳು"
+    },
+    "health-immunisation": {
+      "doses_administered_crore": "ಯು-ವಿನ್‌ನಲ್ಲಿ ನೀಡಿದ ಡೋಸ್‌ಗಳು"
+    },
+    "education-skills": {
+      "pmkvy_trained_crore": "ಪಿಎಂಕೆವಿವೈ ಅಡಿ ತರಬೇತಿ ಪಡೆದವರು"
+    },
+    "education-schools": {
+      "schools_total_lakh": "ಶಾಲೆಗಳು"
+    },
+    "education-higher": {
+      "higher_ed_enrolment_crore": "ಉನ್ನತ ಶಿಕ್ಷಣದ ವಿದ್ಯಾರ್ಥಿಗಳು"
+    },
+    "wildlife-forests": {
+      "forest_cover_pct": "ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "forest_cover_change_2021": "2021ರಿಂದ ಹೆಚ್ಚಾದ ಅರಣ್ಯ",
+      "forest_cover_target_pct": "ಅರಣ್ಯ ವ್ಯಾಪ್ತಿಯ ಗುರಿ",
+      "forest_cover_lakh_km2": "ಅರಣ್ಯ ವಿಸ್ತೀರ್ಣ",
+      "tree_cover_pct": "ಅರಣ್ಯದ ಹೊರಗಿನ ಮರಗಳ ವ್ಯಾಪ್ತಿ",
+      "top_state_pct": "ಭಾರತದ ಅರಣ್ಯದಲ್ಲಿ ಮಧ್ಯ ಪ್ರದೇಶದ ಪಾಲು",
+      "elephants_count": "ಆನೆಗಳು",
+      "rhinos_count": "ಒಂಟಿ ಕೊಂಬಿನ ಘೇಂಡಾಮೃಗಗಳು",
+      "isfr_edition": "ಅರಣ್ಯ ವರದಿಯ ಆವೃತ್ತಿ",
+      "isfr_year": "ಅರಣ್ಯ ವರದಿಯ ವರ್ಷ",
+      "top_state_mizoram_pct": "ಮಿಜೋರಾಂ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_arunachal_pct": "ಅರುಣಾಚಲ ಪ್ರದೇಶ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_meghalaya_pct": "ಮೇಘಾಲಯ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_manipur_pct": "ಮಣಿಪುರ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_nagaland_pct": "ನಾಗಾಲ್ಯಾಂಡ್: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ"
+    },
+    "wildlife-protected-areas": {
+      "parks_count_total": "ಉದ್ಯಾನಗಳು ಮತ್ತು ಅಭಯಾರಣ್ಯಗಳು"
+    },
+    "agriculture-production": {
+      "foodgrain_output_million_tonnes": "ಆಹಾರಧಾನ್ಯ ಉತ್ಪಾದನೆ",
+      "rice_production_million_tonnes": "ಅಕ್ಕಿ",
+      "wheat_production_million_tonnes": "ಗೋಧಿ",
+      "foodgrain_change_yoy_mt": "ಒಂದು ವರ್ಷದ ಬದಲಾವಣೆ",
+      "top_producer_state_pct": "ಮೊದಲ ರಾಜ್ಯದ ಪಾಲು",
+      "estimate_year": "ಅಂದಾಜಿನ ವರ್ಷ",
+      "top_state_up_wheat_mt": "ಉತ್ತರ ಪ್ರದೇಶ: ಗೋಧಿ",
+      "top_state_pb_wheat_mt": "ಪಂಜಾಬ್: ಗೋಧಿ",
+      "top_state_wb_rice_mt": "ಪಶ್ಚಿಮ ಬಂಗಾಳ: ಅಕ್ಕಿ",
+      "top_state_mp_wheat_mt": "ಮಧ್ಯ ಪ್ರದೇಶ: ಗೋಧಿ",
+      "top_state_ap_rice_mt": "ಆಂಧ್ರ ಪ್ರದೇಶ: ಅಕ್ಕಿ"
+    },
+    "agriculture-pmkisan": {
+      "farmers_count_crore": "ಪಿಎಂ-ಕಿಸಾನ್ ರೈತರು",
+      "pmfby_insured_crore": "ವಿಮೆ ಪಡೆದ ರೈತರು (ಪಿಎಂಎಫ್‌ಬಿವೈ)",
+      "kcc_active_cards_crore": "ಬಳಕೆಯಲ್ಲಿರುವ ಕಿಸಾನ್ ಕ್ರೆಡಿಟ್ ಕಾರ್ಡ್‌ಗಳು",
+      "soil_health_cards_crore": "ವಿತರಿಸಿದ ಮಣ್ಣು ಆರೋಗ್ಯ ಕಾರ್ಡ್‌ಗಳು"
+    },
+    "agriculture-plantation": {
+      "tea_production_million_kg": "ಚಹಾ ಉತ್ಪಾದನೆ"
+    },
+    "livestock-census": {
+      "livestock_total_million": "ಜಾನುವಾರುಗಳು"
+    },
+    "livestock-fisheries": {
+      "fish_production_lakh_tonnes": "ಮೀನು ಉತ್ಪಾದನೆ"
+    },
+    "energy-power": {
+      "installed_capacity_gw": "ಸ್ಥಾಪಿತ ಸಾಮರ್ಥ್ಯ",
+      "capacity_change_yoy_gw": "ಒಂದು ವರ್ಷದಲ್ಲಿ ಸೇರ್ಪಡೆ",
+      "re_target_gw_2030": "2030ರ ಶುದ್ಧ ವಿದ್ಯುತ್ ಗುರಿ",
+      "coal_capacity_gw": "ಕಲ್ಲಿದ್ದಲು",
+      "renewables_capacity_gw": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನ",
+      "hydro_capacity_gw": "ಜಲವಿದ್ಯುತ್",
+      "nuclear_capacity_gw": "ಅಣುಶಕ್ತಿ",
+      "mix_pct_coal": "ಕಲ್ಲಿದ್ದಲಿನ ಪಾಲು",
+      "mix_pct_renewables": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನದ ಪಾಲು",
+      "mix_pct_hydro": "ಜಲವಿದ್ಯುತ್‌ನ ಪಾಲು",
+      "mix_pct_nuclear": "ಅಣುಶಕ್ತಿಯ ಪಾಲು",
+      "top_state_mh_capacity_gw": "ಮಹಾರಾಷ್ಟ್ರ: ಸಾಮರ್ಥ್ಯ",
+      "top_state_gj_capacity_gw": "ಗುಜರಾತ್: ಸಾಮರ್ಥ್ಯ",
+      "top_state_tn_capacity_gw": "ತಮಿಳುನಾಡು: ಸಾಮರ್ಥ್ಯ",
+      "top_state_rj_capacity_gw": "ರಾಜಸ್ಥಾನ: ಸಾಮರ್ಥ್ಯ",
+      "top_state_kn_capacity_gw": "ಕರ್ನಾಟಕ: ಸಾಮರ್ಥ್ಯ"
+    },
+    "energy-renewables": {
+      "renewable_installed_gw": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನ ಸಾಮರ್ಥ್ಯ"
+    },
+    "energy-coal": {
+      "coal_production_million_tonnes": "ಗಣಿಗಾರಿಕೆ ಮಾಡಿದ ಕಲ್ಲಿದ್ದಲು"
+    },
+    "energy-fuels": {
+      "crude_imports_million_tonnes": "ಆಮದು ಮಾಡಿದ ಕಚ್ಚಾ ತೈಲ"
+    },
+    "infra-roads": {
+      "nh_length_km": "ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "nh_target_km_2027": "2027ರ ಹೆದ್ದಾರಿ ಗುರಿ",
+      "nh_change_yoy_km": "ಒಂದು ವರ್ಷದಲ್ಲಿ ಸೇರ್ಪಡೆ",
+      "expressway_km": "ಎಕ್ಸ್‌ಪ್ರೆಸ್‌ವೇಗಳು",
+      "bharatmala_nh_km": "ಭಾರತಮಾಲಾ ಅಡಿ ನಿರ್ಮಾಣ",
+      "sagarmala_ports_count": "ಸಾಗರಮಾಲಾ ಪ್ರಮುಖ ಬಂದರುಗಳು",
+      "udan_airports_count": "ಉಡಾನ್ ವಿಮಾನ ನಿಲ್ದಾಣಗಳು",
+      "gatishakti_projects_count": "ಗತಿಶಕ್ತಿ ಯೋಜನೆಗಳು",
+      "data_year": "ಡೇಟಾದ ವರ್ಷ",
+      "top_state_mh_nh_km": "ಮಹಾರಾಷ್ಟ್ರ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_up_nh_km": "ಉತ್ತರ ಪ್ರದೇಶ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_rj_nh_km": "ರಾಜಸ್ಥಾನ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_mp_nh_km": "ಮಧ್ಯ ಪ್ರದೇಶ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_ka_nh_km": "ಕರ್ನಾಟಕ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು"
+    },
+    "infra-railways": {
+      "route_km": "ರೈಲು ಮಾರ್ಗದ ಉದ್ದ"
+    },
+    "infra-aviation": {
+      "airports_operational_count": "ಕಾರ್ಯನಿರತ ವಿಮಾನ ನಿಲ್ದಾಣಗಳು"
+    },
+    "infra-ports": {
+      "major_ports_count": "ಪ್ರಮುಖ ಬಂದರುಗಳು"
+    },
+    "infra-smart-cities": {
+      "cities_count": "ಮಿಷನ್‌ನಲ್ಲಿರುವ ನಗರಗಳು"
+    },
+    "infra-telecom": {
+      "subscribers_crore": "ಮೊಬೈಲ್ ಚಂದಾದಾರರು"
+    },
+    "justice-police": {
+      "civil_police_total_lakh": "ನಾಗರಿಕ ಪೊಲೀಸರು",
+      "police_per_lakh_population": "ಪ್ರತಿ ಲಕ್ಷ ಜನರಿಗೆ ಪೊಲೀಸರು",
+      "un_target_per_lakh": "ವಿಶ್ವಸಂಸ್ಥೆ ಸೂಚಿಸುವ ಮಟ್ಟ",
+      "change_yoy_lakh": "ಒಂದು ವರ್ಷದ ಬದಲಾವಣೆ"
+    },
+    "justice-pendency": {
+      "total_pending_crore_cases": "ಬಾಕಿ ಪ್ರಕರಣಗಳು"
+    },
+    "justice-prisons": {
+      "prison_population_lakh": "ಕಾರಾಗೃಹಗಳಲ್ಲಿರುವವರು"
+    },
+    "justice-crime": {
+      "ipc_cases_per_year_lakh": "ವರ್ಷಕ್ಕೆ ಅಪರಾಧ ಪ್ರಕರಣಗಳು",
+      "conviction_rate_pct": "ಶಿಕ್ಷೆ ಪ್ರಮಾಣ"
+    },
+    "defence-budget": {
+      "defence_allocation_lakh_cr": "ರಕ್ಷಣಾ ಹಂಚಿಕೆ"
+    },
+    "defence-exports": {
+      "defence_exports_thousand_cr": "ರಕ್ಷಣಾ ರಫ್ತು"
+    },
+    "defence-dpsu": {
+      "dpsu_count": "ರಕ್ಷಣಾ ಸಾರ್ವಜನಿಕ ಉದ್ದಿಮೆಗಳು"
+    },
+    "elections-loksabha": {
+      "loksabha_seats_total": "ಲೋಕಸಭೆ ಸ್ಥಾನಗಳು"
+    },
+    "elections-rajyasabha": {
+      "rajyasabha_seats_total": "ರಾಜ್ಯಸಭೆ ಸ್ಥಾನಗಳು"
+    },
+    "elections-turnout": {
+      "ge_2024_turnout_pct": "2024ರ ಲೋಕಸಭೆ ಚುನಾವಣೆಯ ಮತದಾನ ಪ್ರಮಾಣ"
+    },
+    "science-startups": {
+      "dpiit_recognised_lakh": "ಮಾನ್ಯತೆ ಪಡೆದ ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "unicorns_count": "ಯೂನಿಕಾರ್ನ್‌ಗಳು",
+      "change_yoy_lakh": "ಒಂದು ವರ್ಷದಲ್ಲಿ ಸೇರ್ಪಡೆ",
+      "data_year": "ಡೇಟಾದ ವರ್ಷ",
+      "top_state_ka_startups_thousand": "ಕರ್ನಾಟಕ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_mh_startups_thousand": "ಮಹಾರಾಷ್ಟ್ರ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_dl_startups_thousand": "ದೆಹಲಿ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_tn_startups_thousand": "ತಮಿಳುನಾಡು: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_tg_startups_thousand": "ತೆಲಂಗಾಣ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು"
+    },
+    "science-digital": {
+      "upi_txn_per_month_billion": "ತಿಂಗಳಿಗೆ ಯುಪಿಐ ಪಾವತಿಗಳು",
+      "aadhaar_enrolled_crore": "ಆಧಾರ್ ಹೊಂದಿರುವವರು",
+      "digilocker_users_crore": "ಡಿಜಿಲಾಕರ್ ಬಳಕೆದಾರರು",
+      "fastag_active_crore": "ಬಳಕೆಯಲ್ಲಿರುವ ಫಾಸ್ಟ್‌ಟ್ಯಾಗ್‌ಗಳು"
+    },
+    "science-isro": {
+      "satellites_launched_count": "ಉಡಾವಣೆಯಾದ ಉಪಗ್ರಹಗಳು"
+    },
+    "science-rd": {
+      "rd_pct_gdp": "ಸಂಶೋಧನಾ ವೆಚ್ಚ, ಜಿಡಿಪಿಯ ಪಾಲು"
+    },
+    "trade-overview": {
+      "exports_annual_lakh_cr": "ಒಂದು ವರ್ಷದ ಸರಕು ರಫ್ತು"
+    },
+    "trade-fdi": {
+      "fdi_equity_inflow_billion_usd": "ಒಂದು ವರ್ಷದ ವಿದೇಶಿ ಹೂಡಿಕೆ"
+    },
+    "trade-diaspora": {
+      "remittances_annual_billion_usd": "ಒಂದು ವರ್ಷದಲ್ಲಿ ಮನೆಗೆ ಕಳುಹಿಸಿದ ಹಣ"
+    },
+    "tourism-heritage": {
+      "asi_monuments_count": "ಸಂರಕ್ಷಿತ ಸ್ಮಾರಕಗಳು",
+      "unesco_sites_count": "ಯುನೆಸ್ಕೋ ವಿಶ್ವ ಪರಂಪರೆ ತಾಣಗಳು",
+      "global_rank_unesco": "ವಿಶ್ವ ಸ್ಥಾನ: ಯುನೆಸ್ಕೋ ತಾಣಗಳು",
+      "bollywood_films_per_year": "ವರ್ಷಕ್ಕೆ ಪ್ರಮಾಣೀಕರಿಸಿದ ಚಲನಚಿತ್ರಗಳು",
+      "scheduled_languages_count": "ಅನುಸೂಚಿತ ಭಾಷೆಗಳು",
+      "museums_count": "ವಸ್ತುಸಂಗ್ರಹಾಲಯಗಳು",
+      "data_year": "ಡೇಟಾದ ವರ್ಷ",
+      "unesco_taj_mahal_year": "ತಾಜ್ ಮಹಲ್: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_ajanta_year": "ಅಜಂತಾ ಗುಹೆಗಳು: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_khajuraho_year": "ಖಜುರಾಹೊ: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_hampi_year": "ಹಂಪಿ: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_sundarbans_year": "ಸುಂದರಬನ: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ"
+    },
+    "tourism-gi-tags": {
+      "gi_tags_count": "ಜಿಐ ಟ್ಯಾಗ್‌ಗಳು"
+    },
+    "tourism-overview": {
+      "international_arrivals_lakh": "ವಿದೇಶಿ ಪ್ರವಾಸಿಗರ ಆಗಮನ"
+    },
+    "sports-olympics": {
+      "olympic_medals_total": "ಇದುವರೆಗಿನ ಒಲಿಂಪಿಕ್ ಪದಕಗಳು"
+    },
+    "sports-khelo-india": {
+      "khelo_athletes_thousand": "ಖೇಲೋ ಇಂಡಿಯಾ ಕ್ರೀಡಾಪಟುಗಳು"
+    }
+  },
+  "data": {
+    "sourceLine": "ಮೂಲ: <a>{source}</a>, {date}",
+    "recorded": "{ago} ದಾಖಲಿಸಲಾಗಿದೆ",
+    "methodology": "ಹೇಗೆ ಅಳೆಯಲಾಗುತ್ತದೆ",
+    "sources": "ಮೂಲಗಳು",
+    "changeYear": "{year}ರಿಂದ {pct} {dir, select, up {ಏರಿಕೆ} down {ಇಳಿಕೆ} other {ಬದಲಾವಣೆ ಇಲ್ಲ}}",
+    "changePrior": "ಹಿಂದಿನ ಗಣತಿಯಿಂದ {pct} {dir, select, up {ಏರಿಕೆ} down {ಇಳಿಕೆ} other {ಬದಲಾವಣೆ ಇಲ್ಲ}}",
+    "points": "{n, plural, one {ಇದುವರೆಗೆ # ಗಣತಿ} other {ಇದುವರೆಗೆ # ಗಣತಿಗಳು}}",
+    "topTitle": "ಮುಂಚೂಣಿಯ 5 ರಾಜ್ಯಗಳು",
+    "methodTitle": "ಗಣತಿ ಹೇಗೆ ನಡೆಯುತ್ತದೆ",
+    "viewPdf": "ಮೂಲ ಪಿಡಿಎಫ್ ತೆರೆಯಿರಿ",
+    "cadenceLine": "{refresh}, {type}",
+    "differ": "ಮೂಲಗಳ ನಡುವೆ ಭಿನ್ನತೆ ಇದೆಯೇ?",
+    "differYes": "{n, plural, one {# ಮೂಲ ಭಿನ್ನವಾಗಿದೆ} other {# ಮೂಲಗಳು ಭಿನ್ನವಾಗಿವೆ}}",
+    "differNo": "ಯಾವುದೇ ಭಿನ್ನತೆ ಕಂಡುಬಂದಿಲ್ಲ",
+    "updateLog": "ನವೀಕರಣ ದಾಖಲೆ",
+    "continue": "ಇನ್ನಷ್ಟು ನೋಡಿ",
+    "allIn": "ಎಲ್ಲಾ {category} ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗಳು",
+    "news": {
+      "title": "ಸಂಬಂಧಿತ ಸುದ್ದಿ",
+      "ai": "ಎಐ ಸಾರಾಂಶಗಳು",
+      "readAt": "ಮೂಲ ಲೇಖನ ಓದಿ ({site})",
+      "about": "ಈ ಸಾರಾಂಶಗಳ ಬಗ್ಗೆ: ತ್ವರಿತ ತಿಳುವಳಿಕೆಗಾಗಿ ಎಐ ಇವುಗಳನ್ನು ಬರೆಯುತ್ತದೆ; ಇವು ಮೂಲ ಲೇಖನವಲ್ಲ. ಪೂರ್ಣ ವರದಿ ಓದಲು ಲಿಂಕ್ ಅನುಸರಿಸಿ. ಮೂಲ ಸುದ್ದಿಯ ಲೇಖಕರು ForThePeople ಅಲ್ಲ."
+    },
+    "health": {
+      "firstLoad": "ಮೊದಲ ಡೇಟಾಸೆಟ್, ಕೈಯಾರೆ ನಮೂದಿಸಲಾಗಿದೆ. ಸ್ವಯಂಚಾಲಿತ ನವೀಕರಣ ಯೋಜನೆಯಲ್ಲಿದೆ.",
+      "onTime": "ನಿರೀಕ್ಷಿತ {cadence} ವೇಳಾಪಟ್ಟಿಯಂತೆ ನವೀಕರಿಸಲಾಗಿದೆ.",
+      "late": "ಮೂಲ ಸ್ವಲ್ಪ ತಡವಾಗಿದೆ.",
+      "veryLate": "ಮೂಲ ನಿರೀಕ್ಷೆಗಿಂತ ಎರಡು ಪಟ್ಟಿಗಿಂತ ಹೆಚ್ಚು ತಡವಾಗಿದೆ.",
+      "aria": "ಮೂಲ ಎಷ್ಟು ಇತ್ತೀಚಿನದು: {status}"
+    },
+    "cadence": {
+      "daily": "ದೈನಂದಿನ",
+      "weekly": "ಸಾಪ್ತಾಹಿಕ",
+      "monthly": "ಮಾಸಿಕ",
+      "quarterly": "ತ್ರೈಮಾಸಿಕ",
+      "annual": "ವಾರ್ಷಿಕ",
+      "quadrennial": "ನಾಲ್ಕು ವರ್ಷಕ್ಕೊಮ್ಮೆಯ",
+      "event-driven": "ಘಟನೆ ಆಧಾರಿತ"
+    }
+  },
+  "tigers": {
+    "camera": {
+      "title": "ಕ್ಯಾಮೆರಾ ಬಲೆ ಗಣತಿ ಹೇಗೆ ನಡೆಯುತ್ತದೆ",
+      "body": "NTCAಯ ಅಖಿಲ ಭಾರತ ಹುಲಿ ಅಂದಾಜು ದೇಶದಾದ್ಯಂತ ಹುಲಿಗಳ ಆವಾಸಸ್ಥಾನಗಳಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಬಲೆಗಳನ್ನು ಇರಿಸುತ್ತದೆ. ಪ್ರತಿ ಹುಲಿಯನ್ನು ಅದರ ಪಟ್ಟೆಗಳ ವಿನ್ಯಾಸದಿಂದ ಗುರುತಿಸಲಾಗುತ್ತದೆ. ಕ್ಯಾಮೆರಾದಲ್ಲಿ ಕಂಡ ಹುಲಿಗಳು ಮತ್ತು ಕ್ಯಾಮೆರಾ ಇಲ್ಲದ ಪ್ರದೇಶಗಳಲ್ಲಿ ಹೆಜ್ಜೆಗುರುತು ಸಮೀಕ್ಷೆಯಿಂದ ಪಡೆದ ಸಾಂದ್ರತೆಯ ಅಂದಾಜನ್ನು ಸೇರಿಸಿ ಒಟ್ಟು ಅಂದಾಜು ಮಾಡಲಾಗುತ್ತದೆ. 2022ರ ಸುತ್ತಿನಲ್ಲಿ 20 ಹುಲಿ ರಾಜ್ಯಗಳ 32,588 ಸ್ಥಳಗಳಲ್ಲಿ ಕ್ಯಾಮೆರಾಗಳನ್ನು ಬಳಸಲಾಯಿತು."
+    },
+    "meaning": {
+      "title": "ಹುಲಿಗಳ ಸಂಖ್ಯೆಯ ಅರ್ಥ",
+      "body": "ಮುಖ್ಯ ಅಂಕಿ 3,682, ಅಖಿಲ ಭಾರತ ಹುಲಿ ಅಂದಾಜು 2022ರ ಸರಾಸರಿ ಅಂದಾಜು. NTCA ಇದರ ಸುತ್ತ 3,167ರಿಂದ 3,925ರವರೆಗಿನ ಶ್ರೇಣಿಯನ್ನು ಪ್ರಕಟಿಸುತ್ತದೆ; 3,167 ಎಂದರೆ ಕ್ಯಾಮೆರಾ ಬಲೆಗಳಲ್ಲಿ ನಿಜವಾಗಿ ಸೆರೆಯಾದ ಕನಿಷ್ಠ ಹುಲಿಗಳ ಸಂಖ್ಯೆ. ಪೂರ್ಣ ಶ್ರೇಣಿಯನ್ನು ವಿಧಾನದ ಪಿಡಿಎಫ್ ವಿವರಿಸುತ್ತದೆ."
+    },
+    "gaps": {
+      "title": "ಅನಿಶ್ಚಿತತೆ ಮತ್ತು ತಿಳಿದಿರುವ ಕೊರತೆಗಳು",
+      "body": "ಕಡಿಮೆ ಕ್ಯಾಮೆರಾಗಳಿರುವ ಪ್ರದೇಶಗಳಲ್ಲಿ ಅನಿಶ್ಚಿತತೆ ಹೆಚ್ಚು. ಈಶಾನ್ಯ ಭಾರತ ಮತ್ತು ಮಧ್ಯ ಭಾರತದ ಕೆಲವು ಭಾಗಗಳಲ್ಲಿ ಮಾದರಿ ಸಂಗ್ರಹ ಕಡಿಮೆ. ಗಣತಿ ನಾಲ್ಕು ವರ್ಷಕ್ಕೊಮ್ಮೆ ನಡೆಯುವುದರಿಂದ, ಎರಡು ಗಣತಿಗಳ ನಡುವಿನ ಬದಲಾವಣೆಯಲ್ಲಿ ಹುಲಿಗಳ ಸಂಖ್ಯೆಯ ನಿಜವಾದ ಬದಲಾವಣೆ ಮತ್ತು ಸುಧಾರಿತ ಗಣತಿ ವಿಧಾನ ಎರಡೂ ಸೇರಿರುತ್ತವೆ."
+    },
+    "report": {
+      "title": "ಪೂರ್ಣ ವರದಿ",
+      "body": "NTCA, ಭಾರತದಲ್ಲಿ ಹುಲಿಗಳ ಸ್ಥಿತಿ 2022: ಅಧಿಕೃತ ವರದಿ (ಪಿಡಿಎಫ್)."
+    }
+  }
+}

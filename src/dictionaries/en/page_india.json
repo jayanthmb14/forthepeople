@@ -1,0 +1,1111 @@
+{
+  "status": {
+    "live": "Live",
+    "beta": "Beta",
+    "coming_soon": "Coming soon",
+    "planned": "Planned",
+    "soon": "Soon"
+  },
+  "cat": {
+    "snapshot": "Snapshot",
+    "demographics": "Demographics",
+    "economy": "Economy",
+    "budget": "Budget",
+    "agriculture": "Agriculture",
+    "livestock": "Livestock",
+    "wildlife": "Wildlife",
+    "infrastructure": "Infrastructure",
+    "energy": "Energy",
+    "health": "Health",
+    "education": "Education",
+    "defence": "Defence",
+    "justice": "Justice",
+    "elections": "Elections",
+    "science": "Science",
+    "trade": "Trade",
+    "tourism": "Tourism",
+    "sports": "Sports",
+    "custom": "Other"
+  },
+  "subGroup": {
+    "AGRICULTURE": "Agriculture",
+    "DEFENCE": "Defence",
+    "DIGITAL": "Digital",
+    "EDUCATION": "Education",
+    "ELECTIONS": "Elections",
+    "HEALTH": "Health",
+    "HERITAGE": "Heritage",
+    "INDUSTRY": "Industry",
+    "JUSTICE": "Justice",
+    "LIVESTOCK": "Livestock",
+    "POWER": "Power",
+    "SCIENCE": "Science",
+    "SPORTS": "Sports",
+    "TRADE": "Trade",
+    "TRANSPORT": "Transport",
+    "URBAN": "Urban"
+  },
+  "units": {
+    "crore": "crore",
+    "lakh": "lakh",
+    "thousand": "thousand",
+    "million": "million",
+    "billion": "billion",
+    "trillion": "trillion",
+    "lakhCrore": "lakh crore",
+    "thousandCrore": "thousand crore",
+    "lakhTonnes": "lakh tonnes",
+    "lakhPerYear": "lakh a year",
+    "lakhKm2": "lakh km²",
+    "millionTonnes": "million tonnes",
+    "millionKg": "million kg",
+    "millionKm2": "million km²",
+    "billionPerMonth": "billion a month",
+    "gw": "GW",
+    "km": "km",
+    "km2": "km²",
+    "per1000Births": "per 1,000 births",
+    "per1000People": "per 1,000 people",
+    "perLakh": "per lakh people",
+    "perKm2": "per km²",
+    "years": "years",
+    "seats": "seats",
+    "stages": "stages",
+    "individuals": "animals",
+    "tigers": "tigers",
+    "protectedAreas": "protected areas",
+    "notified": "reserves",
+    "ports": "ports",
+    "airports": "airports",
+    "cities": "cities",
+    "projects": "projects",
+    "companies": "companies",
+    "unicorns": "unicorns",
+    "satellites": "satellites",
+    "monuments": "monuments",
+    "sites": "sites",
+    "languages": "languages",
+    "museums": "museums",
+    "giTags": "GI tags",
+    "medals": "medals",
+    "filmsPerYear": "films a year"
+  },
+  "quality": {
+    "published": "Published",
+    "derived": "Worked out",
+    "estimated": "Estimate"
+  },
+  "picker": {
+    "search": "Search modules",
+    "searchAny": "Search any module: economy, tigers, health",
+    "noMatch": "No modules match “{q}”.",
+    "count": "{n, plural, one {# module} other {# modules}}",
+    "summary": "{total, plural, one {# module} other {# modules}}, {live} live, {soon} coming soon"
+  },
+  "report": {
+    "open": "Report an issue",
+    "openAria": "Report a problem with the data on this page",
+    "title": "Report an issue",
+    "close": "Close",
+    "intro": "Spotted a mistake, a missing source or something out of date? Tell us and we will fix it. Page: <b>{module}</b>",
+    "subject": "What is wrong?",
+    "subjectPlaceholder": "For example: the tiger count looks wrong for Karnataka",
+    "message": "Details",
+    "messagePlaceholder": "What did you see, and what should it be? Add a link to a source if you have one.",
+    "name": "Your name (optional)",
+    "email": "Your email (optional)",
+    "emailPlaceholder": "Only used to reply to you",
+    "needBoth": "Please add a short subject and some details.",
+    "failed": "Could not send the report ({status}). Please try again.",
+    "failedGeneric": "Could not send the report. Please try again.",
+    "send": "Send report",
+    "sending": "Sending…",
+    "thanksTitle": "Thank you, we got your report.",
+    "thanksBody": "We will check it. If you left an email and your report needs a reply, we will write to you."
+  },
+  "mod": {
+    "national-snapshot": {
+      "t": "National snapshot",
+      "g": "States, union territories, languages and land area at a glance.",
+      "d": "Constitutional and near-fixed reference facts about the Republic of India."
+    },
+    "demographics-population": {
+      "t": "Population and demographics",
+      "g": "Population, births and life expectancy from SRS and the Census.",
+      "d": "Yearly Sample Registration System (SRS) bulletins and the ten-yearly Census. SRS gives birth, death and infant death rates and life expectancy every year; the Census gives the full picture by age and sex."
+    },
+    "economy-gdp": {
+      "t": "Economy and GDP",
+      "g": "Quarterly GDP, GVA and growth by sector from MoSPI.",
+      "d": "Real and nominal GDP, gross value added by sector, and growth on the last quarter and the last year, from MoSPI press notes released at the end of February, May, August and November."
+    },
+    "economy-inflation": {
+      "t": "Inflation and prices",
+      "g": "Monthly CPI and WPI inflation from MoSPI and DPIIT.",
+      "d": "Consumer prices (CPI: combined, rural and urban) come out on the 12th and wholesale prices (WPI) on the 14th of each month. The headline figure is the change from a year earlier."
+    },
+    "economy-employment": {
+      "t": "Employment (PLFS)",
+      "g": "Work participation and unemployment from MoSPI's labour survey.",
+      "d": "The monthly bulletin of the Periodic Labour Force Survey: labour force participation, the worker population ratio and the unemployment rate by current weekly status."
+    },
+    "budget-union": {
+      "t": "Union Budget",
+      "g": "Yearly Union Budget allocations and monthly actual spending.",
+      "d": "Total spending, the revenue and capital split, and the ten ministries with the biggest allocations. The Controller General of Accounts tracks actual receipts against the estimates every month."
+    },
+    "budget-gst": {
+      "t": "GST collections",
+      "g": "Monthly gross GST collection, split by CGST, SGST and IGST.",
+      "d": "Gross GST collected (CGST, SGST, IGST and cess), published by the GST Council and the Ministry of Finance on the 1st of each month."
+    },
+    "agriculture-production": {
+      "t": "Crop production",
+      "g": "Crop estimates and mandi coverage.",
+      "d": "Advance estimates of crop production from the Department of Agriculture (DA&FW), released four times a year. The number of mandis is tracked monthly through AGMARKNET."
+    },
+    "agriculture-plantation": {
+      "t": "Plantation crops",
+      "g": "Tea, coffee, rubber and spices: production and exports.",
+      "d": "Commodity board data for India's plantation sector. The Tea, Coffee, Rubber and Spices boards each publish a yearly statistics report."
+    },
+    "agriculture-pmkisan": {
+      "t": "PM-KISAN",
+      "g": "Farmers helped and money paid so far.",
+      "d": "Direct income support for small and marginal farmers. The PM-KISAN portal publishes the total number of farmers helped and instalments paid."
+    },
+    "livestock-census": {
+      "t": "Livestock and dairy",
+      "g": "Livestock Census and NDDB milk production.",
+      "d": "The five-yearly Livestock Census and yearly NDDB dairy data: milk production by state, the breed registry and cooperative reach."
+    },
+    "livestock-fisheries": {
+      "t": "Fisheries",
+      "g": "Inland and marine fish production and exports.",
+      "d": "Yearly data from the Department of Fisheries: production by state, exports and PMMSY beneficiaries."
+    },
+    "wildlife-forests": {
+      "t": "Forests and wildlife",
+      "g": "Forest cover from FSI's India State of Forest Report, published every two years.",
+      "d": "Total forest cover, tree cover, and the split between very dense, moderately dense and open forest, from FSI's India State of Forest Report."
+    },
+    "wildlife-tigers": {
+      "t": "Tiger conservation",
+      "g": "Tiger reserves and population estimates from NTCA.",
+      "d": "Tiger population estimates (Status of Tigers, every four years), tiger reserves and conservation funding through NTCA."
+    },
+    "wildlife-protected-areas": {
+      "t": "National parks and sanctuaries",
+      "g": "The protected area network: parks, sanctuaries and Ramsar sites.",
+      "d": "The Wildlife Institute of India's list of all protected areas, plus Ramsar wetlands and biosphere reserves."
+    },
+    "infra-roads": {
+      "t": "Roads and highways",
+      "g": "National highway length and NHAI projects.",
+      "d": "MoRTH quarterly status: total national highway length, ongoing projects and their value, and expressways under construction."
+    },
+    "infra-railways": {
+      "t": "Railways",
+      "g": "Network length, passengers and freight from Indian Railways.",
+      "d": "The Indian Railways yearbook: track length, electrification, passengers carried and freight loaded."
+    },
+    "infra-aviation": {
+      "t": "Aviation",
+      "g": "Monthly air traffic, planes and airports from DGCA.",
+      "d": "DGCA monthly performance report: passengers by airport, domestic and international, and fleet size by airline."
+    },
+    "infra-ports": {
+      "t": "Ports and shipping",
+      "g": "Cargo at major and smaller ports.",
+      "d": "Indian Ports Association data on cargo handled, container traffic and ship calls at the 12 major ports, plus the smaller ports run by states."
+    },
+    "infra-telecom": {
+      "t": "Telecom and internet",
+      "g": "Phone and broadband subscribers from TRAI.",
+      "d": "TRAI performance indicators report: wireless and wireline subscribers, the urban and rural split, and broadband and fibre reach."
+    },
+    "infra-smart-cities": {
+      "t": "Smart Cities Mission",
+      "g": "Projects finished and money used across the mission's cities.",
+      "d": "Smart Cities Mission dashboard: projects sanctioned, finished and under way, and funds released against funds used."
+    },
+    "energy-power": {
+      "t": "Power generation",
+      "g": "Installed capacity and generation by source from CEA.",
+      "d": "CEA monthly summary: total installed capacity, monthly generation from thermal, hydro, nuclear and renewable sources, and peak demand."
+    },
+    "energy-renewables": {
+      "t": "Renewable energy",
+      "g": "Installed solar, wind and other clean power from MNRE.",
+      "d": "MNRE monthly bulletin: solar (large plants and rooftops), wind, biomass, small hydro and total renewable capacity."
+    },
+    "energy-fuels": {
+      "t": "Petroleum and fuels",
+      "g": "Crude imports, fuel use and retail prices.",
+      "d": "PPAC monthly snapshot: crude imports, refinery output, petrol, diesel and LPG use, and retail price ranges."
+    },
+    "energy-coal": {
+      "t": "Coal",
+      "g": "Coal mined, coal sent out, and stock at power plants.",
+      "d": "Ministry of Coal monthly data: coal mined in India, imports, coal sent to power plants and stock held at coal power stations."
+    },
+    "health-overview": {
+      "t": "Health indicators",
+      "g": "Key NFHS-5 figures and National Health Mission coverage.",
+      "d": "NFHS-5 figures on child growth, child deaths and vaccination coverage. National totals, with state figures inside."
+    },
+    "health-pmjay": {
+      "t": "Ayushman Bharat (PM-JAY)",
+      "g": "Cards issued, hospitals on the scheme and treatments approved.",
+      "d": "NHA monthly dashboard: Ayushman cards issued, hospitals on the scheme and hospital stays approved."
+    },
+    "health-immunisation": {
+      "t": "Vaccination and U-WIN",
+      "g": "People registered on U-WIN so far.",
+      "d": "The national vaccination registry: people registered, doses given and coverage for each vaccine."
+    },
+    "education-schools": {
+      "t": "Schools (UDISE+)",
+      "g": "Schools, enrolment and facilities from UDISE+.",
+      "d": "The yearly UDISE+ school census: total schools, enrolment by stage, facilities (toilets, electricity, computers) and teachers."
+    },
+    "education-higher": {
+      "t": "Higher education",
+      "g": "Students, colleges and enrolment ratio from AISHE.",
+      "d": "The All India Survey on Higher Education: enrolment, the enrolment ratio by gender and social group, and recognised universities and colleges."
+    },
+    "education-skills": {
+      "t": "Skill India",
+      "g": "PMKVY trainees, ITI seats and certificates.",
+      "d": "Ministry of Skill Development data: people trained and placed under PMKVY, ITI seats and admissions, and NSDC scheme reach."
+    },
+    "defence-budget": {
+      "t": "Defence budget (public)",
+      "g": "Capital and revenue allocations in the Union Budget.",
+      "d": "Defence allocations in the Union Budget (Demands 17, 19 and 20): the total, capital spending and modernisation. Public figures only."
+    },
+    "defence-exports": {
+      "t": "Defence exports",
+      "g": "Defence export totals released through PIB.",
+      "d": "Defence export totals released by the Ministry of Defence through PIB. Quarterly, total value only."
+    },
+    "defence-dpsu": {
+      "t": "Defence PSU performance",
+      "g": "HAL, BEL, Mazagon and other listed defence PSUs.",
+      "d": "Annual report figures from listed defence public sector companies (HAL, BEL, Mazagon Dock, Cochin Shipyard and others): revenue, profit and order book."
+    },
+    "justice-pendency": {
+      "t": "Court pendency",
+      "g": "Pending court cases, from NJDG.",
+      "d": "National Judicial Data Grid weekly snapshot: total pending cases across district courts, high courts and the Supreme Court. Totals only."
+    },
+    "justice-crime": {
+      "t": "NCRB crime statistics",
+      "g": "Headline figures from the yearly Crime in India report.",
+      "d": "The National Crime Records Bureau's Crime in India report: total cases under the penal code and the rate per lakh people. Released once a year as a scanned PDF."
+    },
+    "justice-police": {
+      "t": "Police strength (BPRD)",
+      "g": "Sanctioned and actual police strength from BPRD.",
+      "d": "Yearly Bureau of Police Research and Development data on police forces: strength, vacancies and police per lakh people."
+    },
+    "justice-prisons": {
+      "t": "Prison statistics",
+      "g": "Headline figures from NCRB's Prison Statistics India.",
+      "d": "NCRB's yearly Prison Statistics: total prisoners, undertrials, convicts and how full prisons are."
+    },
+    "elections-loksabha": {
+      "t": "Lok Sabha",
+      "g": "Seats held by each party, and vacancies.",
+      "d": "Election Commission of India data on the current Lok Sabha: seats by party, vacancies and by-election results."
+    },
+    "elections-rajyasabha": {
+      "t": "Rajya Sabha",
+      "g": "Party strength in the Council of States.",
+      "d": "Rajya Sabha membership: strength by party, elected and nominated members, and vacancies."
+    },
+    "elections-turnout": {
+      "t": "Voter turnout trends",
+      "g": "Past Lok Sabha and state turnout from ECI.",
+      "d": "Long-run voter turnout for Lok Sabha and state assembly elections, from the Election Commission's statistical reports."
+    },
+    "science-isro": {
+      "t": "ISRO missions",
+      "g": "Recent launches and satellites.",
+      "d": "ISRO missions by year, recent launches and active satellites. Updated after each launch."
+    },
+    "science-rd": {
+      "t": "Research and patents",
+      "g": "Money spent on research, and patents granted.",
+      "d": "Department of Science and Technology research statistics: research spending as a share of GDP, and patents filed and granted through IP India."
+    },
+    "science-startups": {
+      "t": "Startups and unicorns",
+      "g": "DPIIT-recognised startups and unicorns.",
+      "d": "Startups recognised by Startup India and DPIIT: the total, by sector, by state, and growth over the year."
+    },
+    "science-digital": {
+      "t": "Digital India (UPI, Aadhaar)",
+      "g": "Monthly UPI payments and Aadhaar enrolment.",
+      "d": "UPI payment count and value (NPCI, monthly), and Aadhaar enrolment and checks (UIDAI)."
+    },
+    "trade-overview": {
+      "t": "Foreign trade",
+      "g": "Monthly exports, imports and the trade balance.",
+      "d": "Department of Commerce quick estimates: monthly goods exports and imports, services trade and the trade balance."
+    },
+    "trade-fdi": {
+      "t": "FDI and investment",
+      "g": "Foreign investment by sector and source country.",
+      "d": "DPIIT foreign investment data: quarterly equity inflows by sector and source country, and RBI capital account data."
+    },
+    "trade-diaspora": {
+      "t": "Diaspora and remittances",
+      "g": "Money sent home, and Indians abroad.",
+      "d": "RBI yearly remittance data and Ministry of External Affairs estimates of Indians abroad, by country."
+    },
+    "tourism-overview": {
+      "t": "Tourism statistics",
+      "g": "Monthly foreign tourist arrivals and earnings from the Ministry of Tourism.",
+      "d": "Foreign tourist arrivals and foreign exchange earnings, from the Ministry of Tourism's monthly bulletin."
+    },
+    "tourism-heritage": {
+      "t": "UNESCO and ASI heritage",
+      "g": "Protected monuments and World Heritage Sites.",
+      "d": "Archaeological Survey of India data on centrally protected monuments, plus India's UNESCO World Heritage Sites."
+    },
+    "tourism-gi-tags": {
+      "t": "GI tags registry",
+      "g": "Products with a Geographical Indication.",
+      "d": "The Geographical Indications registry: total tags, by category and by state."
+    },
+    "sports-olympics": {
+      "t": "Olympic performance",
+      "g": "Medals, athletes and team size.",
+      "d": "India's Olympic and Paralympic record: medals by Games, team size and results by sport."
+    },
+    "sports-khelo-india": {
+      "t": "Khelo India",
+      "g": "Khelo India Games and training centres.",
+      "d": "Khelo India programme data: Games held, accredited training centres (KISCE) and athletes supported, by sport."
+    },
+    "know-india-constitution": {
+      "t": "How the Indian Constitution works",
+      "g": "The Preamble, Fundamental Rights, Directive Principles and Schedules, explained from NCERT.",
+      "d": "A picture-first guide, in line with NCERT, to the Preamble, Fundamental Rights, Directive Principles and how the Constitution is laid out."
+    },
+    "know-india-history-timeline": {
+      "t": "History of India: a timeline",
+      "g": "From the Indus Valley to today: the master timeline of Indian civilisation.",
+      "d": "A picture-first overview, in line with NCERT, from the Indus Valley (3300 BCE) to after Independence. It links to deeper guides on each era."
+    },
+    "know-india-geography-physical": {
+      "t": "Geography of India: the land",
+      "g": "Rivers, mountains, climate zones and natural regions, explained.",
+      "d": "A picture-first guide, in line with NCERT, to India's physical geography: river systems, mountain ranges, climate zones and natural regions."
+    },
+    "know-india-parliament": {
+      "t": "How Parliament works",
+      "g": "Sessions, kinds of bills, committees and question hour, explained.",
+      "d": "A picture-first guide, in line with NCERT, to how Parliament works: the Lok Sabha, the Rajya Sabha, bills, committees and question hour."
+    },
+    "know-india-elections": {
+      "t": "How elections work in India",
+      "g": "Lok Sabha, state and local elections: the machinery from ECI to EVM.",
+      "d": "A picture-first guide, in line with NCERT, to India's election system: the Election Commission, the Model Code of Conduct, EVMs, VVPATs and voter registration."
+    },
+    "know-india-budget": {
+      "t": "How the Union Budget is made",
+      "g": "Article 112, the budget cycle and Demands for Grants, explained.",
+      "d": "A picture-first guide, in line with NCERT, to how the Union Budget is made: Article 112, the budget cycle, who does what, and the Finance Bill."
+    }
+  },
+  "meta": {
+    "title": "India in one page",
+    "description": "A free dashboard of India's key figures from official government portals, each with its source and date. An independent citizen platform."
+  },
+  "liveStrip": {
+    "aria": "How fresh the data is and what the site covers",
+    "data": "Data",
+    "dataAsOf": "Data as of",
+    "sources": "Sources",
+    "sourcesValue": "{n} cited",
+    "modules": "Modules",
+    "live": "{n} live",
+    "beta": "{n} beta",
+    "soon": "{n} coming soon",
+    "planned": "{n} planned",
+    "districts": "Districts",
+    "states": "States",
+    "ofTotal": "{n} of {total}"
+  },
+  "identity": {
+    "aria": "National symbols",
+    "capital": {
+      "label": "Capital",
+      "value": "New Delhi"
+    },
+    "currency": {
+      "label": "Currency",
+      "value": "Indian rupee"
+    },
+    "animal": {
+      "label": "National animal",
+      "value": "Bengal tiger"
+    },
+    "bird": {
+      "label": "National bird",
+      "value": "Peacock"
+    },
+    "flower": {
+      "label": "National flower",
+      "value": "Lotus"
+    },
+    "tree": {
+      "label": "National tree",
+      "value": "Banyan"
+    }
+  },
+  "quick": {
+    "aria": "Quick links",
+    "districts": {
+      "label": "Districts",
+      "meta": "{n} of {total} live"
+    },
+    "know": {
+      "label": "Know India",
+      "meta": "Constitution, Parliament, elections"
+    },
+    "elections": {
+      "label": "Lok Sabha",
+      "meta": "Seats and party strength"
+    },
+    "budget": {
+      "label": "Union Budget",
+      "meta": "Where the money goes"
+    },
+    "updates": {
+      "label": "Update log",
+      "meta": "Every change, with its source"
+    },
+    "vote": {
+      "label": "Your district",
+      "meta": "Vote for the next one"
+    }
+  },
+  "kpi": {
+    "aria": "India in five numbers",
+    "population": {
+      "label": "Population",
+      "unit": "billion",
+      "meta": "Growing about 0.8% a year",
+      "source": "UN, 2024 estimate"
+    },
+    "area": {
+      "label": "Area",
+      "unit": "million km²",
+      "meta": "7th largest country",
+      "source": "Survey of India"
+    },
+    "gdp": {
+      "label": "Nominal GDP",
+      "unit": "trillion",
+      "meta": "6.5% growth projected",
+      "source": "IMF, FY26"
+    },
+    "states": {
+      "label": "States and UTs",
+      "value": "{a} + {b}",
+      "meta": "{n} districts",
+      "source": "MHA, 2024"
+    },
+    "languages": {
+      "label": "Languages",
+      "unit": "scheduled",
+      "meta": "In the Eighth Schedule",
+      "source": "Constitution, Schedule 8"
+    },
+    "footLeft": "Each figure names its source and year",
+    "footRight": "Independent. Sourced from .gov.in portals and NDSAP."
+  },
+  "world": {
+    "title": "India in the world",
+    "subtitle": "Where India ranks among countries",
+    "note": "Each rank names the body that published it and the year.",
+    "someShown": "{shown} of {total} ranks shown",
+    "allShown": "All {total} ranks shown",
+    "viewAll": "View all ranks",
+    "showFewer": "Show fewer",
+    "up": "Up from #{from}",
+    "down": "Down from #{from}",
+    "new": "New",
+    "stable": "No change",
+    "source": "{source}, {year}",
+    "rankSr": "Rank {rank}:",
+    "titles": {
+      "population": "Most people of any country",
+      "democracy": "Largest democracy",
+      "films": "Most films made in a year",
+      "postal": "Largest postal network",
+      "milk": "Largest milk producer",
+      "railway": "Largest railway employer",
+      "internet": "Internet users",
+      "pharma": "Medicine exports",
+      "military": "Military strength",
+      "renewable": "Renewable energy capacity",
+      "moon": "Country to land softly on the Moon",
+      "economy": "Economy size (nominal GDP)"
+    },
+    "notes": {
+      "postal": "1.56 lakh post offices",
+      "milk": "230 million tonnes",
+      "railway": "14 lakh staff",
+      "internet": "90 crore users",
+      "renewable": "191 GW"
+    }
+  },
+  "langs": {
+    "aria": "India, written in {n} scheduled languages",
+    "hi": "Hindi",
+    "as": "Assamese",
+    "bn": "Bengali",
+    "brx": "Bodo",
+    "doi": "Dogri",
+    "gu": "Gujarati",
+    "kn": "Kannada",
+    "ks": "Kashmiri",
+    "kok": "Konkani",
+    "mai": "Maithili",
+    "ml": "Malayalam",
+    "mni": "Manipuri",
+    "mr": "Marathi",
+    "ne": "Nepali",
+    "or": "Odia",
+    "pa": "Punjabi",
+    "sa": "Sanskrit",
+    "sat": "Santali",
+    "sd": "Sindhi",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "ur": "Urdu"
+  },
+  "band": {
+    "sectionOf": "Section {n} of {total}",
+    "modules": "Modules",
+    "liveOf": "{live} of {total} live",
+    "countModules": "{n, plural, one {# module} other {# modules}}",
+    "allPlanned": "All planned",
+    "inDevelopment": "{n, plural, one {# module} other {# modules}} in development",
+    "browseAll": "Browse all {n}",
+    "featured": "Featured",
+    "liveModule": "Live module",
+    "planned": "Planned",
+    "openModule": "Open module",
+    "sources": "Sources: {list}",
+    "target": "Target"
+  },
+  "fmt": {
+    "pct": "{value}%",
+    "usdT": "${value}T",
+    "usdB": "${value}B",
+    "inrLakhCr": "₹{value}L cr",
+    "inrLakhCrMonth": "₹{value}L cr a month",
+    "billion": "{value}B",
+    "millionPlus": "{value}M+",
+    "crore": "{value} cr",
+    "lakh": "{value} lakh",
+    "gw": "{value} GW",
+    "km": "{value} km",
+    "plus": "{value}+",
+    "mt": "{value} MT",
+    "years": "{value} years"
+  },
+  "glance": {
+    "rankTitle": "India's world rank",
+    "ranks": {
+      "population": "Population",
+      "gdpNominal": "GDP",
+      "gdpPpp": "GDP (PPP)",
+      "remittances": "Money sent home",
+      "smartphones": "Smartphone users"
+    },
+    "allRanks": "See all world ranks",
+    "latestTitle": "Latest updates",
+    "recent": "Recent",
+    "allUpdates": "All updates",
+    "headlineUnit": "billion",
+    "growth": "{value}% a year",
+    "rankLabel": "World rank",
+    "rankSub": "most people",
+    "desc": "Population, density, workforce and languages: the shape of India today.",
+    "cells": {
+      "density": {
+        "label": "Density",
+        "sub": "people per km²"
+      },
+      "workforce": {
+        "label": "Workforce",
+        "sub": "{pct}% of people"
+      },
+      "statesUts": {
+        "label": "States and UTs",
+        "sub": "{n} in all"
+      },
+      "languages": {
+        "label": "Languages",
+        "sub": "in Schedule 8"
+      }
+    }
+  },
+  "know": {
+    "fmt": {
+      "millionKm2": "{value}M km²",
+      "millionVoters": "{value}M+ voters",
+      "stages": "{value} stages"
+    },
+    "headlineUnit": "articles",
+    "caption": "In force since 26 January 1950, from NCERT Class 11",
+    "desc": "The Preamble, Fundamental Rights, Directive Principles and how the Schedules are laid out.",
+    "cells": {
+      "articles": "Articles",
+      "schedules": "Schedules",
+      "parts": "Parts",
+      "inForce": "In force"
+    },
+    "timelineTitle": "How it was written",
+    "timeline": {
+      "assembly": "Constituent Assembly meets",
+      "drafting": "Drafting Committee set up",
+      "adopted": "Constitution adopted",
+      "inForce": "Comes into force"
+    },
+    "timelineLink": "History of India timeline",
+    "articlesTitle": "Well-known articles",
+    "article": "Art {n}",
+    "articles": {
+      "a14": "Equality before law",
+      "a19": "Freedom of speech",
+      "a21": "Right to life",
+      "a32": "Right to go to court",
+      "a370": "Former J&K status"
+    },
+    "articlesLink": "All {n}+ articles",
+    "articlesLinkPlain": "All articles"
+  },
+  "living": {
+    "fmt": {
+      "yrs": "{value} yrs",
+      "crCards": "{value} cr cards",
+      "lakhSchools": "{value} lakh schools",
+      "crEnrolled": "{value} cr enrolled",
+      "crTrained": "{value} cr trained",
+      "perK": "{value} per 1,000",
+      "kPlus": "{value}k+"
+    },
+    "headlineUnit": "years of life, on average",
+    "growth": "+{value} years since 1990",
+    "calloutSub": "National Health Policy goal",
+    "desc": "Health indicators from NFHS-5 and the Sample Registration System.",
+    "cells": {
+      "lifeExp": {
+        "label": "Life expectancy",
+        "sub": "years, SRS"
+      },
+      "imr": {
+        "label": "Infant deaths",
+        "sub": "per 1,000 births"
+      },
+      "doctors": {
+        "label": "Doctors",
+        "sub": "per 1,000 people; WHO suggests 1"
+      },
+      "uwin": {
+        "label": "U-WIN",
+        "sub": "crore doses"
+      }
+    },
+    "cards": {
+      "leaders": {
+        "title": "States that lead",
+        "link": "Health indicators dashboard",
+        "rows": {
+          "imr": "Fewest infant deaths",
+          "lifeExp": "Longest lives",
+          "doctors": "Most doctors",
+          "vaccination": "Best vaccination",
+          "hospitals": "Most hospitals"
+        }
+      },
+      "schemes": {
+        "title": "Scheme reach",
+        "link": "Ayushman Bharat dashboard",
+        "rows": {
+          "ayushman": "Ayushman Bharat",
+          "pmjayHospitals": "PM-JAY hospitals",
+          "uwin": "U-WIN doses",
+          "pmkvy": "PMKVY trained"
+        }
+      }
+    }
+  },
+  "wildlife": {
+    "fmt": {
+      "tigers": "{value} tigers",
+      "lakhKm2": "{value} lakh km²",
+      "shareOfForest": "{value}% of India's forest",
+      "edition": "No. {value}",
+      "everyTwo": "{value}, every two years"
+    },
+    "headlineUnit": "of the land under forest",
+    "growth": "+{value} km² since 2021",
+    "calloutSub": "National Forest Policy, 1988",
+    "desc": "Forest cover from FSI's India State of Forest Report, published every two years.",
+    "cells": {
+      "forest": {
+        "label": "Forest"
+      },
+      "tree": {
+        "label": "Trees",
+        "sub": "outside forests"
+      },
+      "topState": {
+        "label": "Most forest",
+        "value": "Madhya Pradesh"
+      },
+      "report": {
+        "label": "Forest report"
+      }
+    },
+    "cards": {
+      "topStates": {
+        "title": "Most forested states",
+        "link": "Forests and wildlife dashboard"
+      },
+      "biodiversity": {
+        "title": "Wildlife counts",
+        "link": "Tiger conservation dashboard",
+        "rows": {
+          "tigers": "Tigers",
+          "elephants": "Elephants",
+          "rhinos": "Rhinos",
+          "reserves": "Tiger reserves"
+        }
+      }
+    }
+  },
+  "agri": {
+    "fmt": {
+      "crFarmers": "{value} cr farmers",
+      "tea": "{value}M kg tea",
+      "livestock": "{value}M animals",
+      "fish": "{value} lakh t fish",
+      "share": "{value}% share",
+      "estimate": "4th advance estimate, {value}",
+      "crInsured": "{value} cr insured",
+      "crCards": "{value} cr cards"
+    },
+    "headlineUnit": "million tonnes of foodgrain",
+    "growth": "+{value} MT in a year",
+    "calloutLabel": "Top state",
+    "calloutValue": "Uttar Pradesh",
+    "desc": "Foodgrain, rice and wheat estimates from the Department of Agriculture (DA&FW).",
+    "cells": {
+      "rice": {
+        "label": "Rice",
+        "sub": "million tonnes"
+      },
+      "wheat": {
+        "label": "Wheat",
+        "sub": "million tonnes"
+      },
+      "topState": {
+        "label": "Top state",
+        "value": "Uttar Pradesh",
+        "sub": "biggest wheat grower"
+      },
+      "source": {
+        "label": "Source",
+        "value": "DA&FW"
+      }
+    },
+    "notes": {
+      "wheat": "wheat",
+      "rice": "rice"
+    },
+    "cards": {
+      "topCrops": {
+        "title": "Top crop states",
+        "link": "Crop production dashboard"
+      },
+      "schemes": {
+        "title": "Farmer schemes",
+        "link": "PM-KISAN dashboard",
+        "rows": {
+          "pmkisan": "PM-KISAN",
+          "pmfby": "Crop insurance (PMFBY)",
+          "kcc": "Kisan Credit Cards",
+          "soilHealth": "Soil Health Cards"
+        }
+      }
+    }
+  },
+  "energy": {
+    "fmt": {
+      "gwClean": "{value} GW clean",
+      "mtCoal": "{value} MT coal",
+      "mtCrude": "{value} MT crude",
+      "mix": "{value}% of the mix"
+    },
+    "headlineUnit": "GW of power plants",
+    "growth": "+{value} GW in a year",
+    "calloutSub": "Clean power goal for 2030",
+    "desc": "All the power plants India has, by the fuel they use.",
+    "cells": {
+      "coal": {
+        "label": "Coal"
+      },
+      "re": {
+        "label": "Renewables"
+      },
+      "hydro": {
+        "label": "Hydro"
+      },
+      "nuclear": {
+        "label": "Nuclear"
+      }
+    },
+    "cards": {
+      "topStates": {
+        "title": "Top power states",
+        "link": "Power generation dashboard"
+      },
+      "mix": {
+        "title": "Energy mix",
+        "link": "Renewable energy dashboard",
+        "rows": {
+          "coal": "Coal",
+          "renewables": "Renewables",
+          "hydro": "Hydro",
+          "nuclear": "Nuclear"
+        }
+      }
+    }
+  },
+  "infra": {
+    "fmt": {
+      "airports": "{value} airports",
+      "majorPorts": "{value} major ports",
+      "cities": "{value} cities",
+      "kmNh": "{value} km of highway",
+      "airportsPlus": "{value}+ airports",
+      "projectsPlus": "{value}+ projects"
+    },
+    "headlineUnit": "km of national highways",
+    "growth": "+{value} km in a year",
+    "calloutSub": "Bharatmala goal for 2027",
+    "desc": "The national highway network, from MoRTH and NHAI.",
+    "cells": {
+      "nh": {
+        "label": "Highways",
+        "sub": "km, MoRTH"
+      },
+      "expressway": {
+        "label": "Expressways",
+        "sub": "km, NHAI"
+      },
+      "topState": {
+        "label": "Top state",
+        "value": "Maharashtra",
+        "sub": "most national highways"
+      },
+      "year": {
+        "label": "Year",
+        "sub": "MoRTH data"
+      }
+    },
+    "cards": {
+      "topStates": {
+        "title": "Most highways",
+        "link": "Roads and highways dashboard"
+      },
+      "flagship": {
+        "title": "Flagship projects",
+        "link": "All infrastructure modules",
+        "rows": {
+          "bharatmala": "Bharatmala",
+          "sagarmala": "Sagarmala",
+          "udan": "UDAN",
+          "gatishakti": "GatiShakti"
+        }
+      }
+    }
+  },
+  "gov": {
+    "fmt": {
+      "lakhYear": "{value} lakh a year",
+      "seats": "{value} seats",
+      "inrThousandCr": "₹{value}k cr",
+      "dpsus": "{value} companies"
+    },
+    "headlineUnit": "lakh civil police",
+    "growth": "{value} police per lakh people",
+    "calloutSub": "per lakh people, as the UN suggests",
+    "desc": "BPRD's yearly snapshot of India's police forces.",
+    "cells": {
+      "police": {
+        "label": "Civil police",
+        "sub": "lakh, BPRD"
+      },
+      "pending": {
+        "label": "Pending cases",
+        "sub": "crore, NJDG"
+      },
+      "defence": {
+        "label": "Defence",
+        "sub": "lakh crore, MoD"
+      },
+      "lokSabha": {
+        "label": "Lok Sabha",
+        "sub": "seats, Article 81"
+      }
+    },
+    "cards": {
+      "justice": {
+        "title": "Justice system",
+        "link": "Police strength dashboard",
+        "rows": {
+          "police": "Police strength",
+          "pending": "Pending cases",
+          "prisons": "People in prison",
+          "crime": "Crime cases",
+          "conviction": "Conviction rate"
+        }
+      },
+      "defenceElections": {
+        "title": "Defence and elections",
+        "link": "Defence budget dashboard",
+        "rows": {
+          "defenceBudget": "Defence budget",
+          "defenceExports": "Defence exports",
+          "lokSabha": "Lok Sabha seats",
+          "turnout": "Turnout in 2024"
+        }
+      }
+    }
+  },
+  "innov": {
+    "fmt": {
+      "satellites": "{value} satellites",
+      "upi": "{value}B UPI a month",
+      "thousand": "{value}K",
+      "upiRow": "{value}B a month",
+      "crUsers": "{value} cr users",
+      "crActive": "{value} cr in use",
+      "launched": "{value} launched"
+    },
+    "headlineUnit": "lakh recognised startups",
+    "growth": "+{value} lakh in a year",
+    "calloutLabel": "Unicorns",
+    "calloutSub": "on the 2024 list",
+    "desc": "India's startups, from the Startup India dashboard.",
+    "cells": {
+      "dpiit": {
+        "label": "Startups",
+        "sub": "lakh, 2024"
+      },
+      "unicorns": {
+        "label": "Unicorns",
+        "sub": "DPIIT list"
+      },
+      "added": {
+        "label": "New",
+        "sub": "lakh added in a year"
+      },
+      "source": {
+        "label": "Source",
+        "value": "DPIIT",
+        "sub": "Startup India"
+      }
+    },
+    "notes": {
+      "bengaluru": "Bengaluru",
+      "mumbai": "Mumbai",
+      "chennai": "Chennai",
+      "hyderabad": "Hyderabad"
+    },
+    "cards": {
+      "hubs": {
+        "title": "Top startup states",
+        "link": "Startups dashboard"
+      },
+      "digital": {
+        "title": "Digital India",
+        "link": "Digital India dashboard",
+        "rows": {
+          "upi": "UPI payments",
+          "aadhaar": "Aadhaar",
+          "digilocker": "DigiLocker",
+          "fastag": "FASTag",
+          "isro": "ISRO satellites"
+        }
+      }
+    }
+  },
+  "culture": {
+    "fmt": {
+      "monuments": "{value} monuments",
+      "lakhArrivals": "{value} lakh visitors",
+      "medals": "{value} medals",
+      "kAthletes": "{value}K athletes",
+      "filmsYear": "{value} films a year",
+      "scheduled": "{value} scheduled"
+    },
+    "headlineUnit": "protected monuments",
+    "growth": "{value} UNESCO World Heritage Sites",
+    "calloutLabel": "World rank",
+    "calloutSub": "for UNESCO sites",
+    "desc": "Centrally protected monuments and India's World Heritage Sites.",
+    "cells": {
+      "unesco": {
+        "label": "UNESCO",
+        "sub": "sites, 2024"
+      },
+      "asi": {
+        "label": "ASI",
+        "sub": "monuments"
+      },
+      "tourism": {
+        "label": "Tourism",
+        "sub": "lakh foreign visitors"
+      },
+      "source": {
+        "label": "Source",
+        "value": "ASI",
+        "sub": "and UNESCO, 2024"
+      }
+    },
+    "cards": {
+      "heritage": {
+        "title": "World Heritage Sites",
+        "link": "All {n} sites",
+        "rows": {
+          "taj": "Taj Mahal",
+          "ajanta": "Ajanta Caves",
+          "khajuraho": "Khajuraho",
+          "hampi": "Hampi",
+          "sundarbans": "Sundarbans"
+        }
+      },
+      "output": {
+        "title": "Culture in numbers",
+        "link": "All culture modules",
+        "rows": {
+          "films": "Films",
+          "giTags": "GI tags",
+          "languages": "Languages",
+          "museums": "Museums"
+        }
+      }
+    }
+  }
+}

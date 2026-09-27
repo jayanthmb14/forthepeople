@@ -2,230 +2,143 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Module deep-dive hero: SVG illustration (Phase 2.5d sets the real
- * SVG library; this phase falls back to a Lucide icon with a
- * data-testid="module-hero-svg-fallback" attribute so Jayanth can
- * grep + swap later) + title + tagline + 3-6 headline KPI cards.
+ * Module deep-dive hero: category and status chips, the title, the plain
+ * description, the module picture (photo when the registry has one,
+ * otherwise a Lucide icon on a hue tile) and the latest published
+ * figures as emoji StatTiles.
  *
- * MOCK DATA — replace in Session C1 (the 6 KPI cards are seeded from
- * mock-state-data; production reads from IndiaIndicator).
+ * Honesty (Sep 2026): the old headline tile printed the registry's
+ * `headlineMetric.mockValue` as if it were published. Tiles now come only
+ * from IndiaIndicator rows, each with its date and source. A module with
+ * no rows shows one honest sentence instead of a number.
+ *
+ * Server component. Every string arrives translated from ModulePage.
  */
 
 import type { IndiaModuleDef } from "@/lib/india/india-modules";
-import { CATEGORY_ACCENT, INDIA_DESIGN, categoryTint } from "@/lib/india/india-design";
+import { CATEGORY_ACCENT } from "@/lib/india/india-design";
+import { StatTile, StatStrip, EmptyState } from "@/components/district/ui";
 import ModuleHeroIcon from "./ModuleHeroIcon";
 
-interface Props {
-  module: IndiaModuleDef;
-}
-
-interface KpiSeed {
+export interface HeroTile {
+  key: string;
   label: string;
   value: string;
   unit?: string;
+  emoji: string;
+  asOf: string;
+  source: { label: string; href?: string };
 }
 
-function deriveHeadlineKpis(module: IndiaModuleDef): KpiSeed[] {
-  // Module-aware: read headlineMetric off the registry. The registry is
-  // the contract — if a module declares its own headline KPI, it shows
-  // exactly that, never a category-fallback (which is how the tigers page
-  // ended up showing "Forest Cover" instead of tiger population).
-  const m = module.headlineMetric;
-  if (!m) return [];
-  return [
-    {
-      label: m.label,
-      value: m.mockValue.toLocaleString("en-IN", { maximumFractionDigits: 2 }),
-      unit: m.mockUnit,
-    },
-  ];
+interface Props {
+  module: IndiaModuleDef;
+  title: string;
+  description: string;
+  categoryLabel: string;
+  statusLabel: string;
+  isLive: boolean;
+  tiles: HeroTile[];
+  figuresTitle: string;
+  empty: { title: string; body: string };
 }
 
-export default function ModuleHero({ module }: Props) {
+export default function ModuleHero({
+  module,
+  title,
+  description,
+  categoryLabel,
+  statusLabel,
+  isLive,
+  tiles,
+  figuresTitle,
+  empty,
+}: Props) {
   const accent = CATEGORY_ACCENT[module.category];
-  const tint = categoryTint(module.category);
-  const kpis = deriveHeadlineKpis(module);
-
   return (
     <section
       style={{
-        padding: "32px 16px 24px",
-        borderBottom: `1px solid ${INDIA_DESIGN.border}`,
-        background: INDIA_DESIGN.bgPage,
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: "var(--ftp-radius-card)",
+        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+        background:
+          "radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--hue-pop) 30%, transparent) 0%, transparent 55%), linear-gradient(135deg, var(--hue-tint) 0%, #fff 70%)",
+        boxShadow: "var(--ftp-shadow-1)",
+        padding: "clamp(18px, 3vw, 28px)",
       }}
     >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 240px",
-          gap: 32,
-          alignItems: "center",
-        }}
-        className="india-module-hero-grid"
-      >
-        <div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "capitalize",
-              color: accent,
-              marginBottom: 6,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "3px 10px",
-              borderRadius: 999,
-              background: tint,
-              border: `1px solid ${accent}33`,
-            }}
-          >
-            <span aria-hidden="true">{module.icon}</span>
-            {module.category}
+      <div className="india-module-hero-grid">
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            <span className="india-chip">
+              <span className="ftp-emoji" aria-hidden>
+                {module.icon}
+              </span>
+              {categoryLabel}
+            </span>
+            <span className={isLive ? "india-chip india-chip-live" : "india-chip india-chip-soon"}>{statusLabel}</span>
           </div>
-          <h1
-            style={{
-              fontSize: 36,
-              fontWeight: 700,
-              color: INDIA_DESIGN.textPrimary,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-              margin: "8px 0 6px",
-              fontFamily: INDIA_DESIGN.fontDisplay,
-            }}
-          >
-            {module.title}
+          <h1 className="ftp-display" style={{ fontSize: "clamp(28px, 4.2vw, 40px)", lineHeight: 1.12, fontWeight: 650, margin: "0 0 8px", color: "var(--ftp-text)" }}>
+            {title}
           </h1>
-          <p
-            style={{
-              fontSize: 15,
-              color: INDIA_DESIGN.textSecondary,
-              lineHeight: 1.55,
-              margin: "0 0 18px",
-              maxWidth: 580,
-            }}
-          >
-            {module.description}
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              gap: 10,
-            }}
-          >
-            {kpis.map((k) => (
-              <div
-                key={k.label}
-                style={{
-                  background: INDIA_DESIGN.bgCard,
-                  border: `1px solid ${INDIA_DESIGN.border}`,
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: INDIA_DESIGN.textMuted,
-                  }}
-                >
-                  {k.label}
-                </div>
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 650,
-                    color: "var(--hue-deep)",
-                    fontFamily: INDIA_DESIGN.fontDisplay,
-                    fontVariantNumeric: "tabular-nums lining-nums",
-                    letterSpacing: "-0.02em",
-                    marginTop: 2,
-                  }}
-                >
-                  {k.value}
-                  {k.unit ? (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: INDIA_DESIGN.textMuted,
-                        marginLeft: 3,
-                      }}
-                    >
-                      {k.unit}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
+          <p style={{ fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", margin: 0, maxWidth: 640 }}>{description}</p>
         </div>
+        <div className="india-module-hero-art" aria-hidden>
+          {module.heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={module.heroImage.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 20 }} />
+          ) : (
+            <>
+              <span className="ftp-emoji india-module-hero-emoji">{module.icon}</span>
+              <ModuleHeroIcon slug={module.slug} accent={accent} size={72} />
+            </>
+          )}
+        </div>
+      </div>
 
-        <ModuleHeroSvg module={module} accent={accent} tint={tint} />
+      <div style={{ marginTop: 20 }}>
+        <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--hue-deep)" }}>{figuresTitle}</p>
+        {tiles.length > 0 ? (
+          <StatStrip cols={tiles.length >= 4 ? 4 : tiles.length >= 3 ? 3 : 2}>
+            {tiles.map((k) => (
+              <StatTile
+                key={k.key}
+                label={k.label}
+                value={k.value}
+                unit={k.unit || undefined}
+                emoji={k.emoji}
+                asOf={k.asOf}
+                source={k.source}
+              />
+            ))}
+          </StatStrip>
+        ) : (
+          <EmptyState emoji="🗂️" title={empty.title} body={empty.body} />
+        )}
       </div>
 
       <style>{`
-        @media (max-width: 900px) {
-          .india-module-hero-grid {
-            grid-template-columns: 1fr !important;
-          }
+        .india-module-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 168px; gap: 24px; align-items: center; }
+        .india-module-hero-art {
+          position: relative; width: 168px; aspect-ratio: 1 / 1; border-radius: 24px;
+          display: flex; align-items: center; justify-content: center;
+          background: radial-gradient(circle at 30% 25%, #fff 0%, var(--hue-tint) 70%);
+          border: 1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border));
+          box-shadow: var(--ftp-shadow-1);
+        }
+        .india-module-hero-emoji { position: absolute; top: 10px; right: 12px; font-size: 30px; }
+        .india-chip {
+          display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px;
+          background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 28%, var(--ftp-border));
+          color: var(--hue-deep); font-size: 12px; line-height: 18px; font-weight: 600;
+        }
+        .india-chip-live { background: #E9F6EE; border-color: #B7E0C4; color: #14532D; }
+        .india-chip-soon { background: #FDF3E5; border-color: #F1D3A6; color: #78350F; }
+        @media (max-width: 640px) {
+          .india-module-hero-grid { grid-template-columns: minmax(0, 1fr); }
+          .india-module-hero-art { display: none; }
         }
       `}</style>
     </section>
-  );
-}
-
-function ModuleHeroSvg({
-  module,
-  accent,
-  tint,
-}: {
-  module: IndiaModuleDef;
-  accent: string;
-  tint: string;
-}) {
-  // Photograph wins when set (Wikimedia CC, PIB-released, etc.); otherwise
-  // a Lucide icon picked by module.slug — no more cartoon-dog SVG library.
-  if (module.heroImage) {
-    return (
-      <div
-        style={{
-          background: tint,
-          border: `1px solid ${accent}33`,
-          borderRadius: 16,
-          overflow: "hidden",
-          aspectRatio: "1 / 1",
-          maxWidth: 240,
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={module.heroImage.url}
-          alt={module.heroImage.alt}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </div>
-    );
-  }
-  return (
-    <div
-      style={{
-        background: tint,
-        border: `1px solid ${accent}33`,
-        borderRadius: 16,
-        padding: 24,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        aspectRatio: "1 / 1",
-        maxWidth: 240,
-      }}
-    >
-      <ModuleHeroIcon slug={module.slug} accent={accent} size={96} />
-    </div>
   );
 }

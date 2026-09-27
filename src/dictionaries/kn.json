@@ -86,114 +86,114 @@
     "builtBy": "An independent citizen-transparency initiative"
   },
   "india": {
-    "title": "TODO_TRANSLATE: India in one page.",
-    "subtitle": "TODO_TRANSLATE: Every key fact about your country, sourced from official government portals.",
+    "title": "ಒಂದೇ ಪುಟದಲ್ಲಿ ಭಾರತ.",
+    "subtitle": "ನಿಮ್ಮ ದೇಶದ ಎಲ್ಲಾ ಪ್ರಮುಖ ಮಾಹಿತಿ, ಅಧಿಕೃತ ಸರ್ಕಾರಿ ಪೋರ್ಟಲ್‌ಗಳಿಂದ.",
     "hero": {
-      "tag": "TODO_TRANSLATE: INDIA AT A GLANCE",
+      "tag": "ಒಂದು ನೋಟದಲ್ಲಿ ಭಾರತ",
       "tiles": {
-        "population": "TODO_TRANSLATE: Population",
-        "gdp": "TODO_TRANSLATE: Nominal GDP",
-        "area": "TODO_TRANSLATE: Geographic Area",
-        "states": "TODO_TRANSLATE: States & UTs",
-        "districts": "TODO_TRANSLATE: Districts",
-        "languages": "TODO_TRANSLATE: Scheduled Languages"
+        "population": "ಜನಸಂಖ್ಯೆ",
+        "gdp": "ನಾಮಮಾತ್ರ ಜಿಡಿಪಿ",
+        "area": "ಭೌಗೋಳಿಕ ವಿಸ್ತೀರ್ಣ",
+        "states": "ರಾಜ್ಯಗಳು ಮತ್ತು ಕೇಂದ್ರಾಡಳಿತ ಪ್ರದೇಶಗಳು",
+        "districts": "ಜಿಲ್ಲೆಗಳು",
+        "languages": "ಅನುಸೂಚಿತ ಭಾಷೆಗಳು"
       },
-      "eyebrow": "ದಕ್ಷಿಣ ಏಷ್ಯಾ · ಗಣರಾಜ್ಯ · ಸಂವಿಧಾನ 26 ಜನವರಿ 1950ರಂದು ಅಂಗೀಕರಿಸಲಾಗಿದೆ",
+      "eyebrow": "ದಕ್ಷಿಣ ಏಷ್ಯಾದ ಗಣರಾಜ್ಯ; 26 ಜನವರಿ 1950ರಿಂದ ಸಂವಿಧಾನ ಜಾರಿಯಲ್ಲಿದೆ",
       "motto": "\"ಸಾರ್ವಭೌಮ, ಸಮಾಜವಾದಿ, ಜಾತ್ಯತೀತ, ಪ್ರಜಾಪ್ರಭುತ್ವ ಗಣರಾಜ್ಯ\"",
-      "readPreamble": "ಪ್ರಸ್ತಾವನೆಯನ್ನು ಓದಿ — ಪ್ರತಿಯೊಬ್ಬ ಭಾರತೀಯನೂ ಓದಬೇಕು"
+      "readPreamble": "ಸಂವಿಧಾನದ ಪೀಠಿಕೆ ಓದಿ"
     },
     "nav": {
-      "today": "TODO_TRANSLATE: Today",
-      "demographics": "TODO_TRANSLATE: Demographics",
-      "economy": "TODO_TRANSLATE: Economy",
-      "budget": "TODO_TRANSLATE: Budget",
-      "agriculture": "TODO_TRANSLATE: Agriculture",
-      "livestock": "TODO_TRANSLATE: Livestock",
-      "wildlife": "TODO_TRANSLATE: Wildlife",
-      "infrastructure": "TODO_TRANSLATE: Infrastructure",
-      "energy": "TODO_TRANSLATE: Energy",
-      "health": "TODO_TRANSLATE: Health",
-      "education": "TODO_TRANSLATE: Education",
-      "defence": "TODO_TRANSLATE: Defence",
-      "justice": "TODO_TRANSLATE: Justice",
-      "elections": "TODO_TRANSLATE: Elections",
-      "science": "TODO_TRANSLATE: Science",
-      "trade": "TODO_TRANSLATE: Trade",
-      "tourism": "TODO_TRANSLATE: Tourism",
-      "sports": "TODO_TRANSLATE: Sports"
+      "today": "ಇಂದು",
+      "demographics": "ಜನಸಂಖ್ಯೆ",
+      "economy": "ಆರ್ಥಿಕತೆ",
+      "budget": "ಬಜೆಟ್",
+      "agriculture": "ಕೃಷಿ",
+      "livestock": "ಜಾನುವಾರು",
+      "wildlife": "ವನ್ಯಜೀವಿ",
+      "infrastructure": "ಮೂಲಸೌಕರ್ಯ",
+      "energy": "ಇಂಧನ",
+      "health": "ಆರೋಗ್ಯ",
+      "education": "ಶಿಕ್ಷಣ",
+      "defence": "ರಕ್ಷಣೆ",
+      "justice": "ನ್ಯಾಯ",
+      "elections": "ಚುನಾವಣೆಗಳು",
+      "science": "ವಿಜ್ಞಾನ",
+      "trade": "ವ್ಯಾಪಾರ",
+      "tourism": "ಪ್ರವಾಸೋದ್ಯಮ",
+      "sports": "ಕ್ರೀಡೆ"
     },
     "suggestions": {
-      "title": "TODO_TRANSLATE: Vote for the next India module",
-      "subtitle": "TODO_TRANSLATE: Help us decide what to build next.",
-      "suggest": "TODO_TRANSLATE: Suggest a module",
-      "submitted": "TODO_TRANSLATE: Thanks — your idea is now visible to others to vote on.",
-      "rateLimit": "TODO_TRANSLATE: You've already voted on this. Try tomorrow.",
-      "request": "TODO_TRANSLATE: Request your module"
+      "title": "ಮುಂದಿನ ಭಾರತ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಮತ ನೀಡಿ",
+      "subtitle": "ಮುಂದೆ ಏನನ್ನು ನಿರ್ಮಿಸಬೇಕೆಂದು ನಿರ್ಧರಿಸಲು ನೆರವಾಗಿ.",
+      "suggest": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಸೂಚಿಸಿ",
+      "submitted": "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ಸಲಹೆಗೆ ಈಗ ಇತರರೂ ಮತ ನೀಡಬಹುದು.",
+      "rateLimit": "ನೀವು ಈಗಾಗಲೇ ಇದಕ್ಕೆ ಮತ ನೀಡಿದ್ದೀರಿ. ನಾಳೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+      "request": "ನಿಮ್ಮ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಕೇಳಿ"
     },
     "comingSoon": {
-      "title": "TODO_TRANSLATE: Coming Soon",
-      "tag": "TODO_TRANSLATE: COMING SOON",
-      "expected": "TODO_TRANSLATE: Expected",
-      "voteToPrioritise": "TODO_TRANSLATE: Vote to prioritise"
+      "title": "ಶೀಘ್ರದಲ್ಲೇ",
+      "tag": "ಶೀಘ್ರದಲ್ಲೇ",
+      "expected": "ನಿರೀಕ್ಷಿತ",
+      "voteToPrioritise": "ಮೊದಲು ಬರಲು ಮತ ನೀಡಿ"
     },
     "awaitingSync": {
-      "title": "TODO_TRANSLATE: Awaiting first sync",
-      "subtitle": "TODO_TRANSLATE: We will populate this section as soon as the source publishes."
+      "title": "ಮೊದಲ ಡೇಟಾಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ",
+      "subtitle": "ಮೂಲ ಪ್ರಕಟಿಸಿದ ತಕ್ಷಣ ಈ ವಿಭಾಗವನ್ನು ತುಂಬುತ್ತೇವೆ."
     },
     "sources": {
-      "title": "TODO_TRANSLATE: Data Sources",
-      "subtitle": "TODO_TRANSLATE: Every portal cited on this page.",
-      "lastUpdated": "TODO_TRANSLATE: Last updated",
-      "refresh": "TODO_TRANSLATE: Refresh"
+      "title": "ಡೇಟಾ ಮೂಲಗಳು",
+      "subtitle": "ಈ ಪುಟದಲ್ಲಿ ಉಲ್ಲೇಖಿಸಿದ ಎಲ್ಲಾ ಪೋರ್ಟಲ್‌ಗಳು.",
+      "lastUpdated": "ಕೊನೆಯ ನವೀಕರಣ",
+      "refresh": "ರಿಫ್ರೆಶ್"
     },
     "disclaimers": {
-      "top": "TODO_TRANSLATE: ForThePeople.in is NOT an official government website. Data aggregated from official portals (NDSAP), accredited research institutions, and verified public sources. Always verify at the original source.",
-      "defence": "TODO_TRANSLATE: Data on this page is limited to information publicly disclosed by the Ministry of Defence, Press Information Bureau, and Parliamentary Q&A. ForThePeople.in does not publish, infer, or speculate on classified, operational, or strategic information.",
-      "health": "TODO_TRANSLATE: Aggregated public-health statistics only. Personal health data and individual hospital outcomes are not published. Consult a registered medical practitioner for health decisions.",
-      "elections": "TODO_TRANSLATE: Electoral data is for citizen information. ForThePeople.in does not endorse, predict, or campaign for any party or candidate.",
-      "justice": "TODO_TRANSLATE: Aggregated case statistics from NJDG. Individual case details are not published.",
-      "mcc": "TODO_TRANSLATE: Model Code of Conduct in effect. ForThePeople.in is non-partisan and complies with ECI guidelines."
+      "top": "ForThePeople.in ಅಧಿಕೃತ ಸರ್ಕಾರಿ ಜಾಲತಾಣವಲ್ಲ. ಅಧಿಕೃತ ಪೋರ್ಟಲ್‌ಗಳು (ಎನ್‌ಡಿಎಸ್‌ಎಪಿ), ಮಾನ್ಯತೆ ಪಡೆದ ಸಂಶೋಧನಾ ಸಂಸ್ಥೆಗಳು ಮತ್ತು ಪರಿಶೀಲಿತ ಸಾರ್ವಜನಿಕ ಮೂಲಗಳಿಂದ ಡೇಟಾ ಸಂಗ್ರಹಿಸಲಾಗಿದೆ. ಯಾವಾಗಲೂ ಮೂಲದಲ್ಲೇ ಪರಿಶೀಲಿಸಿ.",
+      "defence": "ಈ ಪುಟದ ಡೇಟಾ ರಕ್ಷಣಾ ಸಚಿವಾಲಯ, ಪತ್ರಿಕಾ ಮಾಹಿತಿ ಬ್ಯೂರೋ (ಪಿಐಬಿ) ಮತ್ತು ಸಂಸತ್ತಿನ ಪ್ರಶ್ನೋತ್ತರಗಳಲ್ಲಿ ಸಾರ್ವಜನಿಕವಾಗಿ ಬಹಿರಂಗಪಡಿಸಿದ ಮಾಹಿತಿಗೆ ಮಾತ್ರ ಸೀಮಿತ. ForThePeople.in ಗೌಪ್ಯ, ಕಾರ್ಯಾಚರಣೆಯ ಅಥವಾ ವ್ಯೂಹಾತ್ಮಕ ಮಾಹಿತಿಯನ್ನು ಪ್ರಕಟಿಸುವುದಿಲ್ಲ, ಊಹಿಸುವುದಿಲ್ಲ.",
+      "health": "ಒಟ್ಟು ಸಾರ್ವಜನಿಕ ಆರೋಗ್ಯ ಅಂಕಿಅಂಶಗಳು ಮಾತ್ರ. ವೈಯಕ್ತಿಕ ಆರೋಗ್ಯ ಮಾಹಿತಿ ಮತ್ತು ಪ್ರತ್ಯೇಕ ಆಸ್ಪತ್ರೆಗಳ ಫಲಿತಾಂಶಗಳನ್ನು ಪ್ರಕಟಿಸುವುದಿಲ್ಲ. ಆರೋಗ್ಯ ನಿರ್ಧಾರಗಳಿಗೆ ನೋಂದಾಯಿತ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+      "elections": "ಚುನಾವಣಾ ಡೇಟಾ ನಾಗರಿಕರ ಮಾಹಿತಿಗಾಗಿ ಮಾತ್ರ. ForThePeople.in ಯಾವುದೇ ಪಕ್ಷ ಅಥವಾ ಅಭ್ಯರ್ಥಿಯನ್ನು ಬೆಂಬಲಿಸುವುದಿಲ್ಲ, ಫಲಿತಾಂಶ ಊಹಿಸುವುದಿಲ್ಲ, ಪ್ರಚಾರವನ್ನೂ ಮಾಡುವುದಿಲ್ಲ.",
+      "justice": "NJDGಯ ಒಟ್ಟು ಪ್ರಕರಣ ಅಂಕಿಅಂಶಗಳು ಮಾತ್ರ. ಪ್ರತ್ಯೇಕ ಪ್ರಕರಣಗಳ ವಿವರಗಳನ್ನು ಪ್ರಕಟಿಸುವುದಿಲ್ಲ.",
+      "mcc": "ಮಾದರಿ ನೀತಿ ಸಂಹಿತೆ ಜಾರಿಯಲ್ಲಿದೆ. ForThePeople.in ಪಕ್ಷಾತೀತವಾಗಿದ್ದು ಚುನಾವಣಾ ಆಯೋಗದ ಮಾರ್ಗಸೂಚಿಗಳನ್ನು ಪಾಲಿಸುತ್ತದೆ."
     },
     "superCategory": {
       "macroSnapshot": {
-        "title": "India at a Glance",
-        "tagline": "How big India is, how fast it's growing, and how its 1.43 billion people earn and live."
+        "title": "ಒಂದು ನೋಟದಲ್ಲಿ ಭಾರತ",
+        "tagline": "ಭಾರತ ಎಷ್ಟು ದೊಡ್ಡದು, ಎಷ್ಟು ವೇಗವಾಗಿ ಬೆಳೆಯುತ್ತಿದೆ, ಅದರ ಜನರು ಹೇಗೆ ಸಂಪಾದಿಸಿ ಬದುಕುತ್ತಾರೆ."
       },
       "knowIndia": {
-        "title": "Know About India",
-        "tagline": "NCERT-aligned foundations: history, geography, polity, economy. How India works, explained."
+        "title": "ಭಾರತವನ್ನು ತಿಳಿಯಿರಿ",
+        "tagline": "ಎನ್‌ಸಿಇಆರ್‌ಟಿ ಆಧಾರಿತ ಇತಿಹಾಸ, ಭೂಗೋಳ, ರಾಜ್ಯಶಾಸ್ತ್ರ ಮತ್ತು ಅರ್ಥಶಾಸ್ತ್ರದ ಮೂಲಪಾಠಗಳು: ಭಾರತ ಹೇಗೆ ನಡೆಯುತ್ತದೆ, ಸರಳವಾಗಿ."
       },
       "livingStandards": {
-        "title": "Living Standards",
-        "tagline": "Health, education, water, food, housing — what daily life looks like across states."
+        "title": "ಜೀವನ ಮಟ್ಟ",
+        "tagline": "ಆರೋಗ್ಯ, ಶಿಕ್ಷಣ, ನೀರು, ಆಹಾರ ಮತ್ತು ವಸತಿ: ರಾಜ್ಯಗಳಾದ್ಯಂತ ದೈನಂದಿನ ಬದುಕು ಹೇಗಿದೆ."
       },
       "wildlifeForests": {
-        "title": "Wildlife & Forests",
-        "tagline": "Tigers, forests, protected areas — what India safeguards in the wild."
+        "title": "ವನ್ಯಜೀವಿ ಮತ್ತು ಅರಣ್ಯ",
+        "tagline": "ಹುಲಿಗಳು, ಅರಣ್ಯಗಳು ಮತ್ತು ಸಂರಕ್ಷಿತ ಪ್ರದೇಶಗಳು: ಭಾರತ ಕಾಡಿನಲ್ಲಿ ಏನನ್ನು ಕಾಪಾಡುತ್ತಿದೆ."
       },
       "agricultureLivestock": {
-        "title": "Agriculture & Livestock",
-        "tagline": "What India grows and raises — crops, livestock, and the lives of farmers."
+        "title": "ಕೃಷಿ ಮತ್ತು ಜಾನುವಾರು",
+        "tagline": "ಭಾರತ ಏನು ಬೆಳೆಯುತ್ತದೆ, ಏನು ಸಾಕುತ್ತದೆ: ಬೆಳೆಗಳು, ಜಾನುವಾರು ಮತ್ತು ರೈತರ ಬದುಕು."
       },
       "naturalResourcesEnergy": {
-        "title": "Natural Resources & Energy",
-        "tagline": "Fuels, minerals, water — what powers India and what we draw from the earth."
+        "title": "ನೈಸರ್ಗಿಕ ಸಂಪನ್ಮೂಲ ಮತ್ತು ಇಂಧನ",
+        "tagline": "ಇಂಧನ, ಖನಿಜ ಮತ್ತು ನೀರು: ಭಾರತಕ್ಕೆ ಶಕ್ತಿ ಎಲ್ಲಿಂದ ಬರುತ್ತದೆ, ನೆಲದಿಂದ ನಾವು ಏನು ಪಡೆಯುತ್ತೇವೆ."
       },
       "infrastructure": {
-        "title": "Infrastructure",
-        "tagline": "Roads, rail, aviation, ports, telecom, smart cities — the country's backbone."
+        "title": "ಮೂಲಸೌಕರ್ಯ",
+        "tagline": "ರಸ್ತೆ, ರೈಲು, ವಿಮಾನಯಾನ, ಬಂದರು, ದೂರಸಂಪರ್ಕ ಮತ್ತು ಸ್ಮಾರ್ಟ್ ನಗರಗಳು: ದೇಶದ ಬೆನ್ನೆಲುಬು."
       },
       "governance": {
-        "title": "Governance and Justice",
-        "tagline": "Defence, police, courts, prisons, elections — the institutions that hold India together."
+        "title": "ಆಡಳಿತ ಮತ್ತು ನ್ಯಾಯ",
+        "tagline": "ರಕ್ಷಣೆ, ಪೊಲೀಸ್, ನ್ಯಾಯಾಲಯ, ಕಾರಾಗೃಹ ಮತ್ತು ಚುನಾವಣೆ: ಭಾರತವನ್ನು ಒಗ್ಗೂಡಿಸಿಡುವ ಸಂಸ್ಥೆಗಳು."
       },
       "innovation": {
-        "title": "Innovation and Industry",
-        "tagline": "Space, science, startups, digital, foreign trade — where India is going next."
+        "title": "ನಾವೀನ್ಯತೆ ಮತ್ತು ಉದ್ಯಮ",
+        "tagline": "ಬಾಹ್ಯಾಕಾಶ, ವಿಜ್ಞಾನ, ಸ್ಟಾರ್ಟ್‌ಅಪ್‌, ಡಿಜಿಟಲ್ ಮತ್ತು ವಿದೇಶಿ ವ್ಯಾಪಾರ: ಭಾರತ ಮುಂದೆ ಎಲ್ಲಿಗೆ ಸಾಗುತ್ತಿದೆ."
       },
       "culture": {
-        "title": "Culture and Heritage",
-        "tagline": "Tourism, monuments, sports, GI tags — what makes India distinctly Indian."
+        "title": "ಸಂಸ್ಕೃತಿ ಮತ್ತು ಪರಂಪರೆ",
+        "tagline": "ಪ್ರವಾಸೋದ್ಯಮ, ಸ್ಮಾರಕಗಳು, ಕ್ರೀಡೆ ಮತ್ತು ಜಿಐ ಟ್ಯಾಗ್‌ಗಳು: ಭಾರತವನ್ನು ವಿಶಿಷ್ಟವಾಗಿಸುವುದು."
       }
     },
     "breadcrumb": {

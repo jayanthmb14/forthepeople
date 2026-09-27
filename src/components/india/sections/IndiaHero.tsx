@@ -17,7 +17,8 @@
  */
 
 import * as React from "react";
-import { BookOpenText, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BookOpenText } from "lucide-react";
 import { LanguageRotator } from "@/components/india/primitives/LanguageRotator";
 import { NationalIdentityGrid } from "@/components/india/primitives/NationalIdentityGrid";
 import { QuickAccessStrip } from "@/components/india/primitives/QuickAccessStrip";
@@ -27,25 +28,14 @@ import {
 } from "@/components/india/primitives/decorations/HeroJaali";
 import { HeroMandala } from "@/components/india/primitives/decorations/HeroMandala";
 
-export interface IndiaHeroDict {
-  eyebrow: string;
-  motto: string;
-  readPreamble: string;
-}
-
 interface IndiaHeroProps {
   locale: string;
-  dict?: IndiaHeroDict;
 }
 
-const HERO_FALLBACK: IndiaHeroDict = {
-  eyebrow: "South Asia · Republic · Constitution adopted 26 Jan 1950",
-  motto: '"Sovereign, socialist, secular, democratic republic"',
-  readPreamble: "Read the Preamble — every Indian should",
-};
-
-export function IndiaHero({ locale, dict }: IndiaHeroProps) {
-  const t = dict ?? HERO_FALLBACK;
+/** Sync server component: text from the shared "india" messages (hero.*, breadcrumb.india). */
+export function IndiaHero({ locale }: IndiaHeroProps) {
+  const ti = useTranslations("india");
+  const t = { eyebrow: ti("hero.eyebrow"), motto: ti("hero.motto"), readPreamble: ti("hero.readPreamble") };
 
   return (
     <section style={{ padding: "0 0 1rem 0" }}>
@@ -139,7 +129,7 @@ export function IndiaHero({ locale, dict }: IndiaHeroProps) {
                 }}
                 className="india-hero-headline"
               >
-                India
+                {ti("breadcrumb.india")}
               </h1>
               <LanguageRotator />
             </div>
@@ -188,9 +178,8 @@ export function IndiaHero({ locale, dict }: IndiaHeroProps) {
                   flexShrink: 0,
                 }}
               >
-                <BookOpenText size={13} />
+                <BookOpenText size={13} aria-hidden />
                 {t.readPreamble}
-                <ChevronRight size={11} style={{ opacity: 0.7 }} />
               </a>
             </div>
           </div>

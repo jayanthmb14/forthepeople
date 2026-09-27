@@ -8,7 +8,7 @@
 
 .section {
   position: relative;
-  height: 320px;
+  min-height: 320px;
   border: 1.5px solid #0C447C;
   border-radius: 6px;
   overflow: hidden;
@@ -19,6 +19,7 @@
   display: grid;
   grid-template-columns: 320px 1fr 240px;
   height: 100%;
+  min-height: 320px;
 }
 
 /* ─── IDENTITY ZONE (left, 320px) ─── */
@@ -47,7 +48,6 @@
   height: 5px;
   background: #97C459;
   border-radius: 50%;
-  animation: ftp-pulse 2s ease-in-out infinite;
 }
 .identityTitle {
   font-family: var(--ftp-font-display);
@@ -94,27 +94,20 @@
   font-size: 7px;
 }
 
-/* ─── DIRECTORY MARQUEE ─── */
+/* ─── DIRECTORY (a plain list; scrolls on demand, no marquee) ─── */
 .directoryWindow {
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
   border-top: 0.5px solid rgba(255, 255, 255, 0.10);
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.10);
   /* 5 rows × ~26px = 130px visible window. */
-  height: 132px;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
+  max-height: 156px;
 }
 
 .directoryTrack {
   display: flex;
   flex-direction: column;
-  /* Marquee math: 7 rows × 26px + 1 divider × 22px = 204px per cycle. */
-  animation: ftp-directory-scroll var(--directory-scroll-duration, 24s) linear infinite;
-}
-
-.directoryWindow:hover .directoryTrack {
-  animation-play-state: paused;
 }
 
 .directoryRow {
@@ -154,7 +147,6 @@
   font-size: 8px;
   opacity: 0.7;
   margin-left: 4px;
-  animation: ftp-pulse-soft 3s ease-in-out infinite;
 }
 .directoryRowValue {
   font-size: 11px;
@@ -263,7 +255,6 @@
   font-family: var(--ftp-font-sans);
   font-size: 11px;
   font-weight: 500;
-  animation: ftp-fade-up 0.4s 0.5s both;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -312,7 +303,6 @@
   color: #3B6D11;
   font-size: 10px;
   font-weight: 600;
-  animation: ftp-pulse-up 2s ease-in-out infinite;
 }
 .growthValue {
   font-family: var(--ftp-font-sans);
@@ -483,7 +473,6 @@
   height: 5px;
   background: #3B6D11;
   border-radius: 50%;
-  animation: ftp-pulse 2s ease-in-out infinite;
 }
 
 .rightCardList {
@@ -560,34 +549,6 @@
   height: 150px;
   opacity: 0.07;
   pointer-events: none;
-}
-
-/* ─── ENTRY ANIMATION CASCADE ─── */
-.section .layout > * {
-  opacity: 0;
-  transform: translateY(8px);
-}
-.visible .layout > *:nth-child(1) {
-  animation: ftp-fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s both;
-}
-.visible .layout > *:nth-child(2) {
-  animation: ftp-fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
-}
-.visible .layout > *:nth-child(3) {
-  animation: ftp-fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
-}
-
-.visible .featuredCell:nth-child(1) {
-  animation: ftp-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.45s both;
-}
-.visible .featuredCell:nth-child(2) {
-  animation: ftp-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
-}
-.visible .featuredCell:nth-child(3) {
-  animation: ftp-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.55s both;
-}
-.visible .featuredCell:nth-child(4) {
-  animation: ftp-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both;
 }
 
 /* ─── KEYFRAMES ─── */

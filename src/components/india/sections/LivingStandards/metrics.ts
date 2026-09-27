@@ -1,258 +1,72 @@
 /**
- * Metric KEY registry + editorial constants for the living-standards
- * "Living Standards" v1 band (Section 03).
+ * "Living standards" band (Section 03) as a BandSpec.
  *
- * (moduleSlug, metricKey) pairs declared below tell the fetcher which
- * IndiaIndicator rows to load. State names + label strings are
- * editorial config.
+ * Only (moduleSlug, metricKey) pairs and message keys live here; numbers
+ * come from IndiaIndicator and words from page_india "living.*".
  */
 
-export type MetricRef = { moduleSlug: string; metricKey: string };
+import { indicatorKey, specRefs, type BandSpec, type MetricRef } from "../band-spec";
 
-// ── DIRECTORY ──
+export { indicatorKey };
+export type { MetricRef };
 
-export type DirectoryFormat =
-  | "years_with_unit"
-  | "crore_with_label"
-  | "crore_simple"
-  | "lakh_with_label";
+const H = "health-overview";
 
-export type DirectoryRow = {
-  moduleSlug: string;
-  emoji: string;
-  headlineRef: MetricRef;
-  format: DirectoryFormat;
-  /** Trailing string concatenated after the formatted value, e.g. "cr cards". */
-  labelSuffix?: string;
-  isFeatured?: boolean;
-};
-
-export const LS_DIRECTORY: DirectoryRow[] = [
-  {
-    moduleSlug: "health-overview",
+export const LIVING_SPEC: BandSpec = {
+  group: "living",
+  slug: "living-standards",
+  tintId: "living",
+  titleId: "living-standards-title",
+  watermarkClass: "crossWatermark",
+  dotsAccent: "#0F6E56",
+  directory: [
+    { moduleSlug: H, emoji: "💗", featured: true, value: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1, fmt: "living.fmt.yrs" } },
+    { moduleSlug: "health-pmjay", emoji: "🏥", value: { ref: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" }, decimals: 1, fmt: "living.fmt.crCards" } },
+    { moduleSlug: "health-immunisation", emoji: "💉", value: { ref: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" }, decimals: 1, fmt: "fmt.crore" } },
+    { moduleSlug: "education-schools", emoji: "🏫", value: { ref: { moduleSlug: "education-schools", metricKey: "schools_total_lakh" }, decimals: 1, fmt: "living.fmt.lakhSchools" } },
+    { moduleSlug: "education-higher", emoji: "🎓", value: { ref: { moduleSlug: "education-higher", metricKey: "higher_ed_enrolment_crore" }, decimals: 1, fmt: "living.fmt.crEnrolled" } },
+    { moduleSlug: "education-skills", emoji: "🛠", value: { ref: { moduleSlug: "education-skills", metricKey: "pmkvy_trained_crore" }, decimals: 1, fmt: "living.fmt.crTrained" } },
+  ],
+  featured: {
+    moduleSlug: H,
     emoji: "💗",
-    headlineRef: { moduleSlug: "health-overview", metricKey: "life_expectancy_years" },
-    format: "years_with_unit",
-    isFeatured: true,
+    headline: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1 },
+    growth: { ref: { moduleSlug: H, metricKey: "life_expectancy_change_1990" }, fmt: "living.growth" },
+    callout: { value: { ref: { moduleSlug: H, metricKey: "life_expectancy_target_2030" }, fmt: "living.fmt.yrs" }, sub: "calloutSub" },
+    cells: [
+      { key: "lifeExp", value: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1 }, sub: { text: "sub" } },
+      { key: "imr", value: { ref: { moduleSlug: H, metricKey: "infant_mortality_rate" }, decimals: 1 }, sub: { text: "sub" } },
+      { key: "doctors", value: { ref: { moduleSlug: H, metricKey: "doctors_per_1000" }, decimals: 2 }, sub: { text: "sub" } },
+      { key: "uwin", value: { ref: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" }, decimals: 1 }, sub: { text: "sub" } },
+    ],
   },
-  {
-    moduleSlug: "health-pmjay",
-    emoji: "🏥",
-    headlineRef: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" },
-    format: "crore_with_label",
-    labelSuffix: "cr cards",
-  },
-  {
-    moduleSlug: "health-immunisation",
-    emoji: "💉",
-    headlineRef: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" },
-    format: "crore_simple",
-  },
-  {
-    moduleSlug: "education-schools",
-    emoji: "🎓",
-    headlineRef: { moduleSlug: "education-schools", metricKey: "schools_total_lakh" },
-    format: "lakh_with_label",
-    labelSuffix: "lakh schools",
-  },
-  {
-    moduleSlug: "education-higher",
-    emoji: "🎓",
-    headlineRef: { moduleSlug: "education-higher", metricKey: "higher_ed_enrolment_crore" },
-    format: "crore_with_label",
-    labelSuffix: "cr enrolled",
-  },
-  {
-    moduleSlug: "education-skills",
-    emoji: "🛠",
-    headlineRef: { moduleSlug: "education-skills", metricKey: "pmkvy_trained_crore" },
-    format: "crore_with_label",
-    labelSuffix: "cr trained",
-  },
-];
-
-// ── FEATURED zone (Health Indicators) ──
-
-export const FEATURED_HEADLINE_LABEL = "yrs life exp";
-export const FEATURED_DESCRIPTION =
-  "Indicators tracked from NFHS-5 and Sample Registration System.";
-
-export const FEATURED_RIGHT_CALLOUT_LABEL = "Target";
-export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "NHP 2030";
-export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
-  moduleSlug: "health-overview",
-  metricKey: "life_expectancy_target_2030",
+  cards: [
+    {
+      key: "leaders",
+      emoji: "🏅",
+      href: "/india/health-overview",
+      rows: [
+        { key: "imr", arrow: "down", note: { state: "kerala" }, value: { ref: { moduleSlug: H, metricKey: "state_leader_kerala_imr" }, fmt: "living.fmt.perK" } },
+        { key: "lifeExp", arrow: "up", note: { state: "kerala" }, value: { ref: { moduleSlug: H, metricKey: "state_leader_kerala_life_exp" }, decimals: 1, fmt: "living.fmt.yrs" } },
+        { key: "doctors", arrow: "up", note: { state: "delhi" }, value: { ref: { moduleSlug: H, metricKey: "state_leader_delhi_doctors" }, decimals: 2, fmt: "living.fmt.perK" } },
+        { key: "vaccination", arrow: "up", note: { state: "manipur" }, value: { ref: { moduleSlug: H, metricKey: "state_leader_manipur_imm_cov" }, fmt: "fmt.pct" } },
+        { key: "hospitals", arrow: "up", note: { state: "tamil-nadu" }, value: { ref: { moduleSlug: H, metricKey: "state_leader_tn_hosp_per_1000" }, decimals: 2, fmt: "living.fmt.perK" } },
+      ],
+    },
+    {
+      key: "schemes",
+      emoji: "🩺",
+      href: "/india/health-pmjay",
+      rows: [
+        { key: "ayushman", value: { ref: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" }, fmt: "living.fmt.crCards" } },
+        { key: "pmjayHospitals", value: { ref: { moduleSlug: "health-pmjay", metricKey: "empanelled_hospitals_thousands" }, fmt: "living.fmt.kPlus" } },
+        { key: "uwin", value: { ref: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" }, decimals: 1, fmt: "fmt.crore" } },
+        { key: "pmkvy", value: { ref: { moduleSlug: "education-skills", metricKey: "pmkvy_trained_crore" }, decimals: 1, fmt: "fmt.crore" } },
+      ],
+    },
+  ],
 };
-
-export const FEATURED_HEADLINE_REF: MetricRef = {
-  moduleSlug: "health-overview",
-  metricKey: "life_expectancy_years",
-};
-export const FEATURED_GROWTH_PILL_REF: MetricRef = {
-  moduleSlug: "health-overview",
-  metricKey: "life_expectancy_change_1990",
-};
-/** Template substitutes {value} with the formatted growth value. */
-export const FEATURED_GROWTH_PILL_TEMPLATE = "+{value} yrs since 1990";
-
-export type FeaturedCellPrimaryFormat =
-  | "decimal_1"
-  | "decimal_2"
-  | "integer";
-
-export type FeaturedCell = {
-  label: string;
-  primary: MetricRef;
-  primaryFormat: FeaturedCellPrimaryFormat;
-  /** Static sub-line below the value. */
-  subStat: string;
-};
-
-export const FEATURED_CELLS: FeaturedCell[] = [
-  {
-    label: "Life exp",
-    primary: { moduleSlug: "health-overview", metricKey: "life_expectancy_years" },
-    primaryFormat: "decimal_1",
-    subStat: "yrs · SRS",
-  },
-  {
-    label: "IMR",
-    primary: { moduleSlug: "health-overview", metricKey: "infant_mortality_rate" },
-    primaryFormat: "decimal_1",
-    subStat: "per 1k births",
-  },
-  {
-    label: "Doctors",
-    primary: { moduleSlug: "health-overview", metricKey: "doctors_per_1000" },
-    primaryFormat: "decimal_2",
-    subStat: "per 1k · WHO 1.0",
-  },
-  {
-    label: "U-WIN",
-    primary: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" },
-    primaryFormat: "decimal_1",
-    subStat: "cr doses",
-  },
-];
-
-// ── STATE LEADERS right card ──
-
-export type StateLeaderEntry = {
-  label: string;
-  state: string;
-  valueRef: MetricRef;
-  /** "lower_better" → ⬇ prefix, "higher_better" → ⬆ prefix. */
-  direction: "lower_better" | "higher_better";
-  /** Trailing string after the formatted value, e.g. " yrs", "%", " (vs 35)". */
-  valueSuffix: string;
-  /** Decimal places for the rendered value (default 0 = integer). */
-  decimals?: number;
-};
-
-export const STATE_LEADERS: StateLeaderEntry[] = [
-  {
-    label: "IMR",
-    state: "Kerala",
-    valueRef: { moduleSlug: "health-overview", metricKey: "state_leader_kerala_imr" },
-    direction: "lower_better",
-    valueSuffix: " (vs 35)",
-  },
-  {
-    label: "Life exp",
-    state: "Kerala",
-    valueRef: { moduleSlug: "health-overview", metricKey: "state_leader_kerala_life_exp" },
-    direction: "higher_better",
-    valueSuffix: " yrs",
-    decimals: 1,
-  },
-  {
-    label: "Doctors",
-    state: "Delhi",
-    valueRef: { moduleSlug: "health-overview", metricKey: "state_leader_delhi_doctors" },
-    direction: "higher_better",
-    valueSuffix: "/k",
-    decimals: 2,
-  },
-  {
-    label: "Imm cov",
-    state: "Manipur",
-    valueRef: { moduleSlug: "health-overview", metricKey: "state_leader_manipur_imm_cov" },
-    direction: "higher_better",
-    valueSuffix: "%",
-  },
-  {
-    label: "Hosp/k",
-    state: "Tamil Nadu",
-    valueRef: { moduleSlug: "health-overview", metricKey: "state_leader_tn_hosp_per_1000" },
-    direction: "higher_better",
-    valueSuffix: "",
-    decimals: 2,
-  },
-];
-
-// ── SCHEME COVERAGE right card ──
-
-export type SchemeCoverageEntry = {
-  label: string;
-  valueRef: MetricRef;
-  valueSuffix: string;
-  decimals?: number;
-};
-
-export const SCHEME_COVERAGE: SchemeCoverageEntry[] = [
-  {
-    label: "Ayushman Bharat",
-    valueRef: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" },
-    valueSuffix: " cr cards",
-  },
-  {
-    label: "PM-JAY hospitals",
-    valueRef: { moduleSlug: "health-pmjay", metricKey: "empanelled_hospitals_thousands" },
-    valueSuffix: "k+",
-  },
-  {
-    label: "U-WIN doses",
-    valueRef: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" },
-    valueSuffix: " cr",
-    decimals: 1,
-  },
-  {
-    label: "PMKVY trained",
-    valueRef: { moduleSlug: "education-skills", metricKey: "pmkvy_trained_crore" },
-    valueSuffix: " cr",
-    decimals: 1,
-  },
-];
-
-// ── Helpers ──
-
-export function indicatorKey(ref: MetricRef): string {
-  return `${ref.moduleSlug}::${ref.metricKey}`;
-}
 
 export function allLivingStandardsRefs(): MetricRef[] {
-  const refs: MetricRef[] = [
-    FEATURED_HEADLINE_REF,
-    FEATURED_GROWTH_PILL_REF,
-    FEATURED_RIGHT_CALLOUT_REF,
-  ];
-  for (const row of LS_DIRECTORY) {
-    refs.push(row.headlineRef);
-  }
-  for (const cell of FEATURED_CELLS) {
-    refs.push(cell.primary);
-  }
-  for (const entry of STATE_LEADERS) {
-    refs.push(entry.valueRef);
-  }
-  for (const entry of SCHEME_COVERAGE) {
-    refs.push(entry.valueRef);
-  }
-  const seen = new Set<string>();
-  return refs.filter((r) => {
-    const k = indicatorKey(r);
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+  return specRefs(LIVING_SPEC);
 }
