@@ -15,9 +15,10 @@
 //      (React Query de-duplicates by the query key). The identity card
 //      uses it for the KpiRing grade; the breakdown below uses it too.
 //
-//   2. <DistrictHealthScoreCard> — a quiet, collapsible "How is the
-//      grade calculated?" card with the 10 category scores as thin
-//      progress bars. Renders nothing until a score exists.
+//   2. <DistrictHealthScoreCard> — the report card, folded by default
+//      (v5): grade, score and date on one line — and, once the score has
+//      expired, a plain note that it may not match the page. Renders
+//      nothing until a score exists.
 //
 //  The score text, weights and the "indicative only" warning are kept
 //  word for word from v2 — only the presentation changed.
@@ -26,7 +27,8 @@
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { AsOfText, Card, KpiRing, ProgressBar } from "@/components/district/ui";
+import { KpiRing, ProgressBar } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
 
 interface CategoryData {
   score: number;
@@ -46,20 +48,22 @@ export interface HealthScoreData {
     subMetrics: Record<string, { value: number; max: number; score: number; label: string }>;
   }>;
   generatedAt: string;
+  /** When the score stops being valid; the overview says so after this date. */
+  expiresAt?: string | null;
 }
 
-/** The 10 categories, in display order: emoji + hue for the v4 report card. */
-const CATEGORY_CONFIG: Array<{ key: string; label: string; emoji: string; hue: string }> = [
-  { key: "governance",      label: "Governance",     emoji: "🏛️", hue: "indigo" },
-  { key: "education",       label: "Education",      emoji: "🎓", hue: "violet" },
-  { key: "health",          label: "Healthcare",     emoji: "🏥", hue: "rose" },
-  { key: "infrastructure",  label: "Infrastructure", emoji: "🏗️", hue: "orange" },
-  { key: "waterSanitation", label: "Water",          emoji: "💧", hue: "sky" },
-  { key: "economy",         label: "Economy",        emoji: "💰", hue: "amber" },
-  { key: "safety",          label: "Safety",         emoji: "🛡️", hue: "blue" },
-  { key: "agriculture",     label: "Agriculture",    emoji: "🌾", hue: "green" },
-  { key: "digitalAccess",   label: "Digital",        emoji: "📱", hue: "cyan" },
-  { key: "citizenWelfare",  label: "Welfare",        emoji: "🤝", hue: "pink" },
+/** The 10 categories, in display order, each with a hue (v5: no emoji). */
+const CATEGORY_CONFIG: Array<{ key: string; label: string; hue: string }> = [
+  { key: "governance",      label: "Governance",     hue: "indigo" },
+  { key: "education",       label: "Education",      hue: "violet" },
+  { key: "health",          label: "Healthcare",     hue: "rose" },
+  { key: "infrastructure",  label: "Infrastructure", hue: "orange" },
+  { key: "waterSanitation", label: "Water",          hue: "sky" },
+  { key: "economy",         label: "Economy",        hue: "amber" },
+  { key: "safety",          label: "Safety",         hue: "blue" },
+  { key: "agriculture",     label: "Agriculture",    hue: "green" },
+  { key: "digitalAccess",   label: "Digital",        hue: "cyan" },
+  { key: "citizenWelfare",  label: "Welfare",        hue: "pink" },
 ];
 
 /**
@@ -114,14 +118,18 @@ export function HealthScoreRing({ districtSlug, size = 64, compact = false }: { 
 }
 
 /**
- * The breakdown card. Collapsed by default (a native <details>) so the
- * overview stays calm; opening it shows the 10 categories and, for each,
- * its weight and sub-metrics.
+ * The report card on the overview (v5): folded by default. The summary line
+ * gives the grade, the score and when it was computed; once the score has
+ * expired it says so plainly ("… not recomputed since, so it may not match
+ * the data on this page"). Opening it shows the 10 areas as thin bars and,
+ * further folded, how the grade is calculated.
  */
 export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string }) {
   const { data } = useHealthScore(districtSlug);
   const t = useTranslations("overview");
   const th = useTranslations("health");
+  const to = useTranslations("page_overview");
+  const f = useFormat();
   if (!data) return null;
 
   const rows = CATEGORY_CONFIG.map((cat) => {
@@ -131,94 +139,97 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
     return { cat, bd, score: bd?.score ?? cd?.score ?? 0 };
   }).filter((r): r is NonNullable<typeof r> => r !== null);
 
+  const computed = f.date(data.generatedAt, { day: "numeric", month: "short", year: "numeric" });
+  // Read once per render; the card only needs day precision.
+  // eslint-disable-next-line react-hooks/purity -- expiry is a render-time comparison with today
+  const expired = data.expiresAt ? new Date(data.expiresAt).getTime() < Date.now() : false;
+  const score = Math.round(data.overallScore * 10) / 10;
+
   return (
-    <Card as="section" padding={18} id="health-score" aria-label={t("reportCard")} className="ftp-hue-blue" tinted>
-      {/* Header: the grade ring, what it is, and when it was computed. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <KpiRing score={data.overallScore} grade={data.grade} size={72} />
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <h3 className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650, color: "var(--ftp-text)" }}>
-            <span className="ftp-emoji" aria-hidden>🩺 </span>{t("reportCard")}
-          </h3>
-          <p style={{ margin: "2px 0 0", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-            {t("gradeLine", { grade: data.grade, score: data.overallScore })}
-            {data.previousScore !== null && t("gradeLast", { prev: data.previousScore })}
-            {t("gradeNote")}
-          </p>
-        </div>
-        <AsOfText asOf={data.generatedAt} prefix="Computed" />
-      </div>
-
-      {/* Ten categories, each in its own colour. */}
-      <ul
-        style={{
-          listStyle: "none",
-          margin: "16px 0 0",
-          padding: 0,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
-          gap: 10,
-        }}
-      >
-        {rows.map(({ cat, score }) => (
-          <li
-            key={cat.key}
-            className={`ftp-hue-${cat.hue}`}
-            style={{ padding: "10px 12px", borderRadius: 14, background: "#fff", border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 26, height: 26, fontSize: 14, borderRadius: 8 }}>
-                {cat.emoji}
-              </span>
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--ftp-text)" }}>{th(cat.key)}</span>
-              <span className="ftp-num" style={{ fontSize: 13, color: "var(--hue-deep)" }}>{score}</span>
-            </div>
-            <ProgressBar value={score} max={100} height={7} />
-          </li>
-        ))}
-      </ul>
-
-      {/* The method, on demand. */}
-      <details style={{ marginTop: 14 }}>
-        <summary style={{ minHeight: 44, display: "flex", alignItems: "center", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }}>
-          {t("howGraded")}
+    <section id="health-score" aria-label={t("reportCard")} className="ftp-report-card-v5">
+      <details>
+        <summary className="ftp-rc-summary">
+          <KpiRing score={data.overallScore} grade={data.grade} size={48} />
+          <span className="ftp-rc-text">
+            <span className="ftp-rc-title">{to("v5.report.summary", { grade: data.grade, score: f.number(score) })}</span>
+            <span className="ftp-rc-sub" data-expired={expired ? "true" : undefined}>
+              {expired ? to("v5.report.expired", { date: computed }) : to("v5.report.computed", { date: computed })}
+              {data.previousScore !== null ? ` ${to("v5.report.prev", { prev: f.number(Math.round(data.previousScore * 10) / 10) })}` : ""}
+            </span>
+          </span>
+          <span className="ftp-rc-open">{to("v5.report.open")}</span>
         </summary>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 12px" }}>
-          {th("method")}
+
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "12px 0 0" }}>
+          {t("gradeLine", { grade: data.grade, score: data.overallScore })}
+          {t("gradeNote")}
         </p>
-        <p className="ftp-body" style={{ margin: "0 0 12px" }}>
-          <span style={{ fontWeight: 600, color: "var(--ftp-warn)" }}>{th("important")} </span>
-          {th("caveat")}
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))", gap: 10 }}>
-          {rows.map(({ cat, bd, score }) => (
-            <div key={cat.key} style={{ border: "1px solid var(--ftp-border)", borderRadius: "var(--ftp-radius-tile)", padding: "10px 12px", background: "#fff" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <span>
-                  <span className="ftp-emoji" aria-hidden>{cat.emoji} </span>
-                  {th(cat.key)}
-                </span>
-                <span className="ftp-num">{score}/100</span>
+
+        {/* Ten areas, each a thin bar in its own hue. */}
+        <ul
+          style={{
+            listStyle: "none",
+            margin: "12px 0 0",
+            padding: 0,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
+            gap: 10,
+          }}
+        >
+          {rows.map(({ cat, score: s }) => (
+            <li
+              key={cat.key}
+              className={`ftp-hue-${cat.hue}`}
+              style={{ padding: "10px 12px", borderRadius: 12, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--ftp-text)" }}>{th(cat.key)}</span>
+                <span className="ftp-num" style={{ fontSize: 13, color: "var(--hue-deep)" }}>{s}</span>
               </div>
-              {bd && (
-                <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 6 }}>
-                  {th("weightLine", { weight: bd.weight, points: bd.weightedScore })}
-                </div>
-              )}
-              {bd?.subMetrics &&
-                Object.entries(bd.subMetrics).map(([key, metric]) => (
-                  <div key={key} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, lineHeight: "16px", marginTop: 2 }}>
-                    <span style={{ color: "var(--ftp-text-2)" }}>{metric.label}</span>
-                    <span className="ftp-num" style={{ whiteSpace: "nowrap" }}>
-                      {metric.value}
-                      {metric.max > 0 ? `/${metric.max}` : ""}
-                    </span>
-                  </div>
-                ))}
-            </div>
+              <ProgressBar value={s} max={100} height={6} />
+            </li>
           ))}
-        </div>
+        </ul>
+
+        {/* The method, on demand. */}
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ minHeight: 44, display: "flex", alignItems: "center", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "var(--ftp-brand)" }}>
+            {t("howGraded")}
+          </summary>
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 12px" }}>
+            {th("method")}
+          </p>
+          <p className="ftp-body" style={{ margin: "0 0 12px" }}>
+            <span style={{ fontWeight: 600, color: "var(--ftp-warn)" }}>{th("important")} </span>
+            {th("caveat")}
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))", gap: 10 }}>
+            {rows.map(({ cat, bd, score: s }) => (
+              <div key={cat.key} style={{ border: "1px solid var(--ftp-border)", borderRadius: "var(--ftp-radius-tile)", padding: "10px 12px", background: "var(--ftp-surface)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 600 }}>
+                  <span>{th(cat.key)}</span>
+                  <span className="ftp-num">{s}/100</span>
+                </div>
+                {bd && (
+                  <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 6 }}>
+                    {th("weightLine", { weight: bd.weight, points: bd.weightedScore })}
+                  </div>
+                )}
+                {bd?.subMetrics &&
+                  Object.entries(bd.subMetrics).map(([key, metric]) => (
+                    <div key={key} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, lineHeight: "16px", marginTop: 2 }}>
+                      <span style={{ color: "var(--ftp-text-2)" }}>{metric.label}</span>
+                      <span className="ftp-num" style={{ whiteSpace: "nowrap" }}>
+                        {metric.value}
+                        {metric.max > 0 ? `/${metric.max}` : ""}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </div>
+        </details>
       </details>
-    </Card>
+    </section>
   );
 }

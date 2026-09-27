@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   const stateSlug = req.nextUrl.searchParams.get("state") ?? "";
   if (!districtSlug) return NextResponse.json({ error: "district required" }, { status: 400 });
 
-  const key = cacheKey(districtSlug, "glance:v2");
+  const key = cacheKey(districtSlug, "glance:v3");
   const cached = await cacheGet<GlanceData>(key);
   if (cached) {
     return NextResponse.json(cached, {
@@ -135,8 +135,11 @@ export async function GET(req: NextRequest) {
   const usable = (name: string) => name.trim().length > 0 && !name.startsWith("[");
 
   const collector = leaders.find((l) => isCollector(l.role) && usable(l.name)) ?? null;
-  const mps = leaders.filter((l) => isMP(l.role) && usable(l.name));
-  const mp = mps.find((l) => !/rajya/i.test(l.role)) ?? mps[0] ?? null;
+  // A district can span several Lok Sabha seats (Pune: four). Keep every
+  // distinct Lok Sabha MP so the row can say "4 MPs" instead of picking one.
+  const mpRows = leaders.filter((l) => isMP(l.role) && usable(l.name) && !/rajya/i.test(l.role));
+  const mpNames = [...new Set(mpRows.map((l) => l.name.trim()))];
+  const mp = mpRows[0] ?? null;
 
   let budget: GlanceData["budget"] = null;
   if (newestBudget) {
@@ -168,7 +171,7 @@ export async function GET(req: NextRequest) {
 
   const data: GlanceData = {
     collector: collector ? { name: collector.name, role: collector.role } : null,
-    mp: mp ? { name: mp.name, party: mp.party } : null,
+    mp: mp ? { name: mp.name, party: mp.party, count: mpNames.length, names: mpNames } : null,
     population: profile?.totalPopulation
       ? { value: profile.totalPopulation, dataset: profile.dataset, year: profile.year, estimate: false }
       : history?.population

@@ -93,7 +93,18 @@ export default function GlanceRow({
           : t("glance.collector");
       chips.push({ key: "collector", module: "leadership", icon: Landmark, label, value: data.collector.name });
     }
-    if (data.mp) chips.push({ key: "mp", module: "leadership", icon: BadgeCheck, label: t("glance.mp"), value: data.mp.name });
+    if (data.mp) {
+      // Several Lok Sabha seats cover some districts: show all names for
+      // two, the count for more — never one MP as if they were the only one.
+      const many = (data.mp.count ?? 1) > 1;
+      chips.push({
+        key: "mp",
+        module: "leadership",
+        icon: BadgeCheck,
+        label: many ? t("glance.mps") : t("glance.mp"),
+        value: !many ? data.mp.name : data.mp.count === 2 ? data.mp.names.join(", ") : t("glance.mpsCount", { n: data.mp.count }),
+      });
+    }
     if (data.population) {
       const n = people(data.population.value);
       chips.push({

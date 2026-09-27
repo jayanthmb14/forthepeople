@@ -15,6 +15,8 @@
     "dc": "Deputy Commissioner",
     "dm": "District Magistrate",
     "mp": "MP",
+    "mps": "MPs",
+    "mpsCount": "{n} for this district",
     "people": "People",
     "peopleCensus": "{n} ({dataset})",
     "peopleEstimate": "{n} (estimate)",
