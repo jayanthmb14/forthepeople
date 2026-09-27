@@ -1,9 +1,12 @@
 {
-  "title": "Schools",
-  "description": "School directory, students per teacher and exam pass rates",
-  "summary": "This page shows school data for this district: Class 10 board exam pass rates, how many students and teachers each school has, and how many students there are for each teacher. The data comes from UDISE+ (Unified District Information System for Education), which is published once a year.",
-  "tileSub": "From UDISE+, results up to {year}",
+  "description": "Which schools are near you, how many teachers they have, and how their students did in board exams",
+  "tileSub": "UDISE+, results up to {year}",
   "tileSubNoYear": "UDISE+ yearly data",
+  "answer": {
+    "main": "The <b>{n}</b> {count, plural, one {school} other {schools}} listed for {district} have <b>{students}</b> students and <b>{teachers}</b> teachers: about <b>{ratio}</b> students for each teacher.",
+    "noRatio": "<b>{n}</b> {count, plural, one {school is} other {schools are}} listed for {district}.",
+    "pass": "In {year}, about <b>{tenths} of every 10</b> students passed their board exam."
+  },
   "tiles": {
     "schools": "Schools listed",
     "students": "Students",
@@ -11,11 +14,33 @@
     "ratio": "Students per teacher"
   },
   "ratioValue": "{n}:1",
+  "band": {
+    "good": "A good number",
+    "ok": "All right",
+    "high": "Classes are crowded"
+  },
   "picture": {
-    "pass": "In {year}, <b>{passed}</b> of the <b>{total}</b> students who sat exams in the schools listed here passed.",
-    "passPictogram": "About {n} of every 10 students passed in {year}.",
-    "people": "The schools listed here have <b>{students}</b> students and <b>{teachers}</b> teachers.",
+    "passTitle": "Board exam, {year}",
+    "pass": "Each cap is one in ten students. In {year}, {passed} of the {total} students who sat the exam passed.",
+    "classTitle": "One teacher's class",
     "classroom": "{kids, plural, one {One teacher for every student in the schools listed.} other {One teacher for every {n} students in the schools listed.}}"
+  },
+  "list": {
+    "title": "Find a school",
+    "searchLabel": "Type the name of a school or place",
+    "searchPlaceholder": "School name or place",
+    "typeAria": "Kind of school",
+    "allTypes": "All kinds",
+    "levelAria": "Level",
+    "allLevels": "All levels",
+    "noMatch": "No school matches “{query}”",
+    "noMatchBody": "Check the spelling, or try the name of the town.",
+    "typeLevel": "{type} · {level}",
+    "passAria": "{exam} {year}: {pct} passed",
+    "open": "Results, teachers and facilities",
+    "people": "{students} students · {teachers} teachers",
+    "ratio": "Students per teacher",
+    "showAll": "Show all {n}"
   },
   "types": {
     "title": "Kinds of schools",
@@ -33,21 +58,57 @@
     "down": "The pass rate went down from <b>{start}</b> in {from} to <b>{end}</b> in {to}.",
     "legend": "Pass rate"
   },
-  "directory": {
-    "title": "School directory",
-    "typeAria": "School type",
-    "all": "All",
-    "level": "Level: {level}",
+  "sheet": {
+    "directions": "Directions",
+    "udise": "Check on UDISE+",
+    "people": "<b>{students}</b> students and <b>{teachers}</b> teachers: one teacher for every <b>{ratio}</b> students.",
+    "band": {
+      "good": "That is a good number of teachers.",
+      "ok": "That is all right.",
+      "high": "Classes here are crowded."
+    },
+    "noPeople": "The number of students and teachers has not been published for this school.",
+    "results": "Board exam results",
+    "noResults": "No board exam results published for this school yet.",
+    "examYear": "{exam} {year}",
+    "passCount": "{passed} of {appeared} passed",
+    "distinction": "{n} with distinction",
+    "firstClass": "{n} in first class",
+    "facilities": "Facilities",
+    "toilets": "Toilets",
+    "library": "Library",
+    "lab": "Science lab",
+    "yes": "Yes",
+    "no": "No",
+    "about": "About the school",
+    "type": "Kind of school",
+    "level": "Level",
     "students": "Students",
     "teachers": "Teachers",
     "ratio": "Students per teacher",
-    "pass": "passed",
-    "passAria": "{exam} {year}: {pct} passed",
-    "passCount": "{passed} of {appeared}"
+    "udiseCode": "UDISE code",
+    "address": "Address",
+    "updated": "Updated on",
+    "note": "Details are from UDISE+, which is published once a year. Ask the school for the latest."
   },
-  "share": {
-    "withData": "Schools in {district}: {n} listed, {ratio} students per teacher",
-    "withDataNoRatio": "Schools in {district}: {n} listed",
-    "noData": "School information for {district}"
+  "end": {
+    "shareWithData": "Schools in {district}: {n} listed, {ratio} students per teacher",
+    "shareNoRatio": "Schools in {district}: {n} listed",
+    "shareNoData": "School information for {district}",
+    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
+    "actions": "Page actions",
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share this page on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "freq": {
+      "monthly": "Updated monthly",
+      "weekly": "Updated weekly",
+      "daily": "Updated daily",
+      "annual": "Updated once a year",
+      "quarterly": "Updated every three months",
+      "onPublish": "Updated when the source publishes"
+    }
   }
 }
