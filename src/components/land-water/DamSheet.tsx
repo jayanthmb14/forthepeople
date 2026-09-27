@@ -29,6 +29,7 @@ import { ReadingAge, isOlderThan, useClientNow } from "@/components/district/pag
 import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { SheetAction, SheetBlock } from "./cards";
 import { namePair } from "./visuals";
+import { fillPct } from "./dam-data";
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
@@ -68,8 +69,11 @@ export function DamSheet({
   const pct = (v: number, digits = 0) => f.number(v / 100, { style: "percent", maximumFractionDigits: digits, minimumFractionDigits: digits });
   const tmc = (v: number) => f.number(v, { maximumFractionDigits: 2 });
   const shortDay = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
-  const readingTime = (iso: string) =>
-    new Date(iso).toLocaleString(f.intl, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+  // The state portal gives each reading a day, not a time: show the day only
+  // (Sept 2026 audit: midnight UTC was shown as "05:30 am").
+  const readingTime = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
+  // Per cent full from the TMC figures (1 decimal), else the portal's whole number.
+  const full = fillPct(dam);
   const state = flowState(dam);
   // An old reading is not today's level: grey the number and say how old it is.
   const isOld = isOlderThan(dam.recordedAt, DAM_MAX_AGE_HOURS, now);
@@ -111,7 +115,7 @@ export function DamSheet({
         <WaterTank pct={dam.storagePct} label={t("tankOne")} width={128} height={160} />
         <div style={{ minWidth: 0, flex: "1 1 160px" }}>
           <div className="ftp-bignum" style={{ fontSize: 44, lineHeight: "48px", color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
-            {pct(dam.storagePct, 1)}
+            {pct(full.pct, full.digits)}
           </div>
           <p style={{ margin: "2px 0 0", fontSize: 14, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("fullOfCapacity")}</p>
           {dam.maxStorage > 0 && (
@@ -120,7 +124,7 @@ export function DamSheet({
             </p>
           )}
           <div style={{ marginTop: 10 }}>
-            <ReadingAge at={dam.recordedAt} maxAgeHours={DAM_MAX_AGE_HOURS} withTime now={now} />
+            <ReadingAge at={dam.recordedAt} maxAgeHours={DAM_MAX_AGE_HOURS} now={now} />
           </div>
         </div>
       </div>
@@ -168,7 +172,7 @@ export function DamSheet({
       <SheetBlock title={t("rowsTitle")}>
         <DetailList
           rows={[
-            { label: t("rowFull"), value: pct(dam.storagePct, 1) },
+            { label: t("rowFull"), value: pct(full.pct, full.digits) },
             {
               label: t("rowStorage"),
               value: dam.maxStorage > 0 ? t("storageOf", { stored: tmc(dam.storage), capacity: tmc(dam.maxStorage) }) : null,

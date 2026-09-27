@@ -13,9 +13,10 @@
 // "KRS (Krishna Raja Sagara)". The water page groups readings by the
 // exact name, so a live reading under a new spelling showed up as a
 // SECOND KRS card next to the stale seed one. Now every spelling maps to
-// one canonical dam, and the collector writes under the name the district
-// already uses (see pickStoredName), so the live reading continues the
-// same card.
+// one canonical dam. Sept 2026 audit: keeping each district's old seed
+// spelling left KRS with two names on the site (Mandya vs Mysuru), so the
+// collector now always writes the canonical name (storedDamName) and
+// renames a same-day row it finds under an older spelling (damSpellings).
 //
 // Full reservoir levels (FRL) are feet above mean sea level — the same
 // unit the portal's Reservior_Level uses. KRS was listed as 2,624 ft,
@@ -91,16 +92,20 @@ export function canonicalDam(name: string): CanonicalDam | null {
   return BY_ALIAS.get(normalise(name)) ?? null;
 }
 
+/** The name to store a reading under: the canonical name, else the source's own name. */
+export function storedDamName(sourceName: string): string {
+  return canonicalDam(sourceName)?.name ?? sourceName;
+}
+
 /**
- * The name to store a new reading under: the spelling this district's
- * readings already use for the same dam (so the water page keeps one card
- * per dam), else the canonical name, else the source's own name.
+ * Every stored spelling of the same dam, the canonical name first — to find
+ * a reading stored under an older spelling (and rename it).
  */
-export function pickStoredName(sourceName: string, existingNames: string[]): string {
+export function damSpellings(sourceName: string, existingNames: string[]): string[] {
+  const name = storedDamName(sourceName);
   const dam = canonicalDam(sourceName);
-  if (!dam) return sourceName;
-  const same = existingNames.find((n) => canonicalDam(n) === dam);
-  return same ?? dam.name;
+  const older = dam ? existingNames.filter((n) => n !== name && canonicalDam(n) === dam) : [];
+  return [name, ...new Set(older)];
 }
 
 /** Portal date "27 Sep 2026" → UTC midnight of that day, or null. */

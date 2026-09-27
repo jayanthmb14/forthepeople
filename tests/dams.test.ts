@@ -11,7 +11,8 @@ import {
   checkedFullLevel,
   damReadingProblems,
   parsePortalDate,
-  pickStoredName,
+  damSpellings,
+  storedDamName,
 } from "@/scraper/lib/dams";
 
 const NOW = Date.UTC(2026, 8, 27, 14, 0, 0);
@@ -44,19 +45,19 @@ describe("canonicalDam", () => {
   });
 });
 
-describe("pickStoredName", () => {
-  it("continues the district's existing series (the seed name)", () => {
-    expect(pickStoredName("K.R.Sagara Dam", ["Krishna Raja Sagara (KRS)", "Hemavathi Reservoir"])).toBe(
-      "Krishna Raja Sagara (KRS)",
-    );
-    expect(pickStoredName("K.R.Sagara Dam", ["KRS Dam (Krishnaraja Sagara)", "Kabini Reservoir"])).toBe(
-      "KRS Dam (Krishnaraja Sagara)",
-    );
+describe("storedDamName / damSpellings (Sept 2026 audit: one name per dam everywhere)", () => {
+  it("stores every district's reading under the canonical name", () => {
+    expect(storedDamName("K.R.Sagara Dam")).toBe("Krishna Raja Sagara (KRS)");
+    expect(storedDamName("Almatti Dam")).toBe("Almatti Dam");
   });
 
-  it("uses the canonical name for a new dam, and the source name for an unknown one", () => {
-    expect(pickStoredName("K.R.Sagara Dam", [])).toBe("Krishna Raja Sagara (KRS)");
-    expect(pickStoredName("Almatti Dam", [])).toBe("Almatti Dam");
+  it("finds a row stored under an older spelling of the same dam, canonical name first", () => {
+    expect(damSpellings("K.R.Sagara Dam", ["KRS Dam (Krishnaraja Sagara)", "Kabini Reservoir"])).toEqual([
+      "Krishna Raja Sagara (KRS)",
+      "KRS Dam (Krishnaraja Sagara)",
+    ]);
+    expect(damSpellings("K.R.Sagara Dam", ["Krishna Raja Sagara (KRS)"])).toEqual(["Krishna Raja Sagara (KRS)"]);
+    expect(damSpellings("Almatti Dam", ["Kabini Reservoir"])).toEqual(["Almatti Dam"]);
   });
 });
 

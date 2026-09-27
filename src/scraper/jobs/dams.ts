@@ -27,10 +27,11 @@
 // Schedule: every 6 hours via /api/cron/scrape-dams (vercel.json).
 //
 // Sept 2026 (v5), see src/scraper/lib/dams.ts:
-//  - One canonical name per dam; a reading is stored under the name the
-//    district already uses (e.g. the seed's "Krishna Raja Sagara (KRS)"),
-//    so the water page shows ONE card per dam, not a live one next to a
-//    stale seed one.
+//  - One canonical name per dam (CANONICAL_DAMS), the same in every
+//    district (Sept 2026 audit: KRS was "Krishna Raja Sagara (KRS)" in
+//    Mandya and "KRS Dam (Krishnaraja Sagara)" in Mysuru). A same-day row
+//    stored under an older spelling is found and renamed, so the water
+//    page still shows ONE card per dam.
 //  - KRS full level fixed (2,624 ft was wrong; 2,468.8 ft = 752.50 m).
 //  - Each reading keeps the portal's own date. Readings older than 7 days
 //    (the portal still lists one from 2021), % full outside 0–105 or
@@ -45,8 +46,8 @@ import {
   canonicalDam,
   checkedFullLevel,
   damReadingProblems,
+  damSpellings,
   parsePortalDate,
-  pickStoredName,
 } from "../lib/dams";
 
 // ── Karnataka state portal (the only working live source) ──
@@ -157,7 +158,8 @@ async function scrapeKarnataka(ctx: JobContext): Promise<{ newCount: number; upd
     const recordedAt = figures.date as Date;
     const level = figures.level as number;
 
-    const damName = pickStoredName(p.ReservoirName, existingNames.map((e) => e.damName));
+    const [damName, ...olderSpellings] = damSpellings(p.ReservoirName, existingNames.map((e) => e.damName));
+    const local = canonicalDam(p.ReservoirName)?.nameLocal ?? existingNames.find((e) => e.damName === damName)?.damNameLocal ?? null;
     const fullLevel = checkedFullLevel(p.ReservoirName, level);
     if (fullLevel.mismatch) {
       ctx.log(`${p.ReservoirName}: level ${level} ft is above our full level — full level stored as unknown; check CANONICAL_DAMS`);
@@ -173,23 +175,25 @@ async function scrapeKarnataka(ctx: JobContext): Promise<{ newCount: number; upd
     };
 
     const existing = await prisma.damReading.findFirst({
-      where: { districtId: ctx.districtId, damName, recordedAt },
+      where: { districtId: ctx.districtId, damName: { in: [damName, ...olderSpellings] }, recordedAt },
     });
     if (existing) {
-      // Same day already stored: update only if the portal revised the figures.
-      const changed = (Object.keys(data) as Array<keyof typeof data>).some((k) => existing[k] !== data[k]);
+      // Same day already stored: update if the portal revised the figures
+      // or the row still carries an older spelling of the dam's name.
+      const changed =
+        (Object.keys(data) as Array<keyof typeof data>).some((k) => existing[k] !== data[k]) ||
+        existing.damName !== damName ||
+        existing.damNameLocal !== local;
       if (changed) {
         await prisma.damReading.update({
           where: { id: existing.id },
-          data: { ...data, source: KARNATAKA_DAM_SOURCE, fetchedAt: new Date() },
+          data: { ...data, damName, damNameLocal: local, source: KARNATAKA_DAM_SOURCE, fetchedAt: new Date() },
         });
         updatedCount++;
       }
       continue;
     }
 
-    const local =
-      existingNames.find((e) => e.damName === damName)?.damNameLocal ?? canonicalDam(p.ReservoirName)?.nameLocal ?? null;
     await prisma.damReading.create({
       data: {
         districtId: ctx.districtId,
