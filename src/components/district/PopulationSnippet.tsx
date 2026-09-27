@@ -97,7 +97,13 @@ export default function PopulationSnippet({ district, state, base }: Props) {
   const profile = data?.data ?? null;
   if (!profile) return null;
 
-  const religions = top3Alphabetical(profile.religion);
+  const religionName = (name: string) => (t.has(`religion.${name}`) ? t(`religion.${name}`) : name);
+  // A–Z in the reader's language, so the order is as the label says
+  // ("वर्णानुक्रम में" / "ಅಕಾರಾದಿ ಕ್ರಮದಲ್ಲಿ"); Sept 2026 audit: the Hindi list kept
+  // the English order and read like a ranking.
+  const religions = top3Alphabetical(profile.religion).sort((a, b) =>
+    religionName(a.name).localeCompare(religionName(b.name), f.intl),
+  );
   const literacy = typeof profile.literacyTotal === "number" ? profile.literacyTotal : null;
   const ratio = typeof profile.sexRatio === "number" && profile.sexRatio > 0 ? profile.sexRatio : null;
   const barMax = ratio ? Math.max(ratio, 1000) : 1000;
@@ -159,7 +165,7 @@ export default function PopulationSnippet({ district, state, base }: Props) {
           {religions.map((r, i) => (
             <span key={r.name}>
               {i > 0 && " · "}
-              <span style={{ color: "var(--ftp-text)" }}>{t.has(`religion.${r.name}`) ? t(`religion.${r.name}`) : r.name}</span>{" "}
+              <span style={{ color: "var(--ftp-text)" }}>{religionName(r.name)}</span>{" "}
               <span className="ftp-num">{r.pct.toFixed(1)}%</span>
             </span>
           ))}

@@ -300,10 +300,10 @@
   },
   "seo": {
     "districtTitle": "{district} District — Government Data Dashboard",
-    "districtDescription": "Government data for {district} district, {state}: crop prices, dam levels, schemes, budget and more. Every number shows its date and official source.",
-    "districtDescriptionTagline": "Government data for {district} district, {state} ({tagline}): crop prices, dam levels, schemes, budget and more. Every number shows its date and official source.",
+    "districtDescription": "Government data for {district} district, {state}: crop prices, dam levels, schemes, budget and more. Every number shows its date and source (government portals and other reputed sources).",
+    "districtDescriptionTagline": "Government data for {district} district, {state} ({tagline}): crop prices, dam levels, schemes, budget and more. Every number shows its date and source (government portals and other reputed sources).",
     "moduleTitle": "{module} — {district}",
-    "moduleDescription": "{district} district, {state}: {description}. Every number shows its date and official source.",
+    "moduleDescription": "{district} district, {state}: {description}. Every number shows its date and source (government portals and other reputed sources).",
     "talukTitle": "{taluk} {unit} — {district}",
     "talukDescription": "{taluk} {unit} in {district} district, {state}: villages and population from official records."
   },

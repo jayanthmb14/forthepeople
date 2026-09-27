@@ -945,10 +945,10 @@
   },
   "seo": {
     "districtTitle": "{district} जिला — सरकारी डेटा डैशबोर्ड",
-    "districtDescription": "{district} जिला, {state}: फसल के दाम, बाँधों का जल स्तर, योजनाएँ, बजट और बहुत कुछ। हर आँकड़े के साथ उसकी तारीख और सरकारी स्रोत।",
-    "districtDescriptionTagline": "{district} जिला, {state} ({tagline}): फसल के दाम, बाँधों का जल स्तर, योजनाएँ, बजट और बहुत कुछ। हर आँकड़े के साथ उसकी तारीख और सरकारी स्रोत।",
+    "districtDescription": "{district} जिला, {state}: फसल के दाम, बाँधों का जल स्तर, योजनाएँ, बजट और बहुत कुछ। हर आँकड़े के साथ उसकी तारीख़ और स्रोत (सरकारी पोर्टल और दूसरे भरोसेमंद स्रोत)।",
+    "districtDescriptionTagline": "{district} जिला, {state} ({tagline}): फसल के दाम, बाँधों का जल स्तर, योजनाएँ, बजट और बहुत कुछ। हर आँकड़े के साथ उसकी तारीख़ और स्रोत (सरकारी पोर्टल और दूसरे भरोसेमंद स्रोत)।",
     "moduleTitle": "{module} — {district}",
-    "moduleDescription": "{district} जिला, {state}: {description}। हर आँकड़े के साथ उसकी तारीख और सरकारी स्रोत।",
+    "moduleDescription": "{district} जिला, {state}: {description}। हर आँकड़े के साथ उसकी तारीख़ और स्रोत (सरकारी पोर्टल और दूसरे भरोसेमंद स्रोत)।",
     "talukTitle": "{taluk} {unit} — {district}",
     "talukDescription": "{district} जिला, {state} — {taluk} {unit}: गाँव और जनसंख्या, सरकारी रिकॉर्ड से।"
   },
@@ -960,7 +960,7 @@
     "sexRatio": "लिंगानुपात",
     "perThousand": "/1000",
     "literacy": "साक्षरता",
-    "religionLabel": "धर्म (शीर्ष 3):",
+    "religionLabel": "धर्म (शीर्ष 3, वर्णानुक्रम में):",
     "asOf": "{year} के आँकड़े",
     "religion": {
       "Hindu": "हिंदू",
