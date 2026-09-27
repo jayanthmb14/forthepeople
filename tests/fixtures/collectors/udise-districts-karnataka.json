@@ -1,0 +1,27 @@
+{
+ "status": true,
+ "data": [
+  {
+   "udiseDistrictCode": "2921",
+   "udiseDistrictName": "BENGALURU RURAL"
+  },
+  {
+   "udiseDistrictCode": "2928",
+   "udiseDistrictName": "BENGALURU U NORTH"
+  },
+  {
+   "udiseDistrictCode": "2920",
+   "udiseDistrictName": "BENGALURU U SOUTH"
+  },
+  {
+   "udiseDistrictCode": "2922",
+   "udiseDistrictName": "MANDYA"
+  },
+  {
+   "udiseDistrictCode": "2926",
+   "udiseDistrictName": "MYSURU"
+  }
+ ],
+ "errorDetails": "",
+ "message": "Successful"
+}
