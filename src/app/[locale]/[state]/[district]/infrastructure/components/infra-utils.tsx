@@ -142,12 +142,13 @@ export function categoryIcon(raw: string | null | undefined): LucideCmp {
 /**
  * The Lucide icon for a project category, as a real component so callers
  * don't create components during render (a React Compiler rule).
+ * v4: drawn in the module hue (--hue), usually inside an .ftp-icon-chip.
  */
 export function CategoryIcon({ category, size = 18 }: { category: string | null | undefined; size?: number }) {
   return createElement(categoryIcon(category), {
     size,
     "aria-hidden": true,
-    style: { color: "var(--ftp-text-2)", flexShrink: 0 },
+    style: { color: "var(--hue)", flexShrink: 0 },
   } as { size: number; style: React.CSSProperties });
 }
 

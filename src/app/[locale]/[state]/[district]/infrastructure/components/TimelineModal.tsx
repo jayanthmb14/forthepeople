@@ -66,13 +66,15 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
             borderBottom: "1px solid var(--ftp-border)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1, paddingTop: 6 }}>
-            <CategoryIcon category={p.category} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1, paddingTop: 6 }}>
+            <span className="ftp-icon-chip" aria-hidden style={{ width: 34, height: 34, borderRadius: 11 }}>
+              <CategoryIcon category={p.category} />
+            </span>
             <div style={{ minWidth: 0 }}>
               <h2 className="ftp-title">{p.name}</h2>
-              <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                {normalizeCategory(p.category)}
-                {p.executingAgency && <> · Executing: {p.executingAgency}</>}
+              <div style={{ display: "flex", flexWrap: "wrap", columnGap: 10, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{normalizeCategory(p.category)}</span>
+                {p.executingAgency && <span>Executing: {p.executingAgency}</span>}
               </div>
             </div>
           </div>
@@ -110,7 +112,7 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
             </div>
           ) : (
             <p className="ftp-body" style={{ ...AWAIT_STYLE }}>
-              No timeline entries yet — updates appear here as news covers this project.
+              No timeline entries yet. Updates appear here as news covers this project.
             </p>
           )}
 

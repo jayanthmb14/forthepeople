@@ -4,20 +4,22 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// TenderCard — one tender in the district tender list (Design v3).
+// TenderCard — one tender in the district tender list (Design v4).
 //
-//   [AUTHORITY] [Category] · Taluk, District
+//   [AUTHORITY] [Category]  Taluk, District
 //   Title (two lines max)
-//   ₹ value (mono) · MSE-reserved · Startup-eligible · Status
-//   Deadline pill (dot colour = urgency) · published · corrigenda · flags
+//   ₹ value (hue-deep)  [MSE-reserved] [Startup-eligible] [Status]
+//   Deadline pill (dot colour = urgency)  published  corrigenda  flags
 //
-// v3 rules applied: no coloured left stripe, no pulsing, no shadow. The
-// urgency that used to be a stripe is now a Pill with a 6 px dot, and the
-// card's only motion is the 150 ms border-colour hover (.ftp-card-link).
+// v4: the authority code, MSE and startup tags are chips in the module hue
+// (--hue-tint / --hue-deep); status and deadline keep their semantic
+// tones. No coloured stripe, no pulsing. The card lifts 2 px on hover
+// because it is a link (.ftp-card-link).
 "use client";
 
 import Link from "next/link";
-import { Flag } from "lucide-react";
+import type React from "react";
+import { Flag, MapPin } from "lucide-react";
 import { Pill, type Tone } from "@/components/district/ui";
 import { formatInr } from "@/lib/tenders/format";
 import { ageInDays } from "@/lib/utils/timeAgo";
@@ -80,6 +82,30 @@ function deadlineUrgency(deadlineIso: string): {
   return { tone: "live", dimmed: false, ariaLabel: `Deadline in ${Math.ceil(daysLeft)} days (ample time)` };
 }
 
+/** A small tag in the module hue (authority code, MSE, startup). */
+function HueTag({ children, outline }: { children: React.ReactNode; outline?: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        height: 24,
+        padding: "0 8px",
+        borderRadius: "var(--ftp-radius-pill)",
+        background: outline ? "var(--ftp-surface)" : "var(--hue-tint)",
+        border: `1px solid ${outline ? "color-mix(in srgb, var(--hue) 35%, var(--ftp-border))" : "transparent"}`,
+        color: "var(--hue-deep)",
+        fontSize: 11,
+        lineHeight: "16px",
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 export default function TenderCard({ tender, districtSlug, stateSlug, locale }: { tender: TenderCardData; districtSlug: string; stateSlug: string; locale: string }) {
   const status = STATUS_STYLE[tender.status] ?? { tone: "neutral" as Tone, label: tender.status };
   const flagCount = tender.redFlags.length;
@@ -98,6 +124,7 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
         border: "1px solid var(--ftp-border)",
         background: "var(--ftp-surface)",
         borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
         padding: 16,
         textDecoration: "none",
         color: "inherit",
@@ -107,10 +134,11 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
     >
       {/* Line 1: dept + category + location */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
-        <Pill tone="brand">{tender.authority.shortCode}</Pill>
+        <HueTag>{tender.authority.shortCode}</HueTag>
         {tender.category && <Pill>{tender.category.name}</Pill>}
-        <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-          · {tender.locationTaluk ? `${tender.locationTaluk}, ` : ""}{tender.locationDistrict}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+          <MapPin size={12} aria-hidden style={{ color: "var(--hue)" }} />
+          {tender.locationTaluk ? `${tender.locationTaluk}, ` : ""}{tender.locationDistrict}
         </span>
       </div>
 
@@ -130,14 +158,14 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
 
       {/* Line 3: value + MSE/Startup chips + status */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-        <span className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-text)" }}>{formatInr(tender.estimatedValueInr)}</span>
-        {tender.mseReserved && <Pill tone="live">MSE-reserved</Pill>}
-        {tender.startupExempt && <Pill tone="brand">Startup-eligible</Pill>}
+        <span className="ftp-num ftp-display" style={{ fontSize: 17, color: "var(--hue-deep)" }}>{formatInr(tender.estimatedValueInr)}</span>
+        {tender.mseReserved && <HueTag>MSE-reserved</HueTag>}
+        {tender.startupExempt && <HueTag outline>Startup-eligible</HueTag>}
         <Pill tone={status.tone}>{status.label}</Pill>
       </div>
 
       {/* Line 4: deadline + timing + corrigendum + flag counts */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+      <div style={{ display: "flex", columnGap: 12, rowGap: 6, alignItems: "center", flexWrap: "wrap", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         <Pill tone={urgency.tone} dot>
           Closes in <CountdownTimer deadline={tender.bidSubmissionEnd} compact />
         </Pill>
@@ -146,12 +174,12 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
         </span>
         {tender._count.corrigenda > 0 && (
           <span style={{ color: "var(--ftp-warn)" }}>
-            · <span className="ftp-num">{tender._count.corrigenda}</span> corrigendum{tender._count.corrigenda > 1 ? "a" : ""}
+            <span className="ftp-num">{tender._count.corrigenda}</span> corrigendum{tender._count.corrigenda > 1 ? "a" : ""}
           </span>
         )}
         {flagCount > 0 && (
           <span style={{ color: "var(--ftp-danger)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-            · <Flag size={12} aria-hidden /> <span className="ftp-num">{flagCount}</span> flag{flagCount > 1 ? "s" : ""}
+            <Flag size={12} aria-hidden /> <span className="ftp-num">{flagCount}</span> flag{flagCount > 1 ? "s" : ""}
           </span>
         )}
       </div>

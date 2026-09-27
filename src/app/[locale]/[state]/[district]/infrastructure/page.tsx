@@ -6,17 +6,21 @@
  * Every data point links to a news article. The platform presents
  * facts aggregated from the press, never judgment.
  *
- * Design v3 "Civic Ledger" (CONCEPT-v3 §5): PageHeader → notices →
- * freshness line → StatStrip → filter Chips + sort → project cards →
- * cancelled projects → SourcesFooter → ModuleNews → legal notice →
- * Toolbar. The card, timeline, analysis and notice pieces live in
- * ./components/ (one file each, see the comment at the top of each).
+ * Design v4 "Rang" (docs/DESIGN-SYSTEM.md): PageHeader → notices →
+ * freshness line → StatStrip of emoji tiles → the picture (explainer +
+ * pictogram of finished projects + a "running late" gauge) → projects by
+ * category chart → filter Chips + sort → project cards → cancelled
+ * projects → SourcesFooter → ModuleNews → legal notice → Toolbar. The
+ * card, timeline, analysis and notice pieces live in ./components/ (one
+ * file each, see the comment at the top of each). Every number in the
+ * picture and the chart comes from the same project list as the tiles.
  */
 
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { use, useMemo, useState } from "react";
-import { HardHat, AlertTriangle, ArrowLeftRight, Download, Share2 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { HardHat, ArrowLeftRight, Download, Share2 } from "lucide-react";
 import { useInfrastructure } from "@/hooks/useRealtimeData";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import ModuleDisclaimer from "@/components/common/ModuleDisclaimer";
@@ -25,6 +29,7 @@ import {
   StatStrip,
   StatTile,
   Section,
+  Card,
   Chips,
   LoadingShell,
   ErrorBlock,
@@ -34,6 +39,7 @@ import {
   ToolbarButton,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
+import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -107,6 +113,14 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
     delayed: projects.filter(isDelayed).length,
     cancelled: cancelledList.length,
   };
+
+  // The picture: share of tracked projects that are finished (out of 10)
+  // and share reported as running late. Same counts as the tiles above it.
+  const doneOf10 = counts.total > 0 ? (counts.completed / counts.total) * 10 : 0;
+  const latePct = counts.total > 0 ? (counts.delayed / counts.total) * 100 : 0;
+
+  // Chart rows: how many projects fall in each category (largest first).
+  const categoryChart = categoryOrder.map((c) => ({ category: c, count: categoryCounts.get(c) ?? 0 }));
 
   const filtered = useMemo(() => {
     const list = activeList.filter((p) => {
@@ -190,6 +204,7 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
       {error && <ErrorBlock />}
       {!isLoading && !error && projects.length === 0 && (
         <EmptyState
+          emoji="🏗️"
           title="No infrastructure projects tracked yet."
           body="News-driven updates will populate this page automatically."
         />
@@ -202,93 +217,164 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
           {/* Stats — StatStrip wraps to a second row after four tiles */}
           <div style={{ marginBottom: 20 }}>
             <StatStrip cols={4}>
-              <StatTile label="Total Projects" value={counts.total} />
-              <StatTile label="Active" value={counts.active} />
-              <StatTile label="Completed" value={counts.completed} />
-              <StatTile label="Delayed" value={counts.delayed} />
-              <StatTile label="Cancelled" value={counts.cancelled} />
-              <StatTile label="Total Budget" value={formatINR(totalBudget)} sub="As reported in news media" asOf={asOf} />
-              {totalSpent > 0 && <StatTile label="Funds Released" value={formatINR(totalSpent)} sub="As reported in news media" asOf={asOf} />}
+              <StatTile emoji="🏗️" label="Total projects" value={counts.total} asOf={asOf} />
+              <StatTile emoji="🚧" label="Active" value={counts.active} sub="Planned or being built" />
+              <StatTile emoji="✅" label="Completed" value={counts.completed} />
+              <StatTile emoji="⏰" label="Delayed" value={counts.delayed} sub="Delayed or stalled" />
+              <StatTile emoji="🚫" label="Cancelled" value={counts.cancelled} />
+              <StatTile emoji="💰" label="Total budget" value={formatINR(totalBudget)} sub="As reported in news media" asOf={asOf} />
+              {totalSpent > 0 && (
+                <StatTile emoji="🧾" label="Funds released" value={formatINR(totalSpent)} sub="As reported in news media" asOf={asOf} />
+              )}
             </StatStrip>
           </div>
 
-          {/* Filters */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-            <div>
-              <div className="ftp-label" style={{ marginBottom: 6 }}>Category</div>
-              <Chips
-                label="Filter projects by category"
-                value={catFilter}
-                onChange={(v) => setCatFilter(v as CategoryFilter)}
-                items={[
-                  { value: "all", label: "All", count: projects.length },
-                  ...categoryOrder.map((c) => ({ value: c, label: c, count: categoryCounts.get(c) ?? 0 })),
-                ]}
-              />
-            </div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
-              <div>
-                <div className="ftp-label" style={{ marginBottom: 6 }}>Status</div>
-                <Chips
-                  label="Filter projects by status"
-                  value={statusFilter}
-                  onChange={(v) => setStatusFilter(v as StatusFilter)}
-                  items={[
-                    { value: "all", label: "All", count: projects.length },
-                    { value: "active", label: "Active", count: counts.active },
-                    { value: "delayed", label: "Delayed", count: counts.delayed },
-                    { value: "completed", label: "Completed", count: counts.completed },
-                  ]}
+          {/* The picture: finished projects as 10 cranes, plus a dial for the
+              share running late. Needs at least two projects to mean anything. */}
+          {counts.total >= 2 && (
+            <div className="ftp-picture-row" style={{ marginBottom: 24 }}>
+              <Card tinted padding={18}>
+                <Explainer>
+                  This page follows <strong className="ftp-num">{counts.total}</strong> government projects reported in the
+                  news. <strong className="ftp-num">{counts.completed}</strong> are finished and{" "}
+                  <strong className="ftp-num">{counts.active}</strong> are planned or still being built
+                  {counts.cancelled > 0 ? (
+                    <>
+                      ; <strong className="ftp-num">{counts.cancelled}</strong> were cancelled
+                    </>
+                  ) : null}
+                  .
+                </Explainer>
+                <Pictogram
+                  filled={doneOf10}
+                  emoji="🏗️"
+                  label={
+                    counts.completed === 0
+                      ? "None of the projects tracked here is reported as finished yet."
+                      : `About ${Math.round(doneOf10)} of every 10 projects tracked here are finished.`
+                  }
                 />
-              </div>
-              <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-                <span className="ftp-label">Sort</span>
-                {/* ftp-chip = 32 px tall on desktop, 44 px tap target on phones. */}
-                <select
-                  className="ftp-chip"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  style={{
-                    padding: "0 10px", border: "1px solid var(--ftp-border)", borderRadius: "var(--ftp-radius-tile)",
-                    fontSize: 13, background: "var(--ftp-surface)", color: "var(--ftp-text)", fontFamily: "var(--ftp-font-sans)",
-                  }}
-                >
-                  <option value="latest">Latest Update</option>
-                  <option value="budget">Budget (highest)</option>
-                  <option value="progress">Most Complete</option>
-                  <option value="delay">Most Delayed</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          {/* Active cards */}
-          {filtered.length > 0 ? (
-            <div style={{ ...CARD_GRID, marginBottom: 28 }}>
-              {filtered.map((p) => <ProjectCard key={p.id} p={p} />)}
-            </div>
-          ) : (
-            <div style={{ marginBottom: 28 }}>
-              <EmptyState title="No projects match these filters." />
+              </Card>
+              <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Gauge value={latePct} label="Projects running late" caption="Share of tracked projects reported as delayed or stalled" />
+              </Card>
             </div>
           )}
 
+          {/* Projects by category — only when there is more than one category. */}
+          {categoryChart.length >= 2 && (
+            <ChartCard
+              title="Projects by category"
+              emoji="📊"
+              units="Number of tracked projects in each category, cancelled ones included"
+              simple={
+                <>
+                  Most projects here are <strong>{categoryChart[0].category}</strong>:{" "}
+                  <span className="ftp-num">{categoryChart[0].count}</span> of{" "}
+                  <span className="ftp-num">{counts.total}</span>.
+                </>
+              }
+              legend={[{ label: "Projects", swatch: "var(--hue)" }]}
+              source={{ label: "News reports" }}
+              asOf={asOf}
+              table={categoryChart.map((r) => ({ label: r.category, value: r.count.toLocaleString("en-IN") }))}
+            >
+              <ResponsiveContainer width="100%" height={Math.max(160, categoryChart.length * 36 + 40)}>
+                <BarChart data={categoryChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
+                  <ChartGradients />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
+                  <XAxis type="number" tick={CHART_AXIS} allowDecimals={false} />
+                  <YAxis type="category" dataKey="category" tick={CHART_AXIS} width={130} interval={0} />
+                  <Tooltip
+                    formatter={(v) => [Number(v).toLocaleString("en-IN"), "Projects"]}
+                    contentStyle={chartTooltipStyle}
+                    cursor={{ fill: "var(--hue-tint)" }}
+                  />
+                  <Bar dataKey="count" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name="Projects" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+
+          <Section title="Projects" emoji="🚧">
+            {/* Filters */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <div>
+                <div className="ftp-label" style={{ marginBottom: 6 }}>Category</div>
+                <Chips
+                  label="Filter projects by category"
+                  value={catFilter}
+                  onChange={(v) => setCatFilter(v as CategoryFilter)}
+                  items={[
+                    { value: "all", label: "All", count: projects.length },
+                    ...categoryOrder.map((c) => ({ value: c, label: c, count: categoryCounts.get(c) ?? 0 })),
+                  ]}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div>
+                  <div className="ftp-label" style={{ marginBottom: 6 }}>Status</div>
+                  <Chips
+                    label="Filter projects by status"
+                    value={statusFilter}
+                    onChange={(v) => setStatusFilter(v as StatusFilter)}
+                    items={[
+                      { value: "all", label: "All", count: projects.length },
+                      { value: "active", label: "Active", count: counts.active },
+                      { value: "delayed", label: "Delayed", count: counts.delayed },
+                      { value: "completed", label: "Completed", count: counts.completed },
+                    ]}
+                  />
+                </div>
+                <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="ftp-label">Sort</span>
+                  {/* ftp-chip = 32 px tall on desktop, 44 px tap target on phones. */}
+                  <select
+                    className="ftp-chip"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    style={{
+                      padding: "0 10px",
+                      border: "1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+                      borderRadius: "var(--ftp-radius-pill)",
+                      fontSize: 13, background: "var(--ftp-surface)", color: "var(--ftp-text)", fontFamily: "var(--ftp-font-sans)",
+                    }}
+                  >
+                    <option value="latest">Latest update</option>
+                    <option value="budget">Budget (highest)</option>
+                    <option value="progress">Most complete</option>
+                    <option value="delay">Most delayed</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            {/* Active cards */}
+            {filtered.length > 0 ? (
+              <div style={{ ...CARD_GRID, marginBottom: 28 }}>
+                {filtered.map((p) => <ProjectCard key={p.id} p={p} />)}
+              </div>
+            ) : (
+              <div style={{ marginBottom: 28 }}>
+                <EmptyState emoji="🔍" title="No projects match these filters." body="Pick another category or status to see more projects." />
+              </div>
+            )}
+          </Section>
+
           {/* Cancelled section */}
           {cancelledList.length > 0 && (
-            <div style={{ marginTop: 32 }}>
-              <Section
-                title={
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                    <AlertTriangle size={18} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-                    Cancelled / Shelved Projects (<span className="ftp-num">{cancelledList.length}</span>)
-                  </span>
-                }
-              >
-                <div style={{ ...CARD_GRID, marginBottom: 28 }}>
-                  {cancelledList.map((p) => <ProjectCard key={p.id} p={p} />)}
-                </div>
-              </Section>
-            </div>
+            <Section
+              emoji="🚫"
+              title={
+                <>
+                  Cancelled or shelved projects (<span className="ftp-num">{cancelledList.length}</span>)
+                </>
+              }
+            >
+              <div style={{ ...CARD_GRID, marginBottom: 28 }}>
+                {cancelledList.map((p) => <ProjectCard key={p.id} p={p} />)}
+              </div>
+            </Section>
           )}
         </>
       )}

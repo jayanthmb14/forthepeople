@@ -75,9 +75,9 @@ export default function TimelineEntry({ u }: { u: InfraUpdate }) {
         <a
           href={u.newsUrl.startsWith("http") ? u.newsUrl : `https://${u.newsUrl}`}
           target="_blank" rel="noopener noreferrer"
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-brand)", textDecoration: "none" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none" }}
         >
-          {u.newsSource ?? "Source"}{u.newsTitle ? ` · ${u.newsTitle.slice(0, 80)}${u.newsTitle.length > 80 ? "…" : ""}` : ""}
+          {u.newsSource ?? "Source"}{u.newsTitle ? `: ${u.newsTitle.slice(0, 80)}${u.newsTitle.length > 80 ? "…" : ""}` : ""}
           <ExternalLink size={12} aria-hidden />
         </a>
       )}

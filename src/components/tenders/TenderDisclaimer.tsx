@@ -2,16 +2,16 @@
 // Legal basis: RTI §4 proactive disclosure, GODL-India reuse licence,
 // Copyright §52(1)(q) government works exemption, NDSAP 2012.
 
-// Design v3: the compact line is plain 13 px body text; the full version is
-// a bordered surface card with an 11 px uppercase label. The legal wording
-// itself is unchanged, word for word.
+// Design v4: the compact line is plain 13 px body text; the full version is
+// a bordered surface card with a sentence-case label. Links take the module
+// hue (--hue-deep). The legal wording itself is unchanged, word for word.
 
 "use client";
 import Link from "next/link";
 import { Scale } from "lucide-react";
 
 /** Link and emphasis styles (tokens only). */
-const LINK = { color: "var(--ftp-brand)", textDecoration: "underline" } as const;
+const LINK = { color: "var(--hue-deep)", textDecoration: "underline" } as const;
 const STRONG = { fontWeight: 500, color: "var(--ftp-text)" } as const;
 
 type Props = {
@@ -50,7 +50,7 @@ export default function TenderDisclaimer({
         {disclaimerHref ? (
           <>
             {" "}
-            <Link href={disclaimerHref} style={{ color: "var(--ftp-brand)", textDecoration: "underline" }}>Full disclaimer</Link>.
+            <Link href={disclaimerHref} style={LINK}>Full disclaimer</Link>.
           </>
         ) : (
           "."
@@ -65,6 +65,7 @@ export default function TenderDisclaimer({
         background: "var(--ftp-surface)",
         border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
         padding: 16,
         margin: "20px 0",
         fontSize: 13,
@@ -74,7 +75,7 @@ export default function TenderDisclaimer({
     >
       <div className="ftp-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <Scale size={13} aria-hidden style={{ color: "var(--ftp-warn)" }} />
-        Tenders — Legal &amp; Usage Disclaimer
+        Legal and usage disclaimer for tenders
       </div>
       <ol style={{ paddingLeft: 18, margin: 0 }}>
         <li style={{ marginBottom: 8 }}><strong style={STRONG}>Source data only.</strong> Every tender shown here is aggregated from a public Government of India or State of Karnataka procurement portal. No data is generated or inferred.</li>
