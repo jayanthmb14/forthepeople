@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRow } from "@/lib/translation/overlay";
+import { insightTooOld } from "@/lib/insight-age";
 
 const CACHE_TTL = 5 * 60; // 5 minutes
 
@@ -67,7 +68,8 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    if (!row) {
+    // Too old to describe the page (same rule as AIInsightCard): not served.
+    if (!row || insightTooOld(row.generatedAt)) {
       return NextResponse.json({ insight: null });
     }
 

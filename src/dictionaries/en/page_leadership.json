@@ -42,7 +42,7 @@
     "pending": "Not verified yet"
   },
   "attribution": "As last reported in the news. Positions and party links change often, so check the official district website.",
-  "topNote": "Names come from public government records (the Election Commission of India, the state assembly and the district administration) and can lag behind. Positions and party links change often, so check the official district website before you rely on them.",
+  "topNote": "We put these names together by hand from public sources, such as Wikipedia, IndiaVotes election results, news reports and district websites. They can lag behind. Positions and party links change often, so check the official district website before you rely on them.",
   "electionAlert": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "electionAlertDate": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results on {date}. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "emptyTitle": "No leadership data yet",

@@ -28,6 +28,7 @@ import { useFreshness } from "@/hooks/useFreshness";
 import { ChevronDown, ChevronRight, Clock, Sparkles } from "lucide-react";
 import { Card, Pill } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
+import { MAX_INSIGHT_DAYS } from "@/lib/insight-age";
 
 type Severity = "good" | "watch" | "alert" | "critical";
 
@@ -82,10 +83,8 @@ function formatInsightTiming(generatedAt: string, expiresAt: string | null | und
   return { lastUpdated, nextRefresh, isStale };
 }
 
-/** After this many days an analysis is not shown: the figures on the page
- *  may have moved on, and an old paragraph above newer numbers reads as
- *  current. */
-const MAX_INSIGHT_DAYS = 30;
+// MAX_INSIGHT_DAYS (src/lib/insight-age.ts): after this many days an
+// analysis is not shown; /api/data/insight applies the same rule.
 
 /** AI module names that differ from the sidebar slug of their page. */
 const PAGE_SLUG: Record<string, string> = { leaders: "leadership", budget: "finance" };

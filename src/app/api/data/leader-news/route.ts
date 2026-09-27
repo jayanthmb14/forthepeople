@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import { NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { leaderOfficePhone } from "@/lib/government-checks";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
 
@@ -130,7 +131,7 @@ export async function GET(req: NextRequest) {
 
     const data: LeaderNewsPayload = {
       leaderId: leader.id,
-      contact: { phone: leader.phone?.trim() || null, email: leader.email?.trim() || null },
+      contact: { phone: leaderOfficePhone(leader.phone), email: leader.email?.trim() || null },
       nameLocal: leader.nameLocal,
       roleLocal: leader.roleLocal,
       windowDays: WINDOW_DAYS,
