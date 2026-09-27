@@ -23,7 +23,6 @@ import * as React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { SectionWatermark } from "./SectionWatermark";
-import { SectionRightRailDots } from "./SectionRightRailDots";
 import { BandNumber, BandVisibleProvider, RowBar, useBandText, useBandVisible } from "./band-kit";
 import { indicatorKey, type BandSpec, type CardSpec, type RowSpec, type TextOrValue, type ValueSpec } from "./band-spec";
 import { INDIA_SUPER_CATEGORIES, type IndiaSuperCategoryDef } from "@/lib/india/india-super-categories";
@@ -311,12 +310,11 @@ export function SpecBand({ spec, styles, data, locale }: { spec: BandSpec; style
           </div>
 
           {/* RIGHT — two cards */}
-          <div className={styles.rightColumn} data-ftp-right-rail="1">
+          <div className={styles.rightColumn}>
             {spec.cards.map((card) => (
               <Card key={card.key} card={card} spec={spec} data={data} styles={styles} locale={locale} text={text} />
             ))}
           </div>
-          <SectionRightRailDots count={2} accent={spec.dotsAccent} />
         </div>
       </section>
     </BandVisibleProvider>

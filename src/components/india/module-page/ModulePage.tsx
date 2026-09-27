@@ -18,6 +18,12 @@
  * registry mockValue headline, a hash-generated 10-year line, a state map
  * and leaderboard filled from mock-state-data, and a "MOCK" AI analysis —
  * are gone. A picture with no rows behind it is simply not drawn.
+ *
+ * v4.1 (Sep 2026): the page sits in the kit's 1320 px ModulePage frame
+ * (docs/LAYOUT.md); an "In simple words" sentence is built from the
+ * headline row; every figure tile and every state bar opens a
+ * DetailSheet; the pictures sit in an auto-fill grid (1 column on phones,
+ * 2 on tablets, 2–3 on laptops and PCs).
  */
 
 import type { ReactNode } from "react";
@@ -27,9 +33,10 @@ import { ChevronRight, Home } from "lucide-react";
 import { type IndiaModuleDef, getModuleNewsKeywords } from "@/lib/india/india-modules";
 import { getSuperCategoryBySlug } from "@/lib/india/india-super-categories";
 import { INDIA_SOURCES } from "@/lib/india/india-sources";
-import { Section } from "@/components/district/ui";
+import { ModulePage as PageFrame, Section } from "@/components/district/ui";
 import { ChartCard } from "@/components/district/visuals";
-import ModuleHero, { type HeroTile } from "./ModuleHero";
+import ModuleHero from "./ModuleHero";
+import { toFigure } from "./figures";
 import ModuleNewsStrip from "./ModuleNewsStrip";
 import ModuleSourcePanel from "./ModuleSourcePanel";
 import ModuleRelatedModules from "./ModuleRelatedModules";
@@ -44,9 +51,10 @@ import {
   getModuleSeries,
   getModuleStates,
   groupIndicators,
+  pickHeadline,
   type IndicatorRow,
 } from "./data";
-import { fmtDecimal, formatIndicator, formatIndicatorText } from "../format";
+import { fmtDate, fmtDecimal, formatIndicator, formatIndicatorText } from "../format";
 import { INDIA_NS, indiaText } from "../i18n";
 
 interface Props {
@@ -97,19 +105,23 @@ export default async function ModulePage({ locale, module }: Props) {
   const text = (value: number, unit: string | null) => formatIndicatorText(tp, locale, value, unit);
   const stateName = (slug: string, fallback: string) => (ts.has(slug) ? ts(slug) : fallback);
 
-  // ── Hero tiles ────────────────────────────────────────────────────
-  const tiles: HeroTile[] = groups.tiles.slice(0, MAX_TILES).map((row) => {
-    const f = formatIndicator(tp, locale, row.value ?? 0, row.unit);
-    return {
-      key: row.metricKey,
-      label: label(row),
-      value: f.value,
-      unit: f.unit,
-      emoji: tileEmoji(row, module.icon),
-      asOf: row.asOf,
-      source: { label: row.source, href: row.sourceUrl || undefined },
-    };
-  });
+  const hue = indiaCategoryHue(module.category);
+
+  // ── Hero tiles (each opens its own detail sheet) ──────────────────
+  const figures = groups.tiles.slice(0, MAX_TILES).map((row) =>
+    toFigure(row, { tp, locale, label: label(row), emoji: tileEmoji(row, module.icon) }),
+  );
+
+  // ── "In simple words": one sentence from the headline row ─────────
+  const headline = pickHeadline(module.headlineMetric?.key, indicators);
+  const simple = headline
+    ? t("explain.figure", {
+        label: label(headline),
+        value: text(headline.value ?? 0, headline.unit),
+        date: fmtDate(locale, headline.asOf),
+        source: headline.source,
+      })
+    : t("explain.none", { module: title, source: firstSource });
 
   // ── Pictures ──────────────────────────────────────────────────────
   const pictures: ReactNode[] = [];
@@ -149,6 +161,7 @@ export default async function ModulePage({ locale, module }: Props) {
         items={bars}
         source={barsSource}
         asOf={barsAsOf}
+        hueClassName={hue}
       />,
     );
   }
@@ -267,8 +280,8 @@ export default async function ModulePage({ locale, module }: Props) {
     module.legalNote && ti.has(`disclaimers.${module.legalNote}`) ? ti(`disclaimers.${module.legalNote}`) : null;
 
   return (
-    <main role="main" className={indiaCategoryHue(module.category)} style={{ minHeight: "100vh" }}>
-      <div className="ftp-container" style={{ maxWidth: 1200, paddingTop: 16, paddingBottom: 72 }}>
+    <main role="main" className={hue} style={{ minHeight: "100vh" }}>
+      <PageFrame>
         <nav
           aria-label={t("crumbs.aria")}
           style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 13, color: "var(--ftp-text-2)", marginBottom: 14 }}
@@ -302,8 +315,11 @@ export default async function ModulePage({ locale, module }: Props) {
           categoryLabel={x.category(module.category)}
           statusLabel={x.status(module.status)}
           isLive={isLive}
-          tiles={tiles}
+          figures={figures}
           figuresTitle={t("hero.figures")}
+          tapHint={t("hero.tapHint")}
+          simple={simple}
+          hueClassName={hue}
           empty={{ title: t("hero.emptyTitle"), body: t("hero.emptyBody", { source: firstSource }) }}
         />
 
@@ -338,9 +354,9 @@ export default async function ModulePage({ locale, module }: Props) {
               marginTop: 16,
               padding: "14px 16px",
               borderRadius: "var(--ftp-radius-card)",
-              background: "#FEF8E3",
-              border: "1px solid #F3DE9C",
-              color: "#713F12",
+              background: "var(--ftp-warn-tint)",
+              border: "1px solid color-mix(in srgb, var(--ftp-warn) 30%, #fff)",
+              color: "var(--ftp-text)",
               fontSize: 14,
               lineHeight: "21px",
             }}
@@ -374,7 +390,7 @@ export default async function ModulePage({ locale, module }: Props) {
         <ModuleComingSoonRail locale={locale} module={module} moduleTitle={title} />
         <ModuleRelatedModules locale={locale} module={module} />
         <ModuleSourcePanel locale={locale} module={module} moduleTitle={title} />
-      </div>
+      </PageFrame>
 
       <IndiaReportIssueButton moduleSlug={module.slug} moduleLabel={title} />
     </main>

@@ -86,7 +86,7 @@ export function QuickAccessStrip({ locale }: QuickAccessStripProps) {
                 <span
                   style={{
                     fontFamily: "var(--ftp-font-sans)",
-                    fontSize: "11px",
+                    fontSize: "12px",
                     lineHeight: "15px",
                     fontVariantNumeric: "tabular-nums",
                     color: "var(--ftp-text-2)",

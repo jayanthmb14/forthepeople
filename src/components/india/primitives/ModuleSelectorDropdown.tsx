@@ -67,8 +67,8 @@ function StatusPill({ status, x }: { status: IndiaModuleDef["status"]; x: IndiaT
   return (
     <span
       style={{
-        fontSize: "10px",
-        lineHeight: "14px",
+        fontSize: "12px",
+        lineHeight: "16px",
         fontWeight: 600,
         padding: "1px 5px",
         borderRadius: "3px",
@@ -372,7 +372,7 @@ export function ModuleSelectorDropdown({
                         style={{
                           fontFamily: "var(--ftp-font-sans)",
                           fontVariantNumeric: "tabular-nums",
-                          fontSize: "11px",
+                          fontSize: "12px",
                           fontWeight: 600,
                           color: accentHex,
                           minWidth: "16px",
@@ -387,7 +387,7 @@ export function ModuleSelectorDropdown({
                         style={{
                           fontFamily: "var(--ftp-font-sans)",
                           fontVariantNumeric: "tabular-nums",
-                          fontSize: "11px",
+                          fontSize: "12px",
                           color: "var(--color-text-tertiary)",
                           background: "var(--color-background-secondary)",
                           padding: "1px 7px",

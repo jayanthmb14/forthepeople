@@ -12,6 +12,9 @@
  *   - the "State-level distribution map — coming soon" placeholder with a
  *     made-up legend, the "View all states" text that went nowhere and the
  *     "Related editorial — coming soon" box were removed.
+ *   - v4.1: the 1320 px ModulePage frame, an "In simple words" sentence
+ *     from the headline row, supporting figures and state bars that open
+ *     a DetailSheet.
  */
 
 import * as React from "react";
@@ -20,8 +23,10 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRight, Home } from "lucide-react";
 import type { IndiaModuleDef } from "@/lib/india/india-modules";
 import { getSuperCategoryBySlug } from "@/lib/india/india-super-categories";
-import { StatTile, StatStrip } from "@/components/district/ui";
-import { ChartCard } from "@/components/district/visuals";
+import { ModulePage as PageFrame } from "@/components/district/ui";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { FigureTiles } from "@/components/india/FigureSheet";
+import { toFigure } from "@/components/india/module-page/figures";
 import { ModuleDropdown } from "@/components/india/primitives/ModuleDropdown";
 import { DataModuleHero } from "@/components/india/sections/DataModuleHero";
 import { MethodologyAccordion, type MethodologyRow } from "@/components/india/sections/MethodologyAccordion";
@@ -34,7 +39,7 @@ import { indiaCategoryHue } from "@/components/india/module-page/v4";
 import { getModuleIndicators, getModuleSeries, getModuleStates } from "@/components/india/module-page/data";
 import type { ScraperCadence } from "@/components/india/primitives/SourceHealthDot";
 import { INDIA_NS, indiaText } from "@/components/india/i18n";
-import { fmtDecimal, formatIndicator, formatIndicatorText } from "@/components/india/format";
+import { fmtDate, formatIndicator, formatIndicatorText } from "@/components/india/format";
 
 export interface DataModulePageProps {
   module: IndiaModuleDef;
@@ -88,10 +93,23 @@ export async function DataModulePage({
   const stateRows = states[headlineMetricKey] ?? Object.values(states)[0] ?? [];
   const year = (iso: string) => String(new Date(iso).getUTCFullYear());
   const headlineRow = byKey.get(headlineMetricKey);
+  const hue = indiaCategoryHue(module.category);
+  const figures = supporting.map((r) =>
+    toFigure(r, { tp, locale, label: label(r.metricKey, r.metricLabel), emoji: r.metricKey.includes("area") ? "🗺️" : "🏞️" }),
+  );
+  const simple =
+    headlineRow && headlineRow.value !== null
+      ? t("explain.figure", {
+          label: label(headlineRow.metricKey, headlineRow.metricLabel),
+          value: text(headlineRow.value, headlineRow.unit),
+          date: fmtDate(locale, headlineRow.asOf),
+          source: headlineRow.source,
+        })
+      : t("explain.none", { module: title, source: t("soon.theSource") });
 
   return (
-    <main className={indiaCategoryHue(module.category)} style={{ minHeight: "100vh" }}>
-      <div className="ftp-container" style={{ maxWidth: 1200, paddingTop: 16, paddingBottom: 72 }}>
+    <main className={hue} style={{ minHeight: "100vh" }}>
+      <PageFrame>
         <nav
           aria-label={t("crumbs.aria")}
           style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ftp-text-2)", marginBottom: 14, flexWrap: "wrap" }}
@@ -127,36 +145,12 @@ export async function DataModulePage({
           scraperKey={scraperKey}
         />
 
-        {supporting.length > 0 && (
+        <Explainer>{simple}</Explainer>
+
+        {figures.length > 0 && (
           <div style={{ marginBottom: "1.5rem" }}>
-            <StatStrip cols={supporting.length >= 3 ? 3 : 2}>
-              {supporting.map((r) => {
-                const f = formatIndicator(tp, locale, r.value ?? 0, r.unit);
-                const prev = r.previousValue;
-                const delta = r.value !== null && prev !== null && prev !== 0 ? ((r.value - prev) / prev) * 100 : null;
-                const dir = delta === null ? null : delta > 0.1 ? "up" : delta < -0.1 ? "down" : "flat";
-                const pct = delta === null ? "" : `${fmtDecimal(locale, Math.abs(delta), 1)}%`;
-                return (
-                  <StatTile
-                    key={r.metricKey}
-                    label={label(r.metricKey, r.metricLabel)}
-                    value={f.value}
-                    unit={f.unit || undefined}
-                    emoji={r.metricKey.includes("area") ? "🗺️" : "🏞️"}
-                    trend={dir === null ? undefined : dir === "flat" ? "neutral" : dir}
-                    sub={
-                      dir === null
-                        ? undefined
-                        : r.previousAsOf
-                          ? t("data.changeYear", { dir, pct, year: year(r.previousAsOf) })
-                          : t("data.changePrior", { dir, pct })
-                    }
-                    asOf={r.asOf}
-                    source={{ label: r.source, href: r.sourceUrl || undefined }}
-                  />
-                );
-              })}
-            </StatStrip>
+            <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ftp-text-2)" }}>{t("hero.tapHint")}</p>
+            <FigureTiles figures={figures} hueClassName={hue} />
           </div>
         )}
 
@@ -208,6 +202,7 @@ export async function DataModulePage({
                 }))}
                 source={{ label: stateRows[0].source, href: stateRows[0].sourceUrl || undefined }}
                 asOf={stateRows[0].asOf}
+                hueClassName={hue}
               />
             ) : null}
           </div>
@@ -249,7 +244,7 @@ export async function DataModulePage({
             </span>
           </Link>
         ) : null}
-      </div>
+      </PageFrame>
 
       <IndiaReportIssueButton moduleSlug={module.slug} moduleLabel={title} />
     </main>

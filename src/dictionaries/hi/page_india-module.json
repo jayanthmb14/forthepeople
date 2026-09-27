@@ -1,0 +1,451 @@
+{
+  "meta": {
+    "title": "{module}: भारत के आँकड़े",
+    "description": "{tagline} आँकड़े {sources} से, हर एक के साथ उसकी तारीख़। एक मुफ़्त, स्वतंत्र नागरिक मंच।"
+  },
+  "crumbs": {
+    "aria": "आप यहाँ हैं"
+  },
+  "hero": {
+    "figures": "ताज़ा प्रकाशित आँकड़े",
+    "emptyTitle": "इस विषय के लिए अभी कोई प्रकाशित आँकड़े नहीं हैं।",
+    "emptyBody": "जैसे ही {source} आँकड़े प्रकाशित करेगा और हम उन्हें तारीख़ के साथ दर्ज करेंगे, वे यहाँ दिखेंगे।",
+    "tapHint": "तारीख़, स्रोत और पिछला आँकड़ा देखने के लिए किसी भी आँकड़े पर टैप करें।"
+  },
+  "soon": {
+    "title": "यह विषय अभी तैयार किया जा रहा है।",
+    "body": "{module} के लिए अपने-आप अपडेट अभी जुड़े नहीं हैं। {source} के जुड़ते ही नए आँकड़े प्रकाशित होते ही यहाँ दिखेंगे। हम जिन स्रोतों का उपयोग करेंगे, वे नीचे दिए गए हैं।",
+    "theSource": "सरकारी स्रोत"
+  },
+  "vis": {
+    "heading": "चित्रों में",
+    "topTitle": "सबसे आगे के राज्य",
+    "topSimple": "{first} {value} के साथ सबसे आगे है। हर पट्टी एक राज्य को सबसे आगे वाले राज्य के साथ दिखाती है।",
+    "mixTitle": "बिजली कहाँ से आती है",
+    "mixSimple": "कुल में से {pct} {part} से आता है।",
+    "mixCenter": "{part} से",
+    "mixOther": "अन्य स्रोत",
+    "ringsTitle": "हर 100 में से",
+    "ringsSimple": "हर घेरा 100 में से अपने हिस्से तक भरता है।",
+    "goalTitle": "लक्ष्य से कितनी दूर",
+    "goalSimple": "{label} अपने लक्ष्य का {pct} पूरा कर चुका है।",
+    "goalLine": "अभी {now}, लक्ष्य {goal}",
+    "trendTitle": "समय के साथ बदलाव",
+    "trendSimple": "यह {fromYear} में {from} था और {toYear} में {to} हो गया।"
+  },
+  "parts": {
+    "coal": "कोयला",
+    "renewables": "नवीकरणीय",
+    "hydro": "जल विद्युत",
+    "nuclear": "परमाणु"
+  },
+  "crop": {
+    "wheat": "{state} (गेहूँ)",
+    "rice": "{state} (चावल)"
+  },
+  "news": {
+    "title": "{module} से जुड़ी ख़बरें",
+    "emptyTitle": "{module} के बारे में अभी कोई ख़बर नहीं है।",
+    "emptyBody": "अभी हम ज़िलों की ख़बरें जुटाते हैं; राष्ट्रीय ख़बरें अभी जुड़ी नहीं हैं।",
+    "india": "भारत"
+  },
+  "next": {
+    "title": "{module} में आगे क्या आएगा",
+    "tag": "योजना में",
+    "f1": "2016 तक पीछे का लंबा इतिहास",
+    "f2": "हर राज्य की तुलना उसके जैसे राज्यों से",
+    "f3": "स्प्रेडशीट या खुले API के रूप में डाउनलोड"
+  },
+  "related": {
+    "title": "इससे जुड़े विषय"
+  },
+  "sources": {
+    "title": "{module} के स्रोत",
+    "type": {
+      "API": "सीधा डेटा लिंक",
+      "Static": "स्थायी संदर्भ",
+      "Collected": "रिपोर्टों से जुटाया गया",
+      "RSS": "समाचार फ़ीड",
+      "Institutional": "संस्था"
+    },
+    "refresh": {
+      "Daily": "रोज़",
+      "Weekly": "हर हफ़्ते",
+      "Monthly": "हर महीने",
+      "Quarterly": "हर तीन महीने",
+      "Annual": "हर साल",
+      "Event-driven": "जब कुछ होता है",
+      "Manual": "हाथ से अपडेट"
+    }
+  },
+  "metric": {
+    "wildlife-tigers": {
+      "tiger_population_total": "जंगल में बाघ",
+      "tiger_reserves_count": "बाघ अभयारण्य (टाइगर रिज़र्व)",
+      "reserve_area_protected_sqkm": "टाइगर रिज़र्व का क्षेत्रफल"
+    },
+    "demographics-population": {
+      "population_total": "जनसंख्या",
+      "population_growth_yoy": "एक साल में बढ़ोतरी",
+      "population_density_per_sq_km": "प्रति वर्ग किमी लोग",
+      "global_rank": "जनसंख्या में विश्व रैंक"
+    },
+    "economy-gdp": {
+      "gdp_nominal_usd_trillion": "अमेरिकी डॉलर में जीडीपी",
+      "gdp_growth_yoy": "एक साल में जीडीपी वृद्धि",
+      "gdp_per_capita_inr": "प्रति व्यक्ति आय",
+      "gdp_ppp_usd_trillion": "क्रय शक्ति के हिसाब से जीडीपी",
+      "world_rank_gdp_nominal": "विश्व रैंक: जीडीपी",
+      "world_rank_gdp_ppp": "विश्व रैंक: क्रय शक्ति के हिसाब से जीडीपी",
+      "remittances_usd_billion": "विदेश से घर भेजा गया पैसा",
+      "world_rank_remittances": "विश्व रैंक: घर भेजा गया पैसा"
+    },
+    "economy-inflation": {
+      "cpi_inflation": "उपभोक्ता मूल्य महँगाई",
+      "rbi_target_midpoint": "आरबीआई का महँगाई लक्ष्य"
+    },
+    "national-snapshot": {
+      "states_count": "राज्य",
+      "uts_count": "केंद्र शासित प्रदेश",
+      "scheduled_languages": "अनुसूचित भाषाएँ",
+      "smartphone_users_millions": "स्मार्टफ़ोन उपयोगकर्ता",
+      "world_rank_smartphone_users": "विश्व रैंक: स्मार्टफ़ोन उपयोगकर्ता"
+    },
+    "economy-employment": {
+      "workforce_size": "कार्यबल"
+    },
+    "budget-union": {
+      "total_outlay_inr_lakh_crore": "कुल बजट"
+    },
+    "budget-gst": {
+      "monthly_collection_inr_lakh_crore": "एक महीने में जीएसटी संग्रह"
+    },
+    "know-india-constitution": {
+      "articles_count": "अनुच्छेद",
+      "schedules_count": "अनुसूचियाँ",
+      "parts_count": "भाग",
+      "adopted_year": "लागू होने का वर्ष"
+    },
+    "know-india-history-timeline": {
+      "civilization_span_years": "सभ्यता के वर्ष"
+    },
+    "know-india-geography-physical": {
+      "area_total_million_km2": "कुल क्षेत्रफल",
+      "world_rank_by_area": "क्षेत्रफल में विश्व रैंक"
+    },
+    "know-india-parliament": {
+      "lok_sabha_seats": "लोकसभा सीटें",
+      "rajya_sabha_seats": "राज्यसभा सीटें"
+    },
+    "know-india-elections": {
+      "registered_voters_millions": "पंजीकृत मतदाता"
+    },
+    "know-india-budget": {
+      "budget_process_stages": "बजट प्रक्रिया के चरण"
+    },
+    "health-overview": {
+      "life_expectancy_years": "औसत आयु (जीवन प्रत्याशा)",
+      "life_expectancy_target_2030": "औसत आयु का लक्ष्य",
+      "life_expectancy_change_1990": "1990 से बढ़े वर्ष",
+      "infant_mortality_rate": "शिशु मृत्यु",
+      "doctors_per_1000": "डॉक्टर",
+      "state_leader_kerala_imr": "केरल: शिशु मृत्यु",
+      "state_leader_kerala_life_exp": "केरल: औसत आयु",
+      "state_leader_delhi_doctors": "दिल्ली: डॉक्टर",
+      "state_leader_manipur_imm_cov": "मणिपुर: टीकाकरण",
+      "state_leader_tn_hosp_per_1000": "तमिलनाडु: अस्पताल"
+    },
+    "health-pmjay": {
+      "cards_issued_crore": "जारी आयुष्मान कार्ड",
+      "empanelled_hospitals_thousands": "योजना से जुड़े अस्पताल"
+    },
+    "health-immunisation": {
+      "doses_administered_crore": "U-WIN पर दी गई खुराकें"
+    },
+    "education-skills": {
+      "pmkvy_trained_crore": "पीएमकेवीवाई में प्रशिक्षित लोग"
+    },
+    "education-schools": {
+      "schools_total_lakh": "स्कूल"
+    },
+    "education-higher": {
+      "higher_ed_enrolment_crore": "उच्च शिक्षा में छात्र"
+    },
+    "wildlife-forests": {
+      "forest_cover_pct": "वन क्षेत्र",
+      "forest_cover_change_2021": "2021 से बढ़ा वन",
+      "forest_cover_target_pct": "वन क्षेत्र का लक्ष्य",
+      "forest_cover_lakh_km2": "वन का क्षेत्रफल",
+      "tree_cover_pct": "वनों के बाहर पेड़",
+      "top_state_pct": "भारत के वनों में मध्य प्रदेश का हिस्सा",
+      "elephants_count": "हाथी",
+      "rhinos_count": "एक सींग वाले गैंडे",
+      "isfr_edition": "वन रिपोर्ट का संस्करण",
+      "isfr_year": "वन रिपोर्ट का वर्ष",
+      "top_state_mizoram_pct": "मिज़ोरम: वन क्षेत्र",
+      "top_state_arunachal_pct": "अरुणाचल प्रदेश: वन क्षेत्र",
+      "top_state_meghalaya_pct": "मेघालय: वन क्षेत्र",
+      "top_state_manipur_pct": "मणिपुर: वन क्षेत्र",
+      "top_state_nagaland_pct": "नागालैंड: वन क्षेत्र"
+    },
+    "wildlife-protected-areas": {
+      "parks_count_total": "राष्ट्रीय उद्यान और अभयारण्य"
+    },
+    "agriculture-production": {
+      "foodgrain_output_million_tonnes": "खाद्यान्न उत्पादन",
+      "rice_production_million_tonnes": "चावल",
+      "wheat_production_million_tonnes": "गेहूँ",
+      "foodgrain_change_yoy_mt": "एक साल में बदलाव",
+      "top_producer_state_pct": "सबसे आगे वाले राज्य का हिस्सा",
+      "estimate_year": "अनुमान का वर्ष",
+      "top_state_up_wheat_mt": "उत्तर प्रदेश: गेहूँ",
+      "top_state_pb_wheat_mt": "पंजाब: गेहूँ",
+      "top_state_wb_rice_mt": "पश्चिम बंगाल: चावल",
+      "top_state_mp_wheat_mt": "मध्य प्रदेश: गेहूँ",
+      "top_state_ap_rice_mt": "आंध्र प्रदेश: चावल"
+    },
+    "agriculture-pmkisan": {
+      "farmers_count_crore": "पीएम-किसान से जुड़े किसान",
+      "pmfby_insured_crore": "बीमित किसान (पीएमएफबीवाई)",
+      "kcc_active_cards_crore": "चालू किसान क्रेडिट कार्ड",
+      "soil_health_cards_crore": "जारी मृदा स्वास्थ्य कार्ड"
+    },
+    "agriculture-plantation": {
+      "tea_production_million_kg": "चाय उत्पादन"
+    },
+    "livestock-census": {
+      "livestock_total_million": "पशुधन"
+    },
+    "livestock-fisheries": {
+      "fish_production_lakh_tonnes": "मछली उत्पादन"
+    },
+    "energy-power": {
+      "installed_capacity_gw": "स्थापित क्षमता",
+      "capacity_change_yoy_gw": "एक साल में जुड़ी",
+      "re_target_gw_2030": "2030 का स्वच्छ बिजली लक्ष्य",
+      "coal_capacity_gw": "कोयला",
+      "renewables_capacity_gw": "नवीकरणीय",
+      "hydro_capacity_gw": "जल विद्युत",
+      "nuclear_capacity_gw": "परमाणु",
+      "mix_pct_coal": "कोयले का हिस्सा",
+      "mix_pct_renewables": "नवीकरणीय का हिस्सा",
+      "mix_pct_hydro": "जल विद्युत का हिस्सा",
+      "mix_pct_nuclear": "परमाणु का हिस्सा",
+      "top_state_mh_capacity_gw": "महाराष्ट्र: क्षमता",
+      "top_state_gj_capacity_gw": "गुजरात: क्षमता",
+      "top_state_tn_capacity_gw": "तमिलनाडु: क्षमता",
+      "top_state_rj_capacity_gw": "राजस्थान: क्षमता",
+      "top_state_kn_capacity_gw": "कर्नाटक: क्षमता"
+    },
+    "energy-renewables": {
+      "renewable_installed_gw": "नवीकरणीय क्षमता"
+    },
+    "energy-coal": {
+      "coal_production_million_tonnes": "कोयला खनन"
+    },
+    "energy-fuels": {
+      "crude_imports_million_tonnes": "कच्चे तेल का आयात"
+    },
+    "infra-roads": {
+      "nh_length_km": "राष्ट्रीय राजमार्ग",
+      "nh_target_km_2027": "2027 का राजमार्ग लक्ष्य",
+      "nh_change_yoy_km": "एक साल में जुड़े",
+      "expressway_km": "एक्सप्रेसवे",
+      "bharatmala_nh_km": "भारतमाला में बने",
+      "sagarmala_ports_count": "सागरमाला के बड़े बंदरगाह",
+      "udan_airports_count": "उड़ान हवाई अड्डे",
+      "gatishakti_projects_count": "गतिशक्ति परियोजनाएँ",
+      "data_year": "आँकड़ों का वर्ष",
+      "top_state_mh_nh_km": "महाराष्ट्र: राष्ट्रीय राजमार्ग",
+      "top_state_up_nh_km": "उत्तर प्रदेश: राष्ट्रीय राजमार्ग",
+      "top_state_rj_nh_km": "राजस्थान: राष्ट्रीय राजमार्ग",
+      "top_state_mp_nh_km": "मध्य प्रदेश: राष्ट्रीय राजमार्ग",
+      "top_state_ka_nh_km": "कर्नाटक: राष्ट्रीय राजमार्ग"
+    },
+    "infra-railways": {
+      "route_km": "रेल मार्ग की लंबाई"
+    },
+    "infra-aviation": {
+      "airports_operational_count": "चालू हवाई अड्डे"
+    },
+    "infra-ports": {
+      "major_ports_count": "बड़े बंदरगाह"
+    },
+    "infra-smart-cities": {
+      "cities_count": "मिशन में शामिल शहर"
+    },
+    "infra-telecom": {
+      "subscribers_crore": "मोबाइल ग्राहक"
+    },
+    "justice-police": {
+      "civil_police_total_lakh": "सिविल पुलिस",
+      "police_per_lakh_population": "प्रति लाख लोगों पर पुलिस",
+      "un_target_per_lakh": "संयुक्त राष्ट्र का सुझाया स्तर",
+      "change_yoy_lakh": "एक साल में बदलाव"
+    },
+    "justice-pendency": {
+      "total_pending_crore_cases": "लंबित मामले"
+    },
+    "justice-prisons": {
+      "prison_population_lakh": "जेल में लोग"
+    },
+    "justice-crime": {
+      "ipc_cases_per_year_lakh": "एक साल में अपराध के मामले",
+      "conviction_rate_pct": "दोषसिद्धि दर"
+    },
+    "defence-budget": {
+      "defence_allocation_lakh_cr": "रक्षा आवंटन"
+    },
+    "defence-exports": {
+      "defence_exports_thousand_cr": "रक्षा निर्यात"
+    },
+    "defence-dpsu": {
+      "dpsu_count": "रक्षा सार्वजनिक उपक्रम"
+    },
+    "elections-loksabha": {
+      "loksabha_seats_total": "लोकसभा सीटें"
+    },
+    "elections-rajyasabha": {
+      "rajyasabha_seats_total": "राज्यसभा सीटें"
+    },
+    "elections-turnout": {
+      "ge_2024_turnout_pct": "2024 आम चुनाव में मतदान"
+    },
+    "science-startups": {
+      "dpiit_recognised_lakh": "मान्यता प्राप्त स्टार्टअप",
+      "unicorns_count": "यूनिकॉर्न",
+      "change_yoy_lakh": "एक साल में जुड़े",
+      "data_year": "आँकड़ों का वर्ष",
+      "top_state_ka_startups_thousand": "कर्नाटक: स्टार्टअप",
+      "top_state_mh_startups_thousand": "महाराष्ट्र: स्टार्टअप",
+      "top_state_dl_startups_thousand": "दिल्ली: स्टार्टअप",
+      "top_state_tn_startups_thousand": "तमिलनाडु: स्टार्टअप",
+      "top_state_tg_startups_thousand": "तेलंगाना: स्टार्टअप"
+    },
+    "science-digital": {
+      "upi_txn_per_month_billion": "एक महीने में यूपीआई भुगतान",
+      "aadhaar_enrolled_crore": "आधार धारक",
+      "digilocker_users_crore": "डिजिलॉकर उपयोगकर्ता",
+      "fastag_active_crore": "चालू फ़ास्टैग"
+    },
+    "science-isro": {
+      "satellites_launched_count": "छोड़े गए उपग्रह"
+    },
+    "science-rd": {
+      "rd_pct_gdp": "अनुसंधान पर ख़र्च, जीडीपी का हिस्सा"
+    },
+    "trade-overview": {
+      "exports_annual_lakh_cr": "एक साल में माल निर्यात"
+    },
+    "trade-fdi": {
+      "fdi_equity_inflow_billion_usd": "एक साल में विदेशी निवेश"
+    },
+    "trade-diaspora": {
+      "remittances_annual_billion_usd": "एक साल में घर भेजा गया पैसा"
+    },
+    "tourism-heritage": {
+      "asi_monuments_count": "संरक्षित स्मारक",
+      "unesco_sites_count": "यूनेस्को विश्व धरोहर स्थल",
+      "global_rank_unesco": "विश्व रैंक: यूनेस्को स्थल",
+      "bollywood_films_per_year": "एक साल में प्रमाणित फ़िल्में",
+      "scheduled_languages_count": "अनुसूचित भाषाएँ",
+      "museums_count": "संग्रहालय",
+      "data_year": "आँकड़ों का वर्ष",
+      "unesco_taj_mahal_year": "ताजमहल: विश्व धरोहर बना",
+      "unesco_ajanta_year": "अजंता गुफ़ाएँ: विश्व धरोहर बनीं",
+      "unesco_khajuraho_year": "खजुराहो: विश्व धरोहर बना",
+      "unesco_hampi_year": "हम्पी: विश्व धरोहर बना",
+      "unesco_sundarbans_year": "सुंदरबन: विश्व धरोहर बना"
+    },
+    "tourism-gi-tags": {
+      "gi_tags_count": "जीआई टैग"
+    },
+    "tourism-overview": {
+      "international_arrivals_lakh": "आए विदेशी पर्यटक"
+    },
+    "sports-olympics": {
+      "olympic_medals_total": "अब तक के ओलंपिक पदक"
+    },
+    "sports-khelo-india": {
+      "khelo_athletes_thousand": "खेलो इंडिया खिलाड़ी"
+    }
+  },
+  "data": {
+    "sourceLine": "स्रोत: <a>{source}</a>, {date}",
+    "recorded": "{ago} दर्ज किया गया",
+    "methodology": "यह कैसे मापा जाता है",
+    "sources": "स्रोत",
+    "changeYear": "{year} से {pct} {dir, select, up {बढ़ा} down {घटा} other {का बदलाव}}",
+    "changePrior": "पिछली गिनती से {pct} {dir, select, up {बढ़ा} down {घटा} other {का बदलाव}}",
+    "points": "{n, plural, one {अब तक # गिनती} other {अब तक # गिनतियाँ}}",
+    "topTitle": "सबसे आगे के 5 राज्य",
+    "methodTitle": "गिनती कैसे होती है",
+    "viewPdf": "स्रोत की पीडीएफ़ खोलें",
+    "cadenceLine": "{refresh}, {type}",
+    "differ": "क्या स्रोतों में अंतर है?",
+    "differYes": "{n, plural, one {# स्रोत में अंतर है} other {# स्रोतों में अंतर है}}",
+    "differNo": "कोई अंतर नहीं मिला",
+    "updateLog": "अपडेट का रिकॉर्ड",
+    "continue": "और देखें",
+    "allIn": "{category} के सभी विषय",
+    "news": {
+      "title": "जुड़ी ख़बरें",
+      "ai": "एआई सारांश",
+      "readAt": "मूल ख़बर {site} पर पढ़ें",
+      "about": "इन सारांशों के बारे में: इन्हें एआई जल्दी समझाने के लिए लिखता है; ये मूल लेख नहीं हैं। पूरी ख़बर पढ़ने के लिए लिंक खोलें। ForThePeople मूल ख़बर का लेखक नहीं है।"
+    },
+    "health": {
+      "firstLoad": "पहला डेटासेट, हाथ से दर्ज किया गया। अपने-आप अपडेट की योजना है।",
+      "onTime": "अपने तय {cadence} समय पर अपडेट हुआ।",
+      "late": "स्रोत थोड़ा देर से है।",
+      "veryLate": "स्रोत तय समय से दोगुने से भी ज़्यादा देर से है।",
+      "aria": "स्रोत कितना ताज़ा है: {status}"
+    },
+    "cadence": {
+      "daily": "रोज़ाना",
+      "weekly": "साप्ताहिक",
+      "monthly": "मासिक",
+      "quarterly": "तिमाही",
+      "annual": "वार्षिक",
+      "quadrennial": "चार-वर्षीय",
+      "event-driven": "घटना होने पर"
+    }
+  },
+  "tigers": {
+    "camera": {
+      "title": "कैमरा-ट्रैप से गिनती कैसे होती है",
+      "body": "एनटीसीए का अखिल भारतीय बाघ आकलन देश भर में बाघों के रहने की जगहों पर कैमरा ट्रैप लगाता है। हर बाघ को उसकी धारियों के पैटर्न से पहचाना जाता है। आकलन में कैमरे में दिखे बाघों को, और जहाँ कैमरे नहीं हैं वहाँ निशानों के सर्वे से निकाले घनत्व के अनुमान को मिलाया जाता है। 2022 के दौर में 20 बाघ वाले राज्यों में 32,588 जगहों पर कैमरे लगे थे।"
+    },
+    "meaning": {
+      "title": "बाघों की संख्या का मतलब",
+      "body": "मुख्य आँकड़ा, 3,682, अखिल भारतीय बाघ आकलन 2022 का औसत अनुमान है। एनटीसीए इसके आसपास एक दायरा भी प्रकाशित करता है, 3,167 से 3,925 तक; 3,167 उन बाघों की न्यूनतम संख्या है जिनकी तस्वीर सचमुच कैमरा ट्रैप में आई। कार्यप्रणाली की पीडीएफ़ पूरा दायरा समझाती है।"
+    },
+    "gaps": {
+      "title": "अनिश्चितता और ज्ञात कमियाँ",
+      "body": "जहाँ कैमरे कम हैं, वहाँ अनिश्चितता ज़्यादा है। पूर्वोत्तर और मध्य भारत के कुछ हिस्सों में कम जगहों पर जाँच होती है। गिनती हर चार साल में होती है, इसलिए दो गिनतियों के बीच का बदलाव बाघों की संख्या के असली बदलाव और गिनती के बेहतर तरीक़ों, दोनों को दिखाता है।"
+    },
+    "report": {
+      "title": "पूरी रिपोर्ट",
+      "body": "एनटीसीए, भारत में बाघों की स्थिति 2022: आधिकारिक रिपोर्ट (पीडीएफ़)।"
+    }
+  },
+  "explain": {
+    "figure": "ताज़ा सरकारी आँकड़ा: {label} {value} है, {date} तक ({source})।",
+    "none": "{module} के लिए अभी यहाँ कोई सरकारी आँकड़ा नहीं दिखाया गया है। हम आँकड़े तभी जोड़ते हैं जब {source} उन्हें प्रकाशित करता है; कुछ भी अंदाज़े से नहीं भरा जाता।"
+  },
+  "sheet": {
+    "open": "विवरण: {label}",
+    "asOf": "इस तारीख़ तक सही",
+    "before": "पिछला आँकड़ा",
+    "beforeValue": "{value} ({date})",
+    "change": "बदलाव",
+    "kind": "आँकड़े का प्रकार",
+    "source": "स्रोत",
+    "recorded": "हमने दर्ज किया",
+    "openSource": "स्रोत खोलें",
+    "place": "स्थान",
+    "placeValue": "शीर्ष {total} में #{n}",
+    "vsTop": "सबसे आगे वाले राज्य की तुलना में",
+    "vsTopValue": "{leader} का {pct}"
+  }
+}

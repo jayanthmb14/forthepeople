@@ -58,7 +58,7 @@ export default async function ModuleComingSoonRail({ locale, module, moduleTitle
               {DEFAULT_EMOJI[i % DEFAULT_EMOJI.length]}
             </span>
             <span style={{ minWidth: 0 }}>
-              <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--hue-deep)", marginBottom: 2 }}>{t("next.tag")}</span>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--hue-deep)", marginBottom: 2 }}>{t("next.tag")}</span>
               <span lang={f.lang} style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>
                 {f.text}
               </span>

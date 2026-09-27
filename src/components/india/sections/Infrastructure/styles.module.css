@@ -605,3 +605,163 @@
     font-size: 48px;
   }
 }
+
+/* ═══ v4.1 — device layouts and readable sizes (docs/LAYOUT.md) ═══
+   The same block closes every band's CSS module (the bands share class
+   names). Nothing is smaller than 12 px, list rows are 13 px, and links
+   are 44 px tall on touch screens.
+     laptop / PC  ≥ 1180 px   three columns (identity · featured · cards)
+     768–1179 px              identity + featured side by side, the two
+                              cards side by side underneath
+     phone < 768 px           one column; the directory is a full list
+                              (no scroll box inside the page) and the
+                              two cards stack (side by side from 560 px) */
+.layout {
+  grid-template-columns: 300px minmax(0, 1fr) 260px;
+}
+.sectionLabel {
+  font-size: 12px;
+}
+.identityTitle {
+  font-size: 24px;
+  line-height: 1.15;
+}
+.identityDesc {
+  font-size: 13px;
+  line-height: 1.45;
+}
+.modulesCountLabel,
+.modulesCountValue {
+  font-size: 12px;
+}
+.directoryWindow {
+  max-height: 216px;
+}
+.directoryRow {
+  height: auto;
+  min-height: 34px;
+  gap: 8px;
+}
+.directoryRowLabel {
+  font-size: 13px;
+  line-height: 1.3;
+  opacity: 0.92;
+}
+.directoryRowFeaturedTag {
+  font-size: 11px;
+}
+.directoryRowValue {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.browseBtn {
+  font-size: 13px;
+  min-height: 40px;
+}
+.featuredTitle {
+  font-size: 16px;
+}
+.featuredSourceInline,
+.livePill,
+.plannedPill,
+.growthValue,
+.rightCalloutLabel,
+.rightCalloutSubtitle,
+.rankLabel,
+.rankSubtitle {
+  font-size: 12px;
+}
+.headlineRow {
+  flex-wrap: wrap;
+}
+.featuredDesc {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.featuredCellLabel,
+.featuredCellSub {
+  font-size: 12px;
+  line-height: 1.35;
+}
+.featuredCellValue {
+  font-size: 18px;
+}
+.featuredBottom {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+.featuredSources {
+  font-size: 12px;
+}
+.openModuleLink,
+.rightCardLink {
+  font-size: 13px;
+}
+.rightCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+.rightCardIcon {
+  font-size: 15px;
+  opacity: 0.75;
+}
+.rightCardListEntry,
+.rightCardListItem,
+.rightCardListUpdate {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+@media (max-width: 1179px) {
+  .layout {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+  .rightColumn {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-left: none;
+    border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  }
+  .rightCard:not(:last-child) {
+    margin-bottom: 6px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .featuredGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .directoryWindow {
+    max-height: none;
+    overflow: visible;
+  }
+  .rightColumn {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .headlineMajor {
+    font-size: 44px;
+  }
+}
+@media (min-width: 560px) and (max-width: 767px) {
+  .rightColumn {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (pointer: coarse) {
+  .directoryRow,
+  .browseBtn {
+    min-height: 44px;
+  }
+  .openModuleLink,
+  .rightCardLink {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

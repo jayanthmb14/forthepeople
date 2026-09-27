@@ -9,20 +9,32 @@
   "hero": {
     "count": "{n, plural, one {# module} other {# modules}}",
     "figures": "Headline figures",
+    "tapHint": "Tap a figure to see its date and source.",
     "ringLabel": "{live} of {total} modules are live",
     "ringLive": "live",
     "legendLive": "Live",
     "legendSoon": "Coming soon"
   },
-  "rail": {
-    "aria": "Modules in {category}",
-    "summary": "{total, plural, one {# module} other {# modules}}, {live} live, {soon} coming soon"
+  "explain": {
+    "body": "{category} has {total, plural, one {# topic} other {# topics}}: {live} are live now and {soon} are still being set up. Tap a topic to see its latest figures.",
+    "allLive": "All {total} topics in {category} are live. Tap a topic to see its latest figures."
   },
   "grid": {
     "title": "All modules",
+    "other": "More modules",
+    "tapHint": "Tap a card to see its figures",
+    "details": "Details: {module}",
+    "openShort": "Open page",
+    "figureCount": "{n, plural, one {# figure} other {# figures}}",
     "noFigure": "No published figure yet",
-    "open": "Open {module}",
     "figureLine": "{label}, as of {date}"
+  },
+  "sheet": {
+    "figures": "Latest figures",
+    "noFigures": "No published figures yet. They appear here as soon as the source publishes them.",
+    "figureMeta": "As of {date}. Source:",
+    "sources": "Where the numbers come from",
+    "openPage": "Open the full {module} page"
   },
   "soonNote": {
     "title": "{n, plural, one {# module is} other {# modules are}} still being set up.",

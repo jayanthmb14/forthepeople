@@ -13,6 +13,14 @@
  * enDict / knDict by hand, which skipped the English fallback and any
  * language other than en/kn.
  *
+ * v4.1 (Sep 2026): the page follows docs/LAYOUT.md — hero, then one
+ * "In simple words" sentence (reference facts + registry counts), the
+ * five number tiles, the "India in the world" ranks (each opens a detail
+ * sheet), then the ten bands. Content sits in the 1320 px ModulePage
+ * frame; every band has phone / tablet / laptop / PC layouts in its CSS
+ * module (the phone carousel of the two right-hand cards is gone: they
+ * stack, so nothing hides off the edge).
+ *
  * Page-level ISR window: 15 min.
  */
 
@@ -21,7 +29,11 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import "@/app/india-mobile.css";
 import { IndiaHero } from "@/components/india/sections/IndiaHero";
-import { IndiaKpiStrip } from "@/components/india/sections/IndiaKpiStrip";
+import { IndiaKpiStrip, INDIA_REFERENCE } from "@/components/india/sections/IndiaKpiStrip";
+import { ModulePage as PageFrame } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
+import { INDIA_MODULES } from "@/lib/india/india-modules";
+import { fmtDecimal } from "@/components/india/format";
 import { IndiaInTheWorldCard } from "@/components/india/sections/IndiaInTheWorldCard";
 import { IndiaAtGlanceSection } from "@/components/india/sections/IndiaAtGlance";
 import { KnowAboutIndiaSection } from "@/components/india/sections/KnowAboutIndia";
@@ -78,16 +90,25 @@ export default async function IndiaRoute({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: INDIA_NS });
   const superCategories = getOrderedSuperCategories().filter((sc) => BANDS[sc.slug]);
 
+  // "In simple words": the reference facts on the tiles below + registry counts.
+  const simple = t("overview.explain", {
+    pop: fmtDecimal(locale, INDIA_REFERENCE.populationBillion, 2),
+    states: INDIA_REFERENCE.states,
+    uts: INDIA_REFERENCE.uts,
+    total: INDIA_MODULES.length,
+    live: INDIA_MODULES.filter((m) => m.status === "live").length,
+  });
+
   return (
-    <main style={{ minHeight: "100vh", paddingBottom: "3rem" }}>
+    <main className="ftp-hue-blue" style={{ minHeight: "100vh" }}>
       {/* Sticky breadcrumb (with the module picker) and the section progress bar. */}
       <IndiaBreadcrumb locale={locale} />
       <SectionProgressBar />
 
-      {/* Side gutter matches .ftp-container (24 px, 16 px on phones). */}
-      <div className="ftp-container" style={{ maxWidth: "none", width: "100%", paddingTop: 16 }}>
+      <PageFrame>
         <LiveStrip locale={locale} />
         <div data-tint-id="hero">
           <IndiaHero locale={locale} />
@@ -96,6 +117,7 @@ export default async function IndiaRoute({
         <LotusVineGarlandDivider />
 
         <div style={{ marginTop: "1rem" }}>
+          <Explainer>{simple}</Explainer>
           <IndiaKpiStrip />
         </div>
 
@@ -115,7 +137,7 @@ export default async function IndiaRoute({
             );
           })}
         </div>
-      </div>
+      </PageFrame>
     </main>
   );
 }

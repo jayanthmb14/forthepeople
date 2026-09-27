@@ -41,11 +41,14 @@ const ACCENT_RGB: Record<Accent, string> = {
 };
 
 /** Reference values (source and year are in the messages, kpi.<id>.source). */
+/** Reference facts also used by the page's "In simple words" line (one copy). */
+export const INDIA_REFERENCE = { populationBillion: 1.43, states: 28, uts: 8 } as const;
+
 const KPI_TILES: KpiTileSpec[] = [
-  { id: "population", emoji: "👥", value: 1.43, decimals: 2, accent: "blue", numColor: "#082F58" },
+  { id: "population", emoji: "👥", value: INDIA_REFERENCE.populationBillion, decimals: 2, accent: "blue", numColor: "#082F58" },
   { id: "area", emoji: "🗺️", value: 3.29, decimals: 2, accent: "forest-green", numColor: "#27500A" },
   { id: "gdp", emoji: "💹", value: 4.1, decimals: 1, accent: "amber", numColor: "#633806" },
-  { id: "states", emoji: "🏛️", pair: [28, 8], accent: "indigo", numColor: "#26215C" },
+  { id: "states", emoji: "🏛️", pair: [INDIA_REFERENCE.states, INDIA_REFERENCE.uts], accent: "indigo", numColor: "#26215C" },
   { id: "languages", emoji: "🗣️", value: 22, decimals: 0, accent: "pink", numColor: "#4D182A" },
 ];
 
@@ -120,7 +123,7 @@ export function IndiaKpiStrip() {
               <div style={{ fontSize: "12px", lineHeight: "16px", color: "var(--ftp-text-2)" }}>{meta}</div>
               <span
                 style={{
-                  fontSize: "11px",
+                  fontSize: "12px",
                   lineHeight: "15px",
                   padding: "1px 7px",
                   background: "rgba(255,255,255,0.7)",
@@ -160,7 +163,13 @@ export function IndiaKpiStrip() {
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
+        /* v4.1: tablets get 3 per row (5 squeezed the numbers), phones 2. */
+        @media (min-width: 640px) and (max-width: 1023px) {
+          .india-hero-kpi-strip { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+          .india-hero-kpi-strip > * { grid-column: span 2; }
+          .india-hero-kpi-strip > :nth-child(n + 4) { grid-column: span 3; }
+        }
+        @media (max-width: 639px) {
           .india-hero-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
           .india-hero-kpi-strip > :nth-child(5) { grid-column: span 2; }
         }

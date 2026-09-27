@@ -97,7 +97,7 @@ export function ModuleDropdown({ currentLabel, scope, superCategorySlug, locale,
         type="button"
         onClick={() => setOpen((v) => !v)}
         style={{
-          minHeight: 32,
+          minHeight: 40,
           padding: "5px 12px",
           fontSize: 13,
           background: "var(--ftp-surface)",
@@ -118,6 +118,7 @@ export function ModuleDropdown({ currentLabel, scope, superCategorySlug, locale,
 
       {open && (
         <div
+          className="india-module-popover"
           style={{
             position: "absolute",
             top: "calc(100% + 6px)",
@@ -190,7 +191,7 @@ export function ModuleDropdown({ currentLabel, scope, superCategorySlug, locale,
                         </span>
                         <span style={{ flex: 1 }}>{x.moduleTitle(m)}</span>
                         {m.status === "planned" || m.status === "coming_soon" ? (
-                          <span style={{ fontSize: 11, fontWeight: 600, background: "#FAEEDA", color: "#854F0B", padding: "1px 7px", borderRadius: 999 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, background: "var(--ftp-warn-tint)", color: "var(--ftp-warn)", padding: "1px 7px", borderRadius: 999 }}>
                             {t("status.soon")}
                           </span>
                         ) : null}
@@ -207,6 +208,13 @@ export function ModuleDropdown({ currentLabel, scope, superCategorySlug, locale,
           </div>
         </div>
       )}
+      {/* v4.1: on phones the trigger can sit anywhere in a wrapped breadcrumb,
+          so the list spans the screen instead of running off its right edge. */}
+      <style>{`
+        @media (max-width: 639px) {
+          .india-module-popover { position: fixed !important; top: 96px !important; left: 16px !important; right: 16px !important; width: auto !important; max-width: none !important; max-height: calc(100vh - 128px) !important; }
+        }
+      `}</style>
     </div>
   );
 }

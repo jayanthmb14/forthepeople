@@ -78,12 +78,12 @@ function countCitedSources(): number {
 /** One "label value" pair with an emoji. */
 function Item({ emoji, label, value }: { emoji: string; label: string; value: string }) {
   return (
-    <span style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+    <span className="india-live-item" style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
       <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>
         {emoji}
       </span>
       <span className="ftp-label">{label}</span>
-      <span className="ftp-num" style={{ color: "var(--ftp-text)", fontSize: 11, lineHeight: "16px" }}>
+      <span className="ftp-num" style={{ color: "var(--ftp-text)", fontSize: 12, lineHeight: "16px" }}>
         {value}
       </span>
     </span>
@@ -91,7 +91,7 @@ function Item({ emoji, label, value }: { emoji: string; label: string; value: st
 }
 
 function Divider() {
-  return <span aria-hidden style={{ width: 1, height: 12, background: "var(--ftp-border)", flexShrink: 0 }} />;
+  return <span aria-hidden className="india-live-div" style={{ width: 1, height: 12, background: "var(--ftp-border)", flexShrink: 0 }} />;
 }
 
 export async function LiveStrip({ locale }: { locale: string }) {
@@ -122,6 +122,7 @@ export async function LiveStrip({ locale }: { locale: string }) {
   return (
     <div
       role="status"
+      className="india-live-strip"
       aria-label={t("liveStrip.aria")}
       style={{
         // Phase D 2026-05-21: pin the strip below the section progress bar
@@ -161,6 +162,16 @@ export async function LiveStrip({ locale }: { locale: string }) {
       <Item emoji="📍" label={t("liveStrip.districts")} value={t("liveStrip.ofTotal", { n: activeDistricts, total: totalIndiaDistricts })} />
       <Divider />
       <Item emoji="🗺️" label={t("liveStrip.states")} value={t("liveStrip.ofTotal", { n: activeStates, total: STATES_AND_UTS_OF_INDIA })} />
+      {/* v4.1: on phones the strip is not pinned (three pinned bars took a
+          third of the screen) and its items wrap instead of hiding off the
+          right edge. */}
+      <style>{`
+        @media (max-width: 767px) {
+          .india-live-strip { position: static !important; flex-wrap: wrap; row-gap: 6px; overflow-x: visible !important; }
+          .india-live-div { display: none; }
+          .india-live-item { white-space: normal !important; flex-wrap: wrap; }
+        }
+      `}</style>
     </div>
   );
 }

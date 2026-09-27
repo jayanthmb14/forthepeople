@@ -20,7 +20,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import styles from "./styles.module.css";
 import { SectionWatermark } from "../SectionWatermark";
-import { SectionRightRailDots } from "../SectionRightRailDots";
 import { BandNumber, BandVisibleProvider, useBandText, useBandVisible } from "../band-kit";
 import { useFormat } from "@/i18n/client";
 import {
@@ -364,11 +363,10 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
           </div>
 
           {/* RIGHT — world ranks + latest updates */}
-          <div className={styles.rightColumn} data-ftp-right-rail="1">
+          <div className={styles.rightColumn}>
             <WorldRankCard data={data} text={text} />
             <LatestUpdatesCard updates={data.latestUpdates} locale={locale} text={text} />
           </div>
-          <SectionRightRailDots count={2} accent="#0C447C" />
         </div>
       </section>
     </BandVisibleProvider>
