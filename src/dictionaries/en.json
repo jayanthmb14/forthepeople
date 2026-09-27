@@ -371,7 +371,8 @@
     "partly": "Partly updated",
     "noDated": "No dated data",
     "checking": "Checking data…",
-    "noDataYet": "no data yet"
+    "noDataYet": "no data yet",
+    "freshnessAria": "How recent the data is: {status}"
   },
   "intro": {
     "line1": "Your district.",

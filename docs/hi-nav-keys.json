@@ -99,6 +99,9 @@
   "breadcrumb": {
     "noDistricts": "कोई जिला सूची में नहीं है"
   },
+  "status": {
+    "freshnessAria": "डेटा कितना नया है: {status}"
+  },
   "seo": {
     "districtTitle": "{district} जिला — सरकारी डेटा डैशबोर्ड",
     "districtDescription": "{district} जिला, {state}: फसल के दाम, बाँधों का जल स्तर, योजनाएँ, बजट और बहुत कुछ। हर आँकड़े के साथ उसकी तारीख और सरकारी स्रोत।",
