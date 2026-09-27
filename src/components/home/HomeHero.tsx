@@ -35,8 +35,8 @@ import styles from "./home.module.css";
 
 export interface HomeHeroProps {
   locale: string;
-  /** e.g. "10 districts across 7 states" — computed on the server. */
-  coveragePhrase: string;
+  /** Number of states with a live district (registry). */
+  activeStates: number;
   modulesPerDistrict: number;
   activeCount: number;
   totalDataPoints: number | null;
@@ -55,7 +55,7 @@ function focusDistrictSearch() {
 
 export default function HomeHero({
   locale,
-  coveragePhrase,
+  activeStates,
   modulesPerDistrict,
   activeCount,
   totalDataPoints,
@@ -93,7 +93,7 @@ export default function HomeHero({
         </h1>
 
         <p className={`${styles.heroLeadV4} ftp-rise`} style={{ ["--i" as string]: 4 }}>
-          {t("lead", { coverage: coveragePhrase, modules: modulesPerDistrict })}
+          {t("lead", { coverage: t("coverage", { districts: activeCount, states: activeStates }), modules: modulesPerDistrict })}
         </p>
 
         <div className="ftp-rise" style={{ ["--i" as string]: 5 }}>

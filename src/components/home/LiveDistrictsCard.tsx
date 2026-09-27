@@ -36,7 +36,7 @@ import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
 import { usePreview, useTopVotes } from "./home-data";
 import { useTranslations } from "next-intl";
-import { useFormat } from "@/i18n/client";
+import { useFormat, usePlaceText } from "@/i18n/client";
 import styles from "./home.module.css";
 
 /** A district counts as "NEW" for this many days after it goes live. */
@@ -55,6 +55,7 @@ export interface HomeDistrict {
 export default function LiveDistrictsCard({ locale, districts }: { locale: string; districts: HomeDistrict[] }) {
   const t = useTranslations("home");
   const f = useFormat();
+  const place = usePlaceText();
   const preview = usePreview();
   const { votes, loaded: votesLoaded } = useTopVotes();
 
@@ -133,8 +134,8 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
                     </span>
                   )}
                 </span>
-                <span className={styles.districtTileState}>{d.stateName}</span>
-                {tagline && <span className={styles.districtTileTag}>{tagline}</span>}
+                <span className={styles.districtTileState}>{place.state(d.stateSlug, d.stateName)}</span>
+                {tagline && <span className={styles.districtTileTag}>{place.label(tagline)}</span>}
               </Link>
             </li>
           );

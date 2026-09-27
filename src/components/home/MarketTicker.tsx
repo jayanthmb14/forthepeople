@@ -23,6 +23,7 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Pill, formatIST } from "@/components/district/ui";
 import styles from "./home.module.css";
@@ -103,6 +104,7 @@ function istClock(iso: string | undefined): string | null {
 }
 
 export default function MarketTicker() {
+  const t = useTranslations("ticker");
   const [items, setItems] = useState<TickerItem[]>([]);
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
@@ -144,10 +146,10 @@ export default function MarketTicker() {
       <span
         key={`${copy ? "b" : "a"}-${it.symbol}`}
         className={styles.tickerItem}
-        title={`${it.label} · refreshed ${refreshLabelFor(it.symbol)}`}
+        title={t("refreshed", { name: t.has(`sym.${it.symbol}`) ? t(`sym.${it.symbol}`) : it.label, cadence: refreshLabelFor(it.symbol) })}
       >
         <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>{emojiFor(it.symbol)}</span>
-        <span className={styles.tickerLabel}>{it.label}</span>
+        <span className={styles.tickerLabel}>{t.has(`sym.${it.symbol}`) ? t(`sym.${it.symbol}`) : it.label}</span>
         <span className="ftp-num">{it.value}</span>
         <span
           className={`ftp-num ${
@@ -161,10 +163,10 @@ export default function MarketTicker() {
     ));
 
   return (
-    <div className={styles.ticker} role="region" aria-label="Markets">
+    <div className={styles.ticker} role="region" aria-label={t("region")}>
       <div className={`ftp-container ${styles.tickerRow}`}>
         <Pill tone={open ? "live" : "neutral"} dot>
-          {open ? "Market open" : "Market closed"}
+          {open ? t("open") : t("closed")}
         </Pill>
         <div className={styles.tickerViewport}>
           {items.length === 0 ? (
@@ -180,7 +182,7 @@ export default function MarketTicker() {
         </div>
         {clock && (
           <span className={styles.tickerAsOf} title={formatIST(asOf) ?? undefined} suppressHydrationWarning>
-            As of <span className="ftp-num">{clock}</span> IST
+            {t("asOf", { time: clock })}
           </span>
         )}
       </div>

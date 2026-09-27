@@ -17,6 +17,7 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import styles from "./home.module.css";
 
@@ -27,19 +28,20 @@ const DrillDownMap = dynamic(() => import("@/components/map/DrillDownMap"), {
 });
 
 export default function IndiaMapCard({ locale }: { locale: string }) {
+  const t = useTranslations("home");
   return (
-    <figure className={styles.mapFrame} aria-label="Map of India. Blue states have live districts; select one to open it.">
+    <figure className={styles.mapFrame} aria-label={t("mapLabel")}>
       <div className={styles.mapCanvas}>
         <DrillDownMap locale={locale} />
       </div>
       <figcaption className={styles.mapLegend}>
         <span className={styles.legendRow}>
           <span className={`${styles.legendSwatch} ${styles.legendLive}`} aria-hidden />
-          Live
+          {t("legendLive")}
         </span>
         <span className={styles.legendRow}>
           <span className={`${styles.legendSwatch} ${styles.legendLocked}`} aria-hidden />
-          Coming soon
+          {t("legendComing")}
         </span>
       </figcaption>
     </figure>

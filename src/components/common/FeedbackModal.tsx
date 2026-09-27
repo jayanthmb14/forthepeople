@@ -16,6 +16,7 @@
 //  field has a visible <label htmlFor>, 44 px targets, role="dialog" and
 //  focus outlines left on. The submit logic and request body are unchanged.
 // ═══════════════════════════════════════════════════════════════════════
+import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { CheckCircle2, Flag, X } from "lucide-react";
 import { Chips } from "@/components/district/ui";
@@ -43,6 +44,7 @@ export default function FeedbackModal({
   floating = false,
   label = "Feedback",
 }: Props) {
+  const tf = useTranslations("feedback");
   const [open, setOpen] = useState(false);
   const [type, setType] = useState("bug");
   const [subject, setSubject] = useState("");
@@ -101,7 +103,7 @@ export default function FeedbackModal({
     <button
       type="button"
       onClick={() => setOpen(true)}
-      title="Report an issue or send feedback"
+      title={tf("triggerTitle")}
       aria-haspopup="dialog"
       style={{
         position: "fixed", bottom: 24, right: 24, zIndex: 90,
@@ -113,7 +115,7 @@ export default function FeedbackModal({
       }}
     >
       <Flag size={14} aria-hidden />
-      Report issue
+      {tf("trigger")}
     </button>
   ) : (
     <button

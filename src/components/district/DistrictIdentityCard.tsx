@@ -30,6 +30,7 @@ import { SourcePill, StatStrip, StatTile } from "@/components/district/ui";
 import { DEFAULT_PALETTE, DistrictSVG, PALETTES } from "@/components/district/DistrictHeroIllustration";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
 import { scriptLang } from "@/lib/utils/script-lang";
+import { usePlaceText } from "@/i18n/client";
 import DistrictBadges from "@/components/district/DistrictBadges";
 import { HealthScoreRing } from "@/components/district/DistrictHealthScoreCard";
 import type { DistrictBadge } from "@/lib/constants/districts";
@@ -85,6 +86,7 @@ export default function DistrictIdentityCard({
   // landmark illustration (restored from the original site) on the right.
   const t = useTranslations("overview");
   const tk = useTranslations("kit");
+  const place = usePlaceText();
   const locale = useLocale();
   const slug = districtSlug ?? healthSlug ?? "";
   // UI in the district's own language → lead with the local name.
@@ -130,7 +132,7 @@ export default function DistrictIdentityCard({
               }}
             >
               <span className="ftp-emoji" aria-hidden>📍</span>
-              {t("districtOf", { state: stateName })}
+              {t("districtOf", { state: place.state(stateName, stateName) })}
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)", textWrap: "balance" }}>

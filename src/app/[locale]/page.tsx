@@ -25,7 +25,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { setRequestLocale } from "next-intl/server";
 import { languageAlternates } from "@/i18n/seo";
-import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
+import { getPlatformFacts } from "@/lib/platform-facts";
 
 import MarketTicker from "@/components/home/MarketTicker";
 import IntroSplash from "@/components/home/IntroSplash";
@@ -133,7 +133,7 @@ export default async function HomePage({
           <div className="ftp-container">
             <HomeHero
               locale={locale}
-              coveragePhrase={getCoveragePhrase()}
+              activeStates={facts.activeStates}
               modulesPerDistrict={facts.modulesPerDistrict}
               activeCount={activeCount}
               totalDataPoints={totalDataPoints}

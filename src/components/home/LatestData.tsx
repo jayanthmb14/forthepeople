@@ -8,7 +8,7 @@
 //  LatestData — "Latest data — <district>" on the home page (CONCEPT §5)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//    Latest data — Mandya                          View full district →
+//    Latest data — Mandya                          {th("viewDistrict")} →
 //    [Mandya] [Mysuru] [Bengaluru Urban] …          ← Chips, one per live district
 //    ┌ Crop prices ┐ ┌ Schemes ┐ ┌ Local news ┐ ┌ Budget ┐   ← up to 4 cards
 //      headline · one supporting line · As of 12 Sep · SOURCE

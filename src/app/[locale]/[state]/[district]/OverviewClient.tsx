@@ -28,6 +28,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { scriptLang } from "@/lib/utils/script-lang";
 import { useFormat, useModuleText } from "@/i18n/client";
 import Link from "next/link";
 import { MessageSquareWarning } from "lucide-react";
@@ -208,11 +209,18 @@ function TodayEmpty({ label, emoji, hue, sentence, href }: { label: string; emoj
 export default function OverviewClient({ locale, stateSlug, districtSlug, stateName, districtData }: Props) {
   const t = useTranslations("overview");
   const ts = useTranslations("status");
+  const tu = useTranslations("subUnits");
   const mt = useModuleText();
   const f = useFormat();
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
   const stateConfig = getStateConfig(stateSlug);
-  const subUnitPlural = stateConfig?.subDistrictUnitPlural ?? "Taluks";
+  const subUnitEn = stateConfig?.subDistrictUnitPlural ?? "Taluks";
+  const subUnitPlural = tu.has(subUnitEn) ? tu(subUnitEn) : subUnitEn;
+  // In sentences, use the district's local name when the UI is in its language.
+  const displayName =
+    districtData.nameLocal && districtData.nameLocal !== districtData.name && scriptLang(districtData.nameLocal) === locale
+      ? districtData.nameLocal
+      : districtData.name;
 
   // ── Data (same hooks and API calls as v2) ──
   const { data: overview } = useOverview(districtSlug, stateSlug);
@@ -319,7 +327,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </div>
 
       {/* ═══ 2. Today in <district> ═════════════════════════ */}
-      <Section title={t("today", { name: districtData.name })} emoji="☀️">
+      <Section title={t("today", { name: displayName })} emoji="☀️">
         <div
           style={{
             display: "grid",
@@ -445,7 +453,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </div>
 
       {/* ═══ 3. Every dashboard, as colourful emoji tiles ═════ */}
-      <Section title={t("explore", { name: districtData.name })} emoji="🧭">
+      <Section title={t("explore", { name: displayName })} emoji="🧭">
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {groups.map((group) => {
             const mods = group.modules.filter((m) => m.slug !== "overview");
@@ -510,7 +518,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
 
       {/* ═══ 5a. Sub-districts ══════════════════════════════ */}
       {districtData.taluks.length > 0 && (
-        <Section title={t("subUnits", { units: subUnitPlural, name: districtData.name })} emoji="🏘️">
+        <Section title={t("subUnits", { units: subUnitPlural, name: displayName })} emoji="🏘️">
           <ul
             style={{
               listStyle: "none", margin: 0, padding: 0,
@@ -559,7 +567,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       {!weatherLoading && !cropsLoading && !newsLoading && !budgetLoading && !latestWeather && !latestCrop && !headline && budgetEntries.length === 0 && (
         <div style={{ marginTop: 16 }}>
           <EmptyState
-            title={t("addedRecently", { name: districtData.name })}
+            title={t("addedRecently", { name: displayName })}
             body={t("addedRecentlyBody")}
           />
         </div>

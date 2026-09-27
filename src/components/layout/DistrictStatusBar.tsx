@@ -29,7 +29,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useFormat } from "@/i18n/client";
+import { useFormat, usePlaceText } from "@/i18n/client";
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useFreshness } from "@/hooks/useFreshness";
@@ -104,6 +104,7 @@ function summarise(lights: Light[]): Light {
 
 export default function DistrictStatusBar({ districtName, stateName, districtSlug, stateSlug }: DistrictStatusBarProps) {
   const t = useTranslations("status");
+  const place = usePlaceText();
   const { intl } = useFormat();
   const [timeStr, setTimeStr] = useState("");
   const [dateStr, setDateStr] = useState("");
@@ -204,7 +205,7 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
         <span className="ftp-emoji" aria-hidden style={{ marginRight: 4 }}>📍</span>
         <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{districtName}</span>
-        {stateName && <span>, {stateName}</span>}
+        {stateName && <span>, {place.state(stateName, stateName)}</span>}
       </span>
 
       {/* Date — hidden on small screens to keep the strip one line */}

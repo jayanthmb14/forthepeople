@@ -26,6 +26,7 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
@@ -35,9 +36,8 @@ import styles from "./chrome.module.css";
 const STORAGE_KEY = "ftp.disclaimerDismissedAt";
 const HIDE_FOR_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-/** The one-line notice. The full legal wording lives on /<locale>/disclaimer. */
-const DISCLAIMER_SENTENCE =
-  "Independent, not a government website. Data from official portals under NDSAP; verify at the source.";
+// The one-line notice lives in messages ("disclaimer.line"); the full legal
+// wording is on /<locale>/disclaimer.
 
 // ── A tiny store around one localStorage key ──
 const listeners = new Set<() => void>();
@@ -69,6 +69,7 @@ function dismiss() {
 }
 
 export default function DisclaimerLine({ locale }: { locale: string }) {
+  const t = useTranslations("disclaimer");
   const pathname = usePathname();
   const dismissed = useSyncExternalStore(subscribe, readDismissed, () => false);
 
@@ -77,7 +78,7 @@ export default function DisclaimerLine({ locale }: { locale: string }) {
   if (dismissed || isIndiaRoute) return null;
 
   return (
-    <div role="region" aria-label="Site disclaimer" className={styles.disclaimer}>
+    <div role="region" aria-label={t("region")} className={styles.disclaimer}>
       <div className={`ftp-container ${styles.disclaimerRow}`}>
         <Info size={14} aria-hidden className={styles.disclaimerIcon} />
         {/*
@@ -88,22 +89,22 @@ export default function DisclaimerLine({ locale }: { locale: string }) {
           "Read the disclaimer" from 768 px up, "More" on phones.
         */}
         <p className={styles.disclaimerText}>
-          <span className={styles.disclaimerSentence} title={DISCLAIMER_SENTENCE}>
-            {DISCLAIMER_SENTENCE}
+          <span className={styles.disclaimerSentence} title={t("line")}>
+            {t("line")}
           </span>
           <Link href={`/${locale}/disclaimer`} className={styles.disclaimerLinkLong}>
-            Read the disclaimer
+            {t("read")}
           </Link>
-          <Link href={`/${locale}/disclaimer`} className={styles.disclaimerLinkShort} aria-label="Read the full disclaimer">
-            More
+          <Link href={`/${locale}/disclaimer`} className={styles.disclaimerLinkShort} aria-label={t("readFull")}>
+            {t("more")}
           </Link>
         </p>
         <button
           type="button"
           onClick={dismiss}
           className={styles.disclaimerClose}
-          aria-label="Hide this notice for 7 days"
-          title="Hide for 7 days"
+          aria-label={t("hideAria")}
+          title={t("hide")}
         >
           <X size={16} aria-hidden />
         </button>

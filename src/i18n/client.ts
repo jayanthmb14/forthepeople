@@ -13,6 +13,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { intlLocale } from "./languages";
 import { SIDEBAR_MODULES, tierFromPriority, type TierLabel } from "@/lib/constants/sidebar-modules";
+import { INDIA_STATES } from "@/lib/constants/districts";
 
 const TIER_KEY: Record<TierLabel, string> = {
   "Civic duty": "civic",
@@ -56,6 +57,28 @@ export function useModuleText() {
       const tier = tierFromPriority(m.priority);
       const key = TIER_KEY[tier];
       return key && tGroup.has(key) ? tGroup(key) : tier;
+    },
+  };
+}
+
+/**
+ * Reference text that lives in the registry/DB in English: state names and
+ * district taglines/badges. Returns the translation when the language has
+ * one (messages "states" / "placeLabels"), otherwise the English text.
+ */
+export function usePlaceText() {
+  const tState = useTranslations("states");
+  const tLabel = useTranslations("placeLabels");
+  const stateSlugByName = (name: string) => INDIA_STATES.find((s) => s.name === name)?.slug;
+  return {
+    state: (slugOrName: string | null | undefined, fallback?: string) => {
+      if (!slugOrName) return fallback ?? "";
+      const slug = tState.has(slugOrName) ? slugOrName : stateSlugByName(slugOrName);
+      return slug && tState.has(slug) ? tState(slug) : fallback ?? slugOrName;
+    },
+    label: (text: string | null | undefined) => {
+      if (!text) return "";
+      return tLabel.has(text) ? tLabel(text) : text;
     },
   };
 }

@@ -19,6 +19,7 @@
 //  The emoji keys below are written as \u{…} escapes (not the glyphs
 //  themselves) so the source file stays emoji-free.
 
+import { usePlaceText } from "@/i18n/client";
 import type { LucideIcon } from "lucide-react";
 import {
   Banknote, Bike, Building2, Car, Castle, Clapperboard, Dna, Drama, Factory,
@@ -88,6 +89,7 @@ interface Props {
  * with its Lucide icon. Renders nothing when there is nothing to show.
  */
 export default function DistrictBadges({ badges, tagline, tone = "neutral" }: Props) {
+  const place = usePlaceText();
   // Drop a badge that just repeats the tagline (Mandya's registry has
   // "Sugar Capital of Karnataka" as both), so the chip row never doubles up.
   const norm = (t: string) => t.trim().toLowerCase();
@@ -101,12 +103,12 @@ export default function DistrictBadges({ badges, tagline, tone = "neutral" }: Pr
     >
       {tagline && (
         <li>
-          <Pill tone="brand" icon={Sparkles}>{tagline}</Pill>
+          <Pill tone="brand" icon={Sparkles}>{place.label(tagline)}</Pill>
         </li>
       )}
       {list.map((b) => (
         <li key={b.label}>
-          <Pill tone={tone} icon={badgeIcon(b.emoji)}>{b.label}</Pill>
+          <Pill tone={tone} icon={badgeIcon(b.emoji)}>{place.label(b.label)}</Pill>
         </li>
       ))}
     </ul>
