@@ -1066,3 +1066,8 @@ html[data-intro="show"] .ftp-home .ftp-pop { animation-delay: calc(1.85s + var(-
 .ftp-module-desc { font-size: 12px; line-height: 17px; color: var(--ftp-text-2); }
 .ftp-module-dot { position: absolute; top: 14px; right: 14px; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 3px #fff; }
 @media (prefers-reduced-motion: reduce) { .ftp-module-tile:hover .ftp-module-emoji { transform: none; } }
+
+/* Module pages: the "picture" row under the stat tiles (explainer +
+   pictogram on the left, a dial or tank on the right). */
+.ftp-picture-row { display: grid; gap: 12px; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+@media (max-width: 767px) { .ftp-picture-row { grid-template-columns: minmax(0, 1fr); } }

@@ -11,8 +11,8 @@
 //  • 240 px wide, sticky under the 56 px header. Collapses to 56 px icons
 //    with native title tooltips.
 //  • Five groups (from sidebar-modules.ts) with 11 px uppercase labels.
-//  • Items are 36 px tall with a 16 px Lucide icon. Active = brand-tint
-//    background + brand text. No left border, no emoji, no shadows.
+//  • Items are 36 px tall with the module emoji in a hue-tinted chip
+//    (Design v4). Active = the module's hue tint + a 3 px hue bar.
 //  • A 6 px freshness dot on modules that have a live feed (weather,
 //    crops, water, news), fed by useFreshness — one request per district,
 //    cached for five minutes. Grey when unknown.
@@ -32,6 +32,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
+import { hueClass } from "@/lib/design/hues";
 import type { LucideIcon } from "lucide-react";
 import { SIDEBAR_MODULES, getTieredModules, getOrderedSlugs } from "@/lib/constants/sidebar-modules";
 import { useFreshness, MODULE_TO_FRESHNESS_KEY } from "@/hooks/useFreshness";
@@ -160,7 +161,6 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
   function renderModule(slug: string) {
     const mod = MODULE_MAP[slug];
     if (!mod) return null;
-    const Icon = mod.icon;
     const isActive = activeSlug === slug;
     const href = slug === "overview" ? baseUrl : `${baseUrl}/${slug}`;
     const hasFeed = slug in MODULE_TO_FRESHNESS_KEY;
@@ -184,7 +184,25 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         className="ftp-rail-item"
         style={rowStyle(collapsed, isActive)}
       >
-        <Icon size={ICON_SIZE} aria-hidden style={{ flexShrink: 0 }} />
+        {/* v4: the module's emoji in a small chip tinted with its own hue
+            (vault note 37: emoji in the rail read for every age). */}
+        <span
+          aria-hidden
+          className={`ftp-emoji ${hueClass(slug)}`}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 8,
+            flexShrink: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            background: "var(--hue-tint)",
+          }}
+        >
+          {mod.emoji}
+        </span>
         {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{mod.label}</span>}
         {hasFeed && (
           <span
