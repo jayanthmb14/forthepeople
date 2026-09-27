@@ -44,11 +44,13 @@ export const ENERGY_SPEC: BandSpec = {
       href: "/india/energy-power",
       bars: true,
       rows: [
-        { key: "mh", rank: 1, state: "maharashtra", value: { ref: { moduleSlug: P, metricKey: "top_state_mh_capacity_gw" }, fmt: "fmt.gw" } },
-        { key: "gj", rank: 2, state: "gujarat", value: { ref: { moduleSlug: P, metricKey: "top_state_gj_capacity_gw" }, fmt: "fmt.gw" } },
-        { key: "tn", rank: 3, state: "tamil-nadu", value: { ref: { moduleSlug: P, metricKey: "top_state_tn_capacity_gw" }, fmt: "fmt.gw" } },
-        { key: "rj", rank: 4, state: "rajasthan", value: { ref: { moduleSlug: P, metricKey: "top_state_rj_capacity_gw" }, fmt: "fmt.gw" } },
-        { key: "ka", rank: 5, state: "karnataka", value: { ref: { moduleSlug: P, metricKey: "top_state_kn_capacity_gw" }, fmt: "fmt.gw" } },
+        // Order and ranks from CEA's installed-capacity report, 31 Aug 2026 (docs/DATA-FIXES-2026-09.md):
+        // Gujarat 77.0 GW, Rajasthan 67.8, Maharashtra 62.4, Tamil Nadu 48.0, (Uttar Pradesh 39.7), Karnataka 39.3.
+        { key: "gj", rank: 1, state: "gujarat", value: { ref: { moduleSlug: P, metricKey: "top_state_gj_capacity_gw" }, fmt: "fmt.gw" } },
+        { key: "rj", rank: 2, state: "rajasthan", value: { ref: { moduleSlug: P, metricKey: "top_state_rj_capacity_gw" }, fmt: "fmt.gw" } },
+        { key: "mh", rank: 3, state: "maharashtra", value: { ref: { moduleSlug: P, metricKey: "top_state_mh_capacity_gw" }, fmt: "fmt.gw" } },
+        { key: "tn", rank: 4, state: "tamil-nadu", value: { ref: { moduleSlug: P, metricKey: "top_state_tn_capacity_gw" }, fmt: "fmt.gw" } },
+        { key: "ka", rank: 6, state: "karnataka", value: { ref: { moduleSlug: P, metricKey: "top_state_kn_capacity_gw" }, fmt: "fmt.gw" } },
       ],
     },
     {

@@ -704,6 +704,220 @@ this pass; worth re-reading from the PCA file.
 
 ---
 
+## 3. India dashboard (IndiaIndicator + code constants) — verified or hidden
+
+All 172 `IndiaIndicator` rows were typed in by hand in spring 2026 and every
+one carried `asOfDate = 1 May 2026` — the seed day, shown to readers as
+"as of 1 May". Each row is now either **verified** (latest official figure +
+the source's own reporting date) or **hidden** (`numericValue = null`; the
+band loaders skip null values, so the page shows "—").
+
+**Foodgrain:** 12.7 Mt → **376.563 Mt** — DA&FW 3rd Advance Estimates
+2025-26 (a record), released 27 May 2026
+([PIB](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2265965)). Rice
+154.024 Mt, wheat 120.657 Mt, change +18.831 Mt on the 2024-25 final
+estimate; the ministry no longer issues a "4th advance estimate", so the
+label now says "3rd advance estimate" (en/hi/kn). **GDP:** IMF WEO April
+2026 puts India's FY 2025-26 nominal GDP at **$3.92 trillion** and ranks it
+**6th** (rupee fall + the Feb 2026 GDP base-year revision), not 4.1 tn/5th.
+
+### Verified and updated (88 rows)
+
+| Metric | Was | Now | As of | Why | Source |
+|---|---|---|---|---|---|
+| agriculture-production · foodgrain_output_million_tonnes | 12.7 million_tonnes | **376.563** | 2026-05-27 | 12.7 Mt is impossible; the latest official estimate (3rd AE 2025-26, released 27 May 2026) is 376.563 Mt, a record. | DA&FW · 3rd Advance Estimates 2025-26 |
+| agriculture-production · rice_production_million_tonnes | 130 million_tonnes | **154.024** | 2026-05-27 | Rice output in the 3rd AE 2025-26 is a record 154.024 Mt (vs 150.184 Mt final 2024-25); 130 was stale/rounded. | DA&FW · 3rd Advance Estimates 2025-26 |
+| agriculture-production · wheat_production_million_tonnes | 110 million_tonnes | **120.657** | 2026-05-27 | Wheat output in the 3rd AE 2025-26 is 120.657 Mt (vs 117.945 Mt in 2024-25). | DA&FW · 3rd Advance Estimates 2025-26 |
+| agriculture-production · foodgrain_change_yoy_mt | 5 million_tonnes | **18.831** | 2026-05-27 | The same release compares 376.563 Mt with last year's 357.732 Mt, an increase of 18.831 Mt. | DA&FW · 3rd AE 2025-26 vs Final Estimates 2024-25 |
+| agriculture-production · estimate_year | 2,024 year | **2,025** | 2026-05-27 | The latest estimate is for crop year 2025-26 (label's first year 2025), not 2024. | DA&FW · 3rd Advance Estimates 2025-26 |
+| agriculture-production · top_producer_state_pct | 18 percent | **17.85** | 2025-11-20 | Uttar Pradesh produced 17.85% of India's foodgrains in 2024-25 (final), per the official state table. | DA&FW ES&E Division via Economic Survey 2025-26 Stat. Appendix Table 1.18 (Final Estimates 2024-25) |
+| agriculture-production · top_state_up_wheat_mt | 35 million_tonnes | **35.65** | 2025-11-20 | UP wheat output in 2024-25 was 35.65 Mt (30.23% of India). | DA&FW ES&E via Economic Survey 2025-26 Table 1.18 (2024-25 final) |
+| agriculture-production · top_state_mp_wheat_mt | 22 million_tonnes | **24.51** | 2025-11-20 | MP wheat output in 2024-25 was 24.51 Mt, not 22. | DA&FW ES&E via Economic Survey 2025-26 Table 1.18 (2024-25 final) |
+| agriculture-production · top_state_pb_wheat_mt | 18 million_tonnes | **17.99** | 2025-11-20 | Punjab wheat output in 2024-25 was 17.99 Mt (value 18 was right, rounded). | DA&FW ES&E via Economic Survey 2025-26 Table 1.18 (2024-25 final) |
+| agriculture-production · top_state_wb_rice_mt | 16 million_tonnes | **16.02** | 2025-11-20 | West Bengal rice output in 2024-25 was 16.02 Mt (third-largest, behind UP and Telangana). | DA&FW ES&E via Economic Survey 2025-26 Table 1.18 (2024-25 final) |
+| economy-gdp · gdp_nominal_usd_trillion | 4.1 trillion_usd | **3.92** | 2026-04-14 | IMF April 2026 WEO puts India's FY2025-26 nominal GDP at USD 3.92 tn (2026 projection 4.15 tn), not 4.1 tn. | IMF World Economic Outlook, April 2026 (India FY2025-26) |
+| economy-gdp · world_rank_gdp_nominal | 5 rank | **6** | 2026-04-14 | In the IMF April 2026 WEO India slipped from 4th to 6th in nominal GDP (rupee fall + base-year revision), so rank 5 is wrong. | IMF World Economic Outlook, April 2026 |
+| economy-gdp · gdp_ppp_usd_trillion | 14.6 trillion_usd | **17.26** | 2026-04-14 | IMF April 2026 WEO puts India's PPP GDP at about Int$17.3 tn for 2025 (18.9 tn projected for 2026); 14.6 is an old-vintage number. | IMF World Economic Outlook, April 2026 (PPP, India FY2025-26) |
+| economy-gdp · world_rank_gdp_ppp | 3 rank | **(unchanged)** | 2026-04-14 | India remains 3rd by PPP GDP (after China and the US) in the April 2026 WEO; only the date/source need updating. | IMF World Economic Outlook, April 2026 |
+| economy-gdp · gdp_growth_yoy | 7.4 percent | **7.8** | 2026-08-31 | MoSPI's latest official figure for FY2025-26 real GDP growth is 7.8% (updated 31 Aug 2026), not 7.4%. | MoSPI · National Accounts Statistics 2026 (updated PE 2025-26, base 2022-23) |
+| economy-gdp · gdp_per_capita_inr | 240,000 rupees | **243,803** | 2026-06-05 | MoSPI's FY2025-26 per-capita GDP at current prices is about Rs 2.44 lakh (2,43,803 in the June PE). | MoSPI · Provisional Estimates 2025-26, Statement 2 (current prices) |
+| economy-inflation · cpi_inflation | 5 percent | **4.82** | 2026-09-14 | Latest official CPI inflation (Aug 2026, released 14 Sep 2026) is 4.82%, not 5.0%. | MoSPI · CPI (base 2024=100), August 2026 (provisional) |
+| demographics-population · population_total | 1,430,000,000 people | **1,463,865,525** | 2025-07-01 | UN WPP 2024 puts India's mid-2025 population at 1.464 billion; 1.43 bn is the 2023 figure. | UN World Population Prospects 2024 (mid-2025 estimate) |
+| demographics-population · population_growth_yoy | 0.8 percent | **0.89** | 2025-07-01 | World Bank/UN WPP annual growth for 2025 is 0.887%, so 0.8 understates it. | UN WPP 2024 via World Bank WDI (SP.POP.GROW, 2025) |
+| demographics-population · population_density_per_sq_km | 481 per_sq_km | **483.7** | 2023-07-01 | The 481 figure is not a Census number (Census 2011 = 382); the matching international series (World Bank, 2023) is 483.7 per km2. | World Bank WDI EN.POP.DNST (UN WPP population / FAO land area), 2023 |
+| demographics-population · global_rank | 1 rank | **(unchanged)** | 2025-07-01 | India remains the most populous country in UN WPP 2024 (1.46 bn vs China ~1.41 bn); value 1 is correct, only date/source updated. | UN World Population Prospects 2024 |
+| economy-gdp · remittances_usd_billion | 129 billion_usd | **150.7** | 2026-07-13 | World Bank data (updated July 2026) put India's 2025 remittance inflows at USD 150.7 bn, the world's largest. | World Bank WDI · Personal remittances received (BX.TRF.PWKR.CD.DT), 2025 |
+| economy-gdp · world_rank_remittances | 1 rank | **(unchanged)** | 2026-07-13 | India is still #1 (USD 150.7 bn) ahead of Mexico (64.4 bn) and the Philippines (41.6 bn) in WDI 2025. | World Bank WDI, 2025 |
+| trade-diaspora · remittances_annual_billion_usd | 125 billion_usd | **150.7** | 2026-07-13 | Same World Bank series: USD 150.7 bn in 2025; 125 was a 2023-era figure and conflicts with the other remittance row. | World Bank WDI · Personal remittances received, 2025 |
+| energy-power · installed_capacity_gw | 460 gigawatts | **554.54** | 2026-08-31 | CEA's latest monthly report puts total installed capacity at 5,54,544 MW (554.5 GW) as on 31.08.2026. | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-power · capacity_change_yoy_gw | 27 gigawatts | **59** | 2026-08-31 | Capacity grew by about 59 GW in the year to Aug 2026 (495.5 -> 554.5 GW), more than double the 27 shown. | CEA · Installed Capacity Reports, Aug 2025 vs Aug 2026 |
+| energy-power · coal_capacity_gw | 217 gigawatts | **224.41** | 2026-08-31 | Coal capacity is 2,24,408 MW as on 31.08.2026. | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-power · renewables_capacity_gw | 180 gigawatts | **243.49** | 2026-08-31 | Wind, solar and other renewables (excluding large hydro) total 243.5 GW as on 31.08.2026; 180 GW is about 18 months old. | CEA · Installed Capacity Report, 31 Aug 2026 (Wind, Solar & other RE; excl. large hydro) |
+| energy-power · hydro_capacity_gw | 47 gigawatts | **52.06** | 2026-08-31 | Large hydro including pumped storage is 52,065 MW as on 31.08.2026. | CEA · Installed Capacity Report, 31 Aug 2026 (Hydro incl. pumped storage) |
+| energy-power · nuclear_capacity_gw | 7.5 gigawatts | **8.78** | 2026-08-31 | Nuclear capacity is 8,780 MW per CEA (31.08.2026). | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-power · mix_pct_coal | 47 percent | **40.47** | 2026-08-31 | Coal's share of installed capacity has fallen to 40.47% (Aug 2026). | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-power · mix_pct_renewables | 39 percent | **43.91** | 2026-08-31 | Wind, solar and other RE are 43.91% of installed capacity (Aug 2026), up from 39%. | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-power · mix_pct_hydro | 10 percent | **9.39** | 2026-08-31 | Hydro (incl. PSP) is 9.39% of installed capacity. | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-power · mix_pct_nuclear | 1.6 percent | **1.58** | 2026-08-31 | Nuclear is 1.58% of installed capacity (value 1.6 was right when rounded; date updated). | CEA · Installed Capacity Report, 31 Aug 2026 |
+| energy-renewables · renewable_installed_gw | 180 gigawatts | **243.49** | 2026-08-31 | Renewable (excl. large hydro) capacity is 243.5 GW as on 31.08.2026 per CEA/MNRE. | CEA Installed Capacity Report 31 Aug 2026 (RES figures as per MNRE) |
+| energy-power · top_state_gj_capacity_gw | 42 gigawatts | **76.99** | 2026-08-31 | Gujarat has 76.99 GW (incl. central shares), the most of any state. | CEA · Installed capacity incl. allocated central shares, 31 Aug 2026 |
+| energy-power · top_state_mh_capacity_gw | 45 gigawatts | **62.44** | 2026-08-31 | Maharashtra has 62.44 GW and ranks 3rd behind Gujarat and Rajasthan. | CEA · Installed capacity incl. allocated central shares, 31 Aug 2026 |
+| energy-power · top_state_rj_capacity_gw | 33 gigawatts | **67.79** | 2026-08-31 | Rajasthan has 67.79 GW (50.3 GW of it private renewables), ranking 2nd. | CEA · Installed capacity incl. allocated central shares, 31 Aug 2026 |
+| energy-power · top_state_tn_capacity_gw | 37 gigawatts | **48.05** | 2026-08-31 | Tamil Nadu has 48.05 GW (4th). | CEA · Installed capacity incl. allocated central shares, 31 Aug 2026 |
+| energy-power · top_state_kn_capacity_gw | 31 gigawatts | **39.3** | 2026-08-31 | Karnataka has 39.30 GW, just behind Uttar Pradesh (39.72 GW). | CEA · Installed capacity incl. allocated central shares, 31 Aug 2026 |
+| budget-union · total_outlay_inr_lakh_crore | 47.6 lakh_crore_inr | **53.47** | 2026-02-01 | Union Budget 2026-27 total expenditure (BE) is Rs 53.47 lakh crore; 47.6 is an older year's figure. | MoF · Budget at a Glance 2026-27 (Total Expenditure, BE) |
+| defence-budget · defence_allocation_lakh_cr | 6.2 lakh_cr | **7.85** | 2026-02-01 | Ministry of Defence's 2026-27 allocation is Rs 7.85 lakh crore; 6.2 was the 2024-25 level. | MoF · Expenditure Budget 2026-27, Ministry of Defence (all demands) |
+| budget-gst · monthly_collection_inr_lakh_crore | 1.6 lakh_crore_inr | **2.11** | 2026-07-31 | The official GSTN file shows gross GST of Rs 2.11 lakh crore for July 2026 (latest month published), not 1.6. | GSTN · GST Statistics, Gross & Net Tax Collection (July 2026) |
+| health-pmjay · cards_issued_crore | 36 crore_cards | **48.64** | 2026-09-27 | NHA's live dashboard shows 48.64 crore Ayushman cards created, not 36 crore. | NHA · AB PM-JAY public dashboard (Ayushman Cards Created, overall) |
+| health-pmjay · empanelled_hospitals_thousands | 30 thousand | **39.36** | 2026-09-27 | NHA dashboard shows 39,358 hospitals empanelled under AB PM-JAY (about 39.4 thousand, not 30). | NHA · AB PM-JAY public dashboard (Hospitals Empanelled) |
+| science-digital · upi_txn_per_month_billion | 14 billion_per_month | **23.66** | 2026-08-24 | UPI processed 23.66 billion transactions in July 2026 (record), not 14 billion. | PIB Backgrounder (MoF/NPCI data) · UPI, July 2026 |
+| infra-telecom · subscribers_crore | 117 crore | **135.43** | 2026-08-28 | TRAI reports 1,354.28 million (135.4 crore) telephone subscribers at end-July 2026; 117 crore is ~3 years old. | TRAI · Telecom Subscription Data, end of July 2026 |
+| agriculture-pmkisan · farmers_count_crore | 11 crore_farmers | **9.44** | 2026-06-20 | The latest PM-KISAN instalment (23rd, June 2026) reached 9.44 crore farmers. | PIB · 23rd instalment of PM-KISAN (20 Jun 2026) |
+| science-digital · aadhaar_enrolled_crore | 140 crore | **144.66** | 2026-09-27 | UIDAI's dashboard shows 144.66 crore Aadhaar enrolments. | UIDAI · Aadhaar Dashboard (enrolments, cumulative) |
+| science-digital · digilocker_users_crore | 25 crore | **72.43** | 2026-08-12 | DigiLocker has more than 72.43 crore registered users (Aug 2026), nearly 3x the 25 crore shown. | MeitY via PIB (Rajya/Lok Sabha reply, 12 Aug 2026) |
+| science-startups · dpiit_recognised_lakh | 1.4 lakh | **2.23** | 2026-04-17 | DPIIT-recognised startups crossed 2.23 lakh as on 31 Mar 2026 (not 1.4 lakh). | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · change_yoy_lakh | 0.3 lakh | **0.552** | 2026-04-17 | 55,200+ startups were recognised in FY2025-26, the highest ever, not 30,000. | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · data_year | 2,024 year | **2,026** | 2026-04-17 | The latest DPIIT counts are as on 31 March 2026. | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · top_state_mh_startups_thousand | 15 thousand | **38.66** | 2026-04-17 | Maharashtra has 38,660+ recognised startups, the most of any state. | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · top_state_ka_startups_thousand | 18 thousand | **22.6** | 2026-04-17 | Karnataka has 22,600+ recognised startups (2nd). | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · top_state_dl_startups_thousand | 13 thousand | **21.12** | 2026-04-17 | Delhi has 21,120+ recognised startups (4th). | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · top_state_tn_startups_thousand | 9 thousand | **14.83** | 2026-04-17 | Tamil Nadu has 14,830+ recognised startups. | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · top_state_tg_startups_thousand | 7 thousand | **12.52** | 2026-04-17 | Telangana has 12,520+ recognised startups (7th). | DPIIT via PIB (recognised startups as on 31 Mar 2026) |
+| science-startups · unicorns_count | 110 unicorns | **125** | 2026-01-16 | The PM said on National Startup Day 2026 that India has nearly 125 unicorns. | PMO via PIB · National Startup Day speech (16 Jan 2026) |
+| tourism-heritage · unesco_sites_count | 43 sites | **45** | 2026-07-25 | India now has 45 World Heritage properties after Sarnath was inscribed on 25 Jul 2026 (43 is two inscriptions behind). | UNESCO World Heritage List / Ministry of Culture (PIB, 25 Jul 2026) |
+| tourism-heritage · global_rank_unesco | 6 rank | **(unchanged)** | 2026-07-25 | India still ranks 6th globally with 45 sites; value correct, date updated. | Ministry of Culture via PIB (25 Jul 2026) |
+| tourism-heritage · data_year | 2,024 year | **2,026** | 2026-07-25 | Heritage counts are now as of the July 2026 World Heritage Committee session. | UNESCO World Heritage List |
+| wildlife-tigers · tiger_population_total | 3,682 tigers | **(unchanged)** | 2023-07-29 | 3,682 is still the latest official tiger estimate (AITE 2022); only the reporting date needs fixing. | NTCA · Status of Tigers 2022 (All India Tiger Estimation, released 29 Jul 2023) |
+| wildlife-tigers · tiger_reserves_count | 58 notified | **(unchanged)** | 2026-07-29 | The Environment Minister cited 58 tiger reserves on 29 Jul 2026; value correct, date updated. | MoEFCC via PIB · Global Tiger Day 2026 |
+| wildlife-forests · forest_cover_pct | 21.7 percent | **21.76** | 2024-12-21 | ISFR 2023 puts forest cover at 21.76% of geographical area (21.7 was truncated; date was fake). | FSI · ISFR 2023 (released 21 Dec 2024) |
+| wildlife-forests · forest_cover_lakh_km2 | 7.15 lakh_km2 | **(unchanged)** | 2024-12-21 | 7.15 lakh km2 (7,15,343 km2) is correct per ISFR 2023; only the date needed fixing. | FSI · ISFR 2023 (released 21 Dec 2024) |
+| wildlife-forests · tree_cover_pct | 2.91 percent | **3.41** | 2024-12-21 | ISFR 2023 tree cover is 1,12,014 km2 = 3.41% of area; 2.91% was the ISFR 2021 figure. | FSI · ISFR 2023 (released 21 Dec 2024) |
+| wildlife-forests · forest_cover_change_2021 | 1,540 square_km | **156** | 2024-12-21 | ISFR 2023 reports only +156 km2 forest cover since 2021 (+1,445 km2 including tree cover); 1,540 is the 2019-21 change from the previous report. | FSI · ISFR 2023 (released 21 Dec 2024) (change vs ISFR 2021) |
+| wildlife-forests · top_state_mizoram_pct | 84.5 percent | **85.34** | 2024-12-21 | Mizoram's forest cover is 85.34% in ISFR 2023 (84.5 is the ISFR 2021 value). | FSI · ISFR 2023 (released 21 Dec 2024) |
+| defence-exports · defence_exports_thousand_cr | 21 thousand_cr | **38.424** | 2026-04-02 | Defence exports hit a record Rs 38,424 crore in FY2025-26 (up 62.66% from Rs 23,622 crore); 21 is two years old. | MoD via PIB · Defence exports FY2025-26 |
+| defence-dpsu · dpsu_count | 9 entities | **16** | 2026-09-01 | The Raksha Mantri reviewed all 16 Defence PSUs on 1 Sep 2026; 9 is outdated. | MoD via PIB · annual performance review of 16 DPSUs |
+| livestock-fisheries · fish_production_lakh_tonnes | 175 lakh_tonnes | **197.75** | 2026-07-28 | Fish production reached a record 197.75 lakh tonnes in 2024-25, not 175. | Dept of Fisheries via PIB (Parliament reply) · 2024-25 |
+| tourism-gi-tags · gi_tags_count | 600 gi_tags | **800** | 2026-08-04 | PIB says India has over 800 registered GI products (607 granted since 2014). | PIB Backgrounder · GI Tags (4 Aug 2026) |
+| health-overview · life_expectancy_years | 70.8 years | **70.6** | 2026-05-20 | The latest SRS life tables (2020-24, published May 2026) put life expectancy at birth at 70.6 years, not 70.8. | ORGI · SRS Abridged Life Tables 2020-24 |
+| health-overview · state_leader_kerala_life_exp | 75.3 years | **75.6** | 2026-05-20 | Kerala's life expectancy is 75.6 years in SRS 2020-24, the highest among bigger states. | ORGI · SRS Abridged Life Tables 2020-24 (Kerala) |
+| health-overview · infant_mortality_rate | 35 per_1000_births | **24** | 2026-05-20 | SRS 2024 puts India's IMR at 24 per 1,000 live births; 35 is about a decade old. | ORGI · SRS Statistical Report 2024 |
+| health-overview · state_leader_kerala_imr | 6 per_1000_births | **8** | 2026-05-20 | SRS 2024 reports Kerala's IMR at 8, still the lowest among bigger states (not 6). | ORGI · SRS Statistical Report 2024 (Kerala) |
+| justice-pendency · total_pending_crore_cases | 5 crore | **5.21** | 2026-09-27 | NJDG shows 5.21 crore cases pending in district and subordinate courts alone as of 27 Sep 2026. | NJDG · District & subordinate courts (live dashboard) |
+| infra-roads · nh_length_km | 146,145 km | **146,560** | 2025-12-30 | MoRTH's Year End Review 2025 gives the NH network as 1,46,560 km (grew from 91,287 km in 2014). | MoRTH · Year End Review 2025 (PIB) |
+| infra-roads · expressway_km | 6,000 km | **3,052** | 2025-12-30 | MoRTH reports 3,052 km of operational access-controlled expressways, about half the 6,000 shown. | MoRTH · Year End Review 2025 (operational access-controlled HSC/expressways) |
+| infra-roads · data_year | 2,024 year | **2,025** | 2025-12-30 | The latest official NH figures are from MoRTH's Year End Review of Dec 2025. | MoRTH · Year End Review 2025 |
+| infra-roads · top_state_up_nh_km | 12,000 km | **11,672** | 2026-05-21 | MoRTH put Uttar Pradesh's NH network at 11,672 km in May 2026. | MoRTH via PIB (NH network in Uttar Pradesh reviewed, 21 May 2026) |
+| infra-aviation · airports_operational_count | 150 airports | **165** | 2026-07-17 | India had 165 operational airports as of 15 July 2026 (up from 74 in 2014), not 150. | MoCA via PIB Backgrounder (operational airports as of 15 Jul 2026) |
+| infra-roads · udan_airports_count | 85 airports | **95** | 2026-07-17 | UDAN has operationalised 679 routes across 95 airports, heliports and water aerodromes. | MoCA via PIB Backgrounder · UDAN (9 years) |
+| education-higher · higher_ed_enrolment_crore | 4.3 crore_students | **4.5** | 2026-07-08 | AISHE 2023-24 (released July 2026) reports 4.50 crore students in higher education, up from 4.33 crore in 2021-22. | MoE · AISHE 2023-24 (released 8 Jul 2026) |
+| wildlife-forests · elephants_count | 27,312 individuals | **22,446** | 2026-08-12 | The latest official elephant estimate (SAIEE 2021-25) is 22,446; 27,312 is the 2017 census. | MoEFCC · Synchronous All India Population Estimation of Elephants (SAIEE) 2021-25, via PIB |
+| energy-power · re_target_gw_2030 | 500 gigawatts | **(unchanged)** | 2026-08-09 | 500 GW is correct but it is a non-fossil (not only renewable) target; source label should not say NDC. | MNRE via PIB · 500 GW non-fossil capacity target by 2030 |
+| science-rd · rd_pct_gdp | 0.65 percent | **(unchanged)** | 2020-12-31 | R&D spending is about 0.65% of GDP, but the figure is for 2020, not 2026. | World Bank WDI GB.XPD.RSDV.GD.ZS (UNESCO UIS), 2020 |
+
+### Confirmed correct (20 rows — value kept, real date set)
+
+area_total_million_km2 = 3.29; world_rank_by_area = 7; unesco_taj_mahal_year = 1,983; unesco_ajanta_year = 1,983; unesco_khajuraho_year = 1,986; unesco_hampi_year = 1,986; unesco_sundarbans_year = 1,987; isfr_edition = 18; isfr_year = 2,023; forest_cover_target_pct = 33; life_expectancy_change_1990 = 14; loksabha_seats_total = 543; lok_sabha_seats = 543; rajyasabha_seats_total = 245; rajya_sabha_seats = 245; olympic_medals_total = 41; states_count = 28; uts_count = 8; scheduled_languages = 22; scheduled_languages_count = 22.
+Fixed facts with no release date (seats, languages, UNESCO inscription
+years, ISFR edition) get the check date, 27 Sep 2026, as their "as of".
+
+### Hidden: unverifiable (64 rows → "—")
+
+Either the checker found the stored value outdated but could not read the
+exact current figure (e.g. coal output is now above 1,000 Mt, rail route
+length above 69,873 km, Manipur/Nagaland forest cover above 75%), or the row
+was not reached before the web-search quota ran out. None of these seed
+values is shown any more.
+
+- agriculture-production · **top_state_ap_rice_mt** (was 14 million_tonnes) — The official top-3 table does not list Andhra Pradesh for rice, so 14 Mt cannot be confirmed and the row misrepresents the ranking.
+- science-digital · **fastag_active_crore** (was 8 crore) — Could not confirm an official 'active FASTag' count; the latest official issued figure is 11.86 crore (Dec 2025).
+- wildlife-forests · **top_state_arunachal_pct** (was 79.3 percent) — Could not read the ISFR 2023 state percentage table; the stored value appears to be from ISFR 2021.
+- wildlife-forests · **top_state_meghalaya_pct** (was 76 percent) — ISFR 2023 only confirms Meghalaya is above 75%; the exact percentage was not verified.
+- wildlife-forests · **top_state_manipur_pct** (was 74.3 percent) — ISFR 2023 says Manipur is above 75%, so 74.3% is outdated, but the exact figure was not verified.
+- wildlife-forests · **top_state_nagaland_pct** (was 73.9 percent) — ISFR 2023 says Nagaland is above 75%, so 73.9% is outdated, but the exact figure was not verified.
+- wildlife-forests · **top_state_pct** (was 26.6 percent) — 26.6% does not match any ISFR 2023 figure for Madhya Pradesh that I could find.
+- tourism-overview · **international_arrivals_lakh** (was 94 lakh) — The row's definition is unclear: ITAs were 20.57 million in 2024, while 94 lakh looks like an old FTA figure.
+- energy-coal · **coal_production_million_tonnes** (was 990 million_tonnes) — India produced over 1,000 Mt of coal in FY2025-26 (and FY2024-25), so 990 Mt is too low, but the exact FY26 total was not confirmed.
+- trade-overview · **exports_annual_lakh_cr** (was 37 lakh_cr) — FY2025-26 exports are published in USD (US$441.78 bn merchandise; US$860.09 bn incl. services); no official rupee total was found, so the unit could not be matched.
+- infra-railways · **route_km** (was 68,000 km) — Electrified broad-gauge track alone is 69,873 route km, so 68,000 is outdated, but the exact total route length was not confirmed.
+- elections-turnout · **ge_2024_turnout_pct** (was 65.8 percent) — Could not re-open ECI's own document this session; 65.8% is consistent with the commonly cited ECI figure (65.79%).
+- know-india-elections · **registered_voters_millions** (was 970 millions_people) — 970 million is close to the 2024 roll (968-978 million) but no current ECI national total was found.
+- know-india-constitution · **adopted_year** (was 1,950 year) — 1950 is the year it came into force; adoption was 26 November 1949.
+- agriculture-plantation · **tea_production_million_kg** (was 1,400 million_kg) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Tea Board of India in this pass (web-search quota exhau
+- agriculture-pmkisan · **pmfby_insured_crore** (was 5.5 crore_farmers) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against PMFBY · Agri Insurance in this pass (web-search quota e
+- agriculture-pmkisan · **kcc_active_cards_crore** (was 7 crore_cards) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against NABARD · KCC in this pass (web-search quota exhausted);
+- agriculture-pmkisan · **soil_health_cards_crore** (was 22 crore_cards) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Soil Health Card scheme in this pass (web-search quota 
+- economy-employment · **workforce_size** (was 600,000,000 people) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against PLFS / NSO in this pass (web-search quota exhausted); t
+- economy-inflation · **rbi_target_midpoint** (was 4 percent) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against RBI in this pass (web-search quota exhausted); the roun
+- education-schools · **schools_total_lakh** (was 14.9 lakh_schools) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against UDISE+ 2022-23 in this pass (web-search quota exhausted
+- education-skills · **pmkvy_trained_crore** (was 1.4 crore_people) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MSDE · PMKVY dashboard in this pass (web-search quota e
+- energy-fuels · **crude_imports_million_tonnes** (was 232 million_tonnes) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoPNG · PPAC in this pass (web-search quota exhausted);
+- health-immunisation · **doses_administered_crore** (was 26 crore_doses) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against U-WIN · MoHFW in this pass (web-search quota exhausted)
+- health-overview · **life_expectancy_target_2030** (was 75 years) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against National Health Policy 2017 in this pass (web-search qu
+- health-overview · **doctors_per_1000** (was 0.74 per_1000_people) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoHFW · NMC in this pass (web-search quota exhausted); 
+- health-overview · **state_leader_delhi_doctors** (was 1.32 per_1000_people) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against NMC · Delhi Medical Council in this pass (web-search qu
+- health-overview · **state_leader_manipur_imm_cov** (was 82 percent) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against NFHS-5 (Manipur) in this pass (web-search quota exhaust
+- health-overview · **state_leader_tn_hosp_per_1000** (was 1.43 per_1000_people) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against State Health Profile (TN) in this pass (web-search quot
+- infra-ports · **major_ports_count** (was 12 ports) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Ministry of Ports in this pass (web-search quota exhaus
+- infra-roads · **nh_target_km_2027** (was 200,000 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Bharatmala Pariyojana in this pass (web-search quota ex
+- infra-roads · **nh_change_yoy_km** (was 5,200 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoRTH FY25 added in this pass (web-search quota exhaust
+- infra-roads · **top_state_mh_nh_km** (was 18,000 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoRTH · Maharashtra in this pass (web-search quota exha
+- infra-roads · **top_state_rj_nh_km** (was 10,000 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoRTH · Rajasthan in this pass (web-search quota exhaus
+- infra-roads · **top_state_mp_nh_km** (was 9,000 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoRTH · MP in this pass (web-search quota exhausted); t
+- infra-roads · **top_state_ka_nh_km** (was 7,000 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoRTH · Karnataka in this pass (web-search quota exhaus
+- infra-roads · **bharatmala_nh_km** (was 65,000 km) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Bharatmala dashboard in this pass (web-search quota exh
+- infra-roads · **sagarmala_ports_count** (was 12 ports) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Sagarmala · Ministry of Ports in this pass (web-search 
+- infra-roads · **gatishakti_projects_count** (was 200 projects) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against PM GatiShakti dashboard in this pass (web-search quota 
+- infra-smart-cities · **cities_count** (was 100 cities) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Smart Cities Mission in this pass (web-search quota exh
+- justice-crime · **ipc_cases_per_year_lakh** (was 36 lakh_per_year) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Crime in India · NCRB in this pass (web-search quota ex
+- justice-crime · **conviction_rate_pct** (was 57 percent) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Crime in India · NCRB in this pass (web-search quota ex
+- justice-police · **civil_police_total_lakh** (was 21 lakh) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against BPRD · Data on Police Organizations in this pass (web-s
+- justice-police · **police_per_lakh_population** (was 152 per_lakh) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against BPRD · sanctioned strength in this pass (web-search quo
+- justice-police · **un_target_per_lakh** (was 222 per_lakh) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against UN Office on Drugs & Crime (UNODC) in this pass (web-se
+- justice-police · **change_yoy_lakh** (was 0.4 lakh) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against BPRD prior-year delta in this pass (web-search quota ex
+- justice-prisons · **prison_population_lakh** (was 5.7 lakh) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Prison Statistics India · NCRB in this pass (web-search
+- know-india-budget · **budget_process_stages** (was 8 stages) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Constitution Article 112 · NCERT in this pass (web-sear
+- know-india-constitution · **articles_count** (was 470 count) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against NCERT Class 11 Polity in this pass (web-search quota ex
+- know-india-constitution · **schedules_count** (was 12 count) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Constitution of India in this pass (web-search quota ex
+- know-india-constitution · **parts_count** (was 25 count) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Constitution of India in this pass (web-search quota ex
+- know-india-history-timeline · **civilization_span_years** (was 5,000 years) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against NCERT History Class 6-12 in this pass (web-search quota
+- livestock-census · **livestock_total_million** (was 535 million) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Livestock Census · DA&FW in this pass (web-search quota
+- national-snapshot · **smartphone_users_millions** (was 750 millions_people) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against GSMA · Statista in this pass (web-search quota exhauste
+- national-snapshot · **world_rank_smartphone_users** (was 2 rank) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against GSMA · Statista in this pass (web-search quota exhauste
+- science-isro · **satellites_launched_count** (was 120 satellites) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against ISRO mission catalogue in this pass (web-search quota e
+- sports-khelo-india · **khelo_athletes_thousand** (was 3 thousand) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Khelo India · MoYAS in this pass (web-search quota exha
+- tourism-heritage · **asi_monuments_count** (was 3,700 monuments) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against ASI · Centrally Protected Monuments in this pass (web-s
+- tourism-heritage · **bollywood_films_per_year** (was 1,800 films_per_year) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against CBFC · Annual Report in this pass (web-search quota exh
+- tourism-heritage · **museums_count** (was 1,000 museums) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Ministry of Culture in this pass (web-search quota exha
+- trade-fdi · **fdi_equity_inflow_billion_usd** (was 70 billion_usd) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against DPIIT · FDI Statistics in this pass (web-search quota e
+- wildlife-forests · **rhinos_count** (was 4,014 individuals) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against MoEFCC · Rhino conservation 2022 in this pass (web-sear
+- wildlife-protected-areas · **parks_count_total** (was 1,014 parks) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against WII · ENVIS Wildlife Institute in this pass (web-search
+- wildlife-tigers · **reserve_area_protected_sqkm** (was 78,735 km²) — Seeded by hand in spring 2026 (shown as 'as of 1 May 2026', which was only the seed day) and not confirmed against Project Tiger in this pass (web-search quota exhausted)
+
+### Code constants (en + hi + kn)
+
+| Where | Was | Now | Source |
+|---|---|---|---|
+| KPI tile: population (`IndiaKpiStrip.tsx` `INDIA_REFERENCE`) | 1.43 bn, "UN, 2024 estimate", "about 0.8% a year" | **1.46 bn**, "UN WPP 2024, 2025 estimate", "about 0.9% a year" | UN WPP 2024 mid-2025 = 1,463,865,525 — [UNFPA](https://www.unfpa.org/data/world-population/IN); growth 0.887% — [World Bank WDI](https://data.worldbank.org/indicator/SP.POP.GROW?locations=IN) |
+| KPI tile: nominal GDP | 4.1 trillion, "IMF, FY26", "6.5% growth projected" | **3.9 trillion** (3.92), "IMF, April 2026 (FY26)", "7.8% growth in FY26 (MoSPI)" | IMF WEO Apr 2026 via [Business Standard](https://www.business-standard.com/economy/news/india-gdp-ranking-imf-2026-rupee-depreciation-base-revision-126041600790_1.html) (IMF datamapper blocked the checker); growth — [MoSPI NAS 2026](https://www.mospi.gov.in/uploads/latestReleases/latest_release_1788171660220_f2a7f5ed-3ce3-45cc-a5b2-eebc84623a01_Final_Press_Release_on_NAS_2026.pdf) |
+| KPI tiles: area 3.29 M km², 28 states + 8 UTs, 22 languages | — | confirmed | World Bank WDI; MHA |
+| World ranks: economy | #5, 2025, "up from 6" | **#6, 2026, "down from 4"** | IMF WEO Apr 2026 (as above) |
+| World ranks: milk | 230 MT | **248 MT (2024-25)** | [PIB / DAHD](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2298197) |
+| World ranks: internet | 900M / "90 crore users", 2024 | **1.09B / "109 crore internet subscribers", 2026** | TRAI via [PIB](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2276780) (end-March 2026) |
+| World ranks: renewable | 191 GW | **296 GW incl. large hydro (Aug 2026)** | [CEA installed capacity, 31 Aug 2026](https://cea.nic.in/wp-content/uploads/installed/2026/08/IC_Aug_2026.pdf) |
+| World ranks: "Pharmaceutical exports #3 (WTO)" | shown | **removed — hidden: unverifiable** (India is 3rd by *production volume*; no source for #3 in exports) | — |
+| World ranks: postal "156K offices", railway "1.4M staff" | shown | **annotation removed — hidden: unverifiable** (no current official count read) | — |
+| Band ranks: power capacity (`NaturalResourcesEnergy/metrics.ts`) | MH #1, GJ #2, TN #3, RJ #4, KA #5 | GJ #1 (77.0 GW), RJ #2 (67.8), MH #3 (62.4), TN #4 (48.0), KA **#6** (39.3; UP is #5 at 39.7) | CEA, 31 Aug 2026 |
+| Band ranks: startups (`Innovation/metrics.ts`) | KA #1, MH #2, DL #3, TN #4, TG #5 | MH #1 (38.7k), KA #2 (22.6k), DL #4, TN (rank not stated), TG #7 | DPIIT via [PIB](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2253019) |
+| Band ranks: crop states (`AgricultureLivestock/metrics.ts`) | WB rice #4, AP rice #5 | WB rice **#3**; Andhra Pradesh row removed (not in the official top three for rice) | DA&FW final 2024-25 via [Economic Survey table](https://www.indiabudget.gov.in/economicsurvey/doc/stat/tab1.18.pdf) |
+
+**Unverified, left as they are:** world-rank movements for internet ("up
+from #3") and renewables ("up from #5"); ranks for films (#1 UNESCO),
+military (#4 Global Firepower 2025), postal and railway (#1) — well known,
+but no page was re-read this pass. The page_india `world.notes.postal` and
+`world.notes.railway` strings are now unused.
+
+---
+
 ## 4. Helplines (code, not database)
 
 Helplines are constants in `src/components/district/civic/CitizenParts.tsx`

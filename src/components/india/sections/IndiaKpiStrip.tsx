@@ -41,13 +41,18 @@ const ACCENT_RGB: Record<Accent, string> = {
 };
 
 /** Reference values (source and year are in the messages, kpi.<id>.source). */
-/** Reference facts also used by the page's "In simple words" line (one copy). */
-export const INDIA_REFERENCE = { populationBillion: 1.43, states: 28, uts: 8 } as const;
+/**
+ * Reference facts also used by the page's "In simple words" line (one copy).
+ * Checked 27 Sep 2026 (docs/DATA-FIXES-2026-09.md): population 1.46 bn is
+ * UN WPP 2024's mid-2025 estimate (1,463,865,525); GDP 3.92 trillion USD is
+ * IMF WEO April 2026 for FY 2025-26.
+ */
+export const INDIA_REFERENCE = { populationBillion: 1.46, states: 28, uts: 8 } as const;
 
 const KPI_TILES: KpiTileSpec[] = [
   { id: "population", emoji: "👥", value: INDIA_REFERENCE.populationBillion, decimals: 2, accent: "blue", numColor: "#082F58" },
   { id: "area", emoji: "🗺️", value: 3.29, decimals: 2, accent: "forest-green", numColor: "#27500A" },
-  { id: "gdp", emoji: "💹", value: 4.1, decimals: 1, accent: "amber", numColor: "#633806" },
+  { id: "gdp", emoji: "💹", value: 3.92, decimals: 1, accent: "amber", numColor: "#633806" },
   { id: "states", emoji: "🏛️", pair: [INDIA_REFERENCE.states, INDIA_REFERENCE.uts], accent: "indigo", numColor: "#26215C" },
   { id: "languages", emoji: "🗣️", value: 22, decimals: 0, accent: "pink", numColor: "#4D182A" },
 ];

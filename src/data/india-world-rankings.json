@@ -28,7 +28,6 @@
       "rank": 1,
       "category": "postal",
       "title": "Largest postal network",
-      "annotation": "156K offices",
       "source": "India Post",
       "year": "2024",
       "movement": { "kind": "stable" }
@@ -37,7 +36,7 @@
       "rank": 1,
       "category": "milk",
       "title": "Largest milk producer",
-      "annotation": "230 MT",
+      "annotation": "248 MT",
       "source": "FAO",
       "year": "2024",
       "movement": { "kind": "stable" }
@@ -46,7 +45,6 @@
       "rank": 1,
       "category": "railway",
       "title": "Largest railway employer",
-      "annotation": "1.4M staff",
       "source": "Indian Railways",
       "year": "2024",
       "movement": { "kind": "stable" }
@@ -56,17 +54,9 @@
       "category": "internet",
       "title": "Internet users",
       "source": "TRAI",
-      "year": "2024",
-      "annotation": "900M",
+      "year": "2026",
+      "annotation": "1.09B",
       "movement": { "kind": "up", "from": 3 }
-    },
-    {
-      "rank": 3,
-      "category": "pharma",
-      "title": "Pharmaceutical exports",
-      "source": "WTO",
-      "year": "2024",
-      "movement": { "kind": "stable" }
     },
     {
       "rank": 4,
@@ -82,7 +72,7 @@
       "title": "Renewable energy capacity",
       "source": "IRENA",
       "year": "2024",
-      "annotation": "191 GW",
+      "annotation": "296 GW",
       "movement": { "kind": "up", "from": 5 }
     },
     {
@@ -94,12 +84,12 @@
       "movement": { "kind": "new" }
     },
     {
-      "rank": 5,
+      "rank": 6,
       "category": "economy",
       "title": "Largest economy (nominal)",
       "source": "IMF",
-      "year": "2025",
-      "movement": { "kind": "up", "from": 6 }
+      "year": "2026",
+      "movement": { "kind": "down", "from": 4 }
     }
   ]
 }
