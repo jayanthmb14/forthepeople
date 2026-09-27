@@ -22,9 +22,11 @@ import {
   NOT_FROM_NEWS,
   NOT_FROM_NEWS_OPTIONAL,
   NOT_SEEDED_RAINFALL,
+  OFFICIAL_ALERTS,
   SHOWN_CRIME,
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
+  shownCropPrices,
 } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
@@ -218,7 +220,8 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "crops": {
       const data = await prisma.cropPrice.findMany({
-        where: { districtId: did },
+        // No seed rows, no livestock / per-nut / per-stem prices, only mandis in the district (Sept 2026 audit).
+        where: { districtId: did, ...shownCropPrices(districtSlug) },
         orderBy: [{ date: "desc" }, { commodity: "asc" }],
         take: 100,
       });
@@ -592,6 +595,8 @@ async function fetchModule(
         where: {
           districtId: did,
           active: true,
+          // Official warnings only (NDMA SACHET), never news stories (Sept 2026 audit).
+          ...OFFICIAL_ALERTS,
         },
         orderBy: { createdAt: "desc" },
       });

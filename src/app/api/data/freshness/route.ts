@@ -42,12 +42,16 @@ import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapsho
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
-import { VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { SEEDED_RAINFALL_LAST_YEAR, SEEDED_RAINFALL_SOURCES, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
+import { getCronRun } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 
 /** LIKE pattern for CourtStat rows the NJDG collector wrote (NJDG_COURTSTAT). */
 const NJDG_COURTSTAT_LIKE = `${COURTSTAT_SOURCE_PREFIX}%`;
+/** LIKE pattern for LocalAlert rows the NDMA SACHET collector wrote (OFFICIAL_ALERTS). */
+const SACHET_ALERT_LIKE = `${SACHET_SOURCE_PREFIX}%`;
 
 const CACHE_SECONDS = 300;
 
@@ -121,20 +125,23 @@ async function queryRow(districtId: string): Promise<Row | null> {
   // Filters match what the pages show (src/lib/data-filters.ts):
   // NOT_FROM_NEWS (source not a URL), LOCAL_INFRA (DISTRICT/CITY scope),
   // NJDG_COURTSTAT, JJM_DISTRICT_TOTAL, SHOWN_CRIME / SHOWN_TRAFFIC (no
-  // estimates), news without duplicates, active leaders / industries / people.
+  // estimates), news without duplicates, active leaders / industries / people,
+  // OFFICIAL_ALERTS (SACHET rows only), NOT_SEEDED_RAINFALL.
   const rows = await prisma.$queryRaw<Row[]>`
     SELECT
       d."tendersActive" AS tenders_active,
       (SELECT max(x."publishedAt") FROM "NewsItem" x WHERE x."districtId" = d.id AND x."duplicateOf" IS NULL) AS news_date,
       (SELECT max(x."fetchedAt") FROM "NewsItem" x WHERE x."districtId" = d.id) AS news_checked,
       (SELECT count(*) FROM "NewsItem" x WHERE x."districtId" = d.id AND x."duplicateOf" IS NULL)::int AS news_rows,
-      (SELECT max(x."updatedAt") FROM "LocalAlert" x WHERE x."districtId" = d.id) AS alerts_date,
-      (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id)::int AS alerts_rows,
-      (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x.active)::int AS alerts_active,
+      (SELECT max(x."updatedAt") FROM "LocalAlert" x WHERE x."districtId" = d.id AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE}) AS alerts_date,
+      (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE})::int AS alerts_rows,
+      (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x.active AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE})::int AS alerts_active,
       (SELECT max(x."recordedAt") FROM "WeatherReading" x WHERE x."districtId" = d.id) AS weather_date,
       (SELECT count(*) FROM "WeatherReading" x WHERE x."districtId" = d.id)::int AS weather_rows,
-      (SELECT max(x.year) FROM "RainfallHistory" x WHERE x."districtId" = d.id) AS rain_year,
-      (SELECT count(*) FROM "RainfallHistory" x WHERE x."districtId" = d.id)::int AS rain_rows,
+      (SELECT max(x.year) FROM "RainfallHistory" x WHERE x."districtId" = d.id
+        AND NOT (x.source = ANY(${SEEDED_RAINFALL_SOURCES}) AND x.year <= ${SEEDED_RAINFALL_LAST_YEAR})) AS rain_year,
+      (SELECT count(*) FROM "RainfallHistory" x WHERE x."districtId" = d.id
+        AND NOT (x.source = ANY(${SEEDED_RAINFALL_SOURCES}) AND x.year <= ${SEEDED_RAINFALL_LAST_YEAR}))::int AS rain_rows,
       (SELECT count(*) FROM "RtiTemplate" x WHERE x."districtId" = d.id OR x."districtId" IS NULL)::int AS rtitpl_rows,
       (SELECT max(x.year) FROM "RtiStat" x WHERE x."districtId" = d.id) AS rti_year,
       (SELECT count(*) FROM "RtiStat" x WHERE x."districtId" = d.id)::int AS rti_rows,
@@ -261,6 +268,15 @@ interface Extra {
   nrega: { date: Date; checked: Date } | null;
   /** UDISE+ snapshot: when we read it. */
   udiseAt: Date | null;
+  /** When the NDMA SACHET alerts cron last finished without an error (Redis run record). */
+  alertsCheckedAt: Date | null;
+}
+
+/** The later of two dates (either may be missing). */
+function newer(a: Date | null | undefined, b: Date | null | undefined): Date | null {
+  if (!a) return b ?? null;
+  if (!b) return a;
+  return new Date(a).getTime() >= new Date(b).getTime() ? a : b;
 }
 
 /** SQL row → the raw facts per dataset key (DATASETS in src/lib/freshness.ts). */
@@ -268,7 +284,15 @@ function rawFacts(r: Row, x: Extra): Record<string, Raw> {
   const year = (y: number | null): Raw["date"] => yearEndDate(y);
   return {
     news: { rows: r.news_rows, date: r.news_date, checked: r.news_checked },
-    alerts: { rows: r.alerts_rows, date: r.alerts_date, checked: r.alerts_date },
+    // Alerts: "no warning" is an answer too, so the dataset is as fresh as
+    // the last good read of the SACHET feed, not the newest alert row
+    // (Sept 2026 audit: "No active warnings right now" under a feed last
+    // read 35 days earlier). A good read with no alert counts as data.
+    alerts: {
+      rows: r.alerts_rows > 0 ? r.alerts_rows : x.alertsCheckedAt ? 1 : 0,
+      date: newer(x.alertsCheckedAt, r.alerts_date),
+      checked: newer(x.alertsCheckedAt, r.alerts_date),
+    },
     weather: { rows: r.weather_rows, date: r.weather_date, checked: r.weather_date },
     rainfall: { rows: r.rain_rows, date: year(r.rain_year), period: r.rain_year ? String(r.rain_year) : null, periodKind: "year" },
     rtiTemplates: { rows: r.rtitpl_rows },
@@ -386,12 +410,14 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const [courtsSnapshot, udise, nrega, gp] = await Promise.all([
+  const [courtsSnapshot, udise, nrega, gp, alertsRun] = await Promise.all([
     readCourtsSnapshot(districtSlug),
     readDistrictSnapshot("udise", districtSlug),
     readDistrictSnapshot("mgnrega", districtSlug),
     prisma.gramPanchayat.aggregate({ where: { districtId: district.id, ...VERIFIED_PANCHAYAT }, _count: { _all: true }, _max: { updatedAt: true } }),
+    getCronRun("scrape-alerts"),
   ]);
+  const alertsCheckedAt = alertsRun?.lastSuccessAt ? new Date(alertsRun.lastSuccessAt) : null;
   const courtsDate = courtsReadAt(courtsSnapshot?.fetchedAt ?? null, row.courts_source);
   // A snapshot without CourtStat rows (the row write failed) still counts.
   if (courtsSnapshot && row.courts_rows === 0) row.courts_rows = courtsSnapshot.units.length;
@@ -402,6 +428,7 @@ export async function GET(req: NextRequest) {
       ? { date: new Date(nrega.asOf ? `${nrega.asOf}T12:00:00+05:30` : nrega.fetchedAt), checked: new Date(nrega.fetchedAt) }
       : null,
     udiseAt: udise ? new Date(udise.fetchedAt) : null,
+    alertsCheckedAt: alertsCheckedAt && !Number.isNaN(alertsCheckedAt.getTime()) ? alertsCheckedAt : null,
   });
 
   const ageMin = (date: Date | null | undefined): number | null =>

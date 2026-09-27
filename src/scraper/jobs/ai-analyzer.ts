@@ -22,7 +22,7 @@
 // Model routing: purpose "news-analysis" = free Tier 1 (src/lib/ai-models.ts).
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
-import { NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERTS, SHOWN_CROP_PRICE } from "@/lib/data-filters";
 import { AIDeadlineError, callAIJSON } from "@/lib/ai-provider";
 import {
   NEWS_INTEL_MODULES,
@@ -73,7 +73,7 @@ async function fetchContextLines(districtId: string): Promise<string[]> {
       take: 5,
     }),
     prisma.cropPrice.findMany({
-      where: { districtId },
+      where: { districtId, ...SHOWN_CROP_PRICE },
       orderBy: { date: "desc" },
       take: 3,
       select: { commodity: true, modalPrice: true },
@@ -84,7 +84,7 @@ async function fetchContextLines(districtId: string): Promise<string[]> {
       select: { temperature: true, conditions: true },
     }),
     prisma.localAlert.findMany({
-      where: { districtId, active: true },
+      where: { districtId, active: true, ...OFFICIAL_ALERTS },
       take: 3,
       select: { title: true },
     }),
