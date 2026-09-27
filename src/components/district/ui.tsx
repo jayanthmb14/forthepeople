@@ -309,6 +309,10 @@ export function FreshnessPill({
  * SourcePill — mono 11 px bordered link to the data source. Sits beside a
  * headline number so a reader can always check where a figure came from.
  *
+ * Long names never overflow: the pill is capped at the width of whatever
+ * holds it and the label is cut with "…". The full name is always in the
+ * hover tooltip (`title`), so nothing is lost on a 375 px phone.
+ *
  * @prop label  Short source name, e.g. "AGMARKNET".
  * @prop href   Link to the source. Omit to render a non-link pill.
  */
@@ -318,6 +322,9 @@ export function SourcePill({ label, href }: { label: string; href?: string }) {
     alignItems: "center",
     gap: 4,
     height: 24,
+    // Never wider than the parent; the label inside shrinks and truncates.
+    maxWidth: "100%",
+    minWidth: 0,
     padding: "0 8px",
     borderRadius: "var(--ftp-radius-pill)",
     border: "1px solid var(--ftp-border)",
@@ -329,24 +336,80 @@ export function SourcePill({ label, href }: { label: string; href?: string }) {
     whiteSpace: "nowrap",
     ...MONO,
   };
-  if (!href) return <span style={base}>{label}</span>;
+  // The text itself: one line, cut with an ellipsis when there is no room.
+  const text = (
+    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+  );
+  if (!href) {
+    return (
+      <span style={base} title={label}>
+        {text}
+      </span>
+    );
+  }
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" style={base} title={`Source: ${label}`}>
-      {label}
-      <ExternalLink size={11} aria-hidden />
+      {text}
+      <ExternalLink size={11} aria-hidden style={{ flexShrink: 0 }} />
     </a>
   );
 }
 
-/** Small "As of 12 Sep" text line (11 px, text-2) with the exact IST tooltip. */
-export function AsOfText({ asOf, prefix = "As of" }: { asOf?: string | Date | null; prefix?: string }) {
+/**
+ * AsOfText — small "As of 12 Sep" line (11 px, text-2) with the exact IST
+ * time in the hover tooltip.
+ *
+ * Some figures are not tied to a day but to a period — a census, a
+ * financial year, a survey round. For those pass `period` instead:
+ *
+ *   <AsOfText period="Census 2011" />               → "As of Census 2011"
+ *   <AsOfText period="FY 2024-25" prefix="Data:" /> → "Data: FY 2024-25"
+ *
+ * When both `period` and `asOf` are given, the period is shown and the
+ * date moves into the tooltip ("Fetched: 12 Sep 2026, 14:05 IST").
+ * Renders nothing when neither is available.
+ *
+ * @prop asOf    ISO timestamp (or Date) the value was true.
+ * @prop period  Free-text period label, e.g. "Census 2011" or "FY 2024-25".
+ * @prop prefix  Word(s) before the date/period (default "As of").
+ */
+export function AsOfText({
+  asOf,
+  period,
+  prefix = "As of",
+}: {
+  asOf?: string | Date | null;
+  period?: string | null;
+  prefix?: string;
+}) {
   const d = toDate(asOf);
+  const style: React.CSSProperties = { fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" };
+  const label = period?.trim();
+  if (label) {
+    return (
+      <span title={d ? `Fetched: ${formatIST(d)}` : undefined} style={style}>
+        {prefix ? `${prefix} ` : ""}
+        {label}
+      </span>
+    );
+  }
   if (!d) return null;
   return (
-    <span title={`Exact: ${formatIST(d)}`} style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+    <span title={`Exact: ${formatIST(d)}`} style={style}>
       <span suppressHydrationWarning>{prefix} {shortDate(d)}</span>
     </span>
   );
+}
+
+/**
+ * AsOfPeriod — shorthand for `<AsOfText period=… />` when a figure belongs
+ * to a period rather than a date. Example: `<AsOfPeriod period="Census 2011" />`.
+ *
+ * @prop period  Free-text period label (required).
+ * @prop prefix  Default "As of". Pass "" to show the period on its own.
+ */
+export function AsOfPeriod({ period, prefix = "As of" }: { period: string; prefix?: string }) {
+  return <AsOfText period={period} prefix={prefix} />;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -365,7 +428,10 @@ export function AsOfText({ asOf, prefix = "As of" }: { asOf?: string | Date | nu
  * @prop description One short line of context.
  * @prop backHref    Where the back link goes (usually the district overview).
  * @prop backLabel   Text of the back link (default "Back to overview").
- * @prop freshness   { asOf, status? } — feeds a FreshnessPill.
+ * @prop freshness   { asOf, status?, thresholdHours? } — feeds a FreshnessPill.
+ *                   thresholdHours = how many hours still count as "fresh"
+ *                   (green) for this module; default 24. A weekly feed
+ *                   might pass 168 so it is not amber on day two.
  * @prop source      { label, href? } — feeds a SourcePill.
  * @prop actions     Buttons on the right (CSV, Share, Compare) — see Toolbar.
  * @prop accent      Module accent for the icon tint (see ModuleAccent).
@@ -389,7 +455,7 @@ export function PageHeader({
   description?: string;
   backHref?: string;
   backLabel?: string;
-  freshness?: { asOf?: string | Date | null; status?: FreshnessStatus };
+  freshness?: { asOf?: string | Date | null; status?: FreshnessStatus; thresholdHours?: number };
   source?: { label: string; href?: string };
   actions?: React.ReactNode;
   accent?: ModuleAccent;
@@ -449,7 +515,9 @@ export function PageHeader({
         </div>
         {(freshness || source || actions || children) && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {freshness && <FreshnessPill asOf={freshness.asOf} status={freshness.status} />}
+            {freshness && (
+              <FreshnessPill asOf={freshness.asOf} status={freshness.status} thresholdHours={freshness.thresholdHours} />
+            )}
             {source && <SourcePill label={source.label} href={source.href} />}
             {actions}
             {children}
@@ -477,6 +545,8 @@ export function PageHeader({
  * @prop unit    Small unit after the value ("%", "mm", "₹ Cr").
  * @prop sub     One line under the number.
  * @prop asOf    Timestamp the value was true. Shown as "As of …".
+ * @prop asOfPeriod  Free-text period instead of a date, e.g. "Census 2011"
+ *                   or "FY 2024-25". Shown as "As of Census 2011".
  * @prop trend   up | down | neutral — rendered as an arrow glyph, never a coloured fill.
  * @prop icon    Optional Lucide icon beside the label.
  * @prop source  { label, href? } — a SourcePill under the number.
@@ -487,6 +557,7 @@ export function StatTile({
   unit,
   sub,
   asOf,
+  asOfPeriod,
   trend,
   icon: Icon,
   source,
@@ -496,6 +567,7 @@ export function StatTile({
   unit?: string;
   sub?: string;
   asOf?: string | Date | null;
+  asOfPeriod?: string;
   trend?: "up" | "down" | "neutral";
   icon?: LucideIcon;
   source?: { label: string; href?: string };
@@ -527,9 +599,9 @@ export function StatTile({
           {sub && <span>{sub}</span>}
         </div>
       )}
-      {(asOf || source) && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          {asOf && <AsOfText asOf={asOf} />}
+      {(asOf || asOfPeriod || source) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap", minWidth: 0 }}>
+          {(asOf || asOfPeriod) && <AsOfText asOf={asOf} period={asOfPeriod} />}
           {source && <SourcePill label={source.label} href={source.href} />}
         </div>
       )}
@@ -541,10 +613,15 @@ export function StatTile({
  * StatStrip — a row of 2, 3 or 4 StatTiles on the 12-column grid.
  * Collapses to 2 × 2 on phones (CSS class `.ftp-stat-strip`).
  *
- * @prop cols  2 | 3 | 4. Defaults to the number of children, capped at 4.
+ * @prop cols  2 | 3 | 4. Defaults to the number of VISIBLE children, capped
+ *             at 4. Conditional tiles written as `{x && <StatTile … />}` that
+ *             render nothing (null / false / undefined) are not counted, so
+ *             three real tiles give three columns, not four with a gap.
  */
 export function StatStrip({ children, cols }: { children: React.ReactNode; cols?: 2 | 3 | 4 }) {
-  const n = cols ?? (Math.min(4, Math.max(2, React.Children.count(children))) as 2 | 3 | 4);
+  // Children.toArray already drops null, undefined and true/false; we also skip "".
+  const visible = React.Children.toArray(children).filter((child) => child !== "").length;
+  const n = cols ?? (Math.min(4, Math.max(2, visible)) as 2 | 3 | 4);
   const style = { "--ftp-strip-cols": n } as React.CSSProperties;
   return (
     <div className="ftp-stat-strip" style={style}>
@@ -1061,7 +1138,14 @@ export function Chips({
  * ToolbarButton — the secondary (quiet) button: 32 px, bordered, surface
  * background, 13 px text, optional 14 px Lucide icon. Renders a <Link> when
  * `href` is given, a real <button> otherwise.
+ *
+ * On phones (< 768 px) it grows to 44 px tall for a comfortable touch
+ * target. That comes from the `.ftp-btn` class in globals.css (a media
+ * query), because inline styles cannot contain media queries.
  */
+/** Classes on every quiet button: `.ftp-btn` = 44 px tall on phones, `.ftp-btn-secondary` = hover. */
+const BTN_SECONDARY_CLASS = "ftp-btn ftp-btn-secondary";
+
 export function ToolbarButton({
   icon: Icon,
   children,
@@ -1109,19 +1193,107 @@ export function ToolbarButton({
   if (href && !disabled) {
     if (external || download) {
       return (
-        <a href={href} download={download} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="ftp-btn-secondary" style={style} aria-label={ariaLabel}>
+        <a href={href} download={download} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className={BTN_SECONDARY_CLASS} style={style} aria-label={ariaLabel}>
           {inner}
         </a>
       );
     }
     return (
-      <Link href={href} className="ftp-btn-secondary" style={style} aria-label={ariaLabel}>
+      <Link href={href} className={BTN_SECONDARY_CLASS} style={style} aria-label={ariaLabel}>
         {inner}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="ftp-btn-secondary" style={style} aria-label={ariaLabel}>
+    <button type="button" onClick={onClick} disabled={disabled} className={BTN_SECONDARY_CLASS} style={style} aria-label={ariaLabel}>
+      {inner}
+    </button>
+  );
+}
+
+/**
+ * PrimaryButton — the ONE loud button on a screen ("Open my district",
+ * "Support this project"). Filled brand blue with `--ftp-surface` text,
+ * radius 8, 40 px tall on desktop and 44 px on phones (`.ftp-btn`).
+ * Hover darkens to `--ftp-brand-deep` (150 ms, `.ftp-btn-primary`).
+ *
+ * Renders a Next.js <Link> when `href` is given, a real <button> otherwise.
+ * Use ToolbarButton for everything secondary; keep one PrimaryButton per view.
+ *
+ * @prop icon       Optional Lucide icon, 16 px, before the label.
+ * @prop href       Internal path (uses <Link>) or, with `external`, any URL.
+ * @prop external   Open `href` in a new tab (plain <a>, rel="noopener noreferrer").
+ * @prop onClick    Click handler when it is a <button>.
+ * @prop type       Button type inside a form: "button" (default) | "submit".
+ * @prop disabled   Greys it out; a disabled link renders as a disabled button.
+ * @prop ariaLabel  Accessible name when the visible text is not enough.
+ * @prop fullWidth  Stretch to the width of the parent (handy on phones).
+ */
+export function PrimaryButton({
+  icon: Icon,
+  children,
+  href,
+  external,
+  onClick,
+  type = "button",
+  disabled,
+  ariaLabel,
+  fullWidth,
+}: {
+  icon?: LucideIcon;
+  children: React.ReactNode;
+  href?: string;
+  external?: boolean;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  disabled?: boolean;
+  ariaLabel?: string;
+  fullWidth?: boolean;
+}) {
+  const style: React.CSSProperties = {
+    display: fullWidth ? "flex" : "inline-flex",
+    width: fullWidth ? "100%" : undefined,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 40,
+    padding: "0 16px",
+    borderRadius: "var(--ftp-radius-tile)",
+    border: "1px solid var(--ftp-brand)",
+    background: "var(--ftp-brand)",
+    color: "var(--ftp-surface)",
+    fontFamily: "var(--ftp-font-sans)",
+    fontSize: 14,
+    lineHeight: "20px",
+    fontWeight: 500,
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : 1,
+  };
+  const className = "ftp-btn ftp-btn-primary";
+  const inner = (
+    <>
+      {Icon && <Icon size={16} aria-hidden />}
+      {children}
+    </>
+  );
+  if (href && !disabled) {
+    if (external) {
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer" className={className} style={style} aria-label={ariaLabel}>
+          {inner}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className={className} style={style} aria-label={ariaLabel}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} className={className} style={style} aria-label={ariaLabel}>
       {inner}
     </button>
   );
@@ -1432,7 +1604,7 @@ export function ModuleHeader({
   backHref: string;
   liveTag?: boolean;
   children?: React.ReactNode;
-  freshness?: { asOf?: string | Date | null; status?: FreshnessStatus };
+  freshness?: { asOf?: string | Date | null; status?: FreshnessStatus; thresholdHours?: number };
   source?: { label: string; href?: string };
   titleLocal?: string;
   accent?: ModuleAccent;

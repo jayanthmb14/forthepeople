@@ -545,9 +545,21 @@
 .ftp-rail-item { transition: background-color 150ms ease, color 150ms ease; }
 .ftp-rail-item:hover:not([data-active="true"]) { background: var(--ftp-surface-2); color: var(--ftp-text); }
 
+/* Every kit button (ToolbarButton, PrimaryButton) carries `.ftp-btn`.
+   Desktop height is set inline (32 px quiet, 40 px primary); on phones
+   min-height lifts both to the 44 px touch target. min-height wins over
+   an inline `height`, so no !important is needed anywhere. */
+@media (max-width: 767px) {
+  .ftp-btn { min-height: 44px; }
+}
+
 /* Secondary (quiet) button used by Toolbar. */
 .ftp-btn-secondary { transition: border-color 150ms ease, background-color 150ms ease; }
 .ftp-btn-secondary:hover { border-color: var(--ftp-border-strong); background: var(--ftp-surface-2); }
+
+/* Primary (filled brand) button — PrimaryButton in the kit. */
+.ftp-btn-primary { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-btn-primary:hover:not(:disabled) { border-color: var(--ftp-brand-deep); background: var(--ftp-brand-deep); }
 
 /* Live dot: the ONE permitted animation — 2 s opacity pulse, only when
    data is under 30 minutes old. Reduced motion turns it off. */
@@ -563,7 +575,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ftp-live-dot, .ftp-skeleton { animation: none; }
-  .ftp-card-link, .ftp-rail-item, .ftp-btn-secondary { transition: none; }
+  .ftp-card-link, .ftp-rail-item, .ftp-btn-secondary, .ftp-btn-primary { transition: none; }
 }
 
 /* Consumer anchors so the bundler never drops a v3 token (same reason as
