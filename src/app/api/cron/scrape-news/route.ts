@@ -9,6 +9,11 @@
 // Also: auto-expires stale alerts (>14 days) + deduplicates news
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-news"
+//
+// Time budget (v5): no district starts after 240 s and no AI classification
+// starts after it either, so the run always records its result before
+// Vercel's 300 s kill. Districts whose news was fetched longest ago go
+// first, so a cut-short run never starves the same districts twice.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
@@ -28,6 +33,8 @@ export const maxDuration = 300;
 const CRON_NAME = "scrape-news";
 
 const STALE_ALERT_DAYS = 14;
+/** No new district, and no AI classification, starts after this. */
+const BUDGET_MS = 240_000;
 
 export async function GET(request: Request) {
   // Verify cron secret to prevent unauthorized invocations
@@ -44,15 +51,35 @@ export async function GET(request: Request) {
 
   const results: Array<{ district: string; success: boolean; newCount: number; dedupRemoved: number; alertsExpired: number; error?: string }> = [];
   let totalAlertsExpired = 0;
+  const deadlineAt = runStart + BUDGET_MS;
 
-  const activeDistrictRows = await prisma.district.findMany({
+  const districtRows = await prisma.district.findMany({
     where: { active: true },
     select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
     orderBy: { name: "asc" },
   });
 
+  // Least-recently-fetched district first (never-fetched first of all).
+  const lastFetch = new Map<string, number>();
+  try {
+    const rows = await prisma.newsItem.groupBy({
+      by: ["districtId"],
+      where: { districtId: { in: districtRows.map((d) => d.id) } },
+      _max: { fetchedAt: true },
+    });
+    for (const r of rows) if (r.districtId && r._max.fetchedAt) lastFetch.set(r.districtId, r._max.fetchedAt.getTime());
+  } catch { /* fall back to alphabetical */ }
+  const activeDistrictRows = [...districtRows].sort(
+    (a, b) => (lastFetch.get(a.id) ?? -Infinity) - (lastFetch.get(b.id) ?? -Infinity),
+  );
+  const notReached: string[] = [];
+
   for (const row of activeDistrictRows) {
     const slug = row.slug;
+    if (Date.now() >= deadlineAt) {
+      notReached.push(slug);
+      continue;
+    }
     const stateSlug = (row as { state?: { slug: string } }).state?.slug ?? "karnataka";
     const stateName = (row as { state?: { name: string } }).state?.name ?? "Karnataka";
     const districtId = row.id;
@@ -70,7 +97,7 @@ export async function GET(request: Request) {
     // ── 1. Scrape news ──
     let result: { success: boolean; recordsNew: number; error?: string };
     try {
-      result = await scrapeNews(ctx);
+      result = await scrapeNews(ctx, { deadlineAt });
     } catch (scrapeErr) {
       Sentry.captureException(scrapeErr);
       const errMsg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
@@ -146,10 +173,17 @@ export async function GET(request: Request) {
   // error run (one flaky feed is not — the others still delivered).
   const failedDistricts = results.filter((r) => !r.success);
   const allFailed = results.length > 0 && failedDistricts.length === results.length;
+  if (notReached.length > 0) {
+    console.warn(`[scrape-news] time budget used; not reached this run: ${notReached.join(", ")}`);
+  }
   await cronFinished(CRON_NAME, runStart, {
     status: allFailed ? "error" : "ok",
     count: totalNew,
-    error: allFailed ? `all ${results.length} districts failed: ${failedDistricts[0]?.error ?? "unknown"}` : undefined,
+    error: allFailed
+      ? `all ${results.length} districts failed: ${failedDistricts[0]?.error ?? "unknown"}`
+      : notReached.length > 0
+        ? `time budget used; ${notReached.length} district(s) left for the next run: ${notReached.join(", ")}`
+        : undefined,
   });
 
   // Translate the new articles once, now, into every switched-on language
@@ -164,5 +198,5 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json({ ok: true, totalNew, totalDedup, totalAlertsExpired, results, translation });
+  return NextResponse.json({ ok: true, totalNew, totalDedup, totalAlertsExpired, notReached, results, translation });
 }

@@ -13,7 +13,7 @@
 
 import type { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
-import { callAI } from "./ai-provider";
+import { callAIJSON } from "./ai-provider";
 import redis from "./redis";
 
 export const INFRA_ANALYSIS_TTL_S = 24 * 60 * 60;
@@ -93,19 +93,18 @@ export async function generateInfraAnalysis(projectId: string): Promise<InfraAna
   });
 
   try {
-    const response = await callAI({
+    const { data: parsed } = await callAIJSON<Partial<InfraAnalysis>>({
       systemPrompt: SYSTEM_PROMPT,
       userPrompt: buildPrompt(
         project as unknown as Record<string, unknown>,
         updates as unknown as Array<Record<string, unknown>>
       ),
-      purpose: "insight", // Gemini 2.5 Pro
-      jsonMode: true,
+      purpose: "insight", // Tier 2 (low-cost flash-lite), see src/lib/ai-models.ts
+      jsonShape: "object",
       maxTokens: 700,
       temperature: 0.3,
+      timeoutMs: 45_000,
     });
-    const cleaned = response.text.trim().replace(/```(?:json)?/g, "").trim();
-    const parsed = JSON.parse(cleaned) as Partial<InfraAnalysis>;
     const analysis: InfraAnalysis = {
       citizenImpact: Array.isArray(parsed.citizenImpact)
         ? parsed.citizenImpact.filter((s): s is string => typeof s === "string").slice(0, 6)

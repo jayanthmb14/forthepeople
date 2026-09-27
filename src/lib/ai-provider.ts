@@ -1,150 +1,117 @@
 /**
  * ForThePeople.in — Unified AI Provider (OpenRouter)
  * Routes to different models based on task purpose.
- * All AI calls in the codebase go through callAI().
+ * All AI calls in the codebase go through callAI() / callAIJSON().
  *
- * Sept 2026 rewrite (audit items 3.6 and 9.3). What changed and why:
- *   1. MODEL IDS — every ":free" model we used was removed from OpenRouter
- *      on 22 Aug 2026, so every AI call 404'd for five weeks. The ids below
- *      were verified live against GET https://openrouter.ai/api/v1/models
- *      on 2026-09-27. See docs/RUNBOOKS/ai-models.md for how to rotate them.
- *   2. MODEL DISCOVERY — we fetch the live model list at most once per 6 h
- *      (cached in Redis "ftp:ai:models") and skip any chain model that is
- *      not on it. If the fetch fails we fall back to the static list.
- *   3. CIRCUIT BREAKER — a model that answers 404/400 "not found" is marked
- *      dead for 24 h ("ftp:ai:cb:<model>"); a 429 marks it busy for 10 min.
- *      We never hammer a dead model 6× per call again.
- *   4. ATTEMPT CAP — at most 3 models are tried per call.
- *   5. ONE LOG ROW PER CALL — AIUsageLog gets exactly one row per callAI()
- *      (the attempted models are listed in errorMsg), instead of one row
- *      per failed fallback (that was ~60k junk rows since August).
- *   6. REAL COST — costUSD / costINR are computed from PRICE_TABLE
- *      (USD per 1M tokens, 84 INR/USD) instead of the hard-coded 0.
- *   7. DEGRADED FLAG — when every model fails we set "ftp:ai:degraded"
- *      (24 h TTL, read by /api/health) and email the admin at most once a day.
+ * WHAT LIVES WHERE
+ *   src/lib/ai-models.ts  — the model list, chain rules, expiry dates, prices (pure)
+ *   src/lib/ai-json.ts    — robust JSON extraction from model answers (pure)
+ *   this file             — the HTTP call, discovery, circuit breaker, logging
+ *
+ * HISTORY (why it looks like this)
+ *   Aug 2026: every ":free" model we used was retired; every call 404'd for
+ *   five weeks and nobody noticed. Sept 2026 rewrite added: live model
+ *   discovery, a circuit breaker, one log row per call, real costs, and a
+ *   degraded flag for /api/health. The v5 pass (Sept 27) fixed what was
+ *   still wrong:
+ *   1. CHAIN — new ids (see ai-models.ts). The paid backstop now keeps the
+ *      LAST slot; before, the chain was cut to 3 before it was ever reached.
+ *   2. JSON MODE — callers that want an object get response_format
+ *      json_object; the answer is parsed INSIDE the fallback loop, so a model
+ *      that answers with prose, reasoning or broken JSON counts as a failure
+ *      and the next model is tried. Empty / reasoning-only answers too.
+ *   3. REASONING MODELS — asked for low effort with the reasoning hidden,
+ *      plus max_tokens headroom, so the thinking cannot eat the answer.
+ *   4. TIME — per-call timeoutMs and an absolute deadlineAt, so a cron can
+ *      stop calling models when its own time budget runs out.
+ *   5. 402 (out of credit) — breaker for that model + one admin email a day.
+ *   6. EXPIRY GUARD — discovery records OpenRouter's expiration_date for our
+ *      chain models; /api/health reports degraded 30 days before one expires.
  */
 
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { sendAdminAlert } from "@/lib/admin-alerts";
+import {
+  ALL_CHAIN_MODELS,
+  EXPIRY_WARNING_DAYS,
+  KNOWN_MODEL_EXPIRY,
+  REASONING_MODELS,
+  REASONING_TOKEN_HEADROOM,
+  TIER1_FREE_MODELS,
+  estimateCost as estimateCostPure,
+  findExpiringModels,
+  getModelForPurpose as getModelForPurposePure,
+  planChain,
+  selectChain,
+  type ExpiringModel,
+  type TokenUsage,
+} from "@/lib/ai-models";
+import { extractJSON, type JSONShape } from "@/lib/ai-json";
 
 // ── Types ───────────────────────────────────────────────────
 export interface AIRequest {
   systemPrompt: string;
   userPrompt: string;
   purpose?: string;
+  /** Pin a specific model id (tried first). Normally leave unset. */
   model?: string;
+  /** Answer must be JSON. The answer is parsed before a model counts as successful. */
   jsonMode?: boolean;
+  /**
+   * The JSON shape the caller wants. "object" also sends OpenRouter's
+   * response_format json_object (models then MUST answer with an object).
+   * "array" / "any" only instruct via the prompt. Default "any".
+   */
+  jsonShape?: JSONShape;
   maxTokens?: number;
   temperature?: number;
   district?: string;
+  /** Per-model-attempt timeout in ms (default 60 s). Crons should pass ~25–45 s. */
+  timeoutMs?: number;
+  /** Absolute epoch-ms deadline: no model attempt starts after it. */
+  deadlineAt?: number;
 }
 
 export interface AIResponse {
   text: string;
   provider: string;
+  /** The model that actually answered (as reported by OpenRouter). */
   model: string;
   usedFallback: boolean;
+  /** Parsed JSON when jsonMode was set. */
+  json?: unknown;
 }
 
-interface TokenUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
+// ── Re-exports kept for existing importers ─────────────────
+export const getModelForPurpose = getModelForPurposePure;
+export const estimateCost = estimateCostPure;
+/** @deprecated kept for old importers; the free chain lives in ai-models.ts */
+export const FREE_FALLBACK_MODELS: readonly string[] = TIER1_FREE_MODELS.slice(1);
+
+function paidFallbackEnabled(): boolean {
+  return process.env.AI_PAID_FALLBACK === "1";
 }
 
-// ── Tiered model routing ────────────────────────────────────
-// TIER 1 (free, ₹0): classification, summaries, formatting, news analysis.
-//   These are "pick a category / extract a few fields" tasks; a free model
-//   handles them fine and the fallback chain catches rate-limit misses.
-// TIER 2 (cheap): citizen-facing insights and documents.
-//   gemini-2.5-flash-lite is $0.10/$0.40 per 1M tokens — 15× cheaper on
-//   output than gemini-2.5-pro, which burned $4.56 in two days in April.
-// TIER 2+ : very large documents only.
-// TIER 3 (premium): fact-checks, where accuracy matters most.
-export function getModelForPurpose(purpose: string): string {
-  switch (purpose) {
-    case "classify":
-    case "summarize":
-    case "format":
-    case "news-analysis":
-      return "google/gemma-4-31b-it:free";
-
-    case "insight":
-    case "document":
-      return "google/gemini-2.5-flash-lite";
-
-    case "document-large":
-      return "google/gemini-2.5-pro";
-
-    case "fact-check":
-      return "anthropic/claude-sonnet-4";
-
-    default:
-      return "google/gemma-4-31b-it:free";
-  }
-}
-
-// Fallback chain: if the primary model fails (rate limit, removed, 5xx),
-// try these in order. All free. Verified live 2026-09-27.
-export const FREE_FALLBACK_MODELS = [
-  "google/gemma-4-26b-a4b-it:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "qwen/qwen3.8-27b:free",
-  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  "nvidia/nemotron-3-ultra-550b-a55b:free",
-];
-
-// Paid backstop: ONLY used when the owner opts in with AI_PAID_FALLBACK=1
-// in Vercel env. gpt-oss-20b is $0.018/$0.09 per 1M tokens — worst case
-// about $1/month (~₹85) if every Tier-1 call lands here.
-function getPaidBackstop(): string[] {
-  return process.env.AI_PAID_FALLBACK === "1" ? ["openai/gpt-oss-20b"] : [];
-}
-
-// Never try more than this many models for a single callAI().
-const MAX_ATTEMPTS_PER_CALL = 3;
-
-// ── Price table (USD per 1 MILLION tokens: [input, output]) ─
-// Source: OpenRouter /api/v1/models pricing on 2026-09-27. Unknown models
-// are logged at $0 so a missing entry never blocks a call — add new ids
-// here when you rotate models (see docs/RUNBOOKS/ai-models.md).
-const PRICE_TABLE: Record<string, [number, number]> = {
-  "google/gemma-4-31b-it:free": [0, 0],
-  "google/gemma-4-26b-a4b-it:free": [0, 0],
-  "nvidia/nemotron-3-super-120b-a12b:free": [0, 0],
-  "qwen/qwen3.8-27b:free": [0, 0],
-  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": [0, 0],
-  "nvidia/nemotron-3-ultra-550b-a55b:free": [0, 0],
-  "google/gemini-2.5-flash-lite": [0.1, 0.4],
-  "google/gemini-2.5-flash": [0.3, 2.5],
-  "google/gemini-2.5-pro": [1.25, 10],
-  "anthropic/claude-sonnet-4": [3, 15],
-  "openai/gpt-oss-20b": [0.018, 0.09],
-  // Anthropic direct (FTP_AI_PROVIDER=anthropic path, scripts only)
-  "claude-haiku-4-5-20251001": [1, 5],
-};
-
-const INR_PER_USD = 84;
-
-/** Compute the cost of one call. Returns {usd, inr}; 0 for unknown models. */
-export function estimateCost(model: string, usage: TokenUsage | undefined): { usd: number; inr: number } {
-  if (!usage) return { usd: 0, inr: 0 };
-  const [inPrice, outPrice] = PRICE_TABLE[model] ?? [0, 0];
-  const usd = (usage.prompt_tokens / 1_000_000) * inPrice + (usage.completion_tokens / 1_000_000) * outPrice;
-  return { usd, inr: usd * INR_PER_USD };
-}
+const DEFAULT_TIMEOUT_MS = 60_000;
+/** Do not start a model attempt with less time than this before deadlineAt. */
+const MIN_ATTEMPT_MS = 5_000;
 
 // ── Redis keys ──────────────────────────────────────────────
 const KEY_LIVE_MODELS = "ftp:ai:models"; // cached id list from OpenRouter
+const KEY_MODEL_EXPIRY = "ftp:ai:model-expiry"; // {model: "YYYY-MM-DD"} for chain models
 const KEY_DEGRADED = "ftp:ai:degraded"; // set on total failure, read by /api/health
-const KEY_ALERTED = "ftp:ai:alerted"; // rate-limits the admin email to 1/day
+const KEY_ALERTED = "ftp:ai:alerted"; // rate-limits the degraded email to 1/day
+const KEY_ALERTED_402 = "ftp:ai:alerted:402"; // rate-limits the out-of-credit email
+const KEY_ALERTED_EXPIRY = "ftp:ai:alerted:expiry"; // rate-limits the expiry email
 const cbKey = (model: string) => `ftp:ai:cb:${model}`; // circuit breaker per model
 
 const LIVE_MODELS_TTL_S = 6 * 60 * 60; // 6 hours
+const MODEL_EXPIRY_TTL_S = 3 * 24 * 60 * 60; // 3 days (refreshed on every discovery)
 const DEGRADED_TTL_S = 24 * 60 * 60; // 24 hours
 const CB_NOT_FOUND_TTL_S = 24 * 60 * 60; // model removed/unavailable -> 24 h
 const CB_RATE_LIMIT_TTL_S = 10 * 60; // 429 -> 10 min
+const CB_NO_CREDIT_TTL_S = 60 * 60; // 402 -> 1 h
 
 // ── Model discovery ─────────────────────────────────────────
 // In-memory copy so a warm lambda does not hit Redis on every call.
@@ -182,14 +149,25 @@ async function getLiveModelIds(): Promise<Set<string> | null> {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = (await res.json()) as { data?: Array<{ id?: string }> };
-    const ids = (json.data ?? []).map((m) => m.id).filter((id): id is string => typeof id === "string");
+    const json = (await res.json()) as { data?: Array<{ id?: string; expiration_date?: string | null }> };
+    const rows = json.data ?? [];
+    const ids = rows.map((m) => m.id).filter((id): id is string => typeof id === "string");
     if (ids.length === 0) throw new Error("empty model list");
 
     liveModelsMem = { ids: new Set(ids), fetchedAt: Date.now() };
     if (redis) {
       redis.set(KEY_LIVE_MODELS, ids, { ex: LIVE_MODELS_TTL_S }).catch(() => {});
     }
+
+    // Expiry guard: remember OpenRouter's retirement dates for OUR models.
+    const expiry: Record<string, string> = {};
+    for (const m of rows) {
+      if (m.id && ALL_CHAIN_MODELS.includes(m.id) && typeof m.expiration_date === "string" && m.expiration_date) {
+        expiry[m.id] = m.expiration_date.slice(0, 10);
+      }
+    }
+    recordModelExpiry(expiry).catch(() => {});
+
     return liveModelsMem.ids;
   } catch (err) {
     console.warn("[AI] model discovery failed, using static list:", err instanceof Error ? err.message : err);
@@ -197,15 +175,59 @@ async function getLiveModelIds(): Promise<Set<string> | null> {
   }
 }
 
+// ── Model expiry guard ──────────────────────────────────────
+async function recordModelExpiry(liveExpiry: Record<string, string>): Promise<void> {
+  if (redis) {
+    try {
+      await redis.set(KEY_MODEL_EXPIRY, liveExpiry, { ex: MODEL_EXPIRY_TTL_S });
+    } catch {
+      /* non-fatal */
+    }
+  }
+  const expiring = findExpiringModels(ALL_CHAIN_MODELS, { ...KNOWN_MODEL_EXPIRY, ...liveExpiry }, new Date());
+  if (expiring.length === 0) return;
+  console.warn(
+    `[AI] chain models expiring within ${EXPIRY_WARNING_DAYS} days: ` +
+      expiring.map((e) => `${e.model} (${e.expiresOn})`).join(", "),
+  );
+  if (await claimDailyAlert(KEY_ALERTED_EXPIRY)) {
+    sendAdminAlert({
+      level: "warning",
+      title: "AI model retiring soon",
+      message:
+        "OpenRouter will retire a model our AI chain uses. Replace it in src/lib/ai-models.ts " +
+        "before that date (runbook: docs/RUNBOOKS/ai-models.md).",
+      details: Object.fromEntries(expiring.map((e) => [e.model, `${e.expiresOn} (${e.daysLeft} days)`])),
+      module: "ai-provider",
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Used by /api/health: chain models that OpenRouter retires within 30 days
+ * (from the static list in ai-models.ts plus the dates seen at discovery).
+ */
+export async function getModelExpiryWarnings(now: Date = new Date()): Promise<ExpiringModel[]> {
+  let live: Record<string, string> = {};
+  if (redis) {
+    try {
+      live = (await redis.get<Record<string, string>>(KEY_MODEL_EXPIRY)) ?? {};
+    } catch {
+      /* static list only */
+    }
+  }
+  return findExpiringModels(ALL_CHAIN_MODELS, { ...KNOWN_MODEL_EXPIRY, ...live }, now);
+}
+
 // ── Circuit breaker ─────────────────────────────────────────
-/** Returns the subset of `models` that are NOT currently circuit-broken. */
-async function filterOpenCircuits(models: string[]): Promise<string[]> {
-  if (!redis || models.length === 0) return models;
+/** The subset of `models` whose circuit breaker is currently open. */
+async function getBrokenModels(models: string[]): Promise<Set<string>> {
+  if (!redis || models.length === 0) return new Set();
   try {
     const flags = await redis.mget<(string | null)[]>(...models.map(cbKey));
-    return models.filter((_, i) => !flags[i]);
+    return new Set(models.filter((_, i) => Boolean(flags[i])));
   } catch {
-    return models; // Redis hiccup — try everything rather than nothing
+    return new Set(); // Redis hiccup — try everything rather than nothing
   }
 }
 
@@ -218,7 +240,18 @@ async function tripCircuit(model: string, reason: string, ttlSeconds: number): P
   }
 }
 
-// ── OpenRouter error with HTTP status so we can classify it ─
+/** SET NX guard so an alert is emailed at most once a day. */
+async function claimDailyAlert(key: string): Promise<boolean> {
+  if (!redis) return true;
+  try {
+    const set = await redis.set(key, "1", { nx: true, ex: DEGRADED_TTL_S });
+    return set !== null;
+  } catch {
+    return false; // if Redis is down, do not risk flooding the inbox
+  }
+}
+
+// ── Errors we classify ──────────────────────────────────────
 class OpenRouterError extends Error {
   status: number;
   body: string;
@@ -230,10 +263,30 @@ class OpenRouterError extends Error {
   }
 }
 
+/**
+ * Thrown when the caller's deadlineAt left no time to try any model. This is
+ * the caller running out of its own time budget, NOT the AI being down.
+ */
+export class AIDeadlineError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AIDeadlineError";
+  }
+}
+
+/** The model answered, but with nothing usable (empty, reasoning only, or an error finish). */
+class EmptyAnswerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EmptyAnswerError";
+  }
+}
+
 /** Looks like "this model id does not exist / is not served any more". */
 function isModelGone(err: unknown): boolean {
   if (!(err instanceof OpenRouterError)) return false;
   if (err.status !== 404 && err.status !== 400) return false;
+  if (isParamRejection(err)) return false;
   const b = err.body.toLowerCase();
   return (
     b.includes("not found") ||
@@ -245,25 +298,69 @@ function isModelGone(err: unknown): boolean {
   );
 }
 
+/** 400/404 because an optional parameter (response_format, reasoning) is not supported. */
+function isParamRejection(err: unknown): boolean {
+  if (!(err instanceof OpenRouterError)) return false;
+  if (err.status !== 404 && err.status !== 400) return false;
+  const b = err.body.toLowerCase();
+  return b.includes("parameter") || b.includes("response_format") || b.includes("reasoning");
+}
+
 function isRateLimited(err: unknown): boolean {
   return err instanceof OpenRouterError && err.status === 429;
+}
+
+function isOutOfCredit(err: unknown): boolean {
+  return err instanceof OpenRouterError && err.status === 402;
 }
 
 // ── OpenRouter call ─────────────────────────────────────────
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
+interface CallOptions {
+  maxTokens: number;
+  temperature: number;
+  timeoutMs: number;
+  /** false = retry without response_format / reasoning (a provider rejected them) */
+  optionalParams: boolean;
+}
+
+function contentToText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((p) => (p && typeof p === "object" && typeof (p as { text?: unknown }).text === "string" ? (p as { text: string }).text : ""))
+      .join("");
+  }
+  return "";
+}
+
 async function callOpenRouter(
   req: AIRequest,
   model: string,
-  maxTokens: number,
-  temp: number,
-): Promise<{ text: string; usage?: TokenUsage }> {
+  opts: CallOptions,
+): Promise<{ text: string; usage?: TokenUsage; answeredBy: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
 
   let sys = req.systemPrompt;
   if (req.jsonMode) {
-    sys += "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences, no preamble. Pure JSON only.";
+    sys += "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences, no preamble, no explanation. Pure JSON only.";
+  }
+
+  const reasoning = REASONING_MODELS.has(model);
+  const body: Record<string, unknown> = {
+    model,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: req.userPrompt },
+    ],
+    max_tokens: opts.maxTokens + (reasoning ? REASONING_TOKEN_HEADROOM : 0),
+    temperature: opts.temperature,
+  };
+  if (opts.optionalParams) {
+    if (req.jsonMode && req.jsonShape === "object") body.response_format = { type: "json_object" };
+    if (reasoning) body.reasoning = { effort: "low", exclude: true };
   }
 
   const res = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -274,18 +371,9 @@ async function callOpenRouter(
       "HTTP-Referer": "https://forthepeople.in",
       "X-Title": "ForThePeople.in",
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: sys },
-        { role: "user", content: req.userPrompt },
-      ],
-      max_tokens: maxTokens,
-      temperature: temp,
-    }),
-    // A hung upstream must not eat a whole cron budget. 60 s is generous
-    // for a 2k-token completion.
-    signal: AbortSignal.timeout(60_000),
+    body: JSON.stringify(body),
+    // A hung upstream must not eat a whole cron budget.
+    signal: AbortSignal.timeout(opts.timeoutMs),
   });
 
   if (!res.ok) {
@@ -293,14 +381,32 @@ async function callOpenRouter(
     throw new OpenRouterError(res.status, errBody);
   }
 
-  const data = await res.json();
-  let text: string = data.choices?.[0]?.message?.content || "";
+  const data = (await res.json()) as {
+    model?: string;
+    usage?: TokenUsage;
+    error?: { code?: number; message?: string };
+    choices?: Array<{ finish_reason?: string; error?: { message?: string }; message?: { content?: unknown; reasoning?: unknown } }>;
+  };
 
-  if (req.jsonMode) {
-    text = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  // OpenRouter can return 200 with an error object (upstream failed mid-stream).
+  if (data.error) {
+    throw new OpenRouterError(Number(data.error.code) || 502, data.error.message ?? "upstream error");
+  }
+  const choice = data.choices?.[0];
+  if (!choice) throw new EmptyAnswerError("no choices in response");
+  if (choice.error || choice.finish_reason === "error") {
+    throw new EmptyAnswerError(`finish_reason error: ${choice.error?.message ?? "unknown"}`);
   }
 
-  return { text, usage: data.usage };
+  let text = contentToText(choice.message?.content).trim();
+  if (!text) {
+    throw new EmptyAnswerError(choice.message?.reasoning ? "reasoning only, no answer" : "empty answer");
+  }
+  if (req.jsonMode) {
+    text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  }
+
+  return { text, usage: data.usage, answeredBy: typeof data.model === "string" && data.model ? data.model : model };
 }
 
 // ── Usage logging (exactly ONE row per callAI) ──────────────
@@ -315,7 +421,7 @@ async function logUsage(
   errorMsg?: string,
 ) {
   try {
-    const cost = estimateCost(model, usage);
+    const cost = estimateCostPure(model, usage);
     await prisma.aIUsageLog.create({
       data: {
         provider,
@@ -347,28 +453,31 @@ async function markDegraded(summary: string): Promise<void> {
     }
   }
 
-  // Email at most once per day. SET NX returns null when the key exists.
-  let shouldAlert = true;
-  if (redis) {
-    try {
-      const set = await redis.set(KEY_ALERTED, "1", { nx: true, ex: DEGRADED_TTL_S });
-      shouldAlert = set !== null;
-    } catch {
-      shouldAlert = false; // if Redis is down, do not risk flooding the inbox
-    }
-  }
-  if (shouldAlert) {
+  if (await claimDailyAlert(KEY_ALERTED)) {
     sendAdminAlert({
       level: "critical",
       title: "AI provider degraded: every model failed",
       message:
-        "callAI() could not get a response from any model in the chain. " +
-        "Check https://openrouter.ai/api/v1/models for renamed :free ids and update src/lib/ai-provider.ts " +
+        "callAI() could not get a usable answer from any model in the chain. " +
+        "Check https://openrouter.ai/api/v1/models for renamed ids and update src/lib/ai-models.ts " +
         "(runbook: docs/RUNBOOKS/ai-models.md).",
       details: { Error: summary.slice(0, 300), Time: new Date().toISOString() },
       module: "ai-provider",
     }).catch(() => {});
   }
+}
+
+async function alertOutOfCredit(model: string): Promise<void> {
+  if (!(await claimDailyAlert(KEY_ALERTED_402))) return;
+  sendAdminAlert({
+    level: "critical",
+    title: "OpenRouter credit is used up (HTTP 402)",
+    message:
+      "A paid model answered 402 Payment Required, so paid AI calls (insights, paid fallback, fact-checks) fail " +
+      "until the OpenRouter balance is topped up. Free models keep working.",
+    details: { Model: model, Time: new Date().toISOString() },
+    module: "ai-provider",
+  }).catch(() => {});
 }
 
 async function clearDegraded(): Promise<void> {
@@ -422,7 +531,7 @@ export async function getAPIKey(_provider?: string): Promise<string | null> {
 const DEFAULT_SETTINGS = {
   activeProvider: "openrouter",
   geminiModel: "gemini-2.5-flash",
-  anthropicModel: "claude-sonnet-4",
+  anthropicModel: "claude-sonnet-4.6",
   anthropicBaseUrl: "https://openrouter.ai/api/v1",
   anthropicSource: "openrouter",
   fallbackEnabled: true,
@@ -454,6 +563,7 @@ async function getSettings() {
 // ── Optional Anthropic provider — used by scripts that prefer the user's
 //    own Claude key (set FTP_AI_PROVIDER=anthropic). ANTHROPIC_BASE_URL is
 //    honoured automatically by the SDK so Claude Code proxy URLs work.
+//    Never set FTP_AI_PROVIDER in Vercel (see docs/RUNBOOKS/ai-models.md).
 async function callAnthropic(
   request: AIRequest,
   maxTokens: number,
@@ -490,31 +600,22 @@ async function callAnthropic(
 
 // ── Build the ordered list of models to try for this call ───
 /**
- * Chain = [primary, ...free fallbacks, ...paid backstop]
+ * Chain = plan from ai-models.ts (tier order, paid slot reserved last)
  *   minus models not on OpenRouter's live list (when we know it)
  *   minus models whose circuit breaker is open
- *   capped at MAX_ATTEMPTS_PER_CALL.
- * The primary is kept even if discovery says it is missing when the caller
- * pinned it explicitly via request.model (they may know better, e.g. a
- * brand-new id) — otherwise it is filtered like the rest.
+ *   capped at the tier's max attempts.
  */
-async function buildModelChain(primary: string, pinned: boolean): Promise<string[]> {
-  const ordered = [primary, ...FREE_FALLBACK_MODELS.filter((m) => m !== primary), ...getPaidBackstop()];
-  // de-dupe while preserving order
-  const unique = ordered.filter((m, i) => ordered.indexOf(m) === i);
+async function buildModelChain(purpose: string, pinned: string | undefined): Promise<string[]> {
+  const plan = planChain(purpose, { paidFallback: paidFallbackEnabled(), pinned });
+  const all = [...plan.candidates, ...plan.reserved];
 
   const live = await getLiveModelIds();
-  const onLiveList = live
-    ? unique.filter((m) => live.has(m) || (pinned && m === primary))
-    : unique;
-
-  if (live && onLiveList.length < unique.length) {
-    const dropped = unique.filter((m) => !onLiveList.includes(m));
-    console.warn(`[AI] skipping models not on OpenRouter live list: ${dropped.join(", ")}`);
+  if (live) {
+    const dropped = all.filter((m) => !live.has(m) && m !== pinned);
+    if (dropped.length) console.warn(`[AI] skipping models not on OpenRouter live list: ${dropped.join(", ")}`);
   }
-
-  const open = await filterOpenCircuits(onLiveList);
-  return open.slice(0, MAX_ATTEMPTS_PER_CALL);
+  const broken = await getBrokenModels(all);
+  return selectChain(plan, { live, broken, pinned });
 }
 
 // ── Main callAI function ────────────────────────────────────
@@ -523,7 +624,7 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
   const maxTokens = request.maxTokens ?? s.maxTokens;
   const temp = request.temperature ?? s.temperature;
   const purpose = request.purpose ?? "summarize";
-  const primary = request.model ?? getModelForPurpose(purpose);
+  const shape: JSONShape = request.jsonShape ?? "any";
 
   const startTime = Date.now();
 
@@ -534,30 +635,66 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
     const anthropicModel = request.model ?? "claude-haiku-4-5-20251001";
     try {
       const { text, usage } = await callAnthropic(request, maxTokens, temp);
+      const json = request.jsonMode ? extractJSON(text, shape) : undefined;
       logUsage("anthropic", anthropicModel, purpose, request.district, usage, Date.now() - startTime, true);
-      return { text, provider: "anthropic", model: anthropicModel, usedFallback: false };
+      return { text, provider: "anthropic", model: anthropicModel, usedFallback: false, json };
     } catch (err) {
       console.error("[AI] Anthropic provider failed; falling back to OpenRouter:", err instanceof Error ? err.message : err);
       // fall through to OpenRouter path
     }
   }
 
-  const chain = await buildModelChain(primary, Boolean(request.model));
+  const chain = await buildModelChain(purpose, request.model);
   const attempts: string[] = []; // human-readable "model (reason)" list for the log row
 
   if (chain.length === 0) {
-    const summary = `No usable model: chain empty (primary ${primary}; all candidates missing or circuit-broken)`;
+    const summary = `No usable model: chain empty for purpose "${purpose}" (all candidates missing or circuit-broken)`;
     console.error(`[AI] ${summary}`);
-    logUsage("openrouter", primary, purpose, request.district, undefined, Date.now() - startTime, false, summary);
+    logUsage("openrouter", getModelForPurposePure(purpose), purpose, request.district, undefined, Date.now() - startTime, false, summary);
     await markDegraded(summary);
     throw new Error(summary);
   }
 
+  let deadlineHit = false;
   for (let i = 0; i < chain.length; i++) {
     const model = chain[i];
+
+    // Respect the caller's absolute deadline (cron time budgets).
+    let timeoutMs = request.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    if (request.deadlineAt) {
+      const left = request.deadlineAt - Date.now();
+      if (left < MIN_ATTEMPT_MS) {
+        attempts.push(`${model} (skipped: deadline)`);
+        deadlineHit = true;
+        break;
+      }
+      timeoutMs = Math.min(timeoutMs, left);
+    }
+
     if (i > 0) console.log(`[AI] Falling back to ${model}`);
     try {
-      const { text, usage } = await callOpenRouter(request, model, maxTokens, temp);
+      const callOpts: CallOptions = { maxTokens, temperature: temp, timeoutMs, optionalParams: true };
+      let result: Awaited<ReturnType<typeof callOpenRouter>>;
+      try {
+        result = await callOpenRouter(request, model, callOpts);
+      } catch (err) {
+        // A provider that rejects response_format / reasoning: retry once plain.
+        if (!isParamRejection(err)) throw err;
+        console.warn(`[AI] ${model} rejected optional params; retrying without them`);
+        result = await callOpenRouter(request, model, { ...callOpts, optionalParams: false });
+      }
+
+      // In JSON mode an unparseable answer is a failed attempt, not a success.
+      let json: unknown;
+      if (request.jsonMode) {
+        try {
+          json = extractJSON(result.text, shape);
+        } catch (parseErr) {
+          attempts.push(`${model} (bad JSON)`);
+          console.error(`[AI] ${model} returned unusable JSON:`, parseErr instanceof Error ? parseErr.message.slice(0, 160) : parseErr);
+          continue;
+        }
+      }
 
       // Legacy counter kept for the admin panel + clear any stale error on success
       prisma.aIProviderSettings
@@ -573,14 +710,14 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
         model,
         purpose,
         request.district,
-        usage,
+        result.usage,
         Date.now() - startTime,
         true,
         attempts.length ? `fallback after: ${attempts.join("; ")}` : undefined,
       );
       clearDegraded().catch(() => {});
 
-      return { text, provider: "openrouter", model, usedFallback: i > 0 };
+      return { text: result.text, provider: "openrouter", model: result.answeredBy, usedFallback: i > 0, json };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[AI] OpenRouter (${model}) failed:`, msg);
@@ -592,47 +729,49 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
       } else if (isRateLimited(err)) {
         attempts.push(`${model} (429)`);
         await tripCircuit(model, "rate-limited", CB_RATE_LIMIT_TTL_S);
+      } else if (isOutOfCredit(err)) {
+        attempts.push(`${model} (402 no credit)`);
+        await tripCircuit(model, "no-credit", CB_NO_CREDIT_TTL_S);
+        await alertOutOfCredit(model);
+      } else if (err instanceof EmptyAnswerError) {
+        attempts.push(`${model} (${msg.slice(0, 60)})`);
       } else {
         attempts.push(`${model} (${msg.slice(0, 80)})`);
         // 5xx / timeout / network: no breaker, just move to the next model.
       }
-      // continue to next model
     }
   }
 
   // ── Total failure ──
+  const triedAny = attempts.some((a) => !a.endsWith("(skipped: deadline)"));
+  if (deadlineHit && !triedAny) {
+    // Nothing was actually tried: no log row, no degraded flag.
+    throw new AIDeadlineError(`No time left in the caller's budget for purpose "${purpose}"`);
+  }
   const summary = `All ${chain.length} model(s) failed for purpose "${purpose}": ${attempts.join("; ")}`;
-  logUsage("openrouter", primary, purpose, request.district, undefined, Date.now() - startTime, false, summary);
+  logUsage("openrouter", chain[0], purpose, request.district, undefined, Date.now() - startTime, false, summary);
   prisma.aIProviderSettings
     .update({
       where: { id: "singleton" },
       data: { lastError: summary.slice(0, 500), lastErrorAt: new Date() },
     })
     .catch(() => {});
-  await markDegraded(summary);
+  // Running out of the caller's time budget is not the AI being down.
+  if (!deadlineHit) await markDegraded(summary);
   throw new Error(summary);
 }
 
-// ── Robust JSON extractor ───────────────────────────────────
-function extractJSON(text: string): unknown {
-  try { return JSON.parse(text.trim()); } catch { /* continue */ }
-  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenceMatch) {
-    try { return JSON.parse(fenceMatch[1].trim()); } catch { /* continue */ }
-  }
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start !== -1 && end > start) {
-    try { return JSON.parse(text.slice(start, end + 1)); } catch { /* continue */ }
-  }
-  throw new Error(`Could not parse JSON: ${text.slice(0, 200)}`);
-}
-
 // ── Convenience: JSON mode ──────────────────────────────────
-export async function callAIJSON<T = unknown>(
-  request: AIRequest
-): Promise<{ data: T } & AIResponse> {
+/**
+ * callAI with jsonMode on; `data` is the parsed answer. The answer is parsed
+ * inside the fallback loop, so a model that returns prose or broken JSON is
+ * skipped and the next model is tried. Throws when no model gives usable JSON.
+ * Pass jsonShape "object" to also request OpenRouter's JSON mode.
+ */
+export async function callAIJSON<T = unknown>(request: AIRequest): Promise<{ data: T } & AIResponse> {
   const res = await callAI({ ...request, jsonMode: true });
-  const data = extractJSON(res.text) as T;
+  const data = (res.json !== undefined ? res.json : extractJSON(res.text, request.jsonShape ?? "any")) as T;
   return { data, ...res };
 }
+
+export { extractJSON } from "@/lib/ai-json";

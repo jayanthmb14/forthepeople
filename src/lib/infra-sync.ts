@@ -18,7 +18,7 @@
 
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
-import { callAI } from "./ai-provider";
+import { callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
 import {
@@ -182,16 +182,15 @@ export async function extractInfraFromNews(
   article: NewsArticleRef
 ): Promise<InfraExtraction | null> {
   try {
-    const response = await callAI({
+    const { data: parsed } = await callAIJSON<Partial<InfraExtraction>>({
       systemPrompt: EXTRACTION_SYSTEM,
       userPrompt: buildExtractionPrompt(article),
       purpose: "classify", // free tier per spec
-      jsonMode: true,
+      jsonShape: "object",
       maxTokens: 1400,
       temperature: 0,
+      timeoutMs: 30_000,
     });
-    const cleaned = response.text.trim().replace(/```(?:json)?/g, "").trim();
-    const parsed = JSON.parse(cleaned) as Partial<InfraExtraction>;
     if (!parsed.projectName || typeof parsed.projectName !== "string" || parsed.projectName.trim().length < 3) {
       return null;
     }
@@ -337,16 +336,15 @@ export async function verifyInfraExtraction(
   extraction: InfraExtraction
 ): Promise<InfraVerification> {
   try {
-    const response = await callAI({
+    const { data: parsed } = await callAIJSON<Partial<InfraVerification>>({
       systemPrompt: VERIFY_SYSTEM,
       userPrompt: buildVerifyPrompt(article, extraction),
       purpose: "classify", // free tier
-      jsonMode: true,
+      jsonShape: "object",
       maxTokens: 800,
       temperature: 0,
+      timeoutMs: 30_000,
     });
-    const cleaned = response.text.trim().replace(/```(?:json)?/g, "").trim();
-    const parsed = JSON.parse(cleaned) as Partial<InfraVerification>;
     return {
       verified: parsed.verified === true,
       corrections: parsed.corrections ?? null,

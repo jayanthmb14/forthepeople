@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { callAI } from "./ai-provider";
+import { callAIJSON } from "./ai-provider";
 import { extractExamFromNews, syncExamFromNews } from "./exam-sync";
 import { extractVerifyAndSyncInfra } from "./infra-sync";
 import { logUpdate } from "./update-log";
@@ -38,33 +38,53 @@ export interface NewsClassification {
   moduleAction: string;
   extractedData: Record<string, unknown>;
   confidence: number;
+  /**
+   * The classifier's answer to "is this article about THIS district (or
+   * state-/India-wide news that applies to its people)?". Anything other
+   * than true means no action is taken (Sept 2026: "High Court of Karnataka"
+   * stories were arriving in the Hyderabad feed).
+   */
+  isAboutDistrict?: boolean;
 }
 
-// ── Enhanced AI classification with data extraction ─────────
-export async function classifyArticleWithAI(
-  title: string,
-  source: string,
-  districtName: string,
-  publishedAt?: Date
-): Promise<{
+export interface ArticleClassification {
   targetModule: string;
   moduleAction: string;
   confidence: number;
   extractedData: Record<string, unknown>;
+  isAboutDistrict: boolean;
   provider: string;
-} | null> {
+  model: string;
+}
+
+// ── Enhanced AI classification with data extraction ─────────
+/**
+ * Returns null when the AI could not classify (every model failed, or no
+ * usable JSON). The failure is logged as an error — never silently.
+ */
+export async function classifyArticleWithAI(
+  title: string,
+  source: string,
+  districtName: string,
+  publishedAt?: Date,
+  opts: { stateName?: string; summary?: string; deadlineAt?: number } = {},
+): Promise<ArticleClassification | null> {
   const today = new Date().toISOString().split("T")[0];
   const articleDate = publishedAt ? publishedAt.toISOString().split("T")[0] : today;
   const ageDays = publishedAt
     ? Math.floor((Date.now() - publishedAt.getTime()) / 86400000)
     : 0;
+  const place = opts.stateName ? `${districtName} district, ${opts.stateName}` : `${districtName} district`;
+  const stateLabel = opts.stateName ?? "its state";
 
-  const prompt = `Classify this news article for ${districtName} district and extract structured data.
+  const prompt = `Classify this news article for ${place} and extract structured data.
 
-Article: "${title}"
+Article: "${title}"${opts.summary ? `\nSummary: ${opts.summary.slice(0, 300)}` : ""}
 Source: ${source}
 Article date: ${articleDate}
 Today: ${today}
+
+DISTRICT RULE: set "isAboutDistrict" to true ONLY if the article is about ${districtName} itself, or is ${stateLabel}-wide or India-wide news that directly applies to people living in ${districtName} (e.g. a statewide exam or scheme). Set it to false if it is about a different district, city or state (a court, region or company that merely shares a name does not count).
 
 CRITICAL DATE RULE: This article is ${ageDays} day(s) old.
 - If the article reports an event that ALREADY HAPPENED more than 2 days ago → set module to "news", confidence ≤ 0.4, NO alerts/actions.
@@ -81,6 +101,7 @@ Return ONLY valid JSON (no markdown):
   "targetModule": "alerts",
   "moduleAction": "Security restrictions at Melkote event",
   "confidence": 0.92,
+  "isAboutDistrict": true,
   "extractedData": {}
 }
 
@@ -100,24 +121,38 @@ Module-specific extractedData fields:
 Use "news" module if it doesn't clearly fit another. confidence = how certain you are (0-1).`;
 
   try {
-    const response = await callAI({
+    const { data: parsed, ...response } = await callAIJSON<{
+      targetModule?: unknown;
+      moduleAction?: unknown;
+      confidence?: unknown;
+      isAboutDistrict?: unknown;
+      extractedData?: unknown;
+    }>({
       systemPrompt: "You are a news classifier. Return ONLY valid JSON. No markdown, no explanation.",
       userPrompt: prompt,
       purpose: "news-analysis",
-      jsonMode: true,
+      jsonShape: "object",
       maxTokens: 1024,
       temperature: 0.1,
+      timeoutMs: 25_000,
+      deadlineAt: opts.deadlineAt,
     });
-    const text = response.text.trim().replace(/```(?:json)?\n?/g, "").trim();
-    const parsed = JSON.parse(text);
+    const extracted = parsed.extractedData;
     return {
-      targetModule: parsed.targetModule ?? "news",
-      moduleAction: parsed.moduleAction ?? "",
+      targetModule: typeof parsed.targetModule === "string" && parsed.targetModule ? parsed.targetModule : "news",
+      moduleAction: typeof parsed.moduleAction === "string" ? parsed.moduleAction : "",
       confidence: typeof parsed.confidence === "number" ? Math.min(1, Math.max(0, parsed.confidence)) : 0.5,
-      extractedData: parsed.extractedData ?? {},
+      extractedData: extracted && typeof extracted === "object" && !Array.isArray(extracted) ? (extracted as Record<string, unknown>) : {},
+      // Only an explicit true counts; a missing answer is treated as "not about this district".
+      isAboutDistrict: parsed.isAboutDistrict === true,
       provider: response.provider,
+      model: response.model,
     };
-  } catch {
+  } catch (err) {
+    console.error(
+      `[NewsAction] AI classification failed for "${title.slice(0, 60)}":`,
+      err instanceof Error ? err.message.slice(0, 300) : err,
+    );
     return null;
   }
 }
@@ -134,6 +169,12 @@ export async function executeNewsAction(
   classification: NewsClassification
 ): Promise<void> {
   const { districtId, targetModule, extractedData, articleTitle, articleUrl, confidence } = classification;
+
+  // Not about this district (or the classifier did not say): never act on it.
+  if (classification.isAboutDistrict !== true) {
+    console.log(`[NewsAction] Skip (not about this district): ${articleTitle.slice(0, 60)}`);
+    return;
+  }
 
   // Below threshold: skip
   if (confidence < 0.60) {
