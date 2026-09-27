@@ -9,6 +9,7 @@
 import { useState, useEffect, useMemo, useRef, useContext } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
   AlertCircle,
   AlertTriangle,
@@ -30,6 +31,8 @@ import { validateSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
 import { QueryClientContext } from "@tanstack/react-query";
+import { useFormat, usePlaceText } from "@/i18n/client";
+import { nameErrorText } from "@/components/site/name-error";
 
 declare global {
   interface Window {
@@ -46,6 +49,12 @@ declare global {
 //                real colour string, not a CSS variable); on-page buttons use
 //                the page hue instead.
 // The payment flow itself (create → Razorpay → verify) is unchanged.
+//
+// Languages: every word on screen comes from the "page_support" messages
+// (co_* keys); name errors from "page_site.nameError". The English tier
+// `label` is still what Razorpay receives as the payment description, so
+// payment records read the same in every language. Validator and link-check
+// messages from the shared libraries are mapped to translated text below.
 export interface TierConfig {
   emoji: string;
   label: string;
@@ -100,7 +109,34 @@ interface Props {
   tier: TierConfig;
 }
 
+type SupportT = (key: string, values?: Record<string, string | number>) => string;
+
+/** Translated text for a validateSupporterMessage() failure (English reason in, message out). */
+function messageErrorText(t: SupportT, reason: string): string {
+  if (reason.startsWith("Message must be text")) return t("co_msgText");
+  if (reason.startsWith("Message too short")) return t("co_msgShort");
+  if (reason.startsWith("Maximum")) return t("co_msgLong", { n: Number(reason.match(/\d+/)?.[0] ?? 280) });
+  if (reason.startsWith("Messages can't contain")) return t("co_msgSpam");
+  return reason;
+}
+
+/** Translated text for a validateSocialLink() warning. */
+function socialWarningText(t: SupportT, warning: string): string {
+  if (warning.startsWith("Assumed Instagram")) return t("co_socialAssumed");
+  if (warning.startsWith("Could not verify")) return t("co_socialUnverified");
+  if (warning.startsWith("Invalid link")) return t("co_socialInvalid");
+  return warning;
+}
+
 export default function SupportCheckout({ tier }: Props) {
+  const t = useTranslations("page_support");
+  const ts = useTranslations("page_site");
+  const locale = useLocale();
+  const { number } = useFormat();
+  const place = usePlaceText();
+  const inr = (n: number) => `₹${number(n)}`;
+  // Tier name on screen (the English `tier.label` still goes to Razorpay).
+  const tierName = t.has(`tier_${tier.tierKey}_name`) ? t(`tier_${tier.tierKey}_name`) : tier.label;
   // React Query client, if this component is rendered inside <QueryProvider>.
   // Every /[locale]/support page is wrapped by the provider in
   // src/app/[locale]/layout.tsx, but the legacy non-locale /support route is
@@ -214,10 +250,10 @@ export default function SupportCheckout({ tier }: Props) {
   const phoneRequired = !!tier.isMonthly;
 
   const nameCheck = useMemo(() => validateContributorName(name), [name]);
-  const nameError = name.length > 0 && !nameCheck.ok ? nameCheck.reason : null;
+  const nameError = name.length > 0 && !nameCheck.ok ? nameErrorText(ts, nameCheck.reason) : null;
 
   const messageCheck = useMemo(() => validateSupporterMessage(message), [message]);
-  const messageError = message.length > 0 && !messageCheck.ok ? messageCheck.reason : null;
+  const messageError = message.length > 0 && !messageCheck.ok ? messageErrorText(t, messageCheck.reason) : null;
 
   const canSubmit =
     nameCheck.ok &&
@@ -380,48 +416,47 @@ export default function SupportCheckout({ tier }: Props) {
 
   // ── SUCCESS SCREEN ────────────────────────────────────────
   if (step === "success") {
-    const shareText = `I just ${tier.isMonthly ? "subscribed to" : "contributed ₹" + paidAmount.toLocaleString("en-IN") + " to"} ForThePeople.in — a free platform that brings government data to every Indian citizen!`;
-    const shareUrl = "https://forthepeople.in/support";
+    const shareText = tier.isMonthly ? t("co_shareSubscribed") : t("co_shareContributed", { amount: inr(paidAmount) });
+    const shareUrl = `https://forthepeople.in/${locale}/support`;
     const whatsappHref = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
     const twitterHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
 
     // Build contributors page URL if district context available
     const contributorsUrl = selectedState && selectedDistrict
-      ? `/en/${selectedState}/${selectedDistrict}/contributors?just_paid=true`
-      : "/en";
+      ? `/${locale}/${selectedState}/${selectedDistrict}/contributors?just_paid=true`
+      : `/${locale}`;
 
     return (
       <div role="status" style={{ textAlign: "center", padding: "16px 0" }}>
         <CheckCircle2 size={32} aria-hidden style={{ color: "var(--ftp-live)", margin: "0 auto 8px", display: "block" }} />
-        <p className="ftp-title" style={{ marginBottom: 6 }}>Thank you!</p>
+        <p className="ftp-title" style={{ marginBottom: 6 }}>{t("co_thanks")}</p>
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 12 }}>
-          {tier.isMonthly
-            ? `Your ₹${paidAmount.toLocaleString("en-IN")}/month subscription is now active.`
-            : `Your ₹${paidAmount.toLocaleString("en-IN")} contribution helps keep ForThePeople.in running.`}
+          {tier.isMonthly ? t("co_activeMonthly", { amount: inr(paidAmount) }) : t("co_oneTimeThanks", { amount: inr(paidAmount) })}
         </p>
-        <p className="ftp-body" style={{ ...NOTE, color: "var(--ftp-live-text)", marginBottom: 8 }}>
-          Your name will appear on the contributors page within a minute.
-        </p>
-        <p style={{ ...NOTE, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginBottom: 16 }}>
-          Want to update your social link or display name later? Email{" "}
-          <a href="mailto:support@forthepeople.in" style={{ color: "var(--hue-deep)", textDecoration: "none", fontWeight: 600 }}>
-            support@forthepeople.in
-          </a>
+        <p className="ftp-body" style={{ ...NOTE, color: "var(--ftp-live-text)", marginBottom: 8 }}>{t("co_nameSoon")}</p>
+        <p style={{ ...NOTE, fontSize: 11, lineHeight: 1.5, color: "var(--ftp-text-2)", marginBottom: 16 }}>
+          {t.rich("co_updateLater", {
+            link: (c) => (
+              <a href="mailto:support@forthepeople.in" style={{ color: "var(--hue-deep)", textDecoration: "none", fontWeight: 600 }}>
+                {c}
+              </a>
+            ),
+          })}
         </p>
         <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
           <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={SECONDARY_BTN}>
-            <Share2 size={14} aria-hidden /> Share on WhatsApp
+            <Share2 size={14} aria-hidden /> {t("co_shareWhatsApp")}
           </a>
           <a href={twitterHref} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={SECONDARY_BTN}>
-            <Twitter size={14} aria-hidden /> Share on X
+            <Twitter size={14} aria-hidden /> {t("co_shareX")}
           </a>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href={contributorsUrl} style={{ ...TEXT_LINK, color: "var(--hue-deep)", fontWeight: 600 }}>
-            View contributors
+            {t("co_viewContributors")}
           </Link>
-          <Link href="/en" style={{ ...TEXT_LINK, color: "var(--ftp-text-2)" }}>
-            Back to homepage
+          <Link href={`/${locale}`} style={{ ...TEXT_LINK, color: "var(--ftp-text-2)" }}>
+            {t("co_backHome")}
           </Link>
         </div>
       </div>
@@ -435,20 +470,18 @@ export default function SupportCheckout({ tier }: Props) {
       !!selectedDistrict && !!districtOptions.find((d) => d.slug === selectedDistrict && !d.active);
     return (
       <div ref={containerRef} style={{ paddingTop: 4 }}>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginBottom: 12 }}>
-          Almost there — just your name!
-        </p>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginBottom: 12 }}>{t("co_almost")}</p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <input
-            type="text" placeholder="Your Name *" value={name} aria-label="Your name (required)"
+            type="text" placeholder={t("co_namePh")} value={name} aria-label={t("co_nameAria")}
             onChange={(e) => setName(e.target.value)} maxLength={40}
             aria-invalid={!!nameError}
             style={{ ...INPUT, borderColor: nameError ? "var(--ftp-danger)" : "var(--ftp-border)" }}
           />
           {nameError && <FieldError>{nameError}</FieldError>}
           <input
-            type="email" placeholder="Email (optional — for receipt)" value={email} aria-label="Email (optional)"
+            type="email" placeholder={t("co_emailPh")} value={email} aria-label={t("co_emailAria")}
             onChange={(e) => setEmail(e.target.value)}
             style={INPUT}
           />
@@ -458,12 +491,7 @@ export default function SupportCheckout({ tier }: Props) {
           {tier.isMonthly && amount > 15000 && (
             <div style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
               <AlertTriangle size={14} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 1 }} />
-              <span>
-                <strong style={{ fontWeight: 500 }}>Note:</strong> NPCI caps UPI AutoPay at ₹15,000 per debit.
-                For this amount, please use <strong style={{ fontWeight: 500 }}>Card</strong> or{" "}
-                <strong style={{ fontWeight: 500 }}>Netbanking</strong> at checkout. UPI will not work for recurring
-                debits above ₹15,000.
-              </span>
+              <span>{t.rich("co_upiNote", { b: (c) => <strong style={{ fontWeight: 500 }}>{c}</strong> })}</span>
             </div>
           )}
 
@@ -473,8 +501,8 @@ export default function SupportCheckout({ tier }: Props) {
             <input
               type="tel"
               inputMode="numeric"
-              placeholder={phoneRequired ? "Phone (10-digit) *" : "Phone (optional — for payment receipt)"}
-              aria-label={phoneRequired ? "Phone number (required)" : "Phone number (optional)"}
+              placeholder={phoneRequired ? t("co_phoneReqPh") : t("co_phoneOptPh")}
+              aria-label={phoneRequired ? t("co_phoneReqAria") : t("co_phoneOptAria")}
               value={phone}
               onChange={(e) => setPhone(e.target.value.slice(0, 14))}
               aria-invalid={phoneRequired && !!phone && !phoneValid}
@@ -485,21 +513,21 @@ export default function SupportCheckout({ tier }: Props) {
               }}
             />
             {phoneRequired && phone && !phoneValid && (
-              <FieldError>Enter a valid 10-digit Indian mobile number.</FieldError>
+              <FieldError>{t("co_phoneInvalid")}</FieldError>
             )}
             {phoneRequired && !phone && (
-              <p style={HINT}>Required for monthly subscriptions (UPI AutoPay / bank e-mandate).</p>
+              <p style={HINT}>{t("co_phoneWhy")}</p>
             )}
           </div>
 
           {/* Social link */}
           <label htmlFor={`social-${tier.tierKey}`} className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginTop: 2 }}>
-            Social media link (optional)
+            {t("co_socialLabel")}
           </label>
           <div style={{ position: "relative" }}>
             <input
               id={`social-${tier.tierKey}`}
-              type="url" placeholder="Your profile URL or @handle" value={socialLink}
+              type="url" placeholder={t("co_socialPh")} value={socialLink}
               onChange={(e) => setSocialLink(e.target.value)}
               style={{ ...INPUT, paddingRight: SocialIcon ? 36 : 12, width: "100%" }}
             />
@@ -530,41 +558,39 @@ export default function SupportCheckout({ tier }: Props) {
             {isVerified && detectedPlatform ? (
               <>
                 <CheckCircle2 size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-                {`${detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1)} link detected — will be shown next to your name`}
+                {t("co_socialDetected", { platform: detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1) })}
               </>
             ) : hasWarning ? (
               <>
                 <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-                {socialDetect.warning}
+                {socialWarningText(t, socialDetect.warning ?? "")}
               </>
             ) : !socialDetect.valid ? (
               <>
                 <XCircle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-                Invalid link format
+                {t("co_socialInvalid")}
               </>
             ) : (
-              "Your link will be displayed next to your name. Works with Instagram, LinkedIn, GitHub, Twitter, or any website."
+              t("co_socialHint")
             )}
           </p>
 
           {/* Helper text explaining required fields for this tier */}
           {districtRequired && (
-            <p style={{ ...NOTE, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
-              Please pick the state and district you want to sponsor — your name will be featured on that district&apos;s page.
-            </p>
+            <p style={{ ...NOTE, fontSize: 11, lineHeight: 1.5, color: "var(--ftp-text)" }}>{t("co_pickDistrict")}</p>
           )}
 
           {/* State selector (for district/state tiers, optional for others) */}
           {showStateSelector && (
             <select
               value={selectedState}
-              aria-label={stateRequired ? "State (required)" : "State (optional)"}
+              aria-label={stateRequired ? t("co_stateReqAria") : t("co_stateOptAria")}
               onChange={(e) => { setSelectedState(e.target.value); setSelectedDistrict(""); }}
               style={{ ...INPUT, color: selectedState ? "var(--ftp-text)" : "var(--ftp-text-2)" }}
             >
-              <option value="">{stateRequired ? "Select State *" : "Associate with a state (optional)"}</option>
+              <option value="">{stateRequired ? t("co_stateReqPh") : t("co_stateOptPh")}</option>
               {stateOptions.map((s) => (
-                <option key={s.slug} value={s.slug}>{s.name}</option>
+                <option key={s.slug} value={s.slug}>{place.state(s.slug, s.name)}</option>
               ))}
             </select>
           )}
@@ -573,7 +599,7 @@ export default function SupportCheckout({ tier }: Props) {
           {showDistrictSelector && (
             <select
               value={selectedDistrict}
-              aria-label={districtRequired ? "District (required)" : "District (optional)"}
+              aria-label={districtRequired ? t("co_districtReqAria") : t("co_districtOptAria")}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={!selectedState}
               style={{
@@ -585,15 +611,15 @@ export default function SupportCheckout({ tier }: Props) {
             >
               <option value="">
                 {!selectedState
-                  ? "Select a state first to choose your district"
+                  ? t("co_districtFirst")
                   : districtRequired
-                    ? "Select District *"
-                    : "Select District (optional)"}
+                    ? t("co_districtReqPh")
+                    : t("co_districtOptPh")}
               </option>
               {/* Plain-text markers only: ● live, ○ coming soon (no emoji). */}
               {selectedState && districtOptions.map((d) => (
                 <option key={d.slug} value={d.slug}>
-                  {d.active ? "● " : "○ "}{d.name}{!d.active ? " (coming soon)" : ""}
+                  {d.active ? "● " : "○ "}{d.active ? d.name : t("co_districtSoon", { name: d.name })}
                 </option>
               ))}
             </select>
@@ -603,15 +629,12 @@ export default function SupportCheckout({ tier }: Props) {
           {lockedDistrictPicked && (
             <p style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ftp-text)" }} className="ftp-body">
               <Lock size={14} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
-              <span>
-                This district isn&apos;t live yet. Your sponsorship will activate the moment we launch it — your name will be
-                the first on the page.
-              </span>
+              <span>{t("co_lockedNote")}</span>
             </p>
           )}
 
           <input
-            type="text" placeholder="Message (optional, max 280 chars)" value={message} aria-label="Message (optional)"
+            type="text" placeholder={t("co_msgPh")} value={message} aria-label={t("co_msgAria")}
             onChange={(e) => setMessage(e.target.value.slice(0, 280))}
             aria-invalid={!!messageError}
             style={{ ...INPUT, borderColor: messageError ? "var(--ftp-danger)" : "var(--ftp-border)" }}
@@ -620,15 +643,15 @@ export default function SupportCheckout({ tier }: Props) {
 
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", minHeight: 44 }}>
             <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, width: 16, height: 16 }} />
-            <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
-              Show my contribution publicly<br />
-              <span style={{ color: "var(--ftp-text-2)" }}>(unchecked = shown as &quot;Anonymous&quot;)</span>
+            <span style={{ fontSize: 11, lineHeight: 1.5, color: "var(--ftp-text)" }}>
+              {t("co_public")}<br />
+              <span style={{ color: "var(--ftp-text-2)" }}>{t("co_publicHint")}</span>
             </span>
           </label>
         </div>
 
         {tier.isMonthly && (
-          <p style={{ ...HINT, marginTop: 8 }}>Auto-debits monthly via UPI/Card. Cancel anytime.</p>
+          <p style={{ ...HINT, marginTop: 8 }}>{t("co_autoDebit")}</p>
         )}
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -637,16 +660,18 @@ export default function SupportCheckout({ tier }: Props) {
             onClick={() => setStep("idle")} disabled={isLoading}
             className="ftp-btn-secondary"
             style={{ ...SECONDARY_BTN, flexShrink: 0 }}>
-            <ArrowLeft size={14} aria-hidden /> Back
+            <ArrowLeft size={14} aria-hidden /> {t("co_back")}
           </button>
           <button
             type="button"
             onClick={handlePay}
             disabled={!canSubmit || isLoading}
             style={{ ...primaryBtn(!canSubmit || isLoading), flex: 1 }}>
-            {isLoading ? "Opening payment…" : tier.isMonthly
-              ? `Subscribe ₹${amount.toLocaleString("en-IN")}/month`
-              : `Contribute ₹${amount.toLocaleString("en-IN")}`}
+            {isLoading
+              ? t("co_opening")
+              : tier.isMonthly
+                ? t("co_subscribeMonth", { amount: inr(amount) })
+                : t("co_contribute", { amount: inr(amount) })}
           </button>
         </div>
       </div>
@@ -658,10 +683,10 @@ export default function SupportCheckout({ tier }: Props) {
     return (
       <div role="alert" style={{ textAlign: "center", paddingTop: 4 }}>
         <p className="ftp-body" style={{ color: "var(--ftp-danger)", marginBottom: 12, display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
-          <AlertCircle size={14} aria-hidden /> Payment failed or was cancelled.
+          <AlertCircle size={14} aria-hidden /> {t("co_failed")}
         </p>
         <button type="button" onClick={() => setStep("idle")} style={{ ...primaryBtn(false), width: "100%" }}>
-          Try again
+          {t("co_tryAgain")}
         </button>
       </div>
     );
@@ -677,7 +702,7 @@ export default function SupportCheckout({ tier }: Props) {
         <button
           type="button"
           onClick={() => adjust(-tier.step)} disabled={atMin}
-          aria-label={`Decrease amount by ₹${tier.step}`}
+          aria-label={t("co_decrease", { amount: inr(tier.step) })}
           className="ftp-btn-secondary"
           style={{ ...STEPPER_BTN, cursor: atMin ? "not-allowed" : "pointer", opacity: atMin ? 0.5 : 1 }}>
           <Minus size={16} aria-hidden />
@@ -688,7 +713,7 @@ export default function SupportCheckout({ tier }: Props) {
           <span className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-text-2)", marginRight: 4 }}>₹</span>
           <input
             type="number" min={tier.minAmount} max={tier.maxAmount} step={tier.step} value={amountStr}
-            aria-label={`Amount in rupees for ${tier.label}`}
+            aria-label={t("co_amountAria", { tier: tierName })}
             onChange={(e) => setAmountStr(e.target.value)}
             onBlur={handleAmountBlur}
             className="ftp-num ftp-no-spin"
@@ -698,7 +723,7 @@ export default function SupportCheckout({ tier }: Props) {
         <button
           type="button"
           onClick={() => adjust(tier.step)} disabled={atMax}
-          aria-label={`Increase amount by ₹${tier.step}`}
+          aria-label={t("co_increase", { amount: inr(tier.step) })}
           className="ftp-btn-secondary"
           style={{ ...STEPPER_BTN, cursor: atMax ? "not-allowed" : "pointer", opacity: atMax ? 0.5 : 1 }}>
           <Plus size={16} aria-hidden />
@@ -710,8 +735,8 @@ export default function SupportCheckout({ tier }: Props) {
         onClick={() => setStep("form")} disabled={!scriptReady}
         style={{ ...primaryBtn(false), width: "100%", opacity: scriptReady ? 1 : 0.7 }}>
         {tier.isMonthly
-          ? `Subscribe ₹${amount.toLocaleString("en-IN")}/mo`
-          : `Contribute ₹${amount.toLocaleString("en-IN")}`}
+          ? t("co_subscribeMo", { amount: inr(amount) })
+          : t("co_contribute", { amount: inr(amount) })}
       </button>
     </div>
   );
@@ -819,15 +844,4 @@ function FieldError({ children }: { children: React.ReactNode }) {
       {children}
     </p>
   );
-}
-
-
-// Export timeAgo for use in ContributorWall
-export function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
 }

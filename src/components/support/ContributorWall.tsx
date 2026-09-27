@@ -19,12 +19,19 @@
 //  Query keys, refetch timings, caps) is unchanged — SupportCheckout
 //  invalidates these same query keys after a payment.
 //
+//  Languages: headings and counts come from "page_support". The payments
+//  API sends English tier labels ("☕ Chai Supporter") and relative times
+//  ("This week", "September 2026"); both are mapped to translated text
+//  here, and anything unknown is shown as sent. Names are shown as entered.
+//
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
 import type { ContributorsResponse, ContributorItem } from "@/app/api/payment/contributors/route";
 import { normalizeSocialLink } from "@/lib/social-link";
 import { Card, EmptyState, Pill, SectionHeader } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
 
 const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   instagram: Instagram,
@@ -44,6 +51,15 @@ interface SubscriberItem {
   monthsActive: number;
 }
 
+/** English tier label from /api/payment/contributors → message key (emoji kept). */
+const WALL_TIER_KEYS: Array<[string, string]> = [
+  ["Chai Supporter", "wallTier_chai"],
+  ["District Supporter", "wallTier_district"],
+  ["State Supporter", "wallTier_state"],
+  ["All-India Patron", "wallTier_patron"],
+  ["Founding Builder", "wallTier_founder"],
+];
+
 /** Shared style: one-line text that ends in "…" when too long. */
 const ELLIPSIS: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
@@ -59,40 +75,66 @@ function Strip({ children, label }: { children: React.ReactNode; label: string }
   );
 }
 
+/** Translated display name, tier label and time for one API row. */
+function useWallText() {
+  const t = useTranslations("page_support");
+  const { date } = useFormat();
+  return {
+    name: (n: string) => (n === "Anonymous" ? t("anonymous") : n === "Supporter" ? t("supporter") : n),
+    tier: (label: string) => {
+      const hit = WALL_TIER_KEYS.find(([en]) => label.endsWith(en));
+      if (!hit) return label;
+      const emoji = label.slice(0, label.length - hit[0].length).trim();
+      return emoji ? `${emoji} ${t(hit[1])}` : t(hit[1]);
+    },
+    time: (s: string) => {
+      if (s === "Today") return t("wallToday");
+      if (s === "This week") return t("wallThisWeek");
+      if (s === "This month") return t("wallThisMonth");
+      // "September 2026" → the month and year in the reader's language.
+      const parsed = new Date(`1 ${s}`);
+      return Number.isNaN(parsed.getTime()) ? s : date(parsed, { month: "long", year: "numeric" });
+    },
+  };
+}
+
 function ContributorCard({ item }: { item: ContributorItem }) {
+  const w = useWallText();
   return (
     <Card as="li" tinted padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
-      <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: "20px", fontWeight: 600 }}>{item.displayName}</p>
+      <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>{w.name(item.displayName)}</p>
       <div style={{ margin: "4px 0 6px", maxWidth: "100%", overflow: "hidden" }}>
-        <Pill tone="support" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{item.tierLabel}</Pill>
+        <Pill tone="support" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{w.tier(item.tierLabel)}</Pill>
       </div>
       {item.message && (
-        <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+        <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: "0 0 4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
           &ldquo;{item.message.slice(0, 30)}{item.message.length > 30 ? "…" : ""}&rdquo;
         </p>
       )}
-      <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{item.timeAgo}</p>
+      <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: 0 }}>{w.time(item.timeAgo)}</p>
     </Card>
   );
 }
 
 function SubscriberCard({ item }: { item: SubscriberItem }) {
+  const t = useTranslations("page_support");
   const safeLink = normalizeSocialLink(item.socialLink);
   // Even when platform is missing we still render the ExternalLink icon as
   // long as we have a usable URL — keeps bare-domain entries clickable.
   const SocialIcon =
     (item.socialPlatform ? SOCIAL_ICONS[item.socialPlatform] : null) ?? (safeLink ? ExternalLink : null);
+  const badgeKey = item.badgeLevel ? `badge_${item.badgeLevel}` : null;
   return (
     <Card as="li" tinted padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: "20px", fontWeight: 600, flex: 1 }}>{item.name}</span>
+        <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: 1.45, fontWeight: 600, flex: 1 }}>{item.name}</span>
         {SocialIcon && safeLink && (
           <a
             href={safeLink}
             target="_blank"
             rel="noopener noreferrer"
             title={safeLink}
-            aria-label={`${item.name}'s profile`}
+            aria-label={t("wallProfile", { name: item.name })}
             style={{ color: "var(--hue)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
           >
             <SocialIcon size={12} aria-hidden />
@@ -101,13 +143,12 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
       </div>
       {item.badgeLevel && (
         <div style={{ marginTop: 4 }}>
-          <Pill tone="warn">{item.badgeLevel}</Pill>
+          <Pill tone="warn">{badgeKey && t.has(badgeKey) ? t(badgeKey) : item.badgeLevel}</Pill>
         </div>
       )}
       {item.monthsActive > 0 && (
-        <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "4px 0 0" }}>
-          <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{item.monthsActive}</span>{" "}
-          {item.monthsActive === 1 ? "month" : "months"} active
+        <p className="ftp-num" style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: "4px 0 0" }}>
+          {t("wallMonths", { n: item.monthsActive })}
         </p>
       )}
     </Card>
@@ -137,6 +178,11 @@ const TEXT_LINK: React.CSSProperties = {
 };
 
 export default function ContributorWall() {
+  const t = useTranslations("page_support");
+  const locale = useLocale();
+  const { number } = useFormat();
+  const num = (c: React.ReactNode) => <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{c}</span>;
+
   // Existing one-time contributors (from Contribution model)
   const { data, isLoading } = useQuery<ContributorsResponse>({
     queryKey: ["contributors"],
@@ -167,21 +213,21 @@ export default function ContributorWall() {
             emoji="🔁"
             title={
               <>
-                Active supporters
+                {t("wallActive")}
                 {subscribersTotal > subscribers.length && (
-                  <span style={{ fontSize: 14, color: "var(--ftp-text-2)", fontWeight: 400 }}>
-                    {" "}(<span className="ftp-num">{subscribersTotal.toLocaleString("en-IN")}</span> total)
+                  <span className="ftp-num" style={{ fontSize: 14, color: "var(--ftp-text-2)", fontWeight: 400 }}>
+                    {" "}{t("wallActiveTotal", { n: number(subscribersTotal) })}
                   </span>
                 )}
               </>
             }
             action={
-              <Link href="/en/contributors" style={TEXT_LINK}>
-                View all
+              <Link href={`/${locale}/contributors`} style={TEXT_LINK}>
+                {t("wallViewAll")}
               </Link>
             }
           />
-          <Strip label="Active supporters">
+          <Strip label={t("wallActive")}>
             {subscribers.map((item) => (
               <SubscriberCard key={item.id} item={item} />
             ))}
@@ -193,20 +239,17 @@ export default function ContributorWall() {
       <section>
         <SectionHeader
           emoji="🎁"
-          title={subscribers.length > 0 ? "One-time contributions" : "Contributions"}
+          title={subscribers.length > 0 ? t("wallOneTime") : t("wallContributions")}
           action={
             <>
               {!isLoading && data && data.count > 0 && (
                 <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{data.totalRupees.toLocaleString("en-IN")}</span>
-                  {" "}from{" "}
-                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{data.count}</span>
-                  {" "}supporter{data.count !== 1 ? "s" : ""}
+                  {t.rich("wallRaised", { amount: `₹${number(data.totalRupees)}`, count: data.count, num })}
                 </span>
               )}
               {oneTimeTotal > 50 && (
-                <Link href="/en/contributors?filter=one-time" style={TEXT_LINK}>
-                  View all <span className="ftp-num">{oneTimeTotal.toLocaleString("en-IN")}</span>
+                <Link href={`/${locale}/contributors?filter=one-time`} style={TEXT_LINK}>
+                  <span className="ftp-num">{t("wallViewAllN", { n: number(oneTimeTotal) })}</span>
                 </Link>
               )}
             </>
@@ -218,22 +261,16 @@ export default function ContributorWall() {
             {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : contributors.length === 0 ? (
-          <EmptyState emoji="🎁" title="Be the first to support ForThePeople.in!" body="Your name will appear here." />
+          <EmptyState emoji="🎁" title={t("wallEmptyTitle")} body={t("wallEmptyBody")} />
         ) : (
-          <Strip label="One-time contributions">
+          <Strip label={subscribers.length > 0 ? t("wallOneTime") : t("wallContributions")}>
             {contributors.map((item, i) => (
               <ContributorCard key={`${item.displayName}-${i}`} item={item} />
             ))}
           </Strip>
         )}
-
-        {/* Summary line */}
-        {!isLoading && data && data.count > 0 && (
-          <p className="ftp-body" style={{ textAlign: "center", marginTop: 12, color: "var(--ftp-text-2)" }}>
-            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{data.totalRupees.toLocaleString("en-IN")}</span> contributed by{" "}
-            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{data.count}</span> supporters — thank you!
-          </p>
-        )}
+        {/* (The "₹X from N supporters" total sits in the heading row; the
+            old summary line under the strip repeated it word for word.) */}
       </section>
     </div>
   );

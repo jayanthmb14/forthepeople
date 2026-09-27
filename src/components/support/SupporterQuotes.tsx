@@ -10,8 +10,10 @@
 // supporter has left a public message. Design v4: tinted Cards in the page
 // hue with a big quote mark, and a tier Pill.
 // The quotes themselves are user-written, shown exactly as submitted.
+// Heading and tier names: "page_support" messages.
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { Card, Pill, Section } from "@/components/district/ui";
 
@@ -22,6 +24,7 @@ interface Contributor {
 }
 
 export default function SupporterQuotes() {
+  const t = useTranslations("page_support");
   const [quotes, setQuotes] = useState<Contributor[]>([]);
 
   useEffect(() => {
@@ -39,26 +42,26 @@ export default function SupporterQuotes() {
 
   if (quotes.length === 0) return null;
 
+  const tierName = (tier: string) =>
+    t.has(`tier_${tier}_name`) ? t(`tier_${tier}_name`) : TIER_CONFIG[tier]?.name ?? tier;
+
   return (
-    <Section title="What supporters say" emoji="💬">
+    <Section title={t("quotesTitle")} emoji="💬">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 220px), 1fr))", gap: 12 }}>
-        {quotes.map((q, i) => {
-          const tierConf = TIER_CONFIG[q.tier];
-          return (
-            <Card key={i} as="article" tinted padding={16} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <span aria-hidden className="ftp-display" style={{ fontSize: 40, lineHeight: "28px", color: "var(--hue-pop)", fontWeight: 700 }}>
-                &ldquo;
-              </span>
-              <blockquote style={{ margin: 0, fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
-                {q.message}
-              </blockquote>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
-                <span className="ftp-body" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{q.name}</span>
-                <Pill tone="support">{tierConf?.name ?? q.tier}</Pill>
-              </div>
-            </Card>
-          );
-        })}
+        {quotes.map((q, i) => (
+          <Card key={i} as="article" tinted padding={16} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span aria-hidden className="ftp-display" style={{ fontSize: 40, lineHeight: "28px", color: "var(--hue-pop)", fontWeight: 700 }}>
+              &ldquo;
+            </span>
+            <blockquote style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--ftp-text)" }}>
+              {q.message}
+            </blockquote>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
+              <span className="ftp-body" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{q.name}</span>
+              <Pill tone="support">{tierName(q.tier)}</Pill>
+            </div>
+          </Card>
+        ))}
       </div>
     </Section>
   );
