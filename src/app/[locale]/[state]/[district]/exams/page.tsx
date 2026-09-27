@@ -492,7 +492,12 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
 
   const [examCategory, setExamCategory] = useState<"all" | ExamCategory>("all");
 
-  const allExamsRaw = examsData ? [...(examsData.stateExams ?? []), ...(examsData.districtExams ?? [])] : [];
+  // An exam can come back in both lists (state-wide and district); show it once.
+  const allExamsRaw = examsData
+    ? Array.from(
+        new Map([...(examsData.stateExams ?? []), ...(examsData.districtExams ?? [])].map((e) => [e.id, e])).values(),
+      )
+    : [];
 
   const allExams = examCategory === "all"
     ? allExamsRaw

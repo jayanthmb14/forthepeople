@@ -84,7 +84,8 @@
     "upcoming": "{step}: upcoming",
     "tbaAria": "{step}: date not announced",
     "inDays": "{n, plural, =0 {today} one {in # day} other {in # days}}",
-    "applyButton": "Apply"
+    "applyButton": "Apply",
+    "tba": "Not announced"
   },
   "sourcePill": "UPSC, SSC, state PSC"
 }

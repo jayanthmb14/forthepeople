@@ -84,7 +84,8 @@
     "upcoming": "{step}: ಮುಂಬರುತ್ತಿದೆ",
     "tbaAria": "{step}: ದಿನಾಂಕ ಇನ್ನೂ ಪ್ರಕಟಿಸಿಲ್ಲ",
     "inDays": "{n, plural, =0 {ಇಂದು} other {# ದಿನಗಳಲ್ಲಿ}}",
-    "applyButton": "ಅರ್ಜಿ ಸಲ್ಲಿಸಿ"
+    "applyButton": "ಅರ್ಜಿ ಸಲ್ಲಿಸಿ",
+    "tba": "ಪ್ರಕಟವಾಗಿಲ್ಲ"
   },
   "sourcePill": "UPSC, SSC, ರಾಜ್ಯ PSC"
 }
