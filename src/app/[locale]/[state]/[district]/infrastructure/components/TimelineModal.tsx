@@ -3,7 +3,8 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — full-screen dialog with a project's timeline and analysis.
- * Extracted from infrastructure/page.tsx (no behaviour change).
+ * Design v3: flat surface with a 1 px border (no shadow), token scrim,
+ * a 44 px close button, and the heading as the dialog's h2.
  */
 
 "use client";
@@ -11,13 +12,12 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
-import { AWAIT_STYLE, categoryIcon, normalizeCategory } from "./infra-utils";
+import { AWAIT_STYLE, CategoryIcon, normalizeCategory } from "./infra-utils";
 import TimelineEntry from "./TimelineEntry";
 import PrecomputedAnalysis from "./PrecomputedAnalysis";
 
 export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose: () => void }) {
   const updates = p.updates ?? [];
-  const Icon = categoryIcon(p.category);
 
   // ESC closes the modal; lock body scroll while open
   useEffect(() => {
@@ -39,7 +39,8 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: "fixed", inset: 0,
-        background: "rgba(15, 23, 42, 0.55)",
+        // Scrim: the text colour at 55 % opacity (works in light and dark).
+        background: "color-mix(in srgb, var(--ftp-text) 55%, transparent)",
         zIndex: 1000,
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 16,
@@ -47,13 +48,13 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
     >
       <div
         style={{
-          background: "#FFF",
-          borderRadius: 14,
+          background: "var(--ftp-surface)",
+          border: "1px solid var(--ftp-border)",
+          borderRadius: "var(--ftp-radius-card)",
           width: "100%",
           maxWidth: 700,
           maxHeight: "calc(100vh - 32px)",
           display: "flex", flexDirection: "column",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
           overflow: "hidden",
         }}
       >
@@ -61,43 +62,45 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
         <div
           style={{
             display: "flex", alignItems: "flex-start", justifyContent: "space-between",
-            gap: 10, padding: "14px 18px",
-            borderBottom: "1px solid #F0F0EC",
+            gap: 10, padding: "12px 12px 12px 18px",
+            borderBottom: "1px solid var(--ftp-border)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
-            <Icon size={18} style={{ color: "#2563EB", flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1, paddingTop: 6 }}>
+            <CategoryIcon category={p.category} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.3 }}>{p.name}</div>
-              <div style={{ fontSize: 11, color: "#6B7280" }}>
+              <h2 className="ftp-title">{p.name}</h2>
+              <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
                 {normalizeCategory(p.category)}
                 {p.executingAgency && <> · Executing: {p.executingAgency}</>}
               </div>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close timeline"
             style={{
-              background: "none", border: "none", padding: 4, color: "#6B6B6B",
-              cursor: "pointer", display: "flex", alignItems: "center",
+              width: 44, height: 44, flexShrink: 0,
+              background: "none", border: "none", color: "var(--ftp-text-2)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "var(--ftp-radius-tile)",
             }}
           >
-            <X size={18} />
+            <X size={18} aria-hidden />
           </button>
         </div>
 
         {/* Scrollable body */}
         <div style={{ overflowY: "auto", padding: "14px 18px" }}>
           {p.description && (
-            <section style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+            <section style={{ marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--ftp-border)" }}>
+              <div className="ftp-label" style={{ marginBottom: 6 }}>
                 About this project
               </div>
-              <div style={{ fontSize: 14, color: "#4A4A4A", lineHeight: 1.55, marginBottom: 12 }}>
+              <p className="ftp-body" style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
                 {p.description}
-              </div>
-              <hr style={{ border: "none", borderTop: "1px solid #F0F0EC", margin: 0 }} />
+              </p>
             </section>
           )}
 
@@ -106,22 +109,16 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
               {updates.map((u) => <TimelineEntry key={u.id} u={u} />)}
             </div>
           ) : (
-            <div
-              style={{
-                padding: "14px 16px", background: "#F9FAFB",
-                border: "1px dashed #E8E8E4", borderRadius: 10,
-                ...AWAIT_STYLE, fontSize: 12,
-              }}
-            >
+            <p className="ftp-body" style={{ ...AWAIT_STYLE }}>
               No timeline entries yet — updates appear here as news covers this project.
-            </div>
+            </p>
           )}
 
           <div style={{ marginTop: 14 }}>
             <PrecomputedAnalysis projectId={p.id} />
           </div>
 
-          <div style={{ marginTop: 12, fontSize: 10, color: "#9B9B9B", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 12, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
             Data sourced from news articles. Not independently verified. Contact{" "}
             {p.executingAgency ?? "the executing agency"} for official status.
           </div>

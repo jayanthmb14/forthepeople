@@ -3,10 +3,17 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — how recently news updated the tracked projects.
- * Extracted from infrastructure/page.tsx (no behaviour change).
+ * Design v3: one quiet line with a 6 px status dot (live = within a week,
+ * warn = older). No tinted box, no emoji.
  */
 
+import { Info } from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
+
+const LINE: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 8,
+  marginBottom: 14, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)",
+};
 
 export default function DataFreshnessIndicator({ projects }: { projects: InfraProject[] }) {
   if (projects.length === 0) return null;
@@ -15,16 +22,8 @@ export default function DataFreshnessIndicator({ projects }: { projects: InfraPr
     .filter((t): t is number => t != null);
   if (newsTimestamps.length === 0) {
     return (
-      <div
-        role="status"
-        style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "8px 14px", marginBottom: 14, borderRadius: 8,
-          background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1E40AF",
-          fontSize: 12, lineHeight: 1.4,
-        }}
-      >
-        <span>ℹ</span>
+      <div role="status" style={LINE}>
+        <Info size={14} aria-hidden style={{ flexShrink: 0 }} />
         <span>Initial data — will be enriched as news articles appear</span>
       </div>
     );
@@ -38,22 +37,15 @@ export default function DataFreshnessIndicator({ projects }: { projects: InfraPr
     ? `${Math.max(1, ageHours)} hour${ageHours === 1 ? "" : "s"} ago`
     : `${ageDays} day${ageDays === 1 ? "" : "s"} ago`;
   return (
-    <div
-      role="status"
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "8px 14px", marginBottom: 14, borderRadius: 8,
-        background: isStale ? "#FFFBEB" : "#F0FDF4",
-        border: `1px solid ${isStale ? "#FDE68A" : "#86EFAC"}`,
-        color: isStale ? "#92400E" : "#15803D",
-        fontSize: 12, lineHeight: 1.4,
-      }}
-    >
-      <span>{isStale ? "⚠" : "✅"}</span>
+    <div role="status" style={LINE}>
+      <span
+        aria-hidden
+        style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: isStale ? "var(--ftp-warn)" : "var(--ftp-live)" }}
+      />
       <span>
         {isStale
-          ? <>Data last updated from news: <strong>{label}</strong></>
-          : <>Data updated: <strong>{label}</strong></>}
+          ? <>Data last updated from news: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{label}</span></>
+          : <>Data updated: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{label}</span></>}
       </span>
     </div>
   );

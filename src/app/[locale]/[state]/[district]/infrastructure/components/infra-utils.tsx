@@ -3,10 +3,13 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — shared helpers (status + category normalisation, formatting, predicates).
- * Extracted from infrastructure/page.tsx (no behaviour change).
+ * Extracted from infrastructure/page.tsx. Design v3: statuses map to kit
+ * Pill tones; no hex colours.
  */
 
+import { createElement } from "react";
 import type { ComponentType } from "react";
+import type { Tone } from "@/components/district/ui";
 import {
   HardHat,
   Route, Train, TramFront, Landmark, Droplets, Waves, Building2, Zap, Heart,
@@ -38,17 +41,40 @@ export function normalizeStatus(s: string | null | undefined): string {
   return MAP[cleaned] ?? cleaned;
 }
 
-export const STATUS_STYLE: Record<string, { bg: string; color: string; border: string; label: string }> = {
-  PROPOSED:           { bg: "#F3F4F6", color: "#6B7280", border: "#D1D5DB", label: "Proposed" },
-  APPROVED:           { bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE", label: "Approved" },
-  TENDER_ISSUED:      { bg: "#F5F3FF", color: "#7C3AED", border: "#C4B5FD", label: "Tender Issued" },
-  UNDER_CONSTRUCTION: { bg: "#FFF7ED", color: "#D97706", border: "#FDBA74", label: "Under Construction" },
-  ON_TRACK:           { bg: "#F0FDF4", color: "#16A34A", border: "#86EFAC", label: "On Track" },
-  DELAYED:            { bg: "#FEF2F2", color: "#DC2626", border: "#FCA5A5", label: "Delayed" },
-  STALLED:            { bg: "#FEF2F2", color: "#B91C1C", border: "#FCA5A5", label: "Stalled" },
-  COMPLETED:          { bg: "#F0FDF4", color: "#16A34A", border: "#86EFAC", label: "Completed" },
-  CANCELLED:          { bg: "#F3F4F6", color: "#6B7280", border: "#D1D5DB", label: "Cancelled" },
+// Design v3: each status maps to a kit Pill tone (colours live in the
+// --ftp-* tokens, never as hex here).
+export const STATUS_STYLE: Record<string, { tone: Tone; label: string }> = {
+  PROPOSED:           { tone: "neutral",  label: "Proposed" },
+  APPROVED:           { tone: "brand",    label: "Approved" },
+  TENDER_ISSUED:      { tone: "features", label: "Tender Issued" },
+  UNDER_CONSTRUCTION: { tone: "warn",     label: "Under Construction" },
+  ON_TRACK:           { tone: "live",     label: "On Track" },
+  DELAYED:            { tone: "danger",   label: "Delayed" },
+  STALLED:            { tone: "danger",   label: "Stalled" },
+  COMPLETED:          { tone: "live",     label: "Completed" },
+  CANCELLED:          { tone: "neutral",  label: "Cancelled" },
 };
+
+/** Solid token colour for a tone — used for 6–8 px timeline dots. */
+export const TONE_SOLID: Record<Tone, string> = {
+  brand: "var(--ftp-brand)",
+  live: "var(--ftp-live)",
+  warn: "var(--ftp-warn)",
+  danger: "var(--ftp-danger)",
+  features: "var(--ftp-features)",
+  support: "var(--ftp-support)",
+  neutral: "var(--ftp-border-strong)",
+};
+
+/** Tone for a timeline update type (budget → warn, delay → danger, …). */
+export function updateTone(updateType: string): Tone {
+  if (updateType.startsWith("BUDGET")) return "warn";
+  if (updateType === "DELAY" || updateType === "STALL" || updateType === "CANCELLATION") return "danger";
+  if (updateType === "COMPLETION" || updateType === "PHASE_COMPLETE" || updateType === "INAUGURATION") return "live";
+  if (updateType === "CONTROVERSY") return "warn";
+  if (updateType === "ADMIN_EDIT") return "features";
+  return "brand";
+}
 
 export function statusStyle(raw: string | null | undefined) {
   const s = normalizeStatus(raw);
@@ -113,6 +139,18 @@ export function categoryIcon(raw: string | null | undefined): LucideCmp {
   return CATEGORY_ICON[normalizeCategory(raw)] ?? HardHat;
 }
 
+/**
+ * The Lucide icon for a project category, as a real component so callers
+ * don't create components during render (a React Compiler rule).
+ */
+export function CategoryIcon({ category, size = 18 }: { category: string | null | undefined; size?: number }) {
+  return createElement(categoryIcon(category), {
+    size,
+    "aria-hidden": true,
+    style: { color: "var(--ftp-text-2)", flexShrink: 0 },
+  } as { size: number; style: React.CSSProperties });
+}
+
 export const UPDATE_TYPE_LABEL: Record<string, string> = {
   ANNOUNCEMENT: "Announcement", APPROVAL: "Approval", TENDER: "Tender",
   CONSTRUCTION_START: "Construction Start", BUDGET_INCREASE: "Budget Increase",
@@ -158,11 +196,8 @@ export function relativeTime(iso: string | null | undefined): string {
   return formatMonthYear(iso);
 }
 
-export const AWAIT_STYLE: React.CSSProperties = { color: "#9CA3AF", fontStyle: "italic" };
-
-export function Awaiting() {
-  return <span style={AWAIT_STYLE}>Awaiting data</span>;
-}
+/** Quiet text style for "not yet known" placeholders. */
+export const AWAIT_STYLE: React.CSSProperties = { color: "var(--ftp-text-2)" };
 
 // Normalized status predicates
 export function isCancelled(p: InfraProject): boolean { return normalizeStatus(p.status) === "CANCELLED"; }
