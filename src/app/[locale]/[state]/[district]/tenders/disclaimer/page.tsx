@@ -21,9 +21,8 @@ import { use } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck, Mail } from "lucide-react";
-import { PageHeader, Section, Card, LoadingShell, EmptyState } from "@/components/district/ui";
+import { ModulePage, PageHeader, Section, Card, LoadingShell, EmptyState } from "@/components/district/ui";
 import { useModuleText, usePlaceText } from "@/i18n/client";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
 interface DisclaimerClause {
@@ -106,15 +105,16 @@ export default function TenderDisclaimerPage({
 
   return (
     <ModuleErrorBoundary moduleName={mt.label("tenders")}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
+      <ModulePage>
         <PageHeader
           icon={ShieldCheck}
           emoji="⚖️"
           title={t("legalPage.title")}
           backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
           backLabel={t("backToTenders")}
-          accent={getModuleAccent("tenders")}
         />
+        {/* Legal text reads best at a book-like width, even on a wide screen. */}
+        <div style={{ maxWidth: 820 }}>
 
         {uiLocale !== "en" && (
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>{t("disclaimer.englishOnly")}</p>
@@ -170,7 +170,8 @@ export default function TenderDisclaimerPage({
             </span>
           </p>
         </Card>
-      </div>
+        </div>
+      </ModulePage>
     </ModuleErrorBoundary>
   );
 }

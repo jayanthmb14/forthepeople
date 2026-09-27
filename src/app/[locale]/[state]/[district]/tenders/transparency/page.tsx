@@ -4,8 +4,10 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Tender transparency page — module template.
-// A "which indicators come up most" list, then tenders grouped by factual
+// Tender transparency page — "Which tenders look unusual, and why?"
+// ModulePage → PageHeader → Explainer ("12 of 80 tenders carry an
+// indicator; an indicator is not an accusation") → one-line disclaimer →
+// a "which indicators come up most" list, then tenders grouped by factual
 // red-flag type, each group with its methodology. Flag logic and legal
 // sentences are unchanged; words live in "page_tenders" (flag names and
 // methodology included). Tender titles, authorities and the computed
@@ -19,14 +21,13 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Flag } from "lucide-react";
-import { PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
-import { ChartCard } from "@/components/district/visuals";
+import { ModulePage, PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
+import { ChartCard, Explainer } from "@/components/district/visuals";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
 import ModulePageFooter from "@/components/accountability/ModulePageFooter";
 import { TopBarList } from "@/components/money/visuals";
 import { useMoney } from "@/components/money/useMoney";
-import { useModuleText } from "@/i18n/client";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { useDistrictName, useModuleText } from "@/i18n/client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
 type TransparencyResp = {
@@ -53,6 +54,7 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
   const t = useTranslations("page_tenders");
   const mt = useModuleText();
   const m = useMoney();
+  const districtName = useDistrictName(stateSlug, districtSlug);
 
   const { data, isLoading, error } = useQuery<TransparencyResp>({
     queryKey: ["tenders-transparency", districtSlug],
@@ -68,19 +70,26 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
   const groups = Object.entries(data?.flagGroups ?? {})
     .map(([type, rows]) => ({ type, rows }))
     .sort((a, b2) => b2.rows.length - a.rows.length);
+  // How many different tenders carry at least one indicator.
+  const flaggedTenders = new Set(groups.flatMap((g) => g.rows.map((r) => r.tenderId))).size;
 
   return (
     <ModuleErrorBoundary moduleName={mt.label("tenders")}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
+      <ModulePage>
         <PageHeader
           icon={AlertTriangle}
           emoji="🔎"
           title={t("transparency.title")}
-          description={data?.districtName ? t("transparency.descriptionIn", { district: data.districtName }) : t("transparency.description")}
+          description={t("transparency.descriptionIn", { district: districtName })}
           backHref={tendersBase}
           backLabel={t("backToTenders")}
-          accent={getModuleAccent("tenders")}
         />
+
+        {/* The answer in one sentence. */}
+        {data && flaggedTenders > 0 && (
+          <Explainer emoji="🚩">{t.rich("transparency.explainer", { n: flaggedTenders, total: data.totalTenders, district: districtName, b })}</Explainer>
+        )}
+
         <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
         {isLoading && <LoadingShell rows={3} />}
@@ -162,7 +171,7 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
         </div>
 
         <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} showCompare={false} />
-      </div>
+      </ModulePage>
     </ModuleErrorBoundary>
   );
 }
