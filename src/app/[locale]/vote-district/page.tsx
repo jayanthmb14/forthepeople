@@ -5,7 +5,7 @@
  *
  * Session 12 v7 — /vote-district route.
  *
- * Lists all locked districts (770) with search / state filter / sort.
+ * Lists all locked (not-yet-live) districts with search / state filter / sort.
  * Vote button increments the existing DistrictRequest counter via
  * /api/district-request POST.
  *
@@ -15,11 +15,14 @@
 
 import type { Metadata } from "next";
 import VoteDistrictPage from "@/components/vote-district/VoteDistrictPage";
+import { getPlatformFacts } from "@/lib/platform-facts";
+
+// The "N districts waiting" count comes from the registry, never typed by hand.
+const { comingDistricts } = getPlatformFacts();
 
 export const metadata: Metadata = {
   title: "Vote for the next district — ForThePeople.in",
-  description:
-    "770 districts waiting. Your vote prioritises which goes live next on India's free district transparency platform.",
+  description: `${comingDistricts} districts waiting. Your vote prioritises which goes live next on India's free district transparency platform.`,
 };
 
 interface Props {
