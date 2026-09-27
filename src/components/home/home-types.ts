@@ -89,9 +89,7 @@ export interface HomeDistrict {
 /** One headline national figure in the "Explore all of India" band. */
 export interface IndiaFigure {
   id: "states" | "seats" | "languages" | "area";
-  /** page_home keys for the label and the value ("india.figStates"). */
-  labelKey: string;
-  valueKey: string;
+  /** The figure's numbers: states {a, b}; seats, languages {n}; area {n} in lakh sq km. */
   values: Record<string, number>;
   source: string;
   sourceUrl: string | null;

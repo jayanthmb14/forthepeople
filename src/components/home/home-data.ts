@@ -394,8 +394,6 @@ export async function loadIndiaFigures(): Promise<IndiaFigure[]> {
   if (states && uts) {
     out.push({
       id: "states",
-      valueKey: "india.figStatesValue",
-      labelKey: "india.figStates",
       values: { a: states.value, b: uts.value },
       source: states.source,
       sourceUrl: link(states.sourceUrl),
@@ -404,16 +402,16 @@ export async function loadIndiaFigures(): Promise<IndiaFigure[]> {
   }
   const seats = get("loksabha_seats_total");
   if (seats) {
-    out.push({ id: "seats", valueKey: "india.figSeatsValue", labelKey: "india.figSeats", values: { n: seats.value }, source: seats.source, sourceUrl: link(seats.sourceUrl), asOf: seats.asOfDate.toISOString() });
+    out.push({ id: "seats", values: { n: seats.value }, source: seats.source, sourceUrl: link(seats.sourceUrl), asOf: seats.asOfDate.toISOString() });
   }
   const langs = get("scheduled_languages");
   if (langs) {
-    out.push({ id: "languages", valueKey: "india.figLanguagesValue", labelKey: "india.figLanguages", values: { n: langs.value }, source: langs.source, sourceUrl: link(langs.sourceUrl), asOf: langs.asOfDate.toISOString() });
+    out.push({ id: "languages", values: { n: langs.value }, source: langs.source, sourceUrl: link(langs.sourceUrl), asOf: langs.asOfDate.toISOString() });
   }
   const area = get("area_total_million_km2");
   if (area) {
     // 3.29 million sq km = 32.9 lakh sq km (1 million = 10 lakh).
-    out.push({ id: "area", valueKey: "india.figAreaValue", labelKey: "india.figArea", values: { n: Math.round(area.value * 100) / 10 }, source: area.source, sourceUrl: link(area.sourceUrl), asOf: area.asOfDate.toISOString() });
+    out.push({ id: "area", values: { n: Math.round(area.value * 100) / 10 }, source: area.source, sourceUrl: link(area.sourceUrl), asOf: area.asOfDate.toISOString() });
   }
   return out;
 }

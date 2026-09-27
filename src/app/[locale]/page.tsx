@@ -32,10 +32,10 @@ import { routing } from "@/i18n/routing";
 
 import PriceTicker from "@/components/home/PriceTicker";
 import HomeIntro, { INTRO_SCRIPT } from "@/components/home/HomeIntro";
-import { loadCropTicks, loadMapStats, loadMarketFigures, loadPlatformStats } from "@/components/home/home-data";
+import { loadCropTicks, loadIndiaFigures, loadMapStats, loadMarketFigures, loadPlatformStats } from "@/components/home/home-data";
 import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
-import IndiaGlance, { type GlanceFigure } from "@/components/home/IndiaGlance";
+import IndiaGlance from "@/components/home/IndiaGlance";
 import PricesToday from "@/components/home/PricesToday";
 import SupportLine from "@/components/home/SupportLine";
 import styles from "@/components/home/home.module.css";
@@ -44,77 +44,6 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
 // District rows and national figures change rarely; refresh hourly.
 export const revalidate = 3600;
-
-/** The IndiaIndicator rows behind "India at a glance". */
-const GLANCE_ROWS = [
-  { moduleSlug: "demographics-population", metricKey: "population_total" },
-  { moduleSlug: "economy-gdp", metricKey: "gdp_nominal_usd_trillion" },
-  { moduleSlug: "budget-union", metricKey: "total_outlay_inr_lakh_crore" },
-  { moduleSlug: "national-snapshot", metricKey: "states_count" },
-  { moduleSlug: "national-snapshot", metricKey: "uts_count" },
-] as const;
-
-type IndicatorRow = {
-  moduleSlug: string;
-  metricKey: string;
-  numericValue: unknown;
-  source: string;
-  sourceUrl: string;
-  asOfDate: Date;
-};
-
-/** Up to four headline figures, in a fixed order, from whatever rows exist. */
-async function loadGlanceFigures(): Promise<GlanceFigure[]> {
-  let rows: IndicatorRow[] = [];
-  try {
-    rows = await prisma.indiaIndicator.findMany({
-      where: { OR: GLANCE_ROWS.map((r) => ({ moduleSlug: r.moduleSlug, metricKey: r.metricKey })) },
-      select: { moduleSlug: true, metricKey: true, numericValue: true, source: true, sourceUrl: true, asOfDate: true },
-    });
-  } catch {
-    return []; // the band still shows its text and the India link
-  }
-  const get = (metricKey: string) => {
-    const r = rows.find((x) => x.metricKey === metricKey);
-    const value = r && r.numericValue != null ? Number(r.numericValue) : NaN;
-    return r && Number.isFinite(value) ? { ...r, value } : null;
-  };
-  const link = (url: string | null | undefined) => (url && url.startsWith("https://") ? url : null);
-
-  const out: GlanceFigure[] = [];
-  const pop = get("population_total");
-  if (pop) {
-    out.push({
-      labelKey: "figPopulation",
-      valueKey: "figPopulationValue",
-      values: { n: Math.round(pop.value / 1e7) / 100 }, // people → billions, 2 decimals
-      source: pop.source,
-      sourceUrl: link(pop.sourceUrl),
-      asOf: pop.asOfDate.toISOString(),
-    });
-  }
-  const gdp = get("gdp_nominal_usd_trillion");
-  if (gdp) {
-    out.push({ labelKey: "figGdp", valueKey: "figGdpValue", values: { n: gdp.value }, source: gdp.source, sourceUrl: link(gdp.sourceUrl), asOf: gdp.asOfDate.toISOString() });
-  }
-  const budget = get("total_outlay_inr_lakh_crore");
-  if (budget) {
-    out.push({ labelKey: "figBudget", valueKey: "figBudgetValue", values: { n: budget.value }, source: budget.source, sourceUrl: link(budget.sourceUrl), asOf: budget.asOfDate.toISOString() });
-  }
-  const states = get("states_count");
-  const uts = get("uts_count");
-  if (states && uts) {
-    out.push({
-      labelKey: "figStates",
-      valueKey: "figStatesValue",
-      values: { a: states.value, b: uts.value },
-      source: states.source,
-      sourceUrl: link(states.sourceUrl),
-      asOf: (states.asOfDate > uts.asOfDate ? states.asOfDate : uts.asOfDate).toISOString(),
-    });
-  }
-  return out;
-}
 
 export async function generateMetadata({
   params,
@@ -168,7 +97,7 @@ export default async function HomePage({
       },
       orderBy: { name: "asc" },
     }),
-    loadGlanceFigures(),
+    loadIndiaFigures(),
     loadMarketFigures(),
   ]);
   const liveRows = activeRows.map((d) => ({ id: d.id, slug: d.slug, stateSlug: d.state.slug, population: d.population }));
@@ -200,8 +129,8 @@ export default async function HomePage({
         </div>
       </div>
 
-      <LiveDistrictsCard locale={locale} districts={activeDistricts} />
       <IndiaGlance locale={locale} figures={glance} />
+      <LiveDistrictsCard locale={locale} districts={activeDistricts} />
       <PricesToday />
       <SupportLine locale={locale} />
     </main>

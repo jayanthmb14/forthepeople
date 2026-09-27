@@ -71,5 +71,19 @@
     "open": "Open {name}",
     "legendLive": "Live district — tap for facts",
     "legendState": "State — opens its page"
+  },
+  "india": {
+    "kicker": "The whole country",
+    "title": "Explore all of India",
+    "body": "Parliament, the Union Budget, the economy, people and every state — the country's big numbers in one place.",
+    "cta": "Explore all of India",
+    "fig": {
+      "states": "States and union territories",
+      "seats": "Lok Sabha seats",
+      "languages": "Languages in the Constitution",
+      "area": "Area"
+    },
+    "areaUnit": "lakh sq km",
+    "checked": "checked {date}"
   }
 }

@@ -22,12 +22,14 @@
   --home-sky-tint: #eaf6fc;
   --home-violet: #7152c9;
   --home-violet-tint: #f4f0fd;
+  --home-indigo-tint: #eff0fd;
   --home-hl: #fde68a;
   padding-bottom: 8px;
 }
 :global([data-theme="dark"]) .home {
   --home-sky-tint: rgba(47, 119, 174, 0.14);
   --home-violet-tint: rgba(113, 82, 201, 0.14);
+  --home-indigo-tint: rgba(82, 86, 201, 0.14);
   --home-hl: rgba(253, 230, 138, 0.28);
 }
 
@@ -993,22 +995,64 @@
   font-weight: 600;
 }
 
-/* ───────────── India at a glance ───────────── */
+/* ───────────── Explore all of India (IndiaGlance) ───────────── */
 
+.sectionFirst {
+  margin-top: 24px;
+}
 .india {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: 18px;
   padding: 20px;
-  border: 1px solid color-mix(in srgb, var(--ftp-brand) 16%, transparent);
-  border-radius: 20px;
-  background: var(--ftp-brand-tint);
+  border: 1px solid color-mix(in srgb, var(--ftp-brand) 18%, transparent);
+  border-radius: 22px;
+  background:
+    radial-gradient(60% 90% at 100% 0%, var(--home-violet-tint) 0%, transparent 70%),
+    radial-gradient(70% 90% at 0% 100%, var(--home-sky-tint) 0%, transparent 70%),
+    linear-gradient(135deg, var(--ftp-brand-tint) 0%, var(--home-indigo-tint) 100%);
+}
+/* Soft rings in the corner: decoration only. */
+.indiaDecor {
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 28px solid color-mix(in srgb, var(--ftp-brand) 7%, transparent);
+  box-shadow: 0 0 0 36px color-mix(in srgb, var(--home-violet) 5%, transparent);
+  pointer-events: none;
 }
 .indiaText {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
+}
+.indiaKicker {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--home-violet);
+}
+.indiaTitle {
+  margin: 0;
+  font-family: var(--ftp-font-h1);
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ftp-text);
+}
+:global([lang="hi"]) .indiaTitle,
+:global([lang="kn"]) .indiaTitle {
+  line-height: 1.4;
+  letter-spacing: 0;
 }
 .indiaBody {
   margin: 0;
@@ -1017,7 +1061,14 @@
   line-height: 23px;
   color: var(--ftp-text);
 }
+.indiaCta {
+  margin-top: 6px;
+  min-height: 54px;
+  padding: 0 26px;
+  font-size: 17px;
+}
 .indiaFigures {
+  position: relative;
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1026,26 +1077,55 @@
 .figure {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--ftp-border);
-  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
+  border-radius: 16px;
   background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
 }
 .figureLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
-  line-height: 18px;
-  font-weight: 600;
+  line-height: 17px;
+  font-weight: 700;
   color: var(--ftp-text-2);
 }
+.figureIcon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--hue-tint);
+  color: var(--hue);
+}
 .figureValue {
-  margin: 0;
-  font-size: 19px;
-  line-height: 1.35;
-  font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  margin: 2px 0 0;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--ftp-text);
+  color: var(--hue-deep);
+}
+.figurePlus {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ftp-text-2);
+}
+.figureUnit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
 }
 .figureSource {
   margin: 0;
@@ -1158,10 +1238,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .india {
-    padding: 24px;
-  }
-  .figureValue {
-    font-size: 21px;
+    padding: 26px;
   }
 }
 @media (min-width: 768px) {
@@ -1203,10 +1280,10 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .india {
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     align-items: center;
-    gap: 32px;
-    padding: 28px 32px;
+    gap: 36px;
+    padding: 32px 36px;
   }
 }
 @media (max-width: 479px) {
