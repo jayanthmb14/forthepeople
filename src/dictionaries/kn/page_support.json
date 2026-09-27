@@ -146,8 +146,8 @@
   "banner_more": "+{n} ಇನ್ನಷ್ಟು",
   "banner_anon": "{n, plural, one {ಹೆಸರು ತೋರಿಸದ # ವ್ಯಕ್ತಿ} other {ಹೆಸರು ತೋರಿಸದ # ಜನರು}}",
   "banner_anonAnd": "ಮತ್ತು {n, plural, one {ಹೆಸರು ತೋರಿಸದ # ವ್ಯಕ್ತಿ} other {ಹೆಸರು ತೋರಿಸದ # ಜನರು}}",
-  "banner_none": "{district} ಗೆ ಇನ್ನೂ ಯಾರ ಬೆಂಬಲವೂ ಇಲ್ಲ.",
-  "banner_cta": "{district} ಗೆ ಬೆಂಬಲ ನೀಡಿ: ತಿಂಗಳಿಗೆ {amount}",
-  "banner_ctaOr": "ಅಥವಾ ಇಡೀ {state} ಗೆ ತಿಂಗಳಿಗೆ {stateAmount}, ಅಥವಾ ಇಡೀ ಭಾರತಕ್ಕೆ ತಿಂಗಳಿಗೆ {indiaAmount}.",
+  "banner_none": "{district} ಜಿಲ್ಲೆಗೆ ಇನ್ನೂ ಯಾರ ಬೆಂಬಲವೂ ಇಲ್ಲ.",
+  "banner_cta": "{district} ಜಿಲ್ಲೆಗೆ ಬೆಂಬಲ ನೀಡಿ: ತಿಂಗಳಿಗೆ {amount}",
+  "banner_ctaOr": "ಅಥವಾ ಇಡೀ {state} ರಾಜ್ಯಕ್ಕೆ ತಿಂಗಳಿಗೆ {stateAmount}, ಅಥವಾ ಇಡೀ ಭಾರತಕ್ಕೆ ತಿಂಗಳಿಗೆ {indiaAmount}.",
   "national_title": "ಭಾರತದಾದ್ಯಂತ ಇವರ ಬೆಂಬಲದಿಂದ"
 }
