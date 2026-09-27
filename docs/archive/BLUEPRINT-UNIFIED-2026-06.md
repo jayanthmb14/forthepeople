@@ -1,10 +1,15 @@
-# FORTHEPEOPLE.IN — UNIFIED MASTER BLUEPRINT
-# ═══════════════════════════════════════════════════════════
-# SINGLE SOURCE OF TRUTH — Combines original + all addendums
-# Claude Code: Read this file at the start of EVERY session.
-# Generic for ANY Indian district. Pilots: Mandya, Mysuru, Bengaluru Urban (Karnataka).
-# Last updated: June 11, 2026
-# ═══════════════════════════════════════════════════════════
+# FORTHEPEOPLE.IN — UNIFIED BLUEPRINT (ARCHIVED 2026-09-27)
+> Frozen record of March–June 2026. Do NOT follow it for new work: the stack, design,
+> modules, AI providers, admin auth and deployment described below have all changed.
+> The current blueprint is docs/BLUEPRINT-UNIFIED.md. Detailed sources of truth:
+>   CLAUDE.md (rules) · docs/ARCHITECTURE.md (structure, routes, crons, auth, AI) ·
+>   docs/DESIGN-SYSTEM.md + docs/LAYOUT.md (Design v5 "Calm", device layouts, DetailSheet) ·
+>   docs/MODULE-MAP.md (36 modules in 9 groups) · docs/I18N.md (en default, hi + kn beta,
+>   translate-once backend) · docs/RUNBOOKS/* · CHANGELOG.md (what shipped, when).
+> Known-wrong here: §3 design, §4 stack, §5 locales, §6 module list, §9 AI providers,
+> §10 "weekly cron", §13 Railway, §17 admin cookie, §19 tiers, §20 env vars, §21 deploy.
+> Account e-mails and Vercel scope names below are historical; account details belong
+> in the owner's private vault.
 #
 # 2026-06-11 — SESSION 1: SIGNED REVOCABLE ADMIN SESSIONS (SECURITY):  COMPLETE (local, pre-push)
 #   Killed the CRITICAL admin-auth bypass. The cookie ftp_admin_v1 was the static

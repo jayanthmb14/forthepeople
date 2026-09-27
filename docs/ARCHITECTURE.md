@@ -32,8 +32,10 @@ local/legacy runner for the same job modules, not part of the deployed system.
 ## 2. Routing
 
 - `src/proxy.ts` (Next.js 16's replacement for middleware) runs `next-intl`
-  routing: every public path is prefixed with a locale (`/en`, `/kn`); bare paths
-  such as `/support` or `/about` redirect to their `/en/...` equivalent. API
+  routing: every public path is prefixed with a locale (`/en`, `/hi`, `/kn`;
+  routed locales come from `src/i18n/languages.ts`, and planned-but-unshipped
+  ones redirect to `/en`); bare paths such as `/support` or `/about` redirect
+  to their `/en/...` equivalent. API
   routes and `/_next` are excluded from the matcher. An optional admin IP
   allowlist is applied here as defence in depth; the real admin gate is
   per-route (section 5).
@@ -47,8 +49,10 @@ local/legacy runner for the same job modules, not part of the deployed system.
 - `src/app/[locale]/admin/...` — the admin console (tabs are client components
   under the same folder). `/admin/review`, `/admin/security`, `/admin/recover`
   are standalone tool pages.
-- Root-level duplicates (`src/app/support`, `src/app/about`, ...) exist only so
-  the locale pages can re-export them; they are never served directly.
+- Everything public lives under `src/app/[locale]/…` (about, contribute,
+  feedback, support, privacy and disclaimer moved there in e505d27). Directly
+  under `src/app/` there are only the root layout and page, the error and
+  not-found pages, global CSS, the favicon and the SEO/metadata routes below.
 - SEO: `src/app/robots.ts`, `src/app/sitemap.ts` (built from the active
   district list), `opengraph-image.tsx`, `manifest.ts`. `public/.well-known/`
   holds `security.txt` and `funding-manifest-urls`; `public/funding.json` is the
@@ -64,7 +68,8 @@ local/legacy runner for the same job modules, not part of the deployed system.
 2. **Scheduling** — `vercel.json` `crons` calls `src/app/api/cron/<job>/route.ts`
    on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, takes
    a Redis lock so overlapping runs cannot double-write, runs the job(s), records
-   a `ScraperLog` row with timestamps, and posts an admin alert on failure.
+   a `ScraperLog` row with timestamps; some routes (not all yet) also post an
+   admin alert on failure.
    `/api/health` reads those timestamps and reports `degraded` when a job is
    older than twice its schedule.
 3. **Storage** — Neon PostgreSQL via Prisma (`prisma/schema.prisma`, generated
@@ -162,7 +167,7 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 | Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:` |
 | Which districts exist / are active | `src/lib/constants/districts.ts` | code, so it ships with a deploy |
 | Module registry, India modules, responsibility copy | `src/lib/constants/*`, `src/lib/india/*` | code |
-| Translations | `src/dictionaries/*.json` via `next-intl` | `en` complete, `kn` pilot |
+| Translations | `src/dictionaries/<locale>.json` + `<locale>/page_*.json` via `next-intl` (namespaces indexed by `scripts/gen-i18n-namespaces.mjs`) | `en` live and default; `hi`, `kn` beta (machine drafts). Live text (news, insights) via `ContentTranslation` + the `translate-content` cron — needs `db:push` + one provider key |
 | Map boundaries | `public/geo/*.json` | with source attribution |
 | Support-page copy, announcements | DB rows edited from admin | fall back to `src/lib/support-defaults.ts` |
 | Env configuration | Vercel project env | names listed in `.env.example` |
@@ -187,15 +192,23 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 
 ```
 .github/          CI (lint, type-check+build, unit tests), Dependabot, PR template, CODEOWNERS
-docs/             this file, BUG-TRACKER, LIVE-STATE, module guides, archived BLUEPRINT
+docs/             BLUEPRINT-UNIFIED (overview), this file, DESIGN-SYSTEM, LAYOUT, MODULE-MAP,
+                  I18N, RUNBOOKS/, module guides; archive/ holds history only
 prisma/           schema + seed scripts (one per district / module)
 public/           static assets, geo boundaries, funding.json, .well-known/
-scripts/          one-off ops scripts (checks, purges, extracts); not type-checked by the app tsconfig
+scripts/          reusable ops scripts (i18n index, geo rewind, health scores, activation);
+                  archive/ = provenance only; not type-checked by the app tsconfig
 src/app/          routes (see section 2)
-src/components/   UI, grouped by area (home, india, tenders, admin, support, common)
+src/components/   UI by area: district/ (the kit: ui.tsx, visuals.tsx, DetailSheet),
+                  layout/, home/, india/, map/, admin/, support/, site/, common/,
+                  and per-module folders (accountability, community, money, farm,
+                  crops, water, land-water, demographics, services-1, services-2,
+                  tenders, …)
 src/hooks/        React Query hooks for client components
 src/lib/          everything shared: db, redis, cache, ai-provider, admin-auth, tenders, validators
-src/scraper/      collection job modules + parsers (run by the cron routes)
+src/scraper/      collection job modules + parsers; a few run from the cron routes
+                  (news, crops, weather, dams, budget, AI analysis), the rest only
+                  from the local scheduler (`npm run scraper`)
 tests/            Vitest suites
 ```
 
