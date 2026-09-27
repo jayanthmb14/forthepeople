@@ -32,7 +32,8 @@ import { routing } from "@/i18n/routing";
 
 import PriceTicker from "@/components/home/PriceTicker";
 import HomeIntro, { INTRO_SCRIPT } from "@/components/home/HomeIntro";
-import { loadCropTicks, loadIndiaFigures, loadMapStats, loadMarketFigures, loadPlatformStats } from "@/components/home/home-data";
+import { loadCropTicks, loadIndiaFigures, loadMapStats, loadPlatformStats } from "@/components/home/home-data";
+import { loadMarketFigures } from "@/components/home/home-markets";
 import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance from "@/components/home/IndiaGlance";
