@@ -4,9 +4,15 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Home page — small pure formatters shared by the ticker, the price cards
-// and the map card. Numbers always use Indian grouping (docs/I18N.md §2.5).
+// Home page — small pure formatters (and two lookup tables) shared by the
+// ticker, the price cards and the map card. Numbers always use Indian grouping (docs/I18N.md §2.5).
 import { NUMBER_LOCALE, intlLocale } from "@/i18n/languages";
+
+/** page_home message key for a price unit ("/10 g", "/kg"). */
+export const UNIT_KEY = { "10g": "ticker.per10g", kg: "ticker.perKg" } as const;
+
+/** Petrol and diesel pictures and cards take these hues (identity only). */
+export const FUEL_HUE = { petrol: "teal", diesel: "indigo" } as const;
 
 /** "₹15,211", "$67.42", "81,234" (index points). */
 export function money(value: number, currency: "INR" | "USD" | null, decimals: number): string {
@@ -36,11 +42,6 @@ export function dayWords(day: string, ageDays: number, locale: string): string {
     return rtf.format(-ageDays, "day");
   }
   return shortDay(day, locale);
-}
-
-/** Rupees per quintal → rupees per kg ("17.5"), one decimal at most. */
-export function perKg(perQuintal: number): string {
-  return (perQuintal / 100).toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 });
 }
 
 /** "6 hr ago" / "3 days ago" (narrow Intl wording, page language) from `then` to `now`. */

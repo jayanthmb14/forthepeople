@@ -16,12 +16,6 @@
   --g-silver-hi: #f3f4f6;
   --g-silver: #cfd4dc;
   --g-silver-lo: #7c8594;
-  --g-green: #1f9d55;
-  --g-green-hi: #bde8cd;
-  --g-leaf: #34a853;
-  --g-soil: #b98552;
-  --g-oil: #334155;
-  --g-oil-hi: #94a3b8;
   --g-note: #dcf3e4;
   --g-note-lo: #2f7d4c;
   display: inline-block;
@@ -29,8 +23,6 @@
   vertical-align: middle;
 }
 :global([data-theme="dark"]) .glyph {
-  --g-oil: #cbd5e1;
-  --g-oil-hi: #f1f5f9;
   --g-note: rgba(74, 222, 128, 0.18);
   --g-note-lo: #86efac;
 }
@@ -55,15 +47,11 @@
 .note { fill: var(--g-note); stroke: var(--g-note-lo); stroke-width: 1.2; stroke-linejoin: round; }
 .noteMark { fill: none; stroke: var(--g-note-lo); stroke-width: 1.5; stroke-linecap: round; }
 
-/* Crude oil drop */
-.oil { fill: var(--g-oil); }
-.oilShine { fill: none; stroke: var(--g-oil-hi); stroke-width: 1.4; stroke-linecap: round; }
-
-/* Crop sprout */
-.leaf { fill: var(--g-leaf); }
-.leafLight { fill: var(--g-green-hi); stroke: var(--g-leaf); stroke-width: 1; }
-.stem { fill: none; stroke: var(--g-green); stroke-width: 1.6; stroke-linecap: round; }
-.soil { fill: var(--g-soil); opacity: 0.85; }
+/* Fuel pump (petrol, diesel): parent sets .ftp-hue-<name> */
+.pumpBody { fill: var(--hue-pop, var(--ftp-brand-tint)); stroke: var(--hue, var(--ftp-brand)); stroke-width: 1.3; stroke-linejoin: round; }
+.pumpWindow { fill: var(--ftp-surface); stroke: var(--hue, var(--ftp-brand)); stroke-width: 1.1; }
+.pumpBase { fill: none; stroke: var(--hue-deep, var(--ftp-brand-deep)); stroke-width: 1.6; stroke-linecap: round; }
+.pumpHose { fill: none; stroke: var(--hue-deep, var(--ftp-brand-deep)); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Step pictures ("How we get and check the data"): parent sets .ftp-hue-<name> */
 .stepTile { fill: var(--hue-tint, var(--ftp-brand-tint)); }

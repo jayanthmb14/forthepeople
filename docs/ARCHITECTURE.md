@@ -160,6 +160,9 @@ old Docker files are archived in `docs/archive/docker/`.
    - `scrape-courts` reads NJDG; `scrape-jjm`, `scrape-schools`,
      `scrape-mgnrega` and `scrape-tenders` read the JJM dashboard, UDISE+,
      the NREGA "At a glance" page and the state e-procurement portals.
+   - `scrape-fuel` reads PPAC's daily metro petrol/diesel table and checks
+     Delhi against PPAC's "as on" line and BPCL's price build-up (PDFs read
+     by the small `src/scraper/lib/pdf-text.ts`); Redis `ftp:data:fuel`.
    `/api/health` reads those timestamps and reports `degraded` when a job is
    older than twice its schedule.
 3. **Storage** — Neon PostgreSQL via Prisma (`prisma/schema.prisma`, generated

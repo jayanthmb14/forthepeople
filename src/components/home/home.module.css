@@ -23,7 +23,6 @@
   --home-violet: #7152c9;
   --home-violet-tint: #f4f0fd;
   --home-indigo-tint: #eff0fd;
-  --home-hl: #fde68a;
   --home-gold: #c8950f;
   --home-gold-tint: #fdf3d3;
   --home-gold-ring: #efd99a;
@@ -36,7 +35,6 @@
   --home-sky-tint: rgba(47, 119, 174, 0.14);
   --home-violet-tint: rgba(113, 82, 201, 0.14);
   --home-indigo-tint: rgba(82, 86, 201, 0.14);
-  --home-hl: rgba(253, 230, 138, 0.28);
   --home-gold: #e4b53b;
   --home-gold-tint: rgba(228, 181, 59, 0.16);
   --home-gold-ring: rgba(228, 181, 59, 0.35);
@@ -53,30 +51,6 @@
   min-height: 44px;
   border-bottom: 1px solid var(--ftp-border);
   background: var(--ftp-surface);
-}
-.tickerToday {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  min-width: 92px;
-  margin: 0;
-  padding: 4px 12px;
-  border-right: 1px solid color-mix(in srgb, var(--ftp-brand) 18%, var(--ftp-border));
-  background: var(--ftp-brand-tint);
-  font-size: 12px;
-  line-height: 15px;
-  white-space: nowrap;
-}
-.tickerTodayDate {
-  font-weight: 700;
-  color: var(--ftp-brand-deep);
-}
-.tickerTodayTime {
-  font-weight: 500;
-  color: var(--ftp-text-2);
-  font-variant-numeric: tabular-nums;
 }
 .tickerViewport {
   position: relative;
@@ -214,12 +188,6 @@
   outline-offset: -2px;
 }
 @media (max-width: 639px) {
-  .tickerToday {
-    min-width: 78px;
-    padding: 4px 10px;
-    font-size: 11.5px;
-    line-height: 14px;
-  }
   .tickItem {
     font-size: 13px;
   }
@@ -394,13 +362,18 @@
   gap: 8px;
   align-self: flex-start;
   margin: 0;
-  padding: 4px 12px 4px 8px;
+  padding: 5px 14px 5px 10px;
   border: 1px solid color-mix(in srgb, var(--ftp-brand) 22%, transparent);
   border-radius: 999px;
   background: var(--ftp-surface);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 700;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--ftp-text);
+}
+/* "Your data." — the one phrase of the slogan made stronger. */
+.kickerEm {
+  font-weight: 800;
   color: var(--ftp-brand-deep);
 }
 .kickerDot {
@@ -416,18 +389,16 @@
   font-family: var(--ftp-font-h1);
   font-size: clamp(28px, 4.2vw, 46px);
   line-height: 1.15;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ftp-text);
   text-wrap: balance;
 }
+/* The key words ("your district"): brand blue and the heaviest weight —
+   no highlighter stroke behind them. */
 .titleHl {
-  padding: 0 0.12em;
-  border-radius: 0.2em;
-  background: linear-gradient(180deg, transparent 58%, var(--home-hl) 58%, var(--home-hl) 92%, transparent 92%);
-  color: var(--ftp-brand-deep);
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
+  font-weight: 800;
+  color: var(--ftp-brand);
 }
 :global([lang="hi"]) .title,
 :global([lang="kn"]) .title {
@@ -495,30 +466,69 @@
   outline-offset: 2px;
 }
 
-/* Stats row (HeroStats): pastel chips, one hue each */
-.stats {
+/* Stats (HeroStats): "Your district data — tracked and checked", then one
+   pastel tile per figure (two per row on phones, four from 640 px). */
+.statsBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.statsHead {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 14px;
+}
+.statsLine {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.statsLine strong {
+  font-weight: 800;
+  color: var(--ftp-text);
+}
+.statsUpdated {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin: 2px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 .stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 4px 12px 4px 6px;
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, transparent);
-  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
+  border-radius: 14px;
   background: var(--hue-tint);
-  font-size: 13px;
-  line-height: 18px;
+}
+.statTop {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 .statIcon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -527,28 +537,27 @@
   color: var(--hue);
 }
 .statNum {
-  font-size: 15px;
+  font-size: 24px;
+  line-height: 30px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--hue-deep);
 }
 .statLabel {
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 600;
   color: var(--ftp-text-2);
-}
-.statUpdated {
-  padding-left: 12px;
-  border-color: var(--ftp-border);
-  background: var(--ftp-surface);
 }
 .statDot {
   width: 8px;
   height: 8px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--ftp-live);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-live) 22%, transparent);
 }
-.statUpdated[data-fresh="false"] .statDot {
+.statsUpdated[data-fresh="false"] .statDot {
   background: var(--ftp-warn);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-warn) 22%, transparent);
 }
@@ -633,27 +642,21 @@
   padding: 12px 12px 8px;
   border: 1px solid var(--ftp-border);
   border-radius: 20px;
-  background:
-    radial-gradient(80% 60% at 50% 40%, var(--home-sky-tint) 0%, transparent 70%),
-    var(--ftp-surface);
+  /* Plain white, so the pastel land stands out clearly. */
+  background: var(--ftp-surface);
   box-shadow: var(--ftp-shadow-1);
 }
 .mapHead {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 2px 56px 4px 4px;
+  padding: 2px 4px 4px;
 }
 .mapTitle {
   font-size: 15px;
   line-height: 21px;
   font-weight: 700;
   color: var(--ftp-text);
-}
-.mapHint {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--ftp-text-2);
 }
 .mapLoading {
   width: 100%;
@@ -690,7 +693,6 @@
 .legendLand {
   border-radius: 3px;
   border: 1px solid var(--ftp-border-strong);
-  background: var(--ftp-map-locked);
 }
 
 /* The district card inside the map */
@@ -1099,13 +1101,6 @@
   align-items: flex-start;
   gap: 8px;
 }
-.indiaKicker {
-  margin: 0;
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 700;
-  color: var(--home-violet);
-}
 .indiaTitle {
   margin: 0;
   font-family: var(--ftp-font-h1);
@@ -1243,15 +1238,11 @@
   --p-line: var(--home-silver);
   --p-ring: var(--home-silver-ring);
 }
-.priceCard[data-kind="note"] {
-  --p-wash: var(--ftp-live-tint);
-  --p-line: var(--ftp-live);
-  --p-ring: color-mix(in srgb, var(--ftp-live) 22%, var(--ftp-border));
-}
-.priceCard[data-kind="oil"] {
-  --p-wash: var(--ftp-surface-2);
-  --p-line: var(--ftp-text-2);
-  --p-ring: var(--ftp-border-strong);
+/* Petrol and diesel: the card's hue (.ftp-hue-teal / .ftp-hue-indigo). */
+.priceCard[data-kind="fuel"] {
+  --p-wash: var(--hue-tint);
+  --p-line: var(--hue);
+  --p-ring: color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
 }
 .priceHead {
   display: flex;
@@ -1337,6 +1328,9 @@
   stroke: var(--ftp-surface);
   stroke-width: 1.5;
 }
+.priceExtra .priceUnitWord {
+  margin-left: 2px;
+}
 .priceExtra {
   margin: 0;
   font-size: 13px;
@@ -1374,6 +1368,148 @@
 }
 .priceSource a:hover {
   color: var(--ftp-brand-deep);
+}
+/* "Delhi" beside Petrol / Diesel */
+.priceCity {
+  margin-left: 6px;
+  font-weight: 600;
+  color: var(--hue-deep, var(--ftp-text-2));
+}
+/* The other metros under the Delhi price */
+.fuelCities {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px dashed color-mix(in srgb, var(--p-line) 30%, var(--ftp-border));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+.fuelCities li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fuelCities li > span:last-child {
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.fuelCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 600;
+  color: var(--ftp-live-text);
+}
+.fuelCheck svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.fuelCheck a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Sensex, Nifty 50 and the US dollar: one slim row under the cards */
+.marketRow {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.marketItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 14px;
+  background: var(--ftp-surface);
+}
+.marketArt {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--ftp-surface-2);
+}
+.marketText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.marketName {
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.marketSource {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.marketSource a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.marketOld {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0 6px;
+  border: 1px solid var(--ftp-warn-border);
+  border-radius: 999px;
+  background: var(--ftp-warn-tint);
+  color: var(--ftp-warn-text);
+  font-size: 11.5px;
+  line-height: 16px;
+  font-weight: 700;
+}
+.marketValue {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 16px;
+  line-height: 21px;
+  font-weight: 800;
+  color: var(--ftp-text);
+}
+.marketMove {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12.5px;
+  line-height: 17px;
+  font-weight: 700;
+}
+.marketMove[data-dir="up"] {
+  color: var(--ftp-live-text);
+}
+.marketMove[data-dir="down"] {
+  color: var(--ftp-danger);
+}
+/* A section a link jumps to: clear of the sticky header */
+.anchorTarget {
+  scroll-margin-top: 76px;
 }
 
 /* ───────────── How we get and check the data (DataChecks) ───────────── */
@@ -1562,11 +1698,13 @@
 /* ───────────── Wider screens ───────────── */
 
 @media (min-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
   .chips {
     grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   }
   .priceGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
   .india {
@@ -1583,6 +1721,14 @@
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 32px;
   }
+  /* Beside the map the text column is narrow until 1200 px: two tiles a row. */
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .marketRow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
   .heroMap {
     min-height: 420px;
   }
@@ -1598,6 +1744,9 @@
 @media (min-width: 1024px) {
   .heroBand {
     padding: 44px 0 12px;
+  }
+  .priceGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .steps {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1638,23 +1787,30 @@
     flex: 1 1 150px;
     padding: 0 14px;
   }
-  /* Stats: no icons, smaller chips, so they fit in two or three rows. */
-  .stats {
-    gap: 6px;
+  /* Map: a little more room for India. */
+  .map {
+    padding: 10px 8px 6px;
+    border-radius: 18px;
   }
+  /* Stats: two tiles per row, a little smaller. */
   .stat {
-    min-height: 30px;
-    padding: 3px 10px;
-    font-size: 12.5px;
+    padding: 8px 10px;
   }
   .statIcon {
-    display: none;
+    width: 22px;
+    height: 22px;
+  }
+  .statIcon svg {
+    width: 14px;
+    height: 14px;
   }
   .statNum {
-    font-size: 14px;
+    font-size: 21px;
+    line-height: 26px;
   }
-  .statUpdated {
-    padding-left: 10px;
+  .statsLine {
+    font-size: 15px;
+    line-height: 22px;
   }
   /* Live districts: two tight columns, no picture; the badge sits in the corner. */
   .chip {
@@ -1749,5 +1905,10 @@
   .btnPrimary:hover,
   .chip:hover {
     transform: none;
+  }
+}
+@media (min-width: 1200px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

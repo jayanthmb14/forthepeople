@@ -9,7 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 //
 //   ┌─ pastel band ──────────────────────────────────────────────────────┐
-//   │ The whole country                 ┌────────────┐ ┌────────────┐    │
+//   │                                   ┌────────────┐ ┌────────────┐    │
 //   │ Explore all of India              │ (map) 28+8 │ │ (hall) 543 │    │
 //   │ Parliament, the Union Budget, …   │ States and │ │ Lok Sabha  │    │
 //   │ [ Explore all of India → ]        │ UTs · MHA  │ │ seats · …  │    │
@@ -73,7 +73,6 @@ export default function IndiaGlance({ locale, figures }: { locale: string; figur
       <div className={styles.india}>
         <span className={styles.indiaDecor} aria-hidden />
         <div className={styles.indiaText}>
-          <p className={styles.indiaKicker}>{t("india.kicker")}</p>
           <h2 id="home-india" className={styles.indiaTitle}>
             {t("india.title")}
           </h2>

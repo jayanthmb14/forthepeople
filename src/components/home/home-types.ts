@@ -10,16 +10,16 @@
 //  boundary), no Prisma types, safe to import from client components.
 // ═══════════════════════════════════════════════════════════════════════
 
-/** A market price the ticker and the "Prices today" cards show. */
-export type MarketKey = "gold24" | "gold22" | "silver" | "sensex" | "nifty" | "usdInr" | "crude";
+/** A market price the ticker and the "Prices today" section show. */
+export type MarketKey = "gold24" | "gold22" | "silver" | "sensex" | "nifty" | "usdInr";
 
 export interface MarketFigure {
   key: MarketKey;
-  /** The newest value, already in the unit shown (gold per gram, silver per kg). */
+  /** The newest value, in the unit the source publishes (IBJA: gold per 10 g, silver per kg). */
   value: number;
   decimals: number;
   currency: "INR" | "USD" | null;
-  unit: "gram" | "kg" | "barrel" | null;
+  unit: "10g" | "kg" | null;
   /** Change since the trading day before `day`; null when the source gave only one day. */
   change: { pct: number; abs: number; direction: "up" | "down" | "flat"; prevDay: string } | null;
   /** Trading day of the value, "YYYY-MM-DD" (IST). */
@@ -36,21 +36,21 @@ export interface MarketFigure {
   old: boolean;
 }
 
-/** One mandi (crop market) price in the ticker. */
-export interface CropTick {
-  /** Commodity as the source publishes it ("Tomato", "Paddy(Common)"). */
-  commodity: string;
-  /** page_home key under "crops." for a translated name, or null (show as published). */
-  cropKey: string | null;
-  market: string;
-  /** Typical (modal) price in rupees per quintal, as published. */
-  perQuintal: number;
-  /** Date of the price, "YYYY-MM-DD" (IST). */
+/** Petrol or diesel at IOCL outlets (PPAC's daily table), for the ticker and the price cards. */
+export interface FuelFigure {
+  fuel: "petrol" | "diesel";
+  /** Delhi, the national reference, rupees per litre. */
+  city: "Delhi";
+  value: number;
+  /** "double" = PPAC and BPCL agree on Delhi; "single" = PPAC only. */
+  check: "double" | "single";
+  /** The other metros in PPAC's table (one official source), rupees per litre. */
+  others: Array<{ city: "Mumbai" | "Chennai" | "Kolkata"; value: number }>;
+  /** PPAC's "as on" day, "YYYY-MM-DD" (prices in force from 6 am that day). */
   day: string;
   ageDays: number;
+  /** Older than a normal weekend / holiday gap in PPAC's posting. */
   old: boolean;
-  stateSlug: string;
-  districtSlug: string;
 }
 
 /** Live facts for one district on the home map (same rules as the district pages). */
@@ -64,7 +64,7 @@ export interface MapDistrictStat {
   newest: string | null;
 }
 
-/** "10 districts live · 7 states · 5,874 data points · 36 dashboards · updated …" */
+/** "Your district data": 10 districts live · 7 states · 36 dashboards each · 5,874 data points · updated … */
 export interface PlatformStats {
   activeDistricts: number;
   activeStates: number;

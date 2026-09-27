@@ -9,8 +9,8 @@
 // ═══════════════════════════════════════════════════════════════════════
 //
 //   ┌───────────────────────────────────────────┬────────────────────────┐
-//   │ • Your district. Your data. Your right.   │                        │
-//   │ See what is happening in ▓your district▓  │   India map: states    │
+//   │ • Your district. **Your data.** Your right.│                        │
+//   │ See what is happening in **your district**│   India map: states    │
 //   │ Weather, dams, crop prices… (one line)    │   open their page,     │
 //   │ [ 🔍 Type your district, e.g. Mysore    ] │   live districts ping; │
 //   │ [Find your district] [⌖ Use my location]  │   tap one for its      │
@@ -20,7 +20,8 @@
 //   On a phone the map sits right under the hero text.
 //
 //  The page's ONE <h1> is the task, not the slogan (the slogan is the
-//  small kicker above it). "Find your district" submits the search box
+//  kicker above it, "Your data." in bold brand blue). Key words are made
+//  stronger by weight and colour only — no highlighter stroke behind them. "Find your district" submits the search box
 //  (empty box → the live districts as quick picks). "Use my location"
 //  shows its result once, in the floating LocateResult card.
 "use client";
@@ -59,7 +60,7 @@ export default function HomeHero({ locale, stats, districts, mapStats }: HomeHer
       <div className={styles.heroText}>
         <p className={styles.kicker}>
           <span className={styles.kickerDot} aria-hidden />
-          {t("kicker")}
+          <span>{tp.rich("hero.tagline", { b: (c) => <strong className={styles.kickerEm}>{c}</strong> })}</span>
         </p>
         <h1 className={styles.title}>{tp.rich("hero.title", { hl: (c) => <span className={styles.titleHl}>{c}</span> })}</h1>
         <p className={styles.lead}>{t("sources")}</p>

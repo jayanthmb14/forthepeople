@@ -4,22 +4,34 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Home page — market prices for the ticker and the "Prices today" cards.
-// Server side, no database: the same snapshot as the /prices page (IBJA +
-// Yahoo Finance) through Next's data cache, so the home page stays
-// statically generated. Never throws; a price whose source failed is left out.
+// Home page — prices for the ticker and the "Prices today" section.
+// Server side, no database, and the home page stays statically generated:
+//   - gold, silver, Sensex, Nifty 50, US dollar: the same snapshot as the
+//     /prices page (IBJA + Yahoo Finance) through Next's data cache (15 min);
+//   - petrol and diesel: the checked PPAC snapshot the fuel collector keeps
+//     in Redis (src/lib/markets/fuel.ts), read through unstable_cache (15 min)
+//     so the Redis client's no-store fetch does not make the page dynamic.
+// Never throws; a price whose source failed (or that was never checked) is
+// left out.
+import { unstable_cache } from "next/cache";
 import { getPricesSnapshot, type PriceKey } from "@/lib/markets/prices";
 import { ageInDays as marketAgeDays, isStale, latestWithChange } from "@/lib/markets/compute";
-import type { MarketFigure, MarketKey } from "./home-types";
+import { readFuelSnapshot } from "@/lib/markets/fuel";
+import { fuelFigures } from "./home-picks";
+import type { FuelFigure, MarketFigure, MarketKey } from "./home-types";
 
-const MARKET_ORDER: Array<{ key: MarketKey; from: PriceKey; decimals: number; currency: MarketFigure["currency"]; unit: MarketFigure["unit"] }> = [
-  { key: "gold24", from: "gold24", decimals: 0, currency: "INR", unit: "gram" },
-  { key: "gold22", from: "gold22", decimals: 0, currency: "INR", unit: "gram" },
+/**
+ * Gold is shown per 10 grams and silver per kilogram, as IBJA publishes
+ * them (the shared snapshot keeps gold per gram for the /prices page, so
+ * it is multiplied back here). Crude oil is not shown on the home page.
+ */
+const MARKET_ORDER: Array<{ key: MarketKey; from: PriceKey; decimals: number; currency: MarketFigure["currency"]; unit: MarketFigure["unit"]; scale?: number }> = [
+  { key: "gold24", from: "gold24", decimals: 0, currency: "INR", unit: "10g", scale: 10 },
+  { key: "gold22", from: "gold22", decimals: 0, currency: "INR", unit: "10g", scale: 10 },
   { key: "silver", from: "silver", decimals: 0, currency: "INR", unit: "kg" },
   { key: "sensex", from: "sensex", decimals: 0, currency: null, unit: null },
   { key: "nifty", from: "nifty", decimals: 0, currency: null, unit: null },
   { key: "usdInr", from: "usdInr", decimals: 2, currency: "INR", unit: null },
-  { key: "crude", from: "crude", decimals: 2, currency: "USD", unit: "barrel" },
 ];
 
 /**
@@ -38,7 +50,9 @@ export async function loadMarketFigures(nowMs: number = Date.now()): Promise<Mar
   const out: MarketFigure[] = [];
   for (const m of MARKET_ORDER) {
     const s = series[m.from];
-    const lw = s ? latestWithChange(s.points) : null;
+    const scale = m.scale ?? 1;
+    const points = s ? (scale === 1 ? s.points : s.points.map((p) => ({ d: p.d, v: Math.round(p.v * scale * 100) / 100 }))) : [];
+    const lw = latestWithChange(points);
     if (!s || !lw) continue;
     out.push({
       key: m.key,
@@ -54,10 +68,21 @@ export async function loadMarketFigures(nowMs: number = Date.now()): Promise<Mar
       asOf: s.asOf,
       source: m.from.startsWith("gold") || m.from === "silver" ? "ibja" : "yahoo",
       sourceUrl: s.sourceUrl,
-      spark: s.points.slice(-30).map((p) => p.v),
+      spark: points.slice(-30).map((p) => p.v),
       ageDays: marketAgeDays(lw.latest.d, nowMs),
       old: isStale(lw.latest.d, nowMs),
     });
   }
   return out;
+}
+
+const readFuelCached = unstable_cache(async () => readFuelSnapshot(), ["home-fuel-v1"], { revalidate: 900 });
+
+/** Petrol and diesel (Delhi first, then the other metros), or [] when none is stored or checked. */
+export async function loadFuelFigures(nowMs: number = Date.now()): Promise<FuelFigure[]> {
+  try {
+    return fuelFigures(await readFuelCached(), nowMs);
+  } catch {
+    return [];
+  }
 }
