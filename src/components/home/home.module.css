@@ -780,10 +780,11 @@
   display: inline-flex; align-items: center; gap: 10px;
   height: 48px; padding: 0 20px;
   border: none; border-radius: 14px;
-  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  /* orange-700 → 800: white text stays above 4.5:1 across the gradient */
+  background: linear-gradient(135deg, #C2410C 0%, #9A3412 100%);
   color: #fff; font-family: var(--ftp-font-sans); font-size: 16px; font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 10px 22px -10px rgba(234, 88, 12, 0.8);
+  box-shadow: 0 10px 22px -10px rgba(194, 65, 12, 0.8);
   transition: transform 180ms var(--ftp-ease-out), box-shadow 180ms var(--ftp-ease-out);
 }
 .heroLocateBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 28px -12px rgba(234, 88, 12, 0.85); }

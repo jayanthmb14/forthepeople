@@ -28,6 +28,7 @@
 import { SourcePill, StatStrip, StatTile } from "@/components/district/ui";
 import { DEFAULT_PALETTE, DistrictSVG, PALETTES } from "@/components/district/DistrictHeroIllustration";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
+import { scriptLang } from "@/lib/utils/script-lang";
 import DistrictBadges from "@/components/district/DistrictBadges";
 import { HealthScoreRing } from "@/components/district/DistrictHealthScoreCard";
 import type { DistrictBadge } from "@/lib/constants/districts";
@@ -124,11 +125,11 @@ export default function DistrictIdentityCard({
               {stateName} district
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-              <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)" }}>
+              <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)", textWrap: "balance" }}>
                 {name}
               </h1>
               {nameLocal && nameLocal !== name && (
-                <span lang="und" style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
+                <span lang={scriptLang(nameLocal)} style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
                   {nameLocal}
                 </span>
               )}

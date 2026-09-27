@@ -42,6 +42,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getModuleMeta, moduleFromPath } from "@/lib/design/hues";
 import { tierFromPriority } from "@/lib/constants/sidebar-modules";
+import { scriptLang } from "@/lib/utils/script-lang";
 import {
   AlertCircle,
   ArrowDownRight,
@@ -108,13 +109,6 @@ const TONE_SOLID: Record<Tone, string> = {
 /** Solid accent colour for an icon. */
 function accentColor(accent: ModuleAccent = "brand"): string {
   return accent === "brand" ? "var(--ftp-brand)" : `var(--accent-${accent}-700)`;
-}
-
-/** 10 % tint of an accent, for the 40 px icon square behind it. */
-function accentTint(accent: ModuleAccent = "brand"): string {
-  return accent === "brand"
-    ? "var(--ftp-brand-tint)"
-    : `color-mix(in srgb, var(--accent-${accent}-700) 10%, transparent)`;
 }
 
 // v4: numbers use the text face with tabular figures (aligned digits),
@@ -497,9 +491,11 @@ export function CountUp({ value }: { value: string | number }) {
       cancelAnimationFrame(raf);
     };
   }, [text]);
+  // Screen readers get the final value only; the counting digits are hidden.
   return (
-    <span ref={ref} suppressHydrationWarning>
-      {frame ?? text}
+    <span ref={ref}>
+      <span aria-hidden={frame !== null ? true : undefined}>{frame ?? text}</span>
+      {frame !== null && <span className="sr-only">{text}</span>}
     </span>
   );
 }
@@ -582,7 +578,7 @@ export function PageHeader({
       {/* The band: the module's hue as a diagonal gradient, a big emoji
           tile, a faint watermark of the module icon, white type. */}
       <div
-        className="ftp-rise"
+        className="ftp-rise ftp-band"
         style={{
           position: "relative",
           overflow: "hidden",
@@ -641,12 +637,12 @@ export function PageHeader({
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h1
                 className="ftp-display"
-                style={{ fontSize: "clamp(26px, 3.4vw, 34px)", lineHeight: 1.1, fontWeight: 700, color: "#fff", margin: 0 }}
+                style={{ fontSize: "clamp(26px, 3.4vw, 34px)", lineHeight: 1.1, fontWeight: 700, color: "#fff", margin: 0, textWrap: "balance" }}
               >
                 {title}
               </h1>
               {titleLocal && (
-                <span lang="und" style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
+                <span lang={scriptLang(titleLocal)} style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
                   {titleLocal}
                 </span>
               )}
@@ -755,7 +751,12 @@ export function StatTile({
       </div>
       {(sub || TrendIcon) && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-          {TrendIcon && <TrendIcon size={14} aria-label={trend} style={{ color: "var(--hue)" }} />}
+          {TrendIcon && (
+            <>
+              <TrendIcon size={14} aria-hidden style={{ color: "var(--hue)" }} />
+              <span className="sr-only">{trend === "up" ? "Going up." : trend === "down" ? "Going down." : "No change."}</span>
+            </>
+          )}
           {sub && <span>{sub}</span>}
         </div>
       )}
@@ -824,7 +825,7 @@ export function SectionHeader({
           </span>
         )}
         <Tag className="ftp-h2" style={{ margin: 0 }}>{title}</Tag>
-        {titleLocal && <span style={{ fontSize: 22, lineHeight: "28px", color: "var(--ftp-text-2)" }}>{titleLocal}</span>}
+        {titleLocal && <span lang={scriptLang(titleLocal)} style={{ fontSize: 22, lineHeight: "28px", color: "var(--hue-deep)" }}>{titleLocal}</span>}
       </div>
       {action && <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{action}</div>}
     </div>
@@ -970,6 +971,9 @@ export function DataTable({
   return (
     <div
       className="data-table-scroll"
+      tabIndex={0}
+      role="region"
+      aria-label={caption ?? "Table"}
       style={{
         overflowX: "auto",
         background: "var(--ftp-surface)",
@@ -991,9 +995,6 @@ export function DataTable({
                   style={{
                     ...LABEL,
                     color: "var(--hue-deep)",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 1,
                     padding: pad,
                     textAlign: right ? "right" : "left",
                     background: "var(--hue-tint)",
@@ -1092,7 +1093,7 @@ export function ProgressBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-label={label}
+        aria-label={label ?? `${pct}%`}
         style={{ background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
       >
         <div className="ftp-grow-x" style={{ background: fill, height: "100%", width: `${pct}%`, borderRadius: "var(--ftp-radius-pill)" }} />
@@ -1329,7 +1330,7 @@ export function Chips({
           >
             {item.label}
             {item.count !== undefined && (
-              <span className="ftp-num" style={{ fontSize: 11, color: active ? "rgba(255,255,255,0.85)" : "var(--ftp-text-2)" }}>
+              <span className="ftp-num" style={{ fontSize: 12, color: active ? "#fff" : "var(--ftp-text-2)" }}>
                 {item.count}
               </span>
             )}

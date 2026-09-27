@@ -55,16 +55,6 @@ const SOURCE_URLS: Record<string, string> = {
   "State Treasury / eGramSwaraj": "https://egramswaraj.gov.in",
 };
 
-/** Chart styling from tokens: brand bars, text-2 axis labels, surface-2 grid. */
-const AXIS_TICK = { fontSize: 11, fill: "var(--ftp-text-2)" };
-const TOOLTIP_STYLE = {
-  background: "var(--ftp-surface)",
-  border: "1px solid var(--ftp-border)",
-  borderRadius: 8,
-  fontSize: 12,
-  color: "var(--ftp-text)",
-};
-
 /** The newest timestamp in a list of rows (rows carry `fetchedAt` from the API). */
 function latestFetchedAt(rows: Array<{ fetchedAt?: string | null }>): string | null {
   let best: string | null = null;
@@ -237,7 +227,6 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
                 value={totalSpent === 0 && totalLapsed === 0 ? "—" : (totalLapsed / CRORE).toLocaleString("en-IN", { maximumFractionDigits: 1 })}
                 unit={totalSpent === 0 && totalLapsed === 0 ? undefined : "₹ Cr"}
                 sub="Funds not utilised"
-                trend="down"
                 asOf={asOf}
               />
             </StatStrip>
@@ -329,10 +318,10 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                         <div className="ftp-title">{a.department}</div>
                         <div className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-danger)" }}>
-                          ₹{(a.lapsed / CRORE).toFixed(2)}Cr lapsed
+                          ₹{(a.lapsed / CRORE).toFixed(2)}&nbsp;Cr lapsed
                         </div>
                       </div>
-                      <ProgressBar value={a.spent} max={a.allocated} label={`${a.fiscalYear} · ₹${(a.allocated / CRORE).toFixed(1)}Cr allocated`} tone="danger" />
+                      <ProgressBar value={a.spent} max={a.allocated} label={`${a.fiscalYear}: ₹${(a.allocated / CRORE).toFixed(1)}\u00A0Cr allocated`} tone="danger" />
                     </Card>
                   ))}
                 </div>
@@ -374,25 +363,29 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
       {/* Revenue collections */}
       {!rLoading && revChart.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <Section title="Revenue Collections (₹ Lakhs)">
-            <Card>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={revChart} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" />
-                  <XAxis dataKey="label" tick={AXIS_TICK} />
-                  <YAxis tick={AXIS_TICK} />
-                  <Tooltip formatter={(v) => [`₹${Number(v)}L`, ""]} contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--ftp-surface-2)" }} />
-                  <Bar dataKey="amount" fill="var(--ftp-brand)" radius={[4, 4, 0, 0]} name="Collected" />
-                  <Bar dataKey="target" fill="var(--ftp-border-strong)" radius={[4, 4, 0, 0]} name="Target" />
-                </BarChart>
-              </ResponsiveContainer>
-              {revenueAsOf && (
-                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-                  As of {new Date(revenueAsOf).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
-                </p>
-              )}
-            </Card>
-          </Section>
+          <ChartCard
+            title="Revenue collected each month"
+            emoji="🧾"
+            units="Lakh rupees. Colour is what was collected, grey is the target."
+            legend={[
+              { label: "Collected", swatch: "var(--hue)" },
+              { label: "Target", swatch: "#D8D5CB" },
+            ]}
+            asOf={revenueAsOf}
+            table={revChart.map((r) => ({ label: r.label, value: `₹${r.amount.toLocaleString("en-IN")}\u00A0L${r.target ? ` of ₹${r.target.toLocaleString("en-IN")}\u00A0L` : ""}` }))}
+          >
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={revChart} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                <ChartGradients />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                <XAxis dataKey="label" tick={CHART_AXIS} />
+                <YAxis tick={CHART_AXIS} />
+                <Tooltip formatter={(v, name) => [`₹${Number(v).toLocaleString("en-IN")}\u00A0L`, name]} contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} />
+                <Bar dataKey="amount" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name="Collected" />
+                <Bar dataKey="target" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} name="Target" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
         </div>
       )}
 

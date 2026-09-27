@@ -308,13 +308,12 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
           type="button"
           onClick={locate}
           disabled={status.kind === "locating"}
-          aria-label="Go to my district using your location"
           className={styles.heroLocateBtn}
         >
           <span className="ftp-emoji" aria-hidden style={{ fontSize: 20 }}>📍</span>
           {status.kind === "locating" ? "Finding you…" : "Go to my location"}
         </button>
-        <div className={styles.heroLocateStatus}>
+        <div className={styles.heroLocateStatus} aria-live="polite">
           {my.district && status.kind === "idle" && (
             <Pill tone="brand" icon={MapPin} title={PRIVACY_NOTE}>
               My district: {my.district.name}

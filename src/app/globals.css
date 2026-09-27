@@ -906,12 +906,12 @@ body.ftp-india-tinted {
    Deep tones follow the locked section palette (vault notes 42–45);
    accents are brighter so the UI reads as colourful, not muted. */
 .ftp-hue-blue   { --hue: #2563EB; --hue-deep: #1E3A8A; --hue-pop: #93B4F5; --hue-tint: #EEF3FE; }
-.ftp-hue-sky    { --hue: #0284C7; --hue-deep: #0C4A6E; --hue-pop: #7CC4EA; --hue-tint: #E9F6FC; }
+.ftp-hue-sky    { --hue: #0369A1; --hue-deep: #0C4A6E; --hue-pop: #7CC4EA; --hue-tint: #E9F6FC; }
 .ftp-hue-cyan   { --hue: #0E7490; --hue-deep: #164E63; --hue-pop: #67C3D6; --hue-tint: #E6F5F8; }
 .ftp-hue-teal   { --hue: #0F766E; --hue-deep: #134E4A; --hue-pop: #6CC5BA; --hue-tint: #E5F4F2; }
 .ftp-hue-green  { --hue: #15803D; --hue-deep: #14532D; --hue-pop: #7CC794; --hue-tint: #E9F6EE; }
 .ftp-hue-lime   { --hue: #4D7C0F; --hue-deep: #365314; --hue-pop: #A3C763; --hue-tint: #F0F7E5; }
-.ftp-hue-yellow { --hue: #CA8A04; --hue-deep: #713F12; --hue-pop: #EFC75E; --hue-tint: #FEF8E3; }
+.ftp-hue-yellow { --hue: #A16207; --hue-deep: #713F12; --hue-pop: #EFC75E; --hue-tint: #FEF8E3; }
 .ftp-hue-amber  { --hue: #B45309; --hue-deep: #78350F; --hue-pop: #E9B35E; --hue-tint: #FDF3E5; }
 .ftp-hue-orange { --hue: #C2410C; --hue-deep: #7C2D12; --hue-pop: #F0A37A; --hue-tint: #FDEFE7; }
 .ftp-hue-rose   { --hue: #BE123C; --hue-deep: #881337; --hue-pop: #EE8FA6; --hue-tint: #FDEBEF; }
@@ -976,12 +976,20 @@ body {
 /* Sidebar rail: active item in the module's hue */
 .ftp-rail-item[data-active="true"] { background: var(--hue-tint) !important; color: var(--hue-deep) !important; box-shadow: inset 3px 0 0 var(--hue); }
 
-/* Focus ring in the page hue (keyboard users) */
+/* Focus ring in the page hue (keyboard users); white inside hue bands. */
 :focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
+.ftp-band :focus-visible { outline-color: #fff; }
+
+/* Sticky header (56 px) + district status strip (34 px) never cover an
+   anchor target or a focused element. */
+html { scroll-padding-top: 100px; }
 
 @media (prefers-reduced-motion: reduce) {
   .ftp-rise, .ftp-pop, .ftp-grow-x, .ftp-grow-y, .ftp-float, .ftp-ping, .ftp-draw-path, .ftp-wave { animation: none !important; }
   .ftp-card-link, .ftp-card-link:hover { transform: none !important; transition: none !important; }
+  /* Hover lifts on buttons and tiles: no movement at all. */
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
+  a:hover, button:hover { transform: none !important; }
 }
 
 /* ── Intro splash (home page, once per session) ───────────────────── */
@@ -1071,3 +1079,9 @@ html[data-intro="show"] .ftp-home .ftp-pop { animation-delay: calc(1.85s + var(-
    pictogram on the left, a dial or tank on the right). */
 .ftp-picture-row { display: grid; gap: 12px; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
 @media (max-width: 767px) { .ftp-picture-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* Guidelines pass: hover states + balanced headings */
+.ftp-chip { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-chip:hover[aria-pressed="false"] { border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border)) !important; background: var(--hue-tint) !important; }
+header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-decoration: underline; }
+.ftp-h1, .ftp-h2 { text-wrap: balance; }

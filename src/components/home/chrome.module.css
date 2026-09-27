@@ -613,11 +613,11 @@
 .wordmark { gap: 10px; font-family: var(--ftp-font-display); font-weight: 700; letter-spacing: -0.02em; font-size: 19px; }
 .wordmarkSuffix { color: #2563EB; }
 .searchForm { border-radius: 999px !important; background: #fff !important; border: 1px solid var(--ftp-border) !important; box-shadow: 0 1px 2px rgba(23, 26, 31, 0.04); transition: border-color 150ms ease, box-shadow 150ms ease; }
-.searchForm:focus-within { border-color: #2563EB !important; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14); }
+.searchForm:focus-within { border-color: #2563EB !important; box-shadow: 0 0 0 2px #2563EB; }
 .btnSupport {
   color: #fff !important;
   border: none !important;
-  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%) !important;
+  background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%) !important;
   box-shadow: 0 8px 16px -10px rgba(225, 29, 72, 0.9);
 }
 .btnSupport .heart { color: #fff !important; fill: rgba(255, 255, 255, 0.35); }

@@ -43,7 +43,8 @@ export function Explainer({
   title?: string;
 }) {
   return (
-    <aside
+    <div
+      role="note"
       style={{
         display: "flex",
         gap: 14,
@@ -64,7 +65,7 @@ export function Explainer({
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 15, lineHeight: "23px", color: "var(--ftp-text)" }}>{children}</p>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -95,7 +96,7 @@ export function Pictogram({
   const f = Math.max(0, Math.min(total, filled));
   return (
     <figure style={{ margin: 0 }}>
-      <div role="img" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <div aria-hidden style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {Array.from({ length: total }).map((_, i) => {
           const lit = Math.max(0, Math.min(1, f - i));
           return (
@@ -174,11 +175,9 @@ export function Gauge({
         width={size}
         height={size / 2 + stroke}
         viewBox={`0 0 ${size} ${size / 2 + stroke}`}
-        role="img"
-        aria-label={`${label}: ${Math.round(v)} out of 100`}
+        aria-hidden
         style={{ maxWidth: "100%", overflow: "visible" }}
       >
-        <title>{`${label}: ${Math.round(v)}%`}</title>
         <path d={arc} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} strokeLinecap="round" />
         <path
           className="ftp-draw-path"
@@ -197,7 +196,10 @@ export function Gauge({
       <div className="ftp-bignum" style={{ fontSize: Math.round(size / 5.5), lineHeight: 1, color: "var(--hue-deep)", marginTop: 4 }}>
         {Math.round(v)}%
       </div>
-      <figcaption style={{ marginTop: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{caption ?? label}</figcaption>
+      <figcaption style={{ marginTop: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+        {caption ?? label}
+        <span className="sr-only">: {Math.round(v)} out of 100</span>
+      </figcaption>
     </figure>
   );
 }
@@ -276,12 +278,12 @@ export function WaterTank({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 26,
-            color: p > 55 ? "#fff" : "var(--hue-deep)",
-            textShadow: p > 55 ? "0 1px 2px rgba(0,0,0,0.25)" : "none",
+            fontSize: 24,
           }}
         >
-          {Math.round(p)}%
+          <span style={{ padding: "2px 10px", borderRadius: 999, background: "rgba(255,255,255,0.9)", color: "var(--hue-deep)" }}>
+            {Math.round(p)}%
+          </span>
         </span>
       </div>
       <figcaption style={{ marginTop: 8, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", textAlign: "center", maxWidth: width + 40 }}>
@@ -409,7 +411,7 @@ export function ChartCard({
         minWidth: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <figcaption style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           {emoji && (
             <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
@@ -417,9 +419,9 @@ export function ChartCard({
             </span>
           )}
           <div style={{ minWidth: 0 }}>
-            <figcaption className="ftp-display" style={{ fontSize: 17, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
+            <span className="ftp-display" style={{ display: "block", fontSize: 17, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
               {title}
-            </figcaption>
+            </span>
             {units && <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{units}</p>}
           </div>
         </div>
@@ -442,10 +444,10 @@ export function ChartCard({
               fontFamily: "var(--ftp-font-sans)",
             }}
           >
-            {asTable ? "📊 Show chart" : "🔢 Show as table"}
+            <span aria-hidden>🔢 </span>Table view
           </button>
         )}
-      </div>
+      </figcaption>
       {simple && (
         <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>
           <span aria-hidden>👉 </span>

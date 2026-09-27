@@ -89,7 +89,7 @@ export default function Footer({ locale }: FooterProps) {
     <footer role="contentinfo" className={styles.footerV4}>
       <div className={`ftp-container ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
-          <Link href={`/${locale}`} className={styles.footerLogo} aria-label="ForThePeople.in home">
+          <Link href={`/${locale}`} className={styles.footerLogo} aria-label="ForThePeople.in home" translate="no">
             <span className={styles.logoTile} aria-hidden>
               <Users size={17} strokeWidth={2.4} />
             </span>
@@ -124,7 +124,7 @@ export default function Footer({ locale }: FooterProps) {
         <nav aria-label="Footer" className={styles.footerCols}>
           {groups.map((g) => (
             <div key={g.title}>
-              <p className={styles.footerColTitle}>{g.title}</p>
+              <h2 className={styles.footerColTitle}>{g.title}</h2>
               <ul className={styles.footerColList}>
                 {g.links.map((l) => (
                   <li key={l.href}>

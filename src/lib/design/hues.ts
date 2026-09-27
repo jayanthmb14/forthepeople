@@ -22,12 +22,12 @@ export type Hue =
 /** Solid accent per hue, for places that cannot read CSS variables (SVG maps, canvas, OG images). */
 export const HUE_HEX: Record<Hue, { hue: string; deep: string; pop: string; tint: string }> = {
   blue:   { hue: "#2563EB", deep: "#1E3A8A", pop: "#93B4F5", tint: "#EEF3FE" },
-  sky:    { hue: "#0284C7", deep: "#0C4A6E", pop: "#7CC4EA", tint: "#E9F6FC" },
+  sky:    { hue: "#0369A1", deep: "#0C4A6E", pop: "#7CC4EA", tint: "#E9F6FC" },
   cyan:   { hue: "#0E7490", deep: "#164E63", pop: "#67C3D6", tint: "#E6F5F8" },
   teal:   { hue: "#0F766E", deep: "#134E4A", pop: "#6CC5BA", tint: "#E5F4F2" },
   green:  { hue: "#15803D", deep: "#14532D", pop: "#7CC794", tint: "#E9F6EE" },
   lime:   { hue: "#4D7C0F", deep: "#365314", pop: "#A3C763", tint: "#F0F7E5" },
-  yellow: { hue: "#CA8A04", deep: "#713F12", pop: "#EFC75E", tint: "#FEF8E3" },
+  yellow: { hue: "#A16207", deep: "#713F12", pop: "#EFC75E", tint: "#FEF8E3" },
   amber:  { hue: "#B45309", deep: "#78350F", pop: "#E9B35E", tint: "#FDF3E5" },
   orange: { hue: "#C2410C", deep: "#7C2D12", pop: "#F0A37A", tint: "#FDEFE7" },
   rose:   { hue: "#BE123C", deep: "#881337", pop: "#EE8FA6", tint: "#FDEBEF" },

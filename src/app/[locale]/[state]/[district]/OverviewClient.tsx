@@ -289,6 +289,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         {/* Freshness row — one pill per live feed, from /api/data/freshness. */}
         {Object.keys(fresh.modules).length > 0 && (
           <div
+            role="group"
             aria-label="How recent the data is"
             style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--ftp-border)" }}
           >
@@ -329,8 +330,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               emoji={weatherEmoji(latestWeather.conditions)}
               hue="sky"
               label="Weather"
-              value={latestWeather.temperature != null ? `${Math.round(latestWeather.temperature)}°` : "—"}
-              unit={latestWeather.temperature != null ? "C" : undefined}
+              value={latestWeather.temperature != null ? `${Math.round(latestWeather.temperature)}` : "—"}
+              unit={latestWeather.temperature != null ? "°C" : undefined}
               sub={latestWeather.conditions ?? undefined}
               asOf={latestWeather.recordedAt}
               source={latestWeather.source}
@@ -460,12 +461,15 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                           <span className="ftp-module-name">{mod.label}</span>
                           <span className="ftp-module-desc">{mod.description}</span>
                           {f && (
-                            <span
-                              className="ftp-module-dot"
-                              title={f.age ? `Updated ${f.age}` : "No recent data"}
-                              aria-label={f.age ? `Data updated ${f.age}` : "No recent data"}
-                              style={{ background: STATUS_DOT[f.status] }}
-                            />
+                            <>
+                              <span
+                                aria-hidden
+                                className="ftp-module-dot"
+                                title={f.age ? `Updated ${f.age}` : "No recent data"}
+                                style={{ background: STATUS_DOT[f.status] }}
+                              />
+                              <span className="sr-only">{f.age ? `Data updated ${f.age}.` : "No recent data."}</span>
+                            </>
                           )}
                         </Link>
                       </li>

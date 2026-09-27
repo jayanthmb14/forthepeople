@@ -31,6 +31,7 @@ import { weatherEmoji } from "@/components/district/visuals";
 import { getDistrictIcon } from "@/components/district/icons";
 import { DISTRICT_META } from "@/lib/data/district-meta";
 import { getDistrictHue } from "@/lib/design/hues";
+import { scriptLang } from "@/lib/utils/script-lang";
 import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
 import { usePreview, useTopVotes } from "./home-data";
@@ -111,12 +112,13 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
                     <span className={styles.districtWeather} title={tempAsOf || undefined}>
                       <span className="ftp-emoji" aria-hidden>{weatherEmoji(weather?.conditions)}</span>
                       <span className="ftp-num">{Math.round(temp)}°</span>
+                      {tempAsOf && <span className="sr-only">{tempAsOf}</span>}
                     </span>
                   )}
                 </span>
                 <span className={styles.districtTileName}>
                   {d.name}
-                  {local && <span className={styles.districtTileLocal}>{local}</span>}
+                  {local && <span lang={scriptLang(local)} className={styles.districtTileLocal}>{local}</span>}
                 </span>
                 <span className={styles.districtTileState}>{d.stateName}</span>
                 {tagline && <span className={styles.districtTileTag}>{tagline}</span>}

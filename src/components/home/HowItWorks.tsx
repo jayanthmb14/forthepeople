@@ -40,7 +40,7 @@ const STEPS: { icon: LucideIcon; emoji: string; hue: string; title: string; body
     emoji: "👀",
     hue: "green",
     title: "You see",
-    body: 'The latest district data, with an "as of" date on every figure. Free. Open source. Yours.',
+    body: "The latest district data, with an “as of” date on every figure. Free. Open source. Yours.",
   },
 ];
 

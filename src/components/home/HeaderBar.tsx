@@ -252,7 +252,7 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
       <header className={styles.header} role="banner">
         <div className={`ftp-container ${styles.headerRow}`}>
           {/* ── Wordmark ── */}
-          <Link href={`/${locale}`} className={styles.wordmark} aria-label="ForThePeople.in home">
+          <Link href={`/${locale}`} className={styles.wordmark} aria-label="ForThePeople.in home" translate="no">
             <span className={styles.logoTile} aria-hidden>
               <Users size={17} strokeWidth={2.4} />
             </span>
