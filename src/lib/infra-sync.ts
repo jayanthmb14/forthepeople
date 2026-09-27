@@ -22,6 +22,7 @@ import { callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
 import { findSameNamed } from "./dedupe/match";
+import { plausibleBudgetRevision, politicalParty } from "./civic/project-facts";
 import {
   detectDistrictFromName,
   detectDistrictFromAgency,
@@ -508,6 +509,15 @@ export async function syncInfraFromNews(
   sourceDistrictId: string,
   verified: boolean = false
 ): Promise<InfraSyncResult> {
+  // Only a political party is stored as a party. The extraction wrote
+  // agencies, lenders and companies there ("JICA", "Jindal Steel",
+  // "Telangana government") and the page showed them as parties (Sept
+  // 2026 audit).
+  extraction = {
+    ...extraction,
+    party: politicalParty(extraction.party),
+    keyPeople: extraction.keyPeople.map((k) => ({ ...k, party: politicalParty(k.party) })),
+  };
   const targets = await findTargetDistricts(extraction, sourceDistrictId);
   if (targets.length === 0) {
     return { projectsTouched: 0, created: 0, updatedProjects: 0, timelineCreated: 0, duplicatesSkipped: 0 };
@@ -559,7 +569,9 @@ export async function syncInfraFromNews(
           revisedBudget: extraction.budget,
           budget: extraction.budget,
           progressPct: extraction.progressPct,
-          announcedDate: isCancel ? null : now,
+          // The article's date, and only for an announcement: the sync date
+          // said "announced Apr 2026" for a line opened in 2021.
+          announcedDate: !isCancel && extraction.updateType === "ANNOUNCEMENT" ? article.publishedAt : null,
           actualStartDate: startDate,
           startDate: startDate,
           originalEndDate: expectedEnd,
@@ -598,7 +610,10 @@ export async function syncInfraFromNews(
           patch.originalBudget = extraction.budget;
           patch.budget = extraction.budget;
           patch.revisedBudget = extraction.budget;
-        } else if (extraction.budget !== project.revisedBudget) {
+        } else if (extraction.budget !== project.revisedBudget && plausibleBudgetRevision(project.originalBudget, extraction.budget)) {
+          // A figure over 3× or under half the first budget is not stored:
+          // it is far more often a lakh/crore slip or another project in the
+          // article (Namma Metro Phase 2A/2B got "+298%", Sept 2026 audit).
           patch.revisedBudget = extraction.budget;
           patch.budget = extraction.budget;
           const overrun = extraction.budget - project.originalBudget;

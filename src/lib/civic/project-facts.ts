@@ -27,6 +27,8 @@
 //  Nothing here invents a figure: a point appears only when the data
 //  needed for it is present.
 
+import { PARTY_COLORS } from "@/lib/constants/party-colors";
+
 export type ProjectStage = "announced" | "approved" | "building" | "completed" | "stalled" | "cancelled";
 
 export type ProjectKind =
@@ -207,13 +209,103 @@ export function budgetNow(p: ProjectLike): number | null {
   return v !== null && Number.isFinite(v) && v > 0 ? v : null;
 }
 
-/** Change from the first to the latest budget, in %, when both are known. */
-export function budgetChangePct(p: ProjectLike): number | null {
-  if (p.costOverrunPct != null && Number.isFinite(p.costOverrunPct)) return p.costOverrunPct;
+/**
+ * Change from the first to the latest budget, worked out from the two
+ * budgets themselves when both are known. The stored costOverrun /
+ * costOverrunPct are not trusted: the news sync set them from any figure
+ * an article printed (one off by 10×), and they went stale when a budget
+ * was corrected — Namma Metro Phase 2A/2B showed "+298%" with the same
+ * budget on every field (Sept 2026 audit).
+ */
+export function budgetChange(p: ProjectLike): { amount: number; pct: number } | null {
   const first = p.originalBudget ?? null;
   const now = p.revisedBudget ?? null;
-  if (!first || !now || first <= 0) return null;
-  return ((now - first) / first) * 100;
+  if (first == null || now == null || !Number.isFinite(first) || !Number.isFinite(now) || first <= 0 || now <= 0) return null;
+  return { amount: now - first, pct: ((now - first) / first) * 100 };
+}
+
+/** Change from the first to the latest budget, in %, when both are known. */
+export function budgetChangePct(p: ProjectLike): number | null {
+  return budgetChange(p)?.pct ?? null;
+}
+
+/**
+ * Whether a new budget figure can be a revision of the first one. A
+ * figure more than 3× or less than half the first is far more often a
+ * unit slip (lakh/crore) or a different project in the article than a
+ * real revision, so the news sync does not store it.
+ */
+export function plausibleBudgetRevision(first: number | null | undefined, next: number | null | undefined): boolean {
+  if (first == null || next == null || !Number.isFinite(first) || !Number.isFinite(next) || first <= 0 || next <= 0) return false;
+  const ratio = next / first;
+  return ratio >= 0.5 && ratio <= 3;
+}
+
+/**
+ * Progress to show: a finished project is 100% whatever the row says (a
+ * stored 70/80/85 next to "Completed" came from old news); a cancelled
+ * one has none; otherwise the reported figure, if any.
+ */
+export function shownProgress(p: Pick<ProjectLike, "status" | "progressPct">): number | null {
+  const stage = projectStage(p.status);
+  if (stage === "completed") return 100;
+  if (stage === "cancelled") return null;
+  return p.progressPct ?? null;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Political party
+// ─────────────────────────────────────────────────────────────────────
+
+/** Full party names the news extraction writes, besides the short forms in party-colors.ts. */
+const PARTY_FULL_NAMES = [
+  "Bharatiya Janata Party",
+  "Indian National Congress",
+  "Aam Aadmi Party",
+  "All India Trinamool Congress",
+  "Trinamool Congress",
+  "AITC",
+  "Samajwadi Party",
+  "Bahujan Samaj Party",
+  "Bharat Rashtra Samithi",
+  "Telangana Rashtra Samithi",
+  "TRS",
+  "Janata Dal (Secular)",
+  "Janata Dal (United)",
+  "JD(U)",
+  "Dravida Munnetra Kazhagam",
+  "All India Anna Dravida Munnetra Kazhagam",
+  "Nationalist Congress Party",
+  "NCP (SP)",
+  "Telugu Desam Party",
+  "YSR Congress Party",
+  "Communist Party of India (Marxist)",
+  "Communist Party of India",
+  "Shiv Sena (Uddhav Balasaheb Thackeray)",
+  "Maharashtra Navnirman Sena",
+  "MNS",
+  "Rashtriya Janata Dal",
+  "Biju Janata Dal",
+  "Jharkhand Mukti Morcha",
+  "Shiromani Akali Dal",
+  "All India Majlis-e-Ittehadul Muslimeen",
+];
+
+/** Normalised known party names (short forms from party-colors.ts plus the full names above). */
+const KNOWN_PARTIES = new Set(
+  [...Object.keys(PARTY_COLORS).filter((k) => !/^n\/a$/i.test(k)), ...PARTY_FULL_NAMES].map((n) => n.trim().toUpperCase()),
+);
+
+/**
+ * The value when it is a political party, else null. The news extraction
+ * wrote agencies, lenders and companies into the party field ("JICA",
+ * "Jindal Steel", "Telangana government"), which the page then showed in
+ * brackets as if they were a party (Sept 2026 audit).
+ */
+export function politicalParty(raw: string | null | undefined): string | null {
+  const v = raw?.trim();
+  if (!v) return null;
+  return KNOWN_PARTIES.has(v.toUpperCase()) ? v : null;
 }
 
 /**

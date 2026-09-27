@@ -31,6 +31,7 @@ import {
   finishDate,
   lastUpdateAt,
   oneLine,
+  shownProgress,
   sourceCount,
   type ProjectPoint,
 } from "@/lib/civic/project-facts";
@@ -123,7 +124,8 @@ export default function ProjectCard({
   const due = finishDate(p);
   const updated = daysAgo(lastUpdateAt(p));
   const sources = sourceCount(p);
-  const progress = p.progressPct ?? null;
+  // Finished → 100% whatever the row says (Sept 2026 audit).
+  const progress = shownProgress(p);
 
   const dateLine = cancelled
     ? p.cancelledDate
@@ -182,9 +184,9 @@ export default function ProjectCard({
         {dateLine && <span style={{ color: "var(--ftp-text-2)" }}>{dateLine}</span>}
       </span>
 
-      {!cancelled && (progress !== null || finished) && (
+      {!cancelled && progress !== null && (
         <span style={{ display: "block" }}>
-          <ProgressBar pct={progress ?? 100} label={t("card.progress")} />
+          <ProgressBar pct={progress} label={t("card.progress")} />
         </span>
       )}
 

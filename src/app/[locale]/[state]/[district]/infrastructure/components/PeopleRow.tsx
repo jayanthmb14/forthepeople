@@ -15,6 +15,7 @@ import { User } from "lucide-react";
 import MobileHint from "@/components/common/MobileHint";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { useInfraText } from "./infra-i18n";
+import { politicalParty } from "@/lib/civic/project-facts";
 
 const NAME: React.CSSProperties = { fontWeight: 500, color: "var(--ftp-text)" };
 const name = (c: React.ReactNode) => <span style={NAME}>{c}</span>;
@@ -22,6 +23,11 @@ const name = (c: React.ReactNode) => <span style={NAME}>{c}</span>;
 export default function PeopleRow({ p }: { p: InfraProject }) {
   const { t, m } = useInfraText();
   const keyPeople = (p.keyPeople ?? []).filter((k): k is NonNullable<typeof k> => !!k && !!k.name);
+  // Only a political party goes in brackets: the news extraction wrote
+  // agencies, lenders and companies into this field ("JICA", "Jindal
+  // Steel", "Telangana government") — Sept 2026 audit.
+  const party = politicalParty(p.party);
+  const showParty = !!party && party.toUpperCase() !== (p.announcedBy ?? "").trim().toUpperCase();
   const hasAnything = !!p.announcedBy || !!p.executingAgency || keyPeople.length > 0;
 
   if (!hasAnything) {
@@ -43,11 +49,11 @@ export default function PeopleRow({ p }: { p: InfraProject }) {
               <MobileHint hint={t("people.announcerHint")}>
                 <span>{t.rich("people.announcedBy", { who: p.announcedBy, name })}</span>
               </MobileHint>
-              {p.party ? (
+              {showParty ? (
                 <>
                   {" "}
                   <MobileHint hint={t("people.partyHint")}>
-                    <span>({p.party})</span>
+                    <span>({party})</span>
                   </MobileHint>
                 </>
               ) : null}
@@ -66,7 +72,7 @@ export default function PeopleRow({ p }: { p: InfraProject }) {
             <span key={i}>
               {i > 0 ? ", " : ""}
               <span style={NAME}>{kp.name}</span>
-              {kp.role || kp.party ? ` (${[kp.role, kp.party].filter(Boolean).join(", ")})` : ""}
+              {kp.role || politicalParty(kp.party) ? ` (${[kp.role, politicalParty(kp.party)].filter(Boolean).join(", ")})` : ""}
             </span>
           ))}
           {keyPeople.length > 3 && <span> {t("people.more", { n: m.num(keyPeople.length - 3) })}</span>}
