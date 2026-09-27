@@ -103,3 +103,90 @@ Strings changed in en + hi + kn (`page_citizen-corner.json`:
 - Responsibility text: UP "Anti-Corruption Organisation: 0522-2217440",
   Hyderabad SHE Teams WhatsApp 9490617444, and the civic numbers (311, 1916,
   1913, 1969, 1800-111-555 …) were not checked.
+
+---
+
+## 5. Police station phone numbers (PoliceStation)
+
+**Mysuru** — the seed numbers were invented (0821-2443344, …3355, …3366,
+…3377, …3388, …3399 and a run of …100 numbers). Both official sites list
+every station with its landline and e-mail:
+[Mysuru City Police](https://mysurucitypolice.karnataka.gov.in/27/devaraja-police-station/en)
+(city stations, all on the 0821-2418xxx block) and
+[Mysuru District Police](https://mysurupolice.karnataka.gov.in/31/mysuru-district-police-stations)
+(taluk stations).
+
+| Station | Was (invented) | Now | Source page |
+|---|---|---|---|
+| Mysuru · Devaraja Police Station | 0821-2443344 | **0821-2418306** | [link](https://mysurucitypolice.karnataka.gov.in/27/devaraja-police-station/en) |
+| Mysuru · Hebbal Police Station (Mysuru) | 0821-2483100 | **0821-2418318** | [link](https://mysurucitypolice.karnataka.gov.in/40/hebbal-police-station/en) |
+| Mysuru · Jayalakshmipuram Police Station | 0821-2443377 | **0821-2418516** | [link](https://mysurucitypolice.karnataka.gov.in/38/jayalakshmipuram-police-station/en) |
+| Mysuru · Krishnaraja Police Station | 0821-2443355 | **0821-2418119** | [link](https://mysurucitypolice.karnataka.gov.in/41/krishnaraja-police-station/en) |
+| Mysuru · Lashkar Police Station | 0821-2434100 | **0821-2418307** | [link](https://mysurucitypolice.karnataka.gov.in/28/lashkar-police-station/en) |
+| Mysuru · Mandi Mohalla Police Station | 0821-2432100 | **0821-2418313** | [link](https://mysurucitypolice.karnataka.gov.in/35/mandi-police-station/en) |
+| Mysuru · Nazarbad Police Station | 0821-2443366 | **0821-2418308** | [link](https://mysurucitypolice.karnataka.gov.in/30/nazarbad-police-station/en) |
+| Mysuru · Saraswathipuram Police Station | 0821-2518100 | **0821-2418123** | [link](https://mysurucitypolice.karnataka.gov.in/45/sarswarthipuram-police-station/en) |
+| Mysuru · Udayagiri Police Station | 0821-2486100 | **0821-2418309** | [link](https://mysurucitypolice.karnataka.gov.in/31/udayagiri-police-station/en) |
+| Mysuru · V.V. Puram Police Station | 0821-2430100 | **0821-2418314** | [link](https://mysurucitypolice.karnataka.gov.in/36/vanivilasa-puram-police-station/en) |
+| Mysuru · Vidyaranyapuram Police Station | 0821-2443388 | **0821-2418122** | [link](https://mysurucitypolice.karnataka.gov.in/44/vidyaranyapuram-police-station/en) |
+| Mysuru · Bannur Police Station | 0821-2580100 | **08227-275632** | [link](https://mysurupolice.karnataka.gov.in/54/bannuru-police-station/en) |
+| Mysuru · H.D. Kote Police Station | 08228-252100 | **08228-255329** | [link](https://mysurupolice.karnataka.gov.in/44/h-d-kote-police-station/en) |
+| Mysuru · Hunsur Rural Police Station | 08222-252200 | **08222-252042** | [link](https://mysurupolice.karnataka.gov.in/41/hunasuru-rural-police-station/en) |
+| Mysuru · Hunsur Town Police Station | 08222-252100 | **08222-253133** | [link](https://mysurupolice.karnataka.gov.in/42/hunasuru-town-police-station/en) |
+| Mysuru · K.R. Nagar Police Station | 08222-252100 | **08223-263666** | [link](https://mysurupolice.karnataka.gov.in/37/k-r-nagara-police-station/en) |
+| Mysuru · Nanjangud Rural Police Station | 08221-228200 | **08221-226259** | [link](https://mysurupolice.karnataka.gov.in/48/nanjangud-rural-police-station/en) |
+| Mysuru · Nanjangud Town Police Station | 08221-228100 | **08221-228383** | [link](https://mysurupolice.karnataka.gov.in/49/nanjangud-town-police-station/en) |
+| Mysuru · Periyapatna Police Station | 08222-263100 | **08223-273100** | [link](https://mysurupolice.karnataka.gov.in/40/periyapattana-police-station/en) |
+| Mysuru · T. Narasipur Police Station | 08227-262100 | **08227-261227** | [link](https://mysurupolice.karnataka.gov.in/53/t-narsipura-police-station/en) |
+| Mandya · Maddur Police Station | 08232-252100 | **08232-232170** | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+| Mandya · Pandavapura Police Station | 08232-258200 | **08236-255132** | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+| Mandya · Srirangapatna Police Station | 08236-252200 | **08236-252027** | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+| Mandya · K R Pete Police Station | 08232-262200 | **08230-262248** (renamed “K R Pete Town Police Station”) | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+| Mandya · Malavalli Police Station | 08232-272100 | **08231-242244** (renamed “Malavalli Town Police Station”) | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+| Mandya · Nagamangala Police Station | 08234-252100 | **08234-286040** (renamed “Nagamangala Town Police Station”) | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+| Mysuru · Bogadi Police Station | 0821-2443399 | **null** — station not in the official list | [link](https://mysurucitypolice.karnataka.gov.in/27/devaraja-police-station/en) |
+| Mysuru · Chamundipuram Police Station | 0821-2441100 | **null** — station not in the official list | [link](https://mysurucitypolice.karnataka.gov.in/27/devaraja-police-station/en) |
+| Mysuru · K.R. Nagar Town Police Station | 08222-252300 | **null** — station not in the official list | [link](https://mysurupolice.karnataka.gov.in/31/mysuru-district-police-stations) |
+| Mysuru · Nagarahole Forest Police Station | 08228-252200 | **null** — station not in the official list | [link](https://mysurupolice.karnataka.gov.in/31/mysuru-district-police-stations) |
+| Mysuru · Rural Police Station Mysuru | 0821-2440100 | **null** — station not in the official list | [link](https://mysurupolice.karnataka.gov.in/31/mysuru-district-police-stations) |
+| Mandya · Mandya Town Police Station | 08232-222600 | **null** — station not in the official list | [link](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en) |
+
+**Mandya** — same invented pattern (…2100/…2200/…2600). The
+[Mandya District Police contact table](https://mandyapolice.karnataka.gov.in/55/mandya-district-police-officers-contact-details/en)
+lists every station; rows above. Three rows were renamed to the town
+station because each taluk has separate Town and Rural stations.
+E-mails (…@ksp.gov.in) from the same official pages were added for every
+matched station.
+
+**Other districts — invented batches, numbers set to null (no official page confirms them):**
+- **Bengaluru Urban, all 65 numbers.** Two seed batches gave the same
+  stations different numbers (Yelahanka 080-28461100 *and* 080-28461400;
+  Hebbal 23633400 / 23630100; Whitefield 28450100 / 28452400 …); 62 of 65
+  end in …100 or …400. Bengaluru City Police's published directory
+  ([bcp.karnataka.gov.in/26/contact-us](https://bcp.karnataka.gov.in/26/contact-us/en))
+  uses 080-2294xxxx lines and covers traffic stations only, so the
+  law-and-order numbers could not be re-filled. The 12 duplicate station
+  rows (same name and PIN in both batches) are deleted.
+- **Lucknow, all 15** (14 end in …100/…200/…400/…600).
+- **New Delhi, all 7** (6 end in …400/…800/…000).
+- **Chennai 11 of 20, Kolkata 15 of 20, Hyderabad 4 of 16** — the ones
+  ending in a round block (…000, …100, …050, …250, …350 …) like the rest of
+  their seed batch.
+
+The police sites for Delhi, Kolkata, Mumbai and Hyderabad load their
+station directories with scripts the checker could not read, and the web
+search quota for this session ran out, so nothing could be re-filled
+there.
+
+**Unverified — left as they are (look plausible, not confirmed):**
+
+- chennai (9): Adyar Police Station 044-24910013; Guindy Police Station 044-22350545; Kilpauk Police Station 044-26411221; Mylapore Police Station 044-24641212; Nungambakkam Police Station 044-28270221; Perambur Police Station 044-25511221; T Nagar Police Station 044-24340750; Tambaram Police Station 044-22260550; Velachery Police Station 044-22590523
+- hyderabad (12): Abids PS 040-27854814; Afzalgunj PS 040-24515293; Charminar PS 040-24515888; Falaknuma PS 040-24515155; Habeebnagar PS 040-23223625; Hussainialam PS 040-24515533; Kacheguda PS 040-27854133; Mangalhat PS 040-23220678; Musheerabad PS 040-27853855; Nampally PS 040-27853252; Narayanguda PS 040-27854920; Bahadurpura PS 040-24515250
+- kolkata (5): Bhawanipur Police Station 033-24741225; Gariahat Police Station 033-24610320; Lalbazar (Kolkata Police HQ) 033-22143024; New Market Police Station 033-22521515; Park Street Police Station 033-22170460
+- mumbai (20): Andheri Police Station 022-26281515; Azad Maidan Police Station 022-22620974; Bandra Police Station 022-26420245; Borivali Police Station 022-28933510; Colaba Police Station 022-22161613; DN Nagar Police Station 022-26283251; Dadar Police Station 022-24229502; Dharavi Police Station 022-24044888; Ghatkopar Police Station 022-25002210; Goregaon Police Station 022-28721777; Juhu Police Station 022-26362929; Kandivali Police Station 022-28052055; Kurla Police Station 022-26521240; Malad Police Station 022-28811002; Marine Drive Police Station 022-22812366; Powai Police Station 022-25709264; Santacruz Police Station 022-26490092; Versova Police Station 022-26320346; Vikhroli Police Station 022-25787070; Worli Police Station 022-24938571
+
+Also noted, not changed: Bengaluru Urban's list includes Devanahalli and
+Doddaballapur stations, which are in Bengaluru Rural district; Mysuru's
+"Nagarahole Forest", "Bogadi", "Chamundipuram", "K.R. Nagar Town" and
+"Rural Police Station Mysuru" rows match no official station (numbers
+removed, rows kept for the owner to decide).

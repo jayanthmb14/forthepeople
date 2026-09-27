@@ -29,11 +29,12 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 import { DATE_FIELDS, type Fix, type FieldValue } from "./fix-records-2026-09/types";
 import { POPULATION_FIXES } from "./fix-records-2026-09/population";
+import { POLICE_FIXES } from "./fix-records-2026-09/police";
 
 const CONFIRM = process.argv.includes("--confirm");
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length) ?? null;
 
-const ALL_FIXES: Fix[] = [...POPULATION_FIXES];
+const ALL_FIXES: Fix[] = [...POPULATION_FIXES, ...POLICE_FIXES];
 
 /** Prisma delegate name for a table ("InfraProject" → "infraProject"). */
 const delegateName = (table: string) => table[0].toLowerCase() + table.slice(1);
