@@ -96,3 +96,31 @@ describe("Hindi and Kannada plurals", () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe("Hindi: one spelling per word", () => {
+  // The Hindi pages mixed जिला/ज़िला, खर्च/ख़र्च and आंकड़े/आँकड़े (and
+  // 'यह पन्ना शेयर करें' vs 'यह पेज साझा करें'). The site uses the forms most
+  // of its Hindi text already had: जिला, खर्च, आँकड़े, 'यह पेज शेयर करें'.
+  const VARIANTS: Array<[string, RegExp]> = [
+    ["ज़िला (use जिला)", /ज़िल|ज़िल/],
+    ["ख़र्च (use खर्च)", /ख़र्च|ख़र्च/],
+    ["आंकड़ (use आँकड़)", /आंक(?:ड़|ड़)/],
+    ["share wording (use 'यह पेज शेयर करें')", /यह पन्ना शेयर करें|यह पेज साझा करें/],
+  ];
+  // Left for the merge: lines also edited on other Sept 2026 fix branches.
+  const MERGE_PENDING = new Set([
+    "hi.json:india.disclaimers.justice",
+    "hi/page_courts.json:notCoveredBody",
+    "hi/page_india.json:mod.justice-pendency.d",
+    "hi/page_india.json:kpi.states.meta",
+  ]);
+
+  it("uses the chosen spelling everywhere", () => {
+    const bad: string[] = [];
+    for (const [k, v] of strings("hi")) {
+      if (MERGE_PENDING.has(k)) continue;
+      for (const [name, re] of VARIANTS) if (re.test(v)) bad.push(`${k}: ${name}`);
+    }
+    expect(bad).toEqual([]);
+  });
+});

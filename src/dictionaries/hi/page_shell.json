@@ -13,10 +13,10 @@
     "aria": "{district} एक नज़र में",
     "collector": "कलेक्टर",
     "dc": "उपायुक्त",
-    "dm": "ज़िलाधिकारी",
+    "dm": "जिलाधिकारी",
     "mp": "सांसद",
     "mps": "सांसद",
-    "mpsCount": "इस ज़िले के {n}",
+    "mpsCount": "इस जिले के {n}",
     "people": "आबादी",
     "peopleCensus": "{n} ({dataset})",
     "peopleEstimate": "{n} (अनुमान)",
@@ -53,7 +53,7 @@
   },
   "nav": {
     "comingSoon": "जल्द आ रहा है",
-    "comingSoonAria": "{name}: इस ज़िले के लिए जल्द आ रहा है",
+    "comingSoonAria": "{name}: इस जिले के लिए जल्द आ रहा है",
     "late": "डेटा पुराना है",
     "allTopics": "सभी विषय",
     "allTopicsFor": "{district} के सभी विषय"
