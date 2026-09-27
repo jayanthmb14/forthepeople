@@ -141,7 +141,7 @@ export function HelplineCard({ h, onInfo }: { h: (typeof HELPLINES)[number]; onI
           {h.emoji}
         </span>
         <span style={{ minWidth: 0 }}>
-          <span className="ftp-bignum" style={{ display: "block", fontSize: h.number.length > 6 ? 20 : 26, lineHeight: 1.1, color: "var(--hue-deep)" }}>
+          <span className="ftp-bignum" style={{ display: "block", fontSize: h.number.length > 6 ? 18 : 26, lineHeight: 1.15, color: "var(--hue-deep)", overflowWrap: "anywhere" }}>
             {h.number}
           </span>
           <span style={{ display: "block", fontSize: 14, lineHeight: "19px", fontWeight: 600 }}>{name}</span>

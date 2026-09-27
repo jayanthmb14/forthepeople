@@ -369,7 +369,7 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
         titleLocal={titleLocal}
         description={t("description")}
         backHref={base}
-        freshness={asOf ? { asOf, thresholdHours: 24 * 30 } : undefined}
+        freshness={asOf ? { asOf } : undefined}
         source={ECI}
       />
 

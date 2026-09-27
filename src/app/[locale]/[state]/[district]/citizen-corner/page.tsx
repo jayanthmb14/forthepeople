@@ -332,7 +332,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
               </span>
               {t(`kinds.${k.id}`)}
             </h3>
-            <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "240px", gap: 12 } as React.CSSProperties}>
+            <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px", gap: 12 } as React.CSSProperties}>
               {HELPLINES.filter((h) => h.kind === k.id).map((h) => (
                 <HelplineCard key={h.key} h={h} onInfo={() => setHelpline(h)} />
               ))}
@@ -403,10 +403,17 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
                 </Card>
               ))}
             </div>
-            <div style={{ marginTop: 16 }}>
+            {/* The topics ring beside a short note on where the tips come from. */}
+            <div className={tips.length >= 2 ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
               <TopicsRing tips={tips} period={tipsPeriod} />
+              <Card tinted padding={18}>
+                <p className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650 }}>
+                  <span aria-hidden>🤖 </span>
+                  {t("aboutTipsTitle")}
+                </p>
+                <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("tipsNote")}</p>
+              </Card>
             </div>
-            <p style={{ marginTop: 12, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{t("tipsNote")}</p>
           </>
         )}
       </Section>
