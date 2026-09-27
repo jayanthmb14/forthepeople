@@ -23,7 +23,6 @@
   --home-violet: #7152c9;
   --home-violet-tint: #f4f0fd;
   --home-indigo-tint: #eff0fd;
-  --home-hl: #fde68a;
   --home-gold: #c8950f;
   --home-gold-tint: #fdf3d3;
   --home-gold-ring: #efd99a;
@@ -36,7 +35,6 @@
   --home-sky-tint: rgba(47, 119, 174, 0.14);
   --home-violet-tint: rgba(113, 82, 201, 0.14);
   --home-indigo-tint: rgba(82, 86, 201, 0.14);
-  --home-hl: rgba(253, 230, 138, 0.28);
   --home-gold: #e4b53b;
   --home-gold-tint: rgba(228, 181, 59, 0.16);
   --home-gold-ring: rgba(228, 181, 59, 0.35);
@@ -394,13 +392,18 @@
   gap: 8px;
   align-self: flex-start;
   margin: 0;
-  padding: 4px 12px 4px 8px;
+  padding: 5px 14px 5px 10px;
   border: 1px solid color-mix(in srgb, var(--ftp-brand) 22%, transparent);
   border-radius: 999px;
   background: var(--ftp-surface);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 700;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--ftp-text);
+}
+/* "Your data." — the one phrase of the slogan made stronger. */
+.kickerEm {
+  font-weight: 800;
   color: var(--ftp-brand-deep);
 }
 .kickerDot {
@@ -416,18 +419,16 @@
   font-family: var(--ftp-font-h1);
   font-size: clamp(28px, 4.2vw, 46px);
   line-height: 1.15;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ftp-text);
   text-wrap: balance;
 }
+/* The key words ("your district"): brand blue and the heaviest weight —
+   no highlighter stroke behind them. */
 .titleHl {
-  padding: 0 0.12em;
-  border-radius: 0.2em;
-  background: linear-gradient(180deg, transparent 58%, var(--home-hl) 58%, var(--home-hl) 92%, transparent 92%);
-  color: var(--ftp-brand-deep);
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
+  font-weight: 800;
+  color: var(--ftp-brand);
 }
 :global([lang="hi"]) .title,
 :global([lang="kn"]) .title {

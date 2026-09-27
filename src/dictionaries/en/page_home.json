@@ -32,7 +32,8 @@
   "hero": {
     "title": "See what is happening in <hl>your district</hl>",
     "find": "Find your district",
-    "quickPicks": "Live districts — pick one, or type any district"
+    "quickPicks": "Live districts — pick one, or type any district",
+    "tagline": "Your district. <b>Your data.</b> Your right."
   },
   "stats": {
     "aria": "ForThePeople.in in numbers",
