@@ -23,6 +23,12 @@
 //   └────────────────────────────────────────────────────────────┘
 //
 //  This file holds the ONLY <h1> of the page it is used on.
+//
+//  v5 (calm): the overview shows only the name block — no census tiles
+//  (the glance row and the People card carry them), no "📍 state
+//  district" chip (the district bar shows the state) and no health ring
+//  (the report card sits lower down). The locked-district preview keeps
+//  the tiles. Stat tiles carry no emoji.
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
@@ -64,6 +70,10 @@ export interface DistrictIdentityCardProps {
   aside?: React.ReactNode;
   /** Extra rows at the bottom of the card (freshness row, vote block…). */
   children?: React.ReactNode;
+  /** v5: show the four census tiles (default true; the overview turns them off). */
+  showStats?: boolean;
+  /** v5: show the "<state> district" chip above the name (default true). */
+  showStateChip?: boolean;
 }
 
 export default function DistrictIdentityCard({
@@ -84,6 +94,8 @@ export default function DistrictIdentityCard({
   districtSlug,
   aside,
   children,
+  showStats = true,
+  showStateChip = true,
 }: DistrictIdentityCardProps) {
   // v4: the card wears the district's own hue and its hand-drawn
   // landmark illustration (restored from the original site) on the right.
@@ -107,7 +119,8 @@ export default function DistrictIdentityCard({
         overflow: "hidden",
         borderRadius: 24,
         border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
-        background: `linear-gradient(135deg, rgb(${palette.gradientBase}) 0%, #fff 70%)`,
+        // v5: a pastel wash of the district's colour into the surface.
+        background: `linear-gradient(135deg, rgb(${palette.gradientBase}) 0%, var(--ftp-surface) 62%)`,
         boxShadow: "var(--ftp-shadow-1)",
       }}
     >
@@ -119,24 +132,25 @@ export default function DistrictIdentityCard({
       <div style={{ position: "relative", padding: "clamp(18px, 3vw, 28px)" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 260px" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "3px 10px",
-                borderRadius: 999,
-                background: "#fff",
-                border: "1px solid var(--ftp-border)",
-                fontSize: 12,
-                fontWeight: 600,
-                color: "var(--ftp-text-2)",
-                marginBottom: 10,
-              }}
-            >
-              <span className="ftp-emoji" aria-hidden>📍</span>
-              {t("districtOf", { state: place.state(stateName, stateName) })}
-            </span>
+            {showStateChip && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "3px 10px",
+                  borderRadius: 999,
+                  background: "var(--ftp-surface)",
+                  border: "1px solid var(--ftp-border)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--ftp-text-2)",
+                  marginBottom: 10,
+                }}
+              >
+                {t("districtOf", { state: place.state(stateName, stateName) })}
+              </span>
+            )}
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)", textWrap: "balance" }}>
                 <span lang={pair.primaryLang}>{pair.primary}</span>
@@ -159,12 +173,13 @@ export default function DistrictIdentityCard({
         {/* Headline numbers. The caption names where they come from: the
             census row from the database when there is one, otherwise it says
             the figure is an estimate. Never claim a census year we don't have. */}
+        {showStats && (
         <div style={{ marginTop: 20, maxWidth: 720 }}>
           <StatStrip cols={4}>
-            <StatTile emoji="👨‍👩‍👧" label={t("population")} value={population ? f.number(population) : "—"} />
-            <StatTile emoji="🗺️" label={t("area")} value={area ? f.number(area) : "—"} unit={area ? "km²" : undefined} />
-            <StatTile emoji="📚" label={t("literacy")} value={literacy ? `${literacy}` : "—"} unit={literacy ? "%" : undefined} />
-            <StatTile emoji="🏘️" label={subUnitLabel} value={subUnitCount ?? "—"} />
+            <StatTile label={t("population")} value={population ? f.number(population) : "—"} />
+            <StatTile label={t("area")} value={area ? f.number(area) : "—"} unit={area ? "km²" : undefined} />
+            <StatTile label={t("literacy")} value={literacy ? `${literacy}` : "—"} unit={literacy ? "%" : undefined} />
+            <StatTile label={subUnitLabel} value={subUnitCount ?? "—"} />
           </StatStrip>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
             <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
@@ -173,6 +188,7 @@ export default function DistrictIdentityCard({
             {statsSource && <SourcePill label={statsSource.label} href={statsSource.href} />}
           </div>
         </div>
+        )}
 
         {children}
       </div>

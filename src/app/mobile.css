@@ -1,74 +1,12 @@
 /* ============================================================
- * ForThePeople.in — mobile.css (Design v3, rewritten 2026-09-27)
+ * ForThePeople.in — mobile.css
  *
- * What is left here, and why:
- *   The home page and the site header/footer now carry their own
- *   phone layouts in CSS modules (src/components/home/*.module.css),
- *   so every home/header override that used to live here — and the
- *   dozens of !important rules they needed — is gone.
+ * Empty on purpose (v5, 2026-09-27). The home page, header and footer
+ * carry their own phone layouts in CSS modules, and the district shell
+ * (district bar, glance row, stale notice, verification panel) lives in
+ * src/app/[locale]/[state]/[district]/district-shell.css.
  *
- *   What remains is ONLY what district pages still use:
- *     1. The phone breadcrumb strip under the header (MobileBreadcrumbStrip).
- *     2. (removed) The bottom sheet: BreadcrumbBottomSheet now styles
- *        itself inline with tokens, so the old .ftp-m-sheet* rules went.
- *     3. The district status bar scrolling away on phones (DistrictStatusBar).
- *     4. (removed) The module drawer: no component uses .ftp-m-drawer*
- *        any more, so those rules went too.
- *
- *   Colours are v3 tokens (var(--ftp-*)) — no hex. Weights 400/500.
+ * The rules that were here styled the phone breadcrumb strip and forced
+ * the old status bar to scroll away; both components are gone. The file
+ * stays because src/app/layout.tsx imports it — delete both together.
  * ============================================================ */
-
-/* ---------- 1. Phone breadcrumb strip: hidden on desktop ---------- */
-.ftp-m-breadcrumb-strip {
-  display: none;
-}
-
-@media (max-width: 767px) {
-  /* The desktop floating breadcrumb menu is replaced by the bottom sheet. */
-  .ftp-breadcrumb-menu { display: none !important; }
-
-  .ftp-m-breadcrumb-strip {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    position: static !important;
-    background: var(--ftp-surface);
-    border-bottom: 1px solid var(--ftp-border);
-    padding: 6px 8px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .ftp-m-breadcrumb-strip::-webkit-scrollbar { display: none; }
-  .ftp-m-breadcrumb-strip .ftp-district-breadcrumb {
-    padding: 0;
-    background: transparent;
-    border-bottom: none;
-    flex: 1;
-    min-width: 0;
-  }
-  /* Hamburger inside the strip — opens MobileDistrictDrawer via the
-     OPEN_MODULES_EVENT that MobileDistrictChrome listens for. */
-  .ftp-m-breadcrumb-strip-hamburger {
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--ftp-border);
-    background: var(--ftp-surface-2);
-    border-radius: var(--ftp-radius-tile);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    color: var(--ftp-text);
-  }
-  .ftp-m-breadcrumb-strip-hamburger:active { background: var(--ftp-border); }
-
-  /* ---------- 3. DistrictStatusBar ----------
-     It uses Tailwind `sticky top-[92px] md:top-[56px]`. On phones it
-     scrolls away with the content instead of covering it. */
-  div[class*="sticky top-["] {
-    position: static !important;
-  }
-}
-

@@ -82,6 +82,51 @@ export interface SidebarModule {
   related?: readonly string[];
   /** 1 = top of the sidebar. Derived from the array order below. */
   priority: number;
+  /**
+   * v5: how old this module's main dataset may get before the page says so
+   * (StaleDataNotice), how often its source publishes, and how the data
+   * reaches us (VerifyPanel). Undefined for pages that show no dataset of
+   * their own (overview, supporters, data sources, update log).
+   */
+  freshness?: FreshnessRule;
+}
+
+// ── Freshness rules (v5) ───────────────────────────────────
+//
+// One rule per module for its MAIN dataset. /api/data/freshness compares the
+// newest date it finds in the database with `maxAgeHours`; when the data is
+// older, the page shows a calm amber notice with the age in days and "we
+// could not find newer data" (StaleDataNotice), and the verification panel
+// at the bottom marks it "Late". Thresholds follow how often the SOURCE
+// publishes, with some slack — not how often we would like it to.
+
+/** How often the source publishes new data (VerifyPanel "Should update"). */
+export type UpdateEvery =
+  | "hourly"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "election"
+  | "census"
+  | "onChange";
+
+/**
+ * How the data reaches ForThePeople.in (VerifyPanel "How we get it"):
+ *   auto      — an automatic feed from the source (weather, mandi, dams, news)
+ *   manual    — entered by hand from a named document or portal
+ *   news      — picked from news reports
+ *   reference — written by our team (guides, templates, maps); no data date
+ */
+export type CollectMethod = "auto" | "manual" | "news" | "reference";
+
+export interface FreshnessRule {
+  /** Older than this = "late". null = reference content that never goes stale. */
+  maxAgeHours: number | null;
+  every: UpdateEvery;
+  method: CollectMethod;
+  /** An official portal where a visitor can check the figures themselves. */
+  portal?: string;
 }
 
 type ModuleEntry = Omit<SidebarModule, "priority">;
@@ -143,7 +188,57 @@ const MODULES: readonly ModuleEntry[] = [
   { group: "checkWork", slug: "update-log",   label: "What changed and when",     emoji: "🕒", icon: History,  description: "Every data change, with its date" },
 ];
 
-export const SIDEBAR_MODULES: SidebarModule[] = MODULES.map((m, i) => ({ ...m, priority: i + 1 }));
+const HOUR = 1;
+const DAY = 24 * HOUR;
+const YEAR = 365 * DAY;
+
+/**
+ * Expected maximum age per module (main dataset). Periods are measured from
+ * the START of a financial year (budget, housing) and from the END of a
+ * calendar year (yearly statistics, the census), so "FY 2026-27" is current
+ * until May 2027 and "2024 court statistics" until the end of 2026.
+ */
+export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
+  news:                   { maxAgeHours: 24 * HOUR, every: "daily",    method: "auto" },
+  alerts:                 { maxAgeHours: 24 * HOUR, every: "onChange", method: "auto",      portal: "https://sachet.ndma.gov.in" },
+  weather:                { maxAgeHours: 6 * HOUR,  every: "hourly",   method: "auto",      portal: "https://mausam.imd.gov.in" },
+  // Written guidance; the news part of the page carries its own dates.
+  responsibility:         { maxAgeHours: null,      every: "onChange", method: "reference" },
+  "citizen-corner":       { maxAgeHours: null,      every: "onChange", method: "reference" },
+  "file-rti":             { maxAgeHours: null,      every: "onChange", method: "reference", portal: "https://rtionline.gov.in" },
+  rti:                    { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual" },
+  leadership:             { maxAgeHours: 90 * DAY,  every: "onChange", method: "manual" },
+  elections:              { maxAgeHours: 6 * YEAR,  every: "election", method: "manual",    portal: "https://results.eci.gov.in" },
+  "gram-panchayat":       { maxAgeHours: YEAR,      every: "monthly",  method: "manual",    portal: "https://egramswaraj.gov.in" },
+  courts:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://njdg.ecourts.gov.in" },
+  police:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://ncrb.gov.in" },
+  finance:                { maxAgeHours: 400 * DAY, every: "yearly",   method: "manual" },
+  infrastructure:         { maxAgeHours: 90 * DAY,  every: "monthly",  method: "news" },
+  tenders:                { maxAgeHours: 7 * DAY,   every: "daily",    method: "auto",      portal: "https://eprocure.gov.in/cppp/" },
+  industries:             { maxAgeHours: YEAR,      every: "yearly",   method: "manual" },
+  schemes:                { maxAgeHours: 180 * DAY, every: "onChange", method: "manual",    portal: "https://www.myscheme.gov.in" },
+  housing:                { maxAgeHours: 400 * DAY, every: "monthly",  method: "manual",    portal: "https://pmayg.nic.in" },
+  services:               { maxAgeHours: YEAR,      every: "onChange", method: "manual" },
+  offices:                { maxAgeHours: YEAR,      every: "onChange", method: "manual" },
+  exams:                  { maxAgeHours: 14 * DAY,  every: "daily",    method: "auto" },
+  jjm:                    { maxAgeHours: 90 * DAY,  every: "weekly",   method: "manual",    portal: "https://ejalshakti.gov.in/jjmreport/JJMIndia.aspx" },
+  water:                  { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto" },
+  power:                  { maxAgeHours: 7 * DAY,   every: "onChange", method: "auto" },
+  transport:              { maxAgeHours: YEAR,      every: "onChange", method: "manual" },
+  health:                 { maxAgeHours: YEAR,      every: "monthly",  method: "manual" },
+  schools:                { maxAgeHours: 400 * DAY, every: "yearly",   method: "manual",    portal: "https://udiseplus.gov.in" },
+  crops:                  { maxAgeHours: 7 * DAY,   every: "daily",    method: "auto",      portal: "https://agmarknet.gov.in" },
+  farm:                   { maxAgeHours: 30 * DAY,  every: "weekly",   method: "manual",    portal: "https://soilhealth.dac.gov.in" },
+  population:             { maxAgeHours: 20 * YEAR, every: "census",   method: "manual",    portal: "https://censusindia.gov.in" },
+  map:                    { maxAgeHours: null,      every: "onChange", method: "reference" },
+  "famous-personalities": { maxAgeHours: null,      every: "onChange", method: "reference" },
+};
+
+export const SIDEBAR_MODULES: SidebarModule[] = MODULES.map((m, i) => ({
+  ...m,
+  priority: i + 1,
+  freshness: MODULE_FRESHNESS[m.slug],
+}));
 
 const BY_SLUG: Record<string, SidebarModule> = Object.fromEntries(SIDEBAR_MODULES.map((m) => [m.slug, m]));
 const GROUP_BY_KEY = Object.fromEntries(MODULE_GROUPS.map((g) => [g.key, g])) as Record<ModuleGroupKey, ModuleGroup>;
@@ -157,6 +252,11 @@ export function getModule(slug: string | null | undefined): SidebarModule | null
 export function getModuleGroup(slug: string | null | undefined): ModuleGroup | null {
   const m = getModule(slug);
   return m ? GROUP_BY_KEY[m.group] : null;
+}
+
+/** The freshness rule of a module's main dataset, or null (meta pages, unknown slugs). */
+export function getFreshnessRule(slug: string | null | undefined): FreshnessRule | null {
+  return (slug && MODULE_FRESHNESS[slug]) || null;
 }
 
 /** Related modules ("See also") for a slug, in the order listed. */

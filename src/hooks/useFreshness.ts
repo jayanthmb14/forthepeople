@@ -22,10 +22,17 @@
 //    modules.alerts    { activeCount, status: "ok" }      ← no timestamp
 //    modules.aiInsights{ status, age, lastUpdated }
 //    summary           { green, amber, red, unknown }
+//    datasets          v5: one row per dataset on the district's pages
+//                      (src/lib/freshness.ts) — status current / late /
+//                      unknown / not_collected / reference
+//    live              v5: { current, total } of the five fast feeds
 //
 "use client";
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
+import type { DatasetFreshness } from "@/lib/freshness";
+
+export type { DatasetFreshness, DatasetStatus } from "@/lib/freshness";
 
 /** Traffic-light status as computed by the API. */
 export type FreshnessStatus = "green" | "amber" | "red" | "unknown";
@@ -58,6 +65,9 @@ export interface FreshnessResponse {
     aiInsights: { status: FreshnessStatus; age: string; lastUpdated: string | null };
   };
   summary: { green: number; amber: number; red: number; unknown: number };
+  /** v5 — absent from a cached pre-v5 response. */
+  datasets?: DatasetFreshness[];
+  live?: { current: number; total: number };
 }
 
 export interface FreshnessResult {
@@ -73,6 +83,14 @@ export interface FreshnessResult {
    * Returns null when the module has no freshness feed.
    */
   forModule: (slug: string) => ModuleFreshness | null;
+  /** v5: every dataset, in registry order (empty until loaded). */
+  datasets: DatasetFreshness[];
+  /** v5: the datasets a module page shows, main first. */
+  datasetsFor: (slug: string) => DatasetFreshness[];
+  /** v5: a module's main dataset, or null (meta pages, not loaded yet). */
+  primary: (slug: string) => DatasetFreshness | null;
+  /** v5: fast feeds that are current, e.g. { current: 3, total: 5 }. */
+  live: { current: number; total: number } | null;
 }
 
 /**
@@ -167,6 +185,7 @@ export function normaliseFreshness(data: FreshnessResponse): Partial<Record<Fres
 }
 
 const EMPTY_MODULES: Partial<Record<FreshnessKey, ModuleFreshness>> = {};
+const EMPTY_DATASETS: DatasetFreshness[] = [];
 
 /**
  * useFreshness(stateSlug, districtSlug)
@@ -196,6 +215,7 @@ export function useFreshness(stateSlug: string, districtSlug: string): Freshness
 
   const data = entry?.data ?? null;
   const modules = useMemo(() => (data ? normaliseFreshness(data) : EMPTY_MODULES), [data]);
+  const datasets = data?.datasets ?? EMPTY_DATASETS;
 
   return {
     modules,
@@ -207,5 +227,9 @@ export function useFreshness(stateSlug: string, districtSlug: string): Freshness
       const k = MODULE_TO_FRESHNESS_KEY[slug];
       return k ? (modules[k] ?? null) : null;
     },
+    datasets,
+    datasetsFor: (slug: string) => datasets.filter((d) => d.module === slug),
+    primary: (slug: string) => datasets.find((d) => d.module === slug && d.primary) ?? null,
+    live: data?.live ?? null,
   };
 }

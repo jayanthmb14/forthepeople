@@ -62,5 +62,57 @@
     "Heart of Lutyens Delhi": "Heart of Lutyens Delhi",
     "Diplomatic Enclave": "Diplomatic Enclave",
     "Institutional Hub": "Institutional Hub"
+  },
+  "v5": {
+    "basics": "Leaders, people, projects and money",
+    "recent": "Recent news and notices",
+    "allNews": "All news",
+    "noNews": "No local news from the last 30 days.",
+    "newsMeta": "{publisher} · {date}",
+    "opensNewTab": "(opens in a new tab)",
+    "weatherNow": "Weather: {temp}°C, {conditions} ({when})",
+    "weatherOld": "Weather: the last reading is from {date}, {n, plural, one {# day} other {# days}} ago. We could not find a newer one.",
+    "mandiNow": "Mandi: {commodity} ₹{price}/kg at {market} ({date})",
+    "mandiOld": "Mandi prices: the last update is from {date}, {n, plural, one {# day} other {# days}} ago. We could not find newer prices.",
+    "examNext": "Next exam: {title}, {date}",
+    "examApply": "Last day to apply: {title}, {date}",
+    "alertLead": "Official warning",
+    "alertSee": "See the warning",
+    "money": {
+      "title": "Budget",
+      "aria": "Budget",
+      "viewAll": "View all",
+      "given": "Given",
+      "spent": "Spent",
+      "share": "{pct} of the money given has been spent",
+      "noSpend": "Spending not published yet.",
+      "fy": "For FY {fy}",
+      "old": "This is FY {fy}. We could not find a newer budget.",
+      "estimate": "The spending figure is an estimate, not an official count."
+    },
+    "report": {
+      "summary": "District report card: grade {grade} ({score} out of 100)",
+      "computed": "Computed on {date}.",
+      "expired": "Computed on {date} and not recomputed since, so it may not match the data on this page.",
+      "prev": "Previous score: {prev}.",
+      "open": "Show the 10 areas"
+    },
+    "topics": {
+      "title": "All topics",
+      "open": "Show all {n} topics for {name}",
+      "soonNote": "Topics marked “coming soon” are not collected for {name} yet."
+    }
+  },
+  "tenders": {
+    "aria": "Government tenders",
+    "tracking": "Tracking",
+    "pending": "Update pending",
+    "viewAll": "View all",
+    "open": "{n, plural, one {open tender} other {open tenders}}",
+    "closing": "{n} closing in 48 hours",
+    "next": "Next deadline: {title}",
+    "today": "today",
+    "days": "{n, plural, one {# day} other {# days}}",
+    "notChecked": "Not checked yet"
   }
 }

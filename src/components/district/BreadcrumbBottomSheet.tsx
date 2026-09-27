@@ -37,6 +37,7 @@ interface Props {
 
 export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
   const tb = useTranslations("breadcrumb");
+  const tshell = useTranslations("page_shell");
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   // Lock body scroll while the sheet is open; move focus into the sheet.
@@ -146,7 +147,7 @@ export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
             cursor: "pointer",
           }}
         >
-          Cancel
+          {tshell("bar.cancel")}
         </button>
       </div>
     </div>,

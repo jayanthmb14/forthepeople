@@ -5,66 +5,64 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-//  District overview — Design v3 "Civic Ledger" (CONCEPT-v3 §5)
+//  District overview — v5 "calm"
 // ═══════════════════════════════════════════════════════════
 //
-//  The page reads top to bottom like a page of a public ledger:
+//  What a visitor needs first, then details, then the fine print:
 //
-//   1. Identity card  — H1 name + local-script name, tagline chips,
-//                       health grade ring, then 4 Census numbers and
-//                       a row of "how fresh is the data" pills.
-//   2. Today in X     — 5 small tiles (weather, mandi, one headline,
-//                       next exam or alert, budget spent). Each tile
-//                       only shows when its data is recent enough
-//                       (weather 24 h, the rest 30 days); otherwise the
-//                       slot says so honestly in one line.
-//   3. Module groups  — the same 5 groups as the left rail, as cards
-//                       listing every module with a freshness dot.
-//   4. At a glance    — leaders, population, infrastructure, tenders
-//                       snippets (each hides itself when empty).
-//   5. Sub-districts, supporters and "Report an issue" as quiet links.
+//   Above the fold
+//   1. Name block     — the district's name (+ local script), one or two
+//                       tagline chips. The state and taluk switchers are in
+//                       the district bar above.
+//   2. Glance row     — Collector, MP, people, projects, budget, next
+//                       election, report card (if current), warnings.
+//   3. Warning banner — only while a high or critical warning is active.
 //
-//  All data hooks are unchanged from v2; only the layout changed.
+//   Below
+//   4. Leaders, people, projects and money — the four snippets + budget.
+//   5. Recent news and notices — three headlines, the next state or
+//      district exam, and weather / mandi in one honest line each
+//      ("the last reading is from 20 Apr, 160 days ago").
+//   6. Taluks as compact chips.
+//   7. Report card, folded.
+//   8. All topics, folded (the sidebar and drawer already list them).
+//   9. Check this data (VerifyPanel), then supporters last.
 //
-//  v4.1: the page sits in the shared ModulePage frame (up to 1320 px on
-//  laptop/PC, 20 px sides on tablet, 16 px on phone — docs/LAYOUT.md).
-//  District and taluk names follow the page language (मंड्या on /hi) via
-//  the registry's names map; taluk taglines, alert severity and units come
-//  from page_overview.json.
+//  Removed in v5: the "Today" tiles, the 37-tile module grid, the identity
+//  card's census tiles, freshness pills and health ring, the tenders
+//  "Locked" card, the map, the "Report an issue" paragraph.
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
+import { AlertTriangle, BookOpen, CloudSun, ExternalLink, Wheat } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useFormat, useModuleText } from "@/i18n/client";
 import { placeName, placeNamePair } from "@/i18n/place-name";
 import { getDistrict } from "@/lib/constants/districts";
-import Link from "next/link";
-import { MessageSquareWarning } from "lucide-react";
-import {
-  useOverview, useCropPrices, useWeather, useAlerts, useBudget, useNews, useExams,
-  usePopulationProfile,
-} from "@/hooks/useRealtimeData";
-import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
-import { useFreshness } from "@/hooks/useFreshness";
-import type { FreshnessStatus } from "@/hooks/useFreshness";
-import { getTieredModules } from "@/lib/constants/sidebar-modules";
+import { getStateConfig } from "@/lib/constants/state-config";
+import { getGroupedModules } from "@/lib/constants/sidebar-modules";
 import { hueClass } from "@/lib/design/hues";
 import { ageInDays, isWithinMinutes } from "@/lib/utils/timeAgo";
 import {
-  AsOfText, Card, EmptyState, FreshnessPill, LoadingShell, ModulePage, Pill, ProgressBar, Section,
-  SourcePill,
-} from "@/components/district/ui";
-import { weatherEmoji } from "@/components/district/visuals";
+  useAlerts, useBudget, useCropPrices, useExams, useNews, useWeather,
+} from "@/hooks/useRealtimeData";
+import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
+import { useFreshness } from "@/hooks/useFreshness";
+import { Card, ModulePage, ProgressBar, Section } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
+import DistrictSponsorBanner from "@/components/common/DistrictSponsorBanner";
+import { useModuleGroupName } from "@/components/layout/useModuleGroups";
+import { useMoney } from "@/components/money/useMoney";
 import { DistrictHealthScoreCard } from "@/components/district/DistrictHealthScoreCard";
 import DistrictIdentityCard from "@/components/district/DistrictIdentityCard";
-import DistrictSponsorBanner from "@/components/common/DistrictSponsorBanner";
-import { getStateConfig } from "@/lib/constants/state-config";
 import InfraSnippet from "@/components/district/InfraSnippet";
 import LeadersSnippet from "@/components/district/LeadersSnippet";
-import DistrictLocator from "@/components/district/DistrictLocator";
+import LiveElectionBanner from "@/components/district/LiveElectionBanner";
 import PopulationSnippet from "@/components/district/PopulationSnippet";
 import TenderSnippet from "@/components/district/TenderSnippet";
-import LiveElectionBanner from "@/components/district/LiveElectionBanner";
+import GlanceRow from "@/components/district/shell/GlanceRow";
+import VerifyPanel from "@/components/district/shell/VerifyPanel";
 import type { DistrictBadge } from "@/lib/constants/districts";
 
 interface Props {
@@ -88,219 +86,112 @@ interface Props {
   };
 }
 
-// ── Freshness thresholds for the "Today" tiles ─────────────
-const WEATHER_MAX_MINUTES = 24 * 60; // weather older than a day is not "today"
-const TODAY_MAX_DAYS = 30; // everything else: last 30 days
-
-/** Freshness-API status → kit tone for the small dot in the module list. */
-const STATUS_DOT: Record<FreshnessStatus, string> = {
-  green: "var(--ftp-live)",
-  amber: "var(--ftp-warn)",
-  red: "var(--ftp-danger)",
-  unknown: "var(--ftp-border-strong)",
-};
-
-/** Modules whose freshness we show in the identity card's freshness row. */
-const FRESHNESS_ROW: Array<{ slug: string; label: string }> = [
-  { slug: "weather", label: "freshWeather" },
-  { slug: "crops", label: "freshMandi" },
-  { slug: "water", label: "freshDams" },
-  { slug: "news", label: "freshNews" },
-];
+// Weather counts as "now" for 24 hours, mandi prices for 7 days, a
+// headline for 30 days. Older ones are named with their age instead.
+const WEATHER_MAX_MINUTES = 24 * 60;
+const MANDI_MAX_DAYS = 7;
+const NEWS_MAX_DAYS = 30;
+const SERIOUS = new Set(["critical", "high", "severe"]);
 
 type Exam = ExamsData["stateExams"][number];
 
 /**
- * The next exam date (or the soonest open application deadline) from today.
- * Reads the clock here, outside the component body, so render stays pure.
+ * The next state or district exam (or open application deadline). National
+ * exams are left out: they are not news about this district.
  */
-function pickNextExam(data: ExamsData | undefined): { exam: Exam; date: string; kind: "Exam" | "Apply by" } | null {
+function pickNextExam(data: ExamsData | undefined): { exam: Exam; date: string; kind: "exam" | "apply" } | null {
   if (!data) return null;
   const nowMs = Date.now();
-  const all = [...(data.districtExams ?? []), ...(data.stateExams ?? [])];
-  const upcoming: Array<{ exam: Exam; date: string; kind: "Exam" | "Apply by" }> = [];
-  for (const exam of all) {
-    if (exam.examDate && new Date(exam.examDate).getTime() >= nowMs) upcoming.push({ exam, date: exam.examDate, kind: "Exam" });
-    else if (exam.endDate && new Date(exam.endDate).getTime() >= nowMs) upcoming.push({ exam, date: exam.endDate, kind: "Apply by" });
+  const local = [...(data.districtExams ?? []), ...(data.stateExams ?? []).filter((e) => e.level !== "national")];
+  const upcoming: Array<{ exam: Exam; date: string; kind: "exam" | "apply" }> = [];
+  for (const exam of local) {
+    if (exam.examDate && new Date(exam.examDate).getTime() >= nowMs) upcoming.push({ exam, date: exam.examDate, kind: "exam" });
+    else if (exam.endDate && new Date(exam.endDate).getTime() >= nowMs) upcoming.push({ exam, date: exam.endDate, kind: "apply" });
   }
   upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return upcoming[0] ?? null;
 }
 
-/** Highest-severity active alert, if any. */
-function pickAlert(alerts: LocalAlert[]): LocalAlert | null {
-  const rank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-  const active = alerts.filter((a) => a.active !== false);
-  active.sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9));
-  return active[0] ?? null;
+/** The most serious active warning, only if it is high or critical. */
+function pickSeriousAlert(alerts: LocalAlert[]): LocalAlert | null {
+  const rank: Record<string, number> = { critical: 0, high: 1, severe: 1 };
+  const serious = alerts.filter((a) => a.active !== false && SERIOUS.has((a.severity ?? "").toLowerCase()));
+  serious.sort((a, b) => (rank[a.severity.toLowerCase()] ?? 9) - (rank[b.severity.toLowerCase()] ?? 9));
+  return serious[0] ?? null;
 }
 
-/** "12 Sep" / "12 सित॰" in the page language (IST). */
-function shortDay(iso: string, intl: string): string {
-  return new Date(iso).toLocaleDateString(intl, { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
-}
-
-// ── Today tile ─────────────────────────────────────────────
-/**
- * One compact "Today" tile: label row (icon + 11 px label), a mono value,
- * one line of context, then "As of …" + a (non-link) SourcePill. The whole
- * tile links to its module. The SourcePill is plain text here because a
- * link inside a link is invalid HTML.
- */
-function TodayTile({
-  href, emoji, hue, label, value, unit, sub, asOf, asOfText, source, visual,
-}: {
-  href: string;
-  emoji: string;
-  hue: string;
-  label: string;
-  value?: React.ReactNode;
-  unit?: string;
-  sub?: string;
-  asOf?: string | null;
-  /** Used instead of `asOf` when the as-of is a period (e.g. "FY 2024-25"). */
-  asOfText?: string;
-  source?: string | null;
-  /** Optional picture under the number (progress bar, glyph…). */
-  visual?: React.ReactNode;
-}) {
+/** One line in "Recent news and notices": a small icon in the module hue + text, linking to the module. */
+function NoticeLine({ href, module, icon: Icon, children }: { href: string; module: string; icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <div className={`ftp-hue-${hue}`} style={{ height: "100%" }}>
-      <Card href={href} padding={14} tinted style={{ height: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10 }}>
-            {emoji}
-          </span>
-          <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>{label}</span>
-        </div>
-        {value !== undefined && (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap", minWidth: 0 }}>
-            <span className="ftp-bignum" style={{ fontSize: 28, lineHeight: "32px", color: "var(--hue-deep)" }}>{value}</span>
-            {unit && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ftp-text-2)" }}>{unit}</span>}
-          </div>
-        )}
-        {sub && (
-          <p
-            className="ftp-body"
-            style={{ color: "var(--ftp-text)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
-          >
-            {sub}
-          </p>
-        )}
-        {visual && <div style={{ marginTop: 10 }}>{visual}</div>}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-          {asOf ? <AsOfText asOf={asOf} /> : asOfText ? <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{asOfText}</span> : null}
-          {source && <SourcePill label={source} />}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-/** A Today slot with no recent data: one honest sentence + a link to the module. */
-function TodayEmpty({ label, emoji, hue, sentence, href }: { label: string; emoji: string; hue: string; sentence: string; href: string }) {
-  return (
-    // order: 1 → empty slots sit after the tiles that have data.
-    <div className={`ftp-hue-${hue}`} style={{ height: "100%", order: 1 }}>
-      <Card href={href} padding={14} style={{ height: "100%", borderStyle: "dashed", boxShadow: "none" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10, filter: "grayscale(0.6)" }}>
-            {emoji}
-          </span>
-          <span className="ftp-label">{label}</span>
-        </div>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{sentence}</p>
-      </Card>
-    </div>
+    <li className={hueClass(module)}>
+      <Link href={href} className="ftp-ov-line">
+        <span className="ftp-ov-line-icon" aria-hidden>
+          <Icon size={14} />
+        </span>
+        <span>{children}</span>
+      </Link>
+    </li>
   );
 }
 
 export default function OverviewClient({ locale, stateSlug, districtSlug, stateName, districtData }: Props) {
   const t = useTranslations("overview");
-  const ts = useTranslations("status");
+  const to = useTranslations("page_overview");
+  const tsh = useTranslations("page_shell");
   const tu = useTranslations("subUnits");
   const mt = useModuleText();
+  const groupName = useModuleGroupName();
   const f = useFormat();
-  const place = usePlaceText();
+  const money = useMoney();
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
   const stateConfig = getStateConfig(stateSlug);
   const subUnitEn = stateConfig?.subDistrictUnitPlural ?? "Taluks";
   const subUnitPlural = tu.has(subUnitEn) ? tu(subUnitEn) : subUnitEn;
-  const to = useTranslations("page_overview");
-  const tl = useTranslations("latest");
-  // Registry entry: carries names[locale] for the district and its taluks.
   const reg = getDistrict(stateSlug, districtSlug);
-  // In sentences, the district's name in the page language (मंड्या on /hi,
-  // ಮಂಡ್ಯ on /kn, Mandya on /en).
-  const displayName = placeName(
-    { name: districtData.name, nameLocal: districtData.nameLocal, names: reg?.names },
-    locale,
-  );
-  const stateLabel = place.state(stateSlug, stateName);
-  const talukTagline = (text: string) => (to.has(`taglines.${text}`) ? to(`taglines.${text}`) : text);
+  const displayName = placeName({ name: districtData.name, nameLocal: districtData.nameLocal, names: reg?.names }, locale);
 
-  // ── Data (same hooks and API calls as v2) ──
-  const { data: overview } = useOverview(districtSlug, stateSlug);
-  const { data: crops, isLoading: cropsLoading } = useCropPrices(districtSlug, stateSlug);
-  const { data: weather, isLoading: weatherLoading } = useWeather(districtSlug, stateSlug);
+  // ── Data (existing hooks; React Query shares them with other components) ──
+  const { data: weather } = useWeather(districtSlug, stateSlug);
+  const { data: crops } = useCropPrices(districtSlug, stateSlug);
   const { data: alerts } = useAlerts(districtSlug, stateSlug);
-  const { data: budgetData, isLoading: budgetLoading } = useBudget(districtSlug, stateSlug);
+  const { data: budgetData } = useBudget(districtSlug, stateSlug);
   const { data: newsData, isLoading: newsLoading } = useNews(districtSlug, stateSlug);
-  const { data: examsData, isLoading: examsLoading } = useExams(districtSlug, stateSlug);
+  const { data: examsData } = useExams(districtSlug, stateSlug);
   const fresh = useFreshness(stateSlug, districtSlug);
-  const { data: censusData } = usePopulationProfile(districtSlug, stateSlug);
 
-  // Identity-card numbers: use the sourced census row from the database when
-  // it exists. The registry figures are a mix of census counts and later
-  // estimates, so they are shown without a census label.
-  const census = censusData?.data ?? null;
-  const cardPopulation = census?.totalPopulation ?? districtData.population;
-  const cardLiteracy = census?.literacyTotal ?? districtData.literacy;
-  const cardArea = census?.areaSqKm ?? districtData.area;
-  const cardStatsAsOf = census?.totalPopulation ? census.dataset : null;
-  const cardStatsSource = census?.totalPopulation && census.sourceUrl
-    ? { label: t("censusOfIndia"), href: census.sourceUrl }
-    : null;
+  // ── Warning banner ──
+  const serious = pickSeriousAlert(alerts?.data ?? []);
 
-  // Taluk count: prefer the live DB list, fall back to the registry.
-  const dbTalukCount = overview?.data?.taluks?.length;
-  const displayedTalukCount = dbTalukCount ?? districtData.talukCount;
+  // ── Budget: newest financial year ──
+  const allBudget = budgetData?.data?.entries ?? [];
+  const latestFY = allBudget.length > 0 ? allBudget[0].fiscalYear : null;
+  const fyRows = latestFY ? allBudget.filter((e) => e.fiscalYear === latestFY) : [];
+  const allocated = fyRows.reduce((s, e) => s + e.allocated, 0);
+  const spent = fyRows.reduce((s, e) => s + e.spent, 0);
+  const spentShare = allocated > 0 ? spent / allocated : 0;
+  const spendEstimated = fyRows.some((e) => /estimat/i.test(e.source ?? ""));
+  const budgetLate = fresh.primary("finance")?.status === "late";
 
-  // ── Weather: latest reading, only if under 24 h old ──
+  // ── Recent: headlines, exam, weather, mandi ──
+  const headlines = (newsData?.data ?? []).filter((n) => {
+    const age = ageInDays(n.publishedAt);
+    return age !== null && age <= NEWS_MAX_DAYS;
+  }).slice(0, 3);
+  const nextExam = pickNextExam(examsData?.data);
   const latestWeather = weather?.data?.[0];
   const weatherFresh = latestWeather ? isWithinMinutes(latestWeather.recordedAt, WEATHER_MAX_MINUTES) : false;
-
-  // ── Mandi: newest price row, only if under 30 days old ──
   const latestCrop = crops?.data?.[0];
   const cropAge = latestCrop ? ageInDays(latestCrop.date) : null;
-  const cropFresh = cropAge !== null && cropAge <= TODAY_MAX_DAYS;
+  const cropFresh = cropAge !== null && cropAge <= MANDI_MAX_DAYS;
+  const day = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
 
-  // ── Headline: newest news item, only if under 30 days old ──
-  const headline = newsData?.data?.[0];
-  const headlineAge = headline ? ageInDays(headline.publishedAt) : null;
-  const headlineFresh = headlineAge !== null && headlineAge <= TODAY_MAX_DAYS;
-
-  // ── Alert (preferred) or next exam ──
-  const topAlert = pickAlert(alerts?.data ?? []);
-  const nextExam = pickNextExam(examsData?.data);
-
-  // ── Budget: latest fiscal year only (matches the finance page) ──
-  const allBudgetEntries = budgetData?.data?.entries ?? [];
-  const latestFY = allBudgetEntries.length > 0 ? allBudgetEntries[0].fiscalYear : null;
-  const budgetEntries = latestFY ? allBudgetEntries.filter((e) => e.fiscalYear === latestFY) : [];
-  const totalAllocated = budgetEntries.reduce((s, e) => s + e.allocated, 0);
-  const totalSpent = budgetEntries.reduce((s, e) => s + e.spent, 0);
-  const spentPct = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
-  const budgetSource = budgetEntries.find((e) => e.source)?.source ?? null;
-
-  const groups = getTieredModules();
+  // ── All topics (folded index) ──
+  const groups = getGroupedModules().map((g) => ({ ...g, modules: g.modules.filter((m) => m.slug !== "overview") })).filter((g) => g.modules.length > 0);
+  const topicCount = groups.reduce((n, g) => n + g.modules.length, 0);
 
   return (
-    // The shared frame (docs/LAYOUT.md): full width with 16 px sides on a
-    // phone, 20 px on a tablet, up to 1320 px centred on laptop and PC.
-    <ModulePage>
-
-      {/* ═══ 1. Identity card ═══════════════════════════════ */}
+    <ModulePage className="ftp-overview">
+      {/* ═══ 1. Name ═══ */}
       <DistrictIdentityCard
         districtSlug={districtSlug}
         name={districtData.name}
@@ -308,275 +199,171 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         names={reg?.names}
         stateName={stateName}
         tagline={districtData.tagline}
-        badges={districtData.badges}
-        population={cardPopulation}
-        area={cardArea}
-        literacy={cardLiteracy}
-        statsAsOf={cardStatsAsOf}
-        statsSource={cardStatsSource}
-        subUnitCount={displayedTalukCount}
-        subUnitLabel={subUnitPlural}
-        healthSlug={districtSlug}
-      >
-        {/* Freshness row — one pill per live feed, from /api/data/freshness. */}
-        {Object.keys(fresh.modules).length > 0 && (
-          <div
-            role="group"
-            aria-label={ts("howRecent")}
-            style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--ftp-border)" }}
-          >
-            {FRESHNESS_ROW.map(({ slug, label }) => {
-              const f = fresh.forModule(slug);
-              if (!f?.asOf) return null;
-              return (
-                <span key={slug} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{t(label)}</span>
-                  <FreshnessPill asOf={f.asOf} status={f.status} />
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </DistrictIdentityCard>
+        badges={districtData.tagline ? districtData.badges?.slice(0, 1) : districtData.badges?.slice(0, 2)}
+        showStats={false}
+        showStateChip={false}
+      />
 
-      {/* Election notice — renders only when polling is within 30 days. */}
-      <div style={{ marginTop: 16 }}>
+      {/* ═══ 2. Glance row ═══ */}
+      <div style={{ marginTop: 14 }}>
+        <GlanceRow stateSlug={stateSlug} districtSlug={districtSlug} />
+      </div>
+
+      {/* ═══ 3. Serious warning (only while one is active) ═══ */}
+      {serious && (
+        <Link href={`${base}/alerts`} className="ftp-ov-alert" data-severity={serious.severity.toLowerCase()}>
+          <AlertTriangle size={18} aria-hidden />
+          <span>
+            <strong>{to("v5.alertLead")}: </strong>
+            {serious.title}
+          </span>
+          <span className="ftp-ov-alert-see">{to("v5.alertSee")}</span>
+        </Link>
+      )}
+      <div style={{ marginTop: 12 }}>
         <LiveElectionBanner stateSlug={stateSlug} leadershipHref={`${base}/leadership`} />
       </div>
 
-      {/* ═══ 2. Today in <district> ═════════════════════════ */}
-      <Section title={t("today", { name: displayName })} emoji="☀️">
-        <div
-          style={{
-            display: "grid",
-            // auto-fit + 136 px: 2 tiles per row on a 320 px phone, all five
-            // in one row on a PC with no empty band on the right.
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(136px, 100%), 1fr))",
-            gap: 12,
-          }}
-        >
-          {/* Weather (≤ 24 h) */}
-          {weatherLoading ? (
-            <LoadingShell rows={1} />
-          ) : latestWeather && weatherFresh ? (
-            <TodayTile
-              href={`${base}/weather`}
-              emoji={weatherEmoji(latestWeather.conditions)}
-              hue="sky"
-              label={t("weather")}
-              value={latestWeather.temperature != null ? `${Math.round(latestWeather.temperature)}` : "—"}
-              unit={latestWeather.temperature != null ? "°C" : undefined}
-              sub={latestWeather.conditions ?? undefined}
-              asOf={latestWeather.recordedAt}
-              source={latestWeather.source}
-            />
-          ) : (
-            <TodayEmpty href={`${base}/weather`} emoji="🌦️" hue="sky" label={t("weather")} sentence={t("noWeather")} />
-          )}
-
-          {/* Mandi (≤ 30 d) — modal price is per quintal; shown per kg. */}
-          {cropsLoading ? (
-            <LoadingShell rows={1} />
-          ) : latestCrop && cropFresh ? (
-            <TodayTile
-              href={`${base}/crops`}
-              emoji="🌾"
-              hue="green"
-              label={t("mandi")}
-              value={`₹${f.number(Math.round(latestCrop.modalPrice / 100))}`}
-              unit={to("perKg")}
-              sub={`${latestCrop.commodity} · ${latestCrop.market}`}
-              asOf={latestCrop.date}
-              source={latestCrop.source}
-            />
-          ) : (
-            <TodayEmpty href={`${base}/crops`} emoji="🌾" hue="green" label={t("mandi")} sentence={t("noMandi")} />
-          )}
-
-          {/* One headline (≤ 30 d) */}
-          {newsLoading ? (
-            <LoadingShell rows={1} />
-          ) : headline && headlineFresh ? (
-            <TodayTile
-              href={`${base}/news`}
-              emoji="📰"
-              hue="blue"
-              label={t("headline")}
-              sub={headline.headline}
-              asOf={headline.publishedAt}
-              source={headline.publisher || headline.source}
-            />
-          ) : (
-            <TodayEmpty href={`${base}/news`} emoji="📰" hue="blue" label={t("headline")} sentence={t("noNews")} />
-          )}
-
-          {/* Alert (preferred) or next exam */}
-          {topAlert ? (
-            <div className="ftp-hue-rose" style={{ height: "100%" }}>
-            <Card href={`${base}/alerts`} padding={14} tinted style={{ height: "100%" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10 }}>⚠️</span>
-                <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>{t("alert")}</span>
-                <Pill tone={topAlert.severity === "critical" || topAlert.severity === "high" ? "danger" : "warn"} style={{ marginLeft: "auto" }}>
-                  {to.has(`severity.${topAlert.severity}`) ? to(`severity.${topAlert.severity}`) : topAlert.severity}
-                </Pill>
-              </div>
-              <p className="ftp-body" style={{ fontWeight: 500, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
-                {topAlert.title}
-              </p>
-              <div style={{ marginTop: 8 }}>
-                <AsOfText asOf={topAlert.startDate ?? topAlert.createdAt} prefix="Issued" />
-              </div>
-            </Card>
-            </div>
-          ) : examsLoading ? (
-            <LoadingShell rows={1} />
-          ) : nextExam ? (
-            <TodayTile
-              href={`${base}/exams`}
-              emoji="📝"
-              hue="violet"
-              label={nextExam.kind === "Exam" ? t("nextExam") : t("applyBy")}
-              value={shortDay(nextExam.date, f.intl)}
-              sub={nextExam.exam.title}
-              asOfText={nextExam.exam.department}
-            />
-          ) : (
-            <TodayEmpty href={`${base}/exams`} emoji="📝" hue="violet" label={t("examsAlerts")} sentence={t("noExams")} />
-          )}
-
-          {/* Budget spent % for the latest financial year */}
-          {budgetLoading ? (
-            <LoadingShell rows={1} />
-          ) : budgetEntries.length > 0 && totalAllocated > 0 ? (
-            <TodayTile
-              href={`${base}/finance`}
-              emoji="💰"
-              hue="amber"
-              label={t("budgetSpent")}
-              value={spentPct.toFixed(1)}
-              unit="%"
-              sub={t("spentOf", { spent: f.number(Math.round(totalSpent / 1e7)), total: f.number(Math.round(totalAllocated / 1e7)) })}
-              visual={<ProgressBar pct={spentPct} height={8} />}
-              asOfText={latestFY ? tl("fy", { year: latestFY }) : undefined}
-              source={budgetSource}
-            />
-          ) : (
-            <TodayEmpty href={`${base}/finance`} emoji="💰" hue="amber" label={t("budgetSpent")} sentence={t("noBudget")} />
-          )}
-        </div>
-      </Section>
-
-      {/* AI summary of the overview (renders nothing when there is none). */}
-      <div style={{ marginTop: 16 }}>
-        <AIInsightCard module="overview" district={districtSlug} />
-      </div>
-
-      {/* ═══ 3. Every dashboard, as colourful emoji tiles ═════ */}
-      <Section title={t("explore", { name: displayName })} emoji="🧭">
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {groups.map((group) => {
-            const mods = group.modules.filter((m) => m.slug !== "overview");
-            if (mods.length === 0) return null;
-            return (
-              <section key={group.label} aria-label={mt.group(group.label)}>
-                <h3 className="ftp-display" style={{ margin: "0 0 10px", fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
-                  {mt.group(group.label)}
-                </h3>
-                <ul className="ftp-module-grid">
-                  {mods.map((mod) => {
-                    const f = fresh.forModule(mod.slug);
-                    return (
-                      <li key={mod.slug} className={hueClass(mod.slug)}>
-                        <Link href={`${base}/${mod.slug}`} className="ftp-module-tile ftp-card-link">
-                          <span className="ftp-module-emoji ftp-emoji" aria-hidden>
-                            {mod.emoji}
-                          </span>
-                          <span className="ftp-module-name">{mt.label(mod.slug)}</span>
-                          <span className="ftp-module-desc">{mt.description(mod.slug)}</span>
-                          {f && (
-                            <>
-                              <span
-                                aria-hidden
-                                className="ftp-module-dot"
-                                title={f.age ? t("dataUpdated", { age: f.age }) : t("noRecentData")}
-                                style={{ background: STATUS_DOT[f.status] }}
-                              />
-                              <span className="sr-only">{f.age ? t("dataUpdated", { age: f.age }) : t("noRecentData")}</span>
-                            </>
-                          )}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
-      </Section>
-
-      {/* ═══ 4. At a glance — each snippet hides itself when it has no data ═══ */}
-      <Section title={t("atAGlance")} emoji="👀">
-        <div
-          style={{
-            display: "grid",
-            // 320 px minimum: 1 column on a phone, 2 on a tablet or a
-            // laptop beside the sidebar, 3 on a PC (was 360 px: one lonely
-            // column on a 768 px tablet). auto-fit: when snippets hide
-            // themselves, the rest widen instead of leaving a gap.
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
-            gap: 12,
-            alignItems: "start",
-          }}
-        >
-          <DistrictLocator
-            stateSlug={stateSlug}
-            districtSlug={districtSlug}
-            districtName={displayName}
-            stateName={stateLabel}
-          />
+      {/* ═══ 4. Leaders, people, projects and money ═══ */}
+      <Section title={to("v5.basics")}>
+        <div className="ftp-ov-grid">
           <LeadersSnippet district={districtSlug} state={stateSlug} base={base} />
           <PopulationSnippet district={districtSlug} state={stateSlug} base={base} />
           <InfraSnippet district={districtSlug} state={stateSlug} base={base} />
+          {latestFY && allocated > 0 && (
+            <Card as="section" aria-label={to("v5.money.aria")} className="ftp-hue-amber" tinted>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>💰</span>
+                  <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{mt.label("finance")}</h3>
+                </span>
+                <Link href={`${base}/finance`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+                  {to("v5.money.viewAll")}
+                </Link>
+              </div>
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ftp-text-2)" }}>{to("v5.money.fy", { fy: latestFY })}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                <div>
+                  <div className="ftp-label">{to("v5.money.given")}</div>
+                  <div className="ftp-num" style={{ fontSize: 17, lineHeight: "24px" }}>{money.short(allocated, 0)}</div>
+                </div>
+                <div>
+                  <div className="ftp-label">{to("v5.money.spent")}</div>
+                  <div className="ftp-num" style={{ fontSize: 17, lineHeight: "24px" }}>{spent > 0 ? money.short(spent, 0) : "—"}</div>
+                </div>
+              </div>
+              {spent > 0 ? (
+                <div style={{ marginTop: 10 }}>
+                  <ProgressBar value={spentShare * 100} max={100} height={6} />
+                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--ftp-text-2)" }}>{to("v5.money.share", { pct: money.pct(spentShare) })}</p>
+                </div>
+              ) : (
+                <p style={{ margin: "10px 0 0", fontSize: 13, color: "var(--ftp-text-2)" }}>{to("v5.money.noSpend")}</p>
+              )}
+              {(budgetLate || spendEstimated) && (
+                <p className="ftp-ov-note">
+                  {budgetLate ? to("v5.money.old", { fy: latestFY }) : ""}
+                  {budgetLate && spendEstimated ? " " : ""}
+                  {spendEstimated ? to("v5.money.estimate") : ""}
+                </p>
+              )}
+            </Card>
+          )}
           <TenderSnippet locale={locale} district={districtSlug} state={stateSlug} base={base} />
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <DistrictHealthScoreCard districtSlug={districtSlug} />
         </div>
       </Section>
 
-      {/* ═══ 5a. Sub-districts ══════════════════════════════ */}
+      {/* ═══ 5. Recent news and notices ═══ */}
+      <Section
+        title={to("v5.recent")}
+        action={
+          <Link href={`${base}/news`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+            {to("v5.allNews")}
+          </Link>
+        }
+      >
+        <Card padding={0}>
+          {headlines.length > 0 ? (
+            <ul className="ftp-ov-news">
+              {headlines.map((n) => (
+                <li key={n.id}>
+                  <a href={n.url ?? `${base}/news`} target={n.url ? "_blank" : undefined} rel={n.url ? "noopener noreferrer" : undefined} className="ftp-ov-news-link">
+                    <span className="ftp-ov-news-title">{n.headline}</span>
+                    <span className="ftp-ov-news-meta">
+                      {to("v5.newsMeta", { publisher: n.publisher || n.source, date: f.ago(n.publishedAt) })}
+                      {n.url && (
+                        <>
+                          {" "}
+                          <ExternalLink size={11} aria-hidden />
+                          <span className="sr-only">{to("v5.opensNewTab")}</span>
+                        </>
+                      )}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            !newsLoading && <p className="ftp-ov-empty">{to("v5.noNews")}</p>
+          )}
+
+          <ul className="ftp-ov-lines">
+            {nextExam && (
+              <NoticeLine href={`${base}/exams`} module="exams" icon={BookOpen}>
+                {nextExam.kind === "exam"
+                  ? to("v5.examNext", { title: nextExam.exam.title, date: day(nextExam.date) })
+                  : to("v5.examApply", { title: nextExam.exam.title, date: day(nextExam.date) })}
+              </NoticeLine>
+            )}
+            {latestWeather && (
+              <NoticeLine href={`${base}/weather`} module="weather" icon={CloudSun}>
+                {weatherFresh
+                  ? to("v5.weatherNow", {
+                      temp: latestWeather.temperature != null ? Math.round(latestWeather.temperature) : "—",
+                      conditions: latestWeather.conditions ?? "",
+                      when: f.ago(latestWeather.recordedAt),
+                    })
+                  : to("v5.weatherOld", { date: day(latestWeather.recordedAt), n: Math.floor(ageInDays(latestWeather.recordedAt) ?? 0) })}
+              </NoticeLine>
+            )}
+            {latestCrop && (
+              <NoticeLine href={`${base}/crops`} module="crops" icon={Wheat}>
+                {cropFresh
+                  ? to("v5.mandiNow", {
+                      commodity: latestCrop.commodity,
+                      price: f.number(Math.round(latestCrop.modalPrice / 100)),
+                      market: latestCrop.market,
+                      date: day(latestCrop.date),
+                    })
+                  : to("v5.mandiOld", { date: day(latestCrop.date), n: Math.floor(cropAge ?? 0) })}
+              </NoticeLine>
+            )}
+          </ul>
+        </Card>
+        {/* AI reading of the district — hides itself when older than 30
+            days or older than the data it would describe. */}
+        <div style={{ marginTop: 12 }}>
+          <AIInsightCard module="overview" district={districtSlug} />
+        </div>
+      </Section>
+
+      {/* ═══ 6. Taluks ═══ */}
       {districtData.taluks.length > 0 && (
-        <Section title={t("subUnits", { units: subUnitPlural, name: displayName })} emoji="🏘️">
-          <ul
-            style={{
-              listStyle: "none", margin: 0, padding: 0,
-              display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 8,
-            }}
-          >
+        <Section title={t("subUnits", { units: subUnitPlural, name: displayName })}>
+          <ul className="ftp-ov-taluks">
             {districtData.taluks.map((tal) => {
-              // Name in the page language first (मद्दूर on /hi), English or
-              // the local script beside it; tagline from page_overview.
               const names = placeNamePair(
                 { name: tal.name, nameLocal: tal.nameLocal, names: reg?.taluks.find((x) => x.slug === tal.slug)?.names },
                 locale,
               );
               return (
                 <li key={tal.slug}>
-                  <Card href={`${base}/${tal.slug}`} padding={12} style={{ minHeight: 44 }}>
-                    <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                      <span lang={names.primaryLang} className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>{names.primary}</span>
-                      {names.secondary && (
-                        <span lang={names.secondaryLang} style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{names.secondary}</span>
-                      )}
-                    </span>
-                    {tal.tagline && (
-                      <span style={{ display: "block", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-                        {talukTagline(tal.tagline)}
-                      </span>
+                  <Link href={`${base}/${tal.slug}`} className="ftp-ov-taluk">
+                    <span lang={names.primaryLang}>{names.primary}</span>
+                    {names.secondary && (
+                      <span lang={names.secondaryLang} className="ftp-ov-taluk-local">{names.secondary}</span>
                     )}
-                  </Card>
+                  </Link>
                 </li>
               );
             })}
@@ -584,8 +371,41 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         </Section>
       )}
 
-      {/* ═══ 5b. Supporters + report an issue (quiet) ═══════ */}
-      <div style={{ marginTop: 32 }}>
+      {/* ═══ 7. Report card (folded) ═══ */}
+      <div style={{ marginTop: 28 }}>
+        <DistrictHealthScoreCard districtSlug={districtSlug} />
+      </div>
+
+      {/* ═══ 8. All topics (folded; the sidebar and drawer list them too) ═══ */}
+      <details className="ftp-ov-topics">
+        <summary>{to("v5.topics.open", { n: topicCount, name: displayName })}</summary>
+        <p className="ftp-ov-topics-note">{to("v5.topics.soonNote", { name: displayName })}</p>
+        {groups.map((g) => (
+          <section key={g.key} aria-labelledby={`ftp-ov-topics-${g.key}`}>
+            <h3 id={`ftp-ov-topics-${g.key}`} className="ftp-ov-topics-group">{groupName(g.key)}</h3>
+            <ul className="ftp-ov-topics-list">
+              {g.modules.map((m) => {
+                const soon = fresh.primary(m.slug)?.status === "not_collected";
+                return (
+                  <li key={m.slug} className={hueClass(m.slug)}>
+                    <Link href={`${base}/${m.slug}`} className="ftp-ov-topic" data-soon={soon ? "true" : undefined}>
+                      <span className="ftp-ov-topic-emoji ftp-emoji" aria-hidden>{m.emoji}</span>
+                      <span>{mt.label(m.slug)}</span>
+                      {soon && <span className="ftp-ov-soon">{tsh("nav.comingSoon")}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </details>
+
+      {/* ═══ 9. Check this data, then supporters last ═══ */}
+      <div style={{ marginTop: 28 }}>
+        <VerifyPanel stateSlug={stateSlug} districtSlug={districtSlug} variant="overview" />
+      </div>
+      <div style={{ marginTop: 28 }}>
         <DistrictSponsorBanner
           district={districtSlug}
           state={stateSlug}
@@ -594,26 +414,6 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
           locale={locale}
         />
       </div>
-      <p className="ftp-body" style={{ marginTop: 16, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-        <MessageSquareWarning size={14} aria-hidden />
-        {t("somethingWrong")}
-        <Link
-          href={`/${locale}/feedback`}
-          style={{ color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 44 }}
-        >
-          {t("reportIssue")}
-        </Link>
-      </p>
-
-      {/* When nothing at all has loaded for a brand-new district, say so. */}
-      {!weatherLoading && !cropsLoading && !newsLoading && !budgetLoading && !latestWeather && !latestCrop && !headline && budgetEntries.length === 0 && (
-        <div style={{ marginTop: 16 }}>
-          <EmptyState
-            title={t("addedRecently", { name: displayName })}
-            body={t("addedRecentlyBody")}
-          />
-        </div>
-      )}
     </ModulePage>
   );
 }
