@@ -24,15 +24,17 @@
 import "./_env"; // MUST be first — loads .env then .env.local
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { looksLikeContactInfo } from "../src/lib/supporter-name";
 
 const CONFIRM = process.argv.includes("--confirm");
 const REPLACEMENT = "Supporter";
 
-// Keep these in sync with src/app/api/payment/contributors/route.ts.
+// The public APIs mask with looksLikeContactInfo() (src/lib/supporter-name.ts);
+// these two only name the reason in the dry-run list.
 const PHONE_LIKE = /^\+?\d[\d\s-]{7,}$/;
 const EMAIL_LIKE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Reason = "phone" | "email" | "too-short";
+type Reason = "phone" | "email" | "too-short" | "contact-in-text";
 
 function classify(raw: string): Reason | null {
   const name = (raw || "").trim();
@@ -40,6 +42,8 @@ function classify(raw: string): Reason | null {
   if (EMAIL_LIKE.test(name)) return "email";
   const letters = name.match(/\p{L}/gu)?.length ?? 0;
   if (letters < 2) return "too-short";
+  // A phone number or e-mail inside other text ("Call 98765 43210").
+  if (looksLikeContactInfo(name)) return "contact-in-text";
   return null;
 }
 

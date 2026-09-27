@@ -9,6 +9,8 @@ import prisma from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { calculateBadgeLevel, getMonthsActive } from "@/lib/badge-level";
 import { TIER_PRIORITY } from "@/lib/constants/razorpay-plans";
+import { publicDisplayName } from "@/lib/supporter-name";
+import { CONTRIBUTOR_KEYS } from "@/lib/supporter-cache";
 import {
   isMockEnabled,
   mockTopTier,
@@ -68,13 +70,15 @@ function toPublic(s: {
   sponsoredState?: { name: string; slug: string } | null;
 }): PublicContributor {
   const isAnon = !s.isPublic;
+  // Never a phone number or e-mail as a name: those become "Supporter"
+  // (src/lib/supporter-name.ts). email / phone columns are never selected.
   const districtName = s.sponsoredDistrict?.name ?? null;
   const districtSlug = s.sponsoredDistrict?.slug ?? null;
   const stateName = s.sponsoredState?.name ?? s.sponsoredDistrict?.state?.name ?? null;
   const stateSlug = s.sponsoredState?.slug ?? s.sponsoredDistrict?.state?.slug ?? null;
   return {
     id: s.id,
-    name: isAnon ? "Anonymous" : s.name,
+    name: publicDisplayName(s.name, s.isPublic),
     amount: s.isRecurring ? null : s.amount,
     tier: s.tier,
     badgeType: s.badgeType,
@@ -215,7 +219,7 @@ export async function GET(req: NextRequest) {
     // from ₹1,999 on 2026-04-24 when State Champion monthly price was halved.
     if (type === "state-page" && stateSlug) {
       const { limit, offset } = parsePaging(url, 60);
-      const cacheKey = `ftp:contributors:state-page:${stateSlug}:v3`;
+      const cacheKey = CONTRIBUTOR_KEYS.statePage(stateSlug);
       const cached = await cacheGet<PublicContributor[]>(cacheKey);
 
       let sortedAll: PublicContributor[];
@@ -253,7 +257,7 @@ export async function GET(req: NextRequest) {
 
     // ── Growth trend — monthly new supporters + cumulative ──
     if (type === "growth-trend") {
-      const cacheKey = "ftp:contributors:growth-trend";
+      const cacheKey = CONTRIBUTOR_KEYS.growthTrend;
       const cached = await cacheGet<Array<{ month: string; newCount: number; cumulative: number }>>(cacheKey);
       if (cached) return NextResponse.json({ points: cached });
 
@@ -285,7 +289,7 @@ export async function GET(req: NextRequest) {
     // here automatically.
     if (type === "top-tier") {
       const { limit, offset } = parsePaging(url, 20);
-      const cacheKey = "ftp:contributors:top-tier:v3";
+      const cacheKey = CONTRIBUTOR_KEYS.topTier;
       const cached = await cacheGet<PublicContributor[]>(cacheKey);
       const sortedAll = cached
         ? cached
@@ -319,7 +323,7 @@ export async function GET(req: NextRequest) {
     // for both subscriptions AND one-time donations.
     if (districtSlug || stateSlug) {
       const { limit, offset } = parsePaging(url, 120);
-      const cacheKey = `ftp:contributors:district:${districtSlug ?? ""}:${stateSlug ?? ""}:v3`;
+      const cacheKey = CONTRIBUTOR_KEYS.district(districtSlug ?? "", stateSlug ?? "");
       const cached = await cacheGet<PublicContributor[]>(cacheKey);
 
       let combined: PublicContributor[];
@@ -393,7 +397,7 @@ export async function GET(req: NextRequest) {
     // ── Leaderboard ─────────────────────────────────────────
     if (type === "leaderboard") {
       const { limit, offset } = parsePaging(url, 10);
-      const cacheKey = "ftp:contributors:leaderboard";
+      const cacheKey = CONTRIBUTOR_KEYS.leaderboard;
       const cached = await cacheGet<PublicContributor[]>(cacheKey);
 
       const sortedAll = cached
@@ -431,7 +435,7 @@ export async function GET(req: NextRequest) {
 
     // ── District rankings ─────────────────────────────────
     if (type === "district-rankings") {
-      const rkCacheKey = "ftp:contributors:district-rankings";
+      const rkCacheKey = CONTRIBUTOR_KEYS.districtRankings;
       const rkCached = await cacheGet<unknown>(rkCacheKey);
       if (rkCached) return NextResponse.json(rkCached);
 
@@ -494,7 +498,7 @@ export async function GET(req: NextRequest) {
 
     // ── All contributors (one-time + subscriptions) ─────────
     const { limit, offset } = parsePaging(url, 50);
-    const cacheKey = "ftp:contributors:all";
+    const cacheKey = CONTRIBUTOR_KEYS.all;
     const cached = await cacheGet<{ subscribers: PublicContributor[]; oneTime: PublicContributor[] }>(cacheKey);
 
     const full = cached

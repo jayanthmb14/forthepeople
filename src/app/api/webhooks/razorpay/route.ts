@@ -10,18 +10,12 @@ import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { calculateBadgeLevel } from "@/lib/badge-level";
 import { alertPaymentReceived } from "@/lib/admin-alerts";
+import { MASKED_NAME, looksLikeContactInfo } from "@/lib/supporter-name";
+import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
 
 // All contributor cache keys — bust after any payment event
-const CONTRIBUTOR_CACHES = [
-  "ftp:contributors:v1",
-  "ftp:contributors:v6",
-  "ftp:contributors:all",
-  "ftp:contributors:leaderboard",
-  "ftp:contributors:district-rankings",
-  "ftp:contributors:top-tier",
-  "ftp:contributors:top-tier:v3",
-  "ftp:contributors:growth-trend",
-];
+// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
+const CONTRIBUTOR_CACHES = SUPPORTER_LIST_KEYS;
 
 export async function POST(req: NextRequest) {
   // If Razorpay keys aren't configured yet, return 200 gracefully
@@ -82,11 +76,23 @@ export async function POST(req: NextRequest) {
           data: { status: "success" },
         });
       } else {
+        // The name comes from what the supporter typed at checkout (the
+        // Contribution row of this order), never from the payer's phone or
+        // e-mail. No usable name → "Supporter", and not shown publicly unless
+        // the checkout said so (src/lib/supporter-name.ts).
+        const orderId = paymentEntity.order_id ? String(paymentEntity.order_id) : null;
+        const checkout = orderId
+          ? await prisma.contribution.findFirst({ where: { razorpayOrderId: orderId }, select: { name: true, isPublic: true, message: true } })
+          : null;
+        const typedName = checkout?.name?.trim() ?? "";
+        const safeName = typedName && !looksLikeContactInfo(typedName) ? typedName : MASKED_NAME;
         await prisma.supporter.upsert({
           where: { paymentId },
           update: { status: "success" },
           create: {
-            name: String(paymentEntity.contact ?? paymentEntity.email ?? "Anonymous"),
+            name: safeName,
+            isPublic: checkout ? checkout.isPublic : false,
+            message: checkout?.message ?? null,
             email: paymentEntity.email ? String(paymentEntity.email) : null,
             phone: paymentEntity.contact ? String(paymentEntity.contact) : null,
             amount: Number(paymentEntity.amount ?? 0) / 100, // paise → rupees
