@@ -54,7 +54,7 @@ import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
 import { FlowBars, FLOW_IN_FILL, FLOW_OUT_FILL } from "@/components/water/WaterVisuals";
 import { HUE_SHADES, namePair, useDistrictName } from "@/components/land-water/visuals";
-import { Chip, Sparkline, TapCard, TapHint } from "@/components/land-water/cards";
+import { fitGrid, Chip, Sparkline, TapCard, TapHint } from "@/components/land-water/cards";
 import { DamSheet, flowState } from "@/components/land-water/DamSheet";
 import { LandWaterFooter } from "@/components/land-water/PageFooter";
 import { getStateConfig } from "@/lib/constants/state-config";
@@ -384,7 +384,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* Charts, each with its one-line takeaway. */}
           {(showFlows || showTrend) && (
-            <div className="ftp-grid" style={{ marginTop: 8, ["--ftp-grid-min" as string]: "340px" }}>
+            <div style={fitGrid(340, { marginTop: 8 })}>
               {showFlows && (
                 <ChartCard
                   title={t("flowTitle")}

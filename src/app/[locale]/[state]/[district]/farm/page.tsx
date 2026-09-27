@@ -66,7 +66,7 @@ import type { NutrientRow } from "@/components/farm/SoilVisuals";
 import { cropEmoji } from "@/components/crops/CropVisuals";
 import { HueDonut, useDistrictName } from "@/components/land-water/visuals";
 import type { DonutSlice } from "@/components/land-water/visuals";
-import { Chip, EmojiTile, TapCard, TapHint } from "@/components/land-water/cards";
+import { fitGrid, Chip, EmojiTile, TapCard, TapHint } from "@/components/land-water/cards";
 import { AdvisorySheet, SoilSheet, adviceTexts } from "@/components/land-water/FarmSheets";
 import { LandWaterFooter } from "@/components/land-water/PageFooter";
 import { scriptLang } from "@/lib/utils/script-lang";
@@ -219,13 +219,15 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
 
           {/* 3 · The picture: every village's soil pH on one strip. */}
           {showSoilPicture && (
-            <Card tinted padding={18} style={{ marginTop: 16 }}>
-              <p className="ftp-display" style={{ margin: "0 0 4px", fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
-                {t("soilPictureTitle", { n: phReadings.length })}
-              </p>
-              <p style={{ margin: "0 0 14px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                {t("phBandsHelp", { low: f.number(PH_ACIDIC_BELOW), high: f.number(PH_ALKALINE_ABOVE) })}
-              </p>
+            <Card tinted padding={18} style={{ marginTop: 16, ...fitGrid(300, { alignItems: "center", gap: 18 }) }}>
+              <div>
+                <p className="ftp-display" style={{ margin: "0 0 4px", fontSize: 19, lineHeight: "24px", fontWeight: 650 }}>
+                  {t("soilPictureTitle", { n: phReadings.length })}
+                </p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>
+                  {t("phBandsHelp", { low: f.number(PH_ACIDIC_BELOW), high: f.number(PH_ALKALINE_ABOVE) })}
+                </p>
+              </div>
               <PhScale readings={phReadings} />
             </Card>
           )}
@@ -357,7 +359,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
 
           {/* 5 · Charts, each with its one-line takeaway. */}
           {(showNutrients || (showTopics && !topicsAsPicture)) && (
-            <div className="ftp-grid" style={{ marginTop: 8, ["--ftp-grid-min" as string]: "340px" }}>
+            <div style={fitGrid(340, { marginTop: 8 })}>
               {showNutrients && mostLow && (
                 <ChartCard
                   title={t("nutrientsTitle")}

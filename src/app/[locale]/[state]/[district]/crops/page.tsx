@@ -51,7 +51,7 @@ import ModuleNews from "@/components/district/ModuleNews";
 import { cropEmoji, PriceMoves } from "@/components/crops/CropVisuals";
 import type { PriceMove } from "@/components/crops/CropVisuals";
 import { HueBarList, useDistrictName } from "@/components/land-water/visuals";
-import { Chip, EmojiTile, Sparkline, SplitBar, TapCard, TapHint } from "@/components/land-water/cards";
+import { fitGrid, Chip, EmojiTile, Sparkline, SplitBar, TapCard, TapHint } from "@/components/land-water/cards";
 import { CropSheet } from "@/components/land-water/CropSheet";
 import { LandWaterFooter } from "@/components/land-water/PageFooter";
 import { commodityKey, dailySeries, dayOf, latestPerCrop, latestPerMarket, previousDay } from "@/components/land-water/crop-data";
@@ -202,11 +202,13 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* 3 · The picture: up / same / down since the last market day. */}
           {compared.length >= 2 && (
-            <Card tinted padding={18} style={{ marginTop: 16 }}>
-              <p className="ftp-display" style={{ margin: "0 0 4px", fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
-                {t("pictureTitle")}
-              </p>
-              <p style={{ margin: "0 0 14px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("pictureSub")}</p>
+            <Card tinted padding={18} style={{ marginTop: 16, ...fitGrid(300, { alignItems: "center", gap: 18 }) }}>
+              <div>
+                <p className="ftp-display" style={{ margin: "0 0 4px", fontSize: 19, lineHeight: "24px", fontWeight: 650 }}>
+                  {t("pictureTitle")}
+                </p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("pictureSub")}</p>
+              </div>
               <SplitBar
                 ariaLabel={t("splitAria", { total: compared.length, up, same, down })}
                 parts={[
@@ -288,7 +290,7 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* 5 · Charts, each with its one-line takeaway. */}
           {(showLadder || showMoves) && (
-            <div className="ftp-grid" style={{ marginTop: 8, ["--ftp-grid-min" as string]: "340px" }}>
+            <div style={fitGrid(340, { marginTop: 8 })}>
               {showLadder && (
                 <ChartCard
                   title={t("ladderTitle")}

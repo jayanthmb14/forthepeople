@@ -27,6 +27,16 @@
 import React from "react";
 import { useFormat } from "@/i18n/client";
 
+/**
+ * A grid whose items STRETCH to fill the row (auto-fit), for a row of 2–3
+ * charts: on a 1320 px frame two charts take half each instead of leaving
+ * an empty third column (".ftp-grid" uses auto-fill, which is right for
+ * long card lists). One column on phones.
+ */
+export function fitGrid(min: number, extra?: React.CSSProperties): React.CSSProperties {
+  return { display: "grid", gap: 16, gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`, ...extra };
+}
+
 // ─────────────────────────────────────────────────────────────────────
 //  TapCard
 // ─────────────────────────────────────────────────────────────────────

@@ -51,7 +51,7 @@ import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { HueBarList, HueDonut, namePair, useDistrictName } from "@/components/land-water/visuals";
 import type { DonutSlice } from "@/components/land-water/visuals";
-import { Chip, EmojiTile, TapCard, TapHint } from "@/components/land-water/cards";
+import { fitGrid, Chip, EmojiTile, TapCard, TapHint } from "@/components/land-water/cards";
 import { EGRAMSWARAJ, NREGA, PanchayatSheet, type PanchayatRow } from "@/components/land-water/PanchayatSheet";
 import { LandWaterFooter } from "@/components/land-water/PageFooter";
 import { getStateConfig } from "@/lib/constants/state-config";
@@ -186,7 +186,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
       {!isLoading && !error && gps.length === 0 && isUrbanDistrict && sc?.municipalBody && (
         <>
           <EmptyState emoji="🏙️" title={t("urbanTitle")} body={t("urbanBody", { district: districtName })} />
-          <div className="ftp-grid" style={{ marginTop: 12, ["--ftp-grid-min" as string]: "260px" }}>
+          <div style={fitGrid(260, { marginTop: 12 })}>
             <GovernedByCard emoji="🏛️" label={t("municipalBody")} name={sc.municipalBody} body={t("municipalBodyText", { district: districtName })} />
             {sc.waterBoard && <GovernedByCard emoji="🚰" label={t("waterSupply")} name={sc.waterBoard} body={t("waterSupplyText")} />}
           </div>
@@ -403,7 +403,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
 
           {/* 5 · Charts, each with its one-line takeaway. */}
           {(showWater || showLeast) && (
-            <div className="ftp-grid" style={{ marginTop: 8, ["--ftp-grid-min" as string]: "340px" }}>
+            <div style={fitGrid(340, { marginTop: 8 })}>
               {showWater && (
                 <ChartCard
                   title={t("waterTitle")}
