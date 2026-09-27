@@ -1,0 +1,75 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * glyphs.module.css — colours for the home page's small SVG pictures
+ * (HomeGlyphs.tsx). Design v5.1 "Warm Calm": pastel fills, a gold family
+ * (#D4A017) for gold, a silver family (#9CA3AF) for silver, and the
+ * site's own tokens for everything else. The palette lives HERE (one
+ * place), never as hex inside a component.
+ */
+
+.glyph {
+  --g-gold-hi: #fbe7a1;
+  --g-gold: #e4b53b;
+  --g-gold-lo: #a9790c;
+  --g-silver-hi: #f3f4f6;
+  --g-silver: #cfd4dc;
+  --g-silver-lo: #7c8594;
+  --g-green: #1f9d55;
+  --g-green-hi: #bde8cd;
+  --g-leaf: #34a853;
+  --g-soil: #b98552;
+  --g-oil: #334155;
+  --g-oil-hi: #94a3b8;
+  --g-note: #dcf3e4;
+  --g-note-lo: #2f7d4c;
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+:global([data-theme="dark"]) .glyph {
+  --g-oil: #cbd5e1;
+  --g-oil-hi: #f1f5f9;
+  --g-note: rgba(74, 222, 128, 0.18);
+  --g-note-lo: #86efac;
+}
+
+/* Gold coin */
+.goldRim { fill: var(--g-gold); stroke: var(--g-gold-lo); stroke-width: 1.2; }
+.goldFace { fill: var(--g-gold-hi); }
+.goldMark { fill: none; stroke: var(--g-gold-lo); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.shine { fill: none; stroke: #fff; stroke-width: 1.4; stroke-linecap: round; opacity: 0.7; }
+
+/* Silver bar */
+.silverTop { fill: var(--g-silver-hi); stroke: var(--g-silver-lo); stroke-width: 1.1; stroke-linejoin: round; }
+.silverSide { fill: var(--g-silver); stroke: var(--g-silver-lo); stroke-width: 1.1; stroke-linejoin: round; }
+
+/* Share index chart */
+.chartTile { fill: var(--ftp-brand-tint); }
+.chartLine { fill: none; stroke: var(--ftp-brand); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chartDot { fill: var(--ftp-brand); }
+.chartBase { stroke: var(--ftp-border-strong); stroke-width: 1.2; stroke-linecap: round; }
+
+/* Money (US dollar) note */
+.note { fill: var(--g-note); stroke: var(--g-note-lo); stroke-width: 1.2; stroke-linejoin: round; }
+.noteMark { fill: none; stroke: var(--g-note-lo); stroke-width: 1.5; stroke-linecap: round; }
+
+/* Crude oil drop */
+.oil { fill: var(--g-oil); }
+.oilShine { fill: none; stroke: var(--g-oil-hi); stroke-width: 1.4; stroke-linecap: round; }
+
+/* Crop sprout */
+.leaf { fill: var(--g-leaf); }
+.leafLight { fill: var(--g-green-hi); stroke: var(--g-leaf); stroke-width: 1; }
+.stem { fill: none; stroke: var(--g-green); stroke-width: 1.6; stroke-linecap: round; }
+.soil { fill: var(--g-soil); opacity: 0.85; }
+
+/* Step pictures ("How we get and check the data"): parent sets .ftp-hue-<name> */
+.stepTile { fill: var(--hue-tint, var(--ftp-brand-tint)); }
+.stepPaper { fill: var(--ftp-surface); stroke: var(--hue, var(--ftp-brand)); stroke-width: 1.6; stroke-linejoin: round; }
+.stepLine { fill: none; stroke: var(--hue-pop, var(--ftp-border-strong)); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.stepInk { fill: var(--hue, var(--ftp-brand)); }
+.stepFill { fill: var(--hue, var(--ftp-brand)); }
+.stepTick { fill: none; stroke: var(--ftp-surface); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.stepAccent { fill: none; stroke: var(--hue, var(--ftp-brand)); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }

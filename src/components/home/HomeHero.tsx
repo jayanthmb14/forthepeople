@@ -5,91 +5,84 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  HomeHero — Design v5 "calm"
+//  HomeHero — Design v5.1 "Warm Calm"
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌────────────────────────────────────────────┬──────────────────────┐
-//   │ Your district. Your data. Your right.      │                      │
-//   │ See what is happening in your district     │   India map, live    │
-//   │ Weather, dams, crop prices… (sources line) │   districts as dots  │
-//   │ [ 🔍 Type your district, e.g. Mysore     ] │   (tablet and PC)    │
-//   │ [Explore all of India]  [Use my location]  │                      │
-//   │ 10 districts live in 7 states · 36 …       │                      │
-//   └────────────────────────────────────────────┴──────────────────────┘
+//   ┌───────────────────────────────────────────┬────────────────────────┐
+//   │ • Your district. Your data. Your right.   │                        │
+//   │ See what is happening in ▓your district▓  │   India map: states    │
+//   │ Weather, dams, crop prices… (one line)    │   open their page,     │
+//   │ [ 🔍 Type your district, e.g. Mysore    ] │   live districts ping; │
+//   │ [Find your district] [⌖ Use my location]  │   tap one for its      │
+//   │ (10 districts live)(7 states)(5,874 data  │   live facts           │
+//   │  points)(36 dashboards each)(● Updated …) │                        │
+//   └───────────────────────────────────────────┴────────────────────────┘
+//   On a phone the map sits right under the hero text.
 //
 //  The page's ONE <h1> is the task, not the slogan (the slogan is the
-//  small kicker above it). "Explore all of India" is the filled, most
-//  prominent button; "Use my location" is the outline one. Its result
-//  shows once, in the floating LocateResult card.
-//
-//  Counts come from the registry through the page (getPlatformFacts),
-//  never typed by hand.
+//  small kicker above it). "Find your district" submits the search box
+//  (empty box → the live districts as quick picks). "Use my location"
+//  shows its result once, in the floating LocateResult card.
 "use client";
 
-import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowRight, LocateFixed } from "lucide-react";
-import { useFormat } from "@/i18n/client";
-import HomeSearch, { HOME_SEARCH_ID } from "./HomeSearch";
+import { LocateFixed, Search } from "lucide-react";
+import HomeSearch, { HOME_SEARCH_FORM_ID, HOME_SEARCH_ID } from "./HomeSearch";
+import HeroStats from "./HeroStats";
 import LocateResult from "./LocateResult";
 import { useLocate } from "./useLocate";
+import type { HomeDistrict, MapDistrictStat, PlatformStats } from "./home-types";
 import styles from "./home.module.css";
 
-// The map library touches `window`; it is also only wanted on wider screens.
+// The map library touches `window`: load it in the browser only.
 const HomeMap = dynamic(() => import("./HomeMap"), {
   ssr: false,
   loading: () => <div aria-hidden className={styles.mapLoading} />,
 });
 
-const WIDE = "(min-width: 768px)";
-function subscribeWide(cb: () => void) {
-  const mq = window.matchMedia(WIDE);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-
 export interface HomeHeroProps {
   locale: string;
-  activeDistricts: number;
-  activeStates: number;
-  modulesPerDistrict: number;
+  stats: PlatformStats;
+  districts: HomeDistrict[];
+  mapStats: Record<string, MapDistrictStat>;
 }
 
-export default function HomeHero({ locale, activeDistricts, activeStates, modulesPerDistrict }: HomeHeroProps) {
+export default function HomeHero({ locale, stats, districts, mapStats }: HomeHeroProps) {
   const t = useTranslations("home");
+  const tp = useTranslations("page_home");
   const tl = useTranslations("locate");
-  const f = useFormat();
   const loc = useLocate();
-  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
 
   return (
     <div className={styles.hero}>
       <div className={styles.heroText}>
-        <p className={styles.kicker}>{t("kicker")}</p>
-        <h1 className={styles.title}>{t("title")}</h1>
+        <p className={styles.kicker}>
+          <span className={styles.kickerDot} aria-hidden />
+          {t("kicker")}
+        </p>
+        <h1 className={styles.title}>{tp.rich("hero.title", { hl: (c) => <span className={styles.titleHl}>{c}</span> })}</h1>
         <p className={styles.lead}>{t("sources")}</p>
 
         <HomeSearch />
 
         <div className={styles.actions}>
-          <Link href={`/${locale}/india`} className={styles.btnPrimary}>
-            {t("exploreIndia")}
-            <ArrowRight size={18} aria-hidden />
-          </Link>
+          <button type="submit" form={HOME_SEARCH_FORM_ID} className={styles.btnPrimary}>
+            <Search size={18} aria-hidden />
+            {tp("hero.find")}
+          </button>
           <button type="button" className={styles.btnOutline} onClick={loc.locate} disabled={loc.busy}>
             <LocateFixed size={18} aria-hidden />
             {loc.busy ? tl("findingYou") : tl("useLocation")}
           </button>
         </div>
 
-        <p className={styles.stats}>
-          {t("statsLine", { districts: activeDistricts, states: activeStates, modules: f.number(modulesPerDistrict) })}
-        </p>
+        <HeroStats stats={stats} />
       </div>
 
-      <div className={styles.heroMap}>{wide && <HomeMap locale={locale} />}</div>
+      <div className={styles.heroMap}>
+        <HomeMap locale={locale} districts={districts} stats={mapStats} />
+      </div>
 
       {loc.status.kind !== "idle" && loc.status.kind !== "locating" && (
         <LocateResult

@@ -1,5 +1,132 @@
 {
   "footerNav": "Site links",
   "onInstagram": "ForThePeople on Instagram",
-  "onGithub": "ForThePeople on GitHub"
+  "onGithub": "ForThePeople on GitHub",
+  "ticker": {
+    "region": "Prices today",
+    "timeIst": "{time} IST",
+    "pause": "Stop the moving prices",
+    "play": "Move the prices again",
+    "gold24": "Gold 24K",
+    "gold22": "Gold 22K",
+    "silver": "Silver",
+    "sensex": "Sensex",
+    "nifty": "Nifty 50",
+    "usdInr": "US dollar",
+    "crude": "Crude oil",
+    "perGram": "/gram",
+    "perKg": "/kg",
+    "perBarrel": "/barrel",
+    "up": "up {pct}",
+    "down": "down {pct}",
+    "oldDate": "{date} · {days} days old"
+  },
+  "crops": {
+    "tomato": "Tomato",
+    "onion": "Onion",
+    "potato": "Potato",
+    "rice": "Rice",
+    "paddy": "Paddy",
+    "wheat": "Wheat"
+  },
+  "hero": {
+    "title": "See what is happening in <hl>your district</hl>",
+    "find": "Find your district",
+    "quickPicks": "Live districts — pick one, or type any district"
+  },
+  "stats": {
+    "aria": "ForThePeople.in in numbers",
+    "districts": "{n, plural, one {district live} other {districts live}}",
+    "states": "{n, plural, one {state} other {states}}",
+    "dataPoints": "data points tracked",
+    "dashboards": "dashboards each",
+    "updatedAgo": "Updated {ago}",
+    "updatedAt": "Updated {date}, {time} IST"
+  },
+  "intro": {
+    "skip": "Tap anywhere to skip"
+  },
+  "map": {
+    "title": "India, live",
+    "hint": "Pick a pin for its latest facts, or a state to open it.",
+    "aria": "Map of India. Each state opens its own page; the pins are the live districts.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "reset": "Show all of India",
+    "close": "Close",
+    "pinLabel": "{name}, {state}: see its facts and open its dashboards",
+    "stateLive": "{n, plural, one {# live district} other {# live districts}} · open the state page",
+    "stateNone": "No live district yet · see the state and vote",
+    "stateOpen": "Open {name}",
+    "people": "People",
+    "lakh": "{n} lakh",
+    "crore": "{n} crore",
+    "estimate": "estimate",
+    "building": "Being built",
+    "projects": "{n, plural, one {# project} other {# projects}}",
+    "grade": "Report card",
+    "old": "old",
+    "newest": "Newest data",
+    "noFacts": "No facts collected yet for this district.",
+    "open": "Open {name}",
+    "legendLive": "Live district — pick it for facts",
+    "legendState": "State — opens its page"
+  },
+  "india": {
+    "kicker": "The whole country",
+    "title": "Explore all of India",
+    "body": "Parliament, the Union Budget, the economy, people and every state — the country's big numbers in one place.",
+    "cta": "Explore all of India",
+    "fig": {
+      "states": "States and union territories",
+      "seats": "Lok Sabha seats",
+      "languages": "Languages in the Constitution",
+      "area": "Area"
+    },
+    "areaUnit": "lakh sq km",
+    "checked": "checked {date}"
+  },
+  "live": {
+    "title": "Live districts",
+    "legendFresh": "new data in the last day",
+    "legendOld": "older"
+  },
+  "prices": {
+    "title": "Prices today",
+    "more": "See all prices",
+    "move": "{abs} · {pct}",
+    "since": "since {date}",
+    "upSr": "Up {abs} ({pct}) since {date}.",
+    "downSr": "Down {abs} ({pct}) since {date}.",
+    "same": "No change from the day before",
+    "noChange": "Only one day's price so far",
+    "gold22": "22K {price}",
+    "old": "{days} days old — nothing newer found",
+    "srcIbja": "IBJA",
+    "srcYahoo": "Yahoo Finance",
+    "none": "Prices could not be loaded just now. The prices page may have them.",
+    "note": "Gold and silver from IBJA (India Bullion and Jewellers Association); shares, the dollar and crude oil from Yahoo Finance. Crop prices for each district are on its Crop prices page."
+  },
+  "checks": {
+    "title": "How we get and check the data",
+    "lead": "Four steps before a number reaches you.",
+    "collectTitle": "Collect",
+    "collectBody": "From government portals and other reputed sources — some automatically, some by hand.",
+    "checkTitle": "Check automatically",
+    "checkBody": "Empty, zero or impossible values are left out — never filled in with a guess.",
+    "compareTitle": "Double-check",
+    "compareBody": "Where a second source exists, we compare the two. Doubtful updates from the news wait for a person to review them.",
+    "showTitle": "Show with date and source",
+    "showBody": "Every number says where it came from and when. Old data is marked as old.",
+    "link": "See it for yourself: check {name}'s data"
+  },
+  "support": {
+    "title": "Free for everyone. Kept running by citizens.",
+    "body": "No ads and no paywall. People like you pay for the servers and data feeds that keep each district's dashboards open.",
+    "namesLabel": "Some of the people who support ForThePeople.in",
+    "founder": "Founding Builder",
+    "monthly": "monthly supporter",
+    "cta": "Support the project",
+    "all": "See all supporters"
+  }
 }
