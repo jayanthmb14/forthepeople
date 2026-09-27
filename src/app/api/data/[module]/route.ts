@@ -536,8 +536,9 @@ async function fetchModule(
     // 25. TIPS (Citizen tips)
     // ══════════════════════════════════════════════════
     case "tips": {
+      // active=false = retired (the duplicate guard retires copies this way).
       const data = await prisma.citizenTip.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         orderBy: { category: "asc" },
       });
       return { data, meta };
