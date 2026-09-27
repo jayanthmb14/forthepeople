@@ -22,7 +22,10 @@ are copied into prose. Read `CHANGELOG.md` for what changed and when.
                        ├─ Upstash Redis    (REST, `src/lib/redis.ts`)     ← cache, sessions, rate limits, locks
                        ├─ OpenRouter / Anthropic (`src/lib/ai-provider.ts`)
                        ├─ Razorpay, Resend, Sentry, Plausible
-                       └─ Government portals, data.gov.in, OpenWeather, Google News RSS (read only)
+                       └─ Government portals and other reputed sources (read only):
+                             data.gov.in / AGMARKNET, NJDG, JJM dashboard, UDISE+, NREGA,
+                             state e-procurement portals, NDMA SACHET, OpenWeather,
+                             Open-Meteo, Wikipedia / Wikidata (leader checks), Google News RSS
 ```
 
 Everything runs inside Vercel serverless functions. There is no long-running
@@ -41,18 +44,65 @@ old Docker files are archived in `docs/archive/docker/`.
   allowlist is applied here as defence in depth; the real admin gate is
   per-route (section 5).
 - `src/app/[locale]/layout.tsx` wraps every page in the React Query provider,
-  the progress bar, banners, header and footer.
+  the progress bar, banners, header, footer and the floating Report button.
+- **Site chrome** (`src/components/home/`, design v5.1): `HeaderBar` renders
+  the disclaimer line, the sticky full-width header and the status strip.
+  - Header: logo and apps switcher (`ProductSwitcher`, `products.tsx`:
+    ForThePeople.in, plus Connect and Jobs marked "coming soon", not links),
+    search, `LanguageMenu`, Vote, GitHub stars and Support. Below 1024 px the
+    extras move into `HeaderMenu`.
+  - The GitHub star count is fetched on the server at most once an hour
+    (`github-stars.ts`) and passed down from the layout.
+  - `Footer` repeats the links and shows the coming-soon apps.
+- **Status strip** (`StatusStrip.tsx`; the rules are pure and tested in
+  `status-strip.ts`). It reads three things:
+  - **Clock:** the browser's time in IST, redrawn each minute. Nothing is
+    drawn on the server, so there is no hydration mismatch.
+  - **Share market:** NSE hours (Mon–Fri 09:15–15:30 IST) plus the newest
+    Sensex / Nifty quote from `/api/data/prices`. It says "open" only when a
+    quote is recent, "closed" outside hours or when a snapshot well into the
+    session still has an older day's quote (a holiday), and nothing
+    otherwise. There is no holiday calendar.
+  - **"Live data refreshed N ago":** district pages only, from
+    `/api/data/freshness` (`useFreshness`). Shown only when every live feed
+    (`LIVE_FEED_KEYS`: weather, mandi, dams, news, alerts) is on time, and
+    it uses the oldest check.
+- **Report button** (`src/components/common/ReportButton.tsx`), mounted once
+  in `[locale]/layout.tsx`:
+  - Opens a short form that already knows the page: title, address and, on
+    district pages, the state, district and dashboard. It posts to the
+    existing `/api/feedback`; a 429 gets its own message.
+  - Hidden on admin pages and on India module pages, which keep
+    `IndiaReportIssueButton` in the same corner.
+  - District pages also have "Report a mistake" inside "Check this data"
+    (`shell/ReportMistake.tsx`). While it is mounted it sets
+    `<html data-ftp-report="district">` and opens on the window event
+    `ftp:open-report` or the hash `#report-mistake`. The global button does
+    not hand over to it yet; it opens its own form, already filled in with
+    the district.
 - `src/app/[locale]/[state]/[district]/<module>/page.tsx` — one folder per
   module. The district layout renders the sidebar from the module registry, so
   adding a folder plus a registry entry adds a module.
 - District pages share one shell from the district layout:
-  - `DistrictBar`: state › district › taluka, below the site header.
-  - `GlanceRow`: Collector, MPs, people, projects, budget and next election, on
-    every district page.
+  - `DistrictBar`: state › district › taluka, below the site header, with
+    the day, date and time in IST (`shell/useIstClock.ts`) and a "N of M live
+    feeds up to date" pill from `/api/data/freshness`. Hover lists each feed;
+    a click jumps to `#verify`.
+  - `GlanceRow`: Collector, MPs, people, projects, budget and next election,
+    on the district overview only. Module pages keep just the stale notice
+    at the top.
+  - Overview: a hero, number tiles and picture cards (`shell/OverviewCard.tsx`,
+    `shell/MoneySnippet.tsx`, drawings in `shell/overview-art.tsx`).
   - `StaleNotice` / `StaleDataNotice`: "this data is N days old", from each
     module's expected max age in the registry.
   - `VerifyPanel`: "Check this data" at the bottom: source, data date, last
-    checked, how it is collected, and report a mistake.
+    checked, how it is collected, and report a mistake. It also shows each
+    dataset's double-check status from `/api/data/verification`
+    (`shell/useVerification.ts`, parsing in `shell/verification.ts`). If that
+    route fails or answers something unknown, the panel stays as before.
+- Module pages with their own read routes: the weather page reads
+  `/api/data/forecast` (`useForecast()`), the courts page reads
+  `/api/data/court-pendency`.
 - `src/app/[locale]/prices` — gold, silver, markets and the rupee, with
   1-week, 1-month and 3-month trends (`/api/data/prices`, `src/lib/markets/`).
   Values are fetched live and cached; nothing is invented when a source
@@ -75,18 +125,38 @@ old Docker files are archived in `docs/archive/docker/`.
 
 1. **Collection** — `src/scraper/jobs/*.ts` are plain async functions, one per
    data type (crops, dams, weather, news, budget, exams, RTI, courts, ...). Each
-   fetches an official source with a per-call timeout, parses it (Cheerio /
-   JSON), and upserts rows through Prisma. On failure a job writes **nothing**
-   and returns a failed status; it never estimates.
+   fetches a government portal or other reputed source with a per-call
+   timeout, parses it (Cheerio / JSON), and upserts rows through Prisma. On
+   failure a job writes **nothing** and returns a failed status; it never
+   estimates.
+   - The v5.1 portal collectors are `courts-njdg.ts`, `jjm-dashboard.ts`,
+     `udise-schools.ts`, `mgnrega-glance.ts` and `gepnic-tenders.ts`. Their
+     parsers and checks are in `src/scraper/lib/` (`jjm.ts`, `udise.ts`,
+     `nrega.ts`, `gepnic.ts`) and `src/lib/courts/`. Each one cross-checks the
+     source against itself (totals add up, two endpoints agree) before it
+     writes anything.
+   - `src/scraper/lib/collector-registry.ts` (`PORTAL_COLLECTORS`) lists them
+     with module, cron, schedule, storage, source and expected age, for the
+     "Where our data comes from" page and the freshness checks. Nothing reads
+     it yet.
+   - The old `jobs/courts.ts`, `jjm.ts`, `mgnrega.ts`, `schools.ts` and
+     `power.ts` call dead APIs and run only from the local scheduler.
 2. **Scheduling** — `vercel.json` `crons` calls `src/app/api/cron/<job>/route.ts`
-   on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, takes
-   a Redis lock so overlapping runs cannot double-write, runs the job(s), records
-   a `ScraperLog` row per run (success or failure, rows written, duration), which
-   the verification panel and admin read; some routes also post an admin alert
-   on failure. Beyond the original jobs:
+   on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, runs
+   the job(s) inside its own time budget, and records a `ScraperLog` row per
+   run (success or failure, rows written, duration), which the verification
+   panel and admin read. The slow collectors also take a Redis lock
+   (`lock:cron:<name>` or `ftp:lock:<name>`) so overlapping runs cannot
+   double-write; some routes post an admin alert on failure. Beyond the
+   original jobs:
    - `scrape-alerts` reads NDMA SACHET, the official disaster-alert feed.
    - `scrape-weather` falls back to Open-Meteo when OpenWeather fails.
-   - `health-score` recomputes district report cards weekly.
+   - `health-score` recomputes district report cards (a stored grade expires
+     after 7 days).
+   - `verify-data` runs the double-check (item 7 below).
+   - `scrape-courts` reads NJDG; `scrape-jjm`, `scrape-schools`,
+     `scrape-mgnrega` and `scrape-tenders` read the JJM dashboard, UDISE+,
+     the NREGA "At a glance" page and the state e-procurement portals.
    `/api/health` reads those timestamps and reports `degraded` when a job is
    older than twice its schedule.
 3. **Storage** — Neon PostgreSQL via Prisma (`prisma/schema.prisma`, generated
@@ -94,6 +164,19 @@ old Docker files are archived in `docs/archive/docker/`.
    rupees. Districts are registered in `src/lib/constants/districts.ts`
    (`isActive` flag + `getTotalActiveDistrictCount()`); everything else about a
    district comes from the DB.
+   - Some district figures have no table yet and live in Redis:
+     - UDISE+ and MGNREGA snapshots: `ftp:data:udise:<slug>` and
+       `ftp:data:mgnrega:<slug>` (`src/scraper/lib/district-snapshot.ts`). No
+       expiry; written only after every check passed, so a failed run keeps
+       the last good one. Read with `readDistrictSnapshot()`; no page reads
+       them yet.
+     - The NJDG courts snapshot: `ftp:courts:njdg:<slug>`, and High Courts at
+       `ftp:courts:njdg-hc:<stateCode>` (`src/lib/courts/store.ts`, 120-day
+       expiry). The collector also writes this year's filed / decided /
+       waiting figures to `CourtStat` (source prefix `NJDG district
+       dashboard`), so the page still has figures if the key is lost.
+   - A proposed `DistrictIndicator` table would replace the UDISE+ / MGNREGA
+     keys; it is not in the schema.
 4. **Serving** — `src/app/api/data/[module]/route.ts` is the single read API.
    It normalises `?district=` / `?state=`, reads through the Redis cache
    (`src/lib/cache.ts`, short TTL) and returns `{ data, updatedAt, source }`.
@@ -110,9 +193,15 @@ old Docker files are archived in `docs/archive/docker/`.
    - `glance` (the at-a-glance row)
    - `dataset-dates` (newest date per dataset, for the stale notice and the
      verification panel)
+   - `freshness` (how old each dataset is, for the stale notice, the
+     district bar and the status strip)
+   - `verification` (the double-check status per dataset, item 7)
+   - `forecast` (today, tomorrow and the next days, item 8)
+   - `court-pendency` (the NJDG snapshot; it never returns the hand-seeded
+     `CourtStat` rows)
    - `prices`
 
-   None of them writes.
+   None of them writes to the database; some cache their answer in Redis.
 5. **Freshness** — every payload carries its `updatedAt`; the UI pill
    (`src/lib/utils/timeAgo.ts` and friends) derives "Xh ago / stale" from it.
    Nothing is labelled live by default.
@@ -120,25 +209,64 @@ old Docker files are archived in `docs/archive/docker/`.
    invalidates the cache key; every change is recorded in `UpdateLog` with the
    old/new diff (`src/lib/update-log.ts`) and surfaced on the district
    `update-log` page.
+7. **Double-check (verification)** — `src/lib/verification/` has one verifier
+   per dataset: freshness, leaders, weather, dams and mandi. The daily
+   `verify-data` cron runs them, each with its own time cap.
+   - Each compares our stored value with a second source: another weather
+     service; CEDA's mirror of AGMARKNET; a re-read of the Karnataka water
+     portal; Wikipedia and Wikidata for the Chief Minister, Deputy CM,
+     Governor or Lieutenant Governor, Prime Minister and President.
+   - It writes `DataVerification` rows. Disagreements become review items in
+     `NewsActionQueue` (dataType `verify-leaders`). It never changes the data
+     it checks.
+   - `/api/data/verification` serves the summary (`verified`,
+     `single-source`, `disagreement`, `unchecked`). Until `npm run db:push`
+     creates the table, every dataset is "unchecked".
+   - How it works and how to add a verifier: `docs/VERIFICATION.md`.
+8. **Weather forecast** — `src/lib/weather/`:
+   - `codes.ts`: one set of weather kinds for Open-Meteo codes, OpenWeather
+     codes and stored description text.
+   - `forecast.ts`: parses both sources into IST days with range checks (a
+     bad value becomes "—"), and compares them (agree within 3°).
+   - `fetch-forecast.ts` and `use-forecast.ts` (the React Query hook).
+   - `/api/data/forecast` asks Open-Meteo (no key) and, when
+     `OPENWEATHER_API_KEY` is set, OpenWeather at the same time. The point is
+     the district HQ from `src/lib/geo/district-centroids.ts`; a district
+     without one gets 404, so no source is asked with a guessed location.
+     Redis cache 1 h (5 min after a failure), CDN 30 min.
+   - "Right now" on the weather page: our stored reading if it is 3 hours old
+     or less; else the forecast's current value, labelled with its source and
+     time; else the old reading in grey with its age.
+   - `src/components/weather/` draws it (`ForecastCards`, `ForecastStrip`,
+     `ForecastDaySheet`, `WeatherArt`). `src/components/district/TodayWeatherTile.tsx`
+     is built for the overview but not mounted yet.
 
 ## 4. AI
 
-`src/lib/ai-provider.ts` is the only place that talks to a model. `callAI()` /
-`callAIJSON()` take a `purpose` and pick a chain:
+`src/lib/ai-provider.ts` is the only place that talks to a model.
+`src/lib/ai-models.ts` (pure, unit-tested) decides which models a call may try
+and in what order. `callAI()` / `callAIJSON()` take a `purpose` and pick a
+chain:
 
-- `news-analysis` → free Tier-1 models on OpenRouter (classification and small
-  extraction). A keyword classifier in `src/scraper/jobs/news.ts` runs first so
-  most articles never reach a model.
-- `insight` → a low-cost model, twice daily, only after `hasDataChanged()`
-  says the district's data moved. Output is stored per district/module and
+- `news-analysis` (and `classify`, `summarize`, `format`) → **Tier 1**: a free
+  router on OpenRouter first, then free models, then a paid backstop that
+  always keeps the last slot and is used only when `AI_PAID_FALLBACK=1`. A
+  keyword classifier in `src/scraper/jobs/news.ts` runs first so most
+  articles never reach a model.
+- `insight` / `document` → **Tier 2**: two low-cost paid models, then the free
+  Tier-1 chain. Insights run twice daily, only after `hasDataChanged()` says
+  the district's data moved. Output is stored per district/module and
   rendered by `AIInsightCard`.
-- `fact-check` → Claude Sonnet, manual trigger from the admin console only.
-- Paid fallback is opt-in via `AI_PAID_FALLBACK`. Every call is logged
-  (`AILog`) with provider, model, tokens and cost so the admin Costs tab is
-  real spend, not an estimate.
+- `fact-check` → a Claude Sonnet model, then a smaller Claude model; never a
+  free model. Manual trigger from the admin console only.
+- At most 4 models are tried per call (2 for fact-check). Models missing from
+  OpenRouter's live list or with an open circuit breaker are skipped. Every
+  call is logged (`AIUsageLog`) with provider, model, tokens and cost so the
+  admin Costs tab is real spend, not an estimate.
 
-Model names live in that one file (and the `AIProviderSettings` row the admin
-can edit); do not copy them into docs.
+Model ids live only in `src/lib/ai-models.ts` (and the `AIProviderSettings`
+row the admin can edit); do not copy them into this file. The current chain
+and why it was chosen: `docs/RUNBOOKS/ai-models.md`.
 
 **Translation of live text** (news, AI insights) is separate from `callAI`.
 `src/lib/translation/` translates each new item **once** into every
@@ -166,7 +294,9 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
   audit-logged (`src/lib/audit-log.ts`).
 - **Rate limiting** (`src/lib/rate-limit.ts`): Redis counters keyed by a salted
   hash of the IP (`VOTE_IP_SALT`); raw IPs are never stored.
-- **Crons**: bearer `CRON_SECRET`, plus Redis locks.
+- **Crons**: bearer `CRON_SECRET`, plus Redis locks on the slow collectors.
+  Collectors identify themselves honestly in their user agent, wait between
+  requests and never use captcha-protected pages.
 - **Payments**: Razorpay order → client checkout → `/api/payment/verify` checks
   the HMAC signature; `/api/webhooks/razorpay` verifies `RAZORPAY_WEBHOOK_SECRET`
   in constant time and is the only writer of `payment.captured` state.
@@ -176,6 +306,10 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 - **Privacy**: Plausible (cookieless), DPDP policy at `/privacy`, supporter
   records anonymised at the API boundary (`src/lib/contributor-label.ts` and the
   contributors API), name/message validators in `src/lib/validators/`.
+  Known gap (Sept 2026): `/api/data/contributors` does not yet mask names
+  that are really phone numbers (the Razorpay webhook can store the payer's
+  contact as the name). The support components hide them on screen
+  (`src/components/support/public-name.ts`); the API fix is still to do.
 - **Secrets**: only names in git (`.env.example`); values in Vercel env and the
   owner's password manager. Push protection is on.
 
@@ -184,8 +318,11 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 | State | Where | Notes |
 |---|---|---|
 | All civic data, supporters, logs, settings | Neon PostgreSQL | Prisma; schema changes are manual `db:push` before code push |
-| Cache of API responses | Upstash Redis | short TTL, invalidated by admin edits |
-| Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:` |
+| Cache of API responses | Upstash Redis | short TTL, invalidated by admin edits; the forecast is cached per district (`ftp:forecast:v1:<state>/<district>`) |
+| Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:`; two crons lock with `ftp:lock:<name>` |
+| Cron run state | Upstash Redis | `ftp:cron:<name>` hashes + one `ScraperLog` row per run (`docs/RUNBOOKS/crons.md`) |
+| District figures with no table yet | Upstash Redis | `ftp:data:udise:<slug>`, `ftp:data:mgnrega:<slug>` (no expiry), `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` (120 days) |
+| Double-check results | Neon PostgreSQL | `DataVerification` rows (needs `db:push`); review items in `NewsActionQueue` |
 | Which districts exist / are active | `src/lib/constants/districts.ts` | code, so it ships with a deploy |
 | Module registry, India modules, responsibility copy | `src/lib/constants/*`, `src/lib/india/*` | code |
 | Translations | `src/dictionaries/<locale>.json` + `<locale>/page_*.json` via `next-intl` (namespaces indexed by `scripts/gen-i18n-namespaces.mjs`) | `en` live and default; `hi`, `kn` beta (machine drafts). Live text (news, insights) via `ContentTranslation` + the `translate-content` cron — needs `db:push` + one provider key |
@@ -220,16 +357,22 @@ public/           static assets, geo boundaries, funding.json, .well-known/
 scripts/          reusable ops scripts (i18n index, geo rewind, health scores, activation);
                   archive/ = provenance only; not type-checked by the app tsconfig
 src/app/          routes (see section 2)
-src/components/   UI by area: district/ (the kit: ui.tsx, visuals.tsx, DetailSheet),
-                  layout/, home/, india/, map/, admin/, support/, site/, common/,
-                  and per-module folders (accountability, community, money, farm,
-                  crops, water, land-water, demographics, services-1, services-2,
-                  tenders, …)
+src/components/   UI by area: district/ (the kit: ui.tsx, visuals.tsx, DetailSheet;
+                  shell/ = district bar, glance row, overview cards, verify panel),
+                  layout/, home/ (home page + site chrome: header, status strip,
+                  footer), india/, map/, admin/, support/, site/, common/
+                  (ReportButton, LanguageMenu), graphics/ (shared SVG category
+                  glyphs), weather/ (forecast cards and drawings), and per-module
+                  folders (accountability, community, money, farm, crops, water,
+                  land-water, demographics, services-1, services-2, tenders, …)
 src/hooks/        React Query hooks for client components
-src/lib/          everything shared: db, redis, cache, ai-provider, admin-auth, tenders, validators
-src/scraper/      collection job modules + parsers; a few run from the cron routes
-                  (news, crops, weather, dams, budget, AI analysis), the rest only
-                  from the local scheduler (`npm run scraper`)
+src/lib/          everything shared: db, redis, cache, ai-provider, ai-models, admin-auth,
+                  tenders, validators; verification/ (double-check), weather/
+                  (forecast), courts/ (NJDG snapshot)
+src/scraper/      collection job modules + parsers (lib/); the cron routes run news,
+                  crops, weather, dams, alerts, exams, budget, AI analysis, courts,
+                  JJM, schools, MGNREGA and tenders; the rest only from the local
+                  scheduler (`npm run scraper`)
 tests/            Vitest suites
 ```
 
