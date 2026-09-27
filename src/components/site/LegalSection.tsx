@@ -18,14 +18,25 @@
 //  the binding one): pages wrap that text in <LegalBody>, which tags it
 //  lang="en" on non-English pages, and <LegalEnglishNote> says so once near
 //  the top of the page.
+//
+//  v4.1 layout pieces (legal.module.css):
+//    <LegalGlance>   the page's main points as emoji cards ("At a glance")
+//    <LegalLayout>   clause list + text: a sticky list on the left on
+//                    laptop / PC, a "Jump to a part" drop-down on phones
+//    <LegalTable>    a table from 640 px up, one card per row on phones
+//                    (never a sideways-scrolling table as the only view)
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import styles from "./legal.module.css";
+
+/** Anchor id of clause n (the clause list links to it). */
+const clauseId = (n: number) => `clause-${n}`;
 
 /** One numbered clause: a heading with its number chip, then the body. */
 export function LegalSection({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: 32 }}>
+    <section id={clauseId(n)} style={{ marginBottom: 32, scrollMarginTop: 88 }}>
       <h2
         className="ftp-display"
         style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, lineHeight: 1.4, fontWeight: 650, color: "var(--ftp-text)", margin: "0 0 10px" }}
@@ -138,5 +149,127 @@ export function LegalSeeAlso({ links }: { links: Array<{ href: string; label: st
         </Link>
       ))}
     </nav>
+  );
+}
+
+/** "At a glance": the page's main points as emoji cards (translated). */
+export function LegalGlance({ items, label }: { items: Array<{ emoji: string; text: React.ReactNode }>; label: string }) {
+  return (
+    <ul className={styles.glance} aria-label={label}>
+      {items.map((it, i) => (
+        <li key={i} className={styles.glanceItem}>
+          <span className={`ftp-emoji ${styles.glanceEmoji}`} aria-hidden>
+            {it.emoji}
+          </span>
+          <span>{it.text}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The numbered clause list, as links to each clause. */
+function ClauseList({ clauses }: { clauses: Array<{ n: number; title: string }> }) {
+  return (
+    <ol className={styles.tocList}>
+      {clauses.map((c) => (
+        <li key={c.n}>
+          <a href={`#${clauseId(c.n)}`} className={styles.tocLink}>
+            <span className={styles.tocNum}>{c.n}</span>
+            <span>{c.title}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * Clause list + text. Laptop / PC: the list is a sticky column on the
+ * left and the text keeps a 72-character measure. Phone / tablet: the
+ * list folds into a "Jump to a part" drop-down above the text.
+ */
+export function LegalLayout({ clauses, children }: { clauses: Array<{ n: number; title: string }>; children: React.ReactNode }) {
+  const t = useTranslations("page_site");
+  return (
+    <div className={styles.layout}>
+      <nav className={styles.toc} aria-label={t("tocTitle")}>
+        <p className={styles.tocTitle}>{t("tocTitle")}</p>
+        <ClauseList clauses={clauses} />
+      </nav>
+      <div style={{ minWidth: 0 }}>
+        <details className={styles.tocMobile}>
+          <summary>
+            <span className="ftp-emoji" aria-hidden>🧭</span>
+            {t("tocJump")}
+          </summary>
+          <ClauseList clauses={clauses} />
+        </details>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A legal table: a real table from 640 px up, one card per row on phones.
+ * The first column names the row (the card title on phones). Only one of
+ * the two is displayed at a time (the other is display: none, so screen
+ * readers meet the rows once).
+ */
+export function LegalTable({
+  caption,
+  columns,
+  rows,
+}: {
+  caption: string;
+  columns: Array<{ key: string; label: string }>;
+  rows: Array<Record<string, React.ReactNode>>;
+}) {
+  const [first, ...rest] = columns;
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <caption>{caption}</caption>
+          <thead>
+            <tr>
+              {columns.map((c) => (
+                <th key={c.key} scope="col">
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i}>
+                {columns.map((c) => (
+                  <td key={c.key}>{r[c.key]}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className={styles.phoneOnly}>
+        <p className={styles.cardsCaption}>{caption}</p>
+        <ul className={styles.cards}>
+          {rows.map((r, i) => (
+            <li key={i} className={styles.card}>
+              <p className={styles.cardTitle}>{r[first.key]}</p>
+              <dl className={styles.cardRows}>
+                {rest.map((c) => (
+                  <div key={c.key}>
+                    <dt>{c.label}</dt>
+                    <dd>{r[c.key]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }

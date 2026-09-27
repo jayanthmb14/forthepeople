@@ -1,0 +1,61 @@
+/* Legal pages (Disclaimer, Privacy) — Design v4.1 layout.
+   Phone / tablet (< 1024 px): one column; the clause list is a "Jump to a
+   part" drop-down above the text.
+   Laptop / PC (≥ 1024 px): the clause list sits in a sticky column on the
+   left, the text keeps a 72-character measure beside it — no empty band. */
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.toc { display: none; }
+.tocMobile { margin: 0 0 24px; border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-card); background: var(--ftp-surface); }
+.tocMobile > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  cursor: pointer; font-size: 14px; font-weight: 600; color: var(--hue-deep); list-style: none;
+}
+.tocMobile > summary::-webkit-details-marker { display: none; }
+.tocMobile[open] > summary { border-bottom: 1px solid var(--ftp-border); }
+.tocMobile .tocList { padding: 6px; }
+
+@media (min-width: 1024px) {
+  .layout { grid-template-columns: 250px minmax(0, 72ch); justify-content: start; column-gap: 48px; }
+  .toc { display: block; position: sticky; top: 88px; align-self: start; max-height: calc(100vh - 110px); overflow-y: auto; }
+  .tocMobile { display: none; }
+}
+
+.tocTitle { margin: 0 0 8px; padding: 0 8px; font-size: 12px; font-weight: 700; color: var(--ftp-text-2); }
+.tocList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.tocLink {
+  display: flex; gap: 8px; align-items: baseline; min-height: 36px; padding: 7px 8px;
+  border-radius: 10px; color: var(--ftp-text-2); text-decoration: none; font-size: 13px; line-height: 1.4;
+}
+.tocLink:hover { background: var(--hue-tint); color: var(--hue-deep); }
+.tocNum { min-width: 18px; font-weight: 700; color: var(--hue-deep); font-variant-numeric: tabular-nums; }
+
+/* "At a glance": the page in four emoji cards. */
+.glance { list-style: none; margin: 0 0 28px; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+.glanceItem {
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--hue-tint) 0%, var(--ftp-surface) 90%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  font-size: 14px; line-height: 1.5; color: var(--ftp-text);
+}
+.glanceEmoji { font-size: 22px; line-height: 1.1; flex-shrink: 0; }
+
+/* Tables: a real table from 640 px up, one card per row on phones. */
+.tableWrap { display: none; }
+.phoneOnly { display: block; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+@media (min-width: 640px) {
+  .tableWrap { display: block; overflow-x: auto; border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-card); background: var(--ftp-surface); }
+  .phoneOnly { display: none; }
+}
+.table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+.table caption { caption-side: top; text-align: start; padding: 10px 12px 6px; font-size: 13px; color: var(--ftp-text-2); }
+.table th { text-align: start; padding: 8px 12px; background: var(--hue-tint); color: var(--hue-deep); font-weight: 600; font-size: 13px; }
+.table td { padding: 9px 12px; border-top: 1px solid var(--ftp-border); vertical-align: top; color: var(--ftp-text-2); }
+.table td:first-child { color: var(--ftp-text); font-weight: 600; }
+.cardsCaption { margin: 0 0 6px; font-size: 13px; color: var(--ftp-text-2); }
+.card { padding: 12px 14px; border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-card); background: var(--ftp-surface); }
+.cardTitle { margin: 0 0 6px; font-size: 15px; font-weight: 650; color: var(--hue-deep); }
+.cardRows { margin: 0; display: grid; gap: 6px; }
+.cardRows dt { font-size: 12px; color: var(--ftp-text-2); }
+.cardRows dd { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ftp-text); overflow-wrap: anywhere; }

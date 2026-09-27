@@ -8,7 +8,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import LegalPageHeader from "@/components/common/LegalPageHeader";
-import { LEGAL_LINK, LegalBody, LegalEnglishNote, LegalSection, LegalSeeAlso } from "@/components/site/LegalSection";
+import { ModulePage } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
+import { LEGAL_LINK, LegalBody, LegalEnglishNote, LegalGlance, LegalLayout, LegalSection, LegalSeeAlso } from "@/components/site/LegalSection";
 import { languageAlternates } from "@/i18n/seo";
 
 type Props = { params: Promise<{ locale?: string }> };
@@ -23,10 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// ── Design v4 "Rang" (slate, the quiet legal colour) ─────────────────
-// Presentation only: SiteHeader band via LegalPageHeader, numbered clause
-// headings in sentence case (LegalSection), links in the page hue. No
-// picture: this page has no data. The legal text is unchanged.
+// ── Design v4.1 (slate, the quiet legal colour) ──────────────────────
+// Presentation only: SiteHeader band via LegalPageHeader, then the answer
+// in one sentence (Explainer) and the disclaimer "at a glance" in four
+// emoji cards (translated), then the clauses beside a sticky clause list
+// on laptop / PC (a "Jump to a part" drop-down on phones). Numbered clause
+// headings in sentence case (LegalSection), links in the page hue. The
+// legal text is unchanged.
 //
 // Languages (docs/I18N.md, legal pages): the title, clause headings and
 // "See also" links are translated ("page_disclaimer"). The clause text is
@@ -84,9 +89,19 @@ export default async function DisclaimerPage({ params }: Props) {
 
   return (
     <main className="ftp-hue-slate" style={{ background: "var(--ftp-bg)", minHeight: "100vh" }}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 64 }}>
-        <div style={{ maxWidth: 760 }}>
+      <ModulePage>
           <LegalPageHeader title={t("title")} lastUpdated="2026-04-16" emoji="⚠️" />
+          <Explainer emoji="⚠️">{t("simple")}</Explainer>
+          <LegalGlance
+            label={t("glanceLabel")}
+            items={[
+              { emoji: "🏛️", text: t("glance1") },
+              { emoji: "⚖️", text: t("glance2") },
+              { emoji: "🔎", text: t("glance3") },
+              { emoji: "✏️", text: t("glance4") },
+            ]}
+          />
+          <LegalLayout clauses={CLAUSES.map((n) => ({ n, title: t(`s${n}`) }))}>
           <LegalEnglishNote />
 
           {CLAUSES.map((n) => (
@@ -101,8 +116,8 @@ export default async function DisclaimerPage({ params }: Props) {
               { href: `/${locale}/about`, label: t("seeAbout"), emoji: "📖" },
             ]}
           />
-        </div>
-      </div>
+          </LegalLayout>
+      </ModulePage>
     </main>
   );
 }

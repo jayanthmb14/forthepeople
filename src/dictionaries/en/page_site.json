@@ -3,6 +3,8 @@
   "seeAlso": "See also",
   "lastUpdated": "Last updated: {date}",
   "legalEnglishNote": "The official version of the legal text on this page is in English.",
+  "tocTitle": "On this page",
+  "tocJump": "Jump to a part",
   "tier": {
     "founder": "Royal Contributor",
     "patron": "India Patron",
