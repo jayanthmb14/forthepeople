@@ -108,6 +108,15 @@ export default async function ModulePage({ locale, module }: Props) {
 
   const hue = indiaCategoryHue(module.category);
 
+  // Sources of the figures actually shown (rows with a value), one per source.
+  const figureSources: Array<{ label: string; href: string | null }> = [];
+  for (const r of indicators) {
+    if (r.value === null || !r.source) continue;
+    const href = r.sourceUrl && r.sourceUrl.startsWith("https://") ? r.sourceUrl : null;
+    if (figureSources.some((s) => s.label === r.source && s.href === href)) continue;
+    figureSources.push({ label: r.source, href });
+  }
+
   // ── Hero tiles (each opens its own detail sheet) ──────────────────
   const figures = groups.tiles.slice(0, MAX_TILES).map((row) =>
     toFigure(row, { tp, locale, label: label(row), emoji: tileEmoji(row, module.icon) }),
@@ -390,7 +399,7 @@ export default async function ModulePage({ locale, module }: Props) {
         <ModuleNewsStrip locale={locale} newsKeywords={getModuleNewsKeywords(module)} moduleTitle={title} />
         <ModuleComingSoonRail locale={locale} module={module} moduleTitle={title} />
         <ModuleRelatedModules locale={locale} module={module} />
-        <ModuleSourcePanel locale={locale} module={module} moduleTitle={title} />
+        <ModuleSourcePanel locale={locale} module={module} moduleTitle={title} figureSources={figureSources} />
       </PageFrame>
 
       <IndiaReportIssueButton moduleSlug={module.slug} moduleLabel={title} />

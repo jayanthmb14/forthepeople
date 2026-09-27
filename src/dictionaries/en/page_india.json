@@ -131,8 +131,8 @@
     },
     "demographics-population": {
       "t": "Population and demographics",
-      "g": "Population, births and life expectancy from SRS and the Census.",
-      "d": "Yearly Sample Registration System (SRS) bulletins and the ten-yearly Census. SRS gives birth, death and infant death rates and life expectancy every year; the Census gives the full picture by age and sex."
+      "g": "Population, yearly growth and density, from UN and World Bank figures.",
+      "d": "India's population, how fast it is growing and how many people live per square km, from the UN World Population Prospects 2024 and World Bank data."
     },
     "economy-gdp": {
       "t": "Economy and GDP",
@@ -251,8 +251,8 @@
     },
     "health-overview": {
       "t": "Health indicators",
-      "g": "Key NFHS-5 figures and National Health Mission coverage.",
-      "d": "NFHS-5 figures on child growth, child deaths and vaccination coverage. National totals, with state figures inside."
+      "g": "Life expectancy and infant deaths, from the Sample Registration System.",
+      "d": "Life expectancy and infant deaths from the Sample Registration System (Registrar General of India), with the states that lead. National totals."
     },
     "health-pmjay": {
       "t": "Ayushman Bharat (PM-JAY)",
@@ -296,8 +296,8 @@
     },
     "justice-pendency": {
       "t": "Court pendency",
-      "g": "Pending court cases, from NJDG.",
-      "d": "National Judicial Data Grid weekly snapshot: total pending cases across district courts, high courts and the Supreme Court. Totals only."
+      "g": "Pending cases in district courts, from NJDG.",
+      "d": "Pending cases in district and subordinate courts, from the National Judicial Data Grid (NJDG). Totals only."
     },
     "justice-crime": {
       "t": "NCRB crime statistics",
@@ -975,7 +975,7 @@
       },
       "lokSabha": {
         "label": "Lok Sabha",
-        "sub": "seats, Article 81"
+        "sub": "seats"
       }
     },
     "cards": {
@@ -1015,16 +1015,16 @@
     "headlineUnit": "lakh recognised startups",
     "growth": "+{value} lakh in a year",
     "calloutLabel": "Unicorns",
-    "calloutSub": "on the 2024 list",
+    "calloutSub": "the government's count",
     "desc": "India's startups, from the Startup India dashboard.",
     "cells": {
       "dpiit": {
         "label": "Startups",
-        "sub": "lakh, 2024"
+        "sub": "lakh, DPIIT"
       },
       "unicorns": {
         "label": "Unicorns",
-        "sub": "DPIIT list"
+        "sub": "government count"
       },
       "added": {
         "label": "New",
@@ -1077,7 +1077,7 @@
     "cells": {
       "unesco": {
         "label": "UNESCO",
-        "sub": "sites, 2024"
+        "sub": "sites"
       },
       "asi": {
         "label": "ASI",
@@ -1090,7 +1090,7 @@
       "source": {
         "label": "Source",
         "value": "ASI",
-        "sub": "and UNESCO, 2024"
+        "sub": "and UNESCO"
       }
     },
     "cards": {

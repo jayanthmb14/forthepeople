@@ -75,9 +75,9 @@
   "verifyIbja": "<b>IBJA</b> (ibjarates.com): gold and silver rates, published on working days. There are no rates on weekends and central government holidays.",
   "verifyBse": "<b>BSE</b> (bseindia.com): the Sensex.",
   "verifyNse": "<b>NSE</b> (nseindia.com): Nifty 50 and Nifty Bank.",
-  "verifyRbi": "<b>Reserve Bank of India</b> (rbi.org.in): the official reference rate for the US dollar.",
+  "verifyFbil": "<b>FBIL</b> (fbil.org.in): Financial Benchmarks India publishes the official reference rate for the US dollar (the Reserve Bank handed this over in July 2018).",
   "verifyYahoo": "<b>Yahoo Finance</b> (finance.yahoo.com): the market data we use for the share market, the dollar and crude oil.",
   "verifyCadence": "We check the sources about every 15 minutes while Indian markets are open, and about every hour at other times.",
-  "noFuel": "Petrol and diesel are not shown. Their price is different in every city, and we have not yet found a daily source we can check. We will add them when we do.",
+  "noFuel": "Petrol and diesel are not on this page: their price is different in every city. The home page shows the day's price in the four metro cities, from PPAC.",
   "notAdvice": "These prices are for information only. They are not advice to buy or sell."
 }

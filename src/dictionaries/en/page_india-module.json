@@ -80,7 +80,8 @@
       "Annual": "Yearly",
       "Event-driven": "When something happens",
       "Manual": "Updated by hand"
-    }
+    },
+    "ofFigures": "Where each figure on this page comes from."
   },
   "metric": {
     "wildlife-tigers": {

@@ -80,7 +80,8 @@
       "Annual": "हर साल",
       "Event-driven": "जब कुछ होता है",
       "Manual": "हाथ से अपडेट"
-    }
+    },
+    "ofFigures": "इस पेज का हर आँकड़ा कहाँ से आया है।"
   },
   "metric": {
     "wildlife-tigers": {

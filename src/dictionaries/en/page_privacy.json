@@ -62,8 +62,8 @@
       },
       "r3": {
         "data": "Supporter info",
-        "what": "Name, email, contribution amount, optional social handle",
-        "purpose": "Process contributions, display on contributor page if opted in",
+        "what": "Name, email, contribution amount, optional social handle; for monthly plans, a 10-digit phone number (UPI AutoPay or a bank mandate needs it, so it is also shared with Razorpay)",
+        "purpose": "Process contributions, set up monthly payments, display on contributor page if opted in",
         "basis": "Contractual necessity + consent"
       },
       "r4": {
