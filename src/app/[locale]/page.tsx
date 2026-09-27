@@ -32,7 +32,7 @@ import { routing } from "@/i18n/routing";
 
 import PriceTicker from "@/components/home/PriceTicker";
 import HomeIntro, { INTRO_SCRIPT } from "@/components/home/HomeIntro";
-import { loadCropTicks, loadIndiaFigures, loadMapStats, loadPlatformStats } from "@/components/home/home-data";
+import { loadCropTicks, loadDataPointCount, loadIndiaFigures, loadMapStats, platformStats } from "@/components/home/home-data";
 import { loadMarketFigures } from "@/components/home/home-markets";
 import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
@@ -105,11 +105,8 @@ export default async function HomePage({
     loadMarketFigures(),
   ]);
   const liveRows = activeRows.map((d) => ({ id: d.id, slug: d.slug, stateSlug: d.state.slug, population: d.population }));
-  const [crops, mapStats, stats] = await Promise.all([
-    loadCropTicks(liveRows),
-    loadMapStats(liveRows),
-    loadPlatformStats(liveRows.map((d) => d.id)),
-  ]);
+  const [crops, mapStats, dataPoints] = await Promise.all([loadCropTicks(liveRows), loadMapStats(liveRows), loadDataPointCount()]);
+  const stats = platformStats(mapStats, dataPoints);
 
   const activeDistricts = activeRows.map((d) => ({
     slug: d.slug,

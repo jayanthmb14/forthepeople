@@ -29,35 +29,16 @@ import { ArrowRight, Heart, Star } from "lucide-react";
 import { getDistrict, getState } from "@/lib/constants/districts";
 import { placeName } from "@/i18n/place-name";
 import { usePlaceText } from "@/i18n/client";
+import { pickSupporters, type PublicSupporter } from "./home-picks";
 import styles from "./home.module.css";
 
-interface PublicSupporter {
-  id: string;
-  name: string;
-  tier: string;
-  isRecurring: boolean;
-  districtSlug: string | null;
-  stateSlug: string | null;
-  stateName: string | null;
-}
 interface AllResponse {
   subscribers?: PublicSupporter[];
   oneTime?: PublicSupporter[];
 }
 
+/** How many names the band lists. */
 const SHOWN = 6;
-
-/** Founding Builder first, then monthly supporters, then one-time gifts; anonymous left out. */
-function pickSupporters(data: AllResponse, max = SHOWN): PublicSupporter[] {
-  const subs = data.subscribers ?? [];
-  const once = data.oneTime ?? [];
-  const all = [...once.filter((s) => s.tier === "founder"), ...subs, ...once.filter((s) => s.tier !== "founder")];
-  const seen = new Set<string>();
-  return all
-    .filter((s) => s && s.name && s.name.trim() && s.name !== "Anonymous")
-    .filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)))
-    .slice(0, max);
-}
 
 export default function SupportBand({ locale }: { locale: string }) {
   const t = useTranslations("page_home");
@@ -69,7 +50,7 @@ export default function SupportBand({ locale }: { locale: string }) {
     fetch("/api/data/contributors?limit=20")
       .then((r) => (r.ok ? (r.json() as Promise<AllResponse>) : null))
       .then((data) => {
-        if (!cancelled) setPeople(data ? pickSupporters(data) : []);
+        if (!cancelled) setPeople(data ? pickSupporters(data, SHOWN) : []);
       })
       .catch(() => {
         if (!cancelled) setPeople([]);

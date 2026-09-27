@@ -26,9 +26,8 @@
 //
 import { prisma } from "@/lib/db";
 import { LOCAL_INFRA } from "@/lib/data-filters";
-import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 import { getPlatformFacts } from "@/lib/platform-facts";
-import { dayOf, daysBetween, todayIST } from "@/lib/markets/compute";
+import { buildMapStat, pickCropTicks } from "./home-picks";
 import type { CropTick, IndiaFigure, MapDistrictStat, PlatformStats } from "./home-types";
 
 /** A live district row as the page loads it. */
@@ -45,24 +44,9 @@ const statKey = (stateSlug: string, slug: string) => `${stateSlug}/${slug}`;
 //  Mandi prices for the ticker
 // ─────────────────────────────────────────────────────────────────────
 
-/** Staples a citizen recognises, in the order the ticker prefers them. */
-const STAPLES: Array<{ key: string; match: RegExp }> = [
-  { key: "tomato", match: /^tomato$/i },
-  { key: "onion", match: /^onion$/i },
-  { key: "potato", match: /^potato$/i },
-  { key: "rice", match: /^rice$/i },
-  { key: "paddy", match: /^paddy/i },
-  { key: "wheat", match: /^wheat$/i },
-];
-
-/** Crop prices older than this many days are marked old (DESIGN-SYSTEM §6: crop prices 7). */
-const CROP_MAX_AGE_DAYS = 7;
-const MAX_CROP_TICKS = 5;
-
 /**
- * Up to five staple prices, each from a different live district and as far
- * as possible a different crop, from each district's newest mandi day.
- * Every tick carries its market and date; old ones are marked old.
+ * Up to five staple prices from the live districts' newest mandi days (the
+ * choice itself: home-picks.ts → pickCropTicks). Old ones are marked old.
  */
 export async function loadCropTicks(districts: LiveDistrictRow[], nowMs: number = Date.now()): Promise<CropTick[]> {
   if (districts.length === 0) return [];
@@ -81,44 +65,7 @@ export async function loadCropTicks(districts: LiveDistrictRow[], nowMs: number 
       orderBy: [{ market: "asc" }],
       take: 2000,
     });
-
-    // Districts: newest mandi day first, then registry order.
-    const order = new Map(districts.map((d, i) => [d.id, i]));
-    const byDistrict = [...newestDay].sort(
-      (a, b) => b.date.getTime() - a.date.getTime() || (order.get(a.districtId) ?? 0) - (order.get(b.districtId) ?? 0),
-    );
-    const today = todayIST(nowMs);
-    const picked: CropTick[] = [];
-    const usedDistricts = new Set<string>();
-    // Round-robin over the staples (one district per crop per round), so
-    // the ticker shows different crops before it repeats one.
-    for (let round = 0; round < 3 && picked.length < MAX_CROP_TICKS; round++) {
-      for (const staple of STAPLES) {
-        if (picked.length >= MAX_CROP_TICKS) break;
-        const hit = byDistrict
-          .filter((l) => !usedDistricts.has(l.districtId))
-          .map((l) => rows.find((r) => r.districtId === l.districtId && staple.match.test(r.commodity.trim()) && r.modalPrice > 0))
-          .find(Boolean);
-        if (!hit) continue;
-        const d = districts.find((x) => x.id === hit.districtId);
-        if (!d) continue;
-        usedDistricts.add(hit.districtId);
-        const day = dayOf(Math.floor(hit.date.getTime() / 1000));
-        const age = Math.max(0, daysBetween(day, today));
-        picked.push({
-          commodity: hit.commodity.trim(),
-          cropKey: staple.key,
-          market: hit.market.trim(),
-          perQuintal: hit.modalPrice,
-          day,
-          ageDays: age,
-          old: age > CROP_MAX_AGE_DAYS,
-          stateSlug: d.stateSlug,
-          districtSlug: d.slug,
-        });
-      }
-    }
-    return picked;
+    return pickCropTicks(districts, rows, nowMs);
   } catch {
     return [];
   }
@@ -175,30 +122,18 @@ export async function loadMapStats(districts: LiveDistrictRow[]): Promise<Record
     loadNewestPerDistrict(ids),
   ]);
 
-  const now = Date.now();
   for (const d of districts) {
-    const profile = profiles.find((p) => p.districtId === d.id);
-    const census = censusRows.find((p) => p.districtId === d.id);
-    const population: MapDistrictStat["population"] = profile?.totalPopulation
-      ? { value: profile.totalPopulation, dataset: profile.dataset, estimate: false }
-      : census?.population
-        ? { value: census.population, dataset: `Census ${census.year}`, estimate: false }
-        : d.population
-          ? { value: d.population, dataset: null, estimate: true }
-          : null;
-
-    const mine = projects ? projects.filter((p) => p.districtId === d.id && !isNonProject(p)) : null;
-    const building = mine && mine.length > 0 ? mine.filter((p) => projectStage(p.status) === "building").length : null;
-
-    const score = scores.find((s) => s.districtId === d.id);
-    out[statKey(d.stateSlug, d.slug)] = {
-      population,
-      building,
-      grade: score
-        ? { grade: score.grade, date: score.generatedAt.toISOString(), expired: score.expiresAt.getTime() < now }
-        : null,
+    const profile = profiles.find((p) => p.districtId === d.id) ?? null;
+    const census = censusRows.find((p) => p.districtId === d.id) ?? null;
+    const score = scores.find((s) => s.districtId === d.id) ?? null;
+    out[statKey(d.stateSlug, d.slug)] = buildMapStat({
+      profile,
+      census,
+      districtPopulation: d.population,
+      projects: projects ? projects.filter((p) => p.districtId === d.id) : null,
+      score,
       newest: newest.get(d.id) ?? null,
-    };
+    });
   }
   return out;
 }
@@ -280,21 +215,34 @@ const DATA_POINTS_SQL = `SELECT (${COUNTED_TABLES.map(
     `(SELECT count(*) FROM "${table}" x JOIN "District" d ON d.id = x."districtId" WHERE d.active${extra ? ` AND ${extra}` : ""})`,
 ).join(" + ")})::int AS total`;
 
-export async function loadPlatformStats(ids: string[]): Promise<PlatformStats> {
+/** Rows of district data held for the live districts, or null when the count failed. */
+export async function loadDataPointCount(): Promise<number | null> {
+  try {
+    const r = await prisma.$queryRawUnsafe<Array<{ total: number }>>(DATA_POINTS_SQL);
+    const n = Number(r[0]?.total);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The stats line: registry counts, the data-point count, and "updated" =
+ * the newest collection time among the live districts (from loadMapStats).
+ */
+export function platformStats(mapStats: Record<string, MapDistrictStat>, dataPoints: number | null): PlatformStats {
   const facts = getPlatformFacts();
-  const [count, newest] = await Promise.all([
-    prisma.$queryRawUnsafe<Array<{ total: number }>>(DATA_POINTS_SQL).then(
-      (r) => (Number.isFinite(Number(r[0]?.total)) ? Number(r[0].total) : null),
-      () => null,
-    ),
-    loadNewestPerDistrict(ids),
-  ]);
-  const lastUpdate = [...newest.values()].sort().at(-1) ?? null;
+  const lastUpdate =
+    Object.values(mapStats)
+      .map((s) => s.newest)
+      .filter((x): x is string => Boolean(x))
+      .sort()
+      .at(-1) ?? null;
   return {
     activeDistricts: facts.activeDistricts,
     activeStates: facts.activeStates,
     modulesPerDistrict: facts.modulesPerDistrict,
-    dataPoints: count && count > 0 ? count : null,
+    dataPoints,
     lastUpdate,
   };
 }
