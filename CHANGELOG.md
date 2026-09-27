@@ -43,6 +43,35 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   build container could no longer fetch Google Fonts, so every build of `main` failed from
   2026-09-26. All eight families are SIL OFL 1.1. No visitor IPs are sent to Google any more.
 
+### Changed — Design v3 "Civic Ledger" (every citizen-facing page)
+- One design system for the whole site: `--ftp-*` tokens on `:root`, one 1200 px / 12-column
+  container, a five-step type scale (Plus Jakarta Sans 400/500, 600 only for a page H1), numbers in
+  JetBrains Mono, one card / tile / pill spec, no shadows or gradients, Lucide icons instead of emoji.
+  Reference: `docs/DESIGN-SYSTEM.md`.
+- Shared kit rewritten in place (`src/components/district/ui.tsx`): PageHeader, FreshnessPill,
+  SourcePill, StatTile/StatStrip, Section, Card, Pill, Chips, SourcesFooter, Toolbar, KpiRing,
+  EmptyState. Old export names still work as thin wrappers.
+- Homepage rebuilt: one-line disclaimer band, 56 px header, market ticker with "As of" time,
+  **"Find my district"** strip (one tap finds the visitor's district from the browser's location;
+  if it is live it opens it, if not it says so, shows the vote count and the nearest live district;
+  optional "Remember my district" switch; coordinates never leave the browser), hero, four stat
+  tiles, map + live-districts list, latest data (only modules with data under 30 days old),
+  how it works, supporters and top votes, support line, honest footer.
+- District overview rebuilt: identity card (local-script name, tagline chips, health-score ring,
+  Census stats with source), "Today in <district>" tiles that show an honest empty line instead of
+  stale numbers, all modules grouped into five cards with freshness dots. Locked-district preview
+  and state pages use the same identity card.
+- Left rail regrouped into five groups (Civic duty, Money & resources, Daily services,
+  Accountability, Community & people) with freshness dots.
+- All module pages (crops to tenders) moved onto the module template: header with local-script
+  title, freshness and source pills, stat strip, sections, empty states, sources footer, share and
+  compare toolbar. The 1,180-line infrastructure page was split into components.
+- India pages aligned to the same chrome; support, about, features, vote, compare, feedback and
+  legal pages restyled with every flow (Razorpay checkout, votes, feedback) unchanged.
+- Honest cadence copy: water now says "checked every 6 hours"; the leadership page has its own
+  sources entry.
+- Old homepage components (`src/components/home/redesign-v2/*`) deleted.
+
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked
   `.v1/.v2/.v3` snapshot files and the permanently redirected `india-detail` page.
