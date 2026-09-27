@@ -48,7 +48,7 @@ import { getDistrict } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { getGroupedModules } from "@/lib/constants/sidebar-modules";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
-import { ageInDays } from "@/lib/utils/timeAgo";
+import { ageInDays, calendarDaysAgoIST } from "@/lib/utils/timeAgo";
 import { useAlerts, useCropPrices, useExams, useNews } from "@/hooks/useRealtimeData";
 import TodayWeatherTile from "@/components/district/TodayWeatherTile";
 import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
@@ -277,7 +277,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                       market: latestCrop.market,
                       date: day(latestCrop.date),
                     })
-                  : to("v5.mandiOld", { date: day(latestCrop.date), n: Math.floor(cropAge ?? 0) })}
+                  : to("v5.mandiOld", { date: day(latestCrop.date), n: calendarDaysAgoIST(latestCrop.date) ?? 0 })}
               </NoticeLine>
             )}
           </ul>
