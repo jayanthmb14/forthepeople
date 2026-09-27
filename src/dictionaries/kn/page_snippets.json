@@ -9,6 +9,7 @@
     "delayed": "{n} ವಿಳಂಬ",
     "done": "ಪೂರ್ಣಗೊಂಡಿದೆ",
     "notStarted": "ಆರಂಭವಾಗಿಲ್ಲ · {status}",
+    "progressUnknown": "{status} · ಪ್ರಗತಿ ವರದಿಯಾಗಿಲ್ಲ",
     "progress": "{pct}% · {status}",
     "total": "ದಾಖಲಾದ ಒಟ್ಟು ಬಜೆಟ್: <b>{amount}</b>",
     "checked": "ಪರಿಶೀಲಿಸಿದ್ದು",

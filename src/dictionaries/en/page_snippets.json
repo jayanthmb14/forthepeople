@@ -9,6 +9,7 @@
     "delayed": "{n} delayed",
     "done": "Completed",
     "notStarted": "Not started · {status}",
+    "progressUnknown": "{status} · progress not reported",
     "progress": "{pct}% · {status}",
     "total": "Total budget tracked: <b>{amount}</b>",
     "checked": "Checked",

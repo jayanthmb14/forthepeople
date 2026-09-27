@@ -9,6 +9,7 @@
     "delayed": "{n} में देरी",
     "done": "पूरी हुई",
     "notStarted": "शुरू नहीं हुई · {status}",
+    "progressUnknown": "{status} · प्रगति नहीं बताई गई",
     "progress": "{pct}% · {status}",
     "total": "कुल दर्ज बजट: <b>{amount}</b>",
     "checked": "जाँचा गया",
