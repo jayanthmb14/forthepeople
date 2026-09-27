@@ -151,3 +151,8 @@ export interface DatasetDatesPayload {
   checkedAt: string;
   datasets: Record<string, DatasetDate>;
 }
+
+/** How old a dataset may be and still count as current (hours), or undefined. */
+export function maxAgeHoursOf(key: string): number | undefined {
+  return DATASETS.find((d) => d.key === key)?.maxAgeHours;
+}

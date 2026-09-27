@@ -12,23 +12,29 @@
 //  The answer: "Right now it is 27°C with some clouds. Rain this year so
 //  far: 84% of normal (Jan–Aug 2026)."
 //
-//  Order: PageHeader → Explainer → TODAY's weather picture first (big
-//  weather emoji, temperature, sky, plus four tiles: feels like, humidity,
-//  wind, rain) → rain this year vs normal (a drop per month — tap one for
-//  that month — and a ring) → charts (monthly rain vs normal, difference
-//  from normal, temperature) → recent readings (tap one for every detail)
-//  → AI insight → news → sources (CSV of the rain history).
+//  Order: PageHeader → Explainer → TODAY's weather picture first (a plain
+//  sky icon, temperature, sky, plus four tiles: feels like, humidity,
+//  wind, rain) → rain vs normal (a drop per month — tap one for that
+//  month — and a ring) → charts (monthly rain vs normal, difference from
+//  normal, temperature) → recent readings (tap one for every detail) → AI
+//  insight → news → Share / CSV. Sources and "report a mistake" are in the
+//  layout's verification panel.
 //
 //  Honesty rules on this page:
 //   • "Right now" only when the newest reading is under 6 hours old;
-//     otherwise "Last recorded" with its date. The header pill is fed by
-//     that reading's time and says "Live" only under 30 minutes.
+//     otherwise "Last recorded" with its date. Older than the weather
+//     max age (1 day, src/lib/constants/dataset-collection.ts) the number
+//     turns grey under "Last reading we have", with its date and "N days
+//     old; we could not find newer data". The header pill is fed by that
+//     reading's time and says "Live" only under 30 minutes.
 //   • Live readings come from OpenWeatherMap with metric units: wind is
 //     metres per second there, so it is shown ×3.6 as km/h, and rain is
 //     the last hour's rain, so it is labelled that way. Readings from
 //     other sources are shown as stored.
-//   • Rain this year adds up only the months the source has published for
-//     the latest year, and names them. Charts need at least two months;
+//   • Rain adds up only the months the source has published for the
+//     latest year, and names them; it says "this year" only when that year
+//     is the current one, otherwise "Rain in 2024" and "we could not find
+//     newer monthly rain figures". Charts need at least two months;
 //     the temperature line needs three different readings. A missing
 //     figure shows "—", never a zero.
 //
@@ -41,7 +47,25 @@
 import { use, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from "recharts";
-import { Cloud } from "lucide-react";
+import {
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudMoon,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Cloudy,
+  Droplet,
+  Droplets,
+  Haze,
+  Moon,
+  Sun,
+  Thermometer,
+  Wind,
+  type LucideIcon,
+} from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -49,15 +73,23 @@ import ModuleNews from "@/components/district/ModuleNews";
 import { useWeather, useRainfall } from "@/hooks/useRealtimeData";
 import type { RainfallHistory, WeatherReading } from "@/hooks/useRealtimeData";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
-import { AsOfText, Card, LoadingShell, ModulePage, PageHeader, Section, StatStrip, StatTile } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, weatherEmoji, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { Card, LoadingShell, ModulePage, PageHeader, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { ChartCard, ChartGradients, Explainer, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { ProgressRing } from "@/components/district/daily-services/HueCharts";
-import { PageEnd, SheetNote, SheetSmall, useNow } from "@/components/services-2/kit";
+import { SheetNote, SheetSmall, useNow } from "@/components/services-2/kit";
+import { PageActions, ReadingAge, ageInDays, isOlderThan } from "@/components/district/page-kit";
+import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { downloadCSV, todayISO } from "@/lib/csv";
 
 /** A reading counts as "now" only when it is at most this old. */
 const FRESH_HOURS = 6;
+/**
+ * Older than this, the reading is not current for weather at all: the big
+ * number turns grey and carries its date and age ("160 days old; we could
+ * not find newer data"). Same value as the data-sources page uses.
+ */
+const MAX_AGE_HOURS = maxAgeHoursOf("weather") ?? 24;
 /** Rows in the readings list older than this are greyed. */
 const STALE_ROW_MINUTES = 24 * 60;
 /** How many distinct readings the temperature line draws (newest). */
@@ -116,6 +148,35 @@ function hourIST(iso: string): number {
   return d.getUTCHours();
 }
 
+/** A plain Lucide picture of the sky (a pictogram that encodes the reading, not decoration). */
+function weatherIcon(conditions: string | null | undefined, hour: number): LucideIcon {
+  const night = hour < 6 || hour >= 19;
+  switch (conditionKey(conditions)) {
+    case "storm":
+      return CloudLightning;
+    case "drizzle":
+      return CloudDrizzle;
+    case "rain":
+      return CloudRain;
+    case "snow":
+      return CloudSnow;
+    case "fog":
+      return CloudFog;
+    case "haze":
+      return Haze;
+    case "overcast":
+      return Cloudy;
+    case "partlyCloudy":
+      return night ? CloudMoon : CloudSun;
+    case "cloudy":
+      return Cloud;
+    case "clear":
+      return night ? Moon : Sun;
+    default:
+      return Cloud;
+  }
+}
+
 /**
  * The feed is polled every few minutes but the observation changes less
  * often, so consecutive rows often repeat. Keep only the newest row of
@@ -169,6 +230,9 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   const latest = readings[0];
   const ageMin = latest && now > 0 ? (now - new Date(latest.recordedAt).getTime()) / 60_000 : null;
   const isRecent = ageMin !== null && ageMin <= FRESH_HOURS * 60;
+  // Too old to be today's weather: grey the number and say how old it is.
+  const isOld = latest ? isOlderThan(latest.recordedAt, MAX_AGE_HOURS, now) : false;
+  const oldDays = latest && isOld ? ageInDays(latest.recordedAt, now) : 0;
 
   // Rainfall rows, newest month first (the API sorts months ascending inside each year).
   const rainfallRows = useMemo(() => [...(rainfallData?.data ?? [])].sort((a, b) => b.year - a.year || b.month - a.month), [rainfallData]);
@@ -207,6 +271,8 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
             year: String(latestRain.year),
           });
   const monthsAtNormal = yearRows.filter((r) => r.rainfall >= r.normal).length;
+  // "This year" only when the newest monthly figures really are this year's.
+  const rainIsThisYear = Boolean(latestRain && now > 0 && latestRain.year === new Date(now).getUTCFullYear());
 
   // The temperature line: newest distinct readings that carry a temperature.
   const trend = useMemo(() => distinctReadings(readings).filter((r) => r.temperature !== null && r.temperature !== undefined).slice(0, TREND_POINTS).reverse(), [readings]);
@@ -267,15 +333,16 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* 2. The answer in one sentence. */}
       {(latest || showYear) && (
-        <Explainer emoji="🌤️">
+        <Explainer>
           <span suppressHydrationWarning>
             {latest && explainKey && (
               <>
                 {t.rich(`explain.${explainKey}`, { temp: hasTemp ? deg(latest.temperature as number) : "", cond: latestCond ?? "", when: when(latest.recordedAt), b: bold })}
-                {hasFeels ? <> {t.rich(isRecent ? "explain.feelsNow" : "explain.feelsThen", { feels: deg(latest.feelsLike as number), b: bold })}</> : null}{" "}
+                {hasFeels ? <> {t.rich(isRecent ? "explain.feelsNow" : "explain.feelsThen", { feels: deg(latest.feelsLike as number), b: bold })}</> : null}
+                {isOld ? <> {t.rich("explain.oldNote", { n: oldDays, b: bold })}</> : null}{" "}
               </>
             )}
-            {showYear && t.rich("rainShort", { pct: pct(yearShare), period: yearPeriod, b: bold })}
+            {showYear && t.rich(rainIsThisYear ? "rainShort" : "rainShortPast", { pct: pct(yearShare), period: yearPeriod, b: bold })}
           </span>
         </Explainer>
       )}
@@ -285,14 +352,19 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         <Card tinted padding={20}>
           <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", minWidth: 0 }}>
-              <span className="ftp-emoji ftp-pop" role="img" aria-label={latestCond ?? t("glyphAria")} style={{ fontSize: 88, lineHeight: 1 }}>
-                {weatherEmoji(latest.conditions, hourIST(latest.recordedAt))}
-              </span>
+              {(() => {
+                const SkyIcon = weatherIcon(latest.conditions, hourIST(latest.recordedAt));
+                return (
+                  <span role="img" aria-label={latestCond ?? t("glyphAria")} style={{ display: "inline-flex", color: isOld ? "var(--ftp-text-2)" : "var(--hue)" }}>
+                    <SkyIcon size={72} strokeWidth={1.5} aria-hidden />
+                  </span>
+                );
+              })()}
               <div style={{ minWidth: 0 }}>
-                <p className="ftp-label" style={{ margin: 0, color: "var(--hue-deep)" }} suppressHydrationWarning>
-                  {isRecent ? t("hero.now") : t("hero.last")}
+                <p className="ftp-label" style={{ margin: 0, color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }} suppressHydrationWarning>
+                  {isOld ? t("hero.old") : isRecent ? t("hero.now") : t("hero.last")}
                 </p>
-                <div className="ftp-bignum" style={{ fontSize: 56, lineHeight: 1.05, color: "var(--hue-deep)" }}>
+                <div className="ftp-bignum" style={{ fontSize: 56, lineHeight: 1.05, color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
                   {hasTemp ? deg(latest.temperature as number) : "—"}
                 </div>
                 {latestCond && (
@@ -300,16 +372,16 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                     {latestCond}
                   </div>
                 )}
-                <div style={{ marginTop: 6 }}>
-                  <AsOfText asOf={latest.recordedAt} prefix="Recorded" />
+                <div style={{ marginTop: 8 }}>
+                  <ReadingAge at={latest.recordedAt} maxAgeHours={MAX_AGE_HOURS} withTime now={now} />
                 </div>
               </div>
             </div>
             <StatStrip cols={2}>
-              <StatTile emoji="🌡️" label={t("tiles.feels")} value={orDash(latest.feelsLike)} unit="°C" />
-              <StatTile emoji="💧" label={t("tiles.humidity")} value={orDash(latest.humidity, 0)} unit="%" />
-              <StatTile emoji="🌬️" label={t("tiles.wind")} value={orDash(latestWind, 0)} unit={t("kmh")} sub={latest.windDir ?? undefined} />
-              <StatTile emoji="🌧️" label={rainLabel(latest)} value={orDash(latest.rainfall)} unit={t("mmUnit")} />
+              <StatTile icon={Thermometer} label={t("tiles.feels")} value={orDash(latest.feelsLike)} unit="°C" />
+              <StatTile icon={Droplets} label={t("tiles.humidity")} value={orDash(latest.humidity, 0)} unit="%" />
+              <StatTile icon={Wind} label={t("tiles.wind")} value={orDash(latestWind, 0)} unit={t("kmh")} sub={latest.windDir ?? undefined} />
+              <StatTile icon={CloudRain} label={rainLabel(latest)} value={orDash(latest.rainfall)} unit={t("mmUnit")} />
             </StatStrip>
           </div>
         </Card>
@@ -317,7 +389,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* Rain this year vs normal: a drop per month (tap one) and a ring. */}
       {!rLoading && showYear && latestRain && (
-        <Section title={t("rain.title")} emoji="☔">
+        <Section title={rainIsThisYear ? t("rain.title") : t("rain.titlePast", { year: String(latestRain.year) })}>
           <div className="ftp-picture-row">
             <Card tinted padding={18}>
               <p className="ftp-body" style={{ margin: "0 0 12px", fontSize: 15, lineHeight: "23px" }}>
@@ -355,9 +427,13 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                             ["--i" as string]: i,
                           }}
                         >
-                          <span className="ftp-emoji" aria-hidden style={{ fontSize: 18, filter: wet ? "none" : "grayscale(1)", opacity: wet ? 1 : 0.4 }}>
-                            💧
-                          </span>
+                          <Droplet
+                            aria-hidden
+                            size={18}
+                            strokeWidth={1.75}
+                            fill={wet ? "currentColor" : "none"}
+                            style={{ color: wet ? "var(--hue)" : "var(--ftp-border-strong)" }}
+                          />
                           <span aria-hidden style={{ fontSize: 12, lineHeight: "14px", fontWeight: 600, color: wet ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>
                             {monthOf(r.year, r.month, { month: "short" })}
                           </span>
@@ -386,12 +462,11 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* Charts, each with a one-line takeaway. */}
       {(chartData.length > 1 || (trendData.length >= 3 && coolest && warmest)) && (
-        <Section title={t("charts.title")} emoji="📊">
+        <Section title={t("charts.title")}>
           <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
             {chartData.length > 1 && (
               <ChartCard
                 title={t("monthly.title")}
-                emoji="🌧️"
                 units={t("monthly.units")}
                 simple={
                   <>
@@ -431,7 +506,6 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
             {chartData.length > 1 && (
               <ChartCard
                 title={t("departure.title")}
-                emoji="⚖️"
                 units={t("departure.units")}
                 simple={
                   wettest && driest
@@ -471,7 +545,6 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
             {latest && trendData.length >= 3 && coolest && warmest && (
               <ChartCard
                 title={t("trend.title")}
-                emoji="🌡️"
                 units={t("trend.units")}
                 simple={t.rich("trend.simple", { min: deg(coolest.temp), minAt: coolest.full, max: deg(warmest.temp), maxAt: warmest.full, b: bold })}
                 asOf={latest.recordedAt}
@@ -501,7 +574,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* Recent readings: tap one for every detail. Rows older than a day are greyed. */}
       {!wLoading && listRows.length > 1 && (
-        <Section title={t("readings.title")} emoji="🕒">
+        <Section title={t("readings.title")}>
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px" }}>
             {t("readings.hint")}
           </p>
@@ -537,17 +610,20 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                       {when(r.recordedAt)}
                     </span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-                      <span className="ftp-emoji" aria-hidden>
-                        {weatherEmoji(r.conditions, hourIST(r.recordedAt))}
-                      </span>
+                      {(() => {
+                        const RowIcon = weatherIcon(r.conditions, hourIST(r.recordedAt));
+                        return <RowIcon size={16} strokeWidth={1.75} aria-hidden style={{ color: "var(--ftp-text-2)" }} />;
+                      })()}
                       <span className="ftp-num">{temp}</span>
                     </span>
-                    <span className="ftp-num" style={{ fontSize: 13 }}>
-                      <span aria-hidden>💧 </span>
+                    <span className="ftp-num" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                      <Droplets size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+                      <span className="sr-only">{t("tiles.humidity")}</span>
                       {r.humidity !== null && r.humidity !== undefined ? `${num(r.humidity, 0)}%` : "—"}
                     </span>
-                    <span className="ftp-num" style={{ fontSize: 13 }}>
-                      <span aria-hidden>🌧️ </span>
+                    <span className="ftp-num" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                      <CloudRain size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+                      <span className="sr-only">{rainLabel(r)}</span>
                       {r.rainfall !== null && r.rainfall !== undefined ? mm(r.rainfall) : "—"}
                     </span>
                   </button>
@@ -565,18 +641,16 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       )}
 
       <ModuleNews district={district} state={state} locale={locale} module="weather" />
-      <PageEnd
-        ns="page_weather"
-        sourceModule="weather"
-        moduleSlug="weather"
-        state={state}
-        district={district}
-        locale={locale}
-        districtName={districtName}
-        about={t("summary", { district: districtName })}
-        shareText={shareText}
-        onCsv={rainfallRows.length > 0 ? handleDownload : undefined}
-      />
+      <div style={{ marginTop: 28 }}>
+        <PageActions
+          locale={locale}
+          district={district}
+          moduleSlug="weather"
+          shareText={shareText}
+          onCsv={rainfallRows.length > 0 ? handleDownload : undefined}
+          csvLabel={t("end.csv")}
+        />
+      </div>
 
       {/* One reading, or one month of rain. */}
       <DetailSheet
@@ -584,25 +658,23 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         onClose={() => setOpened(null)}
         title={openReading ? t("sheet.readingTitle", { when: when(openReading.recordedAt) }) : openMonth ? monthLong(openMonth) : ""}
         subtitle={openMonth ? t("sheet.monthSub", { district: districtName }) : openReading ? condText(openReading.conditions) ?? undefined : undefined}
-        emoji={openReading ? weatherEmoji(openReading.conditions, hourIST(openReading.recordedAt)) : "💧"}
       >
         {openReading && (
           <>
             <DetailList
               rows={[
-                { emoji: "🌡️", label: t("sheet.temp"), value: openReading.temperature !== null && openReading.temperature !== undefined ? deg(openReading.temperature) : null },
-                { emoji: "🤒", label: t("tiles.feels"), value: openReading.feelsLike !== null && openReading.feelsLike !== undefined ? deg(openReading.feelsLike) : null },
-                { emoji: "☁️", label: t("sheet.sky"), value: condText(openReading.conditions) },
-                { emoji: "💧", label: t("tiles.humidity"), value: openReading.humidity !== null && openReading.humidity !== undefined ? `${num(openReading.humidity, 0)}%` : null },
+                { label: t("sheet.temp"), value: openReading.temperature !== null && openReading.temperature !== undefined ? deg(openReading.temperature) : null },
+                { label: t("tiles.feels"), value: openReading.feelsLike !== null && openReading.feelsLike !== undefined ? deg(openReading.feelsLike) : null },
+                { label: t("sheet.sky"), value: condText(openReading.conditions) },
+                { label: t("tiles.humidity"), value: openReading.humidity !== null && openReading.humidity !== undefined ? `${num(openReading.humidity, 0)}%` : null },
                 {
-                  emoji: "🌬️",
                   label: t("tiles.wind"),
                   value: windKmh(openReading) !== null ? `${num(windKmh(openReading) as number, 0)} ${t("kmh")}${openReading.windDir ? ` · ${openReading.windDir}` : ""}` : null,
                 },
-                { emoji: "🌧️", label: rainLabel(openReading), value: openReading.rainfall !== null && openReading.rainfall !== undefined ? mm(openReading.rainfall) : null },
-                { emoji: "🧭", label: t("sheet.pressure"), value: openReading.pressure !== null && openReading.pressure !== undefined ? t("hpa", { v: num(openReading.pressure, 0) }) : null },
-                { emoji: "👀", label: t("sheet.visibility"), value: openReading.visibility !== null && openReading.visibility !== undefined ? t("km", { v: num(openReading.visibility) }) : null },
-                { emoji: "📡", label: t("sheet.source"), value: openReading.source },
+                { label: rainLabel(openReading), value: openReading.rainfall !== null && openReading.rainfall !== undefined ? mm(openReading.rainfall) : null },
+                { label: t("sheet.pressure"), value: openReading.pressure !== null && openReading.pressure !== undefined ? t("hpa", { v: num(openReading.pressure, 0) }) : null },
+                { label: t("sheet.visibility"), value: openReading.visibility !== null && openReading.visibility !== undefined ? t("km", { v: num(openReading.visibility) }) : null },
+                { label: t("sheet.source"), value: openReading.source },
               ]}
             />
             <SheetSmall>{t("sheet.ist")}</SheetSmall>
@@ -610,7 +682,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         )}
         {openMonth && (
           <>
-            <SheetNote emoji={openMonth.rainfall >= openMonth.normal ? "☔" : "🌤️"}>
+            <SheetNote>
               {openMonth.normal > 0
                 ? t.rich("sheet.monthNote", { month: monthLong(openMonth), actual: mm(openMonth.rainfall), normal: mm(openMonth.normal), pct: pct(openMonth.rainfall / openMonth.normal), b: bold })
                 : t.rich("sheet.monthNoteDry", { month: monthLong(openMonth), actual: mm(openMonth.rainfall), b: bold })}
@@ -641,10 +713,10 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
             })()}
             <DetailList
               rows={[
-                { emoji: "🌧️", label: t("sheet.actual"), value: mm(openMonth.rainfall) },
-                { emoji: "📏", label: t("sheet.normal"), value: mm(openMonth.normal) },
-                { emoji: "⚖️", label: t("sheet.diff"), value: signedMm(openMonth.departure) },
-                { emoji: "📡", label: t("sheet.source"), value: openMonth.source },
+                { label: t("sheet.actual"), value: mm(openMonth.rainfall) },
+                { label: t("sheet.normal"), value: mm(openMonth.normal) },
+                { label: t("sheet.diff"), value: signedMm(openMonth.departure) },
+                { label: t("sheet.source"), value: openMonth.source },
               ]}
             />
           </>
