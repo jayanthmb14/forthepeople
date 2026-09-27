@@ -2,6 +2,8 @@
   "description": "The latest mandi prices from AGMARKNET, each with the market day it is from",
   "emptyTitle": "No mandi prices for {district} yet.",
   "emptyBody": "Daily prices from AGMARKNET will show here once we start receiving them for the mandis in this district.",
+  "emptyNoMandiTitle": "{district} has no mandi of its own on AGMARKNET.",
+  "emptyNoMandiBody": "The mandis AGMARKNET lists for this area are in neighbouring districts, so we do not show their prices as this district's.",
   "answer": "The latest prices are from <b>{date}</b>: {n, plural, one {# crop} other {# crops}} at {markets, plural, one {# mandi} other {# mandis}} in {district}.",
   "tapHint": "Tap a crop to see its price at every mandi and how it changed.",
   "tileCrops": "Crops with prices",

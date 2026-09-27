@@ -63,6 +63,7 @@ import { PageActions, ReadingAge, ageInDays, isOlderThan, useClientNow } from "@
 import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { commodityKey, dailySeries, dayOf, latestPerCrop, latestPerMarket, previousDay } from "@/components/land-water/crop-data";
 import { downloadCSV, todayISO } from "@/lib/csv";
+import { agmarknetMarketsInDistrict } from "@/scraper/lib/district-aliases";
 
 type Unit = "kg" | "quintal";
 
@@ -171,6 +172,9 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
       : t("shareEmpty", { district: districtName });
 
   const hasData = !isLoading && !error && latestByCrop.length > 0;
+  // No AGMARKNET mandi is inside this district (New Delhi): say so, rather
+  // than "not yet" (src/scraper/lib/district-aliases.ts, Sept 2026 audit).
+  const noMandiHere = agmarknetMarketsInDistrict(district)?.length === 0;
 
   return (
     <ModulePage>
@@ -186,7 +190,10 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
       {isLoading && <LoadingShell rows={5} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && latestByCrop.length === 0 && (
-        <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+        <EmptyState
+          title={t(noMandiHere ? "emptyNoMandiTitle" : "emptyTitle", { district: districtName })}
+          body={t(noMandiHere ? "emptyNoMandiBody" : "emptyBody")}
+        />
       )}
 
       {hasData && newestDate && (

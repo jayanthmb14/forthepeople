@@ -42,7 +42,7 @@ import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapsho
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
-import { SEEDED_RAINFALL_LAST_YEAR, SEEDED_RAINFALL_SOURCES, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { SEEDED_RAINFALL_LAST_YEAR, SEEDED_RAINFALL_SOURCES, VERIFIED_PANCHAYAT, shownCropPrices } from "@/lib/data-filters";
 import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
 import { getCronRun } from "@/lib/cron-auth";
 
@@ -410,14 +410,25 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const [courtsSnapshot, udise, nrega, gp, alertsRun] = await Promise.all([
+  const [courtsSnapshot, udise, nrega, gp, alertsRun, crops] = await Promise.all([
     readCourtsSnapshot(districtSlug),
     readDistrictSnapshot("udise", districtSlug),
     readDistrictSnapshot("mgnrega", districtSlug),
     prisma.gramPanchayat.aggregate({ where: { districtId: district.id, ...VERIFIED_PANCHAYAT }, _count: { _all: true }, _max: { updatedAt: true } }),
     getCronRun("scrape-alerts"),
+    // Mandi prices the crops page may show (shownCropPrices: no seed rows,
+    // no livestock / per-nut / per-stem, only mandis in the district).
+    prisma.cropPrice.aggregate({
+      where: { districtId: district.id, ...shownCropPrices(districtSlug) },
+      _count: { _all: true },
+      _max: { date: true, fetchedAt: true },
+    }),
   ]);
   const alertsCheckedAt = alertsRun?.lastSuccessAt ? new Date(alertsRun.lastSuccessAt) : null;
+  // The crops dataset counts only the prices the page shows (Sept 2026 audit).
+  row.crops_rows = crops._count._all;
+  row.crops_date = crops._max.date;
+  row.crops_checked = crops._max.fetchedAt;
   const courtsDate = courtsReadAt(courtsSnapshot?.fetchedAt ?? null, row.courts_source);
   // A snapshot without CourtStat rows (the row write failed) still counts.
   if (courtsSnapshot && row.courts_rows === 0) row.courts_rows = courtsSnapshot.units.length;
