@@ -171,10 +171,10 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
 
   return (
     <div className="ftp-container">
-      <Section id="community" title="Built with citizens">
+      <Section id="community" title="Built with citizens" emoji="🤝">
         <div className={styles.communityGrid}>
           {/* ── Supporters ── */}
-          <Card as="section" aria-labelledby="home-supporters" className={styles.communityMain}>
+          <Card as="section" aria-labelledby="home-supporters" className={`${styles.communityMain} ftp-hue-pink`} tinted>
             <h3 id="home-supporters" className="ftp-title">
               {contributors === null ? (
                 "Loading supporters…"
@@ -218,7 +218,7 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
           </Card>
 
           {/* ── What citizens voted for ── */}
-          <Card as="section" aria-labelledby="home-top-features" className={styles.communitySide}>
+          <Card as="section" aria-labelledby="home-top-features" className={`${styles.communitySide} ftp-hue-violet`} tinted>
             <h3 id="home-top-features" className="ftp-title">
               Top voted features
             </h3>
@@ -235,9 +235,12 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
             </p>
             {top3.length > 0 ? (
               <ol className={styles.voteList}>
-                {top3.map((f) => (
+                {top3.map((f, i) => (
                   <li key={f.id}>
                     <Link href={`/${locale}/features`} className={styles.voteRow}>
+                      <span className={`${styles.voteMedal} ftp-emoji`} aria-hidden>
+                        {["🥇", "🥈", "🥉"][i] ?? "⭐"}
+                      </span>
                       <span className={`ftp-num ${styles.voteCount}`} aria-label={`${f.votes} votes`}>
                         {f.votes.toLocaleString("en-IN")}
                       </span>

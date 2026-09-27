@@ -7,6 +7,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import HueScope from "@/components/district/HueScope";
 import Sidebar from "@/components/layout/Sidebar";
 import DistrictStatusBar from "@/components/layout/DistrictStatusBar";
 import { MobileBreadcrumbStrip } from "@/components/district/MobileBreadcrumbStrip";
@@ -120,7 +121,8 @@ export default async function DistrictLayout({
           on viewport ≥ 768px. */}
       <MobileBreadcrumbStrip locale={locale} />
 
-      <div
+      {/* HueScope: the open module's colour (Design v4) for sidebar + page. */}
+      <HueScope
         style={{
           display: "flex",
           alignItems: "flex-start",
@@ -132,13 +134,13 @@ export default async function DistrictLayout({
 
         {/* Main content */}
         <main
-          style={{ flex: 1, minWidth: 0, background: "var(--ftp-bg)" }}
+          style={{ flex: 1, minWidth: 0 }}
           role="main"
           aria-label={`${districtData!.name} district data`}
         >
           {children}
         </main>
-      </div>
+      </HueScope>
 
       {/* Floating feedback button — bottom-right on all district pages */}
       <FeedbackFloatingButton stateSlug={stateSlug} districtSlug={districtSlug} />

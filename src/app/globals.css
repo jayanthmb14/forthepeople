@@ -414,16 +414,16 @@
  *  slate · community → pink · data → blue.
  */
 :root {
-  /* Surfaces */
-  --ftp-bg:              #FAFAF8;
+  /* Surfaces (v4: warmer page, crisp white cards) */
+  --ftp-bg:              #F6F5F0;
   --ftp-surface:         #FFFFFF;
-  --ftp-surface-2:       #F1F1ED;
-  --ftp-border:          #E8E8E4;
-  --ftp-border-strong:   #D5D5D0;
+  --ftp-surface-2:       #F1F0EA;
+  --ftp-border:          #E6E4DC;
+  --ftp-border-strong:   #D2CFC4;
 
   /* Text */
-  --ftp-text:            #1A1A1A;
-  --ftp-text-2:          #6B6B6B;
+  --ftp-text:            #15171C;
+  --ftp-text-2:          #5D6270;
 
   /* Brand */
   --ftp-brand:           #2563EB;
@@ -447,14 +447,31 @@
   --ftp-map-live:        #2563EB;
   --ftp-map-locked:      #D5D5D0;
 
-  /* Shape — the only three radii in the system */
-  --ftp-radius-card:     12px;
-  --ftp-radius-tile:     8px;
+  /* Shape (v4: softer) */
+  --ftp-radius-card:     16px;
+  --ftp-radius-tile:     12px;
   --ftp-radius-pill:     999px;
 
-  /* Type — aliases of the next/font variables set in app/layout.tsx */
+  /* Depth (v4) — soft, warm-neutral shadows; cards lift on hover */
+  --ftp-shadow-1:        0 1px 2px rgba(23, 26, 31, 0.05), 0 6px 18px -10px rgba(23, 26, 31, 0.14);
+  --ftp-shadow-2:        0 2px 6px rgba(23, 26, 31, 0.06), 0 18px 36px -14px rgba(23, 26, 31, 0.22);
+  --ftp-ease-out:        cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Type — aliases of the next/font variables set in app/layout.tsx.
+     display = Bricolage Grotesque (headings, big numbers)
+     sans    = Plus Jakarta Sans (everything you read)
+     mono    = JetBrains Mono (small data: tables, ranks, sources) */
+  --ftp-font-display:    var(--font-bricolage), "Bricolage Grotesque", var(--font-plus-jakarta), system-ui, sans-serif;
   --ftp-font-sans:       var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
   --ftp-font-mono:       var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+
+  /* Module hue (v4). Every module page sets these through a
+     .ftp-hue-<name> class (see the hue palette below); the default is
+     the brand blue. Kit components read ONLY these for their accent. */
+  --hue:                 #2563EB;
+  --hue-deep:            #1E3A8A;
+  --hue-pop:             #93B4F5;
+  --hue-tint:            #EEF3FE;
 
   /* Layout */
   --ftp-container-max:   1200px;
@@ -515,18 +532,18 @@
 /* ── v3 type scale (CONCEPT-v3 §2.3) ──
    Plus Jakarta Sans 400/500; 600 is reserved for the page H1.
    Numbers are always JetBrains Mono 500 with tabular figures. */
-.ftp-h1    { font-family: var(--ftp-font-sans); font-size: 36px; line-height: 40px; font-weight: 600; color: var(--ftp-text); letter-spacing: -0.01em; margin: 0; }
-.ftp-h2    { font-family: var(--ftp-font-sans); font-size: 22px; line-height: 28px; font-weight: 500; color: var(--ftp-text); margin: 0; }
+.ftp-h1    { font-family: var(--ftp-font-display); font-size: 40px; line-height: 44px; font-weight: 700; color: var(--ftp-text); letter-spacing: -0.02em; margin: 0; }
+.ftp-h2    { font-family: var(--ftp-font-display); font-size: 24px; line-height: 30px; font-weight: 600; color: var(--ftp-text); letter-spacing: -0.01em; margin: 0; }
 .ftp-title { font-family: var(--ftp-font-sans); font-size: 15px; line-height: 22px; font-weight: 500; color: var(--ftp-text); margin: 0; }
 .ftp-body  { font-family: var(--ftp-font-sans); font-size: 13px; line-height: 20px; font-weight: 400; color: var(--ftp-text); margin: 0; }
-.ftp-label { font-family: var(--ftp-font-sans); font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ftp-text-2); margin: 0; }
-.ftp-num   { font-family: var(--ftp-font-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.ftp-label { font-family: var(--ftp-font-sans); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ftp-text-2); margin: 0; }
+.ftp-num   { font-family: var(--ftp-font-sans); font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (max-width: 767px) {
   .ftp-h1 { font-size: 28px; line-height: 32px; }
 }
 
 /* Stat tile value: 28/32 desktop, 24/28 phone. */
-.ftp-stat-value { font-size: 28px; line-height: 32px; }
+.ftp-stat-value { font-family: var(--ftp-font-display); font-weight: 650; font-variant-numeric: tabular-nums lining-nums; font-size: 32px; line-height: 36px; letter-spacing: -0.02em; }
 /* Stat strip: 2/3/4 columns on desktop (set --ftp-strip-cols), 2×2 on phone. */
 .ftp-stat-strip { display: grid; gap: 12px; grid-template-columns: repeat(var(--ftp-strip-cols, 4), minmax(0, 1fr)); }
 /* Filter chips: 32 px desktop, 44 px phone (touch target). */
@@ -538,8 +555,9 @@
 }
 
 /* Interactive card: 150 ms border-colour on hover, nothing else. */
-.ftp-card-link { transition: border-color 150ms ease; }
-.ftp-card-link:hover { border-color: var(--ftp-border-strong); }
+.ftp-card-link { transition: transform 220ms var(--ftp-ease-out), box-shadow 220ms var(--ftp-ease-out), border-color 150ms ease; }
+.ftp-card-link:hover { transform: translateY(-2px); box-shadow: var(--ftp-shadow-2); border-color: color-mix(in srgb, var(--hue) 35%, var(--ftp-border)); }
+.ftp-card-link:active { transform: translateY(0); }
 
 /* Left rail item (Sidebar.tsx). Hover = surface-2; active is set inline. */
 .ftp-rail-item { transition: background-color 150ms ease, color 150ms ease; }
@@ -875,3 +893,145 @@ body.ftp-india-tinted {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Design v4 "Rang" — colour, depth and motion
+   ═══════════════════════════════════════════════════════════════════
+   Every module owns one hue. A page wrapper sets .ftp-hue-<name>; kit
+   components read --hue / --hue-deep / --hue-pop / --hue-tint only.
+     hue       icons, bars, borders, chart fills
+     hue-deep  numbers and text on a tint (AA on white and on tint)
+     hue-pop   second chart series, light fills
+     hue-tint  soft backgrounds
+   Deep tones follow the locked section palette (vault notes 42–45);
+   accents are brighter so the UI reads as colourful, not muted. */
+.ftp-hue-blue   { --hue: #2563EB; --hue-deep: #1E3A8A; --hue-pop: #93B4F5; --hue-tint: #EEF3FE; }
+.ftp-hue-sky    { --hue: #0284C7; --hue-deep: #0C4A6E; --hue-pop: #7CC4EA; --hue-tint: #E9F6FC; }
+.ftp-hue-cyan   { --hue: #0E7490; --hue-deep: #164E63; --hue-pop: #67C3D6; --hue-tint: #E6F5F8; }
+.ftp-hue-teal   { --hue: #0F766E; --hue-deep: #134E4A; --hue-pop: #6CC5BA; --hue-tint: #E5F4F2; }
+.ftp-hue-green  { --hue: #15803D; --hue-deep: #14532D; --hue-pop: #7CC794; --hue-tint: #E9F6EE; }
+.ftp-hue-lime   { --hue: #4D7C0F; --hue-deep: #365314; --hue-pop: #A3C763; --hue-tint: #F0F7E5; }
+.ftp-hue-yellow { --hue: #CA8A04; --hue-deep: #713F12; --hue-pop: #EFC75E; --hue-tint: #FEF8E3; }
+.ftp-hue-amber  { --hue: #B45309; --hue-deep: #78350F; --hue-pop: #E9B35E; --hue-tint: #FDF3E5; }
+.ftp-hue-orange { --hue: #C2410C; --hue-deep: #7C2D12; --hue-pop: #F0A37A; --hue-tint: #FDEFE7; }
+.ftp-hue-rose   { --hue: #BE123C; --hue-deep: #881337; --hue-pop: #EE8FA6; --hue-tint: #FDEBEF; }
+.ftp-hue-pink   { --hue: #BE185D; --hue-deep: #831843; --hue-pop: #EC91BD; --hue-tint: #FCECF4; }
+.ftp-hue-violet { --hue: #7C3AED; --hue-deep: #4C1D95; --hue-pop: #B79AF3; --hue-tint: #F3EEFD; }
+.ftp-hue-indigo { --hue: #4F46E5; --hue-deep: #312E81; --hue-pop: #A5A1F2; --hue-tint: #EEEEFD; }
+.ftp-hue-slate  { --hue: #475569; --hue-deep: #1E293B; --hue-pop: #A3AEBD; --hue-tint: #F0F3F6; }
+
+/* Page background: the ceremonial tricolour as two soft washes at the
+   top of the page (saffron left, green right) over a warm neutral.
+   Never stripes, never a chakra (vault note 45). */
+body {
+  background:
+    radial-gradient(1100px 520px at -10% -12%, rgba(255, 153, 51, 0.13), transparent 62%),
+    radial-gradient(1100px 520px at 110% -12%, rgba(19, 136, 8, 0.10), transparent 62%),
+    var(--ftp-bg);
+  background-repeat: no-repeat;
+  color: var(--ftp-text);
+}
+
+/* Display type helpers */
+.ftp-display { font-family: var(--ftp-font-display); letter-spacing: -0.02em; }
+.ftp-bignum  { font-family: var(--ftp-font-display); font-weight: 650; font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.02em; }
+.ftp-emoji   { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; line-height: 1; }
+
+/* ── Motion ───────────────────────────────────────────────────────
+   One entrance: fade + 10 px rise, staggered by --i (70 ms steps).
+   Content is fully visible without JS; the animation only plays on
+   load. prefers-reduced-motion turns every v4 animation off. */
+@keyframes ftp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes ftp-pop  { 0% { opacity: 0; transform: scale(0.92); } 60% { opacity: 1; transform: scale(1.03); } 100% { transform: none; } }
+@keyframes ftp-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes ftp-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+/* Only a "from": the stroke animates to whatever dashoffset the element
+   declares, so a ring drawn to 62 % stops at 62 %. */
+@keyframes ftp-draw { from { stroke-dashoffset: var(--len, 1000); } }
+.ftp-draw-path { animation: ftp-draw 1100ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 80ms + 150ms); }
+.ftp-dt-row { transition: background-color 120ms ease; }
+.ftp-dt-row:hover { background: var(--hue-tint) !important; }
+@keyframes ftp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes ftp-ping { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ftp-wave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ftp-shine { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+.ftp-rise { animation: ftp-rise 560ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.ftp-pop  { animation: ftp-pop 520ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.ftp-grow-x { transform-origin: left center; animation: ftp-grow-x 900ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 80ms + 150ms); }
+.ftp-grow-y { transform-origin: center bottom; animation: ftp-grow-y 800ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 50ms + 100ms); }
+.ftp-float { animation: ftp-float 4s ease-in-out infinite; }
+.ftp-wave  { animation: ftp-wave 3.2s linear infinite; }
+.ftp-ping  { position: absolute; inset: 0; border-radius: 50%; background: currentColor; animation: ftp-ping 1.8s var(--ftp-ease-out) infinite; }
+
+/* Kit v4 surfaces */
+.ftp-v4-card { background: var(--ftp-surface); border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-card); box-shadow: var(--ftp-shadow-1); }
+.ftp-v4-tinted { background: linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%); border-color: color-mix(in srgb, var(--hue) 22%, var(--ftp-border)); }
+.ftp-icon-chip { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 12px; background: var(--hue-tint); color: var(--hue); }
+
+/* Buttons pick up the page hue */
+.ftp-btn-primary { background: var(--hue); border-color: var(--hue); box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--hue) 70%, transparent); }
+.ftp-btn-primary:hover:not(:disabled) { background: var(--hue-deep); border-color: var(--hue-deep); }
+
+/* Sidebar rail: active item in the module's hue */
+.ftp-rail-item[data-active="true"] { background: var(--hue-tint) !important; color: var(--hue-deep) !important; box-shadow: inset 3px 0 0 var(--hue); }
+
+/* Focus ring in the page hue (keyboard users) */
+:focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ftp-rise, .ftp-pop, .ftp-grow-x, .ftp-grow-y, .ftp-float, .ftp-ping, .ftp-draw-path, .ftp-wave { animation: none !important; }
+  .ftp-card-link, .ftp-card-link:hover { transform: none !important; transition: none !important; }
+}
+
+/* ── Intro splash (home page, once per session) ───────────────────── */
+.ftp-intro { display: none; }
+html[data-intro="show"] .ftp-intro,
+html[data-intro="leaving"] .ftp-intro {
+  display: grid;
+  place-items: center;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  padding: 24px;
+  background:
+    radial-gradient(700px 420px at 12% 18%, rgba(255, 153, 51, 0.22), transparent 70%),
+    radial-gradient(700px 420px at 88% 82%, rgba(19, 136, 8, 0.18), transparent 70%),
+    radial-gradient(600px 400px at 50% 50%, rgba(37, 99, 235, 0.10), transparent 70%),
+    #FBFAF6;
+  animation: ftp-intro-out 700ms cubic-bezier(0.7, 0, 0.2, 1) 1750ms forwards;
+}
+html[data-intro="leaving"] .ftp-intro { animation: ftp-intro-out 420ms cubic-bezier(0.7, 0, 0.2, 1) forwards; }
+@keyframes ftp-intro-out { to { transform: translateY(-100%); opacity: 0.6; visibility: hidden; } }
+.ftp-intro-card { text-align: center; max-width: 720px; }
+.ftp-intro-logo {
+  display: inline-flex; align-items: center; gap: 12px; color: #2563EB;
+  animation: ftp-pop 520ms var(--ftp-ease-out) both;
+}
+.ftp-intro-word { font-family: var(--ftp-font-display); font-size: 30px; font-weight: 700; color: #15171C; letter-spacing: -0.02em; }
+.ftp-intro-in { color: #2563EB; }
+.ftp-intro-line {
+  margin: 22px 0 0; font-family: var(--ftp-font-display); font-weight: 700; letter-spacing: -0.03em;
+  font-size: clamp(34px, 7vw, 64px); line-height: 1.05; color: #15171C;
+}
+.ftp-intro-line span { display: inline-block; animation: ftp-rise 520ms var(--ftp-ease-out) both; animation-delay: calc(350ms + var(--i) * 220ms); }
+.ftp-intro-hl { color: #2563EB; }
+.ftp-intro-bar { width: min(360px, 70vw); height: 4px; margin: 26px auto 0; border-radius: 999px; background: rgba(21, 23, 28, 0.08); overflow: hidden; }
+.ftp-intro-bar span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #FF9933 0%, #2563EB 50%, #138808 100%);
+  transform-origin: left center; animation: ftp-grow-x 1300ms var(--ftp-ease-out) 300ms both;
+}
+.ftp-intro-sub { margin: 16px 0 0; font-size: 14px; color: #5D6270; animation: ftp-rise 520ms var(--ftp-ease-out) 900ms both; }
+
+/* While the intro plays, the home page waits, then cascades in behind it. */
+html[data-intro="show"] .ftp-home .ftp-rise,
+html[data-intro="show"] .ftp-home .ftp-pop { animation-delay: calc(1.85s + var(--i, 0) * 80ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-intro="show"] .ftp-intro, html[data-intro="leaving"] .ftp-intro { display: none; }
+}
+
+/* Map pins on live districts (home India map) */
+.ftp-map-ping { transform-box: fill-box; transform-origin: center; animation: ftp-ping 2.2s var(--ftp-ease-out) infinite; }
+@media (prefers-reduced-motion: reduce) { .ftp-map-ping { animation: none; } }

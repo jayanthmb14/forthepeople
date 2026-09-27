@@ -8,7 +8,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
+import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 import { INDIA_STATES } from "@/lib/constants/districts";
 
@@ -124,6 +125,28 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
               })
             }
           </Geographies>
+
+          {/* v4: a saffron pin with a soft pulse on every LIVE district.
+              Clicking a pin opens that district. */}
+          {INDIA_STATES.flatMap((st) =>
+            st.districts
+              .filter((d) => d.active && DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`])
+              .map((d) => {
+                const c = DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`];
+                return (
+                  <Marker
+                    key={`${st.slug}/${d.slug}`}
+                    coordinates={[c.lng, c.lat]}
+                    onClick={() => router.push(`/${locale}/${st.slug}/${d.slug}`)}
+                    style={{ default: { cursor: "pointer" }, hover: { cursor: "pointer" }, pressed: { cursor: "pointer" } }}
+                  >
+                    <title>{`${d.name}, ${st.name}: open dashboard`}</title>
+                    <circle r={9} fill="#F97316" opacity={0.35} className="ftp-map-ping" />
+                    <circle r={5} fill="#F97316" stroke="#fff" strokeWidth={2} />
+                  </Marker>
+                );
+              }),
+          )}
         </ZoomableGroup>
       </ComposableMap>
 

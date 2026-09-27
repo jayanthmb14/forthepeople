@@ -12,19 +12,22 @@
 //  monthly tier on /support (keep the two in step if pricing changes).
 //
 import Link from "next/link";
-import { ArrowRight, Heart } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import styles from "./home.module.css";
 
 export default function SupportLine({ locale }: { locale: string }) {
   return (
     <div className="ftp-container">
       <aside className={styles.supportLine} aria-label="Support ForThePeople.in">
-        <Heart size={18} aria-hidden className={styles.supportHeart} />
+        <span className={`${styles.supportEmoji} ftp-emoji`} aria-hidden>
+          🪔
+        </span>
         <p className={styles.supportText}>
-          <span className="ftp-num">₹99</span> a month keeps one district&apos;s data flowing.
+          <strong>Keep a district&apos;s data free.</strong>{" "}
+          <span className="ftp-num">₹99</span> a month pays for one district&apos;s servers and data feeds.
         </p>
         <Link href={`/${locale}/support`} className={styles.supportLink}>
-          Support
+          Become a supporter
           <ArrowRight size={14} aria-hidden />
         </Link>
       </aside>

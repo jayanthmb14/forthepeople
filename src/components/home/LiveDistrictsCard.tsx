@@ -5,32 +5,30 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  LiveDistrictsCard — the list of live districts (home, cols 8–12)
+//  LiveDistrictsCard — Design v4: a colourful grid of live districts
 // ═══════════════════════════════════════════════════════════════════════
 //
-//    LIVE DISTRICTS   [• 10 live]                          Newest first
-//    ───────────────────────────────────────────────────────────────────
-//    Mandya ಮಂಡ್ಯ  [NEW]                                          31°C
-//    Karnataka · Sugar Capital of Karnataka
-//    … up to 10 rows of 56 px; more rows scroll inside the card …
-//    ───────────────────────────────────────────────────────────────────
-//    Kanpur leads the vote with 47,531 requests · Vote for yours →
+//   🏙️ Live districts   ● 10 live                       Newest first
+//   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+//   │ [landmark] ☀31°│ │ …            │ │ …            │ │ …            │
+//   │ Mandya ಮಂಡ್ಯ   │ │              │ │              │ │              │
+//   │ Karnataka     │ │              │ │              │ │              │
+//   │ Sugar Capital │ │              │ │              │ │              │
+//   │ Open  →       │ │              │ │              │ │              │
+//   └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+//   ┌─────────────── 🗳️ Vote for the next district (spans 2) ──────────┐
 //
-//  Data:
-//    - districts: server-rendered list from the DB (page.tsx), newest first.
-//    - temperature: /api/data/homepage-preview. The API returns null weather
-//      when the reading is stale, so a temperature only appears when it is
-//      recent; hovering it shows the exact "as of" time.
-//    - vote leader: /api/district-request (top requested district).
-//    - local-script name and tagline: DB first, then the curated
-//      DISTRICT_META file as a fallback.
-//
+//  Each district owns a hue (its landmark's colour story) so the grid
+//  reads as colourful but orderly. Weather is shown only when the API
+//  returned a fresh reading (the API drops stale ones).
 "use client";
 
 import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowRight } from "lucide-react";
 import { Pill } from "@/components/district/ui";
+import { weatherEmoji } from "@/components/district/visuals";
+import { getDistrictIcon } from "@/components/district/icons";
 import { DISTRICT_META } from "@/lib/data/district-meta";
 import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
@@ -39,6 +37,21 @@ import styles from "./home.module.css";
 
 /** A district counts as "NEW" for this many days after it goes live. */
 const NEW_BADGE_DAYS = 30;
+
+/** Colour per district — loosely its landmark's palette. Unknown → cycle. */
+const DISTRICT_HUE: Record<string, string> = {
+  mandya: "green",
+  "bengaluru-urban": "indigo",
+  mysuru: "amber",
+  hyderabad: "orange",
+  chennai: "cyan",
+  mumbai: "blue",
+  pune: "pink",
+  lucknow: "violet",
+  kolkata: "teal",
+  "new-delhi": "rose",
+};
+const CYCLE = ["sky", "lime", "yellow", "slate", "rose", "teal", "violet", "orange"];
 
 export interface HomeDistrict {
   slug: string;
@@ -68,19 +81,22 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
   const leader = votes[0];
 
   return (
-    <section className={styles.districtsCard} aria-labelledby="home-live-districts">
-      <header className={styles.districtsHead}>
-        <h2 id="home-live-districts" className="ftp-label" style={{ margin: 0 }}>
+    <section aria-labelledby="home-live-districts" className="ftp-container">
+      <header className={styles.gridHead}>
+        <span className="ftp-icon-chip ftp-emoji ftp-hue-blue" aria-hidden style={{ width: 38, height: 38, fontSize: 20 }}>
+          🏙️
+        </span>
+        <h2 id="home-live-districts" className="ftp-h2">
           Live districts
         </h2>
-        <Pill tone="live" dot>
+        <Pill tone="live" dot pulse>
           <span className="ftp-num">{sorted.length}</span> live
         </Pill>
-        <span className={styles.districtsSort}>Newest first</span>
+        <span className={styles.gridHeadNote}>Newest first. Tap a district to open its dashboards.</span>
       </header>
 
-      <ul className={styles.districtsList}>
-        {sorted.map((d) => {
+      <ul className={styles.districtGrid}>
+        {sorted.map((d, i) => {
           const meta = DISTRICT_META[d.slug];
           // A local name equal to the English one (e.g. "Pune" stored in the
           // nameLocal column) adds nothing; fall through to the registry script.
@@ -95,45 +111,56 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
           const weather = preview[d.slug]?.weather ?? null;
           const temp = weather?.temp ?? null;
           const tempAsOf = asOfLabel(weather?.recordedAt ?? null, { prefix: "Weather as of" });
+          const Icon = getDistrictIcon(d.slug);
+          const hue = DISTRICT_HUE[d.slug] ?? CYCLE[i % CYCLE.length];
           return (
-            <li key={d.slug}>
-              <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={styles.districtRow}>
-                <span className={styles.districtMain}>
-                  <span className={styles.districtLine1}>
-                    <span className={styles.districtName}>{d.name}</span>
-                    {local && <span className={styles.districtLocal}>{local}</span>}
-                    {isNew && <Pill tone="brand">NEW</Pill>}
+            <li key={d.slug} className={`ftp-hue-${hue} ftp-rise`} style={{ ["--i" as string]: i }}>
+              <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.districtTile} ftp-card-link`}>
+                <span className={styles.districtTileTop}>
+                  <span className={styles.districtArt} aria-hidden>
+                    {Icon ? <Icon size={30} /> : <span className="ftp-emoji" style={{ fontSize: 24 }}>📍</span>}
                   </span>
-                  <span className={styles.districtLine2}>
-                    {d.stateName}
-                    {tagline ? ` · ${tagline}` : ""}
-                  </span>
+                  {isNew && <Pill tone="brand">NEW</Pill>}
+                  {temp !== null && (
+                    <span className={styles.districtWeather} title={tempAsOf || undefined}>
+                      <span className="ftp-emoji" aria-hidden>{weatherEmoji(weather?.conditions)}</span>
+                      <span className="ftp-num">{Math.round(temp)}°</span>
+                    </span>
+                  )}
                 </span>
-                {temp !== null && (
-                  <span className={`ftp-num ${styles.districtTemp}`} title={tempAsOf || undefined}>
-                    {temp}°C
-                  </span>
-                )}
+                <span className={styles.districtTileName}>
+                  {d.name}
+                  {local && <span className={styles.districtTileLocal}>{local}</span>}
+                </span>
+                <span className={styles.districtTileState}>{d.stateName}</span>
+                {tagline && <span className={styles.districtTileTag}>{tagline}</span>}
               </Link>
             </li>
           );
         })}
-      </ul>
 
-      <footer className={styles.districtsFoot}>
-        <Link href={`/${locale}/vote-district`} className={styles.inlineLink}>
-          {votesLoaded && leader ? (
-            <span>
-              {leader.districtName} leads the vote with{" "}
-              <span className="ftp-num">{leader.requestCount.toLocaleString("en-IN")}</span>{" "}
-              {leader.requestCount === 1 ? "request" : "requests"} · Vote for yours
+        {/* Vote card: spans two columns so the grid ends on a full row. */}
+        <li className={`${styles.voteTile} ftp-hue-yellow ftp-rise`} style={{ ["--i" as string]: sorted.length }}>
+          <Link href={`/${locale}/vote-district`} className={`${styles.voteTileLink} ftp-card-link`}>
+            <span className="ftp-emoji" aria-hidden style={{ fontSize: 34 }}>🗳️</span>
+            <span style={{ minWidth: 0 }}>
+              <span className={styles.voteTileTitle}>Is your district next?</span>
+              <span className={styles.voteTileBody}>
+                {votesLoaded && leader ? (
+                  <>
+                    {leader.districtName} leads with{" "}
+                    <span className="ftp-num">{leader.requestCount.toLocaleString("en-IN")}</span>{" "}
+                    {leader.requestCount === 1 ? "request" : "requests"}. Add your vote.
+                  </>
+                ) : (
+                  <>Vote, and the most-requested districts go live first.</>
+                )}
+              </span>
             </span>
-          ) : (
-            <span>Vote for the next district</span>
-          )}
-          <ArrowRight size={14} aria-hidden />
-        </Link>
-      </footer>
+            <ArrowRight size={18} aria-hidden style={{ marginLeft: "auto", flexShrink: 0 }} />
+          </Link>
+        </li>
+      </ul>
     </section>
   );
 }

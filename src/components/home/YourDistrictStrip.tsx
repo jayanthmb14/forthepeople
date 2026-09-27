@@ -94,6 +94,8 @@ type Status =
 
 export interface YourDistrictStripProps {
   locale: string;
+  /** "strip" (full-width row) or "hero" (the card inside the home hero, v4). */
+  variant?: "strip" | "hero";
   /**
    * Optional vote counts keyed by district slug, e.g. { kanpur: 47531 }.
    * When present, the coming-soon copy adds "N people have asked for it."
@@ -152,7 +154,7 @@ function formatCount(n: number): string {
   return n.toLocaleString("en-IN");
 }
 
-export default function YourDistrictStrip({ locale, votes, extras }: YourDistrictStripProps) {
+export default function YourDistrictStrip({ locale, votes, extras, variant = "strip" }: YourDistrictStripProps) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const my = useMyDistrict();
 
@@ -258,6 +260,73 @@ export default function YourDistrictStrip({ locale, votes, extras }: YourDistric
     }
   }
 
+  const remember = (
+    <label title={PRIVACY_NOTE} className={styles.stripRemember} style={mutedStyle}>
+      <span>Remember my district</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={my.remember}
+        aria-label="Remember my district"
+        onClick={() => my.setRemember(!my.remember)}
+        style={{
+          position: "relative",
+          width: 36,
+          height: 20,
+          borderRadius: "var(--ftp-radius-pill)",
+          border: "1px solid var(--ftp-border-strong)",
+          background: my.remember ? "var(--ftp-brand)" : "var(--ftp-surface-2)",
+          cursor: "pointer",
+          padding: 0,
+          flexShrink: 0,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 2,
+            left: my.remember ? 17 : 2,
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            background: "var(--ftp-surface)",
+            border: "1px solid var(--ftp-border-strong)",
+            transition: "left 180ms var(--ftp-ease-out)",
+          }}
+        />
+      </button>
+    </label>
+  );
+
+  if (variant === "hero") {
+    // v4 hero card: one big location button, the status line under it,
+    // and the remember switch. Same logic as the strip.
+    return (
+      <section aria-label="Your district" className={styles.heroLocate}>
+        <button
+          type="button"
+          onClick={locate}
+          disabled={status.kind === "locating"}
+          aria-label="Go to my district using your location"
+          className={styles.heroLocateBtn}
+        >
+          <span className="ftp-emoji" aria-hidden style={{ fontSize: 20 }}>📍</span>
+          {status.kind === "locating" ? "Finding you…" : "Go to my location"}
+        </button>
+        <div className={styles.heroLocateStatus}>
+          {my.district && status.kind === "idle" && (
+            <Pill tone="brand" icon={MapPin} title={PRIVACY_NOTE}>
+              My district: {my.district.name}
+            </Pill>
+          )}
+          {renderStatus()}
+        </div>
+        {remember}
+      </section>
+    );
+  }
+
   return (
     <section aria-label="Your district" className={styles.strip}>
       <div className={`ftp-container ${styles.stripRow}`}>
@@ -277,41 +346,7 @@ export default function YourDistrictStrip({ locale, votes, extras }: YourDistric
         </div>
 
         {/* Right: remember switch */}
-        <label title={PRIVACY_NOTE} className={styles.stripRemember} style={mutedStyle}>
-          <span>Remember my district</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={my.remember}
-            aria-label="Remember my district"
-            onClick={() => my.setRemember(!my.remember)}
-            style={{
-              position: "relative",
-              width: 36,
-              height: 20,
-              borderRadius: "var(--ftp-radius-pill)",
-              border: "1px solid var(--ftp-border-strong)",
-              background: my.remember ? "var(--ftp-brand)" : "var(--ftp-surface-2)",
-              cursor: "pointer",
-              padding: 0,
-              flexShrink: 0,
-            }}
-          >
-            <span
-              aria-hidden
-              style={{
-                position: "absolute",
-                top: 2,
-                left: my.remember ? 17 : 2,
-                width: 14,
-                height: 14,
-                borderRadius: "50%",
-                background: "var(--ftp-surface)",
-                border: "1px solid var(--ftp-border-strong)",
-              }}
-            />
-          </button>
-        </label>
+        {remember}
       </div>
     </section>
   );

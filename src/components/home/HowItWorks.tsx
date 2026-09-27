@@ -14,25 +14,31 @@
 //
 import { Database, LayoutGrid, Eye } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Card, Section } from "@/components/district/ui";
+import { Section } from "@/components/district/ui";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import styles from "./home.module.css";
 
 const { modulesPerDistrict } = getPlatformFacts();
 
-const STEPS: { icon: LucideIcon; title: string; body: string }[] = [
+const STEPS: { icon: LucideIcon; emoji: string; hue: string; title: string; body: string }[] = [
   {
     icon: Database,
+    emoji: "📡",
+    hue: "orange",
     title: "We collect",
     body: "Data from official .gov.in portals, checked daily and stamped with the date the source published. NDSAP-licensed, traceable to the source.",
   },
   {
     icon: LayoutGrid,
+    emoji: "🧩",
+    hue: "blue",
     title: "We organise",
     body: `Into ${modulesPerDistrict} dashboards per district with charts, maps, news and source links.`,
   },
   {
     icon: Eye,
+    emoji: "👀",
+    hue: "green",
     title: "You see",
     body: 'The latest district data, with an "as of" date on every figure. Free. Open source. Yours.',
   },
@@ -53,21 +59,22 @@ const SOURCES: { label: string; href: string }[] = [
 export default function HowItWorks() {
   return (
     <div className="ftp-container">
-      <Section id="how-it-works" title="How it works">
+      <Section id="how-it-works" title="How it works" emoji="⚙️">
         <ol className={styles.howGrid}>
-          {STEPS.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <Card as="li" key={step.title}>
-                <div className={styles.howHead}>
-                  <span className={`ftp-num ${styles.howNum}`}>{String(i + 1).padStart(2, "0")}</span>
-                  <Icon size={18} aria-hidden className={styles.howIcon} />
-                </div>
-                <h3 className="ftp-title">{step.title}</h3>
-                <p className={styles.howBody}>{step.body}</p>
-              </Card>
-            );
-          })}
+          {/* A real sequence (collect → organise → see), so the steps are
+              numbered and joined by a dotted line on wide screens. */}
+          {STEPS.map((step, i) => (
+            <li key={step.title} className={`${styles.howStep} ftp-hue-${step.hue}`}>
+              <div className={styles.howHead}>
+                <span className={`${styles.howEmoji} ftp-emoji`} aria-hidden>
+                  {step.emoji}
+                </span>
+                <span className={styles.howNum}>Step {i + 1}</span>
+              </div>
+              <h3 className={styles.howTitle}>{step.title}</h3>
+              <p className={styles.howBody}>{step.body}</p>
+            </li>
+          ))}
         </ol>
         <p className={styles.howSources}>
           Sources include{" "}

@@ -96,15 +96,13 @@
 .band {
   width: 100%;
 }
-.bandHero   { padding-top: 32px; }
+.bandHero      { padding-top: 36px; padding-bottom: 12px; }
+.bandDistricts { padding-top: 40px; }
 .bandStats  { padding-top: 24px; }
 .bandMap    { padding-top: 24px; }
 @media (max-width: 767px) {
-  .bandHero     { order: 1; padding-top: 24px; padding-bottom: 16px; }
-  .bandStrip    { order: 2; }
-  .bandMap      { order: 3; padding-top: 16px; }
-  .bandStats    { order: 4; padding-top: 16px; }
-  .bandRest     { order: 5; }
+  .bandHero      { padding-top: 20px; }
+  .bandDistricts { padding-top: 28px; }
 }
 
 /* ───────────────────────── Your district strip (56 px) ───────────────────────── */
@@ -718,3 +716,254 @@
   .button,
   .districtRow { transition: none; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   Design v4 — hero, map frame, live-district grid
+   ═══════════════════════════════════════════════════════════════════ */
+.heroV4 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: stretch;
+}
+@media (max-width: 1023px) {
+  .heroV4 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+.heroLeft { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.heroRight { display: flex; min-width: 0; min-height: 520px; }
+@media (max-width: 1023px) { .heroRight { min-height: 420px; } }
+@media (max-width: 767px) { .heroRight { min-height: 340px; } }
+
+.heroPill {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 0; padding: 6px 14px 6px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--ftp-border);
+  box-shadow: var(--ftp-shadow-1);
+  font-size: 13px; font-weight: 600; color: var(--ftp-text);
+}
+.heroTitle {
+  margin: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  font-family: var(--ftp-font-display);
+  font-weight: 750;
+  font-size: clamp(40px, 5.6vw, 66px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--ftp-text);
+}
+.heroLine { display: inline-flex; align-items: center; gap: 14px; }
+.heroMark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.25em; height: 1.25em; flex-shrink: 0;
+  border-radius: 0.34em;
+  font-size: 0.62em;
+  background: var(--hue-tint);
+  border: 1.5px solid color-mix(in srgb, var(--hue) 30%, transparent);
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+.heroLeadV4 { margin: 0; max-width: 560px; font-size: 17px; line-height: 27px; color: var(--ftp-text-2); }
+
+/* "Go to my location" card */
+.heroLocate {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #FFF4E8 0%, #FFFFFF 55%, #EAF7EC 100%);
+  border: 1px solid #F1DEC8;
+  box-shadow: var(--ftp-shadow-1);
+}
+.heroLocateBtn {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 48px; padding: 0 20px;
+  border: none; border-radius: 14px;
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  color: #fff; font-family: var(--ftp-font-sans); font-size: 16px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -10px rgba(234, 88, 12, 0.8);
+  transition: transform 180ms var(--ftp-ease-out), box-shadow 180ms var(--ftp-ease-out);
+}
+.heroLocateBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 28px -12px rgba(234, 88, 12, 0.85); }
+.heroLocateBtn:disabled { opacity: 0.75; cursor: progress; }
+.heroLocateStatus { flex: 1 1 220px; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.heroActionsV4 { display: flex; flex-wrap: wrap; gap: 10px; }
+.heroBtnDark, .heroBtnGhost {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 18px; border-radius: 12px;
+  font-family: var(--ftp-font-sans); font-size: 15px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  transition: transform 180ms var(--ftp-ease-out), background-color 150ms ease, border-color 150ms ease;
+}
+.heroBtnDark { background: #2563EB; color: #fff; border: 1px solid #2563EB; box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.85); }
+.heroBtnDark:hover { background: #1E40AF; border-color: #1E40AF; transform: translateY(-1px); }
+.heroBtnGhost { background: #fff; color: var(--ftp-text); border: 1px solid var(--ftp-border-strong); }
+.heroBtnGhost:hover { border-color: #2563EB; color: #1E3A8A; }
+@media (max-width: 767px) {
+  .heroBtnDark, .heroBtnGhost, .heroLocateBtn { flex: 1 1 auto; justify-content: center; }
+}
+
+.heroStats { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 0; }
+.heroStat {
+  position: relative; display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 12px 12px;
+  border-radius: 16px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--hue) 12%, #fff) 0%, #fff 70%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+}
+.heroStatEmoji { font-size: 20px; line-height: 1; margin-bottom: 4px; }
+.heroStatValue { font-family: var(--ftp-font-display); font-weight: 700; font-size: 28px; line-height: 32px; letter-spacing: -0.02em; color: var(--hue-deep); font-variant-numeric: tabular-nums; }
+.heroStatLabel { font-size: 13px; line-height: 17px; font-weight: 600; color: var(--ftp-text-2); }
+.heroStatAsOf { margin-top: 2px; }
+@media (max-width: 1180px) and (min-width: 1024px) { .heroStats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) { .heroStats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Map frame (v4): sky wash, soft depth. Overrides the v3 .mapFrame. */
+.heroRight .mapFrame {
+  min-height: 0;
+  border-radius: 24px;
+  border: 1px solid #D9E6F7;
+  background:
+    radial-gradient(520px 320px at 30% 20%, rgba(37, 99, 235, 0.10), transparent 70%),
+    linear-gradient(180deg, #F4F8FE 0%, #FFFFFF 100%);
+  box-shadow: var(--ftp-shadow-1);
+}
+
+/* ── Live districts grid ───────────────────────────────────────────── */
+.gridHead { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; margin-bottom: 16px; }
+.gridHeadNote { margin-left: auto; font-size: 13px; color: var(--ftp-text-2); }
+@media (max-width: 767px) { .gridHeadNote { margin-left: 0; flex-basis: 100%; } }
+.districtGrid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1023px) { .districtGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px)  { .districtGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.districtTile {
+  display: flex; flex-direction: column; gap: 4px; height: 100%;
+  padding: 14px 14px 16px;
+  border-radius: 18px;
+  text-decoration: none; color: inherit;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 11%, #fff) 0%, #fff 62%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+}
+.districtTileTop { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.districtArt {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 14px;
+  background: #fff; color: var(--hue);
+  border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
+  box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--hue) 90%, transparent);
+}
+.districtWeather {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85); border: 1px solid var(--ftp-border);
+  font-size: 13px; color: var(--ftp-text);
+}
+.districtTileName {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px;
+  font-family: var(--ftp-font-display); font-size: 19px; line-height: 24px; font-weight: 650; color: var(--ftp-text);
+}
+.districtTileLocal { font-family: var(--ftp-font-sans); font-size: 14px; font-weight: 500; color: var(--hue-deep); }
+.districtTileState { font-size: 13px; line-height: 18px; color: var(--ftp-text-2); }
+.districtTileTag {
+  align-self: flex-start; margin-top: 6px;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--hue-tint); color: var(--hue-deep);
+  font-size: 12px; font-weight: 600; line-height: 18px;
+}
+.voteTile { grid-column: span 2; }
+@media (max-width: 1023px) and (min-width: 768px) { .voteTile { grid-column: span 2; } }
+.voteTileLink {
+  display: flex; align-items: center; gap: 14px; height: 100%;
+  padding: 16px 18px; border-radius: 18px;
+  text-decoration: none; color: var(--ftp-text);
+  background: linear-gradient(135deg, #FFF7DB 0%, #FFFFFF 70%);
+  border: 1.5px dashed color-mix(in srgb, var(--hue) 45%, transparent);
+}
+.voteTileTitle { display: block; font-family: var(--ftp-font-display); font-size: 18px; font-weight: 650; }
+.voteTileBody { display: block; margin-top: 2px; font-size: 13px; line-height: 19px; color: var(--ftp-text-2); }
+
+/* ── v4: How it works (numbered, joined steps) ─────────────────────── */
+.howGrid { position: relative; gap: 16px; }
+.howStep {
+  position: relative;
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 12%, #fff) 0%, #fff 65%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+}
+@media (min-width: 768px) {
+  /* dotted connector between step cards */
+  .howStep:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 42px;
+    right: -16px;
+    width: 16px;
+    border-top: 2px dotted color-mix(in srgb, var(--hue) 55%, transparent);
+  }
+}
+.howHead { justify-content: flex-start; gap: 12px; margin-bottom: 12px; }
+.howEmoji {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 16px; font-size: 26px;
+  background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--hue) 90%, transparent);
+}
+.howNum { font-size: 12px; font-weight: 700; color: var(--hue-deep); background: var(--hue-tint); padding: 3px 10px; border-radius: 999px; }
+.howTitle { margin: 0; font-family: var(--ftp-font-display); font-size: 20px; line-height: 26px; font-weight: 650; color: var(--ftp-text); }
+.howBody { font-size: 14px; line-height: 21px; }
+
+/* ── v4: Support band (warm, never hot pink — vault note) ──────────── */
+.supportLine {
+  gap: 16px;
+  margin-top: 40px;
+  padding: 20px 22px;
+  background:
+    radial-gradient(420px 160px at 0% 0%, rgba(255, 153, 51, 0.16), transparent 70%),
+    #F5F0EB;
+  border: 1px solid #EADFD2;
+  border-radius: 22px;
+}
+.supportEmoji { font-size: 34px; line-height: 1; }
+.supportText strong { font-weight: 700; }
+.supportLink {
+  border: none;
+  border-radius: 12px;
+  background: #15171C;
+  color: #fff;
+  font-weight: 600;
+  transition: transform 180ms var(--ftp-ease-out), background-color 150ms ease;
+}
+.supportLink:hover { background: #2B2F38; transform: translateY(-1px); }
+
+/* ── v4: Latest data cards (each in its module's hue) ─────────────── */
+.latestCard {
+  border-radius: 20px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 10%, #fff) 0%, #fff 60%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+  padding: 18px;
+}
+.latestTitle { gap: 10px; font-family: var(--ftp-font-display); font-size: 16px; font-weight: 650; color: var(--hue-deep); text-transform: none; letter-spacing: 0; }
+.latestTitleLink { color: var(--hue-deep); }
+.latestEmoji {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 12px; font-size: 19px;
+  background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
+}
+.latestHeadline { font-family: var(--ftp-font-display); font-size: 20px; line-height: 26px; font-weight: 650; color: var(--ftp-text); }
+
+/* ── v4: citizens section ─────────────────────────────────────────── */
+.voteMedal { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.voteCount { background: var(--hue-tint) !important; color: var(--hue-deep) !important; }
+.supPill { background: #fff; border-color: color-mix(in srgb, var(--hue) 25%, var(--ftp-border)) !important; }

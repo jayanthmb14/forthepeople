@@ -5,7 +5,12 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  District UI kit — Design v3 "Civic Ledger"  (CONCEPT-v3 §4)
+//  District UI kit — Design v4 "Rang" (colour, depth, motion)
+//  v4 in one breath: every accent reads --hue / --hue-deep / --hue-pop /
+//  --hue-tint (set per module by HueScope), cards have soft depth and lift
+//  on hover, headings and big numbers use the display face, numbers count
+//  up once when they scroll into view, and reduced-motion turns it all off.
+//  The v3 notes below still hold for dates, sources and honesty.
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  HOW TO READ THIS FILE
@@ -34,6 +39,9 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { getModuleMeta, moduleFromPath } from "@/lib/design/hues";
+import { tierFromPriority } from "@/lib/constants/sidebar-modules";
 import {
   AlertCircle,
   ArrowDownRight,
@@ -109,18 +117,19 @@ function accentTint(accent: ModuleAccent = "brand"): string {
     : `color-mix(in srgb, var(--accent-${accent}-700) 10%, transparent)`;
 }
 
+// v4: numbers use the text face with tabular figures (aligned digits),
+// not a monospace — friendlier, and columns still line up.
 const MONO: React.CSSProperties = {
-  fontFamily: "var(--ftp-font-mono)",
-  fontWeight: 500,
+  fontFamily: "var(--ftp-font-sans)",
+  fontWeight: 600,
   fontVariantNumeric: "tabular-nums",
 };
 
+// v4: labels in sentence case (no tracked-out capitals).
 const LABEL: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: 12,
   lineHeight: "16px",
-  fontWeight: 500,
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
+  fontWeight: 600,
   color: "var(--ftp-text-2)",
 };
 
@@ -418,6 +427,83 @@ export function AsOfPeriod({ period, prefix = "As of" }: { period: string; prefi
 //  PageHeader
 // ─────────────────────────────────────────────────────────────────────
 
+
+// ─────────────────────────────────────────────────────────────────────
+//  CountUp — a number that counts up once when 30 % of it is visible
+// ─────────────────────────────────────────────────────────────────────
+
+const NUM_RE = /^(\D*?)(-?\d[\d,]*(?:\.\d+)?)(.*)$/;
+
+/** Split "₹1,830 Cr" into prefix / number / suffix, or null when not numeric. */
+function parseCountable(text: string): { pre: string; n: number; post: string; decimals: number; grouped: boolean } | null {
+  const m = NUM_RE.exec(text.trim());
+  if (!m) return null;
+  const raw = m[2];
+  const n = Number(raw.replace(/,/g, ""));
+  if (!Number.isFinite(n)) return null;
+  const decimals = raw.includes(".") ? raw.split(".")[1].length : 0;
+  return { pre: m[1], n, post: m[3], decimals, grouped: raw.includes(",") };
+}
+
+/**
+ * CountUp — renders `value` exactly as given; after mount, when it scrolls
+ * into view, it counts from 0 to the value in 800 ms (easeOutQuint-ish,
+ * vault note 47). Non-numeric strings and reduced-motion render as-is.
+ */
+export function CountUp({ value }: { value: string | number }) {
+  const text = String(value);
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const [frame, setFrame] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const parsed = parseCountable(text);
+    const el = ref.current;
+    if (!parsed || !el || parsed.n === 0) return;
+    if (typeof window === "undefined" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    let started = false;
+    const fmt = (v: number) => {
+      const body = parsed.grouped
+        ? v.toLocaleString("en-IN", { minimumFractionDigits: parsed.decimals, maximumFractionDigits: parsed.decimals })
+        : v.toFixed(parsed.decimals);
+      return `${parsed.pre}${body}${parsed.post}`;
+    };
+    const run = () => {
+      const t0 = performance.now();
+      const tick = (t: number) => {
+        const k = Math.min(1, (t - t0) / 800);
+        const eased = 1 - Math.pow(1 - k, 4);
+        if (k < 1) {
+          setFrame(fmt(parsed.n * eased));
+          raf = requestAnimationFrame(tick);
+        } else {
+          setFrame(null);
+        }
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!started && entries.some((e) => e.isIntersecting)) {
+          started = true;
+          io.disconnect();
+          run();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [text]);
+  return (
+    <span ref={ref} suppressHydrationWarning>
+      {frame ?? text}
+    </span>
+  );
+}
+
 /**
  * PageHeader — the top of every module page. Replaces ModuleHeader.
  *
@@ -448,7 +534,8 @@ export function PageHeader({
   freshness,
   source,
   actions,
-  accent = "brand",
+  accent: _accent = "brand",
+  emoji,
   children,
 }: {
   icon: LucideIcon;
@@ -460,11 +547,20 @@ export function PageHeader({
   freshness?: { asOf?: string | Date | null; status?: FreshnessStatus; thresholdHours?: number };
   source?: { label: string; href?: string };
   actions?: React.ReactNode;
+  /** v3 prop, kept for old call sites. v4 colours come from the page hue. */
   accent?: ModuleAccent;
+  /** Emoji for the header tile. Defaults to the module's registry emoji. */
+  emoji?: string;
   children?: React.ReactNode;
 }) {
+  void _accent;
+  const pathname = usePathname();
+  const meta = getModuleMeta(moduleFromPath(pathname));
+  const tileEmoji = emoji ?? meta?.emoji;
+  const group = meta ? tierFromPriority(meta.priority) : null;
+  const hasMeta = Boolean(freshness || source || actions || children);
   return (
-    <header style={{ borderBottom: "1px solid var(--ftp-border)", paddingBottom: 20, marginBottom: 24 }}>
+    <header style={{ marginBottom: 24 }}>
       {backHref && (
         <Link
           href={backHref}
@@ -483,40 +579,85 @@ export function PageHeader({
           {backLabel}
         </Link>
       )}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-        <div
+      {/* The band: the module's hue as a diagonal gradient, a big emoji
+          tile, a faint watermark of the module icon, white type. */}
+      <div
+        className="ftp-rise"
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 22,
+          padding: "clamp(18px, 3vw, 28px)",
+          background:
+            "radial-gradient(420px 220px at 88% 0%, rgba(255,255,255,0.22), transparent 70%), linear-gradient(135deg, var(--hue) 0%, var(--hue-deep) 100%)",
+          color: "#fff",
+          boxShadow: "0 22px 44px -26px color-mix(in srgb, var(--hue) 85%, transparent)",
+        }}
+      >
+        <Icon
           aria-hidden
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "var(--ftp-radius-tile)",
-            background: accentTint(accent),
-            color: accentColor(accent),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <Icon size={20} />
-        </div>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: 22, lineHeight: "28px", fontWeight: 500, color: "var(--ftp-text)", margin: 0 }}>
-              {title}
-            </h1>
-            {titleLocal && (
-              <span lang="und" style={{ fontSize: 22, lineHeight: "28px", fontWeight: 400, color: "var(--ftp-text-2)" }}>
-                {titleLocal}
+          size={200}
+          strokeWidth={1.25}
+          style={{ position: "absolute", right: -28, bottom: -52, opacity: 0.13, transform: "rotate(-12deg)", color: "#fff" }}
+        />
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+          <div
+            aria-hidden
+            className="ftp-pop"
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.18)",
+              border: "1px solid rgba(255,255,255,0.32)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              backdropFilter: "blur(6px)",
+              ["--i" as string]: 2,
+            }}
+          >
+            {tileEmoji ? <span className="ftp-emoji" style={{ fontSize: 32 }}>{tileEmoji}</span> : <Icon size={28} />}
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            {group && (
+              <span
+                style={{
+                  display: "inline-block",
+                  margin: "0 0 8px",
+                  padding: "2px 10px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.16)",
+                  border: "1px solid rgba(255,255,255,0.28)",
+                  fontSize: 12,
+                  lineHeight: "18px",
+                  fontWeight: 600,
+                }}
+              >
+                {group}
               </span>
             )}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+              <h1
+                className="ftp-display"
+                style={{ fontSize: "clamp(26px, 3.4vw, 34px)", lineHeight: 1.1, fontWeight: 700, color: "#fff", margin: 0 }}
+              >
+                {title}
+              </h1>
+              {titleLocal && (
+                <span lang="und" style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
+                  {titleLocal}
+                </span>
+              )}
+            </div>
+            {description && (
+              <p style={{ fontSize: 14, lineHeight: "21px", margin: "6px 0 0", opacity: 0.92, maxWidth: 680 }}>{description}</p>
+            )}
           </div>
-          {description && (
-            <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "2px 0 0" }}>{description}</p>
-          )}
         </div>
-        {(freshness || source || actions || children) && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {hasMeta && (
+          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
             {freshness && (
               <FreshnessPill asOf={freshness.asOf} status={freshness.status} thresholdHours={freshness.thresholdHours} />
             )}
@@ -562,7 +703,9 @@ export function StatTile({
   asOfPeriod,
   trend,
   icon: Icon,
+  emoji,
   source,
+  countUp = true,
 }: {
   label: string;
   value: string | number;
@@ -572,32 +715,47 @@ export function StatTile({
   asOfPeriod?: string;
   trend?: "up" | "down" | "neutral";
   icon?: LucideIcon;
+  /** Emoji in a tinted chip beside the label (v4). Wins over `icon`. */
+  emoji?: string;
   source?: { label: string; href?: string };
+  /** Count the number up when it scrolls into view (default true). */
+  countUp?: boolean;
 }) {
   const TrendIcon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : trend === "neutral" ? Minus : null;
   return (
     <div
       style={{
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
+        // Tinted KPI tile (vault note 48): accent 7 % → white at 135°,
+        // border in the accent at ~22 %, number in the deep accent.
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 8%, #fff) 0%, #fff 72%)",
+        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
         borderRadius: "var(--ftp-radius-tile)",
+        boxShadow: "var(--ftp-shadow-1)",
         padding: "14px 16px",
         minWidth: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        {Icon && <Icon size={13} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        {emoji ? (
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 28, height: 28, fontSize: 16, borderRadius: 9 }}>
+            {emoji}
+          </span>
+        ) : Icon ? (
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}>
+            <Icon size={15} />
+          </span>
+        ) : null}
         <span style={LABEL}>{label}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-        <span className="ftp-num ftp-stat-value" style={{ color: "var(--ftp-text)", letterSpacing: "-0.01em" }}>
-          {value}
+        <span className="ftp-stat-value" style={{ color: "var(--hue-deep)" }}>
+          {countUp ? <CountUp value={value} /> : value}
         </span>
-        {unit && <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{unit}</span>}
+        {unit && <span style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text-2)" }}>{unit}</span>}
       </div>
       {(sub || TrendIcon) && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-          {TrendIcon && <TrendIcon size={14} aria-label={trend} />}
+          {TrendIcon && <TrendIcon size={14} aria-label={trend} style={{ color: "var(--hue)" }} />}
           {sub && <span>{sub}</span>}
         </div>
       )}
@@ -647,16 +805,24 @@ export function SectionHeader({
   titleLocal,
   action,
   as = "h2",
+  emoji,
 }: {
   title: React.ReactNode;
   titleLocal?: string;
   action?: React.ReactNode;
   as?: "h2" | "h3";
+  /** v4: an emoji before the heading, e.g. "🌧️". */
+  emoji?: string;
 }) {
   const Tag = as;
   return (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, margin: "24px 0 12px", flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "28px 0 14px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        {emoji && (
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
+            {emoji}
+          </span>
+        )}
         <Tag className="ftp-h2" style={{ margin: 0 }}>{title}</Tag>
         {titleLocal && <span style={{ fontSize: 22, lineHeight: "28px", color: "var(--ftp-text-2)" }}>{titleLocal}</span>}
       </div>
@@ -678,17 +844,20 @@ export function Section({
   titleLocal,
   action,
   id,
+  emoji,
   children,
 }: {
   title: React.ReactNode;
   titleLocal?: string;
   action?: React.ReactNode;
   id?: string;
+  /** v4: an emoji chip before the heading. */
+  emoji?: string;
   children?: React.ReactNode;
 }) {
   return (
     <section id={id}>
-      <SectionHeader title={title} titleLocal={titleLocal} action={action} />
+      <SectionHeader title={title} titleLocal={titleLocal} action={action} emoji={emoji} />
       {children}
     </section>
   );
@@ -709,6 +878,7 @@ export function Card({
   href,
   style,
   className,
+  tinted,
   ...rest
 }: {
   children: React.ReactNode;
@@ -717,11 +887,14 @@ export function Card({
   href?: string;
   style?: React.CSSProperties;
   className?: string;
+  /** v4: a soft wash of the page hue (7 % → white) with a hue border. */
+  tinted?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "style" | "className">) {
   const base: React.CSSProperties = {
-    background: "var(--ftp-surface)",
-    border: "1px solid var(--ftp-border)",
+    background: tinted ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)" : "var(--ftp-surface)",
+    border: tinted ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))" : "1px solid var(--ftp-border)",
     borderRadius: "var(--ftp-radius-card)",
+    boxShadow: "var(--ftp-shadow-1)",
     padding,
     minWidth: 0,
     ...style,
@@ -802,6 +975,7 @@ export function DataTable({
         background: "var(--ftp-surface)",
         border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
       }}
     >
       <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 480 }}>
@@ -816,13 +990,14 @@ export function DataTable({
                   scope="col"
                   style={{
                     ...LABEL,
+                    color: "var(--hue-deep)",
                     position: "sticky",
                     top: 0,
                     zIndex: 1,
                     padding: pad,
                     textAlign: right ? "right" : "left",
-                    background: "var(--ftp-surface)",
-                    borderBottom: "1px solid var(--ftp-border)",
+                    background: "var(--hue-tint)",
+                    borderBottom: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
                     width: col.width,
                   }}
                 >
@@ -834,7 +1009,7 @@ export function DataTable({
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} style={{ background: i % 2 === 1 ? "var(--ftp-surface-2)" : "transparent" }}>
+            <tr key={i} className="ftp-dt-row" style={{ background: i % 2 === 1 ? "color-mix(in srgb, var(--hue-tint) 45%, #fff)" : "transparent" }}>
               {columns.map((col) => {
                 const num = col.numeric || col.mono;
                 const right = col.align === "right" || num;
@@ -895,9 +1070,15 @@ export function ProgressBar({
 }) {
   const raw = pctProp !== undefined ? pctProp : max > 0 ? ((value ?? 0) / max) * 100 : 0;
   const pct = Math.max(0, Math.min(100, Math.round(raw)));
+  // v4: the default ("brand") fill is the page hue as a soft gradient;
+  // semantic tones (live / warn / danger) stay solid.
   const fill =
     color ??
-    (tone in TONE_SOLID ? TONE_SOLID[tone as Tone] : accentColor(tone as ModuleAccent));
+    (tone === "brand"
+      ? "linear-gradient(90deg, var(--hue-pop), var(--hue))"
+      : tone in TONE_SOLID
+        ? TONE_SOLID[tone as Tone]
+        : accentColor(tone as ModuleAccent));
   return (
     <div>
       {label !== undefined && (
@@ -912,9 +1093,9 @@ export function ProgressBar({
         aria-valuemax={100}
         aria-valuenow={pct}
         aria-label={label}
-        style={{ background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
+        style={{ background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
       >
-        <div style={{ background: fill, height: "100%", width: `${pct}%`, borderRadius: "var(--ftp-radius-pill)" }} />
+        <div className="ftp-grow-x" style={{ background: fill, height: "100%", width: `${pct}%`, borderRadius: "var(--ftp-radius-pill)" }} />
       </div>
     </div>
   );
@@ -940,7 +1121,7 @@ export function KpiRing({
   size?: number;
   label?: string;
 }) {
-  const stroke = 4;
+  const stroke = Math.max(5, Math.round(size / 11));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score));
@@ -952,14 +1133,16 @@ export function KpiRing({
       style={{ position: "relative", width: size, height: size, flexShrink: 0 }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--ftp-surface-2)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} />
         <circle
+          className="ftp-draw-path"
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--ftp-brand)"
+          stroke="var(--hue)"
           strokeWidth={stroke}
+          style={{ ["--len" as string]: c }}
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - pct / 100)}
@@ -967,15 +1150,15 @@ export function KpiRing({
         />
       </svg>
       <span
-        className="ftp-num"
+        className="ftp-bignum"
         style={{
           position: "absolute",
           inset: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: Math.round(size * 0.3),
-          color: "var(--ftp-text)",
+          fontSize: Math.round(size * 0.32),
+          color: "var(--hue-deep)",
         }}
       >
         {grade}
@@ -1047,19 +1230,38 @@ export function ErrorBlock({ message, onRetry }: { message?: string; onRetry?: (
  * @prop body    Optional second line (what is being done about it).
  * @prop action  Optional link or button.
  */
-export function EmptyState({ title, body, action }: { title: string; body?: string; action?: React.ReactNode }) {
+export function EmptyState({
+  title,
+  body,
+  action,
+  emoji = "🗂️",
+}: {
+  title: string;
+  body?: string;
+  action?: React.ReactNode;
+  /** v4: a friendly emoji in a tinted circle (never a sad face). */
+  emoji?: string;
+}) {
   return (
     <div
       style={{
-        padding: "24px",
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 14,
+        padding: "20px",
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 5%, #fff) 0%, #fff 70%)",
+        border: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
         borderRadius: "var(--ftp-radius-card)",
       }}
     >
-      <p style={{ fontSize: 15, lineHeight: "22px", fontWeight: 500, color: "var(--ftp-text)", margin: 0 }}>{title}</p>
-      {body && <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "4px 0 0" }}>{body}</p>}
-      {action && <div style={{ marginTop: 12 }}>{action}</div>}
+      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
+        {emoji}
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: 15, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)", margin: 0 }}>{title}</p>
+        {body && <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "4px 0 0" }}>{body}</p>}
+        {action && <div style={{ marginTop: 12 }}>{action}</div>}
+      </div>
     </div>
   );
 }
@@ -1113,9 +1315,11 @@ export function Chips({
               gap: 6,
               padding: "0 12px",
               borderRadius: "var(--ftp-radius-pill)",
-              border: `1px solid ${active ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
-              background: active ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
-              color: active ? "var(--ftp-brand-deep)" : "var(--ftp-text)",
+              border: `1px solid ${active ? "var(--hue)" : "var(--ftp-border)"}`,
+              background: active ? "var(--hue)" : "var(--ftp-surface)",
+              color: active ? "#fff" : "var(--ftp-text)",
+              boxShadow: active ? "0 6px 14px -8px color-mix(in srgb, var(--hue) 80%, transparent)" : "none",
+              transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
               fontFamily: "var(--ftp-font-sans)",
               fontSize: 13,
               lineHeight: "20px",
@@ -1125,7 +1329,7 @@ export function Chips({
           >
             {item.label}
             {item.count !== undefined && (
-              <span className="ftp-num" style={{ fontSize: 11, color: active ? "var(--ftp-brand-deep)" : "var(--ftp-text-2)" }}>
+              <span className="ftp-num" style={{ fontSize: 11, color: active ? "rgba(255,255,255,0.85)" : "var(--ftp-text-2)" }}>
                 {item.count}
               </span>
             )}

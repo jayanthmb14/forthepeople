@@ -26,7 +26,7 @@ import type { MyDistrict } from "@/hooks/useMyDistrict";
 import { asOfLabel } from "@/lib/utils/timeAgo";
 import { slugifyDistrictName, usePreview, useTopVotes } from "./home-data";
 
-export default function YourDistrictBand({ locale }: { locale: string }) {
+export default function YourDistrictBand({ locale, variant = "strip" }: { locale: string; variant?: "strip" | "hero" }) {
   const preview = usePreview();
   const { votes } = useTopVotes();
 
@@ -65,5 +65,5 @@ export default function YourDistrictBand({ locale }: { locale: string }) {
     ));
   }
 
-  return <YourDistrictStrip locale={locale} votes={voteMap} extras={extras} />;
+  return <YourDistrictStrip locale={locale} votes={voteMap} extras={extras} variant={variant} />;
 }

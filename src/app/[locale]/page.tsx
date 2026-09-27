@@ -3,22 +3,18 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * Home page — Design v3 "Civic Ledger" (CONCEPT-v3 §5 "Home").
+ * Home page — Design v4 "Rang".
  *
  * The disclaimer line, header and footer come from [locale]/layout.tsx.
- * This page renders, top to bottom (desktop):
+ * This page renders, top to bottom:
  *
- *   1. MarketTicker        — 32 px markets line, "As of HH:MM IST"
- *   2. YourDistrictStrip   — "Find my district" row (via YourDistrictBand)
- *   3. HomeHero            — the page's ONE <h1>, one sentence, two buttons
- *   4. Stats               — 4 StatTiles (registry + /api/data/homepage-stats)
- *   5. Map (cols 1–7) + LiveDistrictsCard (cols 8–12)
- *   6. The rest            — Latest data, How it works, Built with citizens,
- *                            support line
- *
- * On phones the order becomes: hero · strip · district list · map · stats ·
- * rest (CSS `order` in home.module.css — the HTML order stays logical for
- * screen readers and search engines).
+ *   0. IntroSplash         — 2 s opening, once per session (skippable)
+ *   1. MarketTicker        — markets line, "As of HH:MM IST"
+ *   2. HomeHero            — the ONE <h1>, "Go to my location", four
+ *                            numbers, and the India map on the right
+ *   3. LiveDistrictsCard   — colourful grid of live districts + vote card
+ *   4. The rest            — Latest data, How it works, Built with
+ *                            citizens, support band
  *
  * Numbers: district counts come from the DB / registry (never typed by
  * hand); the data-point total carries an "As of" date from the newest
@@ -28,10 +24,9 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
-import { StatStrip, StatTile } from "@/components/district/ui";
 
 import MarketTicker from "@/components/home/MarketTicker";
-import YourDistrictBand from "@/components/home/YourDistrictBand";
+import IntroSplash from "@/components/home/IntroSplash";
 import HomeHero from "@/components/home/HomeHero";
 import IndiaMapCard from "@/components/home/IndiaMapCard";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
@@ -129,52 +124,36 @@ export default async function HomePage({
   const mostRecentAt = statsFromApi?.mostRecentAt ?? null;
 
   return (
-    <main role="main">
+    <main role="main" className="ftp-home">
+      {/* Once-per-session opening (Design v4). Off for reduced motion / no JS. */}
+      <IntroSplash />
+
       <MarketTicker />
 
       <div className={styles.flow}>
-        {/* 2. Your district — locate, remember, open or vote */}
-        <div className={`${styles.band} ${styles.bandStrip}`}>
-          <YourDistrictBand locale={locale} />
-        </div>
-
-        {/* 3. Hero — the one <h1> on the page */}
+        {/* 1. Hero: the one <h1>, "Go to my location", numbers, India map */}
         <div className={`${styles.band} ${styles.bandHero}`}>
           <div className="ftp-container">
-            <HomeHero locale={locale} coveragePhrase={getCoveragePhrase()} />
-          </div>
-        </div>
-
-        {/* 4. Four honest numbers (no captions, no count-up) */}
-        <div className={`${styles.band} ${styles.bandStats}`}>
-          <div className="ftp-container">
-            <h2 className="sr-only">Platform in numbers</h2>
-            <StatStrip cols={4}>
-              <StatTile label="Districts live" value={activeCount.toLocaleString("en-IN")} />
-              <StatTile label="Dashboards per district" value={facts.modulesPerDistrict.toLocaleString("en-IN")} />
-              <StatTile
-                label="Data points tracked"
-                value={totalDataPoints !== null ? totalDataPoints.toLocaleString("en-IN") : "—"}
-                asOf={totalDataPoints !== null ? mostRecentAt : null}
-              />
-              <StatTile label="Districts coming" value={comingDistricts.toLocaleString("en-IN")} />
-            </StatStrip>
-          </div>
-        </div>
-
-        {/* 5. Map (cols 1–7) + live districts (cols 8–12) */}
-        <div className={`${styles.band} ${styles.bandMap}`}>
-          <div className={`ftp-container ftp-grid-12 ${styles.mapGrid}`}>
-            <div className={styles.mapCol}>
+            <HomeHero
+              locale={locale}
+              coveragePhrase={getCoveragePhrase()}
+              modulesPerDistrict={facts.modulesPerDistrict}
+              activeCount={activeCount}
+              totalDataPoints={totalDataPoints}
+              mostRecentAt={mostRecentAt}
+              comingDistricts={comingDistricts}
+            >
               <IndiaMapCard locale={locale} />
-            </div>
-            <div className={styles.listCol}>
-              <LiveDistrictsCard locale={locale} districts={activeDistricts} />
-            </div>
+            </HomeHero>
           </div>
         </div>
 
-        {/* 6. The rest of the page */}
+        {/* 2. Live districts: a colourful grid, newest first */}
+        <div className={`${styles.band} ${styles.bandDistricts}`}>
+          <LiveDistrictsCard locale={locale} districts={activeDistricts} />
+        </div>
+
+        {/* 3. The rest of the page */}
         <div className={`${styles.band} ${styles.bandRest}`}>
           <LatestData locale={locale} districts={activeDistricts} />
           <HowItWorks />

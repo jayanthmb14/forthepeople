@@ -85,11 +85,11 @@ const LOADING: DistrictCards = { loading: true, cards: [] };
 const MODULE_ORDER: ModuleKey[] = ["crops", "schemes", "news", "budget"];
 
 // Static per-module chrome shared by the loading and the real card.
-const MODULE_CHROME: Record<ModuleKey, { icon: LucideIcon; title: string; path: string }> = {
-  crops: { icon: Wheat, title: "Crop prices", path: "crops" },
-  schemes: { icon: Landmark, title: "Schemes", path: "schemes" },
-  news: { icon: Newspaper, title: "Local news", path: "news" },
-  budget: { icon: Wallet, title: "Budget", path: "finance" },
+const MODULE_CHROME: Record<ModuleKey, { icon: LucideIcon; emoji: string; hue: string; title: string; path: string }> = {
+  crops: { icon: Wheat, emoji: "🌾", hue: "green", title: "Crop prices", path: "crops" },
+  schemes: { icon: Landmark, emoji: "📋", hue: "violet", title: "Schemes", path: "schemes" },
+  news: { icon: Newspaper, emoji: "📰", hue: "blue", title: "Local news", path: "news" },
+  budget: { icon: Wallet, emoji: "💰", hue: "amber", title: "Budget", path: "finance" },
 };
 
 export default function LatestData({ locale, districts }: LatestDataProps) {
@@ -153,7 +153,8 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
     <div className="ftp-container">
       <Section
         id="latest-data"
-        title={`Latest data — ${active.name}`}
+        title={`Latest data for ${active.name}`}
+        emoji="⚡"
         titleLocal={active.nameLocal && active.nameLocal !== active.name ? active.nameLocal : undefined}
         action={
           <Link href={districtPageBase} className={styles.inlineLink}>
@@ -192,10 +193,11 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
 
 /** Card header: 16 px Lucide icon + title. */
 function CardTitle({ moduleKey, title, href }: { moduleKey: ModuleKey; title: string; href?: string }) {
-  const Icon = MODULE_CHROME[moduleKey].icon;
   return (
     <h3 className={styles.latestTitle}>
-      <Icon size={16} aria-hidden className={styles.latestIcon} />
+      <span className={`${styles.latestEmoji} ftp-emoji`} aria-hidden>
+        {MODULE_CHROME[moduleKey].emoji}
+      </span>
       {href ? (
         <Link href={href} className={styles.latestTitleLink}>
           {title}
@@ -209,7 +211,7 @@ function CardTitle({ moduleKey, title, href }: { moduleKey: ModuleKey; title: st
 
 function LoadingCard({ moduleKey }: { moduleKey: ModuleKey }) {
   return (
-    <article className={styles.latestCard}>
+    <article className={`${styles.latestCard} ftp-hue-${MODULE_CHROME[moduleKey].hue}`}>
       <CardTitle moduleKey={moduleKey} title={MODULE_CHROME[moduleKey].title} />
       <div className={`ftp-skeleton ${styles.latestSkeleton}`} aria-hidden />
       <span className="sr-only">Loading…</span>
@@ -219,7 +221,7 @@ function LoadingCard({ moduleKey }: { moduleKey: ModuleKey }) {
 
 function DataCard({ card, href }: { card: ModuleCard; href: string }) {
   return (
-    <article className={styles.latestCard}>
+    <article className={`${styles.latestCard} ftp-hue-${MODULE_CHROME[card.key].hue}`}>
       <CardTitle moduleKey={card.key} title={card.title} href={href} />
       {/* Figures (price, count, rupees) are mono; a news headline is plain text. */}
       <p className={`${styles.latestHeadline} ${card.key === "news" ? "" : "ftp-num"}`}>{card.headline}</p>

@@ -34,6 +34,18 @@ export const plusJakarta = localFont({
   fallback: ["system-ui", "-apple-system", "Segoe UI", "sans-serif"],
 });
 
+// Display face (Design v4) — headings and big numbers. Variable weight
+// 200–800 with optical sizing. Licence: SIL OFL 1.1.
+export const bricolage = localFont({
+  variable: "--font-bricolage",
+  display: "swap",
+  src: [
+    { path: "../fonts/bricolage-grotesque-latin.woff2", weight: "200 800", style: "normal" },
+    { path: "../fonts/bricolage-grotesque-latin-ext.woff2", weight: "200 800", style: "normal" },
+  ],
+  fallback: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+});
+
 export const jetBrains = localFont({
   variable: "--font-jetbrains",
   display: "swap",
@@ -112,6 +124,7 @@ export const notoTelugu = localFont({
 /** All font variable classes, ready for the <html className>. */
 export const fontVariableClasses = [
   plusJakarta.variable,
+  bricolage.variable,
   jetBrains.variable,
   cormorant.variable,
   notoKannada.variable,

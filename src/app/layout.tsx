@@ -200,6 +200,8 @@ export default function RootLayout({
     <html
       lang="en"
       className={fontVariableClasses}
+      // The home-page intro sets data-intro on <html> before hydration.
+      suppressHydrationWarning
     >
       <head>
         <meta name="theme-color" content="#2563EB" />
