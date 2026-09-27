@@ -359,9 +359,7 @@ export default function DistrictBreadcrumb({
         /* "Current" badge — replaces the old ::after rule so it composes
            with the optional nameLocal span. */
         .ftp-breadcrumb-menu-item-current {
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+          font-size: 11px;
           color: var(--ftp-brand);
           font-weight: 500;
           flex-shrink: 0;
