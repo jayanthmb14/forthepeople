@@ -71,6 +71,54 @@ export function minusMonths(day: string, months: number): string {
   return `${ny}-${String(nm + 1).padStart(2, "0")}-${String(nd).padStart(2, "0")}`;
 }
 
+// ── Futures contracts ──────────────────────────────────────────────────
+
+/** Futures month codes, January → December. */
+const MONTH_CODES = "FGHJKMNQUVXZ";
+
+/** Last Monday–Friday of a month (`month` 1–12), "YYYY-MM-DD". */
+export function lastWeekdayOfMonth(year: number, month: number): string {
+  const d = new Date(Date.UTC(year, month, 0)); // day 0 of the next month = last day of this one
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Yahoo symbol of the FRONT-MONTH Brent futures contract (NYMEX "BZ",
+ * which settles on ICE Brent) on trading day `day` ("YYYY-MM-DD", New York).
+ *
+ * Why not Yahoo's continuous "BZ=F": it switches to the next contract a few
+ * days before the front month expires. On 25 Sep 2026 it jumped from the
+ * November contract (106.60 on 24 Sep) to the December one (97.44), so the
+ * page showed a fake 8.6 % one-day fall; the November contract actually
+ * closed at 104.32, −2.1 % (Yahoo BZX26.NYM / BZZ26.NYM; Trading Economics).
+ * One named contract has one price history, so every "change" compares a
+ * contract with itself.
+ *
+ * Rule (CME/ICE contract specs): contract month M stops trading on the last
+ * business day of month M−2 (the December contract expires at the end of
+ * October). Exchange holidays are not modelled: when the last weekday is a
+ * holiday there is no trading that day, and the next contract is used from
+ * the next day on.
+ */
+export function brentFrontMonthSymbol(day: string): string {
+  const [y, m] = day.split("-").map(Number);
+  // The contract two months ahead is the earliest that can still be trading.
+  for (let ahead = 2; ahead <= 4; ahead++) {
+    const total = y * 12 + (m - 1) + ahead;
+    const cy = Math.floor(total / 12);
+    const cm = total - cy * 12 + 1; // 1–12
+    const expTotal = cy * 12 + (cm - 1) - 2;
+    const ey = Math.floor(expTotal / 12);
+    const em = expTotal - ey * 12 + 1;
+    if (lastWeekdayOfMonth(ey, em) >= day) {
+      return `BZ${MONTH_CODES[cm - 1]}${String(cy).slice(-2)}.NYM`;
+    }
+  }
+  // Unreachable: the contract three months ahead always expires later.
+  throw new Error(`no Brent contract for ${day}`);
+}
+
 // ── Series helpers ─────────────────────────────────────────────────────
 
 /**
