@@ -5,93 +5,93 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Elections — module page (Design v4 "Rang", docs/DESIGN-SYSTEM.md)
+//  Elections — module page (v4.1, docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
-//  PageHeader → summary paragraph → StatStrip of emoji tiles → the picture
-//  ("In simple words" + a pictogram of voters and a turnout dial, from the
-//  latest year's real turnout) → a ring of who won the seats in the latest
-//  election with two or more constituencies here → type Chips → turnout
-//  ChartCard → result cards (each with a head-to-head bar of the top two
-//  candidates' votes) → booth table → SourcesFooter → ModuleNews → Toolbar.
-//  Election results do not have a "fetched at" time, so every number says
-//  which election year it comes from instead. Party colour is only ever a
-//  6 px dot (from the shared party-colors table), never a tinted box.
+//  The question: "When do I vote next, and how?"
+//  The answer, in one sentence: "The next election for Mandya voters is
+//  the Lok Sabha election, in 42 days (or 'about May 2028')."
 //
-//  Language: interface text comes from the "page_elections" namespace;
-//  numbers and percentages go through useFormat(). Candidate, party and
-//  constituency names are records and are shown as stored. Election types
-//  arrive in several spellings ("ASSEMBLY", "Assembly", "LokSabha"…); they
-//  are grouped by a normalised key and shown translated when known.
+//  ModulePage → PageHeader → Explainer (from the calendar) → 4 StatTiles
+//  → the picture: a CountdownBar to the next election → "How voting
+//  works" in 4 picture steps (register → check your name → find your
+//  booth → vote) → the "results are being checked" notice → the election
+//  calendar (tappable cards → DetailSheet with every date) → past results
+//  (withheld today) → polling booths as cards (tap → details + directions)
+//  → AI note → sources → news → toolbar.
+//
+//  Data: /api/data/election-events (calendar) and /api/data/elections
+//  (booths; results are WITHHELD by the API until re-checked against ECI,
+//  and the notice says so). Text: "page_elections" namespace. Dates and
+//  numbers go through useFormat().
 "use client";
 
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeftRight, Download, ExternalLink, MapPin, Phone, Search, Share2, Vote } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
-import { getPartyColor } from "@/lib/constants/party-colors";
 import ModuleNews from "@/components/district/ModuleNews";
-import { ArrowLeftRight, Download, Share2, Vote } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useElections } from "@/hooks/useRealtimeData";
-import type { ElectionResult } from "@/hooks/useRealtimeData";
+import type { PollingBooth } from "@/hooks/useRealtimeData";
 import {
+  Card,
+  EmptyState,
+  ErrorBlock,
+  LoadingShell,
+  ModulePage,
   PageHeader,
+  Section,
+  SourcesFooter,
   StatStrip,
   StatTile,
-  Section,
-  Card,
-  Chips,
-  LoadingShell,
-  ErrorBlock,
-  EmptyState,
-  DataTable,
-  SourcesFooter,
   Toolbar,
   ToolbarButton,
 } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
-import { HueDonut } from "@/components/district/civic/HueDonut";
-import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
+import { CountdownBar, Explainer, HowItWorks } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
+import ElectionSection, {
+  ELECTORAL_SEARCH_URL,
+  ELECTION_TYPE_EMOJI,
+  daysUntil,
+  findNextElection,
+  type ElectionEvent,
+} from "@/components/district/ElectionSection";
+import { ElectionResults } from "@/components/district/civic/ElectionResults";
+import { getModuleSources } from "@/lib/constants/state-config";
+import { hueClass } from "@/lib/design/hues";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import knDict from "@/dictionaries/kn.json";
 
-/** Official websites for the sources named by getModuleSources("elections"). */
-const SOURCE_URLS: Record<string, string> = {
-  "Election Commission of India (ECI)": "https://eci.gov.in",
-};
-const ECI = { label: "ECI", href: SOURCE_URLS["Election Commission of India (ECI)"] };
+const ECI = { label: "ECI", href: "https://eci.gov.in" };
+/** Official ECI services named in "How voting works". */
+const VOTERS_PORTAL_URL = "https://voters.eci.gov.in/";
+/** The Election Commission's national voter helpline. */
+const VOTER_HELPLINE = "1950";
 /** Update frequencies from getModuleSources() that have a translation. */
 const FREQ_KEY: Record<string, string> = { "Post-election": "postElection" };
+/** Booths shown before "Show all". */
+const BOOTHS_FIRST = 12;
 
-/** "ASSEMBLY" / "Assembly" → "assembly"; "LOK_SABHA" / "Lok Sabha" / "LokSabha" → "loksabha". */
-function typeKey(raw: string): string {
-  return raw.toLowerCase().replace(/[^a-z]/g, "");
+type Booth = PollingBooth & { taluk?: string | null; latitude?: number | null; longitude?: number | null };
+
+function mapsUrl(b: Booth, districtName: string): string {
+  if (typeof b.latitude === "number" && typeof b.longitude === "number") {
+    return `https://www.google.com/maps/dir/?api=1&destination=${b.latitude},${b.longitude}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([b.name, b.location, districtName].filter(Boolean).join(", "))}`;
 }
 
-/** A 6 px dot in the party's colour — the only place party colour appears. */
-function PartyDot({ party }: { party?: string | null }) {
-  return (
-    <span
-      aria-hidden
-      style={{ width: 6, height: 6, borderRadius: "50%", background: getPartyColor(party).border, flexShrink: 0 }}
-    />
-  );
+/** A rich-text tag renderer for an official link inside a sentence. */
+function extLink(href: string) {
+  return function ExtLink(c: React.ReactNode) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
+        {c}
+      </a>
+    );
+  };
 }
-
-/** The small filled "Winner" tag beside the winning candidate's name. */
-const WINNER_TAG: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  height: 18,
-  padding: "0 8px",
-  borderRadius: "var(--ftp-radius-pill)",
-  background: "var(--hue)",
-  color: "#fff",
-  fontSize: 11,
-  lineHeight: "16px",
-  fontWeight: 600,
-};
 
 /** Turn rows into a CSV file and start a download in the browser. */
 function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
@@ -107,88 +107,106 @@ function downloadCsv(filename: string, rows: Array<Record<string, string | numbe
   URL.revokeObjectURL(url);
 }
 
-/**
- * Head-to-head bar for one result: the winner's share of the top two
- * candidates' votes in the page hue, the runner-up's in grey. Drawn only
- * when both vote counts are known.
- */
-function VoteSplit({ r }: { r: ElectionResult }) {
-  const t = useTranslations("page_elections");
-  const f = useFormat();
-  const wv = r.winnerVotes;
-  const rv = r.runnerUpVotes ?? 0;
-  if (!r.runnerUpName || !(wv > 0) || !(rv > 0)) return null;
-  const share = wv / (wv + rv);
-  const pct = (x: number) => f.number(x, { style: "percent", maximumFractionDigits: 0 });
+/** A link styled as a 44 px sheet action. */
+function ActionLink({ href, icon: Icon, children, primary }: { href: string; icon: typeof Phone; children: React.ReactNode; primary?: boolean }) {
+  const external = /^https?:/.test(href);
   return (
-    <figure style={{ margin: "8px 10px 2px" }}>
-      <div
-        role="img"
-        aria-label={t("splitAria", { winner: r.winnerName, wv: f.number(wv), runner: r.runnerUpName, rv: f.number(rv) })}
-        style={{ display: "flex", gap: 2, height: 10, borderRadius: "var(--ftp-radius-pill)", overflow: "hidden" }}
-      >
-        <span className="ftp-grow-x" style={{ width: `${share * 100}%`, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
-        <span style={{ flex: 1, background: "color-mix(in srgb, var(--ftp-text-2) 28%, #fff)" }} />
-      </div>
-      <figcaption style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-        <span className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{pct(share)}</span>
-        <span style={{ textAlign: "center" }}>{t("splitCaption")}</span>
-        <span className="ftp-num">{pct(1 - share)}</span>
-      </figcaption>
-    </figure>
+    <a
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+      style={{
+        flex: "1 1 150px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minHeight: 44,
+        padding: "0 16px",
+        borderRadius: 12,
+        border: `1px solid ${primary ? "var(--hue)" : "var(--ftp-border)"}`,
+        background: primary ? "var(--hue)" : "var(--ftp-surface)",
+        color: primary ? "#fff" : "var(--ftp-text)",
+        fontSize: 15,
+        fontWeight: 600,
+        textDecoration: "none",
+      }}
+    >
+      <Icon size={18} aria-hidden />
+      {children}
+    </a>
   );
 }
 
-/**
- * The seats ring: for the most recent election that has two or more
- * constituencies in this district, how many each party won. Hidden when no
- * election qualifies (a ring of one seat says nothing).
- */
-function SeatsRing({ results, typeLabel }: { results: ElectionResult[]; typeLabel: (raw: string) => string }) {
+/** The picture: time left until the next election, filled from the last one. */
+function NextElectionCountdown({ e }: { e: ElectionEvent }) {
   const t = useTranslations("page_elections");
   const f = useFormat();
-  const groups = new Map<string, ElectionResult[]>();
-  for (const r of results) {
-    const k = `${typeKey(r.electionType)}|${r.year}`;
-    groups.set(k, [...(groups.get(k) ?? []), r]);
-  }
-  const pick = [...groups.values()]
-    .filter((g) => g.length >= 2)
-    .sort((a, b) => b[0].year - a[0].year || b.length - a.length)[0];
-  if (!pick) return null;
-  const byParty = new Map<string, number>();
-  for (const r of pick) byParty.set(r.winnerParty, (byParty.get(r.winnerParty) ?? 0) + 1);
-  const slices = [...byParty.entries()].map(([party, value]) => ({ key: party, label: party, value })).sort((a, b) => b.value - a.value);
-  const total = pick.length;
-  const top = slices[0];
-  const tied = slices.filter((s) => s.value === top.value).length;
-  const b = (c: React.ReactNode) => <strong>{c}</strong>;
-  const simple =
-    tied > 1
-      ? t("seatsTied", { count: f.number(tied), n: f.number(top.value), total: f.number(total) })
-      : t.rich("seatsTop", { party: top.label, n: f.number(top.value), total: f.number(total), b });
-  const summary = slices.map((s) => `${s.label}: ${f.number(s.value)}`).join(", ");
-  const year = pick[0].year;
+  const target = (e.pollingDate ?? e.nextExpected)!;
+  const days = Math.max(0, daysUntil(target) ?? 0);
+  // The wait starts at the last election; without one, one full term back.
+  const start = e.lastHeld ?? new Date(new Date(target).getTime() - (e.termYears || 5) * 365.25 * 86_400_000).toISOString();
+  const label = e.pollingDate
+    ? days === 0
+      ? t("countdown.today", { label: e.label })
+      : t("countdown.days", { label: e.label, n: days })
+    : t("countdown.about", { label: e.label, date: f.date(target, { month: "long", year: "numeric" }) });
+  const sub = e.lastHeld
+    ? e.pollingDate
+      ? t("countdown.subDate", { last: f.date(e.lastHeld, { month: "long", year: "numeric" }), date: f.date(e.pollingDate, { day: "numeric", month: "long", year: "numeric" }) })
+      : t("countdown.subExpected", { last: f.date(e.lastHeld, { month: "long", year: "numeric" }) })
+    : e.pollingDate
+      ? t("countdown.subDateOnly", { date: f.date(e.pollingDate, { day: "numeric", month: "long", year: "numeric" }) })
+      : t("countdown.subNoLast");
   return (
-    <div style={{ marginBottom: 24 }}>
-      <ChartCard
-        title={t("seatsTitle")}
-        emoji="🏆"
-        units={t("seatsUnits", { type: typeLabel(pick[0].electionType), year })}
-        simple={simple}
-        source={ECI}
-        asOfPeriod={t("yearResults", { year })}
-        table={slices.map((s) => ({ label: s.label, value: f.number(s.value) }))}
-      >
-        <HueDonut
-          slices={slices}
-          centerValue={f.number(total)}
-          centerLabel={t("seatsCenter", { n: total })}
-          ariaLabel={t("seatsAria", { summary })}
-          otherLabel={t("seatsOther")}
-        />
-      </ChartCard>
-    </div>
+    <Card tinted padding={18}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 56, height: 56, fontSize: 28, borderRadius: 16, background: "#fff" }}>
+          {ELECTION_TYPE_EMOJI[e.type] ?? "🗳️"}
+        </span>
+        <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+          <CountdownBar start={start} target={target} label={label} sub={sub} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function BoothSheet({ booth, onClose, districtName }: { booth: Booth | null; onClose: () => void; districtName: string }) {
+  const t = useTranslations("page_elections");
+  const f = useFormat();
+  if (!booth) return null;
+  const hasPoint = typeof booth.latitude === "number" && typeof booth.longitude === "number";
+  return (
+    <DetailSheet
+      open
+      onClose={onClose}
+      title={booth.name}
+      subtitle={t("booth.number", { n: booth.boothNumber })}
+      emoji="🏫"
+      hueClassName={hueClass("elections")}
+      footer={
+        <>
+          <ActionLink href={mapsUrl(booth, districtName)} icon={MapPin} primary>
+            {hasPoint ? t("booth.directions") : t("booth.findOnMap")}
+          </ActionLink>
+          <ActionLink href={ELECTORAL_SEARCH_URL} icon={Search}>
+            {t("booth.checkName")}
+          </ActionLink>
+        </>
+      }
+    >
+      <DetailList
+        rows={[
+          { emoji: "🔢", label: t("colBoothNo"), value: <span className="ftp-num">{booth.boothNumber}</span> },
+          { emoji: "📍", label: t("colLocation"), value: booth.location },
+          { emoji: "🗺️", label: t("colConstituency"), value: booth.constituency },
+          { emoji: "🏘️", label: t("booth.taluk"), value: booth.taluk ?? null },
+          { emoji: "👥", label: t("colVoters"), value: booth.totalVoters != null ? <span className="ftp-num">{f.number(booth.totalVoters)}</span> : null },
+        ]}
+      />
+      <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("booth.hint")}</p>
+    </DetailSheet>
   );
 }
 
@@ -196,77 +214,48 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
   const { locale, state, district } = use(params);
   const t = useTranslations("page_elections");
   const mt = useModuleText();
-  const place = usePlaceText();
   const f = useFormat();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useElections(district, state);
-  const [typeFilter, setTypeFilter] = useState("all");
+  const { data: calendar, isLoading: calendarLoading } = useQuery<{ data: ElectionEvent[] }>({
+    queryKey: ["elections", state],
+    queryFn: () => fetch(`/api/data/election-events?state=${state}`).then((r) => r.json()),
+    staleTime: 5 * 60_000,
+  });
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [booth, setBooth] = useState<Booth | null>(null);
+  const closeBooth = useCallback(() => setBooth(null), []);
+  const [showAllBooths, setShowAllBooths] = useState(false);
 
   const results = data?.data?.results ?? [];
   // The API holds results back until they are checked against ECI.
   const withheld = Boolean((data?.data as { resultsWithheld?: boolean } | undefined)?.resultsWithheld);
-  const booths = data?.data?.booths ?? [];
+  const booths = (data?.data?.booths ?? []) as Booth[];
+  const events = (calendar?.data ?? []).filter((e) => !e.district || e.district === district);
+  const next = findNextElection(events, state, district);
+  const nextDays = next ? daysUntil(next.pollingDate ?? next.nextExpected) : null;
+  const ahead = events.filter((e) => {
+    const d = daysUntil(e.pollingDate ?? e.nextExpected);
+    return d != null && d >= 0;
+  }).length;
+  // The most recent election held: the latest past polling date or "last held".
+  const lastHeld = events
+    .flatMap((e) => [e.lastHeld, e.pollingDate].filter((d): d is string => Boolean(d) && (daysUntil(d) ?? 1) < 0))
+    .sort()
+    .pop();
 
-  const typeLabel = (raw: string) => {
-    const k = typeKey(raw);
-    return t.has(`types.${k}`) ? t(`types.${k}`) : raw;
-  };
-  const pctText = (v: number, digits = 1) =>
-    f.number(v / 100, { style: "percent", minimumFractionDigits: digits, maximumFractionDigits: digits });
-  const b = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
-
-  // Chips group the several spellings of one election type together.
-  const typeKeys = Array.from(new Set(results.map((r) => typeKey(r.electionType))));
-  const types = ["all", ...typeKeys];
-  const filtered = typeFilter === "all" ? results : results.filter((r) => typeKey(r.electionType) === typeFilter);
-
-  const recentYear = results.length > 0 ? Math.max(...results.map((r) => r.year)) : 0;
-  const latestResults = results.filter((r) => r.year === recentYear);
-  const avgTurnout = latestResults.filter((r) => r.turnoutPct).reduce((s, r) => s + (r.turnoutPct ?? 0), 0) / (latestResults.filter(r => r.turnoutPct).length || 1);
-  // How many of the latest results carry a turnout figure. With none, the
-  // average above is 0 by construction — shown as "—", never as "0 %".
-  const turnoutCount = latestResults.filter((r) => r.turnoutPct).length;
-  const hasTurnout = turnoutCount > 0;
-
-  const withTurnout = filtered.filter((r) => r.turnoutPct).slice(0, 12);
-  // The same constituency can appear for several years (Mandya 2019 and
-  // 2024); add the year to those labels so the bars and the "highest /
-  // lowest" sentence don't read "Mandya … Mandya".
-  const repeated = new Set(
-    withTurnout.map((r) => r.constituency).filter((c, i, all) => all.indexOf(c) !== i),
-  );
-  const turnoutChart = withTurnout
-    .map((r) => ({
-      name: repeated.has(r.constituency) ? `${r.constituency.slice(0, 9)} ${r.year}` : r.constituency.slice(0, 12),
-      // Full name, type and year for the tooltip and the table view.
-      nameFull: repeated.has(r.constituency) ? `${r.constituency} ${r.year}` : r.constituency,
-      type: typeLabel(r.electionType),
-      year: r.year,
-      turnout: r.turnoutPct ?? 0,
-    }));
-  const chartYears = Array.from(new Set(turnoutChart.map((r) => r.year))).sort((a, b) => a - b);
-  const chartPeriod =
-    chartYears.length === 0
-      ? undefined
-      : chartYears.length === 1
-        ? t("yearResults", { year: chartYears[0] })
-        : t("yearsResults", { from: chartYears[0], to: chartYears[chartYears.length - 1] });
-  const chartHigh = turnoutChart.length > 0 ? turnoutChart.reduce((a, b) => (b.turnout > a.turnout ? b : a)) : null;
-  const chartLow = turnoutChart.length > 0 ? turnoutChart.reduce((a, b) => (b.turnout < a.turnout ? b : a)) : null;
-
-  const sc = getStateConfig(state);
-  const electionInfo =
-    sc?.lastElectionYear && sc?.lastElectionType
-      ? /assembly$/i.test(sc.lastElectionType)
-        ? t("latestAssembly", { year: sc.lastElectionYear, state: place.state(state, sc.name) })
-        : t("latestOther", { year: sc.lastElectionYear, type: sc.lastElectionType })
-      : t("latestNone");
   const src = getModuleSources("elections", state);
-  // Local-script title comes from the dictionary (Kannada only for now).
   const titleLocal = state === "karnataka" ? knDict.modules.elections : undefined;
-  // Honest "as of" for election numbers = the election they come from.
-  const yearSub = recentYear ? t("yearResults", { year: recentYear }) : undefined;
+  const b = (c: React.ReactNode) => <strong>{c}</strong>;
+
+  const nextWhen = next
+    ? next.pollingDate
+      ? nextDays === 0
+        ? t("when.today")
+        : t("when.inDays", { n: nextDays ?? 0 })
+      : t("when.about", { date: f.date(next.nextExpected!, { month: "long", year: "numeric" }) })
+    : "";
 
   const onShare = async () => {
     const url = window.location.href;
@@ -283,30 +272,30 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
     }
   };
 
+  // CSV = the calendar on screen (results are withheld; booths have their own sheet).
   const onCsv = () =>
     downloadCsv(
-      `${district}-election-results.csv`,
-      results.map((r) => ({
-        year: r.year,
-        election_type: r.electionType,
-        constituency: r.constituency,
-        winner: r.winnerName,
-        winner_party: r.winnerParty,
-        winner_votes: r.winnerVotes,
-        runner_up: r.runnerUpName ?? "",
-        runner_up_party: r.runnerUpParty ?? "",
-        runner_up_votes: r.runnerUpVotes ?? "",
-        turnout_pct: r.turnoutPct ?? "",
-        margin: r.margin ?? "",
-        source: r.source,
-      }))
+      `${district}-elections.csv`,
+      events.map((e) => ({
+        election: e.label,
+        type: e.type,
+        polling_date: e.pollingDate ?? "",
+        result_date: e.resultDate ?? "",
+        last_held: e.lastHeld ?? "",
+        next_expected: e.nextExpected ?? "",
+        seats: e.totalSeats ?? "",
+        body: e.body,
+        source: e.source ?? "",
+      })),
     );
 
+  const shownBooths = showAllBooths ? booths : booths.slice(0, BOOTHS_FIRST);
+
   return (
-    <div className="module-page" style={{ padding: 24, maxWidth: "var(--ftp-reading-max)" }}>
+    <ModulePage>
       <PageHeader
         icon={Vote}
-        accent={getModuleAccent("elections")}
+        emoji="🗳️"
         title={mt.label("elections")}
         titleLocal={titleLocal}
         description={t("description")}
@@ -314,237 +303,165 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
         source={ECI}
       />
 
-      {/* AI-crawler readable summary — plain body text. */}
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
-        {t("summary")} {electionInfo}
-      </p>
+      {!calendarLoading && (
+        <Explainer emoji="🗳️">
+          {next ? t.rich("simpleNext", { name: districtName, label: next.label, when: nextWhen, b }) : t("simpleNone", { name: districtName })}
+          {withheld && <> {t("simpleWithheld")}</>}
+        </Explainer>
+      )}
 
-      <AIInsightCard module="elections" district={district} />
-      {isLoading && <LoadingShell rows={4} />}
-      {error && <ErrorBlock />}
+      <StatStrip cols={4}>
+        <StatTile
+          emoji="⏳"
+          label={t("tileNext")}
+          value={next ? (next.pollingDate ? f.number(Math.max(0, nextDays ?? 0)) : f.date(next.nextExpected!, { month: "short", year: "numeric" })) : "—"}
+          unit={next?.pollingDate ? t("tileDays") : undefined}
+          sub={next ? next.label : t("tileNextNone")}
+          countUp={Boolean(next?.pollingDate)}
+        />
+        <StatTile emoji="🗓️" label={t("tileAhead")} value={calendarLoading ? "—" : f.number(ahead)} sub={t("tileAheadSub")} />
+        <StatTile
+          emoji="⏮️"
+          label={t("tileLast")}
+          value={lastHeld ? f.date(lastHeld, { month: "short", year: "numeric" }) : "—"}
+          sub={t("tileLastSub")}
+          countUp={false}
+        />
+        <StatTile emoji="🏫" label={t("tileBooths")} value={isLoading ? "—" : f.number(booths.length)} sub={t("tileBoothsSub")} />
+      </StatStrip>
 
-      {!isLoading && !error && results.length === 0 && booths.length === 0 && (
-        withheld ? (
+      {/* The picture: how long until the next vote. */}
+      {next && (
+        <div style={{ marginTop: 16 }}>
+          <NextElectionCountdown e={next} />
+        </div>
+      )}
+
+      {/* How voting works, in 4 picture steps, with the official links. */}
+      <div style={{ marginTop: 16 }}>
+        <Card padding={18}>
+          <HowItWorks
+            title={t("how.title")}
+            steps={[
+              { emoji: "📝", title: t("how.register"), body: t.rich("how.registerBody", { link: extLink(VOTERS_PORTAL_URL) }) },
+              { emoji: "🔎", title: t("how.check"), body: t.rich("how.checkBody", { link: extLink(ELECTORAL_SEARCH_URL) }) },
+              { emoji: "📍", title: t("how.booth"), body: t("how.boothBody") },
+              { emoji: "🗳️", title: t("how.vote"), body: t("how.voteBody") },
+            ]}
+          />
+          <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>
+            {t.rich("how.helpline", {
+              call: (c) => (
+                <a href={`tel:${VOTER_HELPLINE}`} className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 700 }}>
+                  {c}
+                </a>
+              ),
+              number: VOTER_HELPLINE,
+            })}
+          </p>
+        </Card>
+      </div>
+
+      {/* Results: withheld on purpose until every number is checked against ECI. */}
+      {withheld && (
+        <div style={{ marginTop: 16 }}>
           <EmptyState emoji="🔎" title={t("withheldTitle")} body={t("withheldBody")} />
-        ) : (
+        </div>
+      )}
+
+      <div style={{ marginTop: 8 }}>
+        {calendarLoading ? <LoadingShell rows={3} /> : <ElectionSection events={events} />}
+      </div>
+
+      {isLoading && <LoadingShell rows={3} />}
+      {error && <ErrorBlock />}
+      {!isLoading && !error && !withheld && <ElectionResults results={results} />}
+      {!isLoading && !error && !withheld && results.length === 0 && booths.length === 0 && (
+        <div style={{ marginTop: 16 }}>
           <EmptyState emoji="🗳️" title={t("emptyTitle")} body={t("emptyBody")} />
-        )
+        </div>
       )}
 
-      {!isLoading && (results.length > 0 || booths.length > 0) && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <StatStrip cols={4}>
-              <StatTile emoji="🗺️" label={t("tileConstituencies")} value={f.number(new Set(results.map(r => r.constituency)).size)} sub={yearSub} />
-              {/* A year is a label, not an amount: no count-up from 0. */}
-              <StatTile emoji="📅" label={t("tileLatestYear")} value={recentYear ? String(recentYear) : "—"} countUp={false} />
-              <StatTile
-                emoji="🙋"
-                label={t("tileTurnout")}
-                value={hasTurnout ? f.number(avgTurnout, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—"}
-                unit={hasTurnout ? "%" : undefined}
-                sub={yearSub}
-              />
-              <StatTile emoji="🏫" label={t("tileBooths")} value={f.number(booths.length)} sub={t("tileBoothsSub")} />
-            </StatStrip>
-          </div>
-
-          {/* The picture: ten voters with the turnout share lit, and a dial.
-              Same number as the "Average turnout" tile; drawn only when the
-              latest results carry turnout figures. */}
-          {hasTurnout && (
-            <div className="ftp-picture-row" style={{ marginBottom: 24 }}>
-              <Card tinted padding={18}>
-                <Explainer emoji="🗳️">
-                  {t.rich("simple", { year: recentYear, pct: Math.round(avgTurnout), count: turnoutCount, b })}
-                </Explainer>
-                <Pictogram
-                  filled={avgTurnout / 10}
-                  emoji="🙋"
-                  label={t("pictogram", { n: Math.round(avgTurnout / 10), year: recentYear })}
-                />
-              </Card>
-              <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Gauge value={avgTurnout} label={t("gaugeLabel")} caption={t("gaugeCaption", { year: recentYear })} />
-              </Card>
-            </div>
-          )}
-
-          {/* Second picture: who won the seats in the latest multi-seat election. */}
-          <SeatsRing results={results} typeLabel={typeLabel} />
-
-          {/* Filter by election type */}
-          {results.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <Chips
-                label={t("chipsLabel")}
-                value={typeFilter}
-                onChange={setTypeFilter}
-                items={types.map((k) => ({
-                  value: k,
-                  label: k === "all" ? t("all") : typeLabel(results.find((r) => typeKey(r.electionType) === k)?.electionType ?? k),
-                  count: k === "all" ? results.length : results.filter((r) => typeKey(r.electionType) === k).length,
-                }))}
-              />
-            </div>
-          )}
-
-          {/* Turnout chart — only with two or more bars (never a chart of one point). */}
-          {turnoutChart.length > 1 && chartHigh && chartLow && (
-            <div style={{ marginTop: 16 }}>
-              <ChartCard
-                title={t("chartTitle")}
-                emoji="📊"
-                units={t("chartUnits")}
-                simple={t.rich("chartSimple", {
-                  high: chartHigh.nameFull,
-                  highPct: pctText(chartHigh.turnout),
-                  low: chartLow.nameFull,
-                  lowPct: pctText(chartLow.turnout),
-                  b: (c) => <strong>{c}</strong>,
-                })}
-                legend={[{ label: t("chartLegend"), swatch: "linear-gradient(180deg, var(--hue), var(--hue-pop))" }]}
-                source={ECI}
-                asOfPeriod={chartPeriod}
-                table={turnoutChart.map((r) => ({
-                  label: t("chartRow", { name: r.nameFull, type: r.type, year: r.year }),
-                  value: pctText(r.turnout),
-                }))}
+      {booths.length > 0 && (
+        <Section title={t("boothsTitle", { n: f.number(booths.length) })} emoji="🏫">
+          <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
+            {t("booth.lead")}
+          </p>
+          <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "240px" } as React.CSSProperties}>
+            {shownBooths.map((bth) => (
+              <button
+                key={bth.id}
+                type="button"
+                onClick={() => setBooth(bth)}
+                className="ftp-card-link"
+                aria-haspopup="dialog"
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 12,
+                  width: "100%",
+                  minHeight: 44,
+                  padding: 14,
+                  textAlign: "left",
+                  font: "inherit",
+                  color: "var(--ftp-text)",
+                  cursor: "pointer",
+                  background: "var(--ftp-surface)",
+                  border: "1px solid var(--ftp-border)",
+                  borderRadius: "var(--ftp-radius-card)",
+                  boxShadow: "var(--ftp-shadow-1)",
+                }}
               >
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={turnoutChart} margin={{ top: 5, right: 10, bottom: 40, left: 0 }}>
-                    <ChartGradients />
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
-                    <XAxis dataKey="name" tick={CHART_AXIS} angle={-30} textAnchor="end" interval={0} />
-                    <YAxis tick={CHART_AXIS} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip
-                      formatter={(v) => [pctText(Number(v)), t("chartLegend")]}
-                      labelFormatter={(_, payload) => {
-                        const row = payload?.[0]?.payload;
-                        return row ? `${row.nameFull}, ${row.year}` : "";
-                      }}
-                      contentStyle={chartTooltipStyle}
-                      cursor={{ fill: "var(--hue-tint)" }}
-                    />
-                    <Bar dataKey="turnout" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name={t("chartLegend")} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
+                <span
+                  className="ftp-icon-chip ftp-num"
+                  aria-hidden
+                  style={{ minWidth: 44, height: 44, padding: "0 6px", borderRadius: 12, fontSize: 15, fontWeight: 700, color: "var(--hue-deep)" }}
+                >
+                  {bth.boothNumber}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span className="ftp-title" style={{ display: "block", fontWeight: 600 }}>
+                    {bth.name}
+                  </span>
+                  <span style={{ display: "block", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>{bth.location}</span>
+                  <span style={{ display: "block", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)", marginTop: 2 }}>
+                    <span aria-hidden>🗺️ </span>
+                    {bth.constituency}
+                    {bth.totalVoters != null && (
+                      <>
+                        {" · "}
+                        {t("booth.voters", { n: f.number(bth.totalVoters) })}
+                      </>
+                    )}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {booths.length > BOOTHS_FIRST && (
+            <div style={{ marginTop: 12 }}>
+              <ToolbarButton onClick={() => setShowAllBooths((v) => !v)}>
+                {showAllBooths ? t("booth.showFewer") : t("booth.showAll", { n: booths.length })}
+              </ToolbarButton>
             </div>
           )}
-
-          {/* Results grid */}
-          {results.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <Section title={t("results")} emoji="🏆">
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
-                  {filtered.slice(0, 20).map((r) => {
-                    const margin = r.margin ?? (r.winnerVotes - (r.runnerUpVotes ?? 0));
-                    return (
-                      <Card key={r.id} as="article" padding={16}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-                            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 16, borderRadius: 10 }}>
-                              {typeKey(r.electionType) === "loksabha" ? "🏛️" : "🏢"}
-                            </span>
-                            <div style={{ minWidth: 0 }}>
-                              <h3 className="ftp-title" style={{ fontWeight: 600 }}>{r.constituency}</h3>
-                              <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                                {typeLabel(r.electionType)}, <span className="ftp-num">{r.year}</span>
-                              </div>
-                            </div>
-                          </div>
-                          {r.turnoutPct && (
-                            <div style={{ textAlign: "right", flexShrink: 0 }}>
-                              <div className="ftp-label">{t("turnout")}</div>
-                              <div className="ftp-num" style={{ fontSize: 15, color: "var(--hue-deep)" }}>{pctText(r.turnoutPct)}</div>
-                            </div>
-                          )}
-                        </div>
-                        {/* Winner — on a soft hue band */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            padding: "8px 10px",
-                            borderRadius: "var(--ftp-radius-tile)",
-                            background: "var(--hue-tint)",
-                          }}
-                        >
-                          <PartyDot party={r.winnerParty} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 13, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{r.winnerName}</span>
-                              <span style={WINNER_TAG}>{t("winner")}</span>
-                            </div>
-                            <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{r.winnerParty}</div>
-                          </div>
-                          <div className="ftp-num" style={{ fontSize: 13, color: "var(--hue-deep)" }}>{f.number(r.winnerVotes)}</div>
-                        </div>
-                        {/* Runner-up */}
-                        {r.runnerUpName && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}>
-                            <PartyDot party={r.runnerUpParty} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>{r.runnerUpName}</div>
-                              <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{r.runnerUpParty}</div>
-                            </div>
-                            {r.runnerUpVotes != null && (
-                              <div className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{f.number(r.runnerUpVotes)}</div>
-                            )}
-                          </div>
-                        )}
-                        <VoteSplit r={r} />
-                        {margin > 0 && (
-                          <div style={{ marginTop: 6, paddingTop: 8, borderTop: "1px solid var(--ftp-border)", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                            {t.rich("wonBy", {
-                              n: f.number(margin),
-                              b: (c) => <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{c}</span>,
-                            })}
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </Section>
-            </div>
-          )}
-
-          {/* Booth list */}
-          {booths.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <Section title={t("boothsTitle", { n: f.number(booths.length) })} emoji="🏫">
-                <DataTable
-                  caption={t("boothsCaption")}
-                  columns={[
-                    { key: "no", label: t("colBoothNo"), mono: true },
-                    { key: "name", label: t("colBoothName") },
-                    { key: "loc", label: t("colLocation") },
-                    { key: "const", label: t("colConstituency") },
-                    { key: "voters", label: t("colVoters"), numeric: true },
-                  ]}
-                  rows={booths.map((booth) => ({
-                    no: booth.boothNumber,
-                    name: booth.name,
-                    loc: booth.location,
-                    const: booth.constituency,
-                    voters: booth.totalVoters != null ? f.number(booth.totalVoters) : "—",
-                  }))}
-                />
-              </Section>
-            </div>
-          )}
-        </>
+        </Section>
       )}
+
+      <div style={{ marginTop: 16 }}>
+        <AIInsightCard module="elections" district={district} />
+      </div>
 
       <SourcesFooter
-        sources={src.sources.map((name) => ({
-          name,
-          url: SOURCE_URLS[name],
-          frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
-        }))}
+        sources={[
+          ...src.sources.map((name) => ({
+            name,
+            url: name.includes("(ECI)") ? ECI.href : undefined,
+            frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
+          })),
+          { name: t("sourceVoters"), url: VOTERS_PORTAL_URL },
+          { name: t("sourceSearch"), url: ELECTORAL_SEARCH_URL },
+        ]}
       />
       <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
         {t("notOfficial")}
@@ -553,17 +470,22 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
       <ModuleNews district={district} state={state} locale={locale} module="elections" />
 
       <Toolbar label={t("toolbar")}>
-        <ToolbarButton icon={Download} onClick={onCsv} disabled={results.length === 0}>
+        <ToolbarButton icon={Download} onClick={onCsv} disabled={events.length === 0}>
           {t("downloadCsv")}
         </ToolbarButton>
         <ToolbarButton icon={Share2} onClick={onShare}>
           {shareNote ?? t("share")}
         </ToolbarButton>
+        <ToolbarButton icon={ExternalLink} href={ELECTORAL_SEARCH_URL} external>
+          {t("checkNameButton")}
+        </ToolbarButton>
         <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=elections&a=${district}`}>
           {t("compare")}
         </ToolbarButton>
       </Toolbar>
-    </div>
+
+      <BoothSheet booth={booth} onClose={closeBooth} districtName={districtName} />
+    </ModulePage>
   );
 }
 

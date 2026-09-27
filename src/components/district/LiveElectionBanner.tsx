@@ -1,20 +1,29 @@
 /**
- * ForThePeople.in — Overview-page election alert.
- *
- * Renders a notice only when the district's state has an active
- * ElectionEvent with polling within 30 days. Otherwise renders nothing
- * (no shell), so quiet states stay calm.
- *
- * Design v3: a linked kit Card (no red fill, no shadow). The urgency is
- * carried by a "danger" Pill with the days left and a Lucide Vote icon.
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  LiveElectionBanner — overview-page notice of an election in this state
+// ═══════════════════════════════════════════════════════════════════════
+//  Shows only when the district's state has an ElectionEvent with polling
+//  in the next 30 days; otherwise renders nothing, so quiet states stay
+//  calm. A tinted card in the Elections hue: 🗳️ chip, the election's name
+//  and polling date(s), a "N days to go" pill in the last two weeks, the
+//  results date, and a link to the Elections page (countdown, calendar,
+//  how to vote).
+//
+//  Text: "page_elections" namespace (`banner.*`); dates via useFormat().
+//  The election label is reference data and is shown as stored.
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Vote } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { ChevronRight } from "lucide-react";
 import type { ElectionEvent } from "@/components/district/ElectionSection";
 import { Card, Pill } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
+import { hueClass } from "@/lib/design/hues";
 
 function daysFromToday(iso: string | null | undefined): number | null {
   if (!iso) return null;
@@ -23,16 +32,16 @@ function daysFromToday(iso: string | null | undefined): number | null {
   return Math.round((t - Date.now()) / 86_400_000);
 }
 
-function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-}
-
 export default function LiveElectionBanner({
-  stateSlug, leadershipHref,
+  stateSlug,
+  leadershipHref,
 }: {
   stateSlug: string;
+  /** The district's leadership page; the banner links to the Elections page beside it. */
   leadershipHref: string;
 }) {
+  const t = useTranslations("page_elections");
+  const f = useFormat();
   const { data } = useQuery<{ data: ElectionEvent[] }>({
     queryKey: ["elections", stateSlug],
     queryFn: () => fetch(`/api/data/election-events?state=${stateSlug}`).then((r) => r.json()),
@@ -46,33 +55,38 @@ export default function LiveElectionBanner({
   });
   if (!live || !live.pollingDate) return null;
 
+  const href = leadershipHref.replace(/\/leadership\/?$/, "/elections");
   const days = daysFromToday(live.pollingDate)!;
-  const phaseSummary = live.pollingPhases && live.pollingPhases.length > 1
-    ? live.pollingPhases.map((p) => `Phase ${p.phase}: ${formatDay(p.date)}`).join(", ")
-    : `Polling on ${formatDay(live.pollingDate)}`;
+  const day = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
+  const phases =
+    live.pollingPhases && live.pollingPhases.length > 1
+      ? live.pollingPhases.map((p) => t("banner.phase", { n: p.phase, date: day(p.date) })).join(", ")
+      : t("banner.pollingOn", { date: day(live.pollingDate) });
 
   return (
-    <Card href={leadershipHref} padding={14} aria-label={`${live.label}: ${phaseSummary}`}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <Vote size={16} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>
-              {live.label} — {phaseSummary}
+    <div className={hueClass("elections")}>
+      <Card href={href} tinted padding={14}>
+        <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
+            🗳️
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span className="ftp-title" style={{ fontWeight: 650 }}>
+                {live.label}
+              </span>
+              {days <= 14 && <Pill tone="danger">{days === 0 ? t("banner.today") : t("banner.daysLeft", { n: days })}</Pill>}
             </span>
-            {days <= 14 && (
-              <Pill tone="danger">
-                {days === 0 ? "Today" : <><span className="ftp-num">{days}</span>&nbsp;day{days === 1 ? "" : "s"} away</>}
-              </Pill>
-            )}
-          </div>
-          {live.resultDate && (
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>
-              Results: {formatDay(live.resultDate)} · Check the leadership page for details
-            </p>
-          )}
-        </div>
-      </div>
-    </Card>
+            <span className="ftp-num" style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
+              {phases}
+            </span>
+            <span style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+              {live.resultDate ? t("banner.results", { date: day(live.resultDate) }) : t("banner.more")}
+            </span>
+          </span>
+          <ChevronRight size={18} aria-hidden style={{ color: "var(--hue)", flexShrink: 0 }} />
+        </span>
+      </Card>
+    </div>
   );
 }
