@@ -31,6 +31,7 @@ import React, { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Check, ChevronRight, Download, GitCompare, Link2, MessageCircle, Search } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { SourcesFooter, Toolbar, ToolbarButton } from "@/components/district/ui";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { scriptLang } from "@/lib/utils/script-lang";
@@ -48,6 +49,7 @@ import { scriptLang } from "@/lib/utils/script-lang";
  */
 export function TapCard({
   emoji,
+  icon: Icon,
   title,
   titleLang,
   subtitle,
@@ -58,7 +60,10 @@ export function TapCard({
   children,
   style,
 }: {
-  emoji: string;
+  /** v4: an emoji in the chip. v5 pages pass `icon` (or nothing) instead. */
+  emoji?: string;
+  /** v5: a small line icon in the hue. */
+  icon?: LucideIcon;
   title: React.ReactNode;
   titleLang?: string;
   subtitle?: React.ReactNode;
@@ -95,9 +100,15 @@ export function TapCard({
       }}
     >
       <span style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%", minWidth: 0 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
-          {emoji}
-        </span>
+        {Icon ? (
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10 }}>
+            <Icon size={16} />
+          </span>
+        ) : emoji ? (
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
+            {emoji}
+          </span>
+        ) : null}
         <span style={{ display: "block", flex: 1, minWidth: 0 }}>
           <span
             lang={titleLang}
@@ -141,15 +152,32 @@ export function TapCard({
  * A small "🏢 Tahsildar office" line inside a card. `clamp` cuts long text
  * after that many lines on the card (the sheet shows it in full).
  */
-export function MetaLine({ emoji, children, lang, clamp }: { emoji: string; children: React.ReactNode; lang?: string; clamp?: number }) {
+export function MetaLine({
+  emoji,
+  icon: Icon,
+  children,
+  lang,
+  clamp,
+}: {
+  /** v4 emoji; v5 pages pass `icon` (or nothing). */
+  emoji?: string;
+  icon?: LucideIcon;
+  children: React.ReactNode;
+  lang?: string;
+  clamp?: number;
+}) {
   const clampStyle: React.CSSProperties = clamp
     ? { display: "-webkit-box", WebkitLineClamp: clamp, WebkitBoxOrient: "vertical", overflow: "hidden" }
     : {};
   return (
     <span style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: "19px", color: "var(--ftp-text)", minWidth: 0 }}>
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 14, lineHeight: "19px" }}>
-        {emoji}
-      </span>
+      {Icon ? (
+        <Icon size={14} aria-hidden style={{ color: "var(--hue-deep)", flexShrink: 0, marginTop: 2 }} />
+      ) : emoji ? (
+        <span className="ftp-emoji" aria-hidden style={{ fontSize: 14, lineHeight: "19px" }}>
+          {emoji}
+        </span>
+      ) : null}
       <span lang={lang} style={{ minWidth: 0, overflowWrap: "anywhere", ...clampStyle }}>
         {children}
       </span>
@@ -187,7 +215,20 @@ export function Chip({ emoji, children, bg, color }: { emoji?: string; children:
 }
 
 /** LinkCard — a whole-card link to another module page (internal). */
-export function LinkCard({ href, emoji, title, body }: { href: string; emoji: string; title: React.ReactNode; body?: React.ReactNode }) {
+export function LinkCard({
+  href,
+  emoji,
+  icon: Icon,
+  title,
+  body,
+}: {
+  href: string;
+  /** v4 emoji; v5 pages pass `icon` (or nothing). */
+  emoji?: string;
+  icon?: LucideIcon;
+  title: React.ReactNode;
+  body?: React.ReactNode;
+}) {
   return (
     <Link
       href={href}
@@ -206,9 +247,15 @@ export function LinkCard({ href, emoji, title, body }: { href: string; emoji: st
         color: "var(--ftp-text)",
       }}
     >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 28, lineHeight: 1 }}>
-        {emoji}
-      </span>
+      {Icon ? (
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11 }}>
+          <Icon size={18} />
+        </span>
+      ) : emoji ? (
+        <span className="ftp-emoji" aria-hidden style={{ fontSize: 28, lineHeight: 1 }}>
+          {emoji}
+        </span>
+      ) : null}
       <span style={{ flex: 1, minWidth: 0 }}>
         <span className="ftp-display" style={{ display: "block", fontSize: 16, lineHeight: 1.35, fontWeight: 650, color: "var(--hue-deep)" }}>
           {title}
