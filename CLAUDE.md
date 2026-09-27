@@ -38,8 +38,9 @@ Prefer existing tables or Redis keys over new columns when a fix allows it.
 - `insight` purpose → low-cost flash-lite model. Call `hasDataChanged()` first
   and skip when nothing is new.
 - `fact-check` → Claude Sonnet, manual trigger only.
-- Paid fallback only when `AI_PAID_FALLBACK=1`. Never hard-code a model name
-  outside `ai-provider.ts`; the model list is the one thing that changes often.
+- Paid fallback only when `AI_PAID_FALLBACK=1`. Model IDs (and their known
+  expiry dates) live only in `src/lib/ai-models.ts`; never hard-code a model name
+  elsewhere — the model list is the one thing that changes often.
 - News pipeline: keyword classifier first; call AI only when the keyword pass
   returns "news"/null or the article lands in an actionable module.
 

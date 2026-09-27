@@ -45,6 +45,18 @@ old Docker files are archived in `docs/archive/docker/`.
 - `src/app/[locale]/[state]/[district]/<module>/page.tsx` — one folder per
   module. The district layout renders the sidebar from the module registry, so
   adding a folder plus a registry entry adds a module.
+- District pages share one shell from the district layout:
+  - `DistrictBar`: state › district › taluka, below the site header.
+  - `GlanceRow`: Collector, MPs, people, projects, budget and next election, on
+    every district page.
+  - `StaleNotice` / `StaleDataNotice`: "this data is N days old", from each
+    module's expected max age in the registry.
+  - `VerifyPanel`: "Check this data" at the bottom: source, data date, last
+    checked, how it is collected, and report a mistake.
+- `src/app/[locale]/prices` — gold, silver, markets and the rupee, with
+  1-week, 1-month and 3-month trends (`/api/data/prices`, `src/lib/markets/`).
+  Values are fetched live and cached; nothing is invented when a source
+  refuses.
 - `src/app/[locale]/india/...` — the national roll-up, driven by
   `src/lib/india/india-modules.ts` and statically generated with revalidation.
 - `src/app/[locale]/admin/...` — the admin console (tabs are client components
@@ -69,8 +81,12 @@ old Docker files are archived in `docs/archive/docker/`.
 2. **Scheduling** — `vercel.json` `crons` calls `src/app/api/cron/<job>/route.ts`
    on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, takes
    a Redis lock so overlapping runs cannot double-write, runs the job(s), records
-   a `ScraperLog` row with timestamps; some routes (not all yet) also post an
-   admin alert on failure.
+   a `ScraperLog` row per run (success or failure, rows written, duration), which
+   the verification panel and admin read; some routes also post an admin alert
+   on failure. Beyond the original jobs:
+   - `scrape-alerts` reads NDMA SACHET, the official disaster-alert feed.
+   - `scrape-weather` falls back to Open-Meteo when OpenWeather fails.
+   - `health-score` recomputes district report cards weekly.
    `/api/health` reads those timestamps and reports `degraded` when a job is
    older than twice its schedule.
 3. **Storage** — Neon PostgreSQL via Prisma (`prisma/schema.prisma`, generated
@@ -91,6 +107,10 @@ old Docker files are archived in `docs/archive/docker/`.
    - `exam-news`
    - `scheme-coverage`
    - `dam-history`
+   - `glance` (the at-a-glance row)
+   - `dataset-dates` (newest date per dataset, for the stale notice and the
+     verification panel)
+   - `prices`
 
    None of them writes.
 5. **Freshness** — every payload carries its `updatedAt`; the UI pill
