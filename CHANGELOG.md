@@ -130,6 +130,32 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 - 2026-09-27: The India map shows live districts as landmark badges in each district's colour, and
   nearby pins fan out with leader lines. The district overview has a "Where is {district}?" locator map.
 
+### Changed — v4.1: Hindi, clearer modules, tap-for-details, device layouts (branch `redesign-v4`)
+- 2026-09-27: **Hindi is switched on** (beta, machine draft) next to English (default) and Kannada:
+  `hi.json`, a Hindi file for every page, Hindi names for the live districts and taluks
+  (`names.hi`), and Devanagari and Kannada fonts that are actually applied. Numbers everywhere use
+  Indian grouping with Latin digits.
+- 2026-09-27: **Modules regrouped** into 9 plainly named groups: Start here, You can help, Who runs it,
+  Money & projects, Help for you, Daily needs, Farming, Know your district, Check our work.
+  - Look-alike modules were renamed. For example, "Offices & Services" and "Services Guide" became
+    "Govt offices near you" and "How to get certificates".
+  - Every module page ends with "See also" tiles.
+  - Titles and descriptions are translated, and no title claims "Live".
+- 2026-09-27: **Tap for details on every module** (`DetailSheet`):
+  - Leaders: role in plain words, contact, how the record was checked, and headlines naming them.
+  - Schemes and housing: one-line benefit, a "how it works" picture, who can get it, and where it
+    runs.
+  - Exams: countdown bars and a full timeline.
+  - Also hospitals, offices, dams, police stations, projects, tenders and news.
+  - "What you can do" now puts first the actions that match this fortnight's district news.
+- 2026-09-27: **Layouts per device**:
+  - Tablets get the phone menu instead of a sidebar that left about 500 px for content.
+  - Laptops and PCs use a 1320 px frame instead of a 960 px column.
+  - Stat tiles show 2 per row on tablets.
+  - The "not live yet" district page uses the same frame and is translated.
+- 2026-09-27: The leaders API now returns the stored phone, email and local names (they were always
+  blanked). Alerts are ranked by severity (the text sort put "medium" before "critical").
+
 ### Changed — every page in English + Kannada, new real-data pictures (branch `redesign-v4`)
 - 2026-09-27: Nine agents converted every district module page, the site pages and the India dashboard
   to message files (en + kn, `src/dictionaries/<locale>/page_<name>.json`). Each page gained at least
