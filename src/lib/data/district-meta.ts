@@ -40,8 +40,9 @@ export const DISTRICT_META: Record<string, DistrictMeta> = {
   mysuru: {
     nativeScript: "ಮೈಸೂರು",
     tagline: "City of Palaces",
+    // "India's Cleanest City" removed (Sept 2026 audit): true only for
+    // Swachh Survekshan 2015 and 2016 (see src/lib/constants/districts.ts).
     bullets: [
-      "🏆 India's Cleanest City",
       "🏛️ City of Palaces",
       "🎪 Dasara Heritage",
     ],

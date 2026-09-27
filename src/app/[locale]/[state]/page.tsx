@@ -46,7 +46,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CheckCircle2, Clock, Lock, MapPin } from "lucide-react";
-import { getState } from "@/lib/constants/districts";
+import { getState, shownSubUnits } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { prisma } from "@/lib/db";
 import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
@@ -368,7 +368,7 @@ export default async function StatePage({ params }: Props) {
                       </div>
                       <dl style={{ display: "flex", gap: 24, margin: "14px 0 0", flexWrap: "wrap" }}>
                         <MiniStat label={t("miniPopulation")} value={popOf(d) > 0 ? fmt(popOf(d)) : "—"} />
-                        <MiniStat label={subUnitLabel} value={d.talukCount ?? (d.taluks.length || "—")} />
+                        <MiniStat label={subUnitLabel} value={shownSubUnits(stateSlug, d).count ?? "—"} />
                       </dl>
                     </Card>
                   </li>

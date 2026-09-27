@@ -722,7 +722,8 @@ function CompareContent({ locale }: { locale: string }) {
                 <MetricRow metric="density" a={dA.density} b={dB.density} show={whole} onExplain={setExplain} />
                 <MetricRow metric="literacy" a={dA.literacy} b={dB.literacy} show={withPct} judged onExplain={setExplain} />
                 <MetricRow metric="sexRatio" a={dA.sexRatio} b={dB.sexRatio} show={whole} onExplain={setExplain} />
-                <MetricRow metric="taluks" a={dA.talukCount ?? dA.taluks?.length} b={dB.talukCount ?? dB.taluks?.length} show={whole} onExplain={setExplain} />
+                {/* The stored count only (checked against the district portal, Sept 2026 audit) — never the number of taluk rows we happen to hold. */}
+                <MetricRow metric="taluks" a={dA.talukCount ?? null} b={dB.talukCount ?? null} show={whole} onExplain={setExplain} />
                 <MetricRow metric="villages" a={dA.villageCount} b={dB.villageCount} show={whole} onExplain={setExplain} />
 
                 {/* Infrastructure */}

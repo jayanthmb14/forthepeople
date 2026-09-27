@@ -87,6 +87,8 @@ interface Props {
     active: boolean;
     badges?: DistrictBadge[];
     taluks: Array<{ slug: string; name: string; nameLocal?: string; tagline?: string }>;
+    /** Units the district portal names that have no page here yet (plain chips). */
+    taluksWithoutPage?: Array<{ name: string; nameLocal: string }>;
   };
 }
 
@@ -194,7 +196,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         stateName={stateName}
         tagline={districtData.tagline}
         badges={districtData.tagline ? districtData.badges?.slice(0, 1) : districtData.badges?.slice(0, 2)}
-        subUnitCount={districtData.taluks.length || null}
+        subUnitCount={districtData.talukCount ?? null}
         subUnitLabel={subUnitPlural}
         showStats={false}
       />
@@ -296,7 +298,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </Section>
 
       {/* ═══ 6. Taluks ═══ */}
-      {districtData.taluks.length > 0 && (
+      {districtData.taluks.length + (districtData.taluksWithoutPage?.length ?? 0) > 0 && (
         <Section title={t("subUnits", { units: subUnitPlural, name: displayName })}>
           <ul className={`ftp-ov-taluks ${hueClass(getDistrictHue(districtSlug))}`}>
             {districtData.taluks.map((tal) => {
@@ -313,6 +315,21 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                       <span lang={names.secondaryLang} className="ftp-ov-taluk-local">{names.secondary}</span>
                     )}
                   </Link>
+                </li>
+              );
+            })}
+            {/* Named by the district portal, no page here yet: a plain chip, no link. */}
+            {(districtData.taluksWithoutPage ?? []).map((tal) => {
+              const names = placeNamePair({ name: tal.name, nameLocal: tal.nameLocal }, locale);
+              return (
+                <li key={tal.name}>
+                  <span className="ftp-ov-taluk">
+                    <MapPin size={13} aria-hidden className="ftp-ov-taluk-pin" />
+                    <span lang={names.primaryLang}>{names.primary}</span>
+                    {names.secondary && (
+                      <span lang={names.secondaryLang} className="ftp-ov-taluk-local">{names.secondary}</span>
+                    )}
+                  </span>
                 </li>
               );
             })}

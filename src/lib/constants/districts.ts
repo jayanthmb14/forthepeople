@@ -302,8 +302,11 @@ const MYSURU_DISTRICT: District = {
   tagline: "City of Palaces",
   taglineLocal: "ಅರಮನೆಗಳ ನಗರ",
   active: true,
+  // "India's Cleanest City" removed (Sept 2026 audit): Mysuru topped
+  // Swachh Survekshan in 2015 and 2016 only; Indore has ranked first every
+  // year since 2017, and in Swachh Survekshan 2024-25 Mysuru is in the
+  // 3–10 lakh Super Swachh League after Noida and Chandigarh (PIB, July 2025).
   badges: [
-    { emoji: "🏆", label: "India's Cleanest City" },
     { emoji: "🏛️", label: "City of Palaces" },
     { emoji: "🎪", label: "Dasara Heritage" },
     { emoji: "🐘", label: "Wildlife Capital" },
@@ -311,7 +314,10 @@ const MYSURU_DISTRICT: District = {
   ],
   population: 3248000,
   area: 6854,
-  talukCount: 7,
+  // 9 taluks: mysore.nic.in/en/subdivision-blocks (read 2026-09-28) lists
+  // Mysuru, Nanjangud, T.Narsipura, Hunsur, Piriyapatna, H.D.Kote,
+  // K.R.Nagara, Saligrama, Sargur. We have pages for the first seven.
+  talukCount: 9,
   villageCount: 2629,
   literacy: 72.64,
   sexRatio: 984,
@@ -488,7 +494,7 @@ const NEW_DELHI_DISTRICT: District = {
   ],
   population: 1173902,
   area: 35,
-  talukCount: 3,
+  // talukCount removed (Sept 2026 audit) — see SUB_UNIT_CHECKS below.
   villageCount: 0,
   literacy: 89.38,
   sexRatio: 824,
@@ -557,7 +563,7 @@ const MUMBAI_DISTRICT: District = {
   ],
   population: 12442373,
   area: 603,
-  talukCount: 5,
+  // talukCount removed (Sept 2026 audit) — see SUB_UNIT_CHECKS below.
   villageCount: 0,
   literacy: 89.73,
   sexRatio: 832,
@@ -661,7 +667,7 @@ const CHENNAI_DISTRICT: District = {
   ],
   population: 7088000,
   area: 426,
-  talukCount: 4,
+  // talukCount removed (Sept 2026 audit) — see SUB_UNIT_CHECKS below.
   villageCount: 0,
   literacy: 90.33,
   sexRatio: 989,
@@ -751,7 +757,7 @@ const KOLKATA_DISTRICT: District = {
   ],
   population: 4496694,
   area: 205,
-  talukCount: 4,
+  // talukCount removed (Sept 2026 audit) — see SUB_UNIT_CHECKS below.
   villageCount: 0,
   literacy: 87.14,
   sexRatio: 908,
@@ -841,15 +847,18 @@ const LUCKNOW_DISTRICT: District = {
   ],
   population: 4589838,
   area: 2528,
-  talukCount: 4,
+  // 5 tehsils: lucknow.nic.in/tehsil (read 2026-09-28) — Sadar, Sarojini
+  // Nagar, Bakshi Ka Talab, Malihabad, Mohanlalganj.
+  talukCount: 5,
   villageCount: 823,
   literacy: 79.33,
   sexRatio: 917,
   taluks: [
     {
       slug: "lucknow-city",
-      name: "Lucknow City",
-      nameLocal: "लखनऊ शहर",
+      // The tehsil is "Sadar" on lucknow.nic.in/tehsil (Sept 2026 audit).
+      name: "Lucknow Sadar",
+      nameLocal: "लखनऊ सदर",
       tagline: "Nawabi Heritage & Governance Hub",
       population: 2800000,
       area: 350,
@@ -1165,12 +1174,14 @@ export const INDIA_STATES: State[] = [
         ],
         population: 9426959,
         area: 15643,
-        talukCount: 14,
+        talukCount: 16,
         villageCount: 1866,
         literacy: 87.19,
         sexRatio: 915,
-        // Pune district has 14 talukas per pune.gov.in administrative setup.
-        // Maharashtra calls them "तालुका" (Taluka) — see state-config.ts.
+        // Pune district has 16 talukas per pune.gov.in/about-district (read
+        // 2026-09-28): these 14 plus Pimpri Chinchwad and Lonikalbhor (no page
+        // yet — SUB_UNIT_CHECKS below). Maharashtra calls them "तालुका"
+        // (Taluka) — see state-config.ts.
         taluks: [
           { slug: "haveli", name: "Haveli", nameLocal: "हवेली" },
           { slug: "pune-city", name: "Pune City", nameLocal: "पुणे शहर" },
@@ -1456,6 +1467,114 @@ export function getTaluk(
   return getDistrict(stateSlug, districtSlug)?.taluks.find(
     (t) => t.slug === talukSlug
   );
+}
+
+// ── Sub-district units a page may show (Sept 2026 audit) ──────────────
+// "Verified or hidden". The hand-written taluk lists above feed the hero
+// ("Karnataka · 7 taluks"), the taluk chips and the district bar's taluk
+// switcher. The audit checked them against the district portals:
+//   • Chennai, Mumbai, Kolkata and New Delhi: our units were invented
+//     (no "Chennai West", no "Harbour Zone" taluka, no Kolkata blocks,
+//     Connaught Place and Lodhi Road are not tehsils) — no count, no list
+//     until the official units are loaded with pages of their own.
+//   • Mysuru, Lucknow and Pune: our units are real but some are missing —
+//     the portal's count, our pages as links, the rest as plain names.
+// Taluk pages that already exist keep working by URL (getTaluk).
+
+export interface SubUnitName {
+  name: string;
+  nameLocal: string;
+}
+
+export interface SubUnitCheck {
+  /** The number the district portal publishes; null = shown as nothing. */
+  count: number | null;
+  /** false = our list does not match the portal: no chips, no switcher. */
+  listShown: boolean;
+  /** Units on the portal that have no page here yet (plain chips, no link). */
+  missing?: SubUnitName[];
+  source: string;
+  checked: string;
+}
+
+export const SUB_UNIT_CHECKS: Record<string, SubUnitCheck> = {
+  // The page's table lists nine taluks (its introduction still says "8").
+  "karnataka/mysuru": {
+    count: 9,
+    listShown: true,
+    missing: [
+      { name: "Saligrama", nameLocal: "ಸಾಲಿಗ್ರಾಮ" },
+      { name: "Sargur", nameLocal: "ಸರಗೂರು" },
+    ],
+    source: "https://mysore.nic.in/en/subdivision-blocks/",
+    checked: "2026-09-28",
+  },
+  "uttar-pradesh/lucknow": {
+    count: 5,
+    listShown: true,
+    missing: [{ name: "Sarojini Nagar", nameLocal: "सरोजनी नगर" }],
+    source: "https://lucknow.nic.in/tehsil/",
+    checked: "2026-09-28",
+  },
+  "maharashtra/pune": {
+    count: 16,
+    listShown: true,
+    missing: [
+      { name: "Pimpri Chinchwad", nameLocal: "पिंपरी चिंचवड" },
+      { name: "Lonikalbhor", nameLocal: "लोणी काळभोर" },
+    ],
+    source: "https://pune.gov.in/about-district/",
+    checked: "2026-09-28",
+  },
+  // chennai.nic.in lists 16 revenue taluks in 3 divisions but its own summary
+  // table says 17 — the count is not certain, so none is shown.
+  "tamil-nadu/chennai": {
+    count: null,
+    listShown: false,
+    source: "https://chennai.nic.in/about-district/administrative-setup/revenue-administration/",
+    checked: "2026-09-28",
+  },
+  // Our "Mumbai" covers Mumbai City and Mumbai Suburban; Mumbai Suburban has
+  // 3 talukas (Andheri, Borivali, Kurla).
+  "maharashtra/mumbai": {
+    count: null,
+    listShown: false,
+    source: "https://mumbaisuburban.gov.in/about-district/",
+    checked: "2026-09-28",
+  },
+  // Kolkata district has no subdivisions or blocks (144 KMC wards).
+  "west-bengal/kolkata": {
+    count: null,
+    listShown: false,
+    source: "https://en.wikipedia.org/wiki/Kolkata_district",
+    checked: "2026-09-28",
+  },
+  // dmnewdelhi.delhi.gov.in/tehsil says "three Tehsils" and names two
+  // (New Delhi, Delhi Cantt).
+  "delhi/new-delhi": {
+    count: null,
+    listShown: false,
+    source: "https://dmnewdelhi.delhi.gov.in/tehsil/",
+    checked: "2026-09-28",
+  },
+};
+
+/**
+ * What a page may show about a district's sub-district units: the count
+ * (null = show none), the units that have pages (links), and the units
+ * named by the portal that have no page yet.
+ */
+export function shownSubUnits(
+  stateSlug: string,
+  district: Pick<District, "slug" | "talukCount" | "taluks">,
+): { count: number | null; taluks: Taluk[]; missing: SubUnitName[] } {
+  const check = SUB_UNIT_CHECKS[`${stateSlug}/${district.slug}`];
+  if (!check) return { count: district.talukCount ?? (district.taluks.length || null), taluks: district.taluks, missing: [] };
+  return {
+    count: check.count,
+    taluks: check.listShown ? district.taluks : [],
+    missing: check.listShown ? (check.missing ?? []) : [],
+  };
 }
 
 export function getActiveDistrict(
