@@ -195,11 +195,22 @@ async function runPortal(
       // Fair share of this run's tender pages for each remaining organisation.
       const share = Math.max(5, Math.floor(detailsLeft / (entries.length - i)));
       let done = 0;
+      let failedInARow = 0;
       for (const t of todo) {
         if (done >= share || detailsLeft <= 0 || Date.now() + 5_000 > opts.deadlineMs) break;
         done++;
         detailsLeft--;
-        const d = parseTenderDetail(await session.request(t.href, { timeoutMs: 30_000 }));
+        let html: string;
+        try {
+          html = await session.request(t.href, { timeoutMs: 30_000 });
+          failedInARow = 0;
+        } catch (err) {
+          // One bad page is skipped; three in a row means the portal is in trouble.
+          out.skipped++;
+          if (++failedInARow >= 3) throw err;
+          continue;
+        }
+        const d = parseTenderDetail(html);
         const problems = d ? detailProblems(t, d, e.org.org, now) : ["tender page unreadable"];
         if (!d || problems.length > 0) {
           out.skipped++;
