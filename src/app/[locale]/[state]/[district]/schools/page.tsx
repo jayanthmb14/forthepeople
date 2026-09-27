@@ -176,10 +176,11 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
   const types = Array.from(new Set(schools.map((s) => s.type).filter(Boolean)));
   const levels = Array.from(new Set(schools.map((s) => s.level).filter(Boolean)));
 
-  // Students and teachers: UDISE+ for the whole district when we have it,
-  // else the schools listed by name.
-  const totalStudents = ut ? ut.students : schools.reduce((s, sc) => s + (sc.students ?? 0), 0);
-  const totalTeachers = ut ? ut.teachers : schools.reduce((s, sc) => s + (sc.teachers ?? 0), 0);
+  // Students and teachers: UDISE+ for the whole district only. The schools
+  // listed by name carry no checked counts (Sept 2026 audit), so they are
+  // never added up into a district figure.
+  const totalStudents = ut ? ut.students : 0;
+  const totalTeachers = ut ? ut.teachers : 0;
   const avgRatio = totalTeachers > 0 ? totalStudents / totalTeachers : 0;
   const hasRatio = totalTeachers > 0 && totalStudents > 0;
   const hasAny = schools.length > 0 || ut !== null;
@@ -269,8 +270,8 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
           {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
             <StatTile label={t(ut ? "tiles.schoolsUdise" : "tiles.schools")} value={f.number(ut ? ut.schools : schools.length)} sub={tileSub} />
-            <StatTile label={t("tiles.students")} value={f.number(totalStudents)} sub={tileSub} />
-            <StatTile label={t("tiles.teachers")} value={f.number(totalTeachers)} sub={tileSub} />
+            <StatTile label={t("tiles.students")} value={ut ? f.number(totalStudents) : "—"} sub={tileSub} />
+            <StatTile label={t("tiles.teachers")} value={ut ? f.number(totalTeachers) : "—"} sub={tileSub} />
             <StatTile
               label={t("tiles.ratio")}
               value={hasRatio ? t("ratioValue", { n: f.number(Math.round(avgRatio)) }) : "—"}
