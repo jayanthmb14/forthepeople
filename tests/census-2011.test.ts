@@ -3,7 +3,8 @@
  * © 2026 Jayanth M B. MIT License.
  */
 import { describe, expect, it } from "vitest";
-import { censusOnlyProfile, pickCensus2011, reconcileCensusProfile } from "@/lib/census-2011";
+import { censusOnlyProfile, pickCensus2011, reconcileCensusProfile, withCensusFigures } from "@/lib/census-2011";
+import { getDistrict } from "@/lib/constants/districts";
 
 // Mandya's checked PopulationHistory row (census2011.co.in, Census 2011 PCA).
 const MANDYA_2011 = { year: 2011, population: 1805769, sexRatio: 995, literacy: 70.4, urbanPct: 17.08, density: 364, source: "Census of India" };
@@ -60,5 +61,42 @@ describe("censusOnlyProfile", () => {
     expect(p).toMatchObject({ dataset: "Census 2011", year: 2011, totalPopulation: 9429408, sexRatio: 915, literacyTotal: 86.15, urbanPct: 60.99 });
     expect(p.religion).toBeNull();
     expect(p.areaSqKm).toBeNull();
+  });
+});
+
+describe("withCensusFigures (overview / compare / report card)", () => {
+  it("replaces the hand-typed District figures (Mandya 19,40,428 / 72.8 / 982)", () => {
+    const row = { id: "x", population: 1940428, literacy: 72.8, sexRatio: 982, density: 391.2, area: 4961 };
+    expect(withCensusFigures(row, MANDYA_2011)).toMatchObject({ population: 1805769, literacy: 70.4, sexRatio: 995, density: 364, area: 4961 });
+  });
+
+  it("drops an area that contradicts population ÷ density (Bengaluru BBMP 741 km²)", () => {
+    const row = { population: 12765000, literacy: 88.5, sexRatio: 916, density: 17230, area: 741 };
+    const out = withCensusFigures(row, { year: 2011, population: 9621551, sexRatio: 916, literacy: 87.67, urbanPct: 90.94, density: 4381, source: "Census of India" });
+    expect(out.population).toBe(9621551);
+    expect(out.area).toBeNull();
+  });
+
+  it("returns the row unchanged without a Census row", () => {
+    const row = { population: 1, literacy: null, sexRatio: null, density: null, area: null };
+    expect(withCensusFigures(row, null)).toBe(row);
+  });
+});
+
+describe("district constants agree with Census 2011", () => {
+  // Sept 2026 audit: the constants carried projections and city figures.
+  const cases: Array<[string, string, number, number]> = [
+    ["karnataka", "mandya", 1805769, 4961],
+    ["karnataka", "bengaluru-urban", 9621551, 2196],
+    ["karnataka", "mysuru", 3001127, 6307],
+    ["telangana", "hyderabad", 3943323, 217],
+    ["tamil-nadu", "chennai", 4646732, 175],
+    ["west-bengal", "kolkata", 4496694, 185],
+    ["delhi", "new-delhi", 142004, 35],
+  ];
+  it.each(cases)("%s/%s", (state, slug, pop, area) => {
+    const d = getDistrict(state, slug)!;
+    expect(d.population).toBe(pop);
+    expect(d.area).toBe(area);
   });
 });

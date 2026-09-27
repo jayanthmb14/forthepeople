@@ -30,6 +30,7 @@ import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 import { dedupeStories } from "@/lib/news-dedupe";
+import { pickCensus2011, withCensusFigures } from "@/lib/census-2011";
 
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
@@ -144,7 +145,17 @@ async function fetchModule(
       // Schools: the district's UDISE+ count (collector) when we have it, not
       // the schools we list by name (compare reads this).
       if (d && udise) d._count.schools = udise.data.totals.schools;
-      return { data: d ? { ...d, schoolsFrom: udise ? "udise" : "listed" } : d, meta };
+      // People figures (population, literacy, sex ratio, density): the
+      // checked Census 2011 row, not the hand-typed District columns
+      // (Sept 2026 audit — src/lib/census-2011.ts).
+      const census = pickCensus2011(
+        await prisma.populationHistory.findMany({
+          where: { districtId: did, year: 2011 },
+          select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
+        }),
+      );
+      const shown = d ? withCensusFigures(d, census) : d;
+      return { data: shown ? { ...shown, schoolsFrom: udise ? "udise" : "listed", figuresFrom: census ? "census-2011" : "district" } : shown, meta };
     }
 
     // ══════════════════════════════════════════════════

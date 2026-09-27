@@ -127,3 +127,30 @@ export function censusOnlyProfile(districtId: string, census: CensusHistoryRow) 
     updatedAt: null,
   };
 }
+
+/** The District-row fields the overview / compare / report card read. */
+export interface DistrictFigures {
+  population: number | null;
+  literacy: number | null;
+  sexRatio: number | null;
+  density: number | null;
+  area: number | null;
+}
+
+/**
+ * The District row with its people figures taken from the checked Census
+ * 2011 row. The District columns were typed into src/lib/constants/districts.ts
+ * (projections, city-corporation figures, one district's literacy on
+ * another) and never reconciled with the Census; the Compare page and the
+ * report card read them. The area stays only while it agrees with
+ * population ÷ density. No Census row → the row is returned unchanged.
+ */
+export function withCensusFigures<D extends DistrictFigures>(d: D, census: CensusHistoryRow | null): D {
+  if (!census) return d;
+  const out: D = { ...d, population: census.population, literacy: census.literacy, sexRatio: census.sexRatio, density: census.density };
+  if (out.area && out.density && out.population) {
+    const implied = out.population / out.area;
+    if (Math.abs(implied - out.density) / out.density > AREA_TOLERANCE) out.area = null;
+  }
+  return out;
+}
