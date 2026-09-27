@@ -5,14 +5,22 @@
 // Design v4: the compact line is plain 13 px body text; the full version is
 // a bordered surface card with a sentence-case label. Links take the module
 // hue (--hue-deep). The legal wording itself is unchanged, word for word.
+// i18n: the compact line and the heading are translated (page_tenders);
+// the seven legal clauses are English-only on purpose (their keys exist
+// only in the English messages) and other languages get a one-line note
+// that the English text is the official version.
 
 "use client";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { Scale } from "lucide-react";
 
 /** Link and emphasis styles (tokens only). */
 const LINK = { color: "var(--hue-deep)", textDecoration: "underline" } as const;
 const STRONG = { fontWeight: 500, color: "var(--ftp-text)" } as const;
+
+const TAKEDOWN_MAIL = "mailto:support@forthepeople.in?subject=Takedown%20Request%3A%20Tenders%20module";
+const GODL_URL = "https://data.gov.in/sites/default/files/Gazette_Notification_OGDL.pdf";
 
 type Props = {
   variant?: "compact" | "full";
@@ -24,12 +32,16 @@ type Props = {
   districtSlug?: string;
 };
 
+const s = (c: React.ReactNode) => <strong style={STRONG}>{c}</strong>;
+
 export default function TenderDisclaimer({
   variant = "compact",
   locale,
   stateSlug,
   districtSlug,
 }: Props) {
+  const t = useTranslations("page_tenders");
+  const uiLocale = useLocale();
   const disclaimerHref =
     locale && stateSlug && districtSlug
       ? `/${locale}/${stateSlug}/${districtSlug}/tenders/disclaimer`
@@ -46,14 +58,12 @@ export default function TenderDisclaimer({
           color: "var(--ftp-text-2)",
         }}
       >
-        <strong style={{ color: "var(--ftp-text)", fontWeight: 500 }}>Data source:</strong> tenders published on KPPP, CPPP, IREPS, defproc.gov.in, BEL eProc and HAL TenderWizard — aggregated under RTI §4 proactive-disclosure rules and the GODL-India licence.
-        {disclaimerHref ? (
+        {t.rich("disclaimer.compact", { s: (c) => <strong style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{c}</strong> })}
+        {disclaimerHref && (
           <>
             {" "}
-            <Link href={disclaimerHref} style={LINK}>Full disclaimer</Link>.
+            <Link href={disclaimerHref} style={LINK}>{t("disclaimer.fullLink")}</Link>
           </>
-        ) : (
-          "."
         )}
       </p>
     );
@@ -75,16 +85,23 @@ export default function TenderDisclaimer({
     >
       <div className="ftp-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <Scale size={13} aria-hidden style={{ color: "var(--ftp-warn)" }} />
-        Legal and usage disclaimer for tenders
+        {t("disclaimer.heading")}
       </div>
-      <ol style={{ paddingLeft: 18, margin: 0 }}>
-        <li style={{ marginBottom: 8 }}><strong style={STRONG}>Source data only.</strong> Every tender shown here is aggregated from a public Government of India or State of Karnataka procurement portal. No data is generated or inferred.</li>
-        <li style={{ marginBottom: 8 }}><strong style={STRONG}>Not an official government service.</strong> ForThePeople.in is an independent civic platform. For binding status, always verify on the source portal.</li>
-        <li style={{ marginBottom: 8 }}><strong style={STRONG}>Factual red-flag labels.</strong> Labels like &quot;single bidder&quot; or &quot;short window&quot; are mathematical observations computed from the published data, compared against rules such as GFR 2017, KTPPA 1999, or CVC guidelines. They are not allegations. Legitimate reasons may exist in any individual case.</li>
-        <li style={{ marginBottom: 8 }}><strong style={STRONG}>Eligibility wizard is informational.</strong> Matching runs in your browser against tender-published criteria. Nothing on this page constitutes legal advice under the Advocates Act §33. Consult an enrolled advocate for interpretation.</li>
-        <li style={{ marginBottom: 8 }}><strong style={STRONG}>Personal data protected.</strong> Aadhaar, phone numbers, personal email addresses and individual PAN are automatically redacted from ingested documents (DPDP Act 2023 readiness).</li>
-        <li style={{ marginBottom: 8 }}><strong style={STRONG}>Takedown & grievance.</strong> 7-working-day SLA. Email <a href="mailto:support@forthepeople.in?subject=Takedown%20Request%3A%20Tenders%20module" style={LINK}>support@forthepeople.in</a> with subject line &ldquo;Takedown Request&rdquo;. Winning bidders may request 7-year anonymisation for individual records.</li>
-        <li><strong style={STRONG}>Licence.</strong> Aggregated data is republished under <a href="https://data.gov.in/sites/default/files/Gazette_Notification_OGDL.pdf" target="_blank" rel="noopener" style={LINK}>GODL-India (Feb 2017)</a> and Copyright Act §52(1)(q).</li>
+      {uiLocale !== "en" && (
+        <p style={{ margin: "0 0 10px", color: "var(--ftp-text-2)" }}>{t("disclaimer.englishOnly")}</p>
+      )}
+      <ol style={{ paddingLeft: 18, margin: 0 }} lang="en">
+        <li style={{ marginBottom: 8 }}>{t.rich("disclaimer.c1", { s })}</li>
+        <li style={{ marginBottom: 8 }}>{t.rich("disclaimer.c2", { s })}</li>
+        <li style={{ marginBottom: 8 }}>{t.rich("disclaimer.c3", { s })}</li>
+        <li style={{ marginBottom: 8 }}>{t.rich("disclaimer.c4", { s })}</li>
+        <li style={{ marginBottom: 8 }}>{t.rich("disclaimer.c5", { s })}</li>
+        <li style={{ marginBottom: 8 }}>
+          {t.rich("disclaimer.c6", { s, mail: (c) => <a href={TAKEDOWN_MAIL} style={LINK}>{c}</a> })}
+        </li>
+        <li>
+          {t.rich("disclaimer.c7", { s, godl: (c) => <a href={GODL_URL} target="_blank" rel="noopener" style={LINK}>{c}</a> })}
+        </li>
       </ol>
     </div>
   );

@@ -6,24 +6,17 @@
 
 // Factual-only red flag pill. Throws at runtime if statement contains banned adjectives.
 //
-// Design v3: a kit Pill in the danger tone with a Lucide flag icon. Hover
-// (title) shows the full factual statement and the rule it references.
+// A kit Pill in the danger tone with a Lucide flag icon. Hover (title)
+// shows the full factual statement and the rule it references. The flag
+// name is translated (page_tenders.flag.<TYPE>); the factual statement is
+// shown exactly as computed.
 
 "use client";
 
 import { Flag } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Pill } from "@/components/district/ui";
 import { assertFactualCopy } from "@/lib/tenders/format";
-
-const LABELS: Record<string, string> = {
-  SINGLE_BIDDER: "Single bidder",
-  SHORT_WINDOW: "Short bidding window",
-  PRICE_HIT_RATE: "Price ≈ estimate",
-  REPEAT_WINNER: "Repeat winner",
-  RETENDERED: "Re-tendered",
-  RESTRICTIVE_TURNOVER: "Higher-than-typical turnover",
-  DIRECT_NOMINATION: "Direct nomination",
-};
 
 export default function RedFlagBadge({
   flagType,
@@ -34,6 +27,7 @@ export default function RedFlagBadge({
   factualStatement: string;
   referenceRule?: string | null;
 }) {
+  const t = useTranslations("page_tenders");
   // Runtime guard — any dynamic factual statement must be adjective-free.
   try {
     assertFactualCopy(factualStatement, `RedFlagBadge(${flagType})`);
@@ -45,9 +39,9 @@ export default function RedFlagBadge({
       <Pill
         tone="danger"
         icon={Flag}
-        title={`${factualStatement}${referenceRule ? ` — Reference: ${referenceRule}` : ""}`}
+        title={referenceRule ? t("flagHint", { statement: factualStatement, rule: referenceRule }) : factualStatement}
       >
-        {LABELS[flagType] ?? flagType}
+        {t.has(`flag.${flagType}`) ? t(`flag.${flagType}`) : flagType}
       </Pill>
     </span>
   );

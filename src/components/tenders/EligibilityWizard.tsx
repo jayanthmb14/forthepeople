@@ -5,14 +5,19 @@
 // Advocates Act §33 constraint: this is information, not legal advice.
 
 //
-// Design v3: a kit Card, 44 px form controls, Lucide result icons, semantic
-// colour as text only. The matching logic below is unchanged.
+// A kit Card, 44 px form controls, Lucide result icons, semantic colour as
+// text only. The matching logic below is unchanged; each result line is a
+// message key plus values so it reads right in every language
+// (page_tenders.wizard). Registration values stay in English because they
+// are matched against the English words the tender publishes; only their
+// labels are translated.
 
 import type React from "react";
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, CircleDashed, XCircle, Info } from "lucide-react";
 import { Card } from "@/components/district/ui";
-import { formatInr } from "@/lib/tenders/format";
+import { useMoney } from "@/components/money/useMoney";
 
 type Eligibility = {
   minAnnualTurnoverInr?: number | null;
@@ -33,28 +38,35 @@ type UserProfile = {
   hasDsc: boolean;
 };
 
-const TURNOVER_OPTIONS: { label: string; value: UserProfile["turnoverBand"] }[] = [
-  { label: "Under ₹50 L", value: 0 },
-  { label: "₹50 L – ₹1 Cr", value: 50_00_000 },
-  { label: "₹1 Cr – ₹5 Cr", value: 1_00_00_000 },
-  { label: "₹5 Cr – ₹10 Cr", value: 5_00_00_000 },
-  { label: "₹10 Cr – ₹50 Cr", value: 10_00_00_000 },
-  { label: "Above ₹50 Cr", value: 50_00_00_000 },
+/** Turnover bands; the label key is page_tenders.wizard.turnover.<key>. */
+const TURNOVER_OPTIONS: { key: string; value: UserProfile["turnoverBand"] }[] = [
+  { key: "under50L", value: 0 },
+  { key: "50Lto1Cr", value: 50_00_000 },
+  { key: "1to5Cr", value: 1_00_00_000 },
+  { key: "5to10Cr", value: 5_00_00_000 },
+  { key: "10to50Cr", value: 10_00_00_000 },
+  { key: "above50Cr", value: 50_00_00_000 },
 ];
 
-const REG_OPTIONS = [
-  "Sole proprietor",
-  "Partnership",
-  "LLP",
-  "Private Limited",
-  "Class I Contractor",
-  "Class II Contractor",
-  "Class III Contractor",
-  "Railways-approved contractor",
-  "MoD-registered vendor",
+/** Registration types: English value (matched against the tender) + label key. */
+const REG_OPTIONS: { value: string; key: string }[] = [
+  { value: "Sole proprietor", key: "sole" },
+  { value: "Partnership", key: "partnership" },
+  { value: "LLP", key: "llp" },
+  { value: "Private Limited", key: "pvtltd" },
+  { value: "Class I Contractor", key: "class1" },
+  { value: "Class II Contractor", key: "class2" },
+  { value: "Class III Contractor", key: "class3" },
+  { value: "Railways-approved contractor", key: "railways" },
+  { value: "MoD-registered vendor", key: "mod" },
 ];
+
+/** One result line: a message key under page_tenders.wizard.line and its values. */
+type Line = { key: string; values?: Record<string, string | number> };
 
 export default function EligibilityWizard({ eligibility, tenderMseReserved, tenderStartupExempt }: { eligibility: Eligibility | null; tenderMseReserved: boolean; tenderStartupExempt: boolean }) {
+  const t = useTranslations("page_tenders");
+  const m = useMoney();
   const [profile, setProfile] = useState<UserProfile>({
     turnoverBand: 0,
     yearsInBusiness: 0,
@@ -66,84 +78,91 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
 
   const matches = useMemo(() => {
     if (!eligibility) return { status: "no-criteria" as const };
-    const issues: string[] = [];
-    const passes: string[] = [];
+    const issues: Line[] = [];
+    const passes: Line[] = [];
 
     // Turnover
     if (typeof eligibility.minAnnualTurnoverInr === "number" && eligibility.minAnnualTurnoverInr > 0) {
       const effective = profile.isStartup ? 0 : profile.turnoverBand;
+      const need = m.short(eligibility.minAnnualTurnoverInr);
       if (effective < eligibility.minAnnualTurnoverInr) {
-        issues.push(`Requires turnover ${formatInr(eligibility.minAnnualTurnoverInr)} — your band covers up to ${formatInr(profile.turnoverBand)}${profile.isStartup ? " (Startup India waiver may apply)" : ""}`);
+        issues.push({
+          key: profile.isStartup ? "turnoverLowStartup" : "turnoverLow",
+          values: { need, band: m.short(profile.turnoverBand) },
+        });
       } else {
-        passes.push(`Turnover ≥ ${formatInr(eligibility.minAnnualTurnoverInr)}${profile.isStartup ? " (waived under Startup India)" : ""}`);
+        passes.push({ key: profile.isStartup ? "turnoverOkStartup" : "turnoverOk", values: { need } });
       }
     }
     // Years
     if (typeof eligibility.yearsRequired === "number" && eligibility.yearsRequired > 0) {
       if (profile.yearsInBusiness < eligibility.yearsRequired && !profile.isStartup) {
-        issues.push(`${eligibility.yearsRequired}+ years in business required — you have ${profile.yearsInBusiness}`);
+        issues.push({ key: "yearsLow", values: { need: eligibility.yearsRequired, have: profile.yearsInBusiness } });
       } else {
-        passes.push(`${eligibility.yearsRequired}+ years experience${profile.isStartup ? " (Startup India waiver)" : ""}`);
+        passes.push({ key: profile.isStartup ? "yearsOkStartup" : "yearsOk", values: { need: eligibility.yearsRequired } });
       }
     }
     // Registration
     if (eligibility.registrationTypes && eligibility.registrationTypes.length > 0) {
       const hasOne = eligibility.registrationTypes.some((r) => profile.registrationTypes.some((p) => r.toLowerCase().includes(p.toLowerCase())));
-      if (!hasOne) issues.push(`Required: ${eligibility.registrationTypes.join(" / ")}`);
-      else passes.push(`Registration type accepted`);
+      if (!hasOne) issues.push({ key: "regRequired", values: { types: eligibility.registrationTypes.join(" / ") } });
+      else passes.push({ key: "regOk" });
     }
     // MSE reservation
     if (tenderMseReserved && !profile.isMse) {
-      issues.push(`This tender is reserved for MSE bidders. Register free on Udyam portal to qualify.`);
+      issues.push({ key: "mseReserved" });
     } else if (tenderMseReserved && profile.isMse) {
-      passes.push("MSE-reserved tender — you qualify and are EMD-exempt");
+      passes.push({ key: "mseOk" });
     }
     // DSC
     if (!profile.hasDsc) {
-      issues.push("Class-3 DSC required before bidding (₹1,200–2,500, 2–3 days)");
+      issues.push({ key: "dscNeeded" });
     } else {
-      passes.push("DSC ready");
+      passes.push({ key: "dscOk" });
     }
 
     const status = issues.length === 0 ? "match" : (passes.length >= issues.length ? "borderline" : "not-match");
     return { status, issues, passes };
-  }, [eligibility, profile, tenderMseReserved]);
+  }, [eligibility, profile, tenderMseReserved, m]);
 
   const toggleReg = (r: string) => setProfile((p) => ({ ...p, registrationTypes: p.registrationTypes.includes(r) ? p.registrationTypes.filter((x) => x !== r) : [...p.registrationTypes, r] }));
 
 
   // Result wording + icon + colour. Semantic colour is used for the icon and
-  // heading text only — no tinted result box (v3 rule).
-  const RESULT: Record<string, { text: string; icon: typeof CheckCircle2; color: string }> = {
-    "no-criteria": { text: "Tender does not list structured eligibility. Review the NIT PDF directly.", icon: Info, color: "var(--ftp-text-2)" },
-    match: { text: "You likely match this tender's eligibility.", icon: CheckCircle2, color: "var(--ftp-live-text)" },
-    borderline: { text: "Borderline match — some criteria not met.", icon: CircleDashed, color: "var(--ftp-warn)" },
-    "not-match": { text: "Likely below the threshold for this tender.", icon: XCircle, color: "var(--ftp-danger)" },
+  // heading text only — no tinted result box.
+  const RESULT: Record<string, { key: string; icon: typeof CheckCircle2; color: string }> = {
+    "no-criteria": { key: "noCriteria", icon: Info, color: "var(--ftp-text-2)" },
+    match: { key: "match", icon: CheckCircle2, color: "var(--ftp-live-text)" },
+    borderline: { key: "borderline", icon: CircleDashed, color: "var(--ftp-warn)" },
+    "not-match": { key: "notMatch", icon: XCircle, color: "var(--ftp-danger)" },
   };
   const result = RESULT[matches.status];
   const ResultIcon = result.icon;
 
   return (
     <Card>
-      <div className="ftp-title" style={{ marginBottom: 4 }}>Can I apply? (client-side check)</div>
+      <div className="ftp-title" style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>🧮</span>
+        {t("wizard.title")}
+      </div>
       <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 14px" }}>
-        Your answers never leave this browser. Matching runs against the tender&apos;s published eligibility criteria. Information only — not legal advice.
+        {t("wizard.privacy")}
       </p>
 
       <div style={{ display: "grid", gap: 14 }}>
         <div>
-          <label htmlFor="elig-turnover" className="ftp-label" style={formLabel}>Your annual turnover (last year)</label>
+          <label htmlFor="elig-turnover" className="ftp-label" style={formLabel}>{t("wizard.turnoverLabel")}</label>
           <select
             id="elig-turnover"
             value={profile.turnoverBand}
             onChange={(e) => setProfile((p) => ({ ...p, turnoverBand: Number(e.target.value) as UserProfile["turnoverBand"] }))}
             style={formField}
           >
-            {TURNOVER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {TURNOVER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t(`wizard.turnover.${o.key}`)}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="elig-years" className="ftp-label" style={formLabel}>Years in business</label>
+          <label htmlFor="elig-years" className="ftp-label" style={formLabel}>{t("wizard.yearsLabel")}</label>
           <input
             id="elig-years"
             type="number"
@@ -155,38 +174,38 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
           />
         </div>
         <div>
-          <div className="ftp-label" style={formLabel} id="elig-reg">Registration (select all that apply)</div>
+          <div className="ftp-label" style={formLabel} id="elig-reg">{t("wizard.regLabel")}</div>
           <div role="group" aria-labelledby="elig-reg" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {REG_OPTIONS.map((r) => {
-              const on = profile.registrationTypes.includes(r);
+              const on = profile.registrationTypes.includes(r.value);
               return (
                 <button
-                  key={r}
+                  key={r.value}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => toggleReg(r)}
+                  onClick={() => toggleReg(r.value)}
                   className="ftp-chip"
                   style={{
                     padding: "0 12px",
                     fontSize: 13,
                     fontFamily: "var(--ftp-font-sans)",
                     borderRadius: "var(--ftp-radius-pill)",
-                    border: `1px solid ${on ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
-                    background: on ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
-                    color: on ? "var(--ftp-brand-deep)" : "var(--ftp-text)",
+                    border: `1px solid ${on ? "var(--hue)" : "var(--ftp-border)"}`,
+                    background: on ? "var(--hue-tint)" : "var(--ftp-surface)",
+                    color: on ? "var(--hue-deep)" : "var(--ftp-text)",
                     cursor: "pointer",
                   }}
                 >
-                  {r}
+                  {t(`wizard.reg.${r.key}`)}
                 </button>
               );
             })}
           </div>
         </div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <label style={checkboxLabel}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} /> I&apos;m Udyam-registered (MSE)</label>
-          <label style={checkboxLabel}><input type="checkbox" checked={profile.isStartup} onChange={(e) => setProfile((p) => ({ ...p, isStartup: e.target.checked }))} /> I have DPIIT Startup recognition</label>
-          <label style={checkboxLabel}><input type="checkbox" checked={profile.hasDsc} onChange={(e) => setProfile((p) => ({ ...p, hasDsc: e.target.checked }))} /> I have a Class-3 DSC</label>
+          <label style={checkboxLabel}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} style={{ accentColor: "var(--hue)" }} /> {t("wizard.isMse")}</label>
+          <label style={checkboxLabel}><input type="checkbox" checked={profile.isStartup} onChange={(e) => setProfile((p) => ({ ...p, isStartup: e.target.checked }))} style={{ accentColor: "var(--hue)" }} /> {t("wizard.isStartup")}</label>
+          <label style={checkboxLabel}><input type="checkbox" checked={profile.hasDsc} onChange={(e) => setProfile((p) => ({ ...p, hasDsc: e.target.checked }))} style={{ accentColor: "var(--hue)" }} /> {t("wizard.hasDsc")}</label>
         </div>
       </div>
 
@@ -194,22 +213,23 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
       <div role="status" style={{ marginTop: 20, paddingTop: 14, borderTop: "1px solid var(--ftp-border)" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, lineHeight: "20px", fontWeight: 500, color: result.color, marginBottom: 8 }}>
           <ResultIcon size={16} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-          <span>{result.text}</span>
+          <span>{t(`wizard.result.${result.key}`)}</span>
         </div>
         {"passes" in matches && matches.passes && matches.passes.length > 0 && (
           <ul style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-live-text)", margin: "4px 0", paddingLeft: 18 }}>
-            {matches.passes.map((p, i) => <li key={i}>{p}</li>)}
+            {matches.passes.map((p, i) => <li key={i}>{t(`wizard.line.${p.key}`, p.values)}</li>)}
           </ul>
         )}
         {"issues" in matches && matches.issues && matches.issues.length > 0 && (
           <ul style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-danger)", margin: "4px 0", paddingLeft: 18 }}>
-            {matches.issues.map((p, i) => <li key={i}>{p}</li>)}
+            {matches.issues.map((p, i) => <li key={i}>{t(`wizard.line.${p.key}`, p.values)}</li>)}
           </ul>
         )}
         {(tenderStartupExempt || tenderMseReserved) && (
           <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 8 }}>
-            {tenderStartupExempt && "Startup India exemptions apply — EMD waived, turnover/experience relaxed. "}
-            {tenderMseReserved && "MSE-reserved — register free at udyamregistration.gov.in."}
+            {tenderStartupExempt && t("wizard.startupNote")}
+            {tenderStartupExempt && tenderMseReserved && " "}
+            {tenderMseReserved && t("wizard.mseNote")}
           </div>
         )}
       </div>

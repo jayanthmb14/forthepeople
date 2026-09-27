@@ -4,21 +4,28 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Tender transparency page — Design v3 "Civic Ledger" module template.
-// Lists tenders grouped by factual red-flag type, each group with its
-// methodology. Flag logic, methodology text and legal sentences are
-// unchanged; only the presentation moved to the kit (Card, Pill, Section).
+// Tender transparency page — module template.
+// A "which indicators come up most" list, then tenders grouped by factual
+// red-flag type, each group with its methodology. Flag logic and legal
+// sentences are unchanged; words live in "page_tenders" (flag names and
+// methodology included). Tender titles, authorities and the computed
+// factual statements stay exactly as published.
 
 "use client";
 
+import type React from "react";
 import { use } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Flag } from "lucide-react";
 import { PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
+import { ChartCard } from "@/components/district/visuals";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
 import ModulePageFooter from "@/components/accountability/ModulePageFooter";
-import { formatInr } from "@/lib/tenders/format";
+import { TopBarList } from "@/components/money/visuals";
+import { useMoney } from "@/components/money/useMoney";
+import { useModuleText } from "@/i18n/client";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
@@ -28,18 +35,24 @@ type TransparencyResp = {
   totalTenders: number;
 };
 
-const FLAG_META: Record<string, { title: string; methodology: string }> = {
-  SINGLE_BIDDER: { title: "Single bidder", methodology: "Count of bids equals 1. CVC guidelines and GFR Rule 173 prefer competitive responses; a single bid is flagged for review without implying wrongdoing." },
-  SHORT_WINDOW: { title: "Short bidding window", methodology: "GFR Rule 173 requires a minimum 21-day gap between NIT publication and bid submission for open tenders (where not exempted). Flagged when the gap is under 21 days." },
-  PRICE_HIT_RATE: { title: "Price very close to estimate", methodology: "Winning bid >98% of the published estimated value. Not unusual in small tenders, but systematically high hit-rates across a buyer warrant review." },
-  REPEAT_WINNER: { title: "Repeat winner", methodology: "Same winning vendor across multiple tenders from the same buyer in the last 24 months. Could indicate specialisation — flagged as an observation." },
-  RETENDERED: { title: "Re-tendered", methodology: "Same scope/location retendered after an earlier cancellation. Normal after a no-bid event; flagged for discoverability." },
-  RESTRICTIVE_TURNOVER: { title: "Higher-than-typical turnover requirement", methodology: "Required turnover exceeds the 85th percentile of comparable tenders in the same category. Can be legitimate for complex works; flagged for review." },
-  DIRECT_NOMINATION: { title: "Direct nomination", methodology: "Awarded via nomination/single-source rather than open tender. Allowed under Rule 194 in specific cases but always flagged for transparency." },
+/** One emoji per indicator type. */
+const FLAG_EMOJI: Record<string, string> = {
+  SINGLE_BIDDER: "1️⃣",
+  SHORT_WINDOW: "⏱️",
+  PRICE_HIT_RATE: "🎯",
+  REPEAT_WINNER: "🔁",
+  RETENDERED: "♻️",
+  RESTRICTIVE_TURNOVER: "📈",
+  DIRECT_NOMINATION: "👉",
 };
+
+const b = (c: React.ReactNode) => <strong>{c}</strong>;
 
 export default function TransparencyPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state: stateSlug, district: districtSlug } = use(params);
+  const t = useTranslations("page_tenders");
+  const mt = useModuleText();
+  const m = useMoney();
 
   const { data, isLoading, error } = useQuery<TransparencyResp>({
     queryKey: ["tenders-transparency", districtSlug],
@@ -51,42 +64,76 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
   });
 
   const tendersBase = `/${locale}/${stateSlug}/${districtSlug}/tenders`;
+  const flagName = (type: string) => (t.has(`flagTitle.${type}`) ? t(`flagTitle.${type}`) : type);
+  const groups = Object.entries(data?.flagGroups ?? {})
+    .map(([type, rows]) => ({ type, rows }))
+    .sort((a, b2) => b2.rows.length - a.rows.length);
 
   return (
-    <ModuleErrorBoundary moduleName="TenderTransparency">
+    <ModuleErrorBoundary moduleName={mt.label("tenders")}>
       <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
         <PageHeader
           icon={AlertTriangle}
-          title="Transparency — factual indicators"
-          description={`Data-derived observations on live and recent tenders in ${data?.districtName ?? "this district"}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.`}
+          emoji="🔎"
+          title={t("transparency.title")}
+          description={data?.districtName ? t("transparency.descriptionIn", { district: data.districtName }) : t("transparency.description")}
           backHref={tendersBase}
-          backLabel="Back to tenders"
+          backLabel={t("backToTenders")}
           accent={getModuleAccent("tenders")}
         />
         <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
         {isLoading && <LoadingShell rows={3} />}
-        {error && <ErrorBlock message="Couldn't load flag data." />}
+        {error && <ErrorBlock message={t("transparency.loadError")} />}
         {data && data.totalTenders === 0 && (
           // Honest cadence: no tender cron is scheduled, so no fixed interval is promised.
           <EmptyState
-            title={`No flagged tenders in ${data.districtName} right now.`}
-            body="Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive."
+            emoji="🔎"
+            title={t("transparency.emptyTitle", { district: data.districtName })}
+            body={t("transparency.emptyBody")}
           />
         )}
 
-        {data && Object.entries(data.flagGroups).map(([flagType, rows]) => (
+        {/* Which indicators come up most — only when there are two or more kinds. */}
+        {groups.length >= 2 && (
+          <div style={{ marginBottom: 8 }}>
+            <ChartCard
+              title={t("transparency.chartTitle")}
+              emoji="🚩"
+              units={t("transparency.chartUnits")}
+              simple={t.rich("transparency.chartSimple", { name: flagName(groups[0].type), n: groups[0].rows.length, b })}
+              source={{ label: t("sourceLabel") }}
+              table={groups.map((g) => ({ label: flagName(g.type), value: m.num(g.rows.length) }))}
+            >
+              <TopBarList
+                max={7}
+                rows={groups.map((g) => ({
+                  key: g.type,
+                  label: flagName(g.type),
+                  emoji: FLAG_EMOJI[g.type] ?? "🚩",
+                  value: g.rows.length,
+                  display: t("transparency.count", { n: g.rows.length }),
+                }))}
+              />
+            </ChartCard>
+          </div>
+        )}
+
+        {groups.map(({ type, rows }) => (
           <Section
-            key={flagType}
-            title={FLAG_META[flagType]?.title ?? flagType}
-            action={<Pill tone="danger" icon={Flag}><span className="ftp-num">{rows.length}</span>&nbsp;tender{rows.length !== 1 ? "s" : ""}</Pill>}
+            key={type}
+            emoji={FLAG_EMOJI[type] ?? "🚩"}
+            title={flagName(type)}
+            action={<Pill tone="danger" icon={Flag}>{t("transparency.count", { n: rows.length })}</Pill>}
           >
             <Card>
               <details style={{ marginBottom: 12 }}>
-                <summary style={{ cursor: "pointer", color: "var(--ftp-brand)", fontSize: 13, lineHeight: "20px", minHeight: 44, display: "flex", alignItems: "center" }}>
-                  Methodology
+                <summary style={{ cursor: "pointer", color: "var(--hue-deep)", fontWeight: 600, fontSize: 13, lineHeight: "20px", minHeight: 44, display: "flex", alignItems: "center" }}>
+                  {t("transparency.methodology")}
                 </summary>
-                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{FLAG_META[flagType]?.methodology ?? "—"}</p>
+                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>
+                  {t.has(`method.${type}`) ? t(`method.${type}`) : "—"}
+                </p>
               </details>
               <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 12 }}>
                 {rows.map((r) => (
@@ -94,13 +141,14 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
                     <Link href={`${tendersBase}/${r.tenderId}`} style={{ color: "var(--ftp-text)", fontWeight: 500, textDecoration: "underline", textDecorationColor: "var(--ftp-border-strong)" }}>
                       {r.title}
                     </Link>
-                    <div style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 2 }}>
-                      {r.authority} · <span className="ftp-num">{formatInr(r.value)}</span>
+                    <div style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 2, display: "flex", flexWrap: "wrap", columnGap: 10 }}>
+                      <span>{r.authority}</span>
+                      <span className="ftp-num">{m.short(r.value)}</span>
                     </div>
                     {/* The factual statement — plain text, rule reference in text-2. */}
                     <div style={{ marginTop: 4, color: "var(--ftp-text)" }}>
                       {r.factualStatement}
-                      {r.referenceRule && <span style={{ color: "var(--ftp-text-2)", marginLeft: 8 }}>— {r.referenceRule}</span>}
+                      {r.referenceRule && <span style={{ color: "var(--ftp-text-2)", marginLeft: 8 }}>({r.referenceRule})</span>}
                     </div>
                   </li>
                 ))}

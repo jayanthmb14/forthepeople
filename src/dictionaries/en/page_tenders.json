@@ -1,0 +1,385 @@
+{
+  "sourceLabel": "Government procurement portals",
+  "backToTenders": "Back to tenders",
+  "tag": {
+    "mse": "MSE-reserved",
+    "startup": "Startup-eligible"
+  },
+  "status": {
+    "OPEN_FOR_BIDS": "Open",
+    "PUBLISHED": "Published",
+    "BID_CLOSED": "Closed",
+    "UNDER_EVALUATION": "Under evaluation",
+    "AWARDED": "Awarded",
+    "CANCELLED": "Cancelled",
+    "RETENDERED": "Re-tendered",
+    "COMPLETED": "Completed",
+    "NO_BID": "No bid received"
+  },
+  "countdown": {
+    "closed": "Closed",
+    "dh": "{d}d {h}h",
+    "hm": "{h}h {m}m",
+    "dhm": "{d}d {h}h {m}m"
+  },
+  "card": {
+    "aria": "{title}. {deadline}",
+    "deadline": {
+      "passed": "Deadline has passed",
+      "urgent": "{n, plural, one {Deadline in # hour (urgent)} other {Deadline in # hours (urgent)}}",
+      "soon": "{n, plural, one {Deadline in # day (approaching)} other {Deadline in # days (approaching)}}",
+      "ample": "{n, plural, one {Deadline in # day (ample time)} other {Deadline in # days (ample time)}}"
+    },
+    "closesIn": "Closes in",
+    "published": "{n, plural, =0 {Published today} one {Published <num>#</num> day ago} other {Published <num>#</num> days ago}}",
+    "corrigenda": "{n, plural, one {<num>#</num> corrigendum} other {<num>#</num> corrigenda}}",
+    "flags": "{n, plural, one {<num>#</num> flag} other {<num>#</num> flags}}"
+  },
+  "flag": {
+    "SINGLE_BIDDER": "Single bidder",
+    "SHORT_WINDOW": "Short bidding window",
+    "PRICE_HIT_RATE": "Price ≈ estimate",
+    "REPEAT_WINNER": "Repeat winner",
+    "RETENDERED": "Re-tendered",
+    "RESTRICTIVE_TURNOVER": "Higher-than-typical turnover",
+    "DIRECT_NOMINATION": "Direct nomination"
+  },
+  "flagHint": "{statement} (reference: {rule})",
+  "flagTitle": {
+    "SINGLE_BIDDER": "Single bidder",
+    "SHORT_WINDOW": "Short bidding window",
+    "PRICE_HIT_RATE": "Price very close to estimate",
+    "REPEAT_WINNER": "Repeat winner",
+    "RETENDERED": "Re-tendered",
+    "RESTRICTIVE_TURNOVER": "Higher-than-typical turnover requirement",
+    "DIRECT_NOMINATION": "Direct nomination"
+  },
+  "method": {
+    "SINGLE_BIDDER": "Count of bids equals 1. CVC guidelines and GFR Rule 173 prefer competitive responses; a single bid is flagged for review without implying wrongdoing.",
+    "SHORT_WINDOW": "GFR Rule 173 requires a minimum 21-day gap between NIT publication and bid submission for open tenders (where not exempted). Flagged when the gap is under 21 days.",
+    "PRICE_HIT_RATE": "Winning bid >98% of the published estimated value. Not unusual in small tenders, but systematically high hit-rates across a buyer warrant review.",
+    "REPEAT_WINNER": "Same winning vendor across multiple tenders from the same buyer in the last 24 months. Could indicate specialisation — flagged as an observation.",
+    "RETENDERED": "Same scope/location retendered after an earlier cancellation. Normal after a no-bid event; flagged for discoverability.",
+    "RESTRICTIVE_TURNOVER": "Required turnover exceeds the 85th percentile of comparable tenders in the same category. Can be legitimate for complex works; flagged for review.",
+    "DIRECT_NOMINATION": "Awarded via nomination/single-source rather than open tender. Allowed under Rule 194 in specific cases but always flagged for transparency."
+  },
+  "disclaimer": {
+    "compact": "<s>Data source:</s> tenders published on KPPP, CPPP, IREPS, defproc.gov.in, BEL eProc and HAL TenderWizard — aggregated under RTI §4 proactive-disclosure rules and the GODL-India licence.",
+    "fullLink": "Full disclaimer",
+    "heading": "Legal and usage disclaimer for tenders",
+    "englishOnly": "The official version of this legal text is in English.",
+    "c1": "<s>Source data only.</s> Every tender shown here is aggregated from a public Government of India or State of Karnataka procurement portal. No data is generated or inferred.",
+    "c2": "<s>Not an official government service.</s> ForThePeople.in is an independent civic platform. For binding status, always verify on the source portal.",
+    "c3": "<s>Factual red-flag labels.</s> Labels like \"single bidder\" or \"short window\" are mathematical observations computed from the published data, compared against rules such as GFR 2017, KTPPA 1999, or CVC guidelines. They are not allegations. Legitimate reasons may exist in any individual case.",
+    "c4": "<s>Eligibility wizard is informational.</s> Matching runs in your browser against tender-published criteria. Nothing on this page constitutes legal advice under the Advocates Act §33. Consult an enrolled advocate for interpretation.",
+    "c5": "<s>Personal data protected.</s> Aadhaar, phone numbers, personal email addresses and individual PAN are automatically redacted from ingested documents (DPDP Act 2023 readiness).",
+    "c6": "<s>Takedown & grievance.</s> 7-working-day SLA. Email <mail>support@forthepeople.in</mail> with subject line “Takedown Request”. Winning bidders may request 7-year anonymisation for individual records.",
+    "c7": "<s>Licence.</s> Aggregated data is republished under <godl>GODL-India (Feb 2017)</godl> and Copyright Act §52(1)(q)."
+  },
+  "timeline": {
+    "title": "Timeline",
+    "empty": "No timeline events yet.",
+    "current": "(current step)",
+    "dotHint": "{label}: {time} IST",
+    "PUBLISHED": "Tender published",
+    "PRE_BID": "Pre-bid meeting",
+    "CORRIGENDUM": "Corrigendum",
+    "corrigendumN": "Corrigendum {n}",
+    "CLOSING": "Bid submission closes",
+    "OPENING_TECH": "Technical bid opening",
+    "OPENING_FIN": "Financial bid opening",
+    "AWARD": "Award issued",
+    "CONTRACT": "Contract signed",
+    "COMPLETION": "Expected completion",
+    "COMPLETED": "Completed"
+  },
+  "how": {
+    "title": "How government tenders actually work",
+    "description": "Plain-English explainer for first-time bidders — citizens, freelancers, SMEs. No jargon, no marketing. Scroll through or open a section below.",
+    "language": "Language of the explainer",
+    "knPending": "Kannada translation pending. Showing English below.",
+    "stepsAria": "The life of a tender, step by step",
+    "steps": {
+      "publish": {
+        "title": "Tender is published",
+        "body": "A government office posts the work, its rules and the last date on a procurement portal."
+      },
+      "bid": {
+        "title": "Firms send bids",
+        "body": "Interested businesses sign up, pay the fee or EMD, and upload their bid before the deadline."
+      },
+      "open": {
+        "title": "Bids are opened",
+        "body": "The office opens the technical bids first, then the price bids of those who qualified."
+      },
+      "award": {
+        "title": "Contract is awarded",
+        "body": "Usually the lowest qualifying price wins, and the result is published."
+      },
+      "build": {
+        "title": "Work gets done",
+        "body": "The winner signs the contract, does the work and is paid in stages."
+      }
+    },
+    "loadError": "Couldn't load the explainer.",
+    "empty": "The explainer sections are not published yet."
+  },
+  "locked": {
+    "title": "Tender tracking for {district} is coming soon",
+    "description": "We’re gathering procurement data from {state}’s government eProc portals. Support the project to prioritise your district — each supporter shortens the wait for a new district to come online.",
+    "helpTitle": "Help bring tenders to {district}",
+    "helpBody": "Covering a new district costs time (legal review, data-collection setup, state-specific disclaimer). Supporters decide where we go next.",
+    "support": "Support this district",
+    "tracked": "Currently tracked"
+  },
+  "wizard": {
+    "title": "Can I apply? (checked in your browser)",
+    "privacy": "Your answers never leave this browser. Matching runs against the tender's published eligibility criteria. Information only — not legal advice.",
+    "turnoverLabel": "Your annual turnover (last year)",
+    "turnover": {
+      "under50L": "Under ₹50 L",
+      "50Lto1Cr": "₹50 L – ₹1 Cr",
+      "1to5Cr": "₹1 Cr – ₹5 Cr",
+      "5to10Cr": "₹5 Cr – ₹10 Cr",
+      "10to50Cr": "₹10 Cr – ₹50 Cr",
+      "above50Cr": "Above ₹50 Cr"
+    },
+    "yearsLabel": "Years in business",
+    "regLabel": "Registration (select all that apply)",
+    "reg": {
+      "sole": "Sole proprietor",
+      "partnership": "Partnership",
+      "llp": "LLP",
+      "pvtltd": "Private Limited",
+      "class1": "Class I Contractor",
+      "class2": "Class II Contractor",
+      "class3": "Class III Contractor",
+      "railways": "Railways-approved contractor",
+      "mod": "MoD-registered vendor"
+    },
+    "isMse": "I'm Udyam-registered (MSE)",
+    "isStartup": "I have DPIIT Startup recognition",
+    "hasDsc": "I have a Class-3 DSC",
+    "result": {
+      "noCriteria": "Tender does not list structured eligibility. Review the NIT PDF directly.",
+      "match": "You likely match this tender's eligibility.",
+      "borderline": "Borderline match — some criteria not met.",
+      "notMatch": "Likely below the threshold for this tender."
+    },
+    "line": {
+      "turnoverLow": "Requires turnover {need} — your band covers up to {band}",
+      "turnoverLowStartup": "Requires turnover {need} — your band covers up to {band} (Startup India waiver may apply)",
+      "turnoverOk": "Turnover ≥ {need}",
+      "turnoverOkStartup": "Turnover ≥ {need} (waived under Startup India)",
+      "yearsLow": "{need}+ years in business required — you have {have}",
+      "yearsOk": "{need}+ years experience",
+      "yearsOkStartup": "{need}+ years experience (Startup India waiver)",
+      "regRequired": "Required: {types}",
+      "regOk": "Registration type accepted",
+      "mseReserved": "This tender is reserved for MSE bidders. Register free on Udyam portal to qualify.",
+      "mseOk": "MSE-reserved tender — you qualify and are EMD-exempt",
+      "dscNeeded": "Class-3 DSC required before bidding (₹1,200–2,500, 2–3 days)",
+      "dscOk": "DSC ready"
+    },
+    "startupNote": "Startup India exemptions apply — EMD waived, turnover/experience relaxed.",
+    "mseNote": "MSE-reserved — register free at udyamregistration.gov.in."
+  },
+  "header": {
+    "title": "Government Tenders",
+    "titleIn": "Government Tenders in {district}",
+    "description": "Live tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide.",
+    "newest": "Newest tender published"
+  },
+  "tiles": {
+    "live": "Live tenders",
+    "value": "Total live value",
+    "closing48": "Closing in 48h",
+    "mse": "MSE-reserved",
+    "mseSub": "Kept for micro and small firms",
+    "startup": "Startup-eligible",
+    "flagged": "Flagged",
+    "flaggedSub": "Factual indicators, not allegations"
+  },
+  "explainer": {
+    "plain": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids. <num>{closing}</num> of them close within two days.",
+    "plainIn": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids in {district}. <num>{closing}</num> of them close within two days.",
+    "withValue": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids, with a combined listed value of <num>{value}</num>. <num>{closing}</num> of them close within two days.",
+    "withValueIn": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids in {district}, with a combined listed value of <num>{value}</num>. <num>{closing}</num> of them close within two days."
+  },
+  "pictogram": "About {n} of every 10 open tenders are reserved for micro and small businesses (MSE).",
+  "pictogramNone": "None of the open tenders is reserved for micro and small businesses.",
+  "work": {
+    "title": "What kind of work is open",
+    "units": "Open tenders in each category",
+    "simple": "The most common kind is <b>{name}</b>: {n} of {total} open tenders.",
+    "center": "open tenders",
+    "aria": "Open tenders by category: {list}"
+  },
+  "buyers": {
+    "title": "Who is buying",
+    "units": "Government bodies with the most open tenders (top 5)",
+    "simple": "<b>{name}</b> has the most open tenders: {n}.",
+    "value": "{n, plural, one {# tender} other {# tenders}}"
+  },
+  "deadline": {
+    "title": "When open tenders close",
+    "units": "Number of open tenders by time left to submit a bid",
+    "simple": "<num>{week}</num> of <num>{total}</num> open tenders close within a week.",
+    "legend": "Open tenders"
+  },
+  "buckets": {
+    "within2d": "Within 2 days",
+    "d2to7": "2 to 7 days",
+    "d7to14": "7 to 14 days",
+    "after14": "After 14 days"
+  },
+  "list": {
+    "title": "Tenders",
+    "statusAria": "Tender status",
+    "error": "Couldn't load tenders. Please try again in a moment.",
+    "empty": "No tenders match your filters.",
+    "emptyLive": "Try switching tabs or loosening filters. Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
+    "emptyOther": "Try the Live tab for current opportunities."
+  },
+  "tabs": {
+    "LIVE": "Live",
+    "CLOSING_SOON": "Closing in 48h",
+    "AWARDED": "Recently awarded",
+    "ARCHIVE": "Archive"
+  },
+  "filters": {
+    "value": "Value",
+    "values": {
+      "any": "Any",
+      "sme": "SME (₹1L–₹5Cr)",
+      "mid": "Mid (₹5Cr–₹50Cr)",
+      "large": "Large (₹50Cr+)"
+    },
+    "category": "Category",
+    "all": "All",
+    "mseOnly": "MSE only",
+    "flaggedOnly": "Flagged only",
+    "search": "Search",
+    "searchPlaceholder": "Search tender title…"
+  },
+  "guides": {
+    "label": "Tender guides",
+    "apply": "Apply guide",
+    "transparency": "Transparency",
+    "how": "How it works"
+  },
+  "pages": {
+    "aria": "Tender pages",
+    "prev": "Prev",
+    "next": "Next",
+    "of": "Page <cur>{page}</cur> of <all>{total}</all>"
+  },
+  "changeType": {
+    "DEADLINE_EXTENSION": "Deadline extension",
+    "ELIGIBILITY_CHANGE": "Eligibility change",
+    "VALUE_CHANGE": "Value change",
+    "SCOPE_CHANGE": "Scope change",
+    "OTHER": "Other"
+  },
+  "detail": {
+    "loadError": "Couldn't load this tender.",
+    "byline": "{authority}, {place}",
+    "shareText": "{title}: {value}, closes {date}. {url}",
+    "urgency": {
+      "passed": "Deadline passed",
+      "within48": "Closes within 48 hours",
+      "within7": "Closes within 7 days",
+      "more7": "More than 7 days left"
+    },
+    "viewSource": "View on source portal",
+    "share": "Share",
+    "alert": "Save & alert me",
+    "tiles": {
+      "value": "Estimated value",
+      "emd": "EMD",
+      "exempt": "Exempt",
+      "fee": "Tender fee",
+      "closesIn": "Closes in"
+    },
+    "flagsTitle": "Factual indicators",
+    "flagsIntro": "Data-derived factual observations, compared against public rules such as GFR 2017 / KTPPA 1999 / CVC guidelines. These are not allegations — legitimate reasons may exist in any individual case.",
+    "plainTitle": "In plain words",
+    "what": "<s>What:</s> {text}",
+    "who": "<s>Who can apply:</s> {text}",
+    "deadline": "<s>Deadline:</s> {text}",
+    "plainPending": "Summary being prepared. Check back soon.",
+    "fullTitle": "Full summary",
+    "fullNote": "Written by AI ({model}) on <num>{time}</num>. Check it against the NIT PDF before bidding.",
+    "canApply": "Can I apply?",
+    "corrigendaTitle": "Corrigenda",
+    "corrigendaCaption": "Corrigenda issued for this tender",
+    "corrigendaIssued": "Issued (IST)",
+    "corrigendaChange": "Change",
+    "corrigendaSummary": "Summary",
+    "awardTitle": "Award of contract",
+    "winner": "Winner:",
+    "awarded": "Awarded amount:",
+    "ofEstimate": "Of estimate:",
+    "awardedOn": "Awarded <num>{date}</num>",
+    "documents": "Documents",
+    "noticeSource": "{portal}: this tender's notice"
+  },
+  "apply": {
+    "title": "Apply guide",
+    "description": "Find tenders you qualify for in your district. Fully client-side matching — your answers never leave your browser.",
+    "descriptionIn": "Find tenders you qualify for in {district}. Fully client-side matching — your answers never leave your browser.",
+    "countsAria": "Open tenders at a glance",
+    "countOpen": "open tenders",
+    "countMse": "kept for MSEs",
+    "countStartup": "open to startups",
+    "filterTitle": "Quick filter: tell us about yourself",
+    "startup": "DPIIT Startup recognition",
+    "matches": "{n, plural, one {<num>#</num> tender matches} other {<num>#</num> tenders match}}",
+    "empty": "No live tenders match your filters right now. Try toggling filters, or check back later.",
+    "dsc": {
+      "title": "Get your DSC",
+      "l1": "Class-3 required for KPPP/CPPP/IREPS",
+      "l2": "Cost: <num>₹849 – ₹2,500</num> (1–3 yr validity)",
+      "l3": "Issuance: 2–3 working days",
+      "l4": "Top CAs: eMudhra, Capricorn, Sify, nCode"
+    },
+    "emd": {
+      "title": "EMD pathways",
+      "l1": "DD payable to authority",
+      "l2": "FDR pledged",
+      "l3": "Bank Guarantee",
+      "l4": "NEFT / RTGS / BSD (portal)",
+      "l5": "MSEs & Startups: fully exempt"
+    },
+    "checklist": {
+      "title": "Submission checklist",
+      "l1": "PAN + GST + Udyam cert",
+      "l2": "Last 3 years audited turnover",
+      "l3": "Similar-work experience certs",
+      "l4": "ISO / BIS / PSARA (if required)",
+      "l5": "Filled BOQ, DSC signed, before deadline"
+    },
+    "notLegalAdvice": "This is information, not legal advice (Advocates Act §33). Consult an enrolled advocate for interpretation."
+  },
+  "transparency": {
+    "title": "Factual indicators",
+    "description": "Data-derived observations on live and recent tenders in this district. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
+    "descriptionIn": "Data-derived observations on live and recent tenders in {district}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
+    "loadError": "Couldn't load flag data.",
+    "emptyTitle": "No flagged tenders in {district} right now.",
+    "emptyBody": "Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
+    "chartTitle": "Which indicators come up most",
+    "chartUnits": "Number of tenders carrying each indicator",
+    "chartSimple": "The most common is <b>{name}</b>, on {n, plural, one {# tender} other {# tenders}}.",
+    "count": "{n, plural, one {# tender} other {# tenders}}",
+    "methodology": "How this is worked out"
+  },
+  "legalPage": {
+    "title": "Tenders: legal and usage disclaimer",
+    "loadError": "Couldn’t load the disclaimer. Please write to <mail>{email}</mail>.",
+    "empty": "Disclaimer content not added yet. Please check back shortly.",
+    "general": "General (all of India)",
+    "stateSpecific": "Specific to {state}",
+    "grievance": "<s>Takedown or grievance?</s> Email <mail>{email}</mail>. We reply within 7 working days, as the IT Rules 2021 require."
+  }
+}
