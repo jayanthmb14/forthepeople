@@ -23,7 +23,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Github, Instagram } from "lucide-react";
+import { Github, Instagram, Users } from "lucide-react";
 import { timeAgoLabel, type TimeAgoResult } from "@/lib/utils/timeAgo";
 import { formatIST } from "@/components/district/ui";
 import styles from "./chrome.module.css";
@@ -57,61 +57,95 @@ export default function Footer({ locale }: FooterProps) {
     };
   }, []);
 
-  const links: { href: string; label: string }[] = [
-    { href: `/${locale}/about`, label: "About" },
-    { href: `/${locale}/privacy`, label: "Privacy" },
-    { href: `/${locale}/disclaimer`, label: "Disclaimer" },
-    { href: `/${locale}/contribute`, label: "Contribute" },
-    { href: `/${locale}/features`, label: "Features" },
-    { href: `/${locale}/feedback`, label: "Feedback" },
-    { href: `/${locale}/support`, label: "Support" },
+  const groups: { title: string; links: { href: string; label: string }[] }[] = [
+    {
+      title: "Explore",
+      links: [
+        { href: `/${locale}/india`, label: "India dashboard" },
+        { href: `/${locale}/vote-district`, label: "Vote for a district" },
+        { href: `/${locale}/compare`, label: "Compare districts" },
+      ],
+    },
+    {
+      title: "Get involved",
+      links: [
+        { href: `/${locale}/contribute`, label: "Contribute" },
+        { href: `/${locale}/features`, label: "Vote on features" },
+        { href: `/${locale}/feedback`, label: "Feedback" },
+        { href: `/${locale}/support`, label: "Support the project" },
+      ],
+    },
+    {
+      title: "About",
+      links: [
+        { href: `/${locale}/about`, label: "About" },
+        { href: `/${locale}/privacy`, label: "Privacy" },
+        { href: `/${locale}/disclaimer`, label: "Disclaimer" },
+      ],
+    },
   ];
 
   return (
-    <footer role="contentinfo" className={styles.footer}>
-      <div className={`ftp-container ${styles.footerRow}`}>
-        <nav aria-label="Footer">
-          <ul className={styles.footerLinks}>
-            {links.map((l) => (
-              <li key={l.href}>
-                <Link href={l.href}>{l.label}</Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className={styles.footerIcons}>
-          <a
-            href="https://www.instagram.com/forthepeople_in/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="ForThePeople on Instagram"
-            className={styles.footerIcon}
-          >
-            <Instagram size={18} aria-hidden />
-          </a>
-          <a
-            href="https://github.com/jayanthmb14/forthepeople"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="ForThePeople on GitHub"
-            className={styles.footerIcon}
-          >
-            <Github size={18} aria-hidden />
-          </a>
+    <footer role="contentinfo" className={styles.footerV4}>
+      <div className={`ftp-container ${styles.footerGrid}`}>
+        <div className={styles.footerBrand}>
+          <Link href={`/${locale}`} className={styles.footerLogo} aria-label="ForThePeople.in home">
+            <span className={styles.logoTile} aria-hidden>
+              <Users size={17} strokeWidth={2.4} />
+            </span>
+            ForThePeople<span className={styles.footerIn}>.in</span>
+          </Link>
+          <p className={styles.footerTagline}>Your district. Your data. Your right.</p>
+          <p className={styles.footerNote}>
+            An independent citizen project. Not a government website. Data from official portals under NDSAP;
+            always verify at the source.
+          </p>
+          <div className={styles.footerIcons}>
+            <a
+              href="https://www.instagram.com/forthepeople_in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="ForThePeople on Instagram"
+              className={styles.footerIcon}
+            >
+              <Instagram size={18} aria-hidden />
+            </a>
+            <a
+              href="https://github.com/jayanthmb14/forthepeople"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="ForThePeople on GitHub"
+              className={styles.footerIcon}
+            >
+              <Github size={18} aria-hidden />
+            </a>
+          </div>
         </div>
+        <nav aria-label="Footer" className={styles.footerCols}>
+          {groups.map((g) => (
+            <div key={g.title}>
+              <p className={styles.footerColTitle}>{g.title}</p>
+              <ul className={styles.footerColList}>
+                {g.links.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href}>{l.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
       </div>
-      <div className="ftp-container">
-        <p className={styles.footerLine} style={{ margin: 0 }}>
-          Independent · Not a government website · NDSAP · Article 19(1)(a) · Built by Jayanth M B
-          {updated.label !== "—" && (
-            <>
-              {" · "}
-              <span title={updated.at ? `Newest record: ${formatIST(updated.at)}` : undefined}>
-                Refreshed <span className="ftp-num">{updated.label}</span>
-              </span>
-            </>
-          )}
-        </p>
+      <div className={`ftp-container ${styles.footerBottom}`}>
+        <span>
+          Built by Jayanth M B in Mandya <span className="ftp-emoji" aria-hidden>🇮🇳</span>
+        </span>
+        <span>Free expression under Article 19(1)(a)</span>
+        {updated.label !== "—" && (
+          <span title={updated.at ? `Newest record: ${formatIST(updated.at)}` : undefined}>
+            Data refreshed <span className="ftp-num">{updated.label}</span>
+          </span>
+        )}
       </div>
     </footer>
   );

@@ -158,13 +158,15 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
 
   return (
     <div
-      className="sticky top-[92px] md:top-[56px] flex items-center justify-center gap-2 px-4"
+      className="sticky top-[92px] md:top-[56px] flex items-center justify-center gap-4 px-4"
       style={{
         zIndex: 30,
-        height: 32,
-        background: "var(--ftp-bg)",
+        height: 34,
+        background: "rgba(246, 245, 240, 0.9)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         borderBottom: "1px solid var(--ftp-border)",
-        fontSize: 11,
+        fontSize: 12,
         lineHeight: "16px",
         color: "var(--ftp-text-2)",
         whiteSpace: "nowrap",
@@ -195,21 +197,24 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
 
       {/* District · State (truncates first on narrow phones) */}
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
-        <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{districtName}</span>
-        {stateName && <span> · {stateName}</span>}
+        <span className="ftp-emoji" aria-hidden style={{ marginRight: 4 }}>📍</span>
+        <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{districtName}</span>
+        {stateName && <span>, {stateName}</span>}
       </span>
 
       {/* Date — hidden on small screens to keep the strip one line */}
       {dateStr && (
         <span className="hidden sm:inline" suppressHydrationWarning>
-          · {dateStr}
+          <span className="ftp-emoji" aria-hidden style={{ marginRight: 4 }}>🗓️</span>
+          {dateStr}
         </span>
       )}
 
       {/* Time (mono) */}
       {timeStr && (
         <span className="ftp-num" style={{ color: "var(--ftp-text)" }} suppressHydrationWarning>
-          · {timeStr}
+          <span className="ftp-emoji" aria-hidden style={{ marginRight: 4 }}>🕒</span>
+          {timeStr}
         </span>
       )}
 

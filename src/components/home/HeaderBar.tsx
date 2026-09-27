@@ -253,7 +253,9 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
         <div className={`ftp-container ${styles.headerRow}`}>
           {/* ── Wordmark ── */}
           <Link href={`/${locale}`} className={styles.wordmark} aria-label="ForThePeople.in home">
-            <Users size={20} aria-hidden className={styles.wordmarkIcon} />
+            <span className={styles.logoTile} aria-hidden>
+              <Users size={17} strokeWidth={2.4} />
+            </span>
             <span>
               ForThePeople<span className={styles.wordmarkSuffix}>.in</span>
             </span>
@@ -399,7 +401,7 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
               Vote on features
             </Link>
 
-            <Link href={`/${locale}/support`} className={`${styles.btn} ${styles.desktopOnly}`}>
+            <Link href={`/${locale}/support`} className={`${styles.btn} ${styles.btnSupport} ${styles.desktopOnly}`}>
               <Heart size={16} aria-hidden className={styles.heart} />
               Support
             </Link>
