@@ -45,7 +45,7 @@ export interface HealthScoreData {
     score: number;
     weight: number;
     weightedScore: number;
-    subMetrics: Record<string, { value: number; max: number; score: number; label: string }>;
+    subMetrics: Record<string, { value: number; max: number; score: number; label: string; noData?: boolean }>;
   }>;
   generatedAt: string;
   /** When the score stops being valid; the overview says so after this date. */
@@ -229,8 +229,13 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
                     <div key={key} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, lineHeight: "16px", marginTop: 2 }}>
                       <span style={{ color: "var(--ftp-text-2)" }}>{metric.label}</span>
                       <span className="ftp-num" style={{ whiteSpace: "nowrap" }}>
-                        {metric.value}
-                        {metric.max > 0 ? `/${metric.max}` : ""}
+                        {/* A measure with no data behind it shows a dash, never its placeholder number. */}
+                        {metric.noData ? "—" : (
+                          <>
+                            {metric.value}
+                            {metric.max > 0 ? `/${metric.max}` : ""}
+                          </>
+                        )}
                       </span>
                     </div>
                   ))}

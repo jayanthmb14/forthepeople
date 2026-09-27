@@ -13,6 +13,8 @@ import { Prisma } from "@/generated/prisma";
 import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
+import { pickCensus2011 } from "@/lib/census-2011";
+import { projectStage } from "@/lib/civic/project-facts";
 
 const WEIGHTS = {
   governance: 15,
@@ -75,6 +77,39 @@ function noDataIf(missing: boolean): { noData?: true } {
   return missing ? { noData: true } : {};
 }
 
+/**
+ * The district's checked Census 2011 row (population, literacy, density).
+ * Sept 2026 audit: District.population / literacy were typed constants
+ * (Mandya's literacy was Mysuru's), so the report card reads the Census.
+ */
+async function census2011(districtId: string) {
+  const rows = await prisma.populationHistory.findMany({
+    where: { districtId, year: 2011 },
+    select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
+  });
+  return pickCensus2011(rows);
+}
+
+/**
+ * Share of the district's schools with a working toilet and a library or
+ * reading corner, from UDISE+ (each part weighted by its schools). Null
+ * when UDISE+ has no figures. The hand-seeded School rows' hasToilets /
+ * hasLibrary were mostly empty, which scored four districts 0 %.
+ */
+export function udiseSchoolInfraPct(udise: UdiseSnapshotData | null): number | null {
+  if (!udise) return null;
+  let weighted = 0;
+  let schools = 0;
+  for (const p of udise.parts ?? []) {
+    const toilet = p.facilitiesPct?.toiletFunctional;
+    const library = p.facilitiesPct?.libraryOrReadingCorner;
+    if (typeof toilet !== "number" || typeof library !== "number" || !(p.schools > 0)) continue;
+    weighted += ((toilet + library) / 2) * p.schools;
+    schools += p.schools;
+  }
+  return schools > 0 ? weighted / schools : null;
+}
+
 function avg(scores: number[]): number {
   if (scores.length === 0) return 50;
   return scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -131,8 +166,11 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   const district = await prisma.district.findFirst({ where: { id: districtId } });
-  const literacy = district?.literacy ?? 70;
-  sub.literacy = { value: Math.round(literacy), max: 95, score: Math.round(Math.min(100, (literacy / 95) * 100)), label: "Literacy Rate (%)", ...noDataIf(district?.literacy == null) };
+  const census = await census2011(districtId);
+  const literacy = census?.literacy ?? null;
+  sub.literacy = literacy !== null
+    ? { value: Math.round(literacy), max: 95, score: Math.round(Math.min(100, (literacy / 95) * 100)), label: "Literacy Rate (%, Census 2011)" }
+    : { value: 0, max: 95, score: 50, label: "Literacy Rate (%, Census 2011)", noData: true };
 
   const results = await prisma.schoolResult.findMany({
     where: { school: { districtId } },
@@ -146,20 +184,25 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
     sub.passRate = { value: 0, max: 100, score: 50, label: "Avg Board Exam Pass Rate (%)", noData: true };
   }
 
-  const schools = await prisma.school.findMany({ where: { districtId } });
-  // Students per teacher: the UDISE+ district totals (collector) when we have
-  // them, else the schools listed by name.
+  // Students per teacher and school facilities: the UDISE+ district totals
+  // (collector) only. The schools listed by name were hand-seeded with
+  // estimated enrolment and mostly empty facilities (Sept 2026 audit), so
+  // they are never used as a stand-in.
   const udise = district?.slug ? await readDistrictSnapshot<UdiseSnapshotData>("udise", district.slug) : null;
-  const totalStudents = udise ? udise.data.totals.students : schools.reduce((s, sc) => s + (sc.students ?? 0), 0);
-  const totalTeachers = udise ? udise.data.totals.teachers : schools.reduce((s, sc) => s + (sc.teachers ?? 0), 0);
-  const ratio = totalTeachers > 0 ? totalStudents / totalTeachers : 35;
-  const ratioScore = ratio <= 25 ? 100 : ratio <= 35 ? 70 : ratio <= 45 ? 40 : 20;
-  sub.studentTeacherRatio = { value: Math.round(ratio), max: 25, score: ratioScore, label: "Student-Teacher Ratio (lower is better)", ...noDataIf(totalTeachers === 0) };
+  const totalStudents = udise ? udise.data.totals.students : 0;
+  const totalTeachers = udise ? udise.data.totals.teachers : 0;
+  if (totalTeachers > 0) {
+    const ratio = totalStudents / totalTeachers;
+    const ratioScore = ratio <= 25 ? 100 : ratio <= 35 ? 70 : ratio <= 45 ? 40 : 20;
+    sub.studentTeacherRatio = { value: Math.round(ratio), max: 25, score: ratioScore, label: "Student-Teacher Ratio (UDISE+, lower is better)" };
+  } else {
+    sub.studentTeacherRatio = { value: 0, max: 25, score: 50, label: "Student-Teacher Ratio (lower is better)", noData: true };
+  }
 
-  const withToilets = schools.filter((s) => s.hasToilets).length;
-  const withLib = schools.filter((s) => s.hasLibrary).length;
-  const infraPct = schools.length > 0 ? ((withToilets + withLib) / (schools.length * 2)) * 100 : 50;
-  sub.schoolInfra = { value: Math.round(infraPct), max: 100, score: Math.round(infraPct), label: "School Infrastructure (%)", ...noDataIf(schools.length === 0) };
+  const infraPct = udiseSchoolInfraPct(udise?.data ?? null);
+  sub.schoolInfra = infraPct !== null
+    ? { value: Math.round(infraPct), max: 100, score: Math.round(infraPct), label: "Schools with working toilets and a library (%, UDISE+)" }
+    : { value: 0, max: 100, score: 50, label: "School Infrastructure (%)", noData: true };
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -168,16 +211,12 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
 async function calcHealth(districtId: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Use government offices (PHC count) as proxy for health infrastructure
-  const phcs = await prisma.govOffice.count({
-    where: { districtId, department: { contains: "health", mode: "insensitive" } },
-  });
-  const district = await prisma.district.findFirst({ where: { id: districtId } });
-  const pop = district?.population ?? 1000000;
-  const phcPer100k = pop > 0 ? (phcs / pop) * 100000 : 0;
-  // Target: 1 PHC per 30,000 = 3.3 per 100k
-  const phcScore = Math.min(100, (phcPer100k / 3.3) * 100);
-  sub.healthFacilities = { value: phcs, max: Math.round((pop / 30000)), score: Math.round(phcScore), label: "PHC/Health Offices", ...noDataIf(district?.population == null) };
+  // Health centres per person: not measured. The old measure counted the
+  // GovOffice rows we typed in whose department mentions "health" (Mandya:
+  // one district hospital) and scored them as PHC coverage (Sept 2026
+  // audit). Until a collector reads the PHC / CHC count (NHM / HMIS), this
+  // is a neutral placeholder flagged noData.
+  sub.healthFacilities = { value: 0, max: 0, score: 50, label: "Health centres (not collected yet)", noData: true };
 
   // Check for health alerts (more alerts = worse health situation)
   const healthAlerts = await prisma.localAlert.count({
@@ -186,10 +225,11 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
   const alertScore = Math.max(0, 100 - healthAlerts * 10);
   sub.activeHealthAlerts = { value: healthAlerts, max: 0, score: alertScore, label: "Active Health Alerts (lower is better)" };
 
-  // Literacy as a proxy for health literacy
-  const literacy = district?.literacy ?? 70;
-  const literacyScore = Math.min(100, (literacy / 90) * 100);
-  sub.healthLiteracyProxy = { value: Math.round(literacy), max: 90, score: Math.round(literacyScore), label: "Literacy (Health Literacy Proxy, %)", ...noDataIf(district?.literacy == null) };
+  // Literacy as a proxy for health literacy (Census 2011)
+  const literacy = (await census2011(districtId))?.literacy ?? null;
+  sub.healthLiteracyProxy = literacy !== null
+    ? { value: Math.round(literacy), max: 90, score: Math.round(Math.min(100, (literacy / 90) * 100)), label: "Literacy (Health Literacy Proxy, %, Census 2011)" }
+    : { value: 0, max: 90, score: 50, label: "Literacy (Health Literacy Proxy, %)", noData: true };
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -200,7 +240,8 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
 
   const projects = await prisma.infraProject.findMany({ where: { districtId, ...LOCAL_INFRA } });
   if (projects.length > 0) {
-    const completed = projects.filter((p) => p.status === "Completed").length;
+    // Any spelling of "completed" (the rows say COMPLETED / Completed / Inaugurated).
+    const completed = projects.filter((p) => projectStage(p.status) === "completed").length;
     const compRate = (completed / projects.length) * 100;
     sub.projectCompletionRate = { value: Math.round(compRate), max: 100, score: Math.round(compRate), label: "Infrastructure Project Completion Rate (%)" };
 
@@ -311,9 +352,9 @@ async function calcEconomy(districtId: string): Promise<CategoryResult> {
 async function calcSafety(districtId: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Crime rate per 100k population
-  const district = await prisma.district.findFirst({ where: { id: districtId } });
-  const pop = district?.population ?? 1000000;
+  // Crime rate per 100k population (Census 2011 population)
+  const census = await census2011(districtId);
+  const pop = census?.population ?? 1000000;
   const crimes = await prisma.crimeStat.findMany({
     where: { districtId, ...SHOWN_CRIME, year: new Date().getFullYear() - 1 },
   });
@@ -329,9 +370,14 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
 
   // Police station coverage
   const stations = await prisma.policeStation.count({ where: { districtId } });
-  const stationsPer100k = (stations / pop) * 100000;
-  const stationScore = Math.min(100, (stationsPer100k / 5) * 100); // target: 5/100k
-  sub.policeCoverage = { value: stations, max: Math.round((pop / 20000)), score: Math.round(stationScore), label: "Police Stations", ...noDataIf(district?.population == null) };
+  if (stations > 0 && census) {
+    const stationsPer100k = (stations / pop) * 100000;
+    const stationScore = Math.min(100, (stationsPer100k / 5) * 100); // target: 5/100k
+    sub.policeCoverage = { value: stations, max: Math.round((pop / 20000)), score: Math.round(stationScore), label: "Police Stations" };
+  } else {
+    // No stations on file means "not collected" (Pune), not zero stations.
+    sub.policeCoverage = { value: 0, max: 0, score: 50, label: "Police Stations", noData: true };
+  }
 
   // Court disposal rate
   const courts = await prisma.courtStat.findMany({ where: { districtId, ...NJDG_COURTSTAT }, orderBy: { year: "desc" }, take: 5 });
@@ -339,7 +385,8 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
     const filed = courts.reduce((s, c) => s + c.filed, 0);
     const disposed = courts.reduce((s, c) => s + c.disposed, 0);
     const disposalRate = filed > 0 ? (disposed / filed) * 100 : 50;
-    sub.courtDisposal = { value: Math.round(disposalRate), max: 100, score: Math.round(disposalRate), label: "Court Case Disposal Rate (%)" };
+    // A rate above 100 % is real (the backlog shrank); the score still tops out at 100.
+    sub.courtDisposal = { value: Math.round(disposalRate), max: 100, score: Math.round(Math.min(100, disposalRate)), label: "Court Case Disposal Rate (%)" };
   } else {
     sub.courtDisposal = { value: 0, max: 100, score: 50, label: "Court Case Disposal Rate (%)", noData: true };
   }
@@ -453,11 +500,8 @@ export interface HealthScoreSummary {
 
 export async function calculateDistrictHealthScore(districtId: string): Promise<HealthScoreSummary> {
   // Fetch district for district-type-aware weight adjustment
-  const districtInfo = await prisma.district.findFirst({
-    where: { id: districtId },
-    select: { name: true, population: true, density: true },
-  });
-  const districtType = getDistrictType(districtInfo?.population, districtInfo?.density);
+  const districtCensus = await census2011(districtId);
+  const districtType = getDistrictType(districtCensus?.population, districtCensus?.density);
   const weights = getAdjustedWeights(districtType);
 
   const [gov, edu, hlt, inf, wat, eco, saf, agr, dig, wel] = await Promise.all([
