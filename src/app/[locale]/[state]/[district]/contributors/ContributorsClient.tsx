@@ -47,7 +47,8 @@ import { useDistrictName, useFormat, usePlaceText } from "@/i18n/client";
 import BadgeExplainer, { BADGE_TONE } from "@/components/common/BadgeExplainer";
 import CorporateSponsorBanner from "@/components/common/CorporateSponsorBanner";
 import { Card, EmptyState, LoadingShell, ModulePage, PageHeader, Pill, Section, StatStrip, StatTile, ToolbarButton } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/page-kit";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { ShareDonut, type DonutSlice } from "@/components/community/CommunityVisuals";
 import { TapCard } from "@/components/community/TapCard";
@@ -98,18 +99,13 @@ const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   website: ExternalLink,
 };
 
-/** A medal for each badge level (same keys as BADGE_TONE). */
-const BADGE_EMOJI: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇", platinum: "💎" };
-
-const TIER_EMOJI: Record<TierKey, string> = { district: "🏅", state: "🏆", india: "👑", onetime: "🎁" };
-
 /** Months of monthly support → step (badge thresholds: 3+ bronze, 6+ silver, 12+ gold, 24+ platinum). */
-const TENURE_STEPS: Array<{ key: "new" | "bronze" | "silver" | "gold" | "platinum"; min: number; emoji: string }> = [
-  { key: "new", min: 0, emoji: "🌱" },
-  { key: "bronze", min: 3, emoji: "🥉" },
-  { key: "silver", min: 6, emoji: "🥈" },
-  { key: "gold", min: 12, emoji: "🥇" },
-  { key: "platinum", min: 24, emoji: "💎" },
+const TENURE_STEPS: Array<{ key: "new" | "bronze" | "silver" | "gold" | "platinum"; min: number }> = [
+  { key: "new", min: 0 },
+  { key: "bronze", min: 3 },
+  { key: "silver", min: 6 },
+  { key: "gold", min: 12 },
+  { key: "platinum", min: 24 },
 ];
 
 function tenureStep(months: number): (typeof TENURE_STEPS)[number]["key"] {
@@ -182,7 +178,7 @@ function useSupporterText() {
         : null;
     const level = c.badgeLevel?.toLowerCase() ?? null;
     const badge = level ? (t.has(`badge.${level}`) ? t(`badge.${level}`) : c.badgeLevel) : null;
-    return { label, expiry, tenure, level, badge, medal: level ? BADGE_EMOJI[level] : undefined };
+    return { label, expiry, tenure, level, badge };
   };
 }
 
@@ -212,13 +208,12 @@ function Initials({ name, size = 40 }: { name: string; size?: number }) {
   );
 }
 
-/** The badge as a Pill with its medal. */
+/** The badge as a Pill in its tone (the word says the level; no medal emoji). */
 function BadgePill({ c }: { c: Contributor }) {
   const text = useSupporterText()(c);
   if (!c.badgeLevel || !text.level) return null;
   return (
     <Pill tone={BADGE_TONE[text.level] ?? BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 22 }}>
-      {text.medal && <span className="ftp-emoji" aria-hidden>{text.medal}</span>}
       {text.badge}
     </Pill>
   );
@@ -279,20 +274,19 @@ function SupporterDetails({ c }: { c: Contributor }) {
     <>
       {c.message && (
         <p style={{ margin: 0, padding: "12px 14px", borderRadius: 14, background: "var(--hue-tint)", color: "var(--ftp-text)", fontSize: 15, lineHeight: "23px" }}>
-          <span className="ftp-emoji" aria-hidden>💬 </span>&ldquo;{c.message}&rdquo;
+          &ldquo;{c.message}&rdquo;
         </p>
       )}
       <DetailList
         rows={[
-          { emoji: "🏷️", label: t("sheet.role"), value: text.label },
-          { emoji: text.medal ?? "🏅", label: t("sheet.badge"), value: c.badgeLevel ? <BadgePill c={c} /> : null },
-          { emoji: "🔁", label: t("sheet.how"), value: c.isRecurring ? t("sheet.monthly") : t("sheet.oneTime") },
-          { emoji: "⏳", label: t("sheet.givingFor"), value: text.tenure },
-          { emoji: "💝", label: t("sheet.gift"), value: !c.isRecurring && c.amount ? <span className="ftp-num">₹{f.number(c.amount)}</span> : null },
-          { emoji: "📅", label: t("sheet.joined"), value: <span suppressHydrationWarning>{f.date(c.createdAt, { day: "numeric", month: "long", year: "numeric" })}</span> },
-          { emoji: "⌛", label: t("sheet.onWall"), value: text.expiry ? <span suppressHydrationWarning>{text.expiry}</span> : null },
+          { label: t("sheet.role"), value: text.label },
+          { label: t("sheet.badge"), value: c.badgeLevel ? <BadgePill c={c} /> : null },
+          { label: t("sheet.how"), value: c.isRecurring ? t("sheet.monthly") : t("sheet.oneTime") },
+          { label: t("sheet.givingFor"), value: text.tenure },
+          { label: t("sheet.gift"), value: !c.isRecurring && c.amount ? <span className="ftp-num">₹{f.number(c.amount)}</span> : null },
+          { label: t("sheet.joined"), value: <span suppressHydrationWarning>{f.date(c.createdAt, { day: "numeric", month: "long", year: "numeric" })}</span> },
+          { label: t("sheet.onWall"), value: text.expiry ? <span suppressHydrationWarning>{text.expiry}</span> : null },
           {
-            emoji: "🔗",
             label: t("sheet.profile"),
             value: safeLink ? (
               <a
@@ -313,10 +307,9 @@ function SupporterDetails({ c }: { c: Contributor }) {
   );
 }
 
-/** One tier: emoji + H2 + count + "View all", then the first PREVIEW_COUNT cards (or an honest prompt). */
+/** One tier: H2 + count + "View all", then the first PREVIEW_COUNT cards (or an honest prompt). */
 function TierSection({
   title,
-  emoji,
   list,
   loading,
   onViewAll,
@@ -324,7 +317,6 @@ function TierSection({
   empty,
 }: {
   title: string;
-  emoji: string;
   list: Contributor[];
   loading?: boolean;
   onViewAll?: () => void;
@@ -335,7 +327,6 @@ function TierSection({
   const f = useFormat();
   return (
     <Section
-      emoji={emoji}
       title={
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {title}
@@ -373,10 +364,9 @@ function TierSection({
 }
 
 /** Honest empty prompt for a tier with nobody in it yet, with its support link. */
-function EmptyTier({ title, emoji, cta, href }: { title: string; emoji: string; cta: string; href: string }) {
+function EmptyTier({ title, cta, href }: { title: string; cta: string; href: string }) {
   return (
     <EmptyState
-      emoji={emoji}
       title={title}
       action={
         <Link
@@ -470,7 +460,6 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
   const tenureSlices: DonutSlice[] = TENURE_STEPS.map((s) => ({
     key: s.key,
     label: t(`tenure.${s.key}`),
-    emoji: s.emoji,
     value: recurring.filter((c) => tenureStep(c.monthsActive ?? 0) === s.key).length,
   })).filter((s) => s.value > 0);
   const yearPlus = recurring.filter((c) => (c.monthsActive ?? 0) >= 12).length;
@@ -502,7 +491,7 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
       )}
 
       {!loadingDist && (
-        <Explainer emoji="🤝">
+        <Explainer>
           {all.length > 0
             ? t.rich("simple", { count: f.number(all.length), n: all.length, name: districtName, monthlyCount: f.number(monthly), monthly, b: bold })
             : t("simpleNone", { name: districtName })}
@@ -511,10 +500,10 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
 
       {!loadingDist && (
         <StatStrip cols={4}>
-          <StatTile emoji="🏅" label={t("statDistrict")} value={f.number(tiers.district.length)} asOf={fetchedAt} />
-          <StatTile emoji="🏆" label={t("statState")} value={f.number(tiers.state.length)} asOf={fetchedAt} />
-          <StatTile emoji="👑" label={t("statIndia")} value={f.number(tiers.india.length)} asOf={fetchedAt} />
-          <StatTile emoji="🎁" label={t("statOneTime")} value={f.number(tiers.onetime.length)} asOf={fetchedAt} />
+          <StatTile label={t("statDistrict")} value={f.number(tiers.district.length)} asOf={fetchedAt} />
+          <StatTile label={t("statState")} value={f.number(tiers.state.length)} asOf={fetchedAt} />
+          <StatTile label={t("statIndia")} value={f.number(tiers.india.length)} asOf={fetchedAt} />
+          <StatTile label={t("statOneTime")} value={f.number(tiers.onetime.length)} asOf={fetchedAt} />
         </StatStrip>
       )}
 
@@ -522,42 +511,38 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
       {!loadingDist && all.length >= MIN_FOR_PICTURE && (
         <div style={{ marginTop: 20 }}>
           <Card tinted padding={18}>
-            <Pictogram filled={monthlyOfTen} emoji="🙋" label={t("monthlyPicto", { n: Math.round(monthlyOfTen) })} />
+            <IconPictogram icon={Users} filled={monthlyOfTen} label={t("monthlyPicto", { n: Math.round(monthlyOfTen) })} />
           </Card>
         </div>
       )}
 
       <TierSection
         title={tierTitle.district}
-        emoji={TIER_EMOJI.district}
         list={tiers.district}
         loading={loadingDist}
         onOpen={(c) => openPerson(c)}
         onViewAll={tiers.district.length > PREVIEW_COUNT ? () => setSheet({ kind: "list", tier: "district" }) : undefined}
-        empty={<EmptyTier emoji="🏅" title={t("emptyDistrict", { name: districtName })} cta={t("ctaDistrict", { price: tierPrice("district") })} href={supportHref} />}
+        empty={<EmptyTier title={t("emptyDistrict", { name: districtName })} cta={t("ctaDistrict", { price: tierPrice("district") })} href={supportHref} />}
       />
       <TierSection
         title={tierTitle.state}
-        emoji={TIER_EMOJI.state}
         list={tiers.state}
         loading={loadingDist}
         onOpen={(c) => openPerson(c)}
         onViewAll={tiers.state.length > PREVIEW_COUNT ? () => setSheet({ kind: "list", tier: "state" }) : undefined}
-        empty={<EmptyTier emoji="🏆" title={t("emptyState", { name: stateName })} cta={t("ctaState", { name: stateName, price: tierPrice("state") })} href={stateHref} />}
+        empty={<EmptyTier title={t("emptyState", { name: stateName })} cta={t("ctaState", { name: stateName, price: tierPrice("state") })} href={stateHref} />}
       />
       <TierSection
         title={tierTitle.india}
-        emoji={TIER_EMOJI.india}
         list={tiers.india}
         loading={loadingDist}
         onOpen={(c) => openPerson(c)}
         onViewAll={tiers.india.length > PREVIEW_COUNT ? () => setSheet({ kind: "list", tier: "india" }) : undefined}
-        empty={<EmptyTier emoji="👑" title={t("emptyIndia")} cta={t("ctaIndia", { price: tierPrice("patron") })} href={patronHref} />}
+        empty={<EmptyTier title={t("emptyIndia")} cta={t("ctaIndia", { price: tierPrice("patron") })} href={patronHref} />}
       />
       {tiers.onetime.length > 0 && (
         <TierSection
           title={tierTitle.onetime}
-          emoji={TIER_EMOJI.onetime}
           list={tiers.onetime}
           onOpen={(c) => openPerson(c)}
           onViewAll={tiers.onetime.length > PREVIEW_COUNT ? () => setSheet({ kind: "list", tier: "onetime" }) : undefined}
@@ -566,11 +551,10 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
       )}
 
       {!loadingDist && showTenure && (
-        <Section emoji="📊" title={t("chartsTitle")}>
+        <Section title={t("chartsTitle")}>
           <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
             <ChartCard
               title={t("tenureTitle")}
-              emoji="⏳"
               units={t("tenureUnits")}
               simple={yearPlus > 0 ? t.rich("tenureSimple", { year: f.number(yearPlus), total: f.number(recurring.length), b: bold }) : t("tenureSimpleNone")}
               asOf={fetchedAt}
@@ -596,9 +580,6 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
 
       {/* Closing call to action: a tinted card with one primary button. */}
       <Card tinted style={{ marginTop: 32, textAlign: "center" }} padding={24}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 52, height: 52, fontSize: 26, borderRadius: 16, marginBottom: 12 }}>
-          🤝
-        </span>
         <h2 className="ftp-h2" style={{ marginBottom: 8 }}>
           {t.rich("ctaTitle", { name: districtName, price: tierPrice("district"), n: num })}
         </h2>
@@ -628,7 +609,7 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
       </Card>
 
       {sheet?.kind === "list" && (
-        <DetailSheet open onClose={close} title={listTitle[sheet.tier]} subtitle={t("sortedBy")} emoji={TIER_EMOJI[sheet.tier]} hueClassName={hueClass("contributors")}>
+        <DetailSheet open onClose={close} title={listTitle[sheet.tier]} subtitle={t("sortedBy")} hueClassName={hueClass("contributors")}>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             {tiers[sheet.tier].map((c) => (
               <li key={c.id}>
@@ -661,7 +642,6 @@ export default function ContributorsClient({ locale, stateSlug, districtSlug, di
                 href={supportHref}
                 style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 44, padding: "0 16px", borderRadius: "var(--ftp-radius-tile)", background: "var(--hue)", color: "#fff", fontSize: 14, fontWeight: 650, textDecoration: "none", flex: "1 1 auto" }}
               >
-                <span className="ftp-emoji" aria-hidden>🤝</span>
                 {t("joinThem", { name: districtName })}
               </Link>
             </>
@@ -706,7 +686,6 @@ function SupporterRow({ c, onOpen }: { c: Contributor; onOpen: () => void }) {
           {text.tenure ? ` · ${text.tenure}` : ""}
         </span>
       </span>
-      {text.medal && <span className="ftp-emoji" aria-hidden>{text.medal}</span>}
       {!c.isRecurring && c.amount ? <span className="ftp-num" style={{ fontSize: 13, color: "var(--hue-deep)" }}>₹{f.number(c.amount)}</span> : null}
     </button>
   );
