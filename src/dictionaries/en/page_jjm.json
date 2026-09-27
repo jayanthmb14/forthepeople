@@ -1,5 +1,5 @@
 {
-  "description": "Which homes have a tap at home, area by area, and whether the water is safe to drink",
+  "description": "How many village homes in the district have a tap at home, from the Jal Jeevan Mission dashboard",
   "urban": {
     "title": "Municipal water supply",
     "body": "Jal Jeevan Mission gives tap water connections to rural homes. {district} is an urban district, so its water supply is run by {board}.",
@@ -8,7 +8,9 @@
   },
   "answer": {
     "district": "About <b>{tenths} of every 10</b> village homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> rural homes, as counted on the Jal Jeevan Mission dashboard.",
+    "districtHundred": "About <b>{n} of every 100</b> village homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> rural homes, as counted on the Jal Jeevan Mission dashboard.",
     "main": "About <b>{tenths} of every 10</b> homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> homes in the {count, plural, one {area} other {{areas} areas}} we track.",
+    "mainHundred": "About <b>{n} of every 100</b> homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> homes in the {count, plural, one {area} other {{areas} areas}} we track.",
     "noHomes": "We track {count, plural, one {one area} other {{areas} areas}} here, but the number of homes has not been published yet.",
     "allSafe": "Every area that was tested has water that is safe to drink.",
     "someIssue": "{issue, plural, one {One area} other {{issueN} areas}} had a water quality problem in the latest test.",
@@ -26,6 +28,7 @@
   "picture": {
     "title": "Out of every 10 homes",
     "homes": "About {n} of every 10 homes have a tap at home.",
+    "homesHundred": "About {n} of every 100 homes have a tap at home.",
     "tank": "Homes with a tap at home"
   },
   "list": {
