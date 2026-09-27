@@ -12,6 +12,7 @@ import type { FigureDetail } from "../FigureSheet";
 import { fmtDecimal, formatIndicator } from "../format";
 import type { Tr } from "../i18n";
 import type { IndicatorRow } from "./data";
+import { isStandingFact } from "@/lib/india/figure-dates";
 
 export function toFigure(
   row: IndicatorRow,
@@ -31,6 +32,9 @@ export function toFigure(
     unit: f.unit || undefined,
     emoji: opts.emoji,
     asOf: row.asOf,
+    // A standing fact (seats, states, a policy target) stores the day it
+    // was last checked, so its tile says "checked", not "as of".
+    checked: isStandingFact(row.metricKey),
     source: { label: row.source, href: row.sourceUrl || undefined },
     previous: prevText ? { value: prevText.unit ? `${prevText.value} ${prevText.unit}` : prevText.value, asOf: row.previousAsOf } : null,
     change:

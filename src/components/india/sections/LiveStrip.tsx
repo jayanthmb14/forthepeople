@@ -36,6 +36,7 @@
 import * as React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
+import { NOT_STANDING_FACT } from "@/lib/india/figure-dates";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { FreshnessPill } from "@/components/district/ui";
 import { INDIA_MODULES } from "@/lib/india/india-modules";
@@ -107,7 +108,10 @@ export async function LiveStrip({ locale }: { locale: string }) {
   // "LAST SYNC X h ago" (seed-placeholder timestamps) with this.
   let latestIndicator: { asOfDate: Date } | null = null;
   try {
+    // Standing facts (seats, states, targets) carry the day they were last
+    // checked, and hidden rows have no value — neither is new data.
     latestIndicator = await prisma.indiaIndicator.findFirst({
+      where: { numericValue: { not: null }, ...NOT_STANDING_FACT },
       orderBy: { asOfDate: "desc" },
       select: { asOfDate: true },
     });

@@ -56,6 +56,7 @@ import {
 } from "./data";
 import { fmtDate, fmtDecimal, formatIndicator, formatIndicatorText } from "../format";
 import { INDIA_NS, indiaText } from "../i18n";
+import { isStandingFact } from "@/lib/india/figure-dates";
 
 interface Props {
   locale: string;
@@ -115,7 +116,7 @@ export default async function ModulePage({ locale, module }: Props) {
   // ── "In simple words": one sentence from the headline row ─────────
   const headline = pickHeadline(module.headlineMetric?.key, indicators);
   const simple = headline
-    ? t("explain.figure", {
+    ? t(isStandingFact(headline.metricKey) ? "explain.fact" : "explain.figure", {
         label: label(headline),
         value: text(headline.value ?? 0, headline.unit),
         date: fmtDate(locale, headline.asOf),

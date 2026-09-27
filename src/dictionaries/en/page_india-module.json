@@ -434,8 +434,9 @@
     }
   },
   "explain": {
-    "figure": "The latest official figure: {label} is {value}, as of {date} ({source}).",
-    "none": "No official figures for {module} are shown here yet. We add them only when {source} publishes them; nothing is guessed."
+    "figure": "The most recent figure we have: {label} is {value}, as of {date} ({source}).",
+    "none": "No official figures for {module} are shown here yet. We add them only when {source} publishes them; nothing is guessed.",
+    "fact": "{label} is {value} ({source}). This does not change often; we last checked it on {date}."
   },
   "sheet": {
     "open": "Details: {label}",
@@ -450,6 +451,8 @@
     "place": "Place",
     "placeRank": "#{n} in India",
     "vsTop": "Compared with the top state",
-    "vsTopValue": "{pct} of {leader}"
+    "vsTopValue": "{pct} of {leader}",
+    "checked": "Last checked",
+    "checkedOn": "Checked {date}"
   }
 }

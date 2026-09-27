@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { NOT_STANDING_FACT } from "@/lib/india/figure-dates";
 import {
   INDIA_MODULES,
   type IndiaModuleCategory,
@@ -57,6 +58,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const rows = await prisma.indiaIndicator.findMany({
+      // Standing facts (seats, states, targets) re-checked by hand are not updates.
+      where: NOT_STANDING_FACT,
       orderBy: { fetchedAt: "desc" },
       take: MAX_ROWS,
       select: {
