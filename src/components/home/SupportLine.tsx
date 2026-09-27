@@ -13,9 +13,11 @@
 //
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import styles from "./home.module.css";
 
 export default function SupportLine({ locale }: { locale: string }) {
+  const t = useTranslations("home");
   return (
     <div className="ftp-container">
       <aside className={styles.supportLine} aria-label="Support ForThePeople.in">
@@ -23,11 +25,10 @@ export default function SupportLine({ locale }: { locale: string }) {
           🪔
         </span>
         <p className={styles.supportText}>
-          <strong>Keep a district&apos;s data free.</strong>{" "}
-          <span className="ftp-num">₹99</span> a month pays for one district&apos;s servers and data feeds.
+          <strong>{t("supportStrong")}</strong> {t("supportBody", { amount: "₹99" })}
         </p>
         <Link href={`/${locale}/support`} className={styles.supportLink}>
-          Become a supporter
+          {t("becomeSupporter")}
           <ArrowRight size={14} aria-hidden />
         </Link>
       </aside>

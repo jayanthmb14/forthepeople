@@ -17,11 +17,13 @@
 //     below is what turns it on, and the CSS hides it otherwise).
 //   • Tricolour stays ceremonial: a thin line and soft washes, never stripes
 //     or a chakra (vault note 45).
+import { useTranslations } from "next-intl";
 import IntroSkip from "./IntroSkip";
 
 const ARM = `try{var d=document.documentElement;if(sessionStorage.getItem('ftp-intro')){d.setAttribute('data-intro','seen')}else{sessionStorage.setItem('ftp-intro','1');d.setAttribute('data-intro','show')}}catch(e){}`;
 
 export default function IntroSplash() {
+  const t = useTranslations("intro");
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: ARM }} />
@@ -39,12 +41,12 @@ export default function IntroSplash() {
             </span>
           </div>
           <p className="ftp-intro-line">
-            <span style={{ ["--i" as string]: 0 }}>Your district.</span>{" "}
-            <span style={{ ["--i" as string]: 1 }} className="ftp-intro-hl">Your data.</span>{" "}
-            <span style={{ ["--i" as string]: 2 }}>Your right.</span>
+            <span style={{ ["--i" as string]: 0 }}>{t("line1")}</span>{" "}
+            <span style={{ ["--i" as string]: 1 }} className="ftp-intro-hl">{t("line2")}</span>{" "}
+            <span style={{ ["--i" as string]: 2 }}>{t("line3")}</span>
           </p>
           <div className="ftp-intro-bar"><span /></div>
-          <p className="ftp-intro-sub">Government data from official portals, made simple for every citizen</p>
+          <p className="ftp-intro-sub">{t("sub")}</p>
         </div>
       </div>
       <IntroSkip />

@@ -23,6 +23,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { AsOfText, SourcePill } from "@/components/district/ui";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -36,12 +37,15 @@ import { AsOfText, SourcePill } from "@/components/district/ui";
 export function Explainer({
   children,
   emoji = "💡",
-  title = "In simple words",
+  title,
 }: {
   children: React.ReactNode;
   emoji?: string;
+  /** Defaults to the translated "In simple words". */
   title?: string;
 }) {
+  const tk = useTranslations("kit");
+  const heading = !title || title === "In simple words" ? tk("inSimpleWords") : title;
   return (
     <div
       role="note"
@@ -61,7 +65,7 @@ export function Explainer({
       </span>
       <div style={{ minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
-          {title}
+          {heading}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 15, lineHeight: "23px", color: "var(--ftp-text)" }}>{children}</p>
       </div>
@@ -397,6 +401,7 @@ export function ChartCard({
   legend?: Array<{ label: string; swatch: string }>;
   children: React.ReactNode;
 }) {
+  const tk = useTranslations("kit");
   const [asTable, setAsTable] = React.useState(false);
   const hasTable = Boolean(table);
   return (
@@ -444,7 +449,7 @@ export function ChartCard({
               fontFamily: "var(--ftp-font-sans)",
             }}
           >
-            <span aria-hidden>🔢 </span>Table view
+            <span aria-hidden>🔢 </span>{tk("tableView")}
           </button>
         )}
       </figcaption>

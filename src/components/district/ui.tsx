@@ -41,8 +41,9 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getModuleMeta, moduleFromPath } from "@/lib/design/hues";
-import { tierFromPriority } from "@/lib/constants/sidebar-modules";
 import { scriptLang } from "@/lib/utils/script-lang";
+import { useTranslations } from "next-intl";
+import { useFormat, useModuleText } from "@/i18n/client";
 import {
   AlertCircle,
   ArrowDownRight,
@@ -133,10 +134,10 @@ function toDate(value: string | Date | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** "12 Sep" or "12 Sep 2025" when the year differs from today. */
-function shortDate(d: Date): string {
+/** "12 Sep" or "12 Sep 2025" when the year differs from today. `intl` picks the language. */
+function shortDate(d: Date, intl = "en-IN"): string {
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString("en-IN", {
+  return d.toLocaleDateString(intl, {
     day: "numeric",
     month: "short",
     ...(sameYear ? {} : { year: "numeric" }),
@@ -145,11 +146,11 @@ function shortDate(d: Date): string {
 }
 
 /** Exact IST timestamp for tooltips: "12 Sep 2026, 14:05 IST". */
-export function formatIST(value: string | Date | null | undefined): string | null {
+export function formatIST(value: string | Date | null | undefined, intl = "en-IN"): string | null {
   const d = toDate(value);
   if (!d) return null;
   return (
-    d.toLocaleString("en-IN", {
+    d.toLocaleString(intl, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -211,6 +212,43 @@ export function describeFreshness(
   else tone = "neutral";
 
   return { ageMinutes, isLive, tone, label, exact: formatIST(d) ?? "" };
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  i18n bridge for the kit
+// ─────────────────────────────────────────────────────────────────────
+
+/** English prefixes older pages pass in → message keys, so they translate. */
+const PREFIX_KEY: Record<string, string> = {
+  "As of": "asOf",
+  Updated: "updated",
+  Published: "published",
+  Issued: "issued",
+  Computed: "computed",
+  Recorded: "recorded",
+};
+
+/** Translate a prefix if it is one of the known English ones; else pass through. */
+function usePrefix(prefix: string | undefined, fallbackKey = "asOf"): string {
+  const t = useTranslations("kit");
+  if (prefix === undefined) return t(fallbackKey);
+  if (prefix === "") return "";
+  const key = PREFIX_KEY[prefix];
+  return key ? t(key) : prefix;
+}
+
+/** Localised freshness label ("Updated 12 min ago" / "As of 12 Sep"). */
+function useFreshnessLabel(info: FreshnessInfo | null, asOf: string | Date | null | undefined): { label: string; exact: string } | null {
+  const t = useTranslations("kit");
+  const f = useFormat();
+  if (!info) return null;
+  const d = toDate(asOf);
+  const m = info.ageMinutes;
+  let label: string;
+  if (info.isLive) label = t("updatedAgo", { ago: m < 1 ? t("justNow") : t("minAgo", { n: Math.round(m) }) });
+  else if (m < 24 * 60) label = t("updatedAgo", { ago: t("hoursAgo", { n: Math.round(m / 60) }) });
+  else label = `${t("asOf")} ${d ? shortDate(d, f.intl) : ""}`.trim();
+  return { label, exact: t("exact", { time: formatIST(d, f.intl) ?? "" }) };
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -300,10 +338,11 @@ export function FreshnessPill({
   thresholdHours?: number;
 }) {
   const info = describeFreshness(asOf, status, thresholdHours);
-  if (!info) return null;
+  const text = useFreshnessLabel(info, asOf);
+  if (!info || !text) return null;
   return (
-    <Pill tone={info.tone} dot={info.isLive} pulse={info.isLive} title={`Exact: ${info.exact}`}>
-      <span suppressHydrationWarning>{info.label}</span>
+    <Pill tone={info.tone} dot={info.isLive} pulse={info.isLive} title={text.exact}>
+      <span suppressHydrationWarning>{text.label}</span>
     </Pill>
   );
 }
@@ -381,27 +420,33 @@ export function SourcePill({ label, href }: { label: string; href?: string }) {
 export function AsOfText({
   asOf,
   period,
-  prefix = "As of",
+  prefix,
 }: {
   asOf?: string | Date | null;
   period?: string | null;
+  /** Defaults to the translated "As of". Known English prefixes are translated. */
   prefix?: string;
 }) {
+  const t = useTranslations("kit");
+  const f = useFormat();
+  const pre = usePrefix(prefix);
   const d = toDate(asOf);
-  const style: React.CSSProperties = { fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" };
+  const style: React.CSSProperties = { fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" };
   const label = period?.trim();
   if (label) {
     return (
-      <span title={d ? `Fetched: ${formatIST(d)}` : undefined} style={style}>
-        {prefix ? `${prefix} ` : ""}
+      <span title={d ? t("fetched", { time: formatIST(d, f.intl) ?? "" }) : undefined} style={style}>
+        {pre ? `${pre} ` : ""}
         {label}
       </span>
     );
   }
   if (!d) return null;
   return (
-    <span title={`Exact: ${formatIST(d)}`} style={style}>
-      <span suppressHydrationWarning>{prefix} {shortDate(d)}</span>
+    <span title={t("exact", { time: formatIST(d, f.intl) ?? "" })} style={style}>
+      <span suppressHydrationWarning>
+        {pre} {shortDate(d, f.intl)}
+      </span>
     </span>
   );
 }
@@ -526,7 +571,7 @@ export function PageHeader({
   titleLocal,
   description,
   backHref,
-  backLabel = "Back to overview",
+  backLabel,
   freshness,
   source,
   actions,
@@ -550,10 +595,21 @@ export function PageHeader({
   children?: React.ReactNode;
 }) {
   void _accent;
+  const t = useTranslations("kit");
+  const mt = useModuleText();
   const pathname = usePathname();
-  const meta = getModuleMeta(moduleFromPath(pathname));
+  const slug = moduleFromPath(pathname);
+  const meta = getModuleMeta(slug);
   const tileEmoji = emoji ?? meta?.emoji;
-  const group = meta ? tierFromPriority(meta.priority) : null;
+  const group = meta ? mt.groupOf(slug) : null;
+  const back = !backLabel || backLabel === "Back to overview" ? t("backToOverview") : backLabel;
+  // Pages that pass the registry's English title/description get the
+  // translated one automatically; anything else is shown as passed.
+  const shownTitle = meta && title === meta.label ? mt.label(slug) : title;
+  const shownDesc = meta && description === meta.description ? mt.description(slug) : description;
+  // The regional-language name is hidden when it already IS the title
+  // (e.g. the Kannada UI on a Karnataka page).
+  const shownLocal = titleLocal && titleLocal !== shownTitle ? titleLocal : undefined;
   const hasMeta = Boolean(freshness || source || actions || children);
   return (
     <header style={{ marginBottom: 24 }}>
@@ -572,7 +628,7 @@ export function PageHeader({
           }}
         >
           <ArrowLeft size={14} aria-hidden />
-          {backLabel}
+          {back}
         </Link>
       )}
       {/* The band: the module's hue as a diagonal gradient, a big emoji
@@ -639,16 +695,16 @@ export function PageHeader({
                 className="ftp-display"
                 style={{ fontSize: "clamp(26px, 3.4vw, 34px)", lineHeight: 1.1, fontWeight: 700, color: "#fff", margin: 0, textWrap: "balance" }}
               >
-                {title}
+                {shownTitle}
               </h1>
-              {titleLocal && (
-                <span lang={scriptLang(titleLocal)} style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
-                  {titleLocal}
+              {shownLocal && (
+                <span lang={scriptLang(shownLocal)} style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
+                  {shownLocal}
                 </span>
               )}
             </div>
-            {description && (
-              <p style={{ fontSize: 14, lineHeight: "21px", margin: "6px 0 0", opacity: 0.92, maxWidth: 680 }}>{description}</p>
+            {shownDesc && (
+              <p style={{ fontSize: 14, lineHeight: "21px", margin: "6px 0 0", opacity: 0.92, maxWidth: 680 }}>{shownDesc}</p>
             )}
           </div>
         </div>
@@ -717,6 +773,7 @@ export function StatTile({
   /** Count the number up when it scrolls into view (default true). */
   countUp?: boolean;
 }) {
+  const tk = useTranslations("kit");
   const TrendIcon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : trend === "neutral" ? Minus : null;
   return (
     <div
@@ -754,7 +811,7 @@ export function StatTile({
           {TrendIcon && (
             <>
               <TrendIcon size={14} aria-hidden style={{ color: "var(--hue)" }} />
-              <span className="sr-only">{trend === "up" ? "Going up." : trend === "down" ? "Going down." : "No change."}</span>
+              <span className="sr-only">{trend === "up" ? tk("goingUp") : trend === "down" ? tk("goingDown") : tk("noChange")}</span>
             </>
           )}
           {sub && <span>{sub}</span>}
@@ -964,8 +1021,9 @@ export function DataTable({
   emptyText?: string;
   caption?: string;
 }) {
+  const tk = useTranslations("kit");
   if (!rows.length) {
-    return <EmptyState title={emptyText ?? "No rows to show yet."} />;
+    return <EmptyState title={emptyText ?? tk("noRows")} />;
   }
   const pad = dense ? "6px 12px" : "10px 14px";
   return (
@@ -1178,12 +1236,13 @@ export function KpiRing({
  * @prop rows  Number of placeholder rows (default 4).
  */
 export function LoadingShell({ rows = 4 }: { rows?: number }) {
+  const tk = useTranslations("kit");
   return (
     <div aria-busy="true" aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="ftp-skeleton" style={{ height: 48, borderRadius: "var(--ftp-radius-tile)" }} />
       ))}
-      <span className="sr-only">Loading</span>
+      <span className="sr-only">{tk("loading")}</span>
     </div>
   );
 }
@@ -1195,6 +1254,7 @@ export function LoadingShell({ rows = 4 }: { rows?: number }) {
  * @prop onRetry  If given, renders a "Try again" button.
  */
 export function ErrorBlock({ message, onRetry }: { message?: string; onRetry?: () => void }) {
+  const tk = useTranslations("kit");
   return (
     <div
       role="alert"
@@ -1212,10 +1272,10 @@ export function ErrorBlock({ message, onRetry }: { message?: string; onRetry?: (
       }}
     >
       <AlertCircle size={16} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0 }} />
-      <span style={{ flex: 1 }}>{message ?? "Could not load this data. Please refresh the page."}</span>
+      <span style={{ flex: 1 }}>{message ?? tk("loadError")}</span>
       {onRetry && (
         <ToolbarButton icon={RefreshCw} onClick={onRetry}>
-          Try again
+          {tk("tryAgain")}
         </ToolbarButton>
       )}
     </div>
@@ -1292,15 +1352,17 @@ export function Chips({
   items,
   value,
   onChange,
-  label = "Filter",
+  label,
 }: {
   items: ChipItem[];
   value: string;
   onChange: (value: string) => void;
   label?: string;
 }) {
+  const tk = useTranslations("kit");
+  const groupLabel = label ?? tk("filter");
   return (
-    <div role="group" aria-label={label} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <div role="group" aria-label={groupLabel} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       {items.map((item) => {
         const active = item.value === value;
         return (
@@ -1543,6 +1605,7 @@ export function SourcesFooter({
   methodologyHref?: string;
   defaultOpen?: boolean;
 }) {
+  const tk = useTranslations("kit");
   if (!sources.length) return null;
   return (
     <details
@@ -1554,7 +1617,7 @@ export function SourcesFooter({
       }}
     >
       <summary style={{ ...LABEL, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6 }}>
-        Sources
+        {tk("sources")}
         <span className="ftp-num" style={{ textTransform: "none", letterSpacing: 0 }}>({sources.length})</span>
       </summary>
       <ul style={{ listStyle: "none", padding: 0, margin: "10px 0 0", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1577,7 +1640,7 @@ export function SourcesFooter({
       </ul>
       {methodologyHref && (
         <Link href={methodologyHref} style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}>
-          How we compute these numbers
+          {tk("howComputed")}
         </Link>
       )}
     </details>

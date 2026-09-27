@@ -35,6 +35,8 @@ import { scriptLang } from "@/lib/utils/script-lang";
 import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
 import { usePreview, useTopVotes } from "./home-data";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import styles from "./home.module.css";
 
 /** A district counts as "NEW" for this many days after it goes live. */
@@ -51,6 +53,8 @@ export interface HomeDistrict {
 }
 
 export default function LiveDistrictsCard({ locale, districts }: { locale: string; districts: HomeDistrict[] }) {
+  const t = useTranslations("home");
+  const f = useFormat();
   const preview = usePreview();
   const { votes, loaded: votesLoaded } = useTopVotes();
 
@@ -74,12 +78,12 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
           🏙️
         </span>
         <h2 id="home-live-districts" className="ftp-h2">
-          Live districts
+          {t("liveDistricts")}
         </h2>
         <Pill tone="live" dot pulse>
-          <span className="ftp-num">{sorted.length}</span> live
+          {t("liveCount", { n: sorted.length })}
         </Pill>
-        <span className={styles.gridHeadNote}>Newest first. Tap a district to open its dashboards.</span>
+        <span className={styles.gridHeadNote}>{t("newestFirst")}</span>
       </header>
 
       <ul className={styles.districtGrid}>
@@ -100,6 +104,11 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
           const tempAsOf = asOfLabel(weather?.recordedAt ?? null, { prefix: "Weather as of" });
           const Icon = getDistrictIcon(d.slug);
           const hue = getDistrictHue(d.slug);
+          // In a UI language that matches the district's own script, lead
+          // with the local name (ಮಂಡ್ಯ on /kn) and show English beside it.
+          const localFirst = Boolean(local && scriptLang(local) === locale);
+          const primary = localFirst ? (local as string) : d.name;
+          const secondary = localFirst ? d.name : local;
           return (
             <li key={d.slug} className={`ftp-hue-${hue} ftp-rise`} style={{ ["--i" as string]: i }}>
               <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.districtTile} ftp-card-link`}>
@@ -107,7 +116,7 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
                   <span className={styles.districtArt} aria-hidden>
                     {Icon ? <Icon size={30} /> : <span className="ftp-emoji" style={{ fontSize: 24 }}>📍</span>}
                   </span>
-                  {isNew && <Pill tone="brand">NEW</Pill>}
+                  {isNew && <Pill tone="brand">{t("new")}</Pill>}
                   {temp !== null && (
                     <span className={styles.districtWeather} title={tempAsOf || undefined}>
                       <span className="ftp-emoji" aria-hidden>{weatherEmoji(weather?.conditions)}</span>
@@ -117,8 +126,12 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
                   )}
                 </span>
                 <span className={styles.districtTileName}>
-                  {d.name}
-                  {local && <span lang={scriptLang(local)} className={styles.districtTileLocal}>{local}</span>}
+                  <span lang={localFirst ? scriptLang(primary) : undefined}>{primary}</span>
+                  {secondary && (
+                    <span lang={localFirst ? "en" : scriptLang(secondary)} className={styles.districtTileLocal}>
+                      {secondary}
+                    </span>
+                  )}
                 </span>
                 <span className={styles.districtTileState}>{d.stateName}</span>
                 {tagline && <span className={styles.districtTileTag}>{tagline}</span>}
@@ -132,17 +145,11 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
           <Link href={`/${locale}/vote-district`} className={`${styles.voteTileLink} ftp-card-link`}>
             <span className="ftp-emoji" aria-hidden style={{ fontSize: 34 }}>🗳️</span>
             <span style={{ minWidth: 0 }}>
-              <span className={styles.voteTileTitle}>Is your district next?</span>
+              <span className={styles.voteTileTitle}>{t("voteTitle")}</span>
               <span className={styles.voteTileBody}>
-                {votesLoaded && leader ? (
-                  <>
-                    {leader.districtName} leads with{" "}
-                    <span className="ftp-num">{leader.requestCount.toLocaleString("en-IN")}</span>{" "}
-                    {leader.requestCount === 1 ? "request" : "requests"}. Add your vote.
-                  </>
-                ) : (
-                  <>Vote, and the most-requested districts go live first.</>
-                )}
+                {votesLoaded && leader
+                  ? t("voteLeader", { name: leader.districtName, count: f.number(leader.requestCount) })
+                  : t("voteDefault")}
               </span>
             </span>
             <ArrowRight size={18} aria-hidden style={{ marginLeft: "auto", flexShrink: 0 }} />

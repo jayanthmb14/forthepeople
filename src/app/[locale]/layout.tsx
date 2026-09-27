@@ -4,6 +4,9 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { getLanguage } from "@/i18n/languages";
 import { notFound } from "next/navigation";
 import { routing, type Locale } from "@/i18n/routing";
 import QueryProvider from "@/components/providers/QueryProvider";
@@ -51,16 +54,31 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
+  // Static rendering: tell next-intl the locale instead of reading headers.
+  setRequestLocale(locale);
 
-  const githubStars = await getGithubStars();
+  const [githubStars, messages] = await Promise.all([getGithubStars(), getMessages({ locale })]);
+  const lang = getLanguage(locale);
 
   return (
-    <QueryProvider>
-      <PageProgressBar />
-      <MigrationBanner />
-      <HeaderBar locale={locale} githubStars={githubStars} />
-      {children}
-      <Footer locale={locale} />
-    </QueryProvider>
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Kolkata">
+      {/* lang + dir for everything rendered in this language (screen
+          readers, hyphenation, the :lang() font rules in globals.css,
+          right-to-left scripts). The inline script also updates <html>. */}
+      <div lang={locale} dir={lang.dir} className="ftp-locale-root">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.lang=${JSON.stringify(locale)};document.documentElement.dir=${JSON.stringify(lang.dir)};`,
+          }}
+        />
+        <QueryProvider>
+          <PageProgressBar />
+          <MigrationBanner />
+          <HeaderBar locale={locale} githubStars={githubStars} />
+          {children}
+          <Footer locale={locale} />
+        </QueryProvider>
+      </div>
+    </NextIntlClientProvider>
   );
 }

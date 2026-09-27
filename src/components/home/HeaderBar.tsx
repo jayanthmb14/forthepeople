@@ -33,6 +33,8 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
+import LanguageMenu from "@/components/common/LanguageMenu";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -57,15 +59,6 @@ import styles from "./chrome.module.css";
 export const DISTRICT_SEARCH_ID = "ftp-district-search";
 
 const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
-
-/**
- * Languages with a real route (see src/i18n/routing.ts). Adding a language
- * is a routing edit plus one line here.
- */
-const LANGUAGES: { code: string; label: string; name: string }[] = [
-  { code: "en", label: "EN", name: "English" },
-  { code: "kn", label: "ಕನ್ನಡ", name: "Kannada" },
-];
 
 // ── Flatten INDIA_STATES into one searchable list ──
 type FlatDistrict = {
@@ -98,10 +91,7 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, onOutside: ()
 }
 
 /** "/en/karnataka/mandya" → "/kn/karnataka/mandya" */
-function switchLocale(pathname: string | null, code: string): string {
-  const rest = (pathname ?? "").replace(/^\/[a-z]{2}(?=\/|$)/, "");
-  return `/${code}${rest}`;
-}
+// Locale switching lives in LanguageMenu (registry-driven).
 
 export interface HeaderBarProps {
   locale: string;
@@ -110,6 +100,8 @@ export interface HeaderBarProps {
 }
 
 export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps) {
+  const t = useTranslations("header");
+  const tl = useTranslations("lang");
   const router = useRouter();
   const pathname = usePathname();
   const my = useMyDistrict();
@@ -220,29 +212,7 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
   const closeMenu = () => setMenuOpen(false);
 
   // ── Small pieces reused in the row and in the menu ──
-  const languageToggle = (
-    <nav className={styles.lang} aria-label="Language">
-      {LANGUAGES.map((l, i) => (
-        <span key={l.code} style={{ display: "inline-flex", alignItems: "center" }}>
-          {i > 0 && (
-            <span className={styles.langSep} aria-hidden>
-              |
-            </span>
-          )}
-          <Link
-            href={switchLocale(pathname, l.code)}
-            hrefLang={l.code}
-            lang={l.code}
-            aria-current={l.code === locale ? "true" : undefined}
-            className={`${styles.langLink} ${l.code === locale ? styles.langLinkActive : ""}`}
-            title={l.code === "en" ? "English" : "Kannada — translation in progress; some text is still in English"}
-          >
-            {l.label}
-          </Link>
-        </span>
-      ))}
-    </nav>
-  );
+  const languageToggle = <LanguageMenu />;
 
   const starsText = githubStars !== null ? githubStars.toLocaleString("en-IN") : null;
 
@@ -291,28 +261,28 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
               <input
                 id={DISTRICT_SEARCH_ID}
                 type="search"
-                placeholder="Search any district"
+                placeholder={t("search")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setSearchOpen(true);
                 }}
                 onFocus={() => setSearchOpen(true)}
-                aria-label="Search any district"
+                aria-label={t("search")}
                 autoComplete="off"
                 className={styles.searchInput}
               />
             </form>
             {searchOpen && search.trim().length > 0 && (
-              <div className={styles.searchResults} aria-label="District search results">
+              <div className={styles.searchResults} aria-label={t("searchResults")}>
                 {filtered.live.length === 0 && filtered.locked.length === 0 ? (
-                  <div className={styles.searchEmpty}>No matching districts. Try a different name.</div>
+                  <div className={styles.searchEmpty}>{t("noMatch")}</div>
                 ) : (
                   <>
                     {filtered.live.length > 0 && (
                       <>
                         <div className={styles.searchGroupLabel}>
-                          Live · <span className="ftp-num">{filtered.live.length}</span>
+                          {t("liveGroup")} <span className="ftp-num">({filtered.live.length})</span>
                         </div>
                         {filtered.live.map((d) => (
                           <Link
@@ -331,7 +301,7 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
                     {filtered.locked.length > 0 && (
                       <>
                         <div className={styles.searchGroupLabel}>
-                          Not live yet · vote to unlock · <span className="ftp-num">{filtered.locked.length}</span>
+                          {t("notLiveGroup")} <span className="ftp-num">({filtered.locked.length})</span>
                         </div>
                         {filtered.locked.map((d) => (
                           <Link
@@ -360,16 +330,16 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
             {/* My district pill (only once the visitor has located themselves) */}
             {my.district && myHref && (
               <span className={`${styles.myDistrict} ${styles.desktopOnly}`}>
-                <Link href={myHref} className={styles.myDistrictLink} title="Your district (stored only in this browser)">
+                <Link href={myHref} className={styles.myDistrictLink} title={t("myDistrictTitle")}>
                   <MapPin size={14} aria-hidden />
-                  My district: {my.district.name}
+                  {t("myDistrict", { name: my.district.name })}
                 </Link>
                 <button
                   type="button"
                   className={styles.myDistrictForget}
                   onClick={my.forget}
                   aria-label={`Forget ${my.district.name} as my district`}
-                  title="Forget my district"
+                  title={t("forget")}
                 >
                   <X size={14} aria-hidden />
                 </button>
@@ -388,22 +358,22 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
               <Github size={16} aria-hidden />
               {starsText ? (
                 <>
-                  <span>Star</span>
+                  <span>{t("star")}</span>
                   <span className={styles.stars}>{starsText}</span>
                 </>
               ) : (
-                <span>GitHub</span>
+                <span>{t("github")}</span>
               )}
             </a>
 
             <Link href={`/${locale}/features`} className={`${styles.btn} ${styles.btnQuiet} ${styles.wideOnly}`}>
               <Vote size={16} aria-hidden />
-              Vote on features
+              {t("voteFeatures")}
             </Link>
 
             <Link href={`/${locale}/support`} className={`${styles.btn} ${styles.btnSupport} ${styles.desktopOnly}`}>
               <Heart size={16} aria-hidden className={styles.heart} />
-              Support
+              {t("support")}
             </Link>
 
             {/* Menu (tablet + phone) — holds everything hidden above. */}
@@ -425,7 +395,7 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
                     <>
                       <Link href={myHref} className={styles.menuItem} onClick={closeMenu}>
                         <MapPin size={16} aria-hidden />
-                        My district: {my.district.name}
+                        {t("myDistrict", { name: my.district.name })}
                       </Link>
                       <button
                         type="button"
@@ -443,11 +413,11 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
                   )}
                   <Link href={`/${locale}/support`} className={styles.menuItem} onClick={closeMenu}>
                     <Heart size={16} aria-hidden className={styles.heart} />
-                    Support
+                    {t("support")}
                   </Link>
                   <Link href={`/${locale}/features`} className={styles.menuItem} onClick={closeMenu}>
                     <Vote size={16} aria-hidden />
-                    Vote on features
+                    {t("voteFeatures")}
                   </Link>
                   <a
                     href={GITHUB_URL}
@@ -457,25 +427,14 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
                     onClick={closeMenu}
                   >
                     <Github size={16} aria-hidden />
-                    GitHub
-                    {starsText && <span className={`${styles.menuItemMeta} ftp-num`}>{starsText} stars</span>}
+                    {t("github")}
+                    {starsText && <span className={`${styles.menuItemMeta} ftp-num`}>{t("stars", { n: starsText })}</span>}
                   </a>
                   <div className={styles.menuDivider} />
-                  <div className={styles.menuLabel}>Language</div>
-                  {LANGUAGES.map((l) => (
-                    <Link
-                      key={l.code}
-                      href={switchLocale(pathname, l.code)}
-                      hrefLang={l.code}
-                      lang={l.code}
-                      aria-current={l.code === locale ? "true" : undefined}
-                      className={styles.menuItem}
-                      onClick={closeMenu}
-                    >
-                      {l.label}
-                      <span className={styles.menuItemMeta}>{l.code === locale ? "Current" : l.name}</span>
-                    </Link>
-                  ))}
+                  <div className={styles.menuLabel}>{tl("menuLabel")}</div>
+                  <div style={{ padding: "4px 8px" }}>
+                    <LanguageMenu />
+                  </div>
                 </div>
               )}
             </div>

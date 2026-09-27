@@ -7,17 +7,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
+import { PLANNED_LOCALES } from "./i18n/languages";
 
 const intlMiddleware = createMiddleware(routing);
 
-/**
- * Locale prefixes we advertise (footer, old share links, the language
- * toggle in an earlier design) but that have NOT shipped yet. Until the
- * Hindi dictionary lands, send them to English with a temporary redirect
- * (307) so search engines keep the original URL and re-check later.
- * Remove "hi" from this list when /hi goes live.
- */
-const UNSHIPPED_LOCALES = ["hi"] as const;
+// Languages that exist in the registry but are not switched on yet
+// (status "planned" in src/i18n/languages.ts) redirect to English.
+const UNSHIPPED_LOCALES = PLANNED_LOCALES;
 
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -57,9 +53,11 @@ export default function proxy(req: NextRequest) {
 
 export const config = {
   // Match all pathnames except for internal Next.js/API routes
+  // Every page path (locale-prefixed or not); files, _next and API are
+  // excluded. Locale codes are NOT listed here, so adding a language to
+  // the registry needs no change in this file.
   matcher: [
     "/",
-    "/(en|kn|hi)/:path*",
     "/((?!_next|_vercel|api|.*\\..*).*)",
   ],
 };

@@ -23,6 +23,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Github, Instagram, Users } from "lucide-react";
 import { timeAgoLabel, type TimeAgoResult } from "@/lib/utils/timeAgo";
 import { formatIST } from "@/components/district/ui";
@@ -33,6 +34,7 @@ export interface FooterProps {
 }
 
 export default function Footer({ locale }: FooterProps) {
+  const t = useTranslations("footer2");
   const [updated, setUpdated] = useState<TimeAgoResult & { at: string | null }>({
     label: "—",
     isStale: true,
@@ -59,28 +61,28 @@ export default function Footer({ locale }: FooterProps) {
 
   const groups: { title: string; links: { href: string; label: string }[] }[] = [
     {
-      title: "Explore",
+      title: t("explore"),
       links: [
-        { href: `/${locale}/india`, label: "India dashboard" },
-        { href: `/${locale}/vote-district`, label: "Vote for a district" },
-        { href: `/${locale}/compare`, label: "Compare districts" },
+        { href: `/${locale}/india`, label: t("indiaDashboard") },
+        { href: `/${locale}/vote-district`, label: t("voteDistrict") },
+        { href: `/${locale}/compare`, label: t("compare") },
       ],
     },
     {
-      title: "Get involved",
+      title: t("involved"),
       links: [
-        { href: `/${locale}/contribute`, label: "Contribute" },
-        { href: `/${locale}/features`, label: "Vote on features" },
-        { href: `/${locale}/feedback`, label: "Feedback" },
-        { href: `/${locale}/support`, label: "Support the project" },
+        { href: `/${locale}/contribute`, label: t("contribute") },
+        { href: `/${locale}/features`, label: t("voteFeatures") },
+        { href: `/${locale}/feedback`, label: t("feedback") },
+        { href: `/${locale}/support`, label: t("supportProject") },
       ],
     },
     {
-      title: "About",
+      title: t("about"),
       links: [
-        { href: `/${locale}/about`, label: "About" },
-        { href: `/${locale}/privacy`, label: "Privacy" },
-        { href: `/${locale}/disclaimer`, label: "Disclaimer" },
+        { href: `/${locale}/about`, label: t("aboutUs") },
+        { href: `/${locale}/privacy`, label: t("privacy") },
+        { href: `/${locale}/disclaimer`, label: t("disclaimer") },
       ],
     },
   ];
@@ -95,11 +97,8 @@ export default function Footer({ locale }: FooterProps) {
             </span>
             ForThePeople<span className={styles.footerIn}>.in</span>
           </Link>
-          <p className={styles.footerTagline}>Your district. Your data. Your right.</p>
-          <p className={styles.footerNote}>
-            An independent citizen project. Not a government website. Data from official portals under NDSAP;
-            always verify at the source.
-          </p>
+          <p className={styles.footerTagline}>{t("tagline")}</p>
+          <p className={styles.footerNote}>{t("note")}</p>
           <div className={styles.footerIcons}>
             <a
               href="https://www.instagram.com/forthepeople_in/"
@@ -138,13 +137,11 @@ export default function Footer({ locale }: FooterProps) {
       </div>
       <div className={`ftp-container ${styles.footerBottom}`}>
         <span>
-          Built by Jayanth M B in Mandya <span className="ftp-emoji" aria-hidden>🇮🇳</span>
+          {t("builtBy")} <span className="ftp-emoji" aria-hidden>🇮🇳</span>
         </span>
-        <span>Free expression under Article 19(1)(a)</span>
+        <span>{t("article")}</span>
         {updated.label !== "—" && (
-          <span title={updated.at ? `Newest record: ${formatIST(updated.at)}` : undefined}>
-            Data refreshed <span className="ftp-num">{updated.label}</span>
-          </span>
+          <span title={updated.at ? formatIST(updated.at) ?? undefined : undefined}>{t("refreshed", { ago: updated.label })}</span>
         )}
       </div>
     </footer>

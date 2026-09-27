@@ -37,6 +37,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowRight, LocateFixed, MapPin } from "lucide-react";
 import { Pill, ToolbarButton } from "@/components/district/ui";
 import { INDIA_STATES, getState } from "@/lib/constants/districts";
@@ -50,8 +51,6 @@ import styles from "./home.module.css";
 export { useMyDistrict } from "@/hooks/useMyDistrict";
 
 const GEO_URL = "/geo/india-states.json";
-const PRIVACY_NOTE =
-  "Your coordinates never leave your browser. The state map is downloaded to your device and matched there. Only the district name is remembered, and only if you switch that on.";
 
 /** Lazy, once-per-page load of the state polygons. */
 let geoPromise: Promise<GeoFeatureCollection> | null = null;
@@ -118,14 +117,14 @@ async function resolvePosition(lat: number, lng: number): Promise<Status> {
   try {
     geo = await loadStates();
   } catch {
-    return { kind: "error", message: "The state map could not be loaded. Please try again." };
+    return { kind: "error", message: "errMap" };
   }
 
   const stateName = findStateForPoint(lng, lat, geo);
   const stateSlug = stateSlugFromName(stateName);
   const state = stateSlug ? getState(stateSlug) : undefined;
   if (!stateName || !stateSlug || !state) {
-    return { kind: "error", message: "We could not match your location to an Indian state. Choose your district from the list or the map." };
+    return { kind: "error", message: "errNoState" };
   }
 
   const all = candidates();
@@ -155,12 +154,14 @@ function formatCount(n: number): string {
 }
 
 export default function YourDistrictStrip({ locale, votes, extras, variant = "strip" }: YourDistrictStripProps) {
+  const t = useTranslations("locate");
+  const privacy = t("privacy");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const my = useMyDistrict();
 
   function locate() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setStatus({ kind: "error", message: "Your browser does not support location. Choose your district from the list or the map." });
+      setStatus({ kind: "error", message: "errUnsupported" });
       return;
     }
     setStatus({ kind: "locating" });
@@ -173,8 +174,8 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) setStatus({ kind: "denied" });
-        else if (err.code === err.TIMEOUT) setStatus({ kind: "error", message: "Finding your location took too long. Please try again." });
-        else setStatus({ kind: "error", message: "Your location could not be determined right now. Choose your district from the list or the map." });
+        else if (err.code === err.TIMEOUT) setStatus({ kind: "error", message: "errTimeout" });
+        else setStatus({ kind: "error", message: "errUnknown" });
       },
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
     );
@@ -188,13 +189,13 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
       case "idle":
         return (
           <span style={mutedStyle}>
-            Tap to find the district you are in. Your coordinates never leave your browser.
+            {t("idle")}
           </span>
         );
       case "locating":
         return (
           <span style={mutedStyle} aria-live="polite">
-            Finding your district…
+            {t("locating")}
           </span>
         );
       case "found-live": {
@@ -202,11 +203,11 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
         return (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }} aria-live="polite">
             <span style={textStyle}>
-              You are in <strong style={{ fontWeight: 500 }}>{d.name}</strong>, {d.stateName}
+              {t.rich("youAreIn", { district: d.name, state: d.stateName, b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
             </span>
             {extras && <span style={mutedStyle}>{extras(d)}</span>}
             <ToolbarButton href={`/${locale}/${d.stateSlug}/${d.slug}`} icon={ArrowRight}>
-              Open {d.name}
+              {t("open", { name: d.name })}
             </ToolbarButton>
           </span>
         );
@@ -220,18 +221,18 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
             <span style={textStyle}>
               {d ? (
                 <>
-                  You are in <strong style={{ fontWeight: 500 }}>{d.name}</strong>, {d.stateName}. {d.name} is not live yet.
-                  {count !== undefined && <> {formatCount(count)} people have asked for it.</>}
+                  {t.rich("notLive", { district: d.name, state: d.stateName, b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
+                  {count !== undefined && <> {t("asked", { count: formatCount(count) })}</>}
                 </>
               ) : (
                 <>
-                  You are in <strong style={{ fontWeight: 500 }}>{status.stateName}</strong>. No district there is live yet.
+                  {t.rich("stateOnly", { state: status.stateName, b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
                 </>
               )}
             </span>
             {d && (
               <ToolbarButton href={`/${locale}/vote-district?d=${d.slug}`} icon={ArrowRight}>
-                Vote for {d.name}
+                {t("voteFor", { name: d.name })}
               </ToolbarButton>
             )}
             {live && (
@@ -239,7 +240,7 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
                 href={`/${locale}/${live.candidate.stateSlug}/${live.candidate.slug}`}
                 style={{ ...mutedStyle, color: "var(--ftp-brand)", textDecoration: "none", whiteSpace: "nowrap" }}
               >
-                Nearest live district: {live.candidate.name}, <span className="ftp-num">{Math.round(live.distanceKm)}</span> km
+                {t("nearest", { name: live.candidate.name, km: Math.round(live.distanceKm) })}
               </a>
             )}
           </span>
@@ -248,26 +249,26 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
       case "denied":
         return (
           <span style={mutedStyle} role="status">
-            Location is off. Choose your district from the list or the map.
+            {t("denied")}
           </span>
         );
       case "error":
         return (
           <span style={mutedStyle} role="status">
-            {status.message}
+            {t(status.message)}
           </span>
         );
     }
   }
 
   const remember = (
-    <label title={PRIVACY_NOTE} className={styles.stripRemember} style={mutedStyle}>
-      <span>Remember my district</span>
+    <label title={privacy} className={styles.stripRemember} style={mutedStyle}>
+      <span>{t("remember")}</span>
       <button
         type="button"
         role="switch"
         aria-checked={my.remember}
-        aria-label="Remember my district"
+        aria-label={t("remember")}
         onClick={() => my.setRemember(!my.remember)}
         style={{
           position: "relative",
@@ -303,7 +304,7 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
     // v4 hero card: one big location button, the status line under it,
     // and the remember switch. Same logic as the strip.
     return (
-      <section aria-label="Your district" className={styles.heroLocate}>
+      <section aria-label={t("yourDistrict")} className={styles.heroLocate}>
         <button
           type="button"
           onClick={locate}
@@ -311,12 +312,12 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
           className={styles.heroLocateBtn}
         >
           <span className="ftp-emoji" aria-hidden style={{ fontSize: 20 }}>📍</span>
-          {status.kind === "locating" ? "Finding you…" : "Go to my location"}
+          {status.kind === "locating" ? t("findingYou") : t("goToLocation")}
         </button>
         <div className={styles.heroLocateStatus} aria-live="polite">
           {my.district && status.kind === "idle" && (
-            <Pill tone="brand" icon={MapPin} title={PRIVACY_NOTE}>
-              My district: {my.district.name}
+            <Pill tone="brand" icon={MapPin} title={privacy}>
+              {t("myDistrict", { name: my.district.name })}
             </Pill>
           )}
           {renderStatus()}
@@ -327,18 +328,18 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
   }
 
   return (
-    <section aria-label="Your district" className={styles.strip}>
+    <section aria-label={t("yourDistrict")} className={styles.strip}>
       <div className={`ftp-container ${styles.stripRow}`}>
         {/* Left: the one button */}
-        <ToolbarButton icon={LocateFixed} onClick={locate} disabled={status.kind === "locating"} ariaLabel="Find my district using your location">
-          Find my district
+        <ToolbarButton icon={LocateFixed} onClick={locate} disabled={status.kind === "locating"} ariaLabel={t("findAria")}>
+          {t("find")}
         </ToolbarButton>
 
         {/* Centre: status */}
         <div className={styles.stripStatus}>
           {my.district && status.kind === "idle" && (
-            <Pill tone="brand" icon={MapPin} title={PRIVACY_NOTE}>
-              My district: {my.district.name}
+            <Pill tone="brand" icon={MapPin} title={privacy}>
+              {t("myDistrict", { name: my.district.name })}
             </Pill>
           )}
           {renderStatus()}

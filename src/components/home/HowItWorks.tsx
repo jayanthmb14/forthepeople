@@ -12,37 +12,12 @@
 //  "real-time" anything). The module count comes from getPlatformFacts()
 //  (the sidebar registry), never a typed number. Sources are real links.
 //
-import { Database, LayoutGrid, Eye } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Section } from "@/components/district/ui";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import styles from "./home.module.css";
 
 const { modulesPerDistrict } = getPlatformFacts();
-
-const STEPS: { icon: LucideIcon; emoji: string; hue: string; title: string; body: string }[] = [
-  {
-    icon: Database,
-    emoji: "📡",
-    hue: "orange",
-    title: "We collect",
-    body: "Data from official .gov.in portals, checked daily and stamped with the date the source published. NDSAP-licensed, traceable to the source.",
-  },
-  {
-    icon: LayoutGrid,
-    emoji: "🧩",
-    hue: "blue",
-    title: "We organise",
-    body: `Into ${modulesPerDistrict} dashboards per district with charts, maps, news and source links.`,
-  },
-  {
-    icon: Eye,
-    emoji: "👀",
-    hue: "green",
-    title: "You see",
-    body: "The latest district data, with an “as of” date on every figure. Free. Open source. Yours.",
-  },
-];
 
 /** Headline public sources. Full attribution lives on every module page. */
 const SOURCES: { label: string; href: string }[] = [
@@ -57,9 +32,15 @@ const SOURCES: { label: string; href: string }[] = [
 ];
 
 export default function HowItWorks() {
+  const t = useTranslations("home");
+  const STEPS = [
+    { emoji: "📡", hue: "orange", title: t("collectTitle"), body: t("collectBody") },
+    { emoji: "🧩", hue: "blue", title: t("organiseTitle"), body: t("organiseBody", { modules: modulesPerDistrict }) },
+    { emoji: "👀", hue: "green", title: t("seeTitle"), body: t("seeBody") },
+  ];
   return (
     <div className="ftp-container">
-      <Section id="how-it-works" title="How it works" emoji="⚙️">
+      <Section id="how-it-works" title={t("howItWorks")} emoji="⚙️">
         <ol className={styles.howGrid}>
           {/* A real sequence (collect → organise → see), so the steps are
               numbered and joined by a dotted line on wide screens. */}
@@ -69,7 +50,7 @@ export default function HowItWorks() {
                 <span className={`${styles.howEmoji} ftp-emoji`} aria-hidden>
                   {step.emoji}
                 </span>
-                <span className={styles.howNum}>Step {i + 1}</span>
+                <span className={styles.howNum}>{t("step", { n: i + 1 })}</span>
               </div>
               <h3 className={styles.howTitle}>{step.title}</h3>
               <p className={styles.howBody}>{step.body}</p>
@@ -77,7 +58,7 @@ export default function HowItWorks() {
           ))}
         </ol>
         <p className={styles.howSources}>
-          Sources include{" "}
+          {t("sourcesInclude")}{" "}
           {SOURCES.map((s, i) => (
             <span key={s.href}>
               {i > 0 && ", "}
@@ -86,7 +67,7 @@ export default function HowItWorks() {
               </a>
             </span>
           ))}{" "}
-          and other public datasets. Every module page lists its own sources.
+          {t("sourcesRest")}
         </p>
       </Section>
     </div>

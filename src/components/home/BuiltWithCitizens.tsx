@@ -30,6 +30,7 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, ExternalLink, Lightbulb } from "lucide-react";
@@ -128,6 +129,8 @@ interface FeatureRow {
 }
 
 export default function BuiltWithCitizens({ locale }: { locale: string }) {
+  const t = useTranslations("citizens");
+  const tk = useTranslations("kit");
   const [contributors, setContributors] = useState<ContributorItem[] | null>(null);
   const [features, setFeatures] = useState<FeatureRow[] | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -171,47 +174,46 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
 
   return (
     <div className="ftp-container">
-      <Section id="community" title="Built with citizens" emoji="🤝">
+      <Section id="community" title={t("title")} emoji="🤝">
         <div className={styles.communityGrid}>
           {/* ── Supporters ── */}
           <Card as="section" aria-labelledby="home-supporters" className={`${styles.communityMain} ftp-hue-pink`} tinted>
             <h3 id="home-supporters" className="ftp-title">
               {contributors === null ? (
-                "Loading supporters…"
+                t("loadingSupporters")
               ) : total === 0 ? (
-                "Be the first to back this project"
+                t("beFirst")
               ) : (
                 <>
-                  Backed by <span className="ftp-num">{total.toLocaleString("en-IN")}</span>{" "}
-                  {total === 1 ? "citizen" : "citizens"}
+                  {t.rich("backedBy", { n: total, num: (c) => <span className="ftp-num">{c}</span> })}
                 </>
               )}
             </h3>
-            <p className={styles.communityNote}>No corporate funding. No ads. Citizens backing citizens.</p>
+            <p className={styles.communityNote}>{t("noCorporate")}</p>
             {(named.length > 0 || anonymousCount > 0) && (
               <div className={styles.supList}>
                 {named.slice(0, MAX_PILLS).map(({ c }, i) => (
                   <SupporterPill key={`${c.displayName}-${i}`} c={c} />
                 ))}
                 {anonymousCount > 0 && (
-                  <span className={styles.supPill} title="Supporters who chose not to show their name">
-                    Anonymous <span className="ftp-num">×{anonymousCount}</span>
+                  <span className={styles.supPill} title={t("anonymousTitle")}>
+                    {t("anonymous")} <span className="ftp-num">×{anonymousCount}</span>
                   </span>
                 )}
                 {named.length > MAX_PILLS && (
                   <Link href={`/${locale}/contributors`} className={styles.supPill}>
-                    + <span className="ftp-num">{named.length - MAX_PILLS}</span> more
+                    {t("more", { n: named.length - MAX_PILLS })}
                   </Link>
                 )}
               </div>
             )}
             <div className={styles.communityLinks}>
               <Link href={`/${locale}/contributors`} className={styles.inlineLink}>
-                View all and how to join
+                {t("viewAll")}
                 <ArrowRight size={14} aria-hidden />
               </Link>
               <Link href={`/${locale}/support?tier=district`} className={styles.inlineLink}>
-                Sponsor a district
+                {t("sponsor")}
                 <ArrowRight size={14} aria-hidden />
               </Link>
             </div>
@@ -220,16 +222,14 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
           {/* ── What citizens voted for ── */}
           <Card as="section" aria-labelledby="home-top-features" className={`${styles.communitySide} ftp-hue-violet`} tinted>
             <h3 id="home-top-features" className="ftp-title">
-              Top voted features
+              {t("topVoted")}
             </h3>
             <p className={styles.communityNote}>
               {features === null ? (
-                "Loading…"
+                tk("loading")
               ) : (
                 <>
-                  <span className="ftp-num">{totalVotes.toLocaleString("en-IN")}</span> {totalVotes === 1 ? "vote" : "votes"} ·{" "}
-                  <span className="ftp-num">{(features ?? []).length.toLocaleString("en-IN")}</span>{" "}
-                  {(features ?? []).length === 1 ? "idea" : "ideas"}
+                  {t("votesIdeas", { votes: totalVotes, ideas: (features ?? []).length })}
                 </>
               )}
             </p>
@@ -241,7 +241,7 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
                       <span className={`${styles.voteMedal} ftp-emoji`} aria-hidden>
                         {["🥇", "🥈", "🥉"][i] ?? "⭐"}
                       </span>
-                      <span className={`ftp-num ${styles.voteCount}`} aria-label={`${f.votes} votes`}>
+                      <span className={`ftp-num ${styles.voteCount}`} aria-label={t("votesAria", { n: f.votes })}>
                         {f.votes.toLocaleString("en-IN")}
                       </span>
                       <span className={styles.voteTitle}>{f.title}</span>
@@ -250,19 +250,19 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
                 ))}
               </ol>
             ) : (
-              features !== null && <p className={styles.communityNote}>No ideas yet. Be the first.</p>
+              features !== null && <p className={styles.communityNote}>{t("noIdeas")}</p>
             )}
 
             {shared ? (
               <p className={styles.communityNote} role="status">
-                Thanks. Your idea has been received.
+                {t("thanks")}
               </p>
             ) : shareOpen ? (
               <div className={styles.shareForm}>
                 <div className={styles.shareHead}>
-                  <span className="ftp-title">Share your idea</span>
+                  <span className="ftp-title">{t("shareYourIdea")}</span>
                   <button type="button" className={styles.button} onClick={() => setShareOpen(false)}>
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
                 <SuggestionForm
@@ -278,11 +278,11 @@ export default function BuiltWithCitizens({ locale }: { locale: string }) {
               {!shareOpen && !shared && (
                 <button type="button" className={styles.button} onClick={() => setShareOpen(true)} aria-expanded={false}>
                   <Lightbulb size={16} aria-hidden />
-                  Share an idea
+                  {t("shareIdea")}
                 </button>
               )}
               <Link href={`/${locale}/features`} className={styles.inlineLink}>
-                View all features
+                {t("viewFeatures")}
                 <ArrowRight size={14} aria-hidden />
               </Link>
             </div>

@@ -23,6 +23,7 @@
 
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { setRequestLocale } from "next-intl/server";
 import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
 
 import MarketTicker from "@/components/home/MarketTicker";
@@ -88,6 +89,8 @@ export default async function HomePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  // Static rendering with translations: the page names its locale.
+  setRequestLocale(locale);
 
   // Server-side fetch (single round trip) — feeds the body components.
   const [activeRows, statsFromApi] = await Promise.all([

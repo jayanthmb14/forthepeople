@@ -33,6 +33,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { ArrowRight, Landmark, Newspaper, Wallet, Wheat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AsOfText, Chips, Section, SourcePill } from "@/components/district/ui";
@@ -57,6 +59,9 @@ export interface LatestDataProps {
 const MAX_AGE_DAYS = 30;
 
 type ModuleKey = "crops" | "schemes" | "news" | "budget";
+
+/** Translator handed to the summarisers (next-intl `t` for the "latest" namespace). */
+type T = (key: string, values?: Record<string, string | number>) => string;
 
 /** One rendered card. `null` from a summariser means "do not render". */
 interface ModuleCard {
@@ -86,13 +91,16 @@ const MODULE_ORDER: ModuleKey[] = ["crops", "schemes", "news", "budget"];
 
 // Static per-module chrome shared by the loading and the real card.
 const MODULE_CHROME: Record<ModuleKey, { icon: LucideIcon; emoji: string; hue: string; title: string; path: string }> = {
-  crops: { icon: Wheat, emoji: "🌾", hue: "green", title: "Crop prices", path: "crops" },
-  schemes: { icon: Landmark, emoji: "📋", hue: "violet", title: "Schemes", path: "schemes" },
-  news: { icon: Newspaper, emoji: "📰", hue: "blue", title: "Local news", path: "news" },
-  budget: { icon: Wallet, emoji: "💰", hue: "amber", title: "Budget", path: "finance" },
+  crops: { icon: Wheat, emoji: "🌾", hue: "green", title: "cropsTitle", path: "crops" },
+  schemes: { icon: Landmark, emoji: "📋", hue: "violet", title: "schemesTitle", path: "schemes" },
+  news: { icon: Newspaper, emoji: "📰", hue: "blue", title: "newsTitle", path: "news" },
+  budget: { icon: Wallet, emoji: "💰", hue: "amber", title: "budgetTitle", path: "finance" },
 };
 
 export default function LatestData({ locale, districts }: LatestDataProps) {
+  const th = useTranslations("home");
+  const tl = useTranslations("latest");
+  const { intl } = useFormat();
   const [activeSlug, setActiveSlug] = useState<string>(districts[0]?.slug ?? "");
   const [byDistrict, setByDistrict] = useState<Record<string, DistrictCards>>({});
   const active = districts.find((d) => d.slug === activeSlug) ?? districts[0];
@@ -125,10 +133,10 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
       if (cancelled) return;
       const now = Date.now();
       const built: Record<ModuleKey, ModuleCard | null> = {
-        crops: summarizeCrops(crops, now),
-        schemes: summarizeSchemes(schemes),
-        news: summarizeNews(news, now),
-        budget: summarizeBudget(budget),
+        crops: summarizeCrops(crops, now, tl, intl),
+        schemes: summarizeSchemes(schemes, tl, intl),
+        news: summarizeNews(news, now, tl),
+        budget: summarizeBudget(budget, tl, intl),
       };
       const cards = MODULE_ORDER.map((k) => built[k]).filter((c): c is ModuleCard => c !== null);
       setByDistrict((prev) => ({ ...prev, [slug]: { loading: false, cards } }));
@@ -138,7 +146,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
     return () => {
       cancelled = true;
     };
-  }, [active, byDistrict]);
+  }, [active, byDistrict, tl, intl]);
 
   const state = useMemo<DistrictCards>(() => {
     if (!active) return LOADING;
@@ -153,7 +161,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
     <div className="ftp-container">
       <Section
         id="latest-data"
-        title={`Latest data for ${active.name}`}
+        title={th("latestFor", { name: active.name })}
         emoji="⚡"
         titleLocal={active.nameLocal && active.nameLocal !== active.name ? active.nameLocal : undefined}
         action={
@@ -164,7 +172,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
         }
       >
         <Chips
-          label="Choose a district"
+          label={th("chooseDistrict")}
           items={districts.map((d) => ({ value: d.slug, label: d.name }))}
           value={active.slug}
           onChange={setActiveSlug}
@@ -172,8 +180,11 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
 
         {!state.loading && state.cards.length === 0 ? (
           <p className={styles.latestNone}>
-            Nothing new was published for {active.name} in the last {MAX_AGE_DAYS} days. Older records are still on
-            the <Link href={districtPageBase}>full district page</Link>.
+            {tl.rich("nothingNew", {
+              name: active.name,
+              days: MAX_AGE_DAYS,
+              link: (c) => <Link href={districtPageBase}>{c}</Link>,
+            })}
           </p>
         ) : (
           <div
@@ -210,11 +221,13 @@ function CardTitle({ moduleKey, title, href }: { moduleKey: ModuleKey; title: st
 }
 
 function LoadingCard({ moduleKey }: { moduleKey: ModuleKey }) {
+  const tl = useTranslations("latest");
+  const tk = useTranslations("kit");
   return (
     <article className={`${styles.latestCard} ftp-hue-${MODULE_CHROME[moduleKey].hue}`}>
-      <CardTitle moduleKey={moduleKey} title={MODULE_CHROME[moduleKey].title} />
+      <CardTitle moduleKey={moduleKey} title={tl(MODULE_CHROME[moduleKey].title)} />
       <div className={`ftp-skeleton ${styles.latestSkeleton}`} aria-hidden />
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{tk("loading")}</span>
     </article>
   );
 }
@@ -259,15 +272,15 @@ function isFresh(iso: string | null, nowMs: number): iso is string {
 }
 
 /** "Mar 2026" from an ISO timestamp. */
-const monthYear = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-IN", { month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+const monthYear = (iso: string, intl = "en-IN") =>
+  new Date(iso).toLocaleDateString(intl, { month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 
-const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+const inr = (n: number, intl = "en-IN") => `₹${Math.round(n).toLocaleString(intl)}`;
 const clip = (t: string, max: number) => (t.length > max ? t.slice(0, max - 1) + "…" : t);
 
 interface CropRow { commodity?: string; modalPrice?: number; market?: string; date?: string }
 
-function summarizeCrops(raw: unknown, nowMs: number): ModuleCard | null {
+function summarizeCrops(raw: unknown, nowMs: number, t: T, intl: string): ModuleCard | null {
   const list = (raw as { data?: CropRow[] } | null)?.data;
   if (!Array.isArray(list) || list.length === 0) return null;
   // Newest date first, then keep the FIRST row per commodity (= newest
@@ -287,16 +300,16 @@ function summarizeCrops(raw: unknown, nowMs: number): ModuleCard | null {
   if (!isFresh(newestAt, nowMs)) return null;
   const [top, second] = unique;
   const support = [
-    top.market ? `${top.market} market` : null,
-    second ? `${second.commodity} ${inr(second.modalPrice as number)}` : null,
+    top.market ? t("market", { name: top.market }) : null,
+    second ? `${second.commodity} ${inr(second.modalPrice as number, intl)}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
   return {
     key: "crops",
-    title: MODULE_CHROME.crops.title,
+    title: t(MODULE_CHROME.crops.title),
     path: MODULE_CHROME.crops.path,
-    headline: `${top.commodity} ${inr(top.modalPrice as number)} / quintal`,
+    headline: t("perQuintal", { name: top.commodity ?? "", price: inr(top.modalPrice as number, intl) }),
     support,
     newestAt,
     source: { label: "AGMARKNET", href: "https://agmarknet.gov.in" },
@@ -307,7 +320,7 @@ interface SchemeRow { name?: string; nameLocal?: string; category?: string; upda
 
 // Reference data: no freshness gate. The card says when the list was last
 // updated ("Updated Mar 2026") so an old list never passes as new.
-function summarizeSchemes(raw: unknown): ModuleCard | null {
+function summarizeSchemes(raw: unknown, t: T, intl: string): ModuleCard | null {
   const list = (raw as { data?: SchemeRow[] } | null)?.data;
   if (!Array.isArray(list) || list.length === 0) return null;
   const activeRows = list.filter((s) => s.active !== false);
@@ -318,19 +331,19 @@ function summarizeSchemes(raw: unknown): ModuleCard | null {
   const total = activeRows.length;
   return {
     key: "schemes",
-    title: MODULE_CHROME.schemes.title,
+    title: t(MODULE_CHROME.schemes.title),
     path: MODULE_CHROME.schemes.path,
-    headline: `${total} active scheme${total === 1 ? "" : "s"}`,
+    headline: t("activeSchemes", { n: total }),
     support: names.slice(0, 2).map((n) => clip(n, 40)).join(" · "),
     newestAt,
-    period: { prefix: "Updated", label: monthYear(newestAt) },
+    period: { prefix: t("updatedPrefix"), label: monthYear(newestAt, intl) },
     source: { label: "MyScheme", href: "https://www.myscheme.gov.in" },
   };
 }
 
 interface NewsRow { title?: string; headline?: string; source?: string; publishedAt?: string }
 
-function summarizeNews(raw: unknown, nowMs: number): ModuleCard | null {
+function summarizeNews(raw: unknown, nowMs: number, t: T): ModuleCard | null {
   const list = (raw as { data?: NewsRow[] } | null)?.data;
   if (!Array.isArray(list) || list.length === 0) return null;
   const newestAt = newestOf(list.map((n) => n.publishedAt));
@@ -342,14 +355,14 @@ function summarizeNews(raw: unknown, nowMs: number): ModuleCard | null {
   const outlet = list.find((n) => (n.title ?? n.headline) === first)?.source?.trim();
   return {
     key: "news",
-    title: MODULE_CHROME.news.title,
+    title: t(MODULE_CHROME.news.title),
     path: MODULE_CHROME.news.path,
     headline: clip(first, 70),
-    support: [second ? clip(second, 60) : null, `${list.length} stor${list.length === 1 ? "y" : "ies"}`]
+    support: [second ? clip(second, 60) : null, t("stories", { n: list.length })]
       .filter(Boolean)
       .join(" · "),
     newestAt,
-    source: { label: outlet ? clip(outlet, 24) : "News feeds" },
+    source: { label: outlet ? clip(outlet, 24) : t("newsFeeds") },
   };
 }
 
@@ -357,13 +370,13 @@ interface BudgetEntry { sector?: string; allocated?: number; spent?: number; fis
 
 // Reference data: a budget belongs to a fiscal year, not to a day. No
 // freshness gate; the card is labelled with its FY instead.
-function summarizeBudget(raw: unknown): ModuleCard | null {
+function summarizeBudget(raw: unknown, t: T, intl: string): ModuleCard | null {
   const entries = (raw as { data?: { entries?: BudgetEntry[] } } | null)?.data?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return null;
   const newestAt = newestOf(entries.map((e) => e.fetchedAt));
   if (!newestAt) return null;
   // Budget values are stored in Rupees (CLAUDE.md) — format to Cr / L here.
-  const oneDp = (n: number) => n.toLocaleString("en-IN", { maximumFractionDigits: 1 });
+  const oneDp = (n: number) => n.toLocaleString(intl, { maximumFractionDigits: 1 });
   const fmt = (n: number) =>
     n >= 10_000_000 ? `₹${oneDp(n / 10_000_000)} Cr` : n >= 100_000 ? `₹${oneDp(n / 100_000)} L` : inr(n);
   const year = entries[0]?.fiscalYear;
@@ -373,12 +386,12 @@ function summarizeBudget(raw: unknown): ModuleCard | null {
   if (alloc <= 0) return null;
   return {
     key: "budget",
-    title: MODULE_CHROME.budget.title,
+    title: t(MODULE_CHROME.budget.title),
     path: MODULE_CHROME.budget.path,
-    headline: `${fmt(alloc)} allocated`,
-    support: [`${fmt(spent)} spent`, `${rows.length} sector${rows.length === 1 ? "" : "s"}`].join(" · "),
+    headline: t("allocated", { amount: fmt(alloc) }),
+    support: [t("spent", { amount: fmt(spent) }), t("sectors", { n: rows.length })].join(" · "),
     newestAt,
-    period: year ? { prefix: "For", label: `FY ${year}` } : { prefix: "Updated", label: monthYear(newestAt) },
+    period: year ? { prefix: t("forPrefix"), label: t("fy", { year }) } : { prefix: t("updatedPrefix"), label: monthYear(newestAt, intl) },
     source: { label: "PFMS", href: "https://pfms.nic.in" },
   };
 }

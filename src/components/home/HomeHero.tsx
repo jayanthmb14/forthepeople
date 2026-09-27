@@ -26,6 +26,8 @@
 
 import Link from "next/link";
 import { Search } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { AsOfText, CountUp } from "@/components/district/ui";
 import { DISTRICT_SEARCH_ID } from "./HeaderBar";
 import YourDistrictBand from "./YourDistrictBand";
@@ -61,12 +63,15 @@ export default function HomeHero({
   comingDistricts,
   children,
 }: HomeHeroProps) {
+  const t = useTranslations("home");
+  const ti = useTranslations("intro");
+  const f = useFormat();
   return (
     <div className={styles.heroV4}>
       <div className={styles.heroLeft}>
         <p className={`${styles.heroPill} ftp-pop`} style={{ ["--i" as string]: 0 }}>
           <span className="ftp-emoji" aria-hidden>🇮🇳</span>
-          Free and open source, for every citizen
+          {t("pill")}
         </p>
 
         {/* Three lines, each with its own picture: a place, a chart, a
@@ -75,21 +80,20 @@ export default function HomeHero({
         <h1 className={styles.heroTitle}>
           <span className={`${styles.heroLine} ftp-rise`} style={{ ["--i" as string]: 1 }}>
             <span className={`${styles.heroMark} ftp-hue-orange ftp-pop`} aria-hidden style={{ ["--i" as string]: 2 }}>📍</span>
-            Your district.
+            {ti("line1")}
           </span>
           <span className={`${styles.heroLine} ftp-rise`} style={{ ["--i" as string]: 2 }}>
             <span className={`${styles.heroMark} ftp-hue-blue ftp-pop`} aria-hidden style={{ ["--i" as string]: 3 }}>📊</span>
-            Your data.
+            {ti("line2")}
           </span>
           <span className={`${styles.heroLine} ftp-rise`} style={{ ["--i" as string]: 3 }}>
             <span className={`${styles.heroMark} ftp-hue-green ftp-pop`} aria-hidden style={{ ["--i" as string]: 4 }}>⚖️</span>
-            Your right.
+            {ti("line3")}
           </span>
         </h1>
 
         <p className={`${styles.heroLeadV4} ftp-rise`} style={{ ["--i" as string]: 4 }}>
-          Free, source-linked government data for {coveragePhrase}. Weather, dams, crop prices, budgets, schools
-          and more: {modulesPerDistrict} dashboards for every district, in plain words.
+          {t("lead", { coverage: coveragePhrase, modules: modulesPerDistrict })}
         </p>
 
         <div className="ftp-rise" style={{ ["--i" as string]: 5 }}>
@@ -99,27 +103,27 @@ export default function HomeHero({
         <div className={`${styles.heroActionsV4} ftp-rise`} style={{ ["--i" as string]: 6 }}>
           <Link href={`/${locale}/india`} className={styles.heroBtnDark}>
             <span className="ftp-emoji" aria-hidden>🗺️</span>
-            Explore all of India
+            {t("exploreIndia")}
           </Link>
           <button type="button" onClick={focusDistrictSearch} className={styles.heroBtnGhost}>
             <Search size={16} aria-hidden />
-            Search a district
+            {t("searchDistrict")}
           </button>
         </div>
 
-        <h2 className="sr-only">Platform in numbers</h2>
+        <h2 className="sr-only">{t("statsHeading")}</h2>
         <ul className={styles.heroStats}>
-          <HeroStat i={7} hue="blue" emoji="🏙️" value={activeCount.toLocaleString("en-IN")} label="districts live" />
-          <HeroStat i={8} hue="violet" emoji="📊" value={modulesPerDistrict.toLocaleString("en-IN")} label="dashboards each" />
+          <HeroStat i={7} hue="blue" emoji="🏙️" value={f.number(activeCount)} label={t("statDistricts")} />
+          <HeroStat i={8} hue="violet" emoji="📊" value={f.number(modulesPerDistrict)} label={t("statDashboards")} />
           <HeroStat
             i={9}
             hue="green"
             emoji="🔢"
-            value={totalDataPoints !== null ? totalDataPoints.toLocaleString("en-IN") : "—"}
-            label="data points"
+            value={totalDataPoints !== null ? f.number(totalDataPoints) : "—"}
+            label={t("statDataPoints")}
             asOf={totalDataPoints !== null ? mostRecentAt : null}
           />
-          <HeroStat i={10} hue="orange" emoji="🚀" value={comingDistricts.toLocaleString("en-IN")} label="districts coming" />
+          <HeroStat i={10} hue="orange" emoji="🚀" value={f.number(comingDistricts)} label={t("statComing")} />
         </ul>
       </div>
 

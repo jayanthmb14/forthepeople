@@ -1,5 +1,9 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Loads src/i18n/request.ts (messages per language, English fallback).
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Content-Security-Policy (REPORT-ONLY)
@@ -174,7 +178,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withNextIntl(nextConfig), {
   // Match the dashboard project Jayanth uses to view events
   // (forthepeoplein.sentry.io/issues/?project=javascript-nextjs).
   // If org/project ever change, update both here AND in Vercel env so
