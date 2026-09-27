@@ -74,7 +74,31 @@
     },
     {
       "path": "/api/cron/health-score",
-      "schedule": "30 1 * * 0"
+      "schedule": "30 1 * * *"
+    },
+    {
+      "path": "/api/cron/verify-data",
+      "schedule": "45 6 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-courts",
+      "schedule": "40 1,13 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-jjm",
+      "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-schools",
+      "schedule": "40 4 * * 2"
+    },
+    {
+      "path": "/api/cron/scrape-mgnrega",
+      "schedule": "50 4 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-tenders",
+      "schedule": "15 */2 * * *"
     }
   ]
 }
