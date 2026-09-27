@@ -1,0 +1,85 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ * https://github.com/jayanthmb14/forthepeople
+ *
+ * home.module.css — the home page (/en) sections, Design v3 "Civic Ledger".
+ *
+ * Rules (docs/DESIGN-SYSTEM.md): colours via var(--ftp-*) only; no hex,
+ * shadows or gradients; weights 400/500 (600 only on the H1); numbers in
+ * mono (.ftp-num); 44 px touch targets and a single column on phones.
+ */
+
+/* ───────────────────────── Market ticker (32 px) ───────────────────────── */
+
+.ticker {
+  background: var(--ftp-surface);
+  border-bottom: 1px solid var(--ftp-border);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+}
+.tickerRow {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tickerViewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.tickerTrack {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ftp-ticker-scroll 90s linear infinite;
+}
+.ticker:hover .tickerTrack {
+  animation-play-state: paused;
+}
+@keyframes ftp-ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.tickerSet {
+  display: inline-flex;
+  gap: 24px;
+  padding-right: 24px;
+}
+.tickerItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.tickerLabel {
+  color: var(--ftp-text);
+  font-weight: 500;
+}
+.up   { color: var(--ftp-live-text); }
+.down { color: var(--ftp-danger); }
+.flat { color: var(--ftp-text-2); }
+.tickerMuted { color: var(--ftp-text-2); }
+.tickerAsOf {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tickerTrack { animation: none; }
+  .tickerCopy { display: none; }
+  .tickerViewport { overflow-x: auto; scrollbar-width: none; }
+}
+/* Phones: static, swipeable row; no scrolling on its own. */
+@media (max-width: 767px) {
+  .tickerTrack { animation: none; }
+  .tickerCopy { display: none; }
+  .tickerViewport {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tickerViewport::-webkit-scrollbar { display: none; }
+  .tickerAsOf { display: none; }
+}

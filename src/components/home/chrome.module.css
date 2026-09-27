@@ -1,0 +1,571 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ * https://github.com/jayanthmb14/forthepeople
+ *
+ * chrome.module.css — site-wide chrome (Design v3 "Civic Ledger").
+ *
+ * Styles for the pieces that appear on EVERY page:
+ *   - DisclaimerLine  (32 px amber line above the header)
+ *   - HeaderBar       (56 px sticky header)
+ *   - Footer          (links + one honest status line)
+ *
+ * Rules (docs/DESIGN-SYSTEM.md):
+ *   - Colours only via var(--ftp-*). No hex, no shadows, no gradients.
+ *   - Weights 400 / 500 only.
+ *   - 44 px touch targets on phones (max-width: 767px).
+ *
+ * Why a CSS module and not inline styles: media queries (phone vs desktop)
+ * cannot be written inline, and a module keeps the class names private to
+ * these components so nothing else on the site can accidentally override
+ * them (the old header needed dozens of !important rules in mobile.css).
+ */
+
+/* ───────────────────────── Disclaimer line ───────────────────────── */
+
+.disclaimer {
+  background: var(--ftp-warn-tint);
+  border-bottom: 1px solid var(--ftp-border);
+  color: var(--ftp-text);
+  font-size: 12px;
+  line-height: 16px;
+}
+.disclaimerRow {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.disclaimerIcon {
+  color: var(--ftp-warn);
+  flex-shrink: 0;
+}
+.disclaimerText {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+}
+.disclaimerText a {
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+.disclaimerClose {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ftp-radius-tile);
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.disclaimerClose:hover {
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+}
+
+/* ───────────────────────── Header ───────────────────────── */
+
+.header {
+  position: sticky;
+  top: 0;
+  /* Above page content and the district status bar; admin modals (60+) still win. */
+  z-index: 50;
+  background: var(--ftp-surface);
+  border-bottom: 1px solid var(--ftp-border);
+}
+.headerRow {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Wordmark: Users icon + "ForThePeople.in" */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 4px;
+  border-radius: var(--ftp-radius-tile);
+  color: var(--ftp-text);
+  text-decoration: none;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.wordmarkIcon {
+  color: var(--ftp-brand);
+  flex-shrink: 0;
+}
+.wordmarkSuffix {
+  color: var(--ftp-brand);
+}
+
+/* District breadcrumb (district pages only, desktop only) */
+.breadcrumbSlot {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* The breadcrumb's dropdown paints outside this box — never clip it. */
+  overflow: visible;
+}
+
+/* Search */
+.searchShell {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 360px;
+}
+.searchShellCompact {
+  flex: 0 1 220px;
+  max-width: 220px;
+}
+.searchForm {
+  position: relative;
+  display: block;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ftp-text-2);
+  pointer-events: none;
+}
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 13px;
+  line-height: 20px;
+  outline: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.searchInput::placeholder {
+  color: var(--ftp-text-2);
+}
+.searchInput:hover {
+  border-color: var(--ftp-border-strong);
+}
+.searchInput:focus {
+  background: var(--ftp-surface);
+  border-color: var(--ftp-brand);
+}
+.searchResults {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: 260px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-card);
+  z-index: 60;
+}
+.searchGroupLabel {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ftp-text-2);
+}
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--ftp-radius-tile);
+  color: var(--ftp-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+.searchRow:hover,
+.searchRow:focus-visible {
+  background: var(--ftp-surface-2);
+}
+.searchRowMuted {
+  color: var(--ftp-text-2);
+}
+.searchRowMeta {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ftp-text-2);
+}
+.searchEmpty {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--ftp-text-2);
+  text-align: center;
+}
+.dotLive,
+.dotLocked {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dotLive {
+  background: var(--ftp-live);
+}
+.dotLocked {
+  background: var(--ftp-map-locked);
+}
+
+/* Right-hand cluster */
+.spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* "My district: Mandya ×" */
+.myDistrict {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  border-radius: var(--ftp-radius-pill);
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.myDistrictLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 4px 0 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.myDistrictForget {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 100%;
+  border: 0;
+  border-radius: var(--ftp-radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.myDistrictForget:hover {
+  color: var(--ftp-text);
+}
+
+/* EN | ಕನ್ನಡ */
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.langLink {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: var(--ftp-radius-tile);
+  color: var(--ftp-text-2);
+  text-decoration: none;
+}
+.langLink:hover {
+  color: var(--ftp-text);
+}
+.langLinkActive {
+  color: var(--ftp-text);
+  font-weight: 500;
+}
+.langSep {
+  color: var(--ftp-border-strong);
+}
+
+/* Quiet bordered button (GitHub pill, Support, menu) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.btn:hover {
+  border-color: var(--ftp-border-strong);
+  background: var(--ftp-surface-2);
+}
+.btnQuiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ftp-text-2);
+}
+.btnQuiet:hover {
+  color: var(--ftp-text);
+}
+.heart {
+  color: var(--ftp-support);
+}
+.stars {
+  font-family: var(--ftp-font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ftp-text-2);
+}
+.iconBtn {
+  width: 40px;
+  padding: 0;
+}
+
+/* Menu panel (tablet + phone) */
+.menuWrap {
+  position: relative;
+}
+.menuPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  padding: 8px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-card);
+  z-index: 60;
+}
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ftp-radius-tile);
+  background: transparent;
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menuItem:hover {
+  background: var(--ftp-surface-2);
+}
+.menuItemMeta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ftp-text-2);
+}
+.menuDivider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--ftp-border);
+}
+.menuLabel {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ftp-text-2);
+}
+
+/*
+ * Responsive visibility.
+ *   ≥ 1100 px : everything in the row, no menu button.
+ *   768–1099  : GitHub + "Vote on features" + language move into the menu.
+ *   ≤ 767     : phone — wordmark, search (44 px), menu (44 px) only.
+ */
+.wideOnly {
+  display: inline-flex;
+}
+.narrowOnly {
+  display: none;
+}
+@media (max-width: 1099px) {
+  .wideOnly {
+    display: none;
+  }
+  .narrowOnly {
+    display: inline-flex;
+  }
+}
+.desktopOnly {
+  display: inline-flex;
+}
+@media (max-width: 767px) {
+  .desktopOnly {
+    display: none;
+  }
+  .headerRow {
+    gap: 8px;
+  }
+  .wordmark {
+    font-size: 15px;
+    gap: 6px;
+    height: 44px;
+  }
+  .searchShell,
+  .searchShellCompact {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+  .searchInput {
+    height: 44px;
+    font-size: 16px; /* 16 px stops iOS Safari zooming into the field */
+  }
+  .searchResults {
+    position: fixed;
+    top: 56px;
+    left: 16px;
+    right: 16px;
+    min-width: 0;
+  }
+  .iconBtn {
+    width: 44px;
+    height: 44px;
+  }
+  .menuPanel {
+    position: fixed;
+    top: 60px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+  .disclaimerClose {
+    width: 44px;
+    height: 44px;
+  }
+  .myDistrictForget {
+    width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchInput,
+  .btn {
+    transition: none;
+  }
+}
+
+/* ───────────────────────── Footer ───────────────────────── */
+
+.footer {
+  margin-top: 48px;
+  background: var(--ftp-surface);
+  border-top: 1px solid var(--ftp-border);
+  color: var(--ftp-text-2);
+  font-size: 13px;
+  line-height: 20px;
+}
+.footerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.footerLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--ftp-text);
+  text-decoration: none;
+}
+.footerLinks a:hover {
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+}
+.footerIcons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.footerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ftp-radius-tile);
+  color: var(--ftp-text-2);
+}
+.footerIcon:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+}
+.footerLine {
+  border-top: 1px solid var(--ftp-border);
+  padding-top: 12px;
+  padding-bottom: 16px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.footerLine a {
+  color: var(--ftp-text-2);
+}
+@media (max-width: 767px) {
+  .footerLinks a,
+  .footerIcon {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .footerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

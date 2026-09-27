@@ -30,7 +30,7 @@ import {
   TOTAL_INDIA_DISTRICTS,
 } from "@/lib/constants";
 
-import FinancialTicker from "@/components/home/redesign-v2/FinancialTicker";
+import MarketTicker from "@/components/home/MarketTicker";
 import StatsBar from "@/components/home/redesign-v2/LiveActivityRibbon";
 import HeroSection from "@/components/home/redesign-v2/HeroSection";
 import LiveDataShowcase from "@/components/home/redesign-v2/LiveDataShowcase";
@@ -135,7 +135,7 @@ export default async function HomePage({
       </h1>
 
       <main role="main">
-        <FinancialTicker />
+        <MarketTicker />
         <StatsBar
           activeDistricts={activeCount}
           dashboardsPerDistrict={DASHBOARDS_PER_DISTRICT}

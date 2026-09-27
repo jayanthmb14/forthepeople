@@ -10,15 +10,12 @@ import QueryProvider from "@/components/providers/QueryProvider";
 import MigrationBanner from "@/components/layout/MigrationBanner";
 import PageProgressBar from "@/components/common/PageProgressBar";
 
-// Session 11.1 — chrome swapped to redesign-v2 site-wide.
-// The legacy components (src/components/layout/Header.tsx, Footer.tsx,
-// DisclaimerBar.tsx) were deleted in the Sept 2026 dead-code sweep
-// (commit 96e2eb7); git history is the rollback if it is ever needed. Some
-// district-page-specific behavior of the legacy Header (lock state,
-// state/district jump, MobileSidebar wiring) is intentionally simpler
-// in HeaderBar — see component header comment for the deferred list.
-import DisclaimerBanner from "@/components/home/redesign-v2/DisclaimerBanner";
-import HeaderBar from "@/components/home/redesign-v2/HeaderBar";
+// Site-wide chrome — Design v3 "Civic Ledger" (2026-09-27).
+// HeaderBar renders the 32 px disclaimer line and the 56 px sticky header.
+// The GitHub star count is fetched here on the server (cached for an hour)
+// so no visitor's browser ever calls api.github.com.
+import HeaderBar from "@/components/home/HeaderBar";
+import { getGithubStars } from "@/components/home/github-stars";
 import Footer from "@/components/home/redesign-v2/Footer";
 
 /**
@@ -55,12 +52,13 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
 
+  const githubStars = await getGithubStars();
+
   return (
     <QueryProvider>
       <PageProgressBar />
       <MigrationBanner />
-      <DisclaimerBanner />
-      <HeaderBar locale={locale} />
+      <HeaderBar locale={locale} githubStars={githubStars} />
       {children}
       <Footer locale={locale} />
     </QueryProvider>
