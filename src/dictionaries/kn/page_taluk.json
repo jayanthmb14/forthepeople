@@ -15,7 +15,7 @@
   "people": "{n} ಜನರು",
   "sizesTitle": "ಗಾತ್ರದ ಪ್ರಕಾರ {label}",
   "sizesUnits": "ಪ್ರತಿ ಜನಸಂಖ್ಯಾ ಗುಂಪಿನಲ್ಲಿ ಎಷ್ಟು ಇವೆ",
-  "sizesSimple": "ಜನಸಂಖ್ಯೆ ದಾಖಲಾಗಿರುವ {total} {label} ಪೈಕಿ {count} ಒಂದೇ ಗುಂಪಿನಲ್ಲಿವೆ: <b>{band}</b>.",
+  "sizesSimple": "ಜನಸಂಖ್ಯೆ ದಾಖಲಾಗಿರುವ {total} ಪೈಕಿ {count}, <b>{band}</b> ಗುಂಪಿನಲ್ಲಿವೆ.",
   "sizesAria": "{name}: ಜನಸಂಖ್ಯೆಯ ಪ್ರಕಾರ ಗುಂಪು ಮಾಡಿದ {label}",
   "bandUnder": "{max}ಕ್ಕಿಂತ ಕಡಿಮೆ ಜನರು",
   "bandRange": "{min} ರಿಂದ {max} ಜನರು",
