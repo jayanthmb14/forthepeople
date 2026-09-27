@@ -14,11 +14,17 @@
 //  label) — no coloured box, no left stripe. The footer keeps the
 //  provider credit and the honest timing line ("Analysis from 3h ago ·
 //  Next refresh in 5h", or "Will refresh when data changes" for old ones).
+//
+//  v5: an analysis is not shown at all when it is more than 30 days old,
+//  or when the page's own data is newer than the analysis (it would
+//  describe figures the page no longer shows). The dates come from
+//  /api/data/freshness (useFreshness), shared with the rest of the page.
 // ═══════════════════════════════════════════════════════════
 
 import { useLocale, useTranslations } from "next-intl";
-import { useFormat } from "@/i18n/client";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useFreshness } from "@/hooks/useFreshness";
 import { ChevronDown, ChevronRight, Clock, Sparkles } from "lucide-react";
 import { Card, Pill } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
@@ -76,10 +82,13 @@ function formatInsightTiming(generatedAt: string, expiresAt: string | null | und
   return { lastUpdated, nextRefresh, isStale };
 }
 
-/** After this many days an analysis is folded away by default: the figures
- *  on the page may have moved on, and an old paragraph shown in full above
- *  newer numbers reads as current. */
-const OLD_INSIGHT_DAYS = 45;
+/** After this many days an analysis is not shown: the figures on the page
+ *  may have moved on, and an old paragraph above newer numbers reads as
+ *  current. */
+const MAX_INSIGHT_DAYS = 30;
+
+/** AI module names that differ from the sidebar slug of their page. */
+const PAGE_SLUG: Record<string, string> = { leaders: "leadership", budget: "finance" };
 
 interface AIInsightCardProps {
   module: string;
@@ -97,7 +106,6 @@ const SEVERITY_CONFIG: Record<Severity, { label: string; tone: Tone }> = {
 
 export default function AIInsightCard({ module, district }: AIInsightCardProps) {
   const t = useTranslations("ai");
-  const { intl } = useFormat();
   // The answer is stored together with the module/district it belongs to,
   // so switching page shows the skeleton again without a synchronous
   // setState inside the effect (React Compiler rule).
@@ -105,7 +113,9 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
   const requestKey = `${module}|${district}|${locale}`;
   const [result, setResult] = useState<{ key: string; insight: ModuleInsight | null } | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [showOld, setShowOld] = useState(false);
+  // /<locale>/<state>/<district>/… — the state slug keys the shared freshness cache.
+  const stateSlug = (usePathname() ?? "").split("/").filter(Boolean)[1] ?? "";
+  const pageData = useFreshness(stateSlug, district).primary(PAGE_SLUG[module] ?? module);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,32 +151,10 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
   const timing = insight.generatedAt ? formatInsightTiming(insight.generatedAt, insight.expiresAt, t) : null;
   const generatedMs = insight.generatedAt ? new Date(insight.generatedAt).getTime() : NaN;
   // eslint-disable-next-line react-hooks/purity -- age is a render-time read, like the "N days ago" label above
-  const ageDays = Number.isFinite(generatedMs) ? (Date.now() - generatedMs) / 86_400_000 : 0;
-  const isOld = ageDays > OLD_INSIGHT_DAYS;
-
-  if (isOld && !showOld) {
-    const on = new Date(generatedMs).toLocaleDateString(intl, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
-    return (
-      <Card as="section" aria-label={t("title")} padding={14} style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Sparkles size={14} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-          <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }} suppressHydrationWarning>
-            {t("oldNote", { date: on })}
-          </span>
-          <button
-            type="button"
-            onClick={() => setShowOld(true)}
-            style={{
-              marginLeft: "auto", minHeight: 44, padding: 0, border: "none", background: "transparent",
-              color: "var(--ftp-brand)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--ftp-font-sans)",
-            }}
-          >
-            {t("showIt")}
-          </button>
-        </div>
-      </Card>
-    );
-  }
+  const ageDays = Number.isFinite(generatedMs) ? (Date.now() - generatedMs) / 86_400_000 : Infinity;
+  if (ageDays > MAX_INSIGHT_DAYS) return null;
+  // The page's data is newer than the analysis: it no longer describes it.
+  if (pageData?.dataDate && new Date(pageData.dataDate).getTime() > generatedMs) return null;
 
   return (
     <Card as="section" aria-label={t("title")} style={{ marginBottom: 20 }}>
