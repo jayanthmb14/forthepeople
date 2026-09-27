@@ -14,6 +14,15 @@
 //  so the visitor only writes what is wrong (and, if they like, an email).
 //  Replaces the floating "Report issue" pill (it covered content on phones
 //  and defaulted to "Bug") and the sidebar link that went to feature voting.
+//
+//  v5.1 — one report form per district page, reachable from anywhere:
+//  the site-wide Report button (site chrome) should not open a second,
+//  generic form on district pages. While this component is mounted it sets
+//  <html data-ftp-report="district">, and it opens itself when
+//    • the window event OPEN_REPORT_EVENT ("ftp:open-report") fires, or
+//    • the URL hash becomes REPORT_HASH ("#report-mistake") — so a plain
+//      link <a href="#report-mistake"> works without JavaScript glue.
+//  The form it opens is already about THIS page and district.
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -35,6 +44,11 @@ interface Props {
 }
 
 type Phase = "idle" | "sending" | "done" | "failed";
+
+/** Fire on window to open the district page's report form (site-wide Report button). */
+export const OPEN_REPORT_EVENT = "ftp:open-report";
+/** A link to this hash opens the form too. */
+export const REPORT_HASH = "#report-mistake";
 
 export default function ReportMistake({ stateSlug, districtSlug, module, pageName, districtName }: Props) {
   const t = useTranslations("page_shell");
@@ -62,8 +76,30 @@ export default function ReportMistake({ stateSlug, districtSlug, module, pageNam
     };
   }, [open]);
 
+  // Let the site-wide Report button hand over to this form (see header).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.ftpReport = "district";
+    const onOpen = () => setOpen(true);
+    const onHash = () => {
+      if (window.location.hash === REPORT_HASH) setOpen(true);
+    };
+    window.addEventListener(OPEN_REPORT_EVENT, onOpen);
+    window.addEventListener("hashchange", onHash);
+    const first = window.setTimeout(onHash, 0);
+    return () => {
+      delete root.dataset.ftpReport;
+      window.removeEventListener(OPEN_REPORT_EVENT, onOpen);
+      window.removeEventListener("hashchange", onHash);
+      window.clearTimeout(first);
+    };
+  }, []);
+
   function close() {
     setOpen(false);
+    if (window.location.hash === REPORT_HASH) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     if (phase === "done") {
       setMessage("");
       setEmail("");
@@ -107,7 +143,7 @@ export default function ReportMistake({ stateSlug, districtSlug, module, pageNam
 
   return (
     <>
-      <button type="button" className="ftp-verify-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      <button type="button" id="report-mistake" className="ftp-verify-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
         <Flag size={14} aria-hidden />
         {t("report.button")}
       </button>
