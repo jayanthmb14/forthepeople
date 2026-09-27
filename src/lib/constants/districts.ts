@@ -55,6 +55,12 @@ export interface District {
   population?: number;
   area?: number; // sq km
   talukCount?: number;
+  /**
+   * True when the `taluks` listed below are NOT the official sub-districts
+   * (Sept 2026 audit: invented zones for some metros). The overview then
+   * shows no list, and the count only when `talukCount` is the official one.
+   */
+  subUnitsUnchecked?: boolean;
   villageCount?: number;
   literacy?: number;
   sexRatio?: number;
@@ -317,7 +323,9 @@ const MYSURU_DISTRICT: District = {
   // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 3001127,
   area: 6307,
-  talukCount: 7,
+  // 9 taluks incl. Saligrama and Sargur (mysore.nic.in/en/subdivision-blocks/,
+  // checked 28 Sep 2026); the list below still has the older 7.
+  talukCount: 9,
   villageCount: 2629,
   literacy: 72.79,
   sexRatio: 985,
@@ -496,7 +504,11 @@ const NEW_DELHI_DISTRICT: District = {
   // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 142004,
   area: 35,
+  // 3 subdivisions: Chanakyapuri, Delhi Cantonment, Vasant Vihar
+  // (https://en.wikipedia.org/wiki/New_Delhi_district, checked 28 Sep 2026).
+  // The list below (Connaught Place, Lodhi Road …) is not them.
   talukCount: 3,
+  subUnitsUnchecked: true,
   villageCount: 0,
   literacy: 88.34,
   sexRatio: 822,
@@ -569,7 +581,9 @@ const MUMBAI_DISTRICT: District = {
   // figure, so none is given.
   population: 12442373,
   area: 603,
-  talukCount: 5,
+  // The units below are zones, not the talukas of Mumbai City + Mumbai
+  // Suburban. Count not given until checked (Sept 2026 audit).
+  subUnitsUnchecked: true,
   villageCount: 0,
   sexRatio: 853,
   taluks: [
@@ -674,7 +688,9 @@ const CHENNAI_DISTRICT: District = {
   // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 4646732,
   area: 175,
-  talukCount: 4,
+  // Chennai has 3 revenue divisions and 16-17 taluks (chennai.nic.in);
+  // the four "taluks" below are not them. Count not given until checked.
+  subUnitsUnchecked: true,
   villageCount: 0,
   literacy: 90.18,
   sexRatio: 989,
@@ -766,7 +782,9 @@ const KOLKATA_DISTRICT: District = {
   // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 4496694,
   area: 185,
-  talukCount: 4,
+  // Kolkata is fully urban with no CD blocks; the units below are not
+  // official sub-districts. Count not given (Sept 2026 audit).
+  subUnitsUnchecked: true,
   villageCount: 0,
   literacy: 86.31,
   sexRatio: 908,
@@ -858,7 +876,11 @@ const LUCKNOW_DISTRICT: District = {
   // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 4589838,
   area: 2528,
-  talukCount: 4,
+  // 5 tehsils: Sadar, Sarojini Nagar, Bakshi Ka Talab, Malihabad, Mohanlalganj
+  // (lucknow.nic.in/tehsil/, checked 28 Sep 2026). The list below is not
+  // those five ("Lucknow City", no Sarojini Nagar), so it is not shown.
+  talukCount: 5,
+  subUnitsUnchecked: true,
   villageCount: 823,
   literacy: 77.29,
   sexRatio: 917,

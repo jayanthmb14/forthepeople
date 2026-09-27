@@ -57,7 +57,9 @@ export default async function DistrictPage({
         tagline: districtData.tagline,
         population: districtData.population,
         area: districtData.area,
-        talukCount: districtData.talukCount ?? districtData.taluks.length,
+        // The official count; the list length only when the list is the official one.
+        talukCount: districtData.talukCount ?? (districtData.subUnitsUnchecked ? undefined : districtData.taluks.length),
+        subUnitsUnchecked: districtData.subUnitsUnchecked ?? false,
         villageCount: districtData.villageCount,
         literacy: districtData.literacy,
         sexRatio: districtData.sexRatio,

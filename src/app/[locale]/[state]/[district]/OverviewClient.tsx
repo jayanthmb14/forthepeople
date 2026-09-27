@@ -81,6 +81,8 @@ interface Props {
     population?: number | null;
     area?: number | null;
     talukCount?: number;
+    /** The taluk list is not the official one: show no list (Sept 2026 audit). */
+    subUnitsUnchecked?: boolean;
     villageCount?: number | null;
     literacy?: number | null;
     sexRatio?: number | null;
@@ -188,7 +190,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         stateName={stateName}
         tagline={districtData.tagline}
         badges={districtData.tagline ? districtData.badges?.slice(0, 1) : districtData.badges?.slice(0, 2)}
-        subUnitCount={districtData.taluks.length || null}
+        subUnitCount={districtData.talukCount || null}
         subUnitLabel={subUnitPlural}
         showStats={false}
       />
@@ -290,7 +292,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </Section>
 
       {/* ═══ 6. Taluks ═══ */}
-      {districtData.taluks.length > 0 && (
+      {districtData.taluks.length > 0 && !districtData.subUnitsUnchecked && (
         <Section title={t("subUnits", { units: subUnitPlural, name: displayName })}>
           <ul className={`ftp-ov-taluks ${hueClass(getDistrictHue(districtSlug))}`}>
             {districtData.taluks.map((tal) => {
