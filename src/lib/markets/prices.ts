@@ -24,9 +24,10 @@
 //  No history is stored in the database: both upstreams return their own
 //  history on every call, so nothing needs a cron or a backfill.
 //
-//  Petrol and diesel are NOT here on purpose. Their price differs by city
-//  and there is no free, dated, official daily feed wired up yet; the old
-//  ticker showed two hard-coded April numbers as if they were live.
+//  Petrol and diesel are NOT in this snapshot: their price differs by city
+//  and comes from a separate, double-checked collector
+//  (/api/cron/scrape-fuel → src/lib/markets/fuel.ts), which /api/data/prices
+//  adds beside this snapshot.
 
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { scaleSeries, type PricePoint } from "./compute";

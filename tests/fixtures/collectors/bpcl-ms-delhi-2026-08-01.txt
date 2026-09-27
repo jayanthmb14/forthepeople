@@ -1,0 +1,258 @@
+% bharatpetroleum.in/pdf/MS_Delhi_Price_Web_Upload.pdf (petrol), content stream (inflated), fetched 27 Sep 2026.
+ /P <</MCID 0>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F1 9 Tf
+1 0 0 1 481.42 712.18 Tm
+/GS8 gs
+0 g
+/GS9 gs
+0 G
+[(E)-4(f)-3(f)-3(e)-3(c)5(ti)6(v)6(e)] TJ
+ET
+Q
+ EMC  /P <</MCID 1>> BDC q
+51.48 697.18 480.6 11.28 re
+W* n
+BT
+/F1 9 Tf
+1 0 0 1 480.46 699.7 Tm
+0 g
+0 G
+[(1-A)6(u)4(g)-5(-26)] TJ
+ET
+Q
+ EMC  /P <</MCID 2>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 66.96 674.98 Tm
+0 g
+0 G
+[(1)] TJ
+ET
+Q
+ EMC  /P <</MCID 3>> BDC q
+51.48 672.22 480.6 11.52 re
+W* n
+BT
+/F1 9 Tf
+1 0 0 1 88.224 674.86 Tm
+0 g
+0 G
+[(Pr)-5(i)6(c)5(e)-3( C)-4(h)4(ar)-3(g)-5(e)-3(d)4( to)4( Deal)6(e)-3(r)-4(s \()4(e)-3(x)6(c)5(l)6(u)4(d)4(i)6(n)4(g)-5( V)4(A)6(T\))] TJ
+ET
+Q
+ EMC  /P <</MCID 4>> BDC q
+51.48 672.22 480.6 11.52 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 431.5 674.98 Tm
+0 g
+0 G
+[(R)-3(s)4(/lt)4(r)] TJ
+ET
+Q
+ EMC  /P <</MCID 5>> BDC q
+51.48 672.22 480.6 11.52 re
+W* n
+BT
+/F1 9 Tf
+1 0 0 1 509.26 674.98 Tm
+0 g
+0 G
+ -0.003 Tc[(81.12)] TJ
+ET
+Q
+ EMC  /P <</MCID 6>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 66.96 662.47 Tm
+0 g
+0 G
+[(2)] TJ
+ET
+Q
+ EMC  /P <</MCID 7>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 88.224 662.47 Tm
+0 g
+0 G
+[(A)6(d)5(d)5( : De)6(ale)7(r Co)-4(mmis)6(s)4(i)3(o)-5(n)5( \()-3(A)6(ve)3(rag)6(e)5(\))] TJ
+ET
+Q
+ EMC  /P <</MCID 8>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 431.5 662.47 Tm
+0 g
+0 G
+[(R)-3(s)4(/lt)4(r)] TJ
+ET
+Q
+ EMC  /P <</MCID 9>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 513.94 662.47 Tm
+0 g
+0 G
+[(4.41)] TJ
+ET
+Q
+ EMC  /P <</MCID 10>> BDC q
+51.48 608.83 480.6 137.06 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 66.96 649.99 Tm
+0 g
+0 G
+[(3)] TJ
+ET
+Q
+ EMC  /P <</MCID 11>> BDC q
+51.48 647.23 480.6 11.52 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 88.224 649.87 Tm
+0 g
+0 G
+[(A)6(d)5(d)5( : V)-5(A)6(T)-5( \()-3(i)3(n)5(c)-3(l)3(u)5(d)5(i)3(n)5(g)4( V)-6(A)6(T)-5( o)-6(n)5( De)6(ale)7(r Co)-4(mmis)6(s)4(i)3(o)-5(n)5(\))-3( ap)3(p)5(l)3(i)3(c)-3(ab)4(l)3(e)5( fo)-8(r D)3(e)5(l)3(h)5(i)3( @ 19.4%)] TJ
+ET
+Q
+ EMC  /P <</MCID 12>> BDC q
+51.48 647.23 480.6 11.52 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 431.5 649.99 Tm
+0 g
+0 G
+[(R)-3(s)4(/lt)4(r)] TJ
+ET
+Q
+ EMC  /P <</MCID 13>> BDC q
+51.48 647.23 480.6 11.52 re
+W* n
+BT
+/F2 9 Tf
+1 0 0 1 509.38 649.99 Tm
+0 g
+0 G
+[(16.59)] TJ
+ET
+Q
+ EMC q
+51.48 608.83 480.6 137.06 re
+W* n
+ /P <</MCID 14>> BDC BT
+/F2 9 Tf
+1 0 0 1 66.96 637.51 Tm
+0 g
+0 G
+[(4)] TJ
+ET
+ EMC  /P <</MCID 15>> BDC BT
+/F1 9 Tf
+1 0 0 1 88.224 637.51 Tm
+[(R)3(e)-3(tai)7(l)6( S)6(e)-3(l)6(l)6(i)6(n)4(g)-5( Pr)-6(i)6(c)5(e)-3( at Del)5(h)4(i)6( \()5(R)3(o)5(u)4(n)4(d)4(e)-3(d)4(\))] TJ
+ET
+ EMC  /P <</MCID 16>> BDC BT
+/F2 9 Tf
+1 0 0 1 431.5 637.51 Tm
+[(R)-3(s)4(/lt)4(r)] TJ
+ET
+ EMC  /P <</MCID 17>> BDC BT
+/F1 9 Tf
+1 0 0 1 504.7 637.51 Tm
+ -0.003 Tc[(102.12)] TJ
+ET
+ EMC Q
+q
+51.48 733.9 480.12 12 re
+W* n
+ /P <</MCID 18>> BDC BT
+/F1 9 Tf
+1 0 0 1 179.66 737.26 Tm
+0 g
+0 G
+[(Pr)-5(i)6(c)5(e)-3( Bu)4(i)6(l)6(d)4(-up)7( o)4(f)-3( Pe)-5(tr)-4(o)5(l)6( at Del)5(h)4(i)6( at BPC)-4(L)-3( Retai)6(l)6( Pump)5( O)-4(u)4(tl)6(e)-3(ts)] TJ
+ET
+ EMC Q
+q
+51.48 696.7 35.064 24.72 re
+W* n
+ /P <</MCID 19>> BDC BT
+/F1 9 Tf
+1 0 0 1 56.76 706.54 Tm
+0 g
+0 G
+[(S)6(r)-4(. N)5(o)5(.)] TJ
+ET
+ EMC Q
+q
+86.544 696.7 332.83 24.72 re
+W* n
+ /P <</MCID 20>> BDC BT
+/F1 9 Tf
+1 0 0 1 236.09 706.54 Tm
+0 g
+0 G
+[(E)-4(l)6(e)-3(me)-3(n)4(ts)] TJ
+ET
+ EMC Q
+q
+419.38 696.7 43.44 24.72 re
+W* n
+ /P <</MCID 21>> BDC BT
+/F1 9 Tf
+1 0 0 1 433.54 706.54 Tm
+0 g
+0 G
+[(Un)3(i)6(t)] TJ
+ET
+ EMC Q
+/Artifact BMC q
+49.56 606.79 484.56 141.02 re
+W* n
+0 g
+50.64 633.79 0.84 87.984 re
+f*
+86.184 633.79 0.84 87.144 re
+f*
+419.02 633.79 0.84003 87.144 re
+f*
+462.46 633.79 0.84 87.144 re
+f*
+531.24 633.79 0.84003 87.144 re
+f*
+51.48 720.94 480.6 0.84 re
+f*
+463.3 708.46 68.784 0.84 re
+f*
+51.48 696.22 480.6 0.84 re
+f*
+51.48 683.74 480.6 0.84 re
+f*
+51.48 671.26 480.6 0.84 re
+f*
+51.48 658.75 480.6 0.84001 re
+f*
+51.48 646.27 480.6 0.84 re
+f*
+51.48 633.79 480.6 0.84 re
+f*
+ EMC Q

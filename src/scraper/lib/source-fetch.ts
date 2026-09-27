@@ -97,6 +97,65 @@ export async function fetchSource(url: string, opts: SourceFetchOptions = {}): P
   return { ok: false, status: lastStatus, text: "", ms: Date.now() - started, error: lastError, cookies: [] };
 }
 
+export interface SourceBytesResult {
+  ok: boolean;
+  status: number;
+  bytes: Uint8Array;
+  /** The response's Content-Type (lower case), or "". */
+  contentType: string;
+  ms: number;
+  error?: string;
+}
+
+/**
+ * Fetch a file (a PDF) politely: the same user agent, timeout, per-host
+ * gap and single retry as fetchSource(), but the body is kept as bytes.
+ * A body larger than `maxBytes` (default 8 MB) is refused. Never throws.
+ */
+export async function fetchSourceBytes(
+  url: string,
+  opts: Omit<SourceFetchOptions, "method" | "body"> & { maxBytes?: number } = {},
+): Promise<SourceBytesResult> {
+  const { headers = {}, timeoutMs = 30_000, retries = 1, minGapMs = 2_500, deadlineMs, maxBytes = 8 * 1024 * 1024 } = opts;
+  const host = new URL(url).host;
+  const started = Date.now();
+  let lastError = "";
+  let lastStatus = 0;
+  const empty = new Uint8Array(0);
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (deadlineMs !== undefined && Date.now() > deadlineMs) {
+      return { ok: false, status: lastStatus, bytes: empty, contentType: "", ms: Date.now() - started, error: lastError || "time budget used up" };
+    }
+    if (attempt > 0) await sleep(2_000);
+    await waitForHost(host, minGapMs);
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": COLLECTOR_UA, Accept: "application/pdf,*/*;q=0.8", "Accept-Language": "en-IN,en;q=0.9", ...headers },
+        redirect: "follow",
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      lastStatus = res.status;
+      const declared = Number(res.headers.get("content-length") ?? "0");
+      if (declared > maxBytes) {
+        await res.body?.cancel().catch(() => {});
+        return { ok: false, status: res.status, bytes: empty, contentType: "", ms: Date.now() - started, error: `file too large (${declared} bytes)` };
+      }
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+      if (bytes.byteLength > maxBytes) {
+        return { ok: false, status: res.status, bytes: empty, contentType, ms: Date.now() - started, error: `file too large (${bytes.byteLength} bytes)` };
+      }
+      if (res.ok) return { ok: true, status: res.status, bytes, contentType, ms: Date.now() - started };
+      lastError = `HTTP ${res.status}`;
+      if (!RETRY_STATUS.has(res.status)) break;
+    } catch (err) {
+      lastError = err instanceof Error ? (err.name === "TimeoutError" ? `timeout after ${timeoutMs} ms` : err.message) : String(err);
+    }
+  }
+  return { ok: false, status: lastStatus, bytes: empty, contentType: "", ms: Date.now() - started, error: lastError };
+}
+
 /** Parse a JSON body; null when it is not JSON. */
 export function parseJsonSafe<T = unknown>(text: string): T | null {
   try {

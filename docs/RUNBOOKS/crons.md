@@ -42,6 +42,7 @@ and one `ScraperLog` row (via `cronStarted()` / `cronFinished()` in
 | `/api/cron/scrape-schools` | `40 4 * * 2` | Tuesday 10:10 | 150 s / 180 s | UDISE+ district school statistics (schools, teachers, students, facilities) after totals-add-up checks. Writes Redis `ftp:data:udise:<slug>` (no expiry) + `UpdateLog`. Lock `lock:cron:scrape-schools`. |
 | `/api/cron/scrape-mgnrega` | `50 4 * * *` | daily 10:20 | 250 s / 300 s | MGNREGA "At a glance" page per rural district (about 20 s each). Writes Redis `ftp:data:mgnrega:<slug>` (no expiry) + `UpdateLog`. Lock `lock:cron:scrape-mgnrega`. |
 | `/api/cron/scrape-tenders` | `15 */2 * * *` | every 2 h at :45 (01:45, 03:45 …) | 240 s / 300 s | Active tenders of followed district bodies on the Maharashtra, Tamil Nadu, West Bengal and Delhi e-procurement (GePNIC) portals; each tender saved only from its own page. Writes `Tender`, `TenderAuthority` and one `UpdateLog` row per district with new tenders. Lock `lock:cron:scrape-tenders`. |
+| `/api/cron/scrape-fuel` | **not in `vercel.json` yet** — suggested `0 7,14 * * *` | 12:30 and 19:30 | 50 s / 60 s | Petrol and diesel in Delhi, Mumbai, Chennai and Kolkata (₹ per litre at IOCL outlets) from PPAC: its home-page "as on" lines and the day's metro table (PDF). Delhi must also equal BPCL's Delhi price build-up (in effect on or before that day); anything that disagrees or cannot be read → nothing written, reasons in `ScraperLog.error`. 5 requests, ≥ 2.5 s apart per site. Writes Redis `ftp:data:fuel` (no expiry). Lock `lock:cron:scrape-fuel`. |
 
 Notes:
 
@@ -100,6 +101,7 @@ Useful options and what to expect:
 | `verify-data` | `?only=leaders,weather` (any of `freshness`, `leaders`, `weather`, `dams`, `mandi`) and `?district=mandya,pune` | counts per verifier; HTTP 409 = another run holds the lock |
 | `scrape-courts` | none | `skipped: "already running"` if the lock is held; otherwise units read per district |
 | `scrape-jjm`, `scrape-schools`, `scrape-mgnrega`, `scrape-tenders` | none | a summary per district; "not covered" for districts the source does not publish |
+| `scrape-fuel` | none | `written: "created" \| "changed" \| "confirmed"`, the four cities' prices and PPAC's `asOf` day; or `ok: false` with `problems` (nothing written) |
 | everything else | none | counts of rows written |
 
 Suggested order after a deploy that touched AI or crons:
@@ -140,6 +142,7 @@ district totals yet):
 |---|---|---|
 | `ftp:data:udise:<slug>` | `scrape-schools` | none (a failed run keeps the last good one) |
 | `ftp:data:mgnrega:<slug>` | `scrape-mgnrega` | none |
+| `ftp:data:fuel` | `scrape-fuel` | none (read by `/api/data/prices` → `fuel` and the home page) |
 | `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` | `scrape-courts` | 120 days (housekeeping only) |
 | `ftp:ai:citizen-tips:<slug>` | `generate-citizen-tips` | 7 days |
 
