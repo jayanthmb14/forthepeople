@@ -126,7 +126,7 @@ function helpIconFor(item: HelpItem): React.ReactNode {
 }
 
 /**
- * Some tier copy in razorpay-plans.ts ends with an emoji (e.g. "… free ☕").
+ * Some tier copy in razorpay-plans.ts ends with an emoji (e.g. a coffee cup).
  * v3 has no emoji in chrome, so pictographs are stripped before rendering.
  * (The RegExp is built from a string so the ES2017 TypeScript target
  * accepts the \p{…} property escape.)
