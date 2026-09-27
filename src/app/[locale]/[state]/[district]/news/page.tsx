@@ -4,55 +4,78 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  News & Updates — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Order on the page:
+//    PageHeader (icon, H1, freshness, source)
+//    → AI summary cards (unchanged data hooks)
+//    → StatStrip (how many articles, categories, linked to a module)
+//    → category Chips → featured article → the rest as quiet cards
+//    → SourcesFooter → Toolbar (Share, Compare)
+//
+//  Every article card shows WHERE it came from (publisher / source) and
+//  WHEN (relative time under a week, the date after that). Module tags use
+//  Lucide icons — no emoji — and link to the module the article is about.
+//
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import Link from "next/link";
 import { use, useState } from "react";
-import { Newspaper, ExternalLink, Clock } from "lucide-react";
+import {
+  Newspaper, ExternalLink, Share2, GitCompare,
+  Users, HardHat, PiggyBank, Waves, Wheat, Cloud, Shield, Vote, GraduationCap,
+  Heart, Bus, ScrollText, Home, Zap, Scale, Factory, Droplets, Building, AlertTriangle,
+  Star, Handshake, Building2, ClipboardList, Sprout, BarChart3,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useNews, useAIInsight } from "@/hooks/useRealtimeData";
-import { ModuleHeader, LoadingShell, ErrorBlock, AIInsightBanner } from "@/components/district/ui";
+import { useFreshness } from "@/hooks/useFreshness";
+import {
+  PageHeader, LoadingShell, ErrorBlock, AIInsightBanner, StatStrip, StatTile,
+  Section, Card, Pill, Chips, SourcesFooter, Toolbar, ToolbarButton,
+} from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
 import NoDataCard from "@/components/common/NoDataCard";
 import { getModuleSources } from "@/lib/constants/state-config";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { timeAgoLabel, asOfLabel } from "@/lib/utils/timeAgo";
 
-const CAT_COLORS: Record<string, string> = {
-  politics: "#DC2626", development: "#2563EB", agriculture: "#16A34A", crime: "#7C3AED",
-  health: "#0891B2", education: "#D97706", infrastructure: "#059669", sports: "#EA580C",
-  weather: "#2563EB", economy: "#B45309",
+// Module tags: the AI news pipeline tags each article with the module it
+// is about (targetModule). The key is that slug; the value is the label
+// and Lucide icon shown on the small link under the headline.
+const MODULE_TAGS: Record<string, { icon: LucideIcon; label: string }> = {
+  "leaders":              { icon: Users,         label: "Leadership" },
+  "infrastructure":       { icon: HardHat,       label: "Infrastructure" },
+  "budget":               { icon: PiggyBank,     label: "Budget" },
+  "water":                { icon: Waves,         label: "Water & Dams" },
+  "crops":                { icon: Wheat,         label: "Crop Prices" },
+  "weather":              { icon: Cloud,         label: "Weather" },
+  "police":               { icon: Shield,        label: "Police" },
+  "elections":            { icon: Vote,          label: "Elections" },
+  "education":            { icon: GraduationCap, label: "Schools" },
+  "health":               { icon: Heart,         label: "Health" },
+  "transport":            { icon: Bus,           label: "Transport" },
+  "schemes":              { icon: ScrollText,    label: "Schemes" },
+  "housing":              { icon: Home,          label: "Housing" },
+  "power":                { icon: Zap,           label: "Power" },
+  "courts":               { icon: Scale,         label: "Courts" },
+  "industries":           { icon: Factory,       label: "Industries" },
+  "jjm":                  { icon: Droplets,      label: "JJM Water" },
+  "gram-panchayat":       { icon: Building,      label: "Gram Panchayat" },
+  "alerts":               { icon: AlertTriangle, label: "Alerts" },
+  "famous-personalities": { icon: Star,          label: "Personalities" },
+  "citizen-corner":       { icon: Handshake,     label: "Citizens" },
+  "offices":              { icon: Building2,     label: "Offices" },
+  "rti":                  { icon: ClipboardList, label: "RTI" },
+  "sugar-factory":        { icon: Factory,       label: "Sugar Factory" },
+  "soil":                 { icon: Sprout,        label: "Soil Health" },
+  "population":           { icon: BarChart3,     label: "Population" },
+  "news":                 { icon: Newspaper,     label: "General" },
 };
 
-// Module tag config: icon, label, color classes
-const MODULE_TAGS: Record<string, { icon: string; label: string; bg: string; text: string; border: string }> = {
-  "leaders":            { icon: "👥", label: "Leadership",    bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
-  "infrastructure":     { icon: "🏗️", label: "Infrastructure",bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  "budget":             { icon: "💰", label: "Budget",         bg: "#FEFCE8", text: "#A16207", border: "#FDE68A" },
-  "water":              { icon: "🚰", label: "Water & Dams",   bg: "#ECFEFF", text: "#0E7490", border: "#A5F3FC" },
-  "crops":              { icon: "🌾", label: "Crop Prices",    bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  "weather":            { icon: "🌤️", label: "Weather",        bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  "police":             { icon: "👮", label: "Police",         bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
-  "elections":          { icon: "📊", label: "Elections",      bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" },
-  "education":          { icon: "🎓", label: "Schools",        bg: "#EEF2FF", text: "#4338CA", border: "#C7D2FE" },
-  "health":             { icon: "🏥", label: "Health",         bg: "#FDF2F8", text: "#BE185D", border: "#FBCFE8" },
-  "transport":          { icon: "🚌", label: "Transport",      bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  "schemes":            { icon: "📋", label: "Schemes",        bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  "housing":            { icon: "🏠", label: "Housing",        bg: "#F0FDFA", text: "#0F766E", border: "#99F6E4" },
-  "power":              { icon: "⚡", label: "Power",          bg: "#FEFCE8", text: "#A16207", border: "#FDE68A" },
-  "courts":             { icon: "⚖️", label: "Courts",         bg: "#F8FAFC", text: "#475569", border: "#E2E8F0" },
-  "industries":         { icon: "🏭", label: "Industries",     bg: "#F9FAFB", text: "#374151", border: "#E5E7EB" },
-  "jjm":                { icon: "💧", label: "JJM Water",      bg: "#ECFEFF", text: "#0E7490", border: "#A5F3FC" },
-  "gram-panchayat":     { icon: "🏘️", label: "Gram Panchayat", bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  "alerts":             { icon: "⚠️", label: "Alerts",         bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
-  "famous-personalities": { icon: "🌟", label: "Personalities", bg: "#FDF4FF", text: "#7E22CE", border: "#E9D5FF" },
-  "citizen-corner":     { icon: "🗣️", label: "Citizens",       bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
-  "offices":            { icon: "🏛️", label: "Offices",        bg: "#F8FAFC", text: "#475569", border: "#E2E8F0" },
-  "rti":                { icon: "📄", label: "RTI",            bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  "sugar-factory":      { icon: "🏭", label: "Sugar Factory",  bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" },
-  "soil":               { icon: "🌱", label: "Soil Health",    bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  "population":         { icon: "👤", label: "Population",     bg: "#EEF2FF", text: "#4338CA", border: "#C7D2FE" },
-  "news":               { icon: "📰", label: "General",        bg: "#F9FAFB", text: "#6B7280", border: "#E5E7EB" },
-};
-
+/** News feeds sometimes leave HTML entities in text — tidy them up. */
 function cleanHtml(text: string): string {
   return text
     .replace(/&nbsp;/g, " ")
@@ -65,39 +88,78 @@ function cleanHtml(text: string): string {
     .trim();
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(diff / 86400000);
-  if (h < 1) return "Just now";
-  if (h < 24) return `${h}h ago`;
-  if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+/** "5h ago" / "3d ago" under a week; the date ("12 Sep") after that. */
+function publishedLabel(iso: string): string {
+  const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
+  return days < 7 ? timeAgoLabel(iso).label : asOfLabel(iso, { prefix: "" });
 }
 
+/** Small link under a headline pointing at the module the article is about. */
 function ModuleTag({ targetModule, moduleAction, base }: { targetModule: string; moduleAction?: string | null; base: string }) {
   const tag = MODULE_TAGS[targetModule];
   if (!tag) return null;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-      <Link
-        href={`${base}/${targetModule}`}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 4,
-          padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-          background: tag.bg, color: tag.text,
-          border: `1px solid ${tag.border}`,
-          textDecoration: "none",
-        }}
-      >
-        <span>{tag.icon}</span>
-        {tag.label}
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+      <Link href={`${base}/${targetModule}`} style={{ textDecoration: "none" }}>
+        <Pill tone="brand" icon={tag.icon}>{tag.label}</Pill>
       </Link>
       {moduleAction && (
-        <span style={{ fontSize: 11, color: "#9B9B9B" }}>→ {moduleAction}</span>
+        <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>→ {moduleAction}</span>
       )}
     </div>
   );
+}
+
+/** "Publisher · 5h ago" line + category pill, shown above every headline. */
+function ArticleMeta({ source, publishedAt, category }: { source: string; publishedAt: string; category: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+      <Pill>{category}</Pill>
+      <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+        {source}
+        <span aria-hidden> · </span>
+        <time dateTime={publishedAt} className="ftp-num" style={{ fontWeight: 400 }}>{publishedLabel(publishedAt)}</time>
+      </span>
+    </div>
+  );
+}
+
+/** Headline — an external link when we have the article URL, plain text otherwise. */
+function Headline({ text, url, featured }: { text: string; url?: string | null; featured?: boolean }) {
+  const style: React.CSSProperties = {
+    fontSize: featured ? 15 : 13,
+    lineHeight: featured ? "22px" : "20px",
+    fontWeight: 500,
+    color: "var(--ftp-text)",
+    margin: 0,
+  };
+  if (!url) return <p style={style}>{text}</p>;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ ...style, display: "flex", alignItems: "flex-start", gap: 8, textDecoration: "none", minHeight: 44 }}
+    >
+      <span style={{ flex: 1 }}>{text}</span>
+      <ExternalLink size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
+      <span className="sr-only"> (opens the original article in a new tab)</span>
+    </a>
+  );
+}
+
+/** Share button: the phone's share sheet when available, else copy the link. */
+function SharePageButton() {
+  const [copied, setCopied] = useState(false);
+  function share() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: document.title, url }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
+    }
+  }
+  return <ToolbarButton icon={Share2} onClick={share}>{copied ? "Link copied" : "Share"}</ToolbarButton>;
 }
 
 function NewsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -105,16 +167,30 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useNews(district, state);
   const { data: aiInsight } = useAIInsight(district, "news");
+  const freshness = useFreshness(state, district).forModule("news");
   const [filter, setFilter] = useState("all");
 
   const news = data?.data ?? [];
   const categories = ["all", ...Array.from(new Set(news.map((n) => n.category)))];
   const filtered = filter === "all" ? news : news.filter((n) => n.category === filter);
+  const sources = getModuleSources("news", state);
+
+  // Headline numbers — all derived from the same list shown below.
+  const latest = news.reduce<string | null>((max, n) => (!max || n.publishedAt > max ? n.publishedAt : max), null);
+  const linkedCount = news.filter((n) => n.targetModule && MODULE_TAGS[n.targetModule]).length;
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Newspaper} title="Local News" description="Latest news and developments from the district" backHref={base} liveTag />
-      {(() => { const _src = getModuleSources("news", state); return <DataSourceBanner moduleName="news" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
+    <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
+      <PageHeader
+        icon={Newspaper}
+        title="Local News"
+        description="Latest news and developments from the district"
+        backHref={base}
+        accent={getModuleAccent("news")}
+        freshness={freshness?.asOf ? { asOf: freshness.asOf, status: freshness.status } : undefined}
+        source={{ label: "Google News RSS" }}
+      />
+
       <AIInsightCard module="news" district={district} />
       {aiInsight && (
         <AIInsightBanner
@@ -135,89 +211,66 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
 
       {!isLoading && news.length > 0 && (
         <>
-          {/* Category filter */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-            {categories.map((c) => {
-              const color = c !== "all" ? (CAT_COLORS[c.toLowerCase()] ?? "#6B7280") : "#2563EB";
-              return (
-                <button key={c} onClick={() => setFilter(c)} style={{
-                  padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: "pointer",
-                  background: filter === c ? color : "#F5F5F0",
-                  color: filter === c ? "#FFF" : "#6B6B6B",
-                  border: filter === c ? `1px solid ${color}` : "1px solid #E8E8E4",
-                }}>
-                  {c === "all" ? `All (${news.length})` : `${c} (${news.filter(n => n.category === c).length})`}
-                </button>
-              );
-            })}
-          </div>
+          <StatStrip cols={3}>
+            <StatTile label="Articles" value={news.length} sub="In the current feed" asOf={latest} />
+            <StatTile label="Categories" value={categories.length - 1} />
+            <StatTile label="Linked to a module" value={linkedCount} sub="Tagged by topic" />
+          </StatStrip>
 
-          {/* Featured news (first item) */}
-          {filtered.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              {(() => {
-                const n = filtered[0];
-                const color = CAT_COLORS[n.category.toLowerCase()] ?? "#2563EB";
-                return (
-                  <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 14, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: `${color}15`, color }}>{n.category}</span>
-                          <span style={{ fontSize: 11, color: "#9B9B9B", display: "flex", alignItems: "center", gap: 3 }}><Clock size={10} />{timeAgo(n.publishedAt)}</span>
-                          <span style={{ fontSize: 11, color: "#9B9B9B" }}>{n.publisher ?? n.source}</span>
-                        </div>
-                        <div style={{ fontSize: 17, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.4, marginBottom: n.summary ? 8 : 0 }}>{cleanHtml(n.headline)}</div>
-                        {n.summary && n.summary !== n.headline && <div style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.6 }}>{cleanHtml(n.summary)}</div>}
-                        {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
-                      </div>
-                      {n.url && (
-                        <a href={n.url} target="_blank" rel="noopener noreferrer" style={{
-                          display: "flex", alignItems: "center", gap: 4, padding: "7px 12px",
-                          background: color, color: "#FFF", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                          textDecoration: "none", flexShrink: 0,
-                        }}>
-                          Read <ExternalLink size={11} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
+          <Section title="Latest articles">
+            {/* Category filter */}
+            <div style={{ marginBottom: 16 }}>
+              <Chips
+                label="Filter news by category"
+                value={filter}
+                onChange={setFilter}
+                items={categories.map((c) => ({
+                  value: c,
+                  label: c === "all" ? "All" : c,
+                  count: c === "all" ? news.length : news.filter((n) => n.category === c).length,
+                }))}
+              />
             </div>
-          )}
 
-          {/* Rest of news */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filtered.slice(1).map((n) => {
-              const color = CAT_COLORS[n.category.toLowerCase()] ?? "#6B7280";
+            {/* Featured article (first in the filtered list) */}
+            {filtered.length > 0 && (() => {
+              const n = filtered[0];
               return (
-                <div key={n.id} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 8, background: `${color}15`, color }}>{n.category}</span>
-                        <span style={{ fontSize: 11, color: "#9B9B9B", display: "flex", alignItems: "center", gap: 3 }}><Clock size={10} />{timeAgo(n.publishedAt)}</span>
-                        <span style={{ fontSize: 11, color: "#9B9B9B" }}>{n.publisher ?? n.source}</span>
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A", lineHeight: 1.4, marginBottom: n.summary ? 4 : 0 }}>{cleanHtml(n.headline)}</div>
-                      {n.summary && n.summary !== n.headline && <div style={{ fontSize: 12, color: "#9B9B9B", lineHeight: 1.5 }}>{cleanHtml(n.summary)}</div>}
-                      {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
-                    </div>
-                    {n.url && (
-                      <a href={n.url} target="_blank" rel="noopener noreferrer" style={{
-                        display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: "#2563EB", textDecoration: "none", flexShrink: 0,
-                      }}>
-                        <ExternalLink size={13} />
-                      </a>
-                    )}
-                  </div>
-                </div>
+                <Card as="article" padding={20} style={{ marginBottom: 12 }}>
+                  <ArticleMeta source={n.publisher ?? n.source} publishedAt={n.publishedAt} category={n.category} />
+                  <Headline text={cleanHtml(n.headline)} url={n.url} featured />
+                  {n.summary && n.summary !== n.headline && (
+                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{cleanHtml(n.summary)}</p>
+                  )}
+                  {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
+                </Card>
               );
-            })}
-          </div>
+            })()}
+
+            {/* Rest of the list */}
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+              {filtered.slice(1).map((n) => (
+                <Card as="li" key={n.id} padding={16}>
+                  <ArticleMeta source={n.publisher ?? n.source} publishedAt={n.publishedAt} category={n.category} />
+                  <Headline text={cleanHtml(n.headline)} url={n.url} />
+                  {n.summary && n.summary !== n.headline && (
+                    <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "2px 0 0" }}>{cleanHtml(n.summary)}</p>
+                  )}
+                  {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
+                </Card>
+              ))}
+            </ul>
+          </Section>
         </>
       )}
+
+      <SourcesFooter sources={sources.sources.map((name) => ({ name, frequency: sources.frequency }))} />
+      <Toolbar>
+        <SharePageButton />
+        <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=news&a=${district}`}>
+          Compare with another district
+        </ToolbarButton>
+      </Toolbar>
     </div>
   );
 }
