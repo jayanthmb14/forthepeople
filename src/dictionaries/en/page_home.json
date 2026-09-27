@@ -119,5 +119,14 @@
     "showTitle": "Show with date and source",
     "showBody": "Every number says where it came from and when. Old data is marked as old.",
     "link": "See it for yourself: check {name}'s data"
+  },
+  "support": {
+    "title": "Free for everyone. Kept running by citizens.",
+    "body": "No ads and no paywall. People like you pay for the servers and data feeds that keep each district's dashboards open.",
+    "namesLabel": "Some of the people who support ForThePeople.in",
+    "founder": "Founding Builder",
+    "monthly": "monthly supporter",
+    "cta": "Support the project",
+    "all": "See all supporters"
   }
 }

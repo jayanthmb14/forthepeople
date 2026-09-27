@@ -37,7 +37,7 @@ import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance from "@/components/home/IndiaGlance";
 import PricesToday from "@/components/home/PricesToday";
-import SupportLine from "@/components/home/SupportLine";
+import SupportBand from "@/components/home/SupportBand";
 import DataChecks from "@/components/home/DataChecks";
 import { getDistrict } from "@/lib/constants/districts";
 import { placeName } from "@/i18n/place-name";
@@ -146,7 +146,7 @@ export default async function HomePage({
       <LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />
       <PricesToday locale={locale} markets={markets} />
       <DataChecks locale={locale} example={example} />
-      <SupportLine locale={locale} />
+      <SupportBand locale={locale} />
     </main>
   );
 }

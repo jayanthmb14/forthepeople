@@ -1431,28 +1431,132 @@
   color: var(--ftp-text-2);
 }
 
-/* ───────────── Support line ───────────── */
+/* ───────────── Support band (SupportBand) ───────────── */
 
-.support {
+.supportBand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  padding: 20px;
+  border: 1px solid var(--ftp-support-border);
+  border-radius: 22px;
+  background:
+    radial-gradient(55% 90% at 100% 0%, var(--home-gold-tint) 0%, transparent 70%),
+    linear-gradient(135deg, var(--ftp-support-tint) 0%, var(--ftp-surface) 75%);
+}
+.supportArt {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--ftp-surface);
+  color: var(--ftp-support);
+  box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--ftp-support) 70%, transparent), inset 0 0 0 1px var(--ftp-support-border);
+}
+.supportBody {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.supportTitle {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: var(--ftp-text);
+}
+.supportText {
+  margin: 0;
+  max-width: 40em;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ftp-text-2);
+}
+.supporters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.supporter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 4px 12px;
+  border: 1px solid var(--ftp-support-border);
+  border-radius: 999px;
+  background: var(--ftp-surface);
+  font-size: 13px;
+  line-height: 18px;
+}
+.supporter[data-founder] {
+  border-color: var(--home-gold-ring);
+  background: linear-gradient(135deg, var(--home-gold-tint) 0%, var(--ftp-surface) 100%);
+}
+.supporterLoading {
+  width: 120px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ftp-support-tint) 70%, var(--ftp-surface-2));
+}
+.supporterStar {
+  flex-shrink: 0;
+  color: var(--home-gold);
+  fill: var(--home-gold);
+}
+.supporterName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.supporterWhere {
+  white-space: nowrap;
+  color: var(--ftp-text-2);
+}
+.supporterWhere::before {
+  content: "· ";
+}
+.supportActions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
-  padding: 12px 18px;
-  border: 1px solid var(--ftp-border);
-  border-radius: 16px;
+  gap: 4px 16px;
+  margin-top: 6px;
+}
+.supportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid var(--ftp-support-border);
+  border-radius: 14px;
   background: var(--ftp-surface);
-}
-.supportHeart {
-  flex-shrink: 0;
-  color: var(--ftp-support-text, #B4234F);
-}
-.supportText {
-  flex: 1 1 240px;
-  margin: 0;
+  color: var(--ftp-support);
   font-size: 15px;
-  line-height: 22px;
-  color: var(--ftp-text);
+  font-weight: 800;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.supportBtn:hover {
+  border-color: var(--ftp-support);
+  background: var(--ftp-support-tint);
+}
+.supportBtn:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
 }
 
 /* ───────────── Wider screens ───────────── */
