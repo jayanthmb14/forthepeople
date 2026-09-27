@@ -23,8 +23,14 @@ function getPrisma() {
 }
 
 const NOW = new Date();
-const REPORT_DATE = new Date("2023-04-09");
+// Sept 2026 audit: the 3,682 estimate and the state-wise figures were released
+// with the detailed "Status of Tigers 2022" report on 29 Jul 2023 (PIB
+// PRID 1943922); the 9 Apr 2023 release gave only the 3,167 camera-trap
+// minimum. The 2018 (4th cycle) estimate is 2,967 (PIB PRID 1580622, 29 Jul
+// 2019) — 3,167 is the 2022 minimum, not a 2018 figure.
+const REPORT_DATE = new Date("2023-07-29");
 const PRIOR_REPORT_DATE = new Date("2018-12-01");
+const TIGERS_2018 = 2967;
 const NTCA_URL = "https://ntca.gov.in/";
 const NTCA_METHODOLOGY_PDF = "https://ntca.gov.in/Status-of-Tigers-2022.pdf";
 const PROJECT_TIGER_URL = "https://projecttiger.nic.in/";
@@ -44,7 +50,7 @@ async function main() {
       numericValue: 3682,
       unit: "tigers",
       asOfDate: REPORT_DATE,
-      previousValue: 3167,
+      previousValue: TIGERS_2018,
       previousAsOfDate: PRIOR_REPORT_DATE,
       dataQuality: "published",
       source: "NTCA",
@@ -62,7 +68,7 @@ async function main() {
       numericValue: 3682,
       unit: "tigers",
       asOfDate: REPORT_DATE,
-      previousValue: 3167,
+      previousValue: TIGERS_2018,
       previousAsOfDate: PRIOR_REPORT_DATE,
       dataQuality: "published",
       source: "NTCA",
@@ -153,7 +159,7 @@ async function main() {
     ["2006-12-01", 1411],
     ["2010-12-01", 1706],
     ["2014-12-01", 2226],
-    ["2018-12-01", 3167],
+    ["2018-12-01", TIGERS_2018],
     ["2022-12-01", 3682],
   ];
   for (const [iso, value] of series) {

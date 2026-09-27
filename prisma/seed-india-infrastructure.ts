@@ -250,7 +250,8 @@ const ROWS: SeedRow[] = [
   {
     moduleSlug: "infra-telecom",
     metricKey: "subscribers_crore",
-    metricLabel: "Wireless subscribers (crore)",
+    // TRAI's headline total counts wireless AND wireline (Sept 2026 audit).
+    metricLabel: "Telephone subscribers, wireless + wireline (crore)",
     numericValue: 117,
     unit: "crore",
     source: "TRAI",

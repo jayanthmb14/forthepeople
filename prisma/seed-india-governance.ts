@@ -42,7 +42,6 @@ const BPRD = "https://bprd.nic.in/";
 const NCRB_CRIME = "https://ncrb.gov.in/crime-in-india";
 const NCRB_PRISONS = "https://ncrb.gov.in/prison-statistics-india";
 const NJDG = "https://njdg.ecourts.gov.in/";
-const ECI = "https://eci.gov.in/";
 const MOD = "https://www.mod.gov.in/";
 const DDPMOD = "https://ddpmod.gov.in/";
 
@@ -168,8 +167,10 @@ const ROWS: SeedRow[] = [
     metricLabel: "Lok Sabha seats",
     numericValue: 543,
     unit: "seats",
-    source: "Constitution Article 81",
-    sourceUrl: ECI,
+    // Article 81 only caps the House at 550; 543 comes from the Delimitation
+    // Order 2008 (Sept 2026 audit). Cite the Secretariat, as know-india does.
+    source: "Lok Sabha Secretariat",
+    sourceUrl: "https://sansad.in/ls/",
     asOfDate: NOW,
     displayOrder: 1,
   },
@@ -192,8 +193,9 @@ const ROWS: SeedRow[] = [
     metricLabel: "Rajya Sabha seats",
     numericValue: 245,
     unit: "seats",
-    source: "Constitution Article 80",
-    sourceUrl: ECI,
+    // 233 elected (Fourth Schedule) + 12 nominated; Article 80 caps it at 250.
+    source: "Rajya Sabha Secretariat",
+    sourceUrl: "https://sansad.in/rs/",
     asOfDate: NOW,
     displayOrder: 1,
   },
