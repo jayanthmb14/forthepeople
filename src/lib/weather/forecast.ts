@@ -387,6 +387,16 @@ export function compareForecasts(primary: SourceForecast | null, check: SourceFo
   return out;
 }
 
+/**
+ * Days that describe a whole day. OpenWeather days built from fewer than
+ * FULL_DAY_SLOTS 3-hour slots (the rest of today, the last day) would show
+ * the "high" of a few evening hours, so they are dropped; Open-Meteo days
+ * are always whole.
+ */
+export function wholeDays(days: readonly ForecastDay[]): ForecastDay[] {
+  return days.filter((d) => d.slots === undefined || d.slots >= FULL_DAY_SLOTS);
+}
+
 /** Days from today (India time) onwards, at most `n`. */
 export function upcomingDays(days: readonly ForecastDay[], nowMs: number, n = 7): ForecastDay[] {
   const today = istDate(nowMs);

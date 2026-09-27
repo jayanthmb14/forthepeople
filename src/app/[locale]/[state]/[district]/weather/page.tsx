@@ -69,7 +69,7 @@ import { PageActions, ageInDays, isOlderThan } from "@/components/district/page-
 import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { downloadCSV, todayISO } from "@/lib/csv";
 import { kindFromText } from "@/lib/weather/codes";
-import { FORECAST_SOURCES, chooseCurrent, todayOf, tomorrowOf, upcomingDays } from "@/lib/weather/forecast";
+import { FORECAST_SOURCES, chooseCurrent, todayOf, tomorrowOf, upcomingDays, wholeDays } from "@/lib/weather/forecast";
 import { useForecast } from "@/lib/weather/use-forecast";
 import { WeatherArt } from "@/components/weather/WeatherArt";
 import { NowCard, SourceLine, TomorrowCard, type NowView } from "@/components/weather/ForecastCards";
@@ -212,11 +212,12 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   // ── Forecast (Open-Meteo, checked against OpenWeather when configured) ──
   const primary = forecast?.primary ?? null;
   const live = primary?.current ?? null;
-  const days = useMemo(() => (primary && now > 0 ? upcomingDays(primary.days, now, 7) : []), [primary, now]);
-  const today = primary && now > 0 ? todayOf(primary.days, now) : null;
-  const tomorrow = primary && now > 0 ? tomorrowOf(primary.days, now) : null;
+  const whole = useMemo(() => (primary ? wholeDays(primary.days) : []), [primary]);
+  const days = useMemo(() => (now > 0 ? upcomingDays(whole, now, 7) : []), [whole, now]);
+  const today = now > 0 ? todayOf(whole, now) : null;
+  const tomorrow = now > 0 ? tomorrowOf(whole, now) : null;
   const checkFor = (date: string) => forecast?.checks.find((c) => c.date === date) ?? null;
-  const checkDayFor = (date: string) => forecast?.check?.days.find((d) => d.date === date) ?? null;
+  const checkDayFor = (date: string) => (forecast?.check ? wholeDays(forecast.check.days) : []).find((d) => d.date === date) ?? null;
   const checkSource = forecast?.check?.source ?? null;
 
   // ── Which "right now": our stored reading when fresh (≤ 3 h), else the
@@ -351,7 +352,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   // What the sheet shows.
   const openReading = opened?.kind === "reading" ? readings.find((r) => r.id === opened.id) ?? null : null;
   const openMonth: RainfallHistory | null = opened?.kind === "month" ? rainfallRows.find((r) => r.year === opened.year && r.month === opened.month) ?? null : null;
-  const openDay = opened?.kind === "day" ? primary?.days.find((d) => d.date === opened.date) ?? null : null;
+  const openDay = opened?.kind === "day" ? whole.find((d) => d.date === opened.date) ?? null : null;
   const monthLong = (r: RainfallHistory) => monthOf(r.year, r.month, { month: "long", year: "numeric" });
 
   const readingList = (rows: WeatherReading[]) => (

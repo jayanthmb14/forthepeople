@@ -28,6 +28,7 @@ import {
   tomorrowOf,
   upcomingDays,
   weekRange,
+  wholeDays,
   type ForecastDay,
   type SourceForecast,
 } from "@/lib/weather/forecast";
@@ -354,6 +355,12 @@ describe("days and choices", () => {
     expect(tomorrowOf(days, after)?.date).toBe("2026-09-29");
     expect(dayOffset("2026-09-29", NOW)).toBe(2);
     expect(dayOffset("2026-09-27", NOW)).toBe(0);
+  });
+
+  it("keeps only whole days (OpenWeather part days would show an evening 'high')", () => {
+    const f = parseOpenWeatherForecast(OPENWEATHER_MANDYA)!;
+    expect(wholeDays(f.days).map((d) => d.date)).toEqual(["2026-09-28"]);
+    expect(wholeDays(days)).toHaveLength(4); // Open-Meteo days carry no slot count
   });
 
   it("drops days already past and caps the strip", () => {

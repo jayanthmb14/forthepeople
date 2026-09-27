@@ -31,7 +31,7 @@ import { useWeather } from "@/hooks/useRealtimeData";
 import type { WeatherReading } from "@/hooks/useRealtimeData";
 import { useDistrictName } from "@/i18n/client";
 import { kindFromText } from "@/lib/weather/codes";
-import { FORECAST_SOURCES, chooseCurrent, tomorrowOf, type ForecastDay, type ForecastSourceKey } from "@/lib/weather/forecast";
+import { FORECAST_SOURCES, chooseCurrent, tomorrowOf, wholeDays, type ForecastDay, type ForecastSourceKey } from "@/lib/weather/forecast";
 import { useForecast } from "@/lib/weather/use-forecast";
 import { ageInDays, useClientNow } from "@/components/district/page-kit";
 import { WeatherArt } from "@/components/weather/WeatherArt";
@@ -170,7 +170,7 @@ export default function TodayWeatherTile({ locale, state, district }: { locale: 
   const latest = weather?.data?.[0];
   const primary = forecast?.primary ?? null;
   const now = tileNow(latest, primary?.current ?? null, primary ? FORECAST_SOURCES[primary.source].label : null, nowMs);
-  const tomorrow = primary ? tomorrowOf(primary.days, nowMs) : null;
+  const tomorrow = primary ? tomorrowOf(wholeDays(primary.days), nowMs) : null;
   // Wait for the forecast before saying "our last reading is old".
   if (!now && forecastLoading) return null;
   const oldReadingAt = !now && latest ? latest.recordedAt : null;
