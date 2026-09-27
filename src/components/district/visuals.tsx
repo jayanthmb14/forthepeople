@@ -644,7 +644,10 @@ export function CountdownBar({
   // eslint-disable-next-line react-hooks/purity -- a countdown is relative to now by definition
   const now = Date.now();
   const span = Math.max(e - s, 1);
-  const pct = Math.min(100, Math.max(0, ((now - s) / span) * 100));
+  // Whole percent: the server and the browser render a moment apart, so a
+  // raw float never matched on hydration. suppressHydrationWarning below
+  // covers the rare minute where even the rounded value differs.
+  const pct = Math.round(Math.min(100, Math.max(0, ((now - s) / span) * 100)));
   const soon = e - now < 7 * 86_400_000 && e >= now;
   return (
     <div className="ftp-countdown">
@@ -657,10 +660,11 @@ export function CountdownBar({
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(pct)}
+        aria-valuenow={pct}
         aria-label={typeof label === "string" ? label : undefined}
+        suppressHydrationWarning
       >
-        <div className={`ftp-countdown-fill${soon ? " is-soon" : ""}`} style={{ width: `${pct}%` }} />
+        <div className={`ftp-countdown-fill${soon ? " is-soon" : ""}`} style={{ width: `${pct}%` }} suppressHydrationWarning />
       </div>
       {sub && <div className="ftp-countdown-sub">{sub}</div>}
     </div>
