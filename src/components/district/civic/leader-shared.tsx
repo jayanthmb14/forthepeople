@@ -4,21 +4,23 @@
  */
 
 // Small shared pieces of the Leadership page: the level (tier) names and
-// emoji, the "how we checked" line, the plain-words role description, and
+// small line icons (v5: no emoji), the "how we checked" line, the plain-words role description, and
 // the avatar. Text comes from the "page_leadership" namespace.
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import type { useTranslations } from "next-intl";
+import { Building, Building2, Landmark, Map as MapIcon, Users, Vote } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getRoleDescriptionId, getRoleDescriptionIdForText } from "@/lib/constants/role-descriptions";
 import { scriptLang } from "@/lib/utils/script-lang";
 
 export type T = ReturnType<typeof useTranslations>;
 
-/** One emoji per level of government. */
-export const TIER_EMOJI: Record<number, string> = { 1: "🏛️", 2: "🗺️", 3: "🏢", 4: "🗳️", 5: "🏙️" };
+/** One small line icon per level of government (drawn in the page hue). */
+export const TIER_ICON: Record<number, LucideIcon> = { 1: Landmark, 2: MapIcon, 3: Building2, 4: Vote, 5: Building };
 
 /**
  * Top-to-bottom order for the "who is above whom" picture and the lists:
@@ -36,19 +38,19 @@ export interface TierMeta {
   label: string;
   /** Short name for the picture ("Country", "State", …). */
   short: string;
-  emoji: string;
+  icon: LucideIcon;
   hint: string;
 }
 export function tierMeta(tier: number, t: T): TierMeta {
-  if (TIER_EMOJI[tier]) {
+  if (TIER_ICON[tier]) {
     return {
       label: t(`tiers.${tier}.label`),
       short: t(`tiers.${tier}.short`),
-      emoji: TIER_EMOJI[tier],
+      icon: TIER_ICON[tier],
       hint: t(`tiers.${tier}.hint`),
     };
   }
-  return { label: t("tiers.other.label", { n: tier }), short: t("tiers.other.short", { n: tier }), emoji: "👥", hint: "" };
+  return { label: t("tiers.other.label", { n: tier }), short: t("tiers.other.short", { n: tier }), icon: Users, hint: "" };
 }
 
 /** Where a leader's record came from, and when it was last checked. */

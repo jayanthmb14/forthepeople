@@ -28,7 +28,7 @@
 import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, Download, ExternalLink, MapPin, Phone, Search, Share2, Vote } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, Download, ExternalLink, History, Hourglass, MapPin, Phone, School, Search, Share2, Vote } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -42,7 +42,6 @@ import {
   ModulePage,
   PageHeader,
   Section,
-  SourcesFooter,
   StatStrip,
   StatTile,
   Toolbar,
@@ -52,13 +51,11 @@ import { CountdownBar, Explainer, HowItWorks } from "@/components/district/visua
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import ElectionSection, {
   ELECTORAL_SEARCH_URL,
-  ELECTION_TYPE_EMOJI,
   daysUntil,
   findNextElection,
   type ElectionEvent,
 } from "@/components/district/ElectionSection";
 import { ElectionResults } from "@/components/district/civic/ElectionResults";
-import { getModuleSources } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import knDict from "@/dictionaries/kn.json";
@@ -68,8 +65,6 @@ const ECI = { label: "ECI", href: "https://eci.gov.in" };
 const VOTERS_PORTAL_URL = "https://voters.eci.gov.in/";
 /** The Election Commission's national voter helpline. */
 const VOTER_HELPLINE = "1950";
-/** Update frequencies from getModuleSources() that have a translation. */
-const FREQ_KEY: Record<string, string> = { "Post-election": "postElection" };
 /** Booths shown before "Show all". */
 const BOOTHS_FIRST = 12;
 
@@ -159,10 +154,10 @@ function NextElectionCountdown({ e }: { e: ElectionEvent }) {
       ? t("countdown.subDateOnly", { date: f.date(e.pollingDate, { day: "numeric", month: "long", year: "numeric" }) })
       : t("countdown.subNoLast");
   return (
-    <Card tinted padding={18}>
+    <Card padding={18}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 56, height: 56, fontSize: 28, borderRadius: 16, background: "#fff" }}>
-          {ELECTION_TYPE_EMOJI[e.type] ?? "🗳️"}
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 40, height: 40, borderRadius: 12 }}>
+          <Vote size={20} />
         </span>
         <div style={{ flex: "1 1 240px", minWidth: 0 }}>
           <CountdownBar start={start} target={target} label={label} sub={sub} />
@@ -183,7 +178,6 @@ function BoothSheet({ booth, onClose, districtName }: { booth: Booth | null; onC
       onClose={onClose}
       title={booth.name}
       subtitle={t("booth.number", { n: booth.boothNumber })}
-      emoji="🏫"
       hueClassName={hueClass("elections")}
       footer={
         <>
@@ -198,11 +192,11 @@ function BoothSheet({ booth, onClose, districtName }: { booth: Booth | null; onC
     >
       <DetailList
         rows={[
-          { emoji: "🔢", label: t("colBoothNo"), value: <span className="ftp-num">{booth.boothNumber}</span> },
-          { emoji: "📍", label: t("colLocation"), value: booth.location },
-          { emoji: "🗺️", label: t("colConstituency"), value: booth.constituency },
-          { emoji: "🏘️", label: t("booth.taluk"), value: booth.taluk ?? null },
-          { emoji: "👥", label: t("colVoters"), value: booth.totalVoters != null ? <span className="ftp-num">{f.number(booth.totalVoters)}</span> : null },
+          { label: t("colBoothNo"), value: <span className="ftp-num">{booth.boothNumber}</span> },
+          { label: t("colLocation"), value: booth.location },
+          { label: t("colConstituency"), value: booth.constituency },
+          { label: t("booth.taluk"), value: booth.taluk ?? null },
+          { label: t("colVoters"), value: booth.totalVoters != null ? <span className="ftp-num">{f.number(booth.totalVoters)}</span> : null },
         ]}
       />
       <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("booth.hint")}</p>
@@ -216,7 +210,6 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
   const mt = useModuleText();
   const f = useFormat();
   const districtName = useDistrictName(state, district);
-  const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useElections(district, state);
   const { data: calendar, isLoading: calendarLoading } = useQuery<{ data: ElectionEvent[] }>({
     queryKey: ["elections", state],
@@ -245,7 +238,6 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
     .sort()
     .pop();
 
-  const src = getModuleSources("elections", state);
   const titleLocal = state === "karnataka" ? knDict.modules.elections : undefined;
   const b = (c: React.ReactNode) => <strong>{c}</strong>;
 
@@ -295,16 +287,14 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
     <ModulePage>
       <PageHeader
         icon={Vote}
-        emoji="🗳️"
         title={mt.label("elections")}
         titleLocal={titleLocal}
         description={t("description")}
-        backHref={base}
         source={ECI}
       />
 
       {!calendarLoading && (
-        <Explainer emoji="🗳️">
+        <Explainer>
           {next ? t.rich("simpleNext", { name: districtName, label: next.label, when: nextWhen, b }) : t("simpleNone", { name: districtName })}
           {withheld && <> {t("simpleWithheld")}</>}
         </Explainer>
@@ -312,22 +302,22 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
 
       <StatStrip cols={4}>
         <StatTile
-          emoji="⏳"
+          icon={Hourglass}
           label={t("tileNext")}
           value={next ? (next.pollingDate ? f.number(Math.max(0, nextDays ?? 0)) : f.date(next.nextExpected!, { month: "short", year: "numeric" })) : "—"}
           unit={next?.pollingDate ? t("tileDays") : undefined}
           sub={next ? next.label : t("tileNextNone")}
           countUp={Boolean(next?.pollingDate)}
         />
-        <StatTile emoji="🗓️" label={t("tileAhead")} value={calendarLoading ? "—" : f.number(ahead)} sub={t("tileAheadSub")} />
+        <StatTile icon={CalendarDays} label={t("tileAhead")} value={calendarLoading ? "—" : f.number(ahead)} sub={t("tileAheadSub")} />
         <StatTile
-          emoji="⏮️"
+          icon={History}
           label={t("tileLast")}
           value={lastHeld ? f.date(lastHeld, { month: "short", year: "numeric" }) : "—"}
           sub={t("tileLastSub")}
           countUp={false}
         />
-        <StatTile emoji="🏫" label={t("tileBooths")} value={isLoading ? "—" : f.number(booths.length)} sub={t("tileBoothsSub")} />
+        <StatTile icon={School} label={t("tileBooths")} value={isLoading ? "—" : f.number(booths.length)} sub={t("tileBoothsSub")} />
       </StatStrip>
 
       {/* The picture: how long until the next vote. */}
@@ -343,10 +333,10 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
           <HowItWorks
             title={t("how.title")}
             steps={[
-              { emoji: "📝", title: t("how.register"), body: t.rich("how.registerBody", { link: extLink(VOTERS_PORTAL_URL) }) },
-              { emoji: "🔎", title: t("how.check"), body: t.rich("how.checkBody", { link: extLink(ELECTORAL_SEARCH_URL) }) },
-              { emoji: "📍", title: t("how.booth"), body: t("how.boothBody") },
-              { emoji: "🗳️", title: t("how.vote"), body: t("how.voteBody") },
+              { emoji: "", title: t("how.register"), body: t.rich("how.registerBody", { link: extLink(VOTERS_PORTAL_URL) }) },
+              { emoji: "", title: t("how.check"), body: t.rich("how.checkBody", { link: extLink(ELECTORAL_SEARCH_URL) }) },
+              { emoji: "", title: t("how.booth"), body: t("how.boothBody") },
+              { emoji: "", title: t("how.vote"), body: t("how.voteBody") },
             ]}
           />
           <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>
@@ -365,7 +355,7 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
       {/* Results: withheld on purpose until every number is checked against ECI. */}
       {withheld && (
         <div style={{ marginTop: 16 }}>
-          <EmptyState emoji="🔎" title={t("withheldTitle")} body={t("withheldBody")} />
+          <EmptyState title={t("withheldTitle")} body={t("withheldBody")} />
         </div>
       )}
 
@@ -378,12 +368,12 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
       {!isLoading && !error && !withheld && <ElectionResults results={results} />}
       {!isLoading && !error && !withheld && results.length === 0 && booths.length === 0 && (
         <div style={{ marginTop: 16 }}>
-          <EmptyState emoji="🗳️" title={t("emptyTitle")} body={t("emptyBody")} />
+          <EmptyState title={t("emptyTitle")} body={t("emptyBody")} />
         </div>
       )}
 
       {booths.length > 0 && (
-        <Section title={t("boothsTitle", { n: f.number(booths.length) })} emoji="🏫">
+        <Section title={t("boothsTitle", { n: f.number(booths.length) })}>
           <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
             {t("booth.lead")}
           </p>
@@ -425,7 +415,6 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
                   </span>
                   <span style={{ display: "block", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>{bth.location}</span>
                   <span style={{ display: "block", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-                    <span aria-hidden>🗺️ </span>
                     {bth.constituency}
                     {bth.totalVoters != null && (
                       <>
@@ -452,23 +441,6 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
         <AIInsightCard module="elections" district={district} />
       </div>
 
-      <SourcesFooter
-        sources={[
-          ...src.sources.map((name) => ({
-            name,
-            url: name.includes("(ECI)") ? ECI.href : undefined,
-            frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
-          })),
-          { name: t("sourceVoters"), url: VOTERS_PORTAL_URL },
-          { name: t("sourceSearch"), url: ELECTORAL_SEARCH_URL },
-        ]}
-      />
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
-        {t("notOfficial")}
-      </p>
-
-      <ModuleNews district={district} state={state} locale={locale} module="elections" />
-
       <Toolbar label={t("toolbar")}>
         <ToolbarButton icon={Download} onClick={onCsv} disabled={events.length === 0}>
           {t("downloadCsv")}
@@ -483,6 +455,8 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
           {t("compare")}
         </ToolbarButton>
       </Toolbar>
+
+      <ModuleNews district={district} state={state} locale={locale} module="elections" />
 
       <BoothSheet booth={booth} onClose={closeBooth} districtName={districtName} />
     </ModulePage>

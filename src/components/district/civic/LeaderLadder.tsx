@@ -13,7 +13,7 @@
 //    ┌────────── 🏢 District officers ────────┐
 //  ┌──────────── 🏙️ City and departments ───────┐   wide at the bottom
 //
-//  One band per level of government, top to bottom, each with its emoji,
+//  One band per level of government, top to bottom, each with its icon,
 //  a plain one-line hint, how many people are listed, and the first names
 //  as tappable chips (the chip opens that person's detail sheet; "+N
 //  more" jumps to the level's list). On phones every band is full width;
@@ -83,8 +83,8 @@ export function LeaderLadder({
                   border: "1px solid color-mix(in srgb, var(--hue) 26%, var(--ftp-border))",
                 }}
               >
-                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 13, background: "#fff" }}>
-                  {m.emoji}
+                <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11, background: "#fff" }}>
+                  <m.icon size={18} />
                 </span>
                 <div style={{ flex: "1 1 180px", minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>

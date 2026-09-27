@@ -17,7 +17,9 @@
 //  person cards per level (ftp-grid; tapping a card opens LeaderSheet with
 //  the job in plain words, party, area, since when, office contact when
 //  stored, how the record was checked, and the latest news that names the
-//  person) → party ring + notes → next election → sources → news → toolbar.
+//  person) → party ring + notes → next election → AI insight → CSV / Share
+//  / Compare → news. v5: no emoji (small line icons per level); sources,
+//  "not an official website" and the stale note come from the shell.
 //
 //  Data: /api/data/leaders (rows guessed from news are never served),
 //  grouped by the Leader.tier column; nothing about who sits where is
@@ -29,7 +31,7 @@
 import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeftRight, ChevronRight, Download, Share2, Users } from "lucide-react";
+import { AlertTriangle, Building2, ChevronRight, Info, Layers, Users, Vote } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -43,33 +45,24 @@ import {
   ModulePage,
   PageHeader,
   Section,
-  SourcesFooter,
   StatStrip,
   StatTile,
-  Toolbar,
-  ToolbarButton,
 } from "@/components/district/ui";
+import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import { ChartCard, Explainer } from "@/components/district/visuals";
 import { HueDonut } from "@/components/district/civic/HueDonut";
 import { LeaderLadder } from "@/components/district/civic/LeaderLadder";
 import { LeaderSheet } from "@/components/district/civic/LeaderSheet";
 import { LeaderAvatar, isPlaceholderName, orderTiers, roleText, tierMeta } from "@/components/district/civic/leader-shared";
 import { daysUntil, findActiveElection, findNextElection, type ElectionEvent } from "@/components/district/ElectionSection";
-import { getModuleSources } from "@/lib/constants/state-config";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { scriptLang } from "@/lib/utils/script-lang";
 import knDict from "@/dictionaries/kn.json";
 
-/** Official websites for the sources named by getModuleSources("leadership"). */
-const SOURCE_URLS: Record<string, string> = {
-  "Election Commission of India (ECI)": "https://eci.gov.in",
-};
-const ECI = { label: "ECI", href: SOURCE_URLS["Election Commission of India (ECI)"] };
-/** Source names and update frequencies from getModuleSources() that have a translation. */
-const SOURCE_KEY: Record<string, string> = { "District Administration": "districtAdministration" };
-const FREQ_KEY: Record<string, string> = { "When the source publishes": "whenPublished" };
+/** The main source, shown in the page header and on the party chart. */
+const ECI = { label: "ECI", href: "https://eci.gov.in" };
 
 /** Cards within a level: President before PM, Governor before CM, MP before MLAs. */
 const ROLE_ORDER: RegExp[] = [
@@ -94,22 +87,8 @@ function rank(role: string): number {
 /** A name that is only a role ("Prime Minister") is not a person. */
 const ROLE_WORDS = /^(prime minister|president|governor|chief minister|minister|mla|mp|speaker|collector|commissioner|mayor|judge|officer|secretary|chairman|director)/i;
 
-/** Turn rows into a CSV file and start a download in the browser. */
-function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = [headers.map(esc).join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 /** One person, as a big tappable card. The whole card opens the detail sheet. */
-function LeaderCard({ l, emoji, onOpen }: { l: Leader; emoji: string; onOpen: (l: Leader) => void }) {
+function LeaderCard({ l, onOpen }: { l: Leader; onOpen: (l: Leader) => void }) {
   const t = useTranslations("page_leadership");
   const f = useFormat();
   const role = roleText(l, f.locale);
@@ -140,13 +119,6 @@ function LeaderCard({ l, emoji, onOpen }: { l: Leader; emoji: string; onOpen: (l
     >
       <span style={{ position: "relative", flexShrink: 0 }}>
         <LeaderAvatar name={l.name} photoUrl={l.photoUrl} />
-        <span
-          className="ftp-icon-chip ftp-emoji"
-          aria-hidden
-          style={{ position: "absolute", right: -4, bottom: -4, width: 24, height: 24, fontSize: 13, borderRadius: 8, border: "2px solid var(--ftp-surface)" }}
-        >
-          {emoji}
-        </span>
       </span>
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         <span
@@ -165,7 +137,6 @@ function LeaderCard({ l, emoji, onOpen }: { l: Leader; emoji: string; onOpen: (l
         </span>
         {l.constituency && (
           <span style={{ fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
-            <span aria-hidden>📍 </span>
             {l.constituency}
           </span>
         )}
@@ -229,7 +200,6 @@ function PartyRing({ reps, asOf }: { reps: Leader[]; asOf: string | null }) {
   return (
     <ChartCard
       title={t("partyTitle")}
-      emoji="🎗️"
       units={t("partyUnits")}
       simple={t("partySimple", { n: f.number(reps.length), parties })}
       asOf={asOf}
@@ -259,10 +229,10 @@ function NextElectionCard({ event, href }: { event: ElectionEvent; href: string 
     : t("next.about", { date: f.date(target, { month: "long", year: "numeric" }) });
   return (
     <div className={hueClass("elections")} style={{ marginTop: 24 }}>
-      <Card href={href} tinted padding={16}>
+      <Card href={href} padding={16}>
         <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 13 }}>
-            🗳️
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11 }}>
+            <Vote size={18} />
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>{t("next.title")}</span>
@@ -287,7 +257,6 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useLeaders(district, state);
   const leaders: Leader[] = data?.data ?? [];
-  const [shareNote, setShareNote] = useState<string | null>(null);
   const [selected, setSelected] = useState<Leader | null>(null);
   const closeSheet = useCallback(() => setSelected(null), []);
 
@@ -317,7 +286,6 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
     (best, l) => (l.lastVerifiedAt && (!best || l.lastVerifiedAt > best) ? l.lastVerifiedAt : best),
     null,
   );
-  const src = getModuleSources("leadership", state);
   const titleLocal = state === "karnataka" ? knDict.modules.leadership : undefined;
   const electedCount = byTier[4]?.length ?? 0;
   // The party ring needs two or more MPs/MLAs and at least one party on record.
@@ -332,20 +300,6 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
   const jumpTo = (tier: number) =>
     document.getElementById(`level-${tier}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  const onShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: mt.label("leadership"), url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareNote(t("linkCopied"));
-        setTimeout(() => setShareNote(null), 2000);
-      }
-    } catch {
-      /* The visitor closed the share sheet — nothing to do. */
-    }
-  };
 
   const onCsv = () =>
     downloadCsv(
@@ -368,13 +322,12 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
         title={mt.label("leadership")}
         titleLocal={titleLocal}
         description={t("description")}
-        backHref={base}
         freshness={asOf ? { asOf } : undefined}
         source={ECI}
       />
 
       {people.length > 0 && (
-        <Explainer emoji="🧭">
+        <Explainer>
           {t.rich("simple", { n: people.length, levels: tiers.length, name: districtName, b })}
           {electedCount > 0 && <> {t.rich("simpleElected", { n: electedCount, b })}</>}
           {officerCount > 0 && <> {t.rich("simpleOfficers", { n: officerCount, b })}</>}
@@ -385,12 +338,12 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
         <div role="alert" style={{ marginBottom: 16 }}>
           <Card padding={14}>
             <p className="ftp-body" style={{ display: "flex", alignItems: "flex-start", gap: 10, color: "var(--ftp-text)", fontSize: 14, lineHeight: "21px" }}>
-              <AlertTriangle size={16} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} />
+              <AlertTriangle size={16} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 2 }} />
               <span>
                 {t.rich(resultDate ? "electionAlertDate" : "electionAlert", {
                   label: liveElection.label,
                   date: resultDate ?? "",
-                  b: (c) => <span style={{ fontWeight: 600, color: "var(--ftp-danger)" }}>{c}</span>,
+                  b: (c) => <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{c}</span>,
                 })}
               </span>
             </p>
@@ -400,36 +353,32 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
-      {!isLoading && !error && people.length === 0 && <EmptyState emoji="👥" title={t("emptyTitle")} body={t("emptyBody")} />}
+      {!isLoading && !error && people.length === 0 && <EmptyState title={t("emptyTitle")} body={t("emptyBody")} />}
 
       {people.length > 0 && (
         <>
           <StatStrip cols={4}>
-            <StatTile emoji="👥" label={t("tilePeople")} value={f.number(people.length)} asOf={asOf} />
-            <StatTile emoji="🗳️" label={t("tileElected")} value={f.number(electedCount)} sub={t("tileElectedSub")} />
-            <StatTile emoji="🏢" label={t("tileOfficers")} value={f.number(officerCount)} sub={t("tileOfficersSub")} />
-            <StatTile emoji="🪜" label={t("tileLevels")} value={f.number(tiers.length)} sub={t("tileLevelsSub")} />
+            <StatTile icon={Users} label={t("tilePeople")} value={f.number(people.length)} asOf={asOf} />
+            <StatTile icon={Vote} label={t("tileElected")} value={f.number(electedCount)} sub={t("tileElectedSub")} />
+            <StatTile icon={Building2} label={t("tileOfficers")} value={f.number(officerCount)} sub={t("tileOfficersSub")} />
+            <StatTile icon={Layers} label={t("tileLevels")} value={f.number(tiers.length)} sub={t("tileLevelsSub")} />
           </StatStrip>
 
           {/* The picture: who is above whom. Names in it open the same sheet as the cards. */}
           <div style={{ marginTop: 16 }}>
-            <Card tinted padding={18}>
+            <Card padding={18}>
               <LeaderLadder tiers={tiers} byTier={byTier} onPick={setSelected} onJump={jumpTo} />
             </Card>
           </div>
         </>
       )}
 
-      <div style={{ marginTop: 16 }}>
-        <AIInsightCard module="leaders" district={district} />
-      </div>
-
       {/* The main list: one section per level, in the same order as the picture. */}
       {tiers.map((tier) => {
         const meta = tierMeta(tier, t);
         return (
           <section key={tier} id={`level-${tier}`} style={{ scrollMarginTop: 80 }}>
-            <Section title={meta.label} emoji={meta.emoji}>
+            <Section title={meta.label}>
               {meta.hint && (
                 <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px", fontSize: 14, lineHeight: "21px" }}>
                   {meta.hint}
@@ -437,7 +386,7 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
               )}
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
                 {byTier[tier].map((l) => (
-                  <LeaderCard key={l.id} l={l} emoji={meta.emoji} onOpen={setSelected} />
+                  <LeaderCard key={l.id} l={l} onOpen={setSelected} />
                 ))}
               </div>
             </Section>
@@ -450,9 +399,9 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
         <div className={hasPartyRing ? "ftp-picture-row" : undefined} style={{ marginTop: 28 }}>
           {hasPartyRing && <PartyRing reps={byTier[4] ?? []} asOf={asOf} />}
           <Card>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
-              <span aria-hidden>ℹ️ </span>
-              {t("topNote")}
+            <p className="ftp-body" style={{ display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
+              <Info size={16} aria-hidden style={{ color: "var(--hue-deep)", flexShrink: 0, marginTop: 2 }} />
+              <span>{t("topNote")}</span>
             </p>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 12 }}>
               {t.rich("noteParties", { b: (c) => <span style={{ fontWeight: 600, color: "var(--hue-deep)" }}>{c}</span> })}
@@ -466,30 +415,18 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
 
       {nextElection && <NextElectionCard event={nextElection} href={`${base}/elections`} />}
 
-      <SourcesFooter
-        sources={src.sources.map((name) => ({
-          name: SOURCE_KEY[name] ? t(`sourceNames.${SOURCE_KEY[name]}`) : name,
-          url: SOURCE_URLS[name],
-          frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
-        }))}
+      <div style={{ marginTop: 24 }}>
+        <AIInsightCard module="leaders" district={district} />
+      </div>
+
+      <MoneyToolbar
+        shareTitle={mt.label("leadership")}
+        onCsv={onCsv}
+        csvDisabled={people.length === 0}
+        compareHref={`/${locale}/compare?module=leadership&a=${district}`}
       />
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
-        {t("notOfficial")}
-      </p>
 
       <ModuleNews district={district} state={state} locale={locale} module="leaders" />
-
-      <Toolbar label={t("toolbar")}>
-        <ToolbarButton icon={Download} onClick={onCsv} disabled={people.length === 0}>
-          {t("downloadCsv")}
-        </ToolbarButton>
-        <ToolbarButton icon={Share2} onClick={onShare}>
-          {shareNote ?? t("share")}
-        </ToolbarButton>
-        <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=leadership&a=${district}`}>
-          {t("compare")}
-        </ToolbarButton>
-      </Toolbar>
 
       <LeaderSheet leader={selected} onClose={closeSheet} district={district} state={state} />
     </ModulePage>
