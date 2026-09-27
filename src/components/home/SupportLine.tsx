@@ -5,32 +5,28 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  SupportLine — the one quiet "please support" line above the footer
+//  SupportLine — the one quiet "support the project" line on the home page
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  A support-tint card with one sentence and one link. ₹99 is the entry
-//  monthly tier on /support (keep the two in step if pricing changes).
+//  One sentence and one text link, after all the data (supporters are
+//  never above the product). No amount here: the support page is the one
+//  place that states prices.
 //
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import { useTranslations } from "next-intl";
 import styles from "./home.module.css";
 
 export default function SupportLine({ locale }: { locale: string }) {
   const t = useTranslations("home");
-  const tf = useTranslations("footer2");
   return (
-    <div className="ftp-container">
-      <aside className={styles.supportLine} aria-label={tf("supportProject")}>
-        <span className={`${styles.supportEmoji} ftp-emoji`} aria-hidden>
-          🪔
-        </span>
-        <p className={styles.supportText}>
-          <strong>{t("supportStrong")}</strong> {t("supportBody", { amount: "₹99" })}
-        </p>
-        <Link href={`/${locale}/support`} className={styles.supportLink}>
-          {t("becomeSupporter")}
-          <ArrowRight size={14} aria-hidden />
+    <div className={`ftp-container ${styles.section}`}>
+      <aside className={styles.support} aria-label={t("supportLink")}>
+        <Heart size={18} aria-hidden className={styles.supportHeart} />
+        <p className={styles.supportText}>{t("supportText")}</p>
+        <Link href={`/${locale}/support`} className={styles.textLink}>
+          {t("supportLink")}
+          <ArrowRight size={16} aria-hidden />
         </Link>
       </aside>
     </div>

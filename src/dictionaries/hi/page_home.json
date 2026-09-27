@@ -1,13 +1,5 @@
 {
   "footerNav": "साइट के लिंक",
   "onInstagram": "Instagram पर ForThePeople",
-  "onGithub": "GitHub पर ForThePeople",
-  "onPlatform": "{platform} पर {name}",
-  "amountCrore": "₹{n} करोड़",
-  "amountLakh": "₹{n} लाख",
-  "cadenceMarketHours": "बाज़ार के समय हर मिनट",
-  "cadenceMinute": "हर मिनट",
-  "cadenceFiveMin": "हर 5 मिनट",
-  "cadenceBullion": "हर 5 मिनट (IBJA)",
-  "cadenceDaily": "रोज़"
+  "onGithub": "GitHub पर ForThePeople"
 }

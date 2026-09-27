@@ -5,165 +5,104 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  HomeHero — Design v4
+//  HomeHero — Design v5 "calm"
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌──────────────────────────────────────┬──────────────────────────┐
-//   │ 🇮🇳 Free and open source             │                          │
-//   │ 📍 Your district.                     │      India map card      │
-//   │ 📊 Your data.                         │   (children, live pins)  │
-//   │ ⚖️ Your right.                        │                          │
-//   │ lead sentence                        │                          │
-//   │ [📍 Go to my location] status        │                          │
-//   │ [🗺️ Explore India] [🔍 Search]        │                          │
-//   │ 🏙️ 10   📊 36   🔢 2,588   🚀 770    │                          │
-//   └──────────────────────────────────────┴──────────────────────────┘
+//   ┌────────────────────────────────────────────┬──────────────────────┐
+//   │ Your district. Your data. Your right.      │                      │
+//   │ See what is happening in your district     │   India map, live    │
+//   │ Weather, dams, crop prices… (sources line) │   districts as dots  │
+//   │ [ 🔍 Type your district, e.g. Mysore     ] │   (tablet and PC)    │
+//   │ [Explore all of India]  [Use my location]  │                      │
+//   │ 10 districts live in 7 states · 36 …       │                      │
+//   └────────────────────────────────────────────┴──────────────────────┘
 //
-//  The page's ONE <h1>. Numbers come from the server (registry / DB),
-//  never typed by hand. Each stat tile carries its own hue so the row is
-//  colourful; they count up once (StatTile → CountUp).
+//  The page's ONE <h1> is the task, not the slogan (the slogan is the
+//  small kicker above it). "Explore all of India" is the filled, most
+//  prominent button; "Use my location" is the outline one. Its result
+//  shows once, in the floating LocateResult card.
+//
+//  Counts come from the registry through the page (getPlatformFacts),
+//  never typed by hand.
 "use client";
 
 import Link from "next/link";
-import { Search } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowRight, LocateFixed } from "lucide-react";
 import { useFormat } from "@/i18n/client";
-import { AsOfText, CountUp } from "@/components/district/ui";
-import { DISTRICT_SEARCH_ID } from "./HeaderBar";
-import YourDistrictBand from "./YourDistrictBand";
+import HomeSearch, { HOME_SEARCH_ID } from "./HomeSearch";
+import LocateResult from "./LocateResult";
+import { useLocate } from "./useLocate";
 import styles from "./home.module.css";
+
+// The map library touches `window`; it is also only wanted on wider screens.
+const HomeMap = dynamic(() => import("./HomeMap"), {
+  ssr: false,
+  loading: () => <div aria-hidden className={styles.mapLoading} />,
+});
+
+const WIDE = "(min-width: 768px)";
+function subscribeWide(cb: () => void) {
+  const mq = window.matchMedia(WIDE);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
 
 export interface HomeHeroProps {
   locale: string;
-  /** Number of states with a live district (registry). */
+  activeDistricts: number;
   activeStates: number;
   modulesPerDistrict: number;
-  activeCount: number;
-  totalDataPoints: number | null;
-  mostRecentAt: string | null;
-  comingDistricts: number;
-  /** The map card, rendered on the right (below on phones). */
-  children?: React.ReactNode;
 }
 
-function focusDistrictSearch() {
-  const input = document.getElementById(DISTRICT_SEARCH_ID) as HTMLInputElement | null;
-  if (!input) return;
-  window.scrollTo({ top: 0, behavior: "auto" });
-  input.focus();
-}
-
-export default function HomeHero({
-  locale,
-  activeStates,
-  modulesPerDistrict,
-  activeCount,
-  totalDataPoints,
-  mostRecentAt,
-  comingDistricts,
-  children,
-}: HomeHeroProps) {
+export default function HomeHero({ locale, activeDistricts, activeStates, modulesPerDistrict }: HomeHeroProps) {
   const t = useTranslations("home");
-  const ti = useTranslations("intro");
+  const tl = useTranslations("locate");
   const f = useFormat();
+  const loc = useLocate();
+  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
+
   return (
-    <div className={styles.heroV4}>
-      <div className={styles.heroLeft}>
-        <p className={`${styles.heroPill} ftp-pop`} style={{ ["--i" as string]: 0 }}>
-          <span className="ftp-emoji" aria-hidden>🇮🇳</span>
-          {t("pill")}
-        </p>
+    <div className={styles.hero}>
+      <div className={styles.heroText}>
+        <p className={styles.kicker}>{t("kicker")}</p>
+        <h1 className={styles.title}>{t("title")}</h1>
+        <p className={styles.lead}>{t("sources")}</p>
 
-        {/* Three lines, each with its own picture: a place, a chart, a
-            balance. The emoji pop in one after another; the words read the
-            same with or without them (the emoji are aria-hidden). */}
-        <h1 className={styles.heroTitle}>
-          <span className={`${styles.heroLine} ftp-rise`} style={{ ["--i" as string]: 1 }}>
-            <span className={`${styles.heroMark} ftp-hue-orange ftp-pop`} aria-hidden style={{ ["--i" as string]: 2 }}>📍</span>
-            {ti("line1")}
-          </span>
-          <span className={`${styles.heroLine} ftp-rise`} style={{ ["--i" as string]: 2 }}>
-            <span className={`${styles.heroMark} ftp-hue-blue ftp-pop`} aria-hidden style={{ ["--i" as string]: 3 }}>📊</span>
-            {ti("line2")}
-          </span>
-          <span className={`${styles.heroLine} ftp-rise`} style={{ ["--i" as string]: 3 }}>
-            <span className={`${styles.heroMark} ftp-hue-green ftp-pop`} aria-hidden style={{ ["--i" as string]: 4 }}>⚖️</span>
-            {ti("line3")}
-          </span>
-        </h1>
+        <HomeSearch />
 
-        <p className={`${styles.heroLeadV4} ftp-rise`} style={{ ["--i" as string]: 4 }}>
-          {t("lead", { coverage: t("coverage", { districts: activeCount, states: activeStates }), modules: modulesPerDistrict })}
-        </p>
-
-        <div className="ftp-rise" style={{ ["--i" as string]: 5 }}>
-          <YourDistrictBand locale={locale} variant="hero" />
-        </div>
-
-        <div className={`${styles.heroActionsV4} ftp-rise`} style={{ ["--i" as string]: 6 }}>
-          <Link href={`/${locale}/india`} className={styles.heroBtnDark}>
-            <span className="ftp-emoji" aria-hidden>🗺️</span>
+        <div className={styles.actions}>
+          <Link href={`/${locale}/india`} className={styles.btnPrimary}>
             {t("exploreIndia")}
+            <ArrowRight size={18} aria-hidden />
           </Link>
-          <button type="button" onClick={focusDistrictSearch} className={styles.heroBtnGhost}>
-            <Search size={16} aria-hidden />
-            {t("searchDistrict")}
+          <button type="button" className={styles.btnOutline} onClick={loc.locate} disabled={loc.busy}>
+            <LocateFixed size={18} aria-hidden />
+            {loc.busy ? tl("findingYou") : tl("useLocation")}
           </button>
         </div>
 
-        <h2 className="sr-only">{t("statsHeading")}</h2>
-        <ul className={styles.heroStats}>
-          <HeroStat i={7} hue="blue" emoji="🏙️" value={f.number(activeCount)} label={t("statDistricts")} />
-          <HeroStat i={8} hue="violet" emoji="📊" value={f.number(modulesPerDistrict)} label={t("statDashboards")} />
-          <HeroStat
-            i={9}
-            hue="green"
-            emoji="🔢"
-            value={totalDataPoints !== null ? f.number(totalDataPoints) : "—"}
-            label={t("statDataPoints")}
-            asOf={totalDataPoints !== null ? mostRecentAt : null}
-          />
-          <HeroStat i={10} hue="orange" emoji="🚀" value={f.number(comingDistricts)} label={t("statComing")} />
-        </ul>
+        <p className={styles.stats}>
+          {t("statsLine", { districts: activeDistricts, states: activeStates, modules: f.number(modulesPerDistrict) })}
+        </p>
       </div>
 
-      <div className={`${styles.heroRight} ftp-rise`} style={{ ["--i" as string]: 3 }}>
-        {children}
-      </div>
-    </div>
-  );
-}
+      <div className={styles.heroMap}>{wide && <HomeMap locale={locale} />}</div>
 
-/** Compact hero number: emoji chip, big number, short label under it. */
-function HeroStat({
-  i,
-  hue,
-  emoji,
-  value,
-  label,
-  asOf,
-}: {
-  i: number;
-  hue: string;
-  emoji: string;
-  value: string;
-  label: string;
-  asOf?: string | null;
-}) {
-  return (
-    <li className={`${styles.heroStat} ftp-hue-${hue} ftp-rise`} style={{ ["--i" as string]: i }}>
-      <span className={`${styles.heroStatEmoji} ftp-emoji`} aria-hidden>
-        {emoji}
-      </span>
-      <span className={styles.heroStatValue}>
-        <CountUp value={value} />
-      </span>
-      <span className={styles.heroStatLabel}>{label}</span>
-      {asOf && (
-        <span className={styles.heroStatAsOf}>
-          <AsOfText asOf={asOf} />
-        </span>
+      {loc.status.kind !== "idle" && loc.status.kind !== "locating" && (
+        <LocateResult
+          floating
+          status={loc.status}
+          onClose={loc.reset}
+          onRetry={loc.locate}
+          onChooseInstead={() => {
+            loc.reset();
+            document.getElementById(HOME_SEARCH_ID)?.focus();
+          }}
+        />
       )}
-    </li>
+    </div>
   );
 }

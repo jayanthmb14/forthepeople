@@ -5,41 +5,36 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  LiveDistrictsCard — Design v4: a colourful grid of live districts
+//  LiveDistrictsCard — Design v5: the live districts as calm, equal cards
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   🏙️ Live districts   ● 10 live                       Newest first
+//   Live districts
+//   Tap a district to see its dashboards.
 //   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-//   │ [landmark] ☀31°│ │ …            │ │ …            │ │ …            │
-//   │ Mandya ಮಂಡ್ಯ   │ │              │ │              │ │              │
-//   │ Karnataka     │ │              │ │              │ │              │
-//   │ Sugar Capital │ │              │ │              │ │              │
-//   │ Open  →       │ │              │ │              │ │              │
+//   │ (landmark)   │ │              │ │              │ │ Is your      │
+//   │ Mandya ಮಂಡ್ಯ  │ │  …           │ │  …           │ │ district     │
+//   │ Karnataka    │ │              │ │              │ │ next? Vote → │
+//   │ Sugar Capital│ │              │ │              │ │              │
 //   └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
-//   ┌─────────────── 🗳️ Vote for the next district (spans 2) ──────────┐
 //
-//  Each district owns a hue (its landmark's colour story) so the grid
-//  reads as colourful but orderly. Weather is shown only when the API
-//  returned a fresh reading (the API drops stale ones).
+//  Every card looks the same (white, thin border, pastel landmark chip):
+//  the district's landmark picture is its only identity mark. Newest
+//  launch first; a small "New" tag for 30 days after going live.
+//  The vote card carries no vote counts (they are not de-duplicated).
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { ArrowRight } from "lucide-react";
-import { Pill } from "@/components/district/ui";
-import { weatherEmoji } from "@/components/district/visuals";
-import { getDistrictIcon } from "@/components/district/icons";
+import { useTranslations } from "next-intl";
+import { ArrowRight, MapPin } from "lucide-react";
 import { DISTRICT_META } from "@/lib/data/district-meta";
-import { getDistrictHue } from "@/lib/design/hues";
 import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays } from "@/lib/utils/timeAgo";
-import { usePreview, useTopVotes } from "./home-data";
-import { useTranslations } from "next-intl";
-import { useFormat, usePlaceText } from "@/i18n/client";
+import { usePlaceText } from "@/i18n/client";
 import { placeNamePair } from "@/i18n/place-name";
+import DistrictLandmark, { hasLandmark } from "./DistrictLandmark";
 import styles from "./home.module.css";
 
-/** A district counts as "NEW" for this many days after it goes live. */
+/** A district counts as "New" for this many days after it goes live. */
 const NEW_BADGE_DAYS = 30;
 
 export interface HomeDistrict {
@@ -54,109 +49,69 @@ export interface HomeDistrict {
 
 export default function LiveDistrictsCard({ locale, districts }: { locale: string; districts: HomeDistrict[] }) {
   const t = useTranslations("home");
-  const tp = useTranslations("popup");
-  const f = useFormat();
   const place = usePlaceText();
-  const preview = usePreview();
-  const { votes, loaded: votesLoaded } = useTopVotes();
 
   // Newest launch first; districts without a date go last.
-  const sorted = useMemo(
-    () =>
-      [...districts].sort((a, b) => {
-        const ax = a.goLiveDate ? new Date(a.goLiveDate).getTime() : 0;
-        const bx = b.goLiveDate ? new Date(b.goLiveDate).getTime() : 0;
-        return bx - ax;
-      }),
-    [districts],
-  );
-
-  const leader = votes[0];
+  const sorted = [...districts].sort((a, b) => {
+    const ax = a.goLiveDate ? new Date(a.goLiveDate).getTime() : 0;
+    const bx = b.goLiveDate ? new Date(b.goLiveDate).getTime() : 0;
+    return bx - ax || a.name.localeCompare(b.name);
+  });
 
   return (
-    <section aria-labelledby="home-live-districts" className="ftp-container">
-      <header className={styles.gridHead}>
-        <span className="ftp-icon-chip ftp-emoji ftp-hue-blue" aria-hidden style={{ width: 38, height: 38, fontSize: 20 }}>
-          🏙️
-        </span>
-        <h2 id="home-live-districts" className="ftp-h2">
+    <section aria-labelledby="home-live-districts" className={`ftp-container ${styles.section}`}>
+      <div className={styles.sectionHead}>
+        <h2 id="home-live-districts" className={styles.h2}>
           {t("liveDistricts")}
         </h2>
-        {/* A count of districts, not a data feed: no pulsing dot (the kit
-            keeps the pulse for data under 30 minutes old). */}
-        <Pill tone="live" dot>
-          {t("liveCount", { n: sorted.length })}
-        </Pill>
-        <span className={styles.gridHeadNote}>{t("newestFirst")}</span>
-      </header>
+        <p className={styles.sectionNote}>{t("liveIntro")}</p>
+      </div>
 
       <ul className={styles.districtGrid}>
-        {sorted.map((d, i) => {
+        {sorted.map((d) => {
+          const reg = getDistrict(d.stateSlug, d.slug);
           const meta = DISTRICT_META[d.slug];
           // A local name equal to the English one (e.g. "Pune" stored in the
-          // nameLocal column) adds nothing; fall through to the registry script.
-          const dbLocal = d.nameLocal && d.nameLocal !== d.name ? d.nameLocal : null;
-          const registryLocal = getDistrict(d.stateSlug, d.slug)?.nameLocal;
-          const regLocal = registryLocal && registryLocal !== d.name ? registryLocal : null;
-          const metaLocal = meta?.nativeScript && meta.nativeScript !== d.name ? meta.nativeScript : null;
-          const local = dbLocal ?? regLocal ?? metaLocal;
+          // nameLocal column) adds nothing; fall through to the registry.
+          const local = [d.nameLocal, reg?.nameLocal, meta?.nativeScript].find((x) => x && x !== d.name) ?? null;
           const tagline = d.tagline ?? meta?.tagline ?? null;
           const age = ageInDays(d.goLiveDate);
           const isNew = age !== null && age <= NEW_BADGE_DAYS;
-          const weather = preview[d.slug]?.weather ?? null;
-          const temp = weather?.temp ?? null;
-          const tempAsOf = weather?.recordedAt
-            ? tp("weatherAsOf", { date: f.date(weather.recordedAt, { day: "numeric", month: "short" }) })
-            : "";
-          const Icon = getDistrictIcon(d.slug);
-          const hue = getDistrictHue(d.slug);
-          // The name in the page language leads (मंड्या on /hi, ಮಂಡ್ಯ on /kn)
-          // with English beside it; on /en the local script sits beside.
-          const names = placeNamePair({ name: d.name, nameLocal: local, names: getDistrict(d.stateSlug, d.slug)?.names }, locale);
+          // The name in the page language leads (मंड्या on /hi, ಮಂಡ್ಯ on
+          // /kn) with English beside it; on /en the local script sits beside.
+          const names = placeNamePair({ name: d.name, nameLocal: local, names: reg?.names }, locale);
           return (
-            <li key={d.slug} className={`ftp-hue-${hue} ftp-rise`} style={{ ["--i" as string]: i }}>
-              <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.districtTile} ftp-card-link`}>
-                <span className={styles.districtTileTop}>
+            <li key={d.slug}>
+              <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={styles.districtCard}>
+                <span className={styles.districtTop}>
                   <span className={styles.districtArt} aria-hidden>
-                    {Icon ? <Icon size={30} /> : <span className="ftp-emoji" style={{ fontSize: 24 }}>📍</span>}
+                    {hasLandmark(d.slug) ? <DistrictLandmark slug={d.slug} size={28} /> : <MapPin size={20} />}
                   </span>
-                  {isNew && <Pill tone="brand">{t("new")}</Pill>}
-                  {temp !== null && (
-                    <span className={styles.districtWeather} title={tempAsOf || undefined}>
-                      <span className="ftp-emoji" aria-hidden>{weatherEmoji(weather?.conditions)}</span>
-                      <span className="ftp-num">{Math.round(temp)}°</span>
-                      {tempAsOf && <span className="sr-only">{tempAsOf}</span>}
-                    </span>
-                  )}
+                  {isNew && <span className={styles.newTag}>{t("new")}</span>}
                 </span>
-                <span className={styles.districtTileName}>
+                <span className={styles.districtName}>
                   <span lang={names.primaryLang}>{names.primary}</span>
                   {names.secondary && (
-                    <span lang={names.secondaryLang} className={styles.districtTileLocal}>
+                    <span lang={names.secondaryLang} className={styles.districtLocal}>
                       {names.secondary}
                     </span>
                   )}
                 </span>
-                <span className={styles.districtTileState}>{place.state(d.stateSlug, d.stateName)}</span>
-                {tagline && <span className={styles.districtTileTag}>{place.label(tagline)}</span>}
+                <span className={styles.districtState}>{place.state(d.stateSlug, d.stateName)}</span>
+                {tagline && <span className={styles.districtTag}>{place.label(tagline)}</span>}
               </Link>
             </li>
           );
         })}
 
-        {/* Vote card: spans two columns so the grid ends on a full row. */}
-        <li className={`${styles.voteTile} ftp-hue-yellow ftp-rise`} style={{ ["--i" as string]: sorted.length }}>
-          <Link href={`/${locale}/vote-district`} className={`${styles.voteTileLink} ftp-card-link`}>
-            <span className="ftp-emoji" aria-hidden style={{ fontSize: 34 }}>🗳️</span>
-            <span style={{ minWidth: 0 }}>
-              <span className={styles.voteTileTitle}>{t("voteTitle")}</span>
-              <span className={styles.voteTileBody}>
-                {votesLoaded && leader
-                  ? t("voteLeader", { name: leader.districtName, count: f.number(leader.requestCount) })
-                  : t("voteDefault")}
-              </span>
+        <li>
+          <Link href={`/${locale}/vote-district`} className={`${styles.districtCard} ${styles.voteCard}`}>
+            <span className={styles.voteTitle}>{t("voteTitle")}</span>
+            <span className={styles.voteBody}>{t("voteBody")}</span>
+            <span className={styles.voteLink}>
+              {t("voteLink")}
+              <ArrowRight size={16} aria-hidden />
             </span>
-            <ArrowRight size={18} aria-hidden style={{ marginLeft: "auto", flexShrink: 0 }} />
           </Link>
         </li>
       </ul>

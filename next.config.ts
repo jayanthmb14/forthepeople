@@ -95,7 +95,10 @@ const nextConfig: NextConfig = {
           // every current browser, and could itself introduce side-channels in
           // old ones. CSP (below) is the modern replacement.
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // geolocation=(self): "Use my location" on the home page and the district
+          // finder asks the browser for a position. geolocation=() blocked it for
+          // the whole document, so the prompt never appeared (Sep 2026 audit).
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
           { key: "Content-Security-Policy-Report-Only", value: cspHeaderValue },
           { key: "X-Powered-By", value: "ForThePeople.in" },
           { key: "X-Creator", value: "Jayanth M B" },

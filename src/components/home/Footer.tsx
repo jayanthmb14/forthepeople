@@ -5,30 +5,29 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Footer — site-wide footer (Design v3)
+//  Footer — site-wide footer (Design v5 "calm", light)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//    About · Privacy · Disclaimer · Contribute · Features · Feedback · Support   [IG] [GitHub]
-//    ─────────────────────────────────────────────────────────────────────────────
-//    Independent · Not a government website · NDSAP · Article 19(1)(a) ·
-//    Built by Jayanth M B · Refreshed 3h ago
+//    [logo] ForThePeople.in          Explore        Get involved      About
+//    Your district. Your data…       India …        Support …         About
+//    Independent … sources note      Vote for …     Contribute        Privacy
+//    [Instagram] [GitHub]            Compare …      Suggest a feature Disclaimer
+//                                    Prices today   Vote on features
+//                                                   Feedback · GitHub
+//    ── Coming soon · ForThePeople Connect: report local problems …
+//    Built by Jayanth M B in Mandya · Free expression under Article 19(1)(a)
 //
-//  "Refreshed" is the real age of the newest record on the platform
-//  (GET /api/data/homepage-stats → mostRecentAt), formatted by the shared
-//  honest timeAgoLabel(): "Xm/Xh/Xd ago", never "Live". It is fetched ONCE
-//  when the page loads — no polling. Until it answers (or if it fails) the
-//  "Refreshed" part is simply left out.
+//  GitHub and "Vote on features" live here (not in the header). There is
+//  no site-wide "Data refreshed …" line: freshness belongs to each
+//  dataset, next to its own figure.
 //
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Github, Instagram, Users } from "lucide-react";
-import { timeAgoLabel, type TimeAgoResult } from "@/lib/utils/timeAgo";
-import { formatIST } from "@/components/district/ui";
-import { useFormat } from "@/i18n/client";
 import styles from "./chrome.module.css";
+
+const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
+const INSTAGRAM_URL = "https://www.instagram.com/forthepeople_in/";
 
 export interface FooterProps {
   locale: string;
@@ -38,47 +37,26 @@ export default function Footer({ locale }: FooterProps) {
   const t = useTranslations("footer2");
   const th = useTranslations("header");
   const tp = useTranslations("page_home");
-  const f = useFormat();
-  const [updated, setUpdated] = useState<TimeAgoResult & { at: string | null }>({
-    label: "—",
-    isStale: true,
-    isLive: false,
-    at: null,
-  });
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/data/homepage-stats")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { mostRecentAt?: string | null } | null) => {
-        if (!cancelled && data) {
-          setUpdated({ ...timeAgoLabel(data.mostRecentAt ?? null), at: data.mostRecentAt ?? null });
-        }
-      })
-      .catch(() => {
-        /* leave "Refreshed" out */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const groups: { title: string; links: { href: string; label: string }[] }[] = [
+  const groups: { title: string; links: { href: string; label: string; external?: boolean }[] }[] = [
     {
       title: t("explore"),
       links: [
         { href: `/${locale}/india`, label: t("indiaDashboard") },
         { href: `/${locale}/vote-district`, label: t("voteDistrict") },
         { href: `/${locale}/compare`, label: t("compare") },
+        { href: `/${locale}/prices`, label: t("pricesToday") },
       ],
     },
     {
       title: t("involved"),
       links: [
+        { href: `/${locale}/support`, label: t("supportProject") },
         { href: `/${locale}/contribute`, label: t("contribute") },
+        { href: `/${locale}/features#share-idea`, label: t("suggestFeature") },
         { href: `/${locale}/features`, label: t("voteFeatures") },
         { href: `/${locale}/feedback`, label: t("feedback") },
-        { href: `/${locale}/support`, label: t("supportProject") },
+        { href: GITHUB_URL, label: t("github"), external: true },
       ],
     },
     {
@@ -92,34 +70,24 @@ export default function Footer({ locale }: FooterProps) {
   ];
 
   return (
-    <footer role="contentinfo" className={styles.footerV4}>
+    <footer role="contentinfo" className={styles.footer}>
       <div className={`ftp-container ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
           <Link href={`/${locale}`} className={styles.footerLogo} aria-label={th("home")} translate="no">
             <span className={styles.logoTile} aria-hidden>
               <Users size={17} strokeWidth={2.4} />
             </span>
-            ForThePeople<span className={styles.footerIn}>.in</span>
+            <span>
+              ForThePeople<span className={styles.wordmarkSuffix}>.in</span>
+            </span>
           </Link>
           <p className={styles.footerTagline}>{t("tagline")}</p>
           <p className={styles.footerNote}>{t("note")}</p>
           <div className={styles.footerIcons}>
-            <a
-              href="https://www.instagram.com/forthepeople_in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={tp("onInstagram")}
-              className={styles.footerIcon}
-            >
+            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label={tp("onInstagram")} className={styles.footerIcon}>
               <Instagram size={18} aria-hidden />
             </a>
-            <a
-              href="https://github.com/jayanthmb14/forthepeople"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={tp("onGithub")}
-              className={styles.footerIcon}
-            >
+            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label={tp("onGithub")} className={styles.footerIcon}>
               <Github size={18} aria-hidden />
             </a>
           </div>
@@ -131,7 +99,13 @@ export default function Footer({ locale }: FooterProps) {
               <ul className={styles.footerColList}>
                 {g.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href}>{l.label}</Link>
+                    {l.external ? (
+                      <a href={l.href} target="_blank" rel="noopener noreferrer">
+                        {l.label}
+                      </a>
+                    ) : (
+                      <Link href={l.href}>{l.label}</Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -139,18 +113,19 @@ export default function Footer({ locale }: FooterProps) {
           ))}
         </nav>
       </div>
-      <div className={`ftp-container ${styles.footerBottom}`}>
-        <span>
-          {t("builtBy")} <span className="ftp-emoji" aria-hidden>🇮🇳</span>
-        </span>
-        <span>{t("article")}</span>
-        {/* The age in the page language ("5 घंटे पहले"); same honest rule
-            as timeAgoLabel: the real age, never "Live". */}
-        {updated.label !== "—" && updated.at && (
-          <span title={formatIST(updated.at, f.intl) ?? undefined} suppressHydrationWarning>
-            {t("refreshed", { ago: f.ago(updated.at) })}
+
+      <div className="ftp-container">
+        <p className={styles.connect}>
+          <span className={styles.connectTag}>{t("connectSoon")}</span>
+          <span>
+            <strong>{t("connectName")}</strong> {t("connectBody")}
           </span>
-        )}
+        </p>
+      </div>
+
+      <div className={`ftp-container ${styles.footerBottom}`}>
+        <span>{t("builtBy")}</span>
+        <span>{t("article")}</span>
       </div>
     </footer>
   );
