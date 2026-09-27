@@ -13,12 +13,15 @@
 //  1. Active supporters (monthly subscribers, from /api/data/contributors)
 //  2. One-time contributions (from /api/payment/contributors)
 //
-//  Design v5 (calm): each strip is a row of small plain Cards the visitor
-//  can swipe / scroll sideways (no auto-scrolling marquee). No emoji: the
-//  headings are plain h3s under the page's "Our supporters" heading, and
-//  the tier label is text only. Data fetching (React Query keys, refetch
-//  timings, caps) is unchanged — SupportCheckout invalidates these same
-//  query keys after a payment.
+//  Design v5.1 ("Warm Calm"): each strip is a row of small cards the
+//  visitor can swipe / scroll sideways (no auto-scrolling marquee). Every
+//  card wears its supporter's plan colour — rose, blue, teal, violet or
+//  gold, the same as the plan cards above (tier-look.ts) — with a round
+//  initials avatar, the plan in a small coloured tag, and month badges as
+//  tiny bronze / silver / gold / platinum medals. A colour key sits on top.
+//  No emoji. Data fetching (React Query keys, refetch timings, caps) is
+//  unchanged — SupportCheckout invalidates these same query keys after a
+//  payment.
 //
 //  Languages: headings and counts come from "page_support". The payments
 //  API sends English tier labels ("☕ Chai Supporter") and relative times
@@ -32,8 +35,14 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
 import type { ContributorsResponse, ContributorItem } from "@/app/api/payment/contributors/route";
 import { normalizeSocialLink } from "@/lib/social-link";
-import { Card, Pill, SectionHeader } from "@/components/district/ui";
+import { SectionHeader } from "@/components/district/ui";
+import { tierLabel } from "@/components/site/tier-label";
 import { useFormat } from "@/i18n/client";
+import SupporterAvatar from "./SupporterAvatar";
+import { publicName } from "./public-name";
+import { tierHueClass, tierKeyFromWallLabel, tierKeyOf, type TierKey } from "./tier-look";
+import look from "./look.module.css";
+import wall from "./wall.module.css";
 
 const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   instagram: Instagram,
@@ -51,7 +60,13 @@ interface SubscriberItem {
   socialLink: string | null;
   socialPlatform: string | null;
   monthsActive: number;
+  districtName?: string | null;
+  stateName?: string | null;
+  message?: string | null;
 }
+
+/** The colour key, in plan order. */
+const LEGEND: TierKey[] = ["custom", "district", "state", "patron", "founder"];
 
 /** English tier label from /api/payment/contributors → message key (emoji dropped). */
 const WALL_TIER_KEYS: Array<[string, string]> = [
@@ -62,17 +77,47 @@ const WALL_TIER_KEYS: Array<[string, string]> = [
   ["Founding Builder", "wallTier_founder"],
 ];
 
-/** Shared style: one-line text that ends in "…" when too long. */
-const ELLIPSIS: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
-
 /** Horizontal strip that scrolls sideways on its own (never the page). */
 function Strip({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <ul
-      aria-label={label}
-      style={{ display: "flex", gap: 12, overflowX: "auto", margin: 0, padding: "0 0 8px", listStyle: "none", scrollSnapType: "x proximity" }}
-    >
+    <ul aria-label={label} className={wall.strip}>
       {children}
+    </ul>
+  );
+}
+
+/** One wall card in its plan colour (gold for the Founding Builder). */
+function WallCard({ tier, children }: { tier: TierKey; children: React.ReactNode }) {
+  return (
+    <li className={`${wall.card} ${tierHueClass(tier)} ${look.metal}`} data-tier={tier}>
+      {children}
+    </li>
+  );
+}
+
+/** "Bronze" with a tiny bronze medal before it. */
+function Medal({ level }: { level: string }) {
+  const t = useTranslations("page_support");
+  const key = `badge_${level}`;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span aria-hidden className={`${look.medal} ${look.metal}`} data-level={level} />
+      {t.has(key) ? t(key) : level}
+    </span>
+  );
+}
+
+/** Which colour is which plan. */
+function ColourKey() {
+  const t = useTranslations("page_support");
+  return (
+    <ul className={wall.legend} aria-label={t("wallKey")}>
+      {LEGEND.map((k) => (
+        <li key={k} className={`${wall.legendItem} ${tierHueClass(k)} ${look.metal}`} data-tier={k}>
+          <span aria-hidden className={wall.legendDot} />
+          {t(`tier_${k}_name`)}
+        </li>
+      ))}
     </ul>
   );
 }
@@ -82,7 +127,10 @@ function useWallText() {
   const t = useTranslations("page_support");
   const { date } = useFormat();
   return {
-    name: (n: string) => (n === "Anonymous" ? t("anonymous") : n === "Supporter" ? t("supporter") : n),
+    // Anonymous, placeholders and contact details (a phone number or e-mail
+    // stored as a name) are never shown: "Anonymous" / "Supporter" instead.
+    name: (n: string) => publicName(n) ?? (n === "Anonymous" ? t("anonymous") : t("supporter")),
+    hidden: (n: string) => publicName(n) === null,
     tier: (label: string) => {
       const hit = WALL_TIER_KEYS.find(([en]) => label.endsWith(en));
       // Unknown label: show it as sent, minus any leading emoji.
@@ -102,70 +150,85 @@ function useWallText() {
 
 function ContributorCard({ item }: { item: ContributorItem }) {
   const w = useWallText();
+  // The wall label is chosen by amount on the server ("District Supporter"
+  // from ₹99, … "Founding Builder" from ₹50,000); its colour follows it.
+  const tier = tierKeyFromWallLabel(item.tierLabel);
+  const hidden = w.hidden(item.displayName);
+  const name = w.name(item.displayName);
   return (
-    <Card as="li" padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
-      <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>{w.name(item.displayName)}</p>
-      <div style={{ margin: "4px 0 6px", maxWidth: "100%", overflow: "hidden" }}>
-        <Pill tone="support" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{w.tier(item.tierLabel)}</Pill>
+    <WallCard tier={tier}>
+      <div className={wall.head}>
+        <SupporterAvatar name={name} tier={tier} size={40} anonymous={hidden} />
+        <div className={wall.who}>
+          <span className={wall.name} title={name}>{name}</span>
+          <span className={wall.tag}>{w.tier(item.tierLabel)}</span>
+        </div>
       </div>
       {item.message && (
-        <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: "0 0 4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-          &ldquo;{item.message.slice(0, 30)}{item.message.length > 30 ? "…" : ""}&rdquo;
+        <p className={wall.msg}>
+          &ldquo;{item.message.slice(0, 60)}{item.message.length > 60 ? "…" : ""}&rdquo;
         </p>
       )}
-      <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: 0 }}>{w.time(item.timeAgo)}</p>
-    </Card>
+      <p className={wall.meta}>{w.time(item.timeAgo)}</p>
+    </WallCard>
   );
 }
 
 function SubscriberCard({ item }: { item: SubscriberItem }) {
   const t = useTranslations("page_support");
+  const ts = useTranslations("page_site");
+  const w = useWallText();
   const safeLink = normalizeSocialLink(item.socialLink);
   // Even when platform is missing we still render the ExternalLink icon as
   // long as we have a usable URL — keeps bare-domain entries clickable.
   const SocialIcon =
     (item.socialPlatform ? SOCIAL_ICONS[item.socialPlatform] : null) ?? (safeLink ? ExternalLink : null);
-  const badgeKey = item.badgeLevel ? `badge_${item.badgeLevel}` : null;
+  const tier = tierKeyOf(item.tier);
+  const hidden = w.hidden(item.name);
+  const name = w.name(item.name);
   return (
-    <Card as="li" padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: 1.45, fontWeight: 600, flex: 1 }}>{item.name}</span>
-        {SocialIcon && safeLink && (
-          <a
-            href={safeLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={safeLink}
-            aria-label={t("wallProfile", { name: item.name })}
-            style={{ color: "var(--ftp-text-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
-          >
-            <SocialIcon size={12} aria-hidden />
-          </a>
-        )}
-      </div>
-      {item.badgeLevel && (
-        <div style={{ marginTop: 4 }}>
-          <Pill tone="neutral">{badgeKey && t.has(badgeKey) ? t(badgeKey) : item.badgeLevel}</Pill>
+    <WallCard tier={tier}>
+      <div className={wall.head}>
+        <SupporterAvatar name={name} tier={tier} size={40} anonymous={hidden} />
+        <div className={wall.who}>
+          <span className={wall.nameRow}>
+            <span className={wall.name} title={name}>{name}</span>
+            {SocialIcon && safeLink && (
+              <a
+                href={safeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={safeLink}
+                aria-label={t("wallProfile", { name })}
+                className={wall.social}
+              >
+                <SocialIcon size={13} aria-hidden />
+              </a>
+            )}
+          </span>
+          {/* "Mandya Champion", "Karnataka Champion", "India Patron" … (place names as stored) */}
+          <span className={wall.tag}>{tierLabel(ts, item.tier, item.districtName, item.stateName)}</span>
         </div>
-      )}
-      {item.monthsActive > 0 && (
-        <p className="ftp-num" style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: "4px 0 0" }}>
-          {t("wallMonths", { n: item.monthsActive })}
+      </div>
+      {item.message && !hidden && (
+        <p className={wall.msg}>
+          &ldquo;{item.message.slice(0, 60)}{item.message.length > 60 ? "…" : ""}&rdquo;
         </p>
       )}
-    </Card>
+      {(item.badgeLevel || item.monthsActive > 0) && (
+        <p className={wall.meta}>
+          {item.badgeLevel && <Medal level={item.badgeLevel} />}
+          {item.badgeLevel && item.monthsActive > 0 && <span aria-hidden className={wall.metaDot} />}
+          {item.monthsActive > 0 && <span>{t("wallMonths", { n: item.monthsActive })}</span>}
+        </p>
+      )}
+    </WallCard>
   );
 }
 
 /** Flat placeholder card while the list loads (no shimmer gradient). */
 function SkeletonCard() {
-  return (
-    <div
-      aria-hidden
-      className="ftp-skeleton"
-      style={{ width: 170, minWidth: 170, height: 88, borderRadius: "var(--ftp-radius-card)", flexShrink: 0 }}
-    />
-  );
+  return <div aria-hidden className={`ftp-skeleton ${wall.skeleton}`} />;
 }
 
 const TEXT_LINK: React.CSSProperties = {
@@ -183,7 +246,6 @@ export default function ContributorWall() {
   const t = useTranslations("page_support");
   const locale = useLocale();
   const { number } = useFormat();
-  const num = (c: React.ReactNode) => <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{c}</span>;
 
   // Existing one-time contributors (from Contribution model)
   const { data, isLoading } = useQuery<ContributorsResponse>({
@@ -201,13 +263,23 @@ export default function ContributorWall() {
   });
 
   const allContributors = data?.contributors ?? [];
-  const contributors = allContributors.slice(0, 50); // cap one-time at 50
-  const oneTimeTotal = allContributors.length;
   const subscribers = (subData?.subscribers ?? []).slice(0, 30);
   const subscribersTotal = subData?.subscribersTotal ?? subscribers.length;
+  // /api/payment/contributors lists EVERY active supporter, monthly ones
+  // too, and its ₹ total adds one month of each subscription to the one-time
+  // gifts (checked against the database, 27 Sep 2026). So: when the monthly
+  // strip is shown above, this strip keeps only the one-time gifts (no one
+  // twice), and it shows a COUNT, never that mixed ₹ total. The count is
+  // shown only when the API returned every row (it sends at most 50).
+  const splitOut = subscribers.length > 0;
+  const contributors = (splitOut ? allContributors.filter((c) => !c.isRecurring) : allContributors).slice(0, 50);
+  const haveAll = !!data && data.count <= allContributors.length;
+  const moreThanShown = !!data && data.count > allContributors.length;
 
   return (
     <div>
+      {(subscribers.length > 0 || contributors.length > 0) && <ColourKey />}
+
       {/* ── Active supporters (monthly) ── */}
       {subscribers.length > 0 && (
         <section>
@@ -244,14 +316,14 @@ export default function ContributorWall() {
           title={subscribers.length > 0 ? t("wallOneTime") : t("wallContributions")}
           action={
             <>
-              {!isLoading && data && data.count > 0 && (
-                <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  {t.rich("wallRaised", { amount: `₹${number(data.totalRupees)}`, count: data.count, num })}
+              {!isLoading && haveAll && contributors.length > 0 && (
+                <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                  {t("wallCount", { n: contributors.length, shown: number(contributors.length) })}
                 </span>
               )}
-              {oneTimeTotal > 50 && (
+              {moreThanShown && (
                 <Link href={`/${locale}/contributors?filter=one-time`} style={TEXT_LINK}>
-                  <span className="ftp-num">{t("wallViewAllN", { n: number(oneTimeTotal) })}</span>
+                  {t("wallViewAll")}
                 </Link>
               )}
             </>
@@ -274,8 +346,6 @@ export default function ContributorWall() {
             ))}
           </Strip>
         )}
-        {/* (The "₹X from N supporters" total sits in the heading row; the
-            old summary line under the strip repeated it word for word.) */}
       </section>
     </div>
   );

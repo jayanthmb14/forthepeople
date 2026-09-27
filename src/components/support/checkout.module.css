@@ -1,0 +1,448 @@
+/* The support checkout: the plan card's button and the popup form.
+ * Colours come from the plan hue (--hue …) and the v5 tokens only.
+ * The popup is the kit DetailSheet: a right panel on laptops and PCs, a
+ * bottom sheet on tablets and — overridden here — the FULL screen on phones.
+ */
+
+/* ── The popup frame ─────────────────────────────────────────────────── */
+.sheet :global(.ftp-sheet-body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 20px;
+  padding: 18px 16px 24px;
+}
+.sheet :global(.ftp-sheet-foot) {
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--ftp-surface);
+}
+.sheet :global(.ftp-sheet-head) {
+  align-items: center;
+}
+@media (max-width: 639px) {
+  .sheet :global(.ftp-sheet) {
+    top: 0;
+    max-height: none;
+    border-radius: 0;
+    padding-bottom: 0;
+  }
+  .sheet :global(.ftp-sheet-grip) { display: none; }
+}
+
+/* ── The form ────────────────────────────────────────────────────────── */
+.form {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.summary {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--ftp-radius-card);
+  background: linear-gradient(150deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-pop) 30%, var(--ftp-surface)) 100%);
+  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
+}
+.summaryLabel {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 650;
+  color: var(--hue-deep);
+}
+
+.group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+.legend {
+  padding: 0;
+  margin: 0 0 10px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ftp-text);
+}
+.optional {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+.hintRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.count {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px; /* 16 px stops phones zooming in on focus */
+  line-height: 24px;
+  color: var(--ftp-text);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-tile);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.input::placeholder { color: var(--ftp-text-2); opacity: 0.8; }
+.input:focus {
+  outline: none;
+  border-color: var(--hue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hue) 22%, transparent);
+}
+.input[aria-invalid="true"] {
+  border-color: var(--ftp-danger);
+  background: color-mix(in srgb, var(--ftp-danger-tint) 40%, var(--ftp-surface));
+}
+.input:disabled {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text-2);
+  cursor: not-allowed;
+}
+textarea.input {
+  min-height: 92px;
+  resize: vertical;
+}
+.selectWrap {
+  position: relative;
+  min-width: 0;
+}
+.selectWrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 42px;
+  cursor: pointer;
+}
+.selectWrap > svg {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--ftp-text-2);
+}
+
+.error {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 500;
+  color: var(--ftp-danger);
+}
+.error > svg { flex-shrink: 0; margin-top: 2px; }
+
+/* The polite live region for screen readers: out of the layout, so it
+   takes no room while empty. The visible summary is a separate element. */
+.srLive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* "Almost there. Please check …" — a calm amber note, not a red alarm. */
+.errorSummary {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-warn-tint);
+  border: 1px solid var(--ftp-warn-border);
+  color: var(--ftp-warn-text);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.errorSummary > svg { flex-shrink: 0; margin-top: 2px; }
+
+.note {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface-2);
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text);
+}
+.note > svg { flex-shrink: 0; margin-top: 2px; color: var(--hue); }
+/* Used together with .note. */
+.warnNote { background: var(--ftp-warn-tint); color: var(--ftp-warn-text); }
+.warnNote > svg { color: var(--ftp-warn); }
+
+/* "Keep me anonymous" — a big, easy tick row. */
+.anonRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border-radius: var(--ftp-radius-tile);
+  border: 1px solid var(--ftp-border);
+  background: var(--ftp-surface);
+  cursor: pointer;
+}
+.anonRow:has(input:checked) {
+  border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border));
+  background: var(--hue-tint);
+}
+.anonRow:focus-within { outline: 2px solid var(--ftp-focus); outline-offset: 2px; }
+.anonRow input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--hue);
+  cursor: pointer;
+}
+.anonText { display: grid; gap: 2px; min-width: 0; }
+.anonTitle { font-size: 15px; line-height: 21px; font-weight: 650; color: var(--ftp-text); }
+
+/* The live preview of the wall card. */
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--ftp-radius-card);
+  background: var(--ftp-surface);
+  border: 1px dashed color-mix(in srgb, var(--hue) 40%, var(--ftp-border));
+}
+.previewText { display: grid; gap: 4px; min-width: 0; }
+.previewName {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+  color: var(--ftp-text);
+  overflow-wrap: anywhere;
+}
+.previewMsg {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.tierTag {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: var(--ftp-radius-pill);
+  background: var(--hue-tint);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, transparent);
+  color: var(--hue-deep);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 650;
+}
+
+/* ── Amount: [−] ₹ [amount] [+] ───────────────────────────────────────── */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.stepBtn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ftp-radius-tile);
+  border: 1px solid color-mix(in srgb, var(--hue) 28%, var(--ftp-border));
+  background: var(--ftp-surface);
+  color: var(--hue-deep);
+  cursor: pointer;
+}
+.stepBtn:hover:not(:disabled) { background: var(--hue-tint); }
+.stepBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.stepBtn:focus-visible { outline: 2px solid var(--ftp-focus); outline-offset: 2px; }
+.amountBox {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--ftp-radius-tile);
+  border: 1px solid var(--ftp-border-strong);
+  background: var(--ftp-surface);
+}
+.amountBox:focus-within {
+  border-color: var(--hue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hue) 22%, transparent);
+}
+.rupee { font-size: 16px; font-weight: 600; color: var(--ftp-text-2); }
+.amountInput {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ftp-text);
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.mainBtn {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--ftp-radius-tile);
+  background: var(--hue);
+  color: white;
+  font: inherit;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--hue) 75%, transparent);
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.mainBtn:hover:not(:disabled) { background: var(--hue-deep); }
+.mainBtn:active:not(:disabled) { transform: translateY(1px); }
+.mainBtn:focus-visible { outline: 2px solid var(--ftp-focus); outline-offset: 2px; }
+.mainBtn:disabled {
+  background: var(--ftp-border-strong);
+  color: var(--ftp-text-2);
+  box-shadow: none;
+  cursor: default;
+}
+.quietBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--ftp-radius-tile);
+  border: 1px solid var(--ftp-border);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.quietBtn:hover { background: var(--ftp-surface-2); }
+.quietBtn:focus-visible { outline: 2px solid var(--ftp-focus); outline-offset: 2px; }
+
+.foot { width: 100%; display: grid; gap: 8px; }
+.secure {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.secure > svg { flex-shrink: 0; color: var(--ftp-live); }
+
+/* ── After paying / if it failed ─────────────────────────────────────── */
+.result {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  text-align: center;
+}
+.resultTitle {
+  margin: 4px 0 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 750;
+  color: var(--hue-deep);
+}
+.resultBody { margin: 0; font-size: 15px; line-height: 22px; color: var(--ftp-text); max-width: 36ch; }
+.resultNote {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-live-tint);
+  color: var(--ftp-live-text);
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+}
+.resultSmall { margin: 0; font-size: 12px; line-height: 18px; color: var(--ftp-text-2); }
+.resultSmall a, .resultBody a { color: var(--hue-deep); font-weight: 650; text-decoration: none; }
+.row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.failIcon { color: var(--ftp-danger); }
+
+/* ── On the plan card ────────────────────────────────────────────────── */
+.cardAction { display: grid; gap: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .input, .mainBtn { transition: none; }
+  .mainBtn:active:not(:disabled) { transform: none; }
+}
