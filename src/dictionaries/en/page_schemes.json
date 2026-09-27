@@ -1,0 +1,89 @@
+{
+  "description": "Active central and state schemes with eligibility and application links",
+  "empty": {
+    "title": "No schemes data yet for this district.",
+    "body": "We add schemes as MyScheme.gov.in and the state scheme portals publish them."
+  },
+  "tiles": {
+    "listed": "Schemes listed",
+    "categories": "Categories",
+    "withLink": "With apply link",
+    "ofTotal": "of {n}"
+  },
+  "explainer": "This page lists <num>{total}</num> government {total, plural, one {scheme} other {schemes}} in <num>{cats}</num> {cats, plural, one {category} other {categories}}. <num>{withLink}</num> of them have a link where you can apply online.",
+  "pictogram": "About {n} of every 10 schemes listed here have an online apply link.",
+  "pictogramNone": "None of the schemes listed here has an online apply link yet.",
+  "level": {
+    "central": "Central government",
+    "state": "State government",
+    "local": "Local body"
+  },
+  "levels": {
+    "title": "Who runs these schemes",
+    "units": "Number of schemes run by each level of government",
+    "center": "schemes",
+    "unknown": "Level not stated",
+    "aria": "Schemes by level of government: {list}",
+    "simple": {
+      "central": "<b>{n}</b> of {total} schemes here are run by the central government.",
+      "state": "<b>{n}</b> of {total} schemes here are run by the state government.",
+      "local": "<b>{n}</b> of {total} schemes here are run by a local body."
+    }
+  },
+  "byCategory": {
+    "title": "Schemes by category",
+    "units": "Number of schemes listed in each category",
+    "simple": "The biggest category is <b>{name}</b>: {n} of {total} schemes.",
+    "legend": "Schemes"
+  },
+  "reach": {
+    "title": "Schemes that reach the most people",
+    "units": "Number of beneficiaries reported for each scheme (top 5)",
+    "simple": "<b>{name}</b> reaches the most people: {n} beneficiaries."
+  },
+  "list": {
+    "title": "Schemes",
+    "filterLabel": "Filter schemes by category",
+    "all": "All"
+  },
+  "card": {
+    "eligibility": "Eligibility",
+    "benefit": "Benefit amount",
+    "beneficiaries": "Beneficiaries",
+    "level": "Level: {level}",
+    "apply": "Apply online",
+    "noLink": "No apply link listed yet"
+  },
+  "cat": {
+    "housing": "Housing",
+    "health": "Health",
+    "healthinsurance": "Health insurance",
+    "education": "Education",
+    "employment": "Employment",
+    "agriculture": "Agriculture",
+    "women": "Women",
+    "womenandchild": "Women & child",
+    "womenandchilddevelopment": "Women & child development",
+    "transport": "Transport",
+    "socialwelfare": "Social welfare",
+    "socialsecurity": "Social security",
+    "water": "Water",
+    "foodsecurity": "Food security",
+    "foodandnutrition": "Food & nutrition",
+    "urbandevelopment": "Urban development",
+    "urbandev": "Urban development",
+    "urbanwelfare": "Urban welfare",
+    "msmeandartisans": "MSME & artisans",
+    "msmeandfinance": "MSME & finance",
+    "financeandsavings": "Finance & savings",
+    "electricity": "Electricity",
+    "energy": "Energy",
+    "lpg": "LPG",
+    "industry": "Industry",
+    "tourism": "Tourism",
+    "livelihood": "Livelihood",
+    "certificates": "Certificates",
+    "pension": "Pension",
+    "skilldevelopment": "Skill development"
+  }
+}
