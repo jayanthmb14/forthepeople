@@ -98,7 +98,8 @@ export default async function DistrictLayout({
         <Sidebar locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
         {/* Main content (v5):
-              ShellTop     — stale-data notice for the open module
+              ShellTop     — stale-data notice for the open module (the
+                             glance tiles are overview-only since v5.1)
               the page
               See also     — modules people mix up with this one
               ShellBottom  — "Check this data" (#verify) with the one

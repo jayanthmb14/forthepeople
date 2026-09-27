@@ -103,7 +103,7 @@
 }
 
 
-/* ---------- The strip above a module page (glance row + stale notice)
+/* ---------- The strip above a module page (stale notice)
    and the strip below it (verification panel). Same frame as
    .ftp-module-page: up to 1320 px, 16 / 20 / 28 px sides. ---------- */
 .ftp-dshell-strip {
@@ -126,9 +126,10 @@
   .ftp-dshell-strip { padding: 12px 16px 0; }
   .ftp-dshell-strip[data-pos="bottom"] { padding: 8px 16px 28px; }
 }
-/* The page below the top strip needs less top padding. */
-.ftp-dshell-strip + .ftp-module-page,
-.ftp-dshell-strip + * > .ftp-module-page:first-child { padding-top: 16px; }
+/* The page below a non-empty top strip needs less top padding. (The strip
+   is empty — display: none — when the module's data is current.) */
+.ftp-dshell-strip:not(:empty) + .ftp-module-page,
+.ftp-dshell-strip:not(:empty) + * > .ftp-module-page:first-child { padding-top: 16px; }
 
 /* ---------- Glance row ---------- */
 .ftp-glance { min-width: 0; }
