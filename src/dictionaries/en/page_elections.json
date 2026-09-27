@@ -56,5 +56,7 @@
   "toolbar": "Page actions",
   "freq": {
     "postElection": "After each election"
-  }
+  },
+  "withheldTitle": "Results are being checked",
+  "withheldBody": "We found mistakes in the election results we had, so we have taken them down. They will come back once every number is checked against the Election Commission of India (results.eci.gov.in)."
 }

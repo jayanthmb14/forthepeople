@@ -386,19 +386,30 @@ async function fetchModule(
     // 16. ELECTIONS
     // ══════════════════════════════════════════════════
     case "elections": {
+      // Results are WITHHELD until checked against ECI (Sept 2026). The
+      // ElectionResult rows were seeded, not taken from ECI: wrong winners
+      // (Mandya 2024 lists Nikhil Kumaraswamy; H.D. Kumaraswamy won), a
+      // Mysuru seat filed under Mandya, round "votes" (520000), placeholder
+      // runners-up ("AIADMK candidate"), rows marked "approximate", and the
+      // same seat twice with different counts — all labelled "ECI". Showing
+      // them would break the no-fabrication rule. Flip this to false once
+      // the table is re-loaded from results.eci.gov.in.
+      const ELECTION_RESULTS_WITHHELD = true;
       const [results, booths] = await Promise.all([
-        prisma.electionResult.findMany({
-          where: { districtId: did },
-          orderBy: [{ year: "desc" }, { constituency: "asc" }],
-          take: 100,
-        }),
+        ELECTION_RESULTS_WITHHELD
+          ? Promise.resolve([])
+          : prisma.electionResult.findMany({
+              where: { districtId: did },
+              orderBy: [{ year: "desc" }, { constituency: "asc" }],
+              take: 100,
+            }),
         prisma.pollingBooth.findMany({
           where: { districtId: did },
           orderBy: { boothNumber: "asc" },
           take: 50,
         }),
       ]);
-      return { data: { results, booths }, meta };
+      return { data: { results, booths, resultsWithheld: ELECTION_RESULTS_WITHHELD }, meta };
     }
 
     // ══════════════════════════════════════════════════

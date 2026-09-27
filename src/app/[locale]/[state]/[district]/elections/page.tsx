@@ -204,6 +204,8 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
   const [shareNote, setShareNote] = useState<string | null>(null);
 
   const results = data?.data?.results ?? [];
+  // The API holds results back until they are checked against ECI.
+  const withheld = Boolean((data?.data as { resultsWithheld?: boolean } | undefined)?.resultsWithheld);
   const booths = data?.data?.booths ?? [];
 
   const typeLabel = (raw: string) => {
@@ -322,7 +324,11 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
       {error && <ErrorBlock />}
 
       {!isLoading && !error && results.length === 0 && booths.length === 0 && (
-        <EmptyState emoji="🗳️" title={t("emptyTitle")} body={t("emptyBody")} />
+        withheld ? (
+          <EmptyState emoji="🔎" title={t("withheldTitle")} body={t("withheldBody")} />
+        ) : (
+          <EmptyState emoji="🗳️" title={t("emptyTitle")} body={t("emptyBody")} />
+        )
       )}
 
       {!isLoading && (results.length > 0 || booths.length > 0) && (
