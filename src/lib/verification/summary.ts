@@ -34,6 +34,7 @@ const CROSS_KINDS = new Set(["cross-source", "source-recheck"]);
 /** Reasons in the order the panel should mention them (most important first). */
 const REASON_ORDER: ReasonCode[] = [
   "sources-disagree",
+  "sources-split",
   "office-missing",
   "name-placeholder",
   "late",

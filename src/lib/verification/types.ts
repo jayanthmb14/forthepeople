@@ -59,6 +59,8 @@ export type PublicStatus = "verified" | "single-source" | "disagreement" | "unch
 export type ReasonCode =
   | "sources-agree"
   | "sources-disagree"
+  /** One independent source confirms our value, another names someone/something else (often an outdated source). Shown as confirmed by one source; the admin still gets a review item. */
+  | "sources-split"
   | "second-source-no-data"
   | "second-source-failed"
   | "no-second-source"

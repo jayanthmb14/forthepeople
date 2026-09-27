@@ -150,7 +150,15 @@ export function decideStatus(
   if (checks.length === 0) return { status: "single-source", agreed: null, reason: "no-second-source" };
   const answered = checks.filter((c) => c.agreed !== null);
   if (answered.length === 0) return { status: "single-source", agreed: null, reason: noAnswerReason };
-  if (answered.some((c) => c.agreed === false)) return { status: "disagreement", agreed: false, reason: "sources-disagree" };
+  if (answered.some((c) => c.agreed === false)) {
+    // One independent source confirms us and another does not (e.g. Wikidata
+    // still lists last year's office holder): not a disagreement with us —
+    // confirmed by one source, and the caller still raises a review item.
+    if (answered.some((c) => c.agreed === true && c.independent)) {
+      return { status: "single-source", agreed: true, reason: "sources-split" };
+    }
+    return { status: "disagreement", agreed: false, reason: "sources-disagree" };
+  }
   const independentAgreeing = answered.filter((c) => c.independent).length + (opts.primaryCounts ? 1 : 0);
   if (independentAgreeing >= 2) return { status: "verified", agreed: true, reason: "sources-agree" };
   if (answered.every((c) => !c.independent)) return { status: "single-source", agreed: true, reason: "same-publisher" };

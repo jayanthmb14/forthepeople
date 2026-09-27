@@ -201,12 +201,12 @@ describe("leaders comparison (fixtures end to end)", () => {
     const checks = officeChecks("Thaavar Chand Gehlot", { people: ka.governor, url: null }, wdFor("Q1185", "P35"));
     expect(decideStatus(checks, { primaryCounts: false }).status).toBe("verified");
   });
-  it("Maharashtra Governor: Wikipedia agrees, Wikidata's statement is outdated → disagreement, no suggestion", () => {
+  it("Maharashtra Governor: Wikipedia agrees, Wikidata's statement is outdated → split (one source confirms), no suggestion", () => {
     const wd = wdFor("Q1191", "P35");
     const checks = officeChecks("Jishnu Dev Varma", { people: mh.governor, url: null }, wd);
     expect(checks.map((c) => c.agreed)).toEqual([true, false]);
     expect(checks[1].value).toBe("Ramesh Bais");
-    expect(decideStatus(checks, { primaryCounts: false }).status).toBe("disagreement");
+    expect(decideStatus(checks, { primaryCounts: false })).toEqual({ status: "single-source", agreed: true, reason: "sources-split" });
     expect(sourcesAgreeWithEachOther(checks, mh.governor, wd)).toBe(false);
   });
   it("Maharashtra CM: the preferred statement wins over an open older one", () => {

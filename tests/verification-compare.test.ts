@@ -107,8 +107,9 @@ describe("decideStatus", () => {
     expect(decideStatus([c(true), c(true)], { primaryCounts: false }).status).toBe("verified");
     expect(decideStatus([c(true), c(null)], { primaryCounts: false })).toEqual({ status: "single-source", agreed: true, reason: "second-source-no-data" });
   });
-  it("any disagreeing answer wins", () => {
-    expect(decideStatus([c(true), c(false)], { primaryCounts: false })).toEqual({ status: "disagreement", agreed: false, reason: "sources-disagree" });
+  it("a disagreement needs every answering source against us; one confirming source makes it a split", () => {
+    expect(decideStatus([c(true), c(false)], { primaryCounts: false })).toEqual({ status: "single-source", agreed: true, reason: "sources-split" });
+    expect(decideStatus([c(false), c(false)], { primaryCounts: false })).toEqual({ status: "disagreement", agreed: false, reason: "sources-disagree" });
   });
   it("a re-read of the same publisher is never 'verified'", () => {
     expect(decideStatus([c(true, false)], { primaryCounts: true })).toEqual({ status: "single-source", agreed: true, reason: "same-publisher" });

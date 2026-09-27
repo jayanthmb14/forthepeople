@@ -266,7 +266,7 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
       reason: verdict.reason,
       notes: `${officeTitle(office, jur.name)} — ${checks.map((c) => `${c.source}: ${c.value ?? "no answer"}${c.agreed === null ? "" : c.agreed ? " ✓" : " ✗"}`).join("; ")}`,
     });
-    if (verdict.status === "disagreement") {
+    if (verdict.status === "disagreement" || verdict.reason === "sources-split") {
       const gk = `${jur.slug}|${office}|${nameTokens(l.name).join("")}`;
       const g = mismatchGroups.get(gk) ?? { st: jur, office, shown: l.name, checks, rows: [] };
       g.rows.push({ d, leaderId: l.id, name: l.name, role: l.role, key });
