@@ -3,22 +3,41 @@
  * District tender transparency dashboard.
  * Data from 6 Karnataka government procurement portals — every tender carries
  * a source URL and timestamp. No editorialising; only factual red-flag labels.
+ *
+ * Design v3 "Civic Ledger" module template:
+ *   PageHeader → compact disclaimer → StatStrip → status chips → filters →
+ *   guide links → tender cards (or an honest EmptyState) → pagination →
+ *   full legal disclaimer → sources + Share/Compare.
+ * Data hooks, filters, red-flag logic and legal text are unchanged.
  */
 
 "use client";
 
+import type React from "react";
 import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import { Gavel, AlertTriangle, Info, BookOpen, ShieldCheck } from "lucide-react";
-import { ModuleHeader, LoadingShell, ErrorBlock, EmptyBlock } from "@/components/district/ui";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
+import { Gavel, AlertTriangle, BookOpen, ShieldCheck, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  PageHeader,
+  StatStrip,
+  StatTile,
+  Section,
+  Card,
+  Chips,
+  Toolbar,
+  ToolbarButton,
+  AsOfText,
+  LoadingShell,
+  ErrorBlock,
+  EmptyState,
+} from "@/components/district/ui";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
-import { getModuleSources } from "@/lib/constants/state-config";
+import ModulePageFooter from "@/components/accountability/ModulePageFooter";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
 import TenderCard, { type TenderCardData } from "@/components/tenders/TenderCard";
 import TenderLockedState from "@/components/tenders/TenderLockedState";
 import { formatInr } from "@/lib/tenders/format";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 interface AccessResponse {
   tendersActive: boolean;
@@ -45,6 +64,14 @@ const VALUE_PRESETS = [
   { label: "SME (₹1L–₹5Cr)", min: 100_000, max: 50_000_000 },
   { label: "Mid (₹5Cr–₹50Cr)", min: 50_000_000, max: 500_000_000 },
   { label: "Large (₹50Cr+)", min: 500_000_000, max: null },
+];
+
+/** Status tabs, shown as filter chips (no emoji — v3 chrome rule). */
+const TABS: Array<{ value: Tab; label: string }> = [
+  { value: "LIVE", label: "Live" },
+  { value: "CLOSING_SOON", label: "Closing <48h" },
+  { value: "AWARDED", label: "Recently Awarded" },
+  { value: "ARCHIVE", label: "Archive" },
 ];
 
 export default function TendersPage({
@@ -95,8 +122,14 @@ export default function TendersPage({
     },
   });
 
-  const moduleSources = getModuleSources("tenders", stateSlug);
   const tenders = (listQuery.data?.tenders ?? []).filter((t) => (onlyFlagged ? t.redFlags.length > 0 : true));
+  // Newest publish date in the current list — an honest "as of" for the page
+  // (we show when the newest tender appeared, not a made-up refresh time).
+  const newestPublished = (listQuery.data?.tenders ?? []).reduce<string | null>(
+    (latest, t) => (!latest || new Date(t.publishedAt) > new Date(latest) ? t.publishedAt : latest),
+    null,
+  );
+  const totalPages = listQuery.data ? Math.ceil(listQuery.data.total / pageSize) : 1;
 
   // Render the locked state whenever the flag resolves false. Until the
   // access query resolves we show nothing heavy — the dashboard shell
@@ -115,180 +148,160 @@ export default function TendersPage({
     );
   }
 
+  const tendersBase = `/${locale}/${stateSlug}/${districtSlug}/tenders`;
+  const districtName = listQuery.data?.districtName ?? stats.data?.districtName ?? "";
+
   return (
     <ModuleErrorBoundary moduleName="Tenders">
-      <div style={{ background: "#FAFAF8", minHeight: "100vh" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 80px" }}>
-          <ModuleHeader
-            icon={Gavel}
-            title={`Government Tenders · ${listQuery.data?.districtName ?? stats.data?.districtName ?? ""}`}
-            description="Live tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide."
-            backHref={`/${locale}/${stateSlug}/${districtSlug}`}
-            liveTag
-          />
+      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
+        <PageHeader
+          icon={Gavel}
+          title={`Government Tenders${districtName ? ` · ${districtName}` : ""}`}
+          description="Live tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide."
+          backHref={`/${locale}/${stateSlug}/${districtSlug}`}
+          accent={getModuleAccent("tenders")}
+          actions={newestPublished ? <AsOfText asOf={newestPublished} prefix="Newest tender published" /> : undefined}
+        />
 
-          <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
-          <DataSourceBanner
-            moduleName="tenders"
-            sources={moduleSources.sources}
-            updateFrequency={moduleSources.frequency}
-            isLive={moduleSources.isLive}
-          />
+        <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
-          {/* Stats strip */}
-          {stats.data && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
-              <StatCard label="Live tenders" value={stats.data.live.count.toLocaleString("en-IN")} />
-              <StatCard label="Total live value" value={formatInr(stats.data.live.totalValueInr)} />
-              <StatCard label="Closing <48h" value={String(stats.data.deadlineHistogram.find((b) => b.bucket === "<48h")?.count ?? 0)} accent="#DC2626" />
-              <StatCard label="MSE-reserved" value={String(stats.data.live.mseReservedCount)} accent="#047857" />
-              <StatCard label="Startup-eligible" value={String(stats.data.live.startupExemptCount)} accent="#1D4ED8" />
-              <StatCard label="Flagged" value={String(stats.data.live.redFlaggedCount)} accent="#991B1B" />
-            </div>
-          )}
+        {/* Stats strip — counts come from the tender database for this district. */}
+        {stats.data && (
+          <StatStrip cols={3}>
+            <StatTile label="Live tenders" value={stats.data.live.count.toLocaleString("en-IN")} icon={Gavel} />
+            <StatTile label="Total live value" value={formatInr(stats.data.live.totalValueInr)} />
+            <StatTile label="Closing <48h" value={String(stats.data.deadlineHistogram.find((b) => b.bucket === "<48h")?.count ?? 0)} />
+            <StatTile label="MSE-reserved" value={String(stats.data.live.mseReservedCount)} />
+            <StatTile label="Startup-eligible" value={String(stats.data.live.startupExemptCount)} />
+            <StatTile label="Flagged" value={String(stats.data.live.redFlaggedCount)} sub="Factual indicators, not allegations" />
+          </StatStrip>
+        )}
 
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, borderBottom: "1px solid #E8E8E4", overflowX: "auto" }}>
-            <TabBtn active={tab === "LIVE"} onClick={() => { setTab("LIVE"); setPage(1); }}>🔴 Live</TabBtn>
-            <TabBtn active={tab === "CLOSING_SOON"} onClick={() => { setTab("CLOSING_SOON"); setPage(1); }}>⏰ Closing &lt;48h</TabBtn>
-            <TabBtn active={tab === "AWARDED"} onClick={() => { setTab("AWARDED"); setPage(1); }}>✅ Recently Awarded</TabBtn>
-            <TabBtn active={tab === "ARCHIVE"} onClick={() => { setTab("ARCHIVE"); setPage(1); }}>📚 Archive</TabBtn>
+        <Section title="Tenders">
+          {/* Status tabs as chips (32 px, 44 px on phones) */}
+          <div style={{ marginBottom: 12 }}>
+            <Chips
+              label="Tender status"
+              items={TABS}
+              value={tab}
+              onChange={(v) => { setTab(v as Tab); setPage(1); }}
+            />
           </div>
 
           {/* Filter ribbon */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, padding: 12, background: "#F5F5F2", border: "1px solid #E8E8E4", borderRadius: 10, marginBottom: 16 }}>
-            <div>
-              <label style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, display: "block", marginBottom: 4 }}>Value</label>
-              <select value={valuePreset} onChange={(e) => { setValuePreset(Number(e.target.value)); setPage(1); }} style={filterSelect}>
-                {VALUE_PRESETS.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
-              </select>
+          <Card padding={12} style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+              <div style={{ flex: "1 1 160px" }}>
+                <label htmlFor="tender-value" className="ftp-label" style={{ display: "block", marginBottom: 4 }}>Value</label>
+                <select id="tender-value" value={valuePreset} onChange={(e) => { setValuePreset(Number(e.target.value)); setPage(1); }} style={filterControl}>
+                  {VALUE_PRESETS.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: "1 1 160px" }}>
+                <label htmlFor="tender-category" className="ftp-label" style={{ display: "block", marginBottom: 4 }}>Category</label>
+                <select id="tender-category" value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} style={filterControl}>
+                  <option value="">All</option>
+                  {stats.data?.categoryDistribution.filter((c) => c.category).map((c) => (
+                    <option key={c.category!.slug} value={c.category!.slug}>{c.category!.name} ({c.count})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <label style={checkboxLabel}>
+                  <input type="checkbox" checked={onlyMse} onChange={(e) => setOnlyMse(e.target.checked)} /> MSE only
+                </label>
+                <label style={checkboxLabel}>
+                  <input type="checkbox" checked={onlyFlagged} onChange={(e) => setOnlyFlagged(e.target.checked)} /> Flagged only
+                </label>
+              </div>
+              <div style={{ flex: "2 1 220px" }}>
+                <label htmlFor="tender-search" className="ftp-label" style={{ display: "block", marginBottom: 4 }}>Search</label>
+                <div style={{ position: "relative" }}>
+                  <Search size={16} aria-hidden style={{ position: "absolute", left: 10, top: 14, color: "var(--ftp-text-2)" }} />
+                  <input
+                    id="tender-search"
+                    type="search"
+                    placeholder="Search tender title..."
+                    value={search}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                    style={{ ...filterControl, paddingLeft: 32 }}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, display: "block", marginBottom: 4 }}>Category</label>
-              <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} style={filterSelect}>
-                <option value="">All</option>
-                {stats.data?.categoryDistribution.filter((c) => c.category).map((c) => (
-                  <option key={c.category!.slug} value={c.category!.slug}>{c.category!.name} ({c.count})</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: "flex", alignItems: "end", gap: 10 }}>
-              <label style={{ fontSize: 12, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
-                <input type="checkbox" checked={onlyMse} onChange={(e) => setOnlyMse(e.target.checked)} /> MSE only
-              </label>
-              <label style={{ fontSize: 12, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
-                <input type="checkbox" checked={onlyFlagged} onChange={(e) => setOnlyFlagged(e.target.checked)} /> Flagged only
-              </label>
-            </div>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <label style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, display: "block", marginBottom: 4 }}>Search</label>
-              <input
-                placeholder="Search tender title..."
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                style={{ ...filterSelect, minWidth: 200, width: "100%" }}
-              />
-            </div>
-          </div>
+          </Card>
 
-          {/* Secondary nav */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
-            <SecondaryLink href={`/${locale}/${stateSlug}/${districtSlug}/tenders/apply-guide`} icon={<ShieldCheck size={14} />}>Apply Guide</SecondaryLink>
-            <SecondaryLink href={`/${locale}/${stateSlug}/${districtSlug}/tenders/transparency`} icon={<AlertTriangle size={14} />}>Transparency</SecondaryLink>
-            <SecondaryLink href={`/${locale}/${stateSlug}/${districtSlug}/tenders/how-it-works`} icon={<BookOpen size={14} />}>How It Works</SecondaryLink>
-          </div>
+          {/* Secondary nav — guides about tenders */}
+          <Toolbar label="Tender guides">
+            <ToolbarButton href={`${tendersBase}/apply-guide`} icon={ShieldCheck}>Apply Guide</ToolbarButton>
+            <ToolbarButton href={`${tendersBase}/transparency`} icon={AlertTriangle}>Transparency</ToolbarButton>
+            <ToolbarButton href={`${tendersBase}/how-it-works`} icon={BookOpen}>How It Works</ToolbarButton>
+          </Toolbar>
 
           {/* Body */}
-          {listQuery.isLoading && <LoadingShell rows={3} />}
-          {listQuery.error && <ErrorBlock message="Couldn't load tenders — please try again in a moment." />}
-          {!listQuery.isLoading && !listQuery.error && tenders.length === 0 && (
-            <EmptyBlock message={tab === "LIVE"
-              ? "No tenders match your filters. Try switching tabs or loosening filters. New tenders ingest every 30 minutes."
-              : "No tenders match your filters. Try the Live tab for current opportunities."}
-            />
-          )}
-          {tenders.length > 0 && (
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
-              {tenders.map((t) => (
-                <TenderCard key={t.id} tender={t} districtSlug={districtSlug} stateSlug={stateSlug} locale={locale} />
-              ))}
-            </div>
-          )}
+          <div style={{ marginTop: 16 }}>
+            {listQuery.isLoading && <LoadingShell rows={3} />}
+            {listQuery.error && <ErrorBlock message="Couldn't load tenders — please try again in a moment." />}
+            {!listQuery.isLoading && !listQuery.error && tenders.length === 0 && (
+              <EmptyState title={tab === "LIVE"
+                ? "No tenders match your filters. Try switching tabs or loosening filters. New tenders ingest every 30 minutes."
+                : "No tenders match your filters. Try the Live tab for current opportunities."}
+              />
+            )}
+            {tenders.length > 0 && (
+              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))" }}>
+                {tenders.map((t) => (
+                  <TenderCard key={t.id} tender={t} districtSlug={districtSlug} stateSlug={stateSlug} locale={locale} />
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Pagination */}
           {listQuery.data && listQuery.data.total > pageSize && (
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 24 }}>
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} style={pagerBtn}>‹ Prev</button>
-              <span style={{ alignSelf: "center", fontSize: 13, color: "#6B7280" }}>
-                Page {page} of {Math.ceil(listQuery.data.total / pageSize)}
+            <nav aria-label="Tender pages" style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", marginTop: 24, flexWrap: "wrap" }}>
+              <ToolbarButton icon={ChevronLeft} disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</ToolbarButton>
+              <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                Page <span className="ftp-num">{page}</span> of <span className="ftp-num">{totalPages}</span>
               </span>
-              <button disabled={page >= Math.ceil(listQuery.data.total / pageSize)} onClick={() => setPage((p) => p + 1)} style={pagerBtn}>Next ›</button>
-            </div>
+              <ToolbarButton disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                Next <ChevronRight size={14} aria-hidden />
+              </ToolbarButton>
+            </nav>
           )}
+        </Section>
 
-          <div style={{ marginTop: 40 }}>
-            <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
-          </div>
-        </div>
+        <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
+
+        <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} />
       </div>
     </ModuleErrorBoundary>
   );
 }
 
-// ── Local tiny UI primitives ────────────────────────────────────────────────
-function StatCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: 12 }}>
-      <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: accent ?? "#0F172A", marginTop: 4 }}>{value}</div>
-    </div>
-  );
-}
+// ── Local styles (tokens only) ──────────────────────────────────────────────
 
-function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: "10px 16px",
-        border: "none",
-        background: "transparent",
-        cursor: "pointer",
-        fontSize: 14,
-        fontWeight: 600,
-        color: active ? "#0F172A" : "#6B7280",
-        borderBottom: active ? "2px solid #0F172A" : "2px solid transparent",
-        marginBottom: -1,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SecondaryLink({ href, icon, children }: { href: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <Link href={href} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}>
-      {icon} {children}
-    </Link>
-  );
-}
-
-const filterSelect: React.CSSProperties = {
-  padding: "8px 10px",
+/** Select / text input in the filter ribbon — 44 px tall for easy tapping. */
+const filterControl: React.CSSProperties = {
+  width: "100%",
+  minHeight: 44,
+  padding: "0 10px",
   fontSize: 13,
-  borderRadius: 8,
-  border: "1px solid #D1D5DB",
-  background: "#FFFFFF",
-  color: "#0F172A",
+  fontFamily: "var(--ftp-font-sans)",
+  borderRadius: "var(--ftp-radius-tile)",
+  border: "1px solid var(--ftp-border)",
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  boxSizing: "border-box",
 };
 
-const pagerBtn: React.CSSProperties = {
-  padding: "8px 16px",
-  borderRadius: 8,
-  border: "1px solid #D1D5DB",
-  background: "#FFFFFF",
-  color: "#374151",
-  cursor: "pointer",
+/** Checkbox + label row, 44 px tall so the whole label is an easy target. */
+const checkboxLabel: React.CSSProperties = {
   fontSize: 13,
+  color: "var(--ftp-text)",
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  minHeight: 44,
+  cursor: "pointer",
 };
