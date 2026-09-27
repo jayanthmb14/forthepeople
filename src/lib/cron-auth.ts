@@ -21,15 +21,28 @@
 // attacker cannot guess the secret one byte at a time by measuring
 // response times.
 //
-// The second half of this file records every cron run in Redis so
-// /api/health can tell whether a cron actually ran (no schema change
-// needed). Each cron writes a hash at "ftp:cron:<name>" with:
-//   startedAt, finishedAt, status ("running" | "ok" | "error"),
-//   count (records touched), error (message, if any),
-//   lastSuccessAt (only updated on a successful run).
+// The second half of this file records every cron run in two places:
+//  1. Redis hash "ftp:cron:<name>" so /api/health can tell whether a cron
+//     actually ran: startedAt, finishedAt, status ("running" | "ok" |
+//     "error"), outcome ("ok" | "partial" | "skipped" | "error"), count
+//     (records touched), error (message, if any), lastSuccessAt (updated on
+//     every run that was not an error).
+//  2. One ScraperLog row per run (Sept 2026 v5): the admin scraper-health
+//     panel and the public verification section read ScraperLog, and the
+//     Vercel crons had never written it. The row is created as "running"
+//     at the start, so a run that Vercel kills at maxDuration stays visible
+//     as "running" instead of vanishing. Row format: src/scraper/lib/run-log.ts.
 // ═══════════════════════════════════════════════════════════
 import { timingSafeEqual } from "crypto";
 import { redis } from "@/lib/redis";
+import { prisma } from "@/lib/db";
+import {
+  scraperJobName,
+  scraperLogStatus,
+  summariseFailures,
+  type RunFailure,
+  type RunOutcome,
+} from "@/scraper/lib/run-log";
 
 // ── Auth ────────────────────────────────────────────────────
 
@@ -79,6 +92,8 @@ export interface CronRunRecord {
   finishedAt?: string;
   lastSuccessAt?: string;
   status?: CronStatus;
+  /** Finer result of the last finished run: "ok" | "partial" | "skipped" | "error". */
+  outcome?: RunOutcome;
   count?: number;
   error?: string;
   durationMs?: number;
@@ -93,6 +108,10 @@ export function cronRunKey(name: string): string {
 // "last succeeded 40 days ago" for a cron that silently died, rather than
 // "never recorded". Ten tiny hashes cost nothing in Upstash.
 
+// ScraperLog row ids of runs in progress, keyed by "<name>@<startedAtMs>".
+// cronStarted() and cronFinished() run in the same function invocation.
+const openLogRows = new Map<string, string>();
+
 /**
  * Mark a cron as started. Returns the start timestamp (ms) so the caller
  * can pass it back to cronFinished() for the duration calculation.
@@ -100,46 +119,117 @@ export function cronRunKey(name: string): string {
  */
 export async function cronStarted(name: string): Promise<number> {
   const startedAt = Date.now();
-  if (!redis) return startedAt;
+  if (redis) {
+    try {
+      const key = cronRunKey(name);
+      await redis.hset(key, {
+        startedAt: new Date(startedAt).toISOString(),
+        status: "running",
+        error: "",
+      });
+    } catch (err) {
+      console.warn(`[cron:${name}] could not record start:`, err instanceof Error ? err.message : err);
+    }
+  }
   try {
-    const key = cronRunKey(name);
-    await redis.hset(key, {
-      startedAt: new Date(startedAt).toISOString(),
-      status: "running",
-      error: "",
+    const row = await prisma.scraperLog.create({
+      data: { jobName: scraperJobName(name), status: "running", startedAt: new Date(startedAt) },
+      select: { id: true },
     });
+    openLogRows.set(`${name}@${startedAt}`, row.id);
   } catch (err) {
-    console.warn(`[cron:${name}] could not record start:`, err instanceof Error ? err.message : err);
+    console.warn(`[cron:${name}] could not open ScraperLog row:`, err instanceof Error ? err.message : err);
   }
   return startedAt;
+}
+
+/** What a cron route reports to cronFinished(). */
+export interface CronFinishResult {
+  /** "ok" | "partial" (some districts failed / budget ran out) | "skipped" (nothing to do) | "error". */
+  status: RunOutcome;
+  /** Rows written (ScraperLog.recordsNew). */
+  count?: number;
+  /** Rows changed (ScraperLog.recordsUpdated). */
+  updated?: number;
+  error?: string;
+  /** Per-district failures; on a partial run each also gets a "<job>/<district>" error row. */
+  failures?: RunFailure[];
+  /** How many districts/items were attempted (for the failure summary). */
+  attempted?: number;
 }
 
 /**
  * Mark a cron as finished. Call once at the end of the route, in both the
  * success and the failure path.
- *   status "ok"    -> also updates lastSuccessAt (what /api/health reads)
- *   status "error" -> keeps the previous lastSuccessAt untouched
+ *   status "ok" | "partial" | "skipped" -> Redis status "ok", lastSuccessAt
+ *                                          updated (what /api/health reads)
+ *   status "error"                      -> keeps the previous lastSuccessAt
+ * Also closes the run's ScraperLog row (see the file header).
  */
-export async function cronFinished(
-  name: string,
-  startedAtMs: number,
-  result: { status: "ok" | "error"; count?: number; error?: string },
-): Promise<void> {
-  if (!redis) return;
+export async function cronFinished(name: string, startedAtMs: number, result: CronFinishResult): Promise<void> {
+  const finishedAtDate = new Date();
+  const durationMs = finishedAtDate.getTime() - startedAtMs;
+  const failures = result.failures ?? [];
+  const errorText =
+    result.error ??
+    summariseFailures(failures, result.attempted ?? failures.length) ??
+    "";
+
+  if (redis) {
+    try {
+      const key = cronRunKey(name);
+      const finishedAt = finishedAtDate.toISOString();
+      const fields: Record<string, string | number> = {
+        finishedAt,
+        status: result.status === "error" ? "error" : "ok",
+        outcome: result.status,
+        count: result.count ?? 0,
+        error: errorText.slice(0, 500),
+        durationMs,
+      };
+      if (result.status !== "error") fields.lastSuccessAt = finishedAt;
+      await redis.hset(key, fields);
+    } catch (err) {
+      console.warn(`[cron:${name}] could not record finish:`, err instanceof Error ? err.message : err);
+    }
+  }
+
   try {
-    const key = cronRunKey(name);
-    const finishedAt = new Date().toISOString();
-    const fields: Record<string, string | number> = {
-      finishedAt,
-      status: result.status,
-      count: result.count ?? 0,
-      error: (result.error ?? "").slice(0, 500),
-      durationMs: Date.now() - startedAtMs,
+    const job = scraperJobName(name);
+    const data = {
+      status: scraperLogStatus(result.status),
+      recordsNew: result.count ?? 0,
+      recordsUpdated: result.updated ?? 0,
+      duration: durationMs,
+      error: errorText ? errorText.slice(0, 500) : null,
+      completedAt: finishedAtDate,
     };
-    if (result.status === "ok") fields.lastSuccessAt = finishedAt;
-    await redis.hset(key, fields);
+    const openKey = `${name}@${startedAtMs}`;
+    const rowId = openLogRows.get(openKey);
+    openLogRows.delete(openKey);
+    if (rowId) {
+      await prisma.scraperLog.update({ where: { id: rowId }, data });
+    } else {
+      await prisma.scraperLog.create({ data: { jobName: job, startedAt: new Date(startedAtMs), ...data } });
+    }
+    // Partial run: one error row per failed district, so the admin grid
+    // (which looks for "<job>/<district>") can point at the failing cell.
+    if (result.status === "partial" && failures.length > 0) {
+      await prisma.scraperLog.createMany({
+        data: failures.slice(0, 50).map((f) => ({
+          jobName: `${job}/${f.district}`,
+          status: "error",
+          recordsNew: 0,
+          recordsUpdated: 0,
+          duration: durationMs,
+          error: (f.error ?? "failed").slice(0, 500),
+          startedAt: new Date(startedAtMs),
+          completedAt: finishedAtDate,
+        })),
+      });
+    }
   } catch (err) {
-    console.warn(`[cron:${name}] could not record finish:`, err instanceof Error ? err.message : err);
+    console.warn(`[cron:${name}] could not write ScraperLog:`, err instanceof Error ? err.message : err);
   }
 }
 
@@ -191,6 +281,7 @@ export async function getCronRun(name: string): Promise<CronRunRecord | null> {
       finishedAt: raw.finishedAt ? String(raw.finishedAt) : undefined,
       lastSuccessAt: raw.lastSuccessAt ? String(raw.lastSuccessAt) : undefined,
       status: raw.status ? (String(raw.status) as CronStatus) : undefined,
+      outcome: raw.outcome ? (String(raw.outcome) as RunOutcome) : undefined,
       count: raw.count !== undefined && raw.count !== "" ? Number(raw.count) : undefined,
       error: raw.error ? String(raw.error) : undefined,
       durationMs: raw.durationMs !== undefined && raw.durationMs !== "" ? Number(raw.durationMs) : undefined,

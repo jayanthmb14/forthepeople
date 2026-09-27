@@ -26,6 +26,7 @@ import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { scrapeWeather } from "@/scraper/jobs/weather";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { runOutcome } from "@/scraper/lib/run-log";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
@@ -106,11 +107,14 @@ export async function GET(request: Request) {
   }
 
   const succeeded = results.filter((r) => r.success).length;
-  const allFailed = results.length > 0 && succeeded === 0;
+  const failures = results.filter((r) => !r.success).map((r) => ({ district: r.district, error: r.error }));
+  const outcome = runOutcome({ attempted: results.length, failed: failures.length, budgetExhausted: partial });
+  const allFailed = outcome === "error";
   await cronFinished(CRON_NAME, runStart, {
-    status: allFailed ? "error" : "ok",
+    status: outcome,
     count: succeeded,
-    error: allFailed ? `all ${results.length} districts failed: ${results[0]?.error ?? "unknown"}` : undefined,
+    failures,
+    attempted: results.length,
   });
 
   return NextResponse.json({

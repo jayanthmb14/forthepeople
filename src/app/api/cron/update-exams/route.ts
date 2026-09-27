@@ -125,7 +125,7 @@ export async function GET(req: Request) {
     });
     flaggedStale = stale.count;
 
-    await cronFinished(CRON_NAME, startedAt, { status: "ok", count: statusAdvanced + flaggedStale });
+    await cronFinished(CRON_NAME, startedAt, { status: "ok", count: 0, updated: statusAdvanced + flaggedStale });
 
     return NextResponse.json({
       ok: true,

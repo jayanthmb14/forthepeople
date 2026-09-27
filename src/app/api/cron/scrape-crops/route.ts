@@ -26,6 +26,7 @@ import { prisma } from "@/lib/db";
 import { scrapeCrops } from "@/scraper/jobs/crops";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { runOutcome } from "@/scraper/lib/run-log";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
@@ -103,13 +104,15 @@ export async function GET(request: Request) {
   }
 
   const totalNew = results.reduce((s, r) => s + r.newCount, 0);
-  const failed = results.filter((r) => !r.success);
-  const allFailed = results.length > 0 && failed.length === results.length;
+  const failures = results.filter((r) => !r.success).map((r) => ({ district: r.district, error: r.error }));
+  const outcome = runOutcome({ attempted: results.length, failed: failures.length, budgetExhausted: partial });
+  const allFailed = outcome === "error";
 
   await cronFinished(CRON_NAME, runStart, {
-    status: allFailed ? "error" : "ok",
+    status: outcome,
     count: totalNew,
-    error: allFailed ? `all ${results.length} districts failed: ${failed[0]?.error ?? "unknown"}` : undefined,
+    failures,
+    attempted: results.length,
   });
 
   return NextResponse.json({
