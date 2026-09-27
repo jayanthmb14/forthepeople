@@ -1,8 +1,5 @@
 {
   "description": "District budget allocation, utilisation, lapsed funds and revenue collections",
-  "summary": "This page shows the annual budget allocation and expenditure data for this district's government departments, sourced from {sources}. Figures are in Indian Rupees in Crores (1 Crore = ₹10 million). Unspent budget that lapses at fiscal year end is highlighted as “lapsed funds.”",
-  "summarySourcesState": "the {state} Finance Department, PFMS and eGramSwaraj",
-  "summarySources": "the State Finance Department, PFMS and eGramSwaraj",
   "fy": "FY {year}",
   "empty": {
     "title": "No budget data yet for this district.",

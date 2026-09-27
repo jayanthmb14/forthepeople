@@ -170,8 +170,6 @@ export interface TopBarRow {
   display: string;
   /** Small line icon in a hue chip before the label. */
   icon?: LucideIcon;
-  /** @deprecated v5: not shown. */
-  emoji?: string;
   /** Small second line under the label. */
   sub?: React.ReactNode;
 }
@@ -224,8 +222,6 @@ export function TopBarList({ rows, max = 5 }: { rows: TopBarRow[]; max?: number 
 export interface IconCount {
   key: string;
   icon?: LucideIcon;
-  /** @deprecated v5: not shown. */
-  emoji?: string;
   /** Already formatted count ("12", "₹4.2 Cr"). */
   count: string;
   label: string;

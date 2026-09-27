@@ -2,7 +2,6 @@
   "lakh": "₹{n} lakh",
   "crore": "₹{n} crore",
   "description": "Each village council's people, drinking water, MGNREGA works and money",
-  "summary": "This page shows the gram panchayats (village councils) in this district: population, households, drinking water coverage, road connectivity, MGNREGA works, and the money each panchayat was given and has used, from eGramSwaraj and NREGA.nic.in. Amounts are shown in lakh or crore rupees (1 lakh = ₹1,00,000; 1 crore = 100 lakh).",
   "urbanTitle": "Municipal governance",
   "urbanBody": "{district} is a fully urban district governed by a Municipal Corporation. Gram Panchayat and MGNREGA data applies only to rural areas.",
   "municipalBody": "Municipal body",
@@ -85,20 +84,5 @@
   "leastTitle": "Least of their money used",
   "leastUnits": "Share of money used, lowest first. Tap one to see all its details.",
   "leastSimple": "<b>{name}</b> has used the smallest share of its money: {used}.",
-  "leastRow": "{used} ({spent} used of {given})",
-  "sourceEgs": "eGramSwaraj (Ministry of Panchayati Raj)",
-  "sourceNrega": "NREGA.nic.in (MGNREGA)",
-  "share": "{district} has {n, plural, one {# gram panchayat} other {# gram panchayats}}{funds, select, yes {; about {used} of the money given to them has been used} other {}}.",
-  "shareEmpty": "Village councils (gram panchayats) in {district}",
-  "footer": {
-    "aboutTitle": "About this page",
-    "frequency": "When the source publishes",
-    "notOfficial": "ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "csv": "Download CSV",
-    "whatsapp": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district"
-  }
+  "leastRow": "{used} ({spent} used of {given})"
 }

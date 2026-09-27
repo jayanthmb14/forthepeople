@@ -104,8 +104,6 @@ export function CardHead({
   side,
 }: {
   icon?: LucideIcon;
-  /** @deprecated v5: emoji are not shown on rows; kept so old call sites compile. */
-  emoji?: string;
   title: React.ReactNode;
   titleLocal?: string | null;
   /** Something small on the right (a status pill). */
@@ -142,8 +140,6 @@ export function HueTag({
   children: React.ReactNode;
   outline?: boolean;
   icon?: LucideIcon;
-  /** @deprecated v5: not shown. */
-  emoji?: string;
 }) {
   return (
     <span
@@ -183,8 +179,6 @@ export function SheetHighlight({
   label: string;
   children: React.ReactNode;
   lang?: string;
-  /** @deprecated v5: not shown. */
-  emoji?: string;
 }) {
   return (
     <div
@@ -215,8 +209,6 @@ export function SheetSection({
 }: {
   title: string;
   children: React.ReactNode;
-  /** @deprecated v5: not shown. */
-  emoji?: string;
 }) {
   return (
     <section style={{ minWidth: 0 }}>

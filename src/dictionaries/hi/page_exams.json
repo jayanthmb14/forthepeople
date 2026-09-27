@@ -9,9 +9,6 @@
     "resultWait": "परिणाम की प्रतीक्षा",
     "done": "पूरी हो चुकी"
   },
-  "unverified": "हाल में पुष्टि नहीं",
-  "unverifiedTitle": "किसी समाचार से आखिरी पुष्टि {when} हुई थी। आधिकारिक वेबसाइट देखें।",
-  "unverifiedNever": "अभी तक किसी समाचार से पुष्टि नहीं हुई। आधिकारिक वेबसाइट देखें।",
   "whenLower": "{n, plural, =0 {आज} =1 {कल} other {# दिन में}}",
   "countdown": {
     "notification": "{name} की अधिसूचना {when}",
@@ -69,7 +66,6 @@
   "simpleNext": "अभी <b>{open}</b> {open, plural, one {परीक्षा के लिए} other {परीक्षाओं के लिए}} आवेदन चल रहे हैं। अगली तारीख: <b>{next}</b>।",
   "simpleNoNext": "अभी <b>{open}</b> {open, plural, one {परीक्षा के लिए} other {परीक्षाओं के लिए}} आवेदन चल रहे हैं। नई तारीखें अभी घोषित नहीं हुई हैं।",
   "statOpen": "आवेदन चल रहे हैं",
-  "statOpenSub": "अभी आवेदन कर सकते हैं",
   "statNext": "अगली तारीख में",
   "todayWord": "आज",
   "daysUnit": "{n, plural, one {दिन} other {दिन}}",
@@ -79,8 +75,6 @@
   "statPostsSub": "{n, plural, one {# परीक्षा में} other {# परीक्षाओं में}} जिनमें संख्या दी गई",
   "statTracked": "सूची में परीक्षाएँ",
   "statTrackedSub": "{n, plural, =0 {अभी कोई पूरी नहीं हुई} other {# पूरी हो चुकी हैं}}",
-  "stagesTitle": "हर परीक्षा अभी किस चरण में है",
-  "phaseCount": "{n, plural, =0 {अभी कोई नहीं} one {{count} परीक्षा} other {{count} परीक्षाएँ}}",
   "filterLabel": "परीक्षा लेने वाले के अनुसार दिखाएँ",
   "categories": {
     "all": "सभी",
@@ -118,10 +112,6 @@
   "ringAria": "{role}: स्वीकृत पदों में से {pct} भरे हुए",
   "rowCounts": "{working} काम पर, {vacant} खाली",
   "sourcePill": "भर्ती बोर्ड और समाचार रिपोर्टें",
-  "frequency": "रोज़",
-  "sourceBoards": "राज्य PSC और भर्ती बोर्ड",
-  "sourceNews": "परीक्षा की तारीखों पर समाचार",
-  "compare": "किसी दूसरे जिले से तुलना करें",
   "stepper": {
     "aria": "परीक्षा की तारीखें",
     "notification": "अधिसूचना",

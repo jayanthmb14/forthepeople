@@ -6,27 +6,6 @@
     "title": "No infrastructure projects tracked yet.",
     "body": "News-driven updates will populate this page automatically."
   },
-  "freshness": {
-    "initial": "Initial data — will be enriched as news articles appear",
-    "fresh": "Data updated: <b>{when}</b>",
-    "stale": "Data last updated from news: <b>{when}</b>"
-  },
-  "tiles": {
-    "total": "Total projects",
-    "active": "Active",
-    "completed": "Completed",
-    "delayed": "Delayed",
-    "delayedSub": "Delayed or stalled",
-    "budget": "Total budget",
-    "activeCount": "{n} planned or being built",
-    "budgetSub": "{n, plural, one {# project} other {# projects}} with a budget, as reported"
-  },
-  "pictogram": "About {n} of every 10 projects tracked here are finished.",
-  "pictogramNone": "None of the projects tracked here is reported as finished yet.",
-  "gauge": {
-    "label": "Projects running late",
-    "caption": "Share of tracked projects reported as delayed or stalled"
-  },
   "biggest": {
     "title": "Biggest projects by money",
     "units": "Latest budget reported in the news for each project (top 5, cancelled ones left out)",
@@ -34,9 +13,6 @@
     "sub": "{category}, {status}"
   },
   "byCategory": {
-    "title": "Projects by category",
-    "units": "Number of tracked projects in each category, cancelled ones included",
-    "simple": "Most projects here are <b>{name}</b>: {n} of {total}.",
     "legend": "Projects"
   },
   "list": {
@@ -50,44 +26,10 @@
     "sortLatest": "Latest update",
     "sortBudget": "Budget (highest)",
     "sortProgress": "Most complete",
-    "sortDelay": "Most delayed",
     "noMatch": "No projects match these filters.",
     "noMatchBody": "Pick another category or status to see more projects."
   },
   "cancelledTitle": "Cancelled or shelved projects ({n})",
-  "status": {
-    "proposed": "Proposed",
-    "approved": "Approved",
-    "tenderIssued": "Tender issued",
-    "underConstruction": "Under construction",
-    "onTrack": "On track",
-    "delayed": "Delayed",
-    "stalled": "Stalled",
-    "completed": "Completed",
-    "cancelled": "Cancelled"
-  },
-  "cat": {
-    "roads": "Roads",
-    "metro": "Metro",
-    "rail": "Rail",
-    "bridge": "Bridge",
-    "flyover": "Flyover",
-    "water": "Water",
-    "sewage": "Sewage",
-    "housing": "Housing",
-    "power": "Power",
-    "hospital": "Hospital",
-    "education": "Education",
-    "sports": "Sports & stadium",
-    "airport": "Airport",
-    "port": "Port",
-    "parks": "Parks & lakes",
-    "traffic": "Traffic",
-    "environment": "Environment",
-    "industry": "Industry",
-    "telecom": "Telecom",
-    "other": "Other"
-  },
   "scope": {
     "STATE": "State project",
     "NATIONAL": "National project"
@@ -127,25 +69,16 @@
     "budgetUnknown": "Budget not disclosed",
     "asReported": "As reported in news media",
     "noTimeline": "Timeline not announced",
-    "notStarted": "Not started",
-    "finished": "Finished",
     "progress": "Progress",
     "notVerified": "Not yet cross-verified by news sources",
     "singleSource": "Single source, awaiting additional verification",
     "cancelReason": "Cancellation reason:",
-    "lastUpdated": "Last updated: {when}",
     "more": "See details",
     "cardAria": "{name}: show details",
-    "budget": "Budget",
-    "expected": "Expected",
-    "finishedOn": "Finished",
-    "cancelledOn": "Cancelled",
     "late": "{months, plural, one {# month} other {# months}} late",
-    "updates": "{n, plural, =0 {No news yet} one {# news update} other {# news updates}}",
     "sourcesAgree": "{n} sources agree"
   },
   "timeline": {
-    "about": "About this project",
     "empty": "No timeline entries yet. Updates appear here as news covers this project.",
     "footer": "Data sourced from news articles. Not independently verified. Contact {agency} for official status.",
     "footerNoAgency": "Data sourced from news articles. Not independently verified. Contact the executing agency for official status.",
@@ -177,8 +110,6 @@
   },
   "noticeShort": "From news reports and government press releases, each linked to its source.",
   "noticeMore": "Read more",
-  "explainerIn": "This page follows <num>{total}</num> government {total, plural, one {project} other {projects}} in {district} reported in the news. <num>{done}</num> are finished and <num>{active}</num> are planned or still being built.",
-  "explainerCancelledIn": "This page follows <num>{total}</num> government {total, plural, one {project} other {projects}} in {district} reported in the news. <num>{done}</num> are finished and <num>{active}</num> are planned or still being built; <num>{cancelled}</num> {cancelled, plural, one {was} other {were}} cancelled.",
   "explainerTap": "Tap a project to see its money, its dates and every news update.",
   "sheet": {
     "openNews": "Open latest news",
