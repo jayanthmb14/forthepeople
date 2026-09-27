@@ -2,13 +2,17 @@
 // One entry per src/dictionaries/en/<name>.json (page-level messages).
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_citizen-corner",
+  "page_crops",
   "page_elections",
+  "page_farm",
   "page_finance",
+  "page_gram-panchayat",
   "page_industries",
   "page_infrastructure",
   "page_leadership",
   "page_money",
   "page_responsibility",
   "page_schemes",
-  "page_tenders"
+  "page_tenders",
+  "page_water"
 ];
