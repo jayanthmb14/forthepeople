@@ -150,7 +150,8 @@ function sarvam(key: string): TranslationProvider {
       for (const input of texts) {
         const json = (await postJSON(
           "https://api.sarvam.ai/translate",
-          { input, source_language_code: "en-IN", target_language_code: `${locale}-IN`, model },
+          // Sarvam writes Odia as "od" (ISO 639-1 is "or"); every other code matches.
+          { input, source_language_code: "en-IN", target_language_code: `${locale === "or" ? "od" : locale}-IN`, model },
           { "api-subscription-key": key },
         )) as { translated_text?: string };
         out.push(json.translated_text);
