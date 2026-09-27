@@ -4,23 +4,37 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Local Alerts — Design v3 module page (CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Data: useAlerts() → active alerts, most severe first, then newest.
+//  The old unconditional "Live" tag is gone: the header pill and the stat
+//  tiles use the newest alert's createdAt, and every alert shows when it
+//  was posted. Severity is shown as a Pill (colour as text on a tint),
+//  never as a coloured stripe or box.
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
-import NoDataCard from "@/components/common/NoDataCard";
-import { getModuleSources } from "@/lib/constants/state-config";
+import ModuleNews from "@/components/district/ModuleNews";
 import { use } from "react";
-import { Bell } from "lucide-react";
+import { Bell, CalendarDays, MapPin } from "lucide-react";
 import { useAlerts } from "@/hooks/useRealtimeData";
-import { ModuleHeader, StatCard, SeverityBadge, LoadingShell, ErrorBlock } from "@/components/district/ui";
-
-const SEV_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  critical: { bg: "#FFF1F2", border: "#FECDD3", text: "#DC2626" },
-  high: { bg: "#FFF7ED", border: "#FED7AA", text: "#EA580C" },
-  medium: { bg: "#FEFCE8", border: "#FEF08A", text: "#CA8A04" },
-  low: { bg: "#F0FDF4", border: "#BBF7D0", text: "#16A34A" },
-};
+import {
+  PageHeader,
+  Section,
+  Card,
+  Pill,
+  StatTile,
+  StatStrip,
+  SeverityBadge,
+  LoadingShell,
+  ErrorBlock,
+  EmptyState,
+  AsOfText,
+} from "@/components/district/ui";
+import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 function formatDateRange(start?: string | null, end?: string | null) {
   if (!start) return null;
@@ -29,6 +43,10 @@ function formatDateRange(start?: string | null, end?: string | null) {
   const e = new Date(end).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
   return `${s} – ${e}`;
 }
+
+// "water_supply" → "Water Supply" for display
+const formatTypeLabel = (raw: string) =>
+  raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 function AlertsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -46,77 +64,98 @@ function AlertsPageInner({ params }: { params: Promise<{ locale: string; state: 
     }, {})
   ).sort((a, b) => b[1] - a[1]);
 
-  // "water_supply" → "Water Supply" for display
-  const formatTypeLabel = (raw: string) =>
-    raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  // Newest alert posted (ISO strings sort correctly as text).
+  const newest = alerts.reduce<string | null>((m, a) => (!m || a.createdAt > m ? a.createdAt : m), null);
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Bell} title="Local Alerts" description="Active alerts and advisories for the district" backHref={base} liveTag />
-      {(() => { const _src = getModuleSources("alerts", state); return <DataSourceBanner moduleName="alerts" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
+    <ModulePage>
+      <PageHeader
+        icon={Bell}
+        title="Local Alerts"
+        description="Active alerts and advisories for the district"
+        backHref={base}
+        accent={getModuleAccent("alerts")}
+        freshness={newest ? { asOf: newest } : undefined}
+      />
+
       <AIInsightCard module="alerts" district={district} />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
-      {!isLoading && (
+      {!isLoading && !error && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-            <StatCard label="Active Alerts" value={alerts.length} icon={Bell} accent={critical > 0 ? "#DC2626" : "#D97706"} />
-            <StatCard label="Critical" value={critical} accent="#DC2626" />
-            <StatCard label="High Priority" value={high} accent="#EA580C" />
-            <StatCard label="Alert Types" value={byType.length} />
-          </div>
+          <StatStrip cols={4}>
+            <StatTile label="Active alerts" value={alerts.length} icon={Bell} asOf={newest} />
+            <StatTile label="Critical" value={critical} asOf={newest} />
+            <StatTile label="High priority" value={high} asOf={newest} />
+            <StatTile label="Alert types" value={byType.length} asOf={newest} />
+          </StatStrip>
 
           {alerts.length === 0 ? (
-            <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: 24, textAlign: "center" }}>
-              <Bell size={28} style={{ color: "#16A34A", marginBottom: 8 }} />
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#15803D" }}>No active alerts</div>
-              <div style={{ fontSize: 13, color: "#16A34A" }}>All clear for the district</div>
+            <div style={{ marginTop: 24 }}>
+              <EmptyState title="No active alerts" body="All clear for the district" />
             </div>
           ) : (
-            <>
-              {/* Type pills */}
+            <Section title="Active alerts">
+              {/* Count per alert type. */}
               {byType.length > 1 && (
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
                   {byType.map(([type, count]) => (
-                    <span key={type} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 12, background: "#F5F5F0", color: "#6B6B6B", border: "1px solid #E8E8E4" }}>
-                      {formatTypeLabel(type)} ({count})
-                    </span>
+                    <Pill key={type}>
+                      {formatTypeLabel(type)} <span className="ftp-num">({count})</span>
+                    </Pill>
                   ))}
                 </div>
               )}
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                 {alerts.map((a) => {
-                  const sev = SEV_COLORS[a.severity.toLowerCase()] ?? SEV_COLORS.low;
                   const dateRange = formatDateRange(a.startDate, a.endDate);
                   return (
-                    <div key={a.id} style={{
-                      background: sev.bg, border: `1px solid ${sev.border}`,
-                      borderLeft: `3px solid ${sev.text}`, borderRadius: 10, padding: "14px 16px",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                            <SeverityBadge severity={a.severity} />
-                            <span style={{ fontSize: 11, background: "#00000010", padding: "2px 7px", borderRadius: 10, color: "#6B6B6B" }}>{formatTypeLabel(a.type)}</span>
-                            {dateRange && <span style={{ fontSize: 11, color: "#9B9B9B" }}>📅 {dateRange}</span>}
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A", marginBottom: 4 }}>{a.title}</div>
-                          {a.titleLocal && <div style={{ fontSize: 13, color: "#4B4B4B", fontFamily: "var(--font-regional)", marginBottom: 4 }}>{a.titleLocal}</div>}
-                          <div style={{ fontSize: 13, color: "#4B4B4B", lineHeight: 1.5 }}>{a.description}</div>
-                          {a.location && <div style={{ fontSize: 12, color: "#9B9B9B", marginTop: 6 }}>📍 {a.location}</div>}
-                        </div>
+                    <Card key={a.id} as="li">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                        <SeverityBadge severity={a.severity} />
+                        <Pill>{formatTypeLabel(a.type)}</Pill>
+                        {dateRange && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                            <CalendarDays size={12} aria-hidden /> {dateRange}
+                          </span>
+                        )}
                       </div>
-                    </div>
+                      <h3 className="ftp-title">{a.title}</h3>
+                      {a.titleLocal && <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{a.titleLocal}</div>}
+                      <p className="ftp-body" style={{ margin: "4px 0 0" }}>{a.description}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+                        {a.location && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                            <MapPin size={12} aria-hidden /> {a.location}
+                          </span>
+                        )}
+                        <AsOfText asOf={a.createdAt} prefix="Posted" />
+                      </div>
+                    </Card>
                   );
                 })}
-              </div>
-            </>
+              </ul>
+            </Section>
           )}
         </>
       )}
-    </div>
+
+      <ModuleSources module="alerts" state={state} />
+      <ModuleNews district={district} state={state} locale={locale} module="alerts" />
+      <ModuleToolbar
+        locale={locale}
+        district={district}
+        moduleSlug="alerts"
+        moduleLabel="Local Alerts"
+        shareText={
+          alerts.length > 0
+            ? `${district} alerts: ${alerts.length} active (${critical} critical, ${high} high priority)`
+            : `No active alerts for ${district}`
+        }
+      />
+    </ModulePage>
   );
 }
 
