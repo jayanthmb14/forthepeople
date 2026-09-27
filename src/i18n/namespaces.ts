@@ -2,6 +2,7 @@
 // One entry per src/dictionaries/en/<name>.json (page-level messages).
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_about",
+  "page_compare",
   "page_site",
   "page_state",
   "page_taluk",
