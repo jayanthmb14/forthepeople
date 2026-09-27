@@ -226,17 +226,18 @@ export function parseOpenMeteoForecast(json: unknown): SourceForecast | null {
       tMin = null;
     }
     const rain = inRange(at("precipitation_sum", i), 0, 1500);
+    const rainChance = inRange(at("precipitation_probability_max", i), 0, 100);
     const sunrise = finite(at("sunrise", i));
     const sunset = finite(at("sunset", i));
     const wind = inRange(at("wind_speed_10m_max", i), 0, 400);
     const uv = inRange(at("uv_index_max", i), 0, 20);
     days.push({
       date,
-      kind: kindFromWmo(code),
+      kind: dayKind(kindFromWmo(code), rainChance),
       code,
       tMax: tMax === null ? null : round1(tMax),
       tMin: tMin === null ? null : round1(tMin),
-      rainChance: inRange(at("precipitation_probability_max", i), 0, 100),
+      rainChance,
       rainMm: rain === null ? null : round2(rain),
       windMaxKmh: wind === null ? null : round1(wind),
       windDir: compass(finite(at("wind_direction_10m_dominant", i))),
@@ -343,13 +344,14 @@ export function parseOpenWeatherForecast(json: unknown): SourceForecast | null {
         code = id;
       }
     }
+    const rainChance = pops.length ? Math.max(...pops) : null;
     days.push({
       date,
-      kind,
+      kind: dayKind(kind, rainChance),
       code,
       tMax: highs.length ? round1(Math.max(...highs)) : null,
       tMin: lows.length ? round1(Math.min(...lows)) : null,
-      rainChance: pops.length ? Math.max(...pops) : null,
+      rainChance,
       // No rain field in any slot means "no rain expected" for OpenWeather.
       rainMm: rainSeen ? round2(rain) : pops.length ? 0 : null,
       windMaxKmh: msToKmh(windMs),
@@ -423,6 +425,21 @@ export function dayOffset(date: string, nowMs: number): number {
 }
 
 export type RainBand = "unlikely" | "possible" | "likely" | "veryLikely";
+
+/** Wet kinds that a low chance of rain overrules (thunder and heavy rain keep their warning). */
+const LIGHT_WET_KINDS: ReadonlySet<WeatherKind> = new Set<WeatherKind>(["drizzle", "rain", "showers"]);
+
+/**
+ * A day's picture word that agrees with its chance of rain. The daily
+ * weather code is the worst hour of the day (one hour of light drizzle
+ * makes a "drizzle" day), while the chance of rain can still say rain is
+ * unlikely. Sept 2026 audit: Hyderabad showed "Light drizzle · 8% chance
+ * of rain · Rain unlikely". When rain is unlikely (rainBand), drizzle,
+ * rain and showers read as "cloudy"; thunderstorms and heavy rain stay.
+ */
+export function dayKind(kind: WeatherKind, rainChance: number | null | undefined): WeatherKind {
+  return LIGHT_WET_KINDS.has(kind) && rainBand(rainChance) === "unlikely" ? "cloudy" : kind;
+}
 
 /** Chance of rain in words a child understands. */
 export function rainBand(chance: number | null | undefined): RainBand | null {

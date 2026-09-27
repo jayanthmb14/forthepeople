@@ -14,6 +14,7 @@ import {
   chooseCurrent,
   compareForecasts,
   compass,
+  dayKind,
   dayOffset,
   dayTip,
   istDate,
@@ -404,3 +405,41 @@ describe("days and choices", () => {
     expect(weekRange([day("a", { tMin: null, tMax: null })])).toBeNull();
   });
 });
+
+describe("dayKind (Sept 2026 audit: 'Light drizzle' next to 'Rain unlikely')", () => {
+  it("reads a drizzle / rain / showers day as cloudy when rain is unlikely", () => {
+    expect(dayKind("drizzle", 8)).toBe("cloudy");
+    expect(dayKind("drizzle", 0)).toBe("cloudy");
+    expect(dayKind("showers", 19)).toBe("cloudy");
+  });
+
+  it("keeps the wet word when rain is possible, and when the chance is unknown", () => {
+    expect(dayKind("drizzle", 20)).toBe("drizzle");
+    expect(dayKind("rain", 65)).toBe("rain");
+    expect(dayKind("drizzle", null)).toBe("drizzle");
+  });
+
+  it("never hides a thunderstorm or heavy rain", () => {
+    expect(dayKind("thunder", 5)).toBe("thunder");
+    expect(dayKind("heavyRain", 5)).toBe("heavyRain");
+    expect(dayKind("clear", 5)).toBe("clear");
+  });
+
+  it("applies to parsed Open-Meteo days", () => {
+    const f = parseOpenMeteoForecast({
+      utc_offset_seconds: 19800,
+      daily: {
+        time: [1790620200],
+        weather_code: [51],
+        temperature_2m_max: [31],
+        temperature_2m_min: [22],
+        precipitation_probability_max: [8],
+        precipitation_sum: [0.5],
+      },
+    });
+    expect(f?.days[0]?.kind).toBe("cloudy");
+    expect(f?.days[0]?.code).toBe(51);
+    expect(f?.days[0]?.rainChance).toBe(8);
+  });
+});
+

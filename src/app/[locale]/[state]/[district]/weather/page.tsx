@@ -69,7 +69,7 @@ import { PageActions, ageInDays, isOlderThan } from "@/components/district/page-
 import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { downloadCSV, todayISO } from "@/lib/csv";
 import { kindFromText } from "@/lib/weather/codes";
-import { FORECAST_SOURCES, chooseCurrent, todayOf, tomorrowOf, upcomingDays, wholeDays } from "@/lib/weather/forecast";
+import { AGREE_TOLERANCE_C, FORECAST_SOURCES, chooseCurrent, todayOf, tomorrowOf, upcomingDays, wholeDays } from "@/lib/weather/forecast";
 import { useForecast } from "@/lib/weather/use-forecast";
 import { WeatherArt } from "@/components/weather/WeatherArt";
 import { NowCard, SourceLine, TomorrowCard, type NowView } from "@/components/weather/ForecastCards";
@@ -335,6 +335,14 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
 
   // "In simple words": the newest reading, then rain this year.
   const explainKey = latest ? `${isRecent ? "now" : "then"}${hasTemp && latestCond ? "TempCond" : hasTemp ? "Temp" : "Cond"}` : null;
+  // Our reading and the second source (the same pair the "Right now" card
+  // compares) differ by more than the tolerance: the simple-words line gives
+  // the range, not one of the two as fact (Sept 2026 audit: "26.3°C" in the
+  // headline while the panel said the sources disagree, 22.7°C).
+  const nowRange =
+    nowView?.origin === "stored" && latest && isRecent && hasTemp && live && primary && Math.abs((latest.temperature as number) - live.temperature) > AGREE_TOLERANCE_C
+      ? { low: Math.min(latest.temperature as number, live.temperature), high: Math.max(latest.temperature as number, live.temperature) }
+      : null;
 
   // Share: what the page shows as "now" (never an old reading as if current),
   // then tomorrow.
@@ -436,7 +444,8 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                 {nowView.feels !== null ? <> {t.rich("explain.feelsNow", { feels: deg(nowView.feels), b: bold })}</> : null}{" "}
               </>
             )}
-            {!showingLive && !waitingForLive && latest && explainKey && (
+            {!showingLive && !waitingForLive && latest && nowRange && <>{t.rich("explain.nowRange", { low: deg(nowRange.low), high: deg(nowRange.high), b: bold })} </>}
+            {!showingLive && !waitingForLive && latest && explainKey && !nowRange && (
               <>
                 {t.rich(`explain.${explainKey}`, { temp: hasTemp ? deg(latest.temperature as number) : "", cond: latestCond ?? "", when: when(latest.recordedAt), b: bold })}
                 {hasFeels ? <> {t.rich(isRecent ? "explain.feelsNow" : "explain.feelsThen", { feels: deg(latest.feelsLike as number), b: bold })}</> : null}

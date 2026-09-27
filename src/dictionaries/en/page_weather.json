@@ -34,6 +34,7 @@
     "nowTempCond": "Right now it is <b>{temp}</b> with {cond}.",
     "nowTemp": "Right now it is <b>{temp}</b>.",
     "nowCond": "Right now the weather shows {cond}.",
+    "nowRange": "Right now it is somewhere between <b>{low}</b> and <b>{high}</b>: our two sources differ by more than 3°.",
     "thenTempCond": "When last recorded, on {when} IST, it was <b>{temp}</b> with {cond}.",
     "thenTemp": "When last recorded, on {when} IST, it was <b>{temp}</b>.",
     "thenCond": "When last recorded, on {when} IST, the weather showed {cond}.",
