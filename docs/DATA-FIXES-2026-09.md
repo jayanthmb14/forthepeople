@@ -990,9 +990,20 @@ The unused strings `helplines.police` (page_citizen-corner) and `nhh`
 
 - West Bengal: wbhealth.gov.in runs the free "102" ambulance; whether 108
   also works statewide was not confirmed, so 108 still shows there.
-- Responsibility text: UP "Anti-Corruption Organisation: 0522-2217440",
-  Hyderabad SHE Teams WhatsApp 9490617444, and the civic numbers (311, 1916,
-  1913, 1969, 1800-111-555 …) were not checked.
+- **Responsibility text (`responsibility-content.ts`) — verified or hidden:**
+  36 phone numbers in the "My Responsibility" advice (city-corporation,
+  water-board, PWD, DC-office, pollution-board, forest and vigilance lines,
+  e.g. Mandya CMC 08232-222400, BBMP 080-22660000, "MCC 0821-2418100" — which
+  is actually in the Mysuru city police block, GHMC 040-21111111, SHE Teams
+  WhatsApp 9490617444) could not be confirmed and were removed; the advice
+  now names the office without a number. "Report drunk driving … 100" and
+  "Dial 100" now say 112. Kept: Maharashtra and Telangana ACB 1064 and the
+  Karnataka Lokayukta office line (all confirmed above).
+- **Not checked — needs its own pass:** the same file's statistics (e.g.
+  "Bengaluru's green cover dropped from 68% (1973) to under 3%", "Mysuru
+  district has 3,000+ lakes", "1,087 lakes and tanks in Mandya", yearly
+  road-death and waste figures) have no sources and should be verified or
+  removed under the same rule.
 
 ---
 
