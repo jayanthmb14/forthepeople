@@ -239,19 +239,23 @@
    Each tile: a pastel wash of its module hue, a drawn picture in a white
    medallion, the number in the deep hue, and where the number is from. */
 .ftp-tiles { min-width: 0; }
+/* Flex, not grid: a row that is not full stretches its tiles, so there is
+   never an empty cell (phone: 2 per row, an odd last tile takes the row). */
 .ftp-tiles-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.ftp-tiles-list > li { flex: 1 1 calc(50% - 5px); min-width: 0; }
 @media (min-width: 640px) {
-  .ftp-tiles-list { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .ftp-tiles-list { gap: 12px; }
+  .ftp-tiles-list > li { flex-basis: 170px; }
 }
-@media (max-width: 639px) {
-  .ftp-tiles-list > li[data-wide="true"] { grid-column: 1 / -1; }
+@media (min-width: 1200px) {
+  .ftp-tiles-list > li { flex-basis: 150px; }
 }
 .ftp-tile {
   position: relative;
@@ -701,7 +705,9 @@
   /* 1 column on a phone, 2 on a tablet or laptop, 3 on a wide PC. */
   grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 14px;
-  align-items: stretch;
+  /* Cards keep their own height: a short card (leaders) is not stretched
+     into a tall empty box next to a long one (projects). */
+  align-items: start;
 }
 
 /* ---------- The four picture cards (OverviewCard, v5.1) ---------- */

@@ -128,6 +128,9 @@ function FreshSummary({ fresh, districtName, popover }: { fresh: FreshnessResult
     return td("bar.feedNoDate");
   };
   const tipId = `ftp-dbar-feeds-${popover ? "pc" : "m"}`;
+  // Nothing collected here (a district that is not live yet) or the check
+  // failed: no pill — it would point at a verification section with nothing in it.
+  if (state === "none") return null;
 
   return (
     <span className="ftp-dbar-freshwrap">

@@ -19,8 +19,9 @@
 //  • A tile with nothing honest to show is left out. An old budget year
 //    says "Old year"; an estimate says so; warnings only while active; the
 //    report card only while it has not expired.
-//  • Phone: 2 tiles per row (the MP tile takes a full row when the count
-//    is even, so no gap is left). Tablet and up: as many as fit, ≥ 170 px.
+//  • Phone: 2 tiles per row. Tablet and up: as many as fit (≥ 170 px,
+//    150 px on wide PCs). A row that is not full stretches its tiles, so
+//    no empty cell is ever left.
 //  • One small request: /api/data/glance (cached 10 min).
 "use client";
 
@@ -203,9 +204,6 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
   }
 
   if (!isLoading && tiles.length === 0) return null;
-  // Phones show 2 per row; the last (MP) tile fills a row when it would
-  // otherwise sit alone next to an empty cell.
-  const wideLast = tiles.length % 2 === 1;
 
   return (
     <nav className="ftp-tiles" aria-label={t("glance.aria", { district: districtName })}>
@@ -223,7 +221,6 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
               key={c.key}
               className={`${hueClass(c.module)} ftp-rise`}
               style={{ ["--i" as string]: i }}
-              data-wide={wideLast && i === tiles.length - 1 ? "true" : undefined}
             >
               <Link href={c.href} className="ftp-tile" data-key={c.key} data-tone={c.tone}>
                 <span className="ftp-tile-art" aria-hidden>
