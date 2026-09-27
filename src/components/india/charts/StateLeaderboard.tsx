@@ -70,7 +70,7 @@ export async function StateLeaderboard({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" }}>
-        <h3 style={{ fontSize: "14px", fontWeight: 500, margin: 0 }}>{title}</h3>
+        <h3 className="ftp-display" style={{ fontSize: "16px", fontWeight: 600, margin: 0 }}>{title}</h3>
         {unit && (
           <span style={{ fontSize: "11px", color: "var(--color-text-tertiary)" }}>{unit}</span>
         )}
@@ -92,7 +92,7 @@ export async function StateLeaderboard({
                 fontSize: "13px",
               }}
             >
-              <span style={{ color: "var(--color-text-tertiary)", fontFamily: "var(--font-mono)" }}>
+              <span style={{ color: "var(--color-text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
                 {i + 1}
               </span>
               <div>
@@ -118,7 +118,7 @@ export async function StateLeaderboard({
               </div>
               <span
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontVariantNumeric: "tabular-nums",
                   fontSize: "13px",
                   fontWeight: 500,
                   textAlign: "right",

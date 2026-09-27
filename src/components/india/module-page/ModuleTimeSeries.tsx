@@ -15,6 +15,7 @@ import IndiaTimeSeriesChart, {
 } from "../IndiaTimeSeriesChart";
 import { INDIA_DESIGN, CATEGORY_ACCENT } from "@/lib/india/india-design";
 import type { IndiaModuleCategory } from "@/lib/india/india-modules";
+import { IndiaSectionTitle } from "./v4";
 
 interface Props {
   metricKey: string;
@@ -63,37 +64,22 @@ export default function ModuleTimeSeries({
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            gap: 10,
-            marginBottom: 10,
-            flexWrap: "wrap",
-          }}
+        <IndiaSectionTitle
+          emoji="📈"
+          aside={
+            <span
+              style={{
+                fontSize: 11,
+                color: INDIA_DESIGN.textFaint,
+                fontStyle: "italic",
+              }}
+            >
+              Mock 10-year window — replaced when IndiaTimeSeries lands
+            </span>
+          }
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: INDIA_DESIGN.textFaint,
-            }}
-          >
-            Trend — {metricLabel}
-          </div>
-          <span
-            style={{
-              fontSize: 10,
-              color: INDIA_DESIGN.textFaint,
-              fontStyle: "italic",
-            }}
-          >
-            Mock 10-year window — replaced when IndiaTimeSeries lands
-          </span>
-        </div>
+          {metricLabel} trend
+        </IndiaSectionTitle>
         <IndiaTimeSeriesChart series={series} unit={unit} color={accent} />
       </div>
     </section>

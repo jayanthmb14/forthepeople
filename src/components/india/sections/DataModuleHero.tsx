@@ -164,11 +164,9 @@ export async function DataModuleHero({
         <div>
           <div
             style={{
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.07em",
+              fontSize: "12px",
               color: accent.hex,
-              fontWeight: 500,
+              fontWeight: 600,
               marginBottom: "4px",
             }}
           >
@@ -178,9 +176,9 @@ export async function DataModuleHero({
 
           <h1
             style={{
-              fontFamily: "var(--font-jakarta)",
-              fontSize: "32px",
-              fontWeight: 500,
+              fontFamily: "var(--ftp-font-display)",
+              fontSize: "34px",
+              fontWeight: 650,
               margin: "0 0 4px",
               letterSpacing: "-0.02em",
               lineHeight: 1.1,
@@ -207,9 +205,11 @@ export async function DataModuleHero({
                 target={value}
                 className="data-hero-bignum"
                 inlineStyle={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "44px",
-                  fontWeight: 500,
+                  fontFamily: "var(--ftp-font-display)",
+                  fontVariantNumeric: "tabular-nums lining-nums",
+                  letterSpacing: "-0.02em",
+                  fontSize: "48px",
+                  fontWeight: 650,
                   lineHeight: 1,
                   color: accent.text,
                 }}
@@ -217,9 +217,11 @@ export async function DataModuleHero({
             ) : (
               <span
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "44px",
-                  fontWeight: 500,
+                  fontFamily: "var(--ftp-font-display)",
+                  fontVariantNumeric: "tabular-nums lining-nums",
+                  letterSpacing: "-0.02em",
+                  fontSize: "48px",
+                  fontWeight: 650,
                   lineHeight: 1,
                   color: accent.text,
                 }}
@@ -298,10 +300,9 @@ export async function DataModuleHero({
         >
           <div
             style={{
-              fontSize: "10px",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--color-text-tertiary)",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--color-text-secondary)",
               marginBottom: "8px",
             }}
           >

@@ -45,11 +45,9 @@ export default function ModuleAIAnalysisCard({ analysis }: Props) {
               display: "flex",
               alignItems: "center",
               gap: 8,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: INDIA_DESIGN.textFaint,
+              fontSize: 12,
+              fontWeight: 600,
+              color: INDIA_DESIGN.textMuted,
             }}
           >
             <span aria-hidden="true">🧠</span>

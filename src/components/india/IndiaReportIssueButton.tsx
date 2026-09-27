@@ -325,11 +325,9 @@ function Field({
     <label style={{ display: "grid", gap: 4 }}>
       <span
         style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: INDIA_DESIGN.textFaint,
+          fontSize: 12,
+          fontWeight: 600,
+          color: INDIA_DESIGN.textMuted,
         }}
       >
         {label}

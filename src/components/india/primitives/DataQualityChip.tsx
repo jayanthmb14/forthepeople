@@ -20,10 +20,10 @@ const PALETTE: Record<DataQualityKind, { bg: string; fg: string }> = {
 };
 
 const BASE_STYLE: React.CSSProperties = {
-  fontSize: "9px",
-  letterSpacing: "0.05em",
-  fontWeight: 500,
-  textTransform: "uppercase",
+  fontSize: "11px",
+  fontWeight: 600,
+  // Design v4: sentence case ("Published"), no tracked-out capitals.
+  textTransform: "capitalize",
   borderRadius: "3px",
   padding: "1px 5px",
   display: "inline-block",
