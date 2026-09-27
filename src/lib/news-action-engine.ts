@@ -355,52 +355,11 @@ export async function executeNewsAction(
       }
 
       case "staffing": {
-        const data = extractedData as Record<string, unknown>;
-        if (
-          data.module &&
-          data.department &&
-          data.roleName &&
-          typeof data.sanctionedPosts === "number" &&
-          typeof data.workingStrength === "number"
-        ) {
-          const vacantPosts = Math.max(0, (data.sanctionedPosts as number) - (data.workingStrength as number));
-          const existing = await prisma.departmentStaffing.findFirst({
-            where: {
-              districtId,
-              module: data.module as string,
-              department: data.department as string,
-              roleName: data.roleName as string,
-            },
-          });
-          if (existing) {
-            await prisma.departmentStaffing.update({
-              where: { id: existing.id },
-              data: {
-                sanctionedPosts: data.sanctionedPosts as number,
-                workingStrength: data.workingStrength as number,
-                vacantPosts,
-                asOfDate: new Date(),
-                sourceUrl: articleUrl,
-              },
-            });
-            console.log(`[NewsAction] ✅ Updated DepartmentStaffing: ${data.module}/${data.roleName}`);
-          } else {
-            await prisma.departmentStaffing.create({
-              data: {
-                districtId,
-                module: data.module as string,
-                department: data.department as string,
-                roleName: data.roleName as string,
-                sanctionedPosts: data.sanctionedPosts as number,
-                workingStrength: data.workingStrength as number,
-                vacantPosts,
-                asOfDate: new Date(),
-                sourceUrl: articleUrl,
-              },
-            });
-            console.log(`[NewsAction] ✅ Created DepartmentStaffing: ${data.module}/${data.roleName}`);
-          }
-        }
+        // Sept 2026 audit: numbers in news stories are not a district's
+        // sanctioned strength (Kolkata got 2,73,000 all-India CAPF posts,
+        // Hyderabad "0 of 19,000 police working"). Staffing is written only
+        // from a department's own figures now, never from a headline.
+        console.log(`[NewsAction] staffing from news is not written (not official district figures): "${articleTitle.slice(0, 60)}"`);
         break;
       }
 
