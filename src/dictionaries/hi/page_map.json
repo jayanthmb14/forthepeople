@@ -25,7 +25,6 @@
   "landSimple": "सबसे बड़ा {unit} <b>{name}</b> है, जिसके पास {share} ज़मीन है।",
   "landAria": "{unit} के अनुसार ज़मीन का घेरा। सबसे बड़ा {name} है, {share} ज़मीन के साथ।",
   "landOther": "दूसरे {units}",
-  "sourceShapes": "{unit} की सूची: जिला प्रशासन और भारत की जनगणना। नक्शे के आकार अनुमानित हैं, आधिकारिक सीमाएँ नहीं।",
   "sourceLabel": "अनुमानित आकार",
   "details": "पूरी जानकारी देखें",
   "villagesPlain": "{n, plural, one {{count} गाँव} other {{count} गाँव}}",

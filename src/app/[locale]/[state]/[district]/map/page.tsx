@@ -19,7 +19,7 @@
 //  district's villages) opens a DetailSheet: people, area, villages, its
 //  share of the district, the village names, and "Open the taluk page".
 //  → "How the land is shared" (ring of each taluk's area, only when every
-//  taluk has an area on record) → sources → Share.
+//  taluk has an area on record) → Share (sources: the layout's verification panel).
 //
 //  i18n: page_map (en / kn / hi); the sub-district word (Taluk / Mandal /
 //  Tehsil…) comes from the shared subUnitOne / subUnits namespaces. Taluk
@@ -32,13 +32,13 @@ import { Map as MapIcon } from "lucide-react";
 import { useTaluks, useOverview, type Taluk } from "@/hooks/useRealtimeData";
 import {
   ModulePage, PageHeader, StatStrip, StatTile, Section, Card, LoadingShell,
-  EmptyState, SourcesFooter, Toolbar,
+  EmptyState,
 } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { OTHER_SHADE, ShareDonut, type DonutSlice } from "@/components/community/CommunityVisuals";
-import { EmojiChip, TapCard } from "@/components/community/TapCard";
-import { SharePageButton } from "@/components/community/pageTools";
+import { TapCard } from "@/components/community/TapCard";
+import { PageActions } from "@/components/district/page-kit";
 import TalukMap from "@/components/map/TalukMap";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
@@ -104,7 +104,6 @@ function TalukCard({
   return (
     <TapCard
       onOpen={() => onOpen(tk)}
-      leading={<EmojiChip emoji={showVillages ? "🏘️" : "🏙️"} size={36} />}
       title={tk.name}
       subtitle={tk.nameLocal ? <span lang="und" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{tk.nameLocal}</span> : undefined}
       hint={t("details")}
@@ -166,7 +165,6 @@ function TalukSheet({
       onClose={onClose}
       title={tk.name}
       subtitle={tk.nameLocal ? <span lang="und">{tk.nameLocal}</span> : undefined}
-      emoji={showVillages ? "🏘️" : "🏙️"}
       hueClassName={hueClass("map")}
       footer={
         <Link
@@ -187,16 +185,14 @@ function TalukSheet({
             flex: "1 1 auto",
           }}
         >
-          <span className="ftp-emoji" aria-hidden>🧭</span>
           {t("openTaluk", { name: tk.name, unit: unitWord })}
         </Link>
       }
     >
       <DetailList
         rows={[
-          { emoji: "👥", label: t("population"), value: tk.population != null ? <span className="ftp-num">{f.number(tk.population)}</span> : notRecorded },
+          { label: t("population"), value: tk.population != null ? <span className="ftp-num">{f.number(tk.population)}</span> : notRecorded },
           {
-            emoji: "📐",
             label: t("area"),
             value:
               tk.area != null ? (
@@ -209,7 +205,6 @@ function TalukSheet({
               ),
           },
           {
-            emoji: "🏡",
             label: t("villages"),
             value: showVillages ? (
               <span className="ftp-num">
@@ -228,7 +223,6 @@ function TalukSheet({
       {showVillages && shown.length > 0 && (
         <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <h3 className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-            <span className="ftp-emoji" aria-hidden>🏡 </span>
             {t("villageNames", { n: villages, count: f.number(villages) })}
           </h3>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -324,11 +318,11 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
       />
       {isLoading && <LoadingShell rows={4} />}
 
-      {!isLoading && taluks.length === 0 && <EmptyState emoji="🗺️" title={t("noTaluks", { place: placeName })} body={t("noTaluksBody")} />}
+      {!isLoading && taluks.length === 0 && <EmptyState title={t("noTaluks", { place: placeName })} body={t("noTaluksBody")} />}
 
       {!isLoading && taluks.length > 0 && (
         <>
-          <Explainer emoji="🗺️">
+          <Explainer>
             {t.rich(simpleKey, {
               place: placeName,
               n: f.number(taluks.length),
@@ -340,12 +334,11 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
           </Explainer>
 
           <StatStrip cols={Math.min(4, Math.max(2, tileCount)) as 2 | 3 | 4}>
-            <StatTile emoji="🗺️" label={hideVillages ? t("zones") : unitMany} value={f.number(taluks.length)} />
-            {!hideVillages && <StatTile emoji="🏡" label={t("villages")} value={f.number(totalVillages)} />}
-            {overview?.area && <StatTile emoji="📐" label={t("area")} value={f.number(overview.area)} unit="km²" asOf={overviewAsOf} />}
+            <StatTile label={hideVillages ? t("zones") : unitMany} value={f.number(taluks.length)} />
+            {!hideVillages && <StatTile label={t("villages")} value={f.number(totalVillages)} />}
+            {overview?.area && <StatTile label={t("area")} value={f.number(overview.area)} unit="km²" asOf={overviewAsOf} />}
             {overview?.population && (
               <StatTile
-                emoji="👥"
                 label={t("population")}
                 value={f.number(overview.population / 100_000, { maximumFractionDigits: 1 })}
                 unit={t("lakh")}
@@ -355,7 +348,7 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
           </StatStrip>
 
           {/* The one picture: the map beside the taluk cards (stacked below 900 px). */}
-          <Section title={hideVillages ? t("mapSectionUrban") : t("mapSection", { unit: unitOne })} emoji="🧭">
+          <Section title={hideVillages ? t("mapSectionUrban") : t("mapSection", { unit: unitOne })}>
             {coverage.status === "loading" ? (
               <LoadingShell rows={2} />
             ) : showMap ? (
@@ -386,7 +379,6 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
                     border: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
                   }}
                 >
-                  <span className="ftp-emoji" aria-hidden style={{ fontSize: 18 }}>🧭</span>
                   <span>
                     {coverage.status === "partial"
                       ? t("coveragePartial", { n: f.number(coverage.features), total: f.number(taluks.length), units: unitsWord })
@@ -399,11 +391,10 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
           </Section>
 
           {allHaveArea && biggest && (
-            <Section emoji="📊" title={t("chartsTitle")}>
+            <Section title={t("chartsTitle")}>
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
                 <ChartCard
                   title={t("landTitle")}
-                  emoji="📐"
                   units={t("landUnits", { unit: unitWord })}
                   simple={t.rich("landSimple", { name: biggest.name, unit: unitWord, share: biggestShare, b: (c) => <strong>{c}</strong> })}
                   table={byArea.map((tk) => ({ label: tk.name, value: t("areaKm", { n: f.number(tk.area ?? 0) }) }))}
@@ -425,10 +416,9 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
       {/* The taluk shapes (public/geo/<district>-taluks.json) are approximate
           boxes, NOT OpenStreetMap boundaries. Credit the real source once
           surveyed polygons exist. */}
-      <SourcesFooter sources={[{ name: t("sourceShapes", { unit: unitWord }) }]} />
-      <Toolbar>
-        <SharePageButton />
-      </Toolbar>
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="map" compare={false} />
+      </div>
 
       {selected && (
         <TalukSheet
