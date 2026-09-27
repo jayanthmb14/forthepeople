@@ -1,7 +1,18 @@
+/**
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ * https://github.com/jayanthmb14/forthepeople
+ */
+
 // Factual-only red flag pill. Throws at runtime if statement contains banned adjectives.
+//
+// Design v3: a kit Pill in the danger tone with a Lucide flag icon. Hover
+// (title) shows the full factual statement and the rule it references.
 
 "use client";
 
+import { Flag } from "lucide-react";
+import { Pill } from "@/components/district/ui";
 import { assertFactualCopy } from "@/lib/tenders/format";
 
 const LABELS: Record<string, string> = {
@@ -30,25 +41,14 @@ export default function RedFlagBadge({
     console.error(err);
   }
   return (
-    <div
-      role="note"
-      title={`${factualStatement}${referenceRule ? ` — Reference: ${referenceRule}` : ""}`}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "6px 12px",
-        background: "#FEF2F2",
-        border: "1px solid #FCA5A5",
-        borderRadius: 999,
-        fontSize: 12,
-        color: "#991B1B",
-        fontWeight: 600,
-        cursor: "help",
-      }}
-    >
-      <span>◆</span>
-      <span>{LABELS[flagType] ?? flagType}</span>
-    </div>
+    <span role="note" style={{ display: "inline-flex", cursor: "help" }}>
+      <Pill
+        tone="danger"
+        icon={Flag}
+        title={`${factualStatement}${referenceRule ? ` — Reference: ${referenceRule}` : ""}`}
+      >
+        {LABELS[flagType] ?? flagType}
+      </Pill>
+    </span>
   );
 }
