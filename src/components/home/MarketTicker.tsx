@@ -61,6 +61,31 @@ function refreshLabelFor(symbol: string): string {
   }
 }
 
+/** A small picture per figure (Design v4) so the strip reads at a glance. */
+function emojiFor(symbol: string): string {
+  switch (symbol) {
+    case "SENSEX":
+    case "NIFTY50":
+    case "NIFTYBANK":
+      return "📈";
+    case "USD_INR":
+    case "EUR_INR":
+      return "💱";
+    case "BTC_INR":
+    case "ETH_INR":
+      return "🪙";
+    case "GOLD":
+      return "🥇";
+    case "SILVER":
+      return "🥈";
+    case "PETROL":
+    case "DIESEL":
+      return "⛽";
+    default:
+      return "•";
+  }
+}
+
 /** Indian markets: Mon–Fri, 09:15–15:30 IST. IST = UTC+5:30, no DST. */
 function isMarketOpen(nowMs: number): boolean {
   const ist = new Date(nowMs + (5 * 60 + 30) * 60 * 1000);
@@ -121,6 +146,7 @@ export default function MarketTicker() {
         className={styles.tickerItem}
         title={`${it.label} · refreshed ${refreshLabelFor(it.symbol)}`}
       >
+        <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>{emojiFor(it.symbol)}</span>
         <span className={styles.tickerLabel}>{it.label}</span>
         <span className="ftp-num">{it.value}</span>
         <span
