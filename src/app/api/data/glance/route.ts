@@ -27,7 +27,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
-import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERT } from "@/lib/data-filters";
+import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_BUDGET, OFFICIAL_ALERT } from "@/lib/data-filters";
 import type { GlanceData } from "@/components/district/shell/glance-types";
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 import { isCollectorRole } from "@/lib/leader-roles";
@@ -110,8 +110,9 @@ export async function GET(req: NextRequest) {
       orderBy: { year: "desc" },
       select: { year: true, population: true },
     }),
+    // Seed rows are never a district budget (NOT_SEEDED_BUDGET, data-filters).
     prisma.budgetEntry.findFirst({
-      where: { districtId: did },
+      where: { districtId: did, ...NOT_SEEDED_BUDGET },
       orderBy: { fiscalYear: "desc" },
       select: { fiscalYear: true },
     }),
@@ -144,7 +145,7 @@ export async function GET(req: NextRequest) {
   let budget: GlanceData["budget"] = null;
   if (newestBudget) {
     const rows = await prisma.budgetEntry.findMany({
-      where: { districtId: did, fiscalYear: newestBudget.fiscalYear },
+      where: { districtId: did, fiscalYear: newestBudget.fiscalYear, ...NOT_SEEDED_BUDGET },
       select: { allocated: true, source: true },
     });
     const allocated = rows.reduce((s, r) => s + (r.allocated || 0), 0);

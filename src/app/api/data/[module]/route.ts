@@ -21,6 +21,7 @@ import {
   NJDG_COURTSTAT,
   NOT_FROM_NEWS,
   NOT_FROM_NEWS_OPTIONAL,
+  NOT_SEEDED_BUDGET,
   NOT_SEEDED_RAINFALL,
   SHOWN_CRIME,
   SHOWN_TRAFFIC,
@@ -186,7 +187,7 @@ async function fetchModule(
     case "budget": {
       const [entries, allocations] = await Promise.all([
         prisma.budgetEntry.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...NOT_SEEDED_BUDGET },
           orderBy: [{ fiscalYear: "desc" }, { sector: "asc" }],
         }),
         prisma.budgetAllocation.findMany({

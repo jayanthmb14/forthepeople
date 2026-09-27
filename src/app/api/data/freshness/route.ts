@@ -42,7 +42,7 @@ import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapsho
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
-import { VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { SEEDED_BUDGET_SOURCES, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
 
 export const runtime = "nodejs";
 
@@ -119,7 +119,7 @@ interface Row {
 
 async function queryRow(districtId: string): Promise<Row | null> {
   // Filters match what the pages show (src/lib/data-filters.ts):
-  // NOT_FROM_NEWS (source not a URL), LOCAL_INFRA (DISTRICT/CITY scope),
+  // NOT_FROM_NEWS (source not a URL), NOT_SEEDED_BUDGET, LOCAL_INFRA (DISTRICT/CITY scope),
   // NJDG_COURTSTAT, JJM_DISTRICT_TOTAL, SHOWN_CRIME / SHOWN_TRAFFIC (no
   // estimates), news without duplicates, active leaders / industries / people.
   const rows = await prisma.$queryRaw<Row[]>`
@@ -151,13 +151,13 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT max(x."fetchedAt") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%') AS traffic_checked,
       (SELECT count(*) FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%')::int AS traffic_rows,
       (SELECT count(*) FROM "PoliceStation" x WHERE x."districtId" = d.id)::int AS stations_rows,
-      (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id) AS budget_fy,
-      (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id) AS budget_checked,
-      (SELECT count(*) FROM "BudgetEntry" x WHERE x."districtId" = d.id)::int AS budget_rows,
+      (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND COALESCE(x.source, '') <> ALL(${SEEDED_BUDGET_SOURCES})) AS budget_fy,
+      (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND COALESCE(x.source, '') <> ALL(${SEEDED_BUDGET_SOURCES})) AS budget_checked,
+      (SELECT count(*) FROM "BudgetEntry" x WHERE x."districtId" = d.id AND COALESCE(x.source, '') <> ALL(${SEEDED_BUDGET_SOURCES}))::int AS budget_rows,
       EXISTS (
         SELECT 1 FROM "BudgetEntry" x
-        WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%'
-          AND x."fiscalYear" = (SELECT max(y."fiscalYear") FROM "BudgetEntry" y WHERE y."districtId" = d.id)
+        WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%' AND COALESCE(x.source, '') <> ALL(${SEEDED_BUDGET_SOURCES})
+          AND x."fiscalYear" = (SELECT max(y."fiscalYear") FROM "BudgetEntry" y WHERE y."districtId" = d.id AND COALESCE(y.source, '') <> ALL(${SEEDED_BUDGET_SOURCES}))
       ) AS budget_estimate,
       (SELECT max(x."lastVerifiedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY'))) AS infra_date,
       (SELECT max(x."updatedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY'))) AS infra_checked,
