@@ -26,6 +26,7 @@ import { useModuleText } from "@/i18n/client";
 import { CountUp } from "@/components/district/ui";
 import OverviewCard from "./OverviewCard";
 import { MoneyMark } from "./overview-art";
+import { isPastFiscalYear } from "./fiscal";
 
 function GoldRing({ pct, size = 76 }: { pct: number; size?: number }) {
   const stroke = 9;
@@ -60,7 +61,7 @@ export default function MoneySnippet({ district, state, base }: { district: stri
   const mt = useModuleText();
   const money = useMoney();
   const fresh = useFreshness(state, district);
-  const { data: budgetData } = useBudget(district, state);
+  const { data: budgetData, dataUpdatedAt } = useBudget(district, state);
 
   const all = budgetData?.data?.entries ?? [];
   const fy = all.length > 0 ? all[0].fiscalYear : null;
@@ -71,7 +72,7 @@ export default function MoneySnippet({ district, state, base }: { district: stri
 
   const share = spent / allocated;
   const estimated = rows.some((e) => /estimat/i.test(e.source ?? ""));
-  const late = fresh.primary("finance")?.status === "late";
+  const late = fresh.primary("finance")?.status === "late" || isPastFiscalYear(fy, dataUpdatedAt);
 
   return (
     <OverviewCard

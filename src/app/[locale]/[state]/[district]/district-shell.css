@@ -348,6 +348,23 @@
 .ftp-tile[data-tone="danger"]::before { background: color-mix(in srgb, var(--ftp-danger) 14%, transparent); }
 .ftp-tile[data-tone="danger"] .ftp-tile-art, .ftp-tile[data-tone="danger"] .ftp-tile-label, .ftp-tile[data-tone="danger"] .ftp-tile-value { color: var(--ftp-danger); }
 .ftp-tile-skeleton { height: 124px; border-radius: 16px; }
+/* Double-check mark (when /api/data/verification says so). */
+.ftp-tile-check {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ftp-live-tint);
+  color: var(--ftp-live-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ftp-live) 30%, transparent);
+}
+.ftp-tile-check[data-status="disagreement"] { background: var(--ftp-warn-tint); color: var(--ftp-warn-text); box-shadow: inset 0 0 0 1px var(--ftp-warn-border); }
+.ftp-tile:has(.ftp-tile-check) .ftp-tile-sub { padding-right: 26px; }
 @media (max-width: 639px) {
   .ftp-tile { min-height: 116px; padding: 12px; }
   .ftp-tile-art { width: 40px; height: 40px; border-radius: 12px; top: 8px; right: 8px; }

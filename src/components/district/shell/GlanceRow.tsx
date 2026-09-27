@@ -29,7 +29,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, BadgeCheck, ClipboardCheck } from "lucide-react";
+import { AlertTriangle, BadgeCheck, ClipboardCheck, ShieldCheck } from "lucide-react";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat } from "@/i18n/client";
 import { useMoney } from "@/components/money/useMoney";
@@ -37,10 +37,14 @@ import { useFreshness } from "@/hooks/useFreshness";
 import { CountUp } from "@/components/district/ui";
 import { ElectionMark, MoneyMark, PeopleMark, ProjectsMark } from "./overview-art";
 import type { GlanceData } from "./glance-types";
+import { useVerification } from "./useVerification";
+import { isPastFiscalYear } from "./fiscal";
 
 interface Tile {
   key: string;
   module: string;
+  /** Dataset key (src/lib/freshness.ts) for the double-check mark. */
+  dataset?: string;
   /** The tile's picture (overview-art.tsx) or icon, in its module's hue. */
   art: React.ReactNode;
   label: string;
@@ -70,6 +74,7 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
   const money = useMoney();
   const fresh = useFreshness(stateSlug, districtSlug);
   const districtName = useDistrictName(stateSlug, districtSlug);
+  const verification = useVerification(stateSlug, districtSlug);
   const { data, isLoading, dataUpdatedAt } = useQuery<GlanceData>({
     queryKey: ["glance", stateSlug, districtSlug],
     queryFn: async () => {
@@ -118,6 +123,7 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
     if (data.population) {
       tiles.push({
         key: "people",
+        dataset: "census",
         module: "population",
         art: <PeopleMark size={34} />,
         label: t("glance.people"),
@@ -131,6 +137,7 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
     if (data.projects && data.projects.active > 0) {
       tiles.push({
         key: "projects",
+        dataset: "projects",
         module: "infrastructure",
         art: <ProjectsMark size={34} />,
         label: td("tiles.projects"),
@@ -141,9 +148,12 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
       });
     }
     if (data.budget) {
-      const late = fresh.primary("finance")?.status === "late";
+      const late =
+        fresh.primary("finance")?.status === "late" ||
+        isPastFiscalYear(data.budget.fiscalYear, dataUpdatedAt || new Date(data.checkedAt).getTime());
       tiles.push({
         key: "budget",
+        dataset: "budget",
         module: "finance",
         art: <MoneyMark size={34} />,
         label: td("tiles.budget"),
@@ -168,6 +178,7 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
       const date = monthYear(data.election.date);
       tiles.push({
         key: "election",
+        dataset: "elections",
         module: "elections",
         art: <ElectionMark size={34} />,
         label: t("glance.nextVote"),
@@ -193,6 +204,7 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
       const many = (data.mp.count ?? 1) > 1;
       tiles.push({
         key: "mp",
+        dataset: "leaders",
         module: "leadership",
         art: <IconArt icon={BadgeCheck} />,
         label: many ? t("glance.mps") : t("glance.mp"),
@@ -230,6 +242,18 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
                 <span className="ftp-tile-value" data-kind={c.count ? "num" : "text"}>
                   {c.count ? <CountUp value={c.value} /> : c.value}
                 </span>
+                {(() => {
+                  // v5.1: a small mark when a second source was compared.
+                  const v = c.dataset && verification ? verification[c.dataset] : undefined;
+                  if (!v || (v.status !== "verified" && v.status !== "disagreement")) return null;
+                  const Icon = v.status === "verified" ? ShieldCheck : AlertTriangle;
+                  return (
+                    <span className="ftp-tile-check" data-status={v.status} title={td(`verify.chip.${v.status}`)}>
+                      <Icon size={13} aria-hidden />
+                      <span className="sr-only">{td(`verify.chip.${v.status}`)}</span>
+                    </span>
+                  );
+                })()}
                 {(c.sub || c.flag) && (
                   <span className="ftp-tile-sub">
                     {c.sub && <span className="ftp-tile-sub-text">{c.sub}</span>}
