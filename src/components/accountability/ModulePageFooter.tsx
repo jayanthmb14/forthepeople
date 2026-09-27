@@ -37,6 +37,7 @@ export default function ModulePageFooter({
   sourceUrls = {},
   actions,
   showCompare = true,
+  children,
 }: {
   /**
    * Links for registry source names, e.g.
@@ -53,6 +54,8 @@ export default function ModulePageFooter({
   extraSources?: SourceEntry[];
   /** Extra toolbar buttons, e.g. a CSV download. */
   actions?: React.ReactNode;
+  /** Rendered between the sources and the toolbar (e.g. <ModuleNews />). */
+  children?: React.ReactNode;
   /** Hide the Compare button on pages where comparing makes no sense. */
   showCompare?: boolean;
 }) {
@@ -91,6 +94,7 @@ export default function ModulePageFooter({
         ForThePeople.in is NOT an official government website. Data aggregated from publicly available government
         portals under India&apos;s Open Data Policy (NDSAP).
       </p>
+      {children}
       <Toolbar>
         {actions}
         <ToolbarButton icon={copied ? Check : Share2} onClick={share} ariaLabel="Share this page">
