@@ -1,10 +1,13 @@
 /**
- * DataQualityChip — PUBLISHED / DERIVED / ESTIMATED chip.
+ * DataQualityChip — Published / Worked out / Estimate chip.
  *
- * Authenticity move #8 (file 45 §6). Always uppercase.
+ * Authenticity move #8 (file 45 §6). Sentence case (Design v4), translated
+ * through page_india "quality.*". Works in server and client components.
  */
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
+import { INDIA_NS } from "../i18n";
 
 export type DataQualityKind = "published" | "derived" | "estimated";
 
@@ -13,31 +16,35 @@ export interface DataQualityChipProps {
   className?: string;
 }
 
-const PALETTE: Record<DataQualityKind, { bg: string; fg: string }> = {
-  published: { bg: "#EAF3DE", fg: "#27500A" },
-  derived: { bg: "var(--color-background-secondary)", fg: "var(--color-text-secondary)" },
-  estimated: { bg: "#FAEEDA", fg: "#854F0B" },
-};
-
-const BASE_STYLE: React.CSSProperties = {
-  fontSize: "11px",
-  fontWeight: 600,
-  // Design v4: sentence case ("Published"), no tracked-out capitals.
-  textTransform: "capitalize",
-  borderRadius: "3px",
-  padding: "1px 5px",
-  display: "inline-block",
-  lineHeight: 1.4,
+const PALETTE: Record<DataQualityKind, { bg: string; fg: string; emoji: string }> = {
+  published: { bg: "#EAF3DE", fg: "#27500A", emoji: "✅" },
+  derived: { bg: "var(--ftp-surface-2)", fg: "var(--ftp-text-2)", emoji: "🧮" },
+  estimated: { bg: "#FAEEDA", fg: "#854F0B", emoji: "〰️" },
 };
 
 export function DataQualityChip({ quality, className }: DataQualityChipProps) {
-  const { bg, fg } = PALETTE[quality];
+  const t = useTranslations(INDIA_NS);
+  const { bg, fg, emoji } = PALETTE[quality] ?? PALETTE.published;
   return (
     <span
-      style={{ ...BASE_STYLE, background: bg, color: fg }}
       className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontSize: 12,
+        lineHeight: "18px",
+        fontWeight: 600,
+        borderRadius: 999,
+        padding: "1px 9px 1px 7px",
+        background: bg,
+        color: fg,
+      }}
     >
-      {quality}
+      <span className="ftp-emoji" aria-hidden style={{ fontSize: 11 }}>
+        {emoji}
+      </span>
+      {t(`quality.${quality}`)}
     </span>
   );
 }

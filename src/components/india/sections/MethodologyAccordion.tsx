@@ -1,102 +1,104 @@
 "use client";
 
 /**
- * MethodologyAccordion — 4-row accordion per Mockup 2.
+ * MethodologyAccordion — "How it is measured" rows per Mockup 2.
  *
- * Rows are module-specific. Phase 4: hardcoded rows for Wildlife/Tigers.
- * Phase 5: rows come from a JSON config keyed by module slug.
+ * Rows are module-specific and live in the "page_india-module" messages
+ * under `<group>.<key>.title` / `.body` (e.g. tigers.camera.title), so each
+ * row is translated like the rest of the page. The route passes the keys
+ * and the source PDF links.
  */
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
+import { ChevronDown, ExternalLink } from "lucide-react";
 
 export interface MethodologyRow {
-  title: string;
-  body: string;
+  key: string;
   pdfUrl?: string;
 }
 
 export interface MethodologyAccordionProps {
   rows: MethodologyRow[];
+  /** Message group holding the rows, e.g. "tigers". */
+  group: string;
   className?: string;
 }
 
-export function MethodologyAccordion({ rows, className }: MethodologyAccordionProps) {
-  const [open, setOpen] = React.useState<number | null>(null);
+const ROW_EMOJI = ["📷", "🔢", "🧭", "📄", "🔍"];
+
+export function MethodologyAccordion({ rows, group, className }: MethodologyAccordionProps) {
+  const t = useTranslations("page_india-module");
+  const [open, setOpen] = React.useState<number | null>(0);
+  const baseId = React.useId();
 
   return (
     <section
       className={className}
       style={{
-        background: "var(--color-surface)",
-        border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: "var(--border-radius-lg)",
-        padding: "18px 22px",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
+        padding: "18px 20px",
         marginTop: "1.5rem",
       }}
     >
-      <h2
-        style={{
-          fontFamily: "var(--ftp-font-display)",
-          fontSize: "20px",
-          fontWeight: 600,
-          letterSpacing: "-0.01em",
-          margin: "0 0 12px",
-        }}
-      >
-        Methodology
+      <h2 className="ftp-h2" style={{ fontSize: 20, lineHeight: "26px", display: "flex", alignItems: "center", gap: 10, margin: "0 0 8px" }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>
+          🔬
+        </span>
+        {t("data.methodTitle")}
       </h2>
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {rows.map((row, i) => {
           const isOpen = open === i;
+          const panelId = `${baseId}-${i}`;
           return (
-            <li
-              key={i}
-              style={{
-                borderTop: i === 0 ? "none" : "0.5px solid var(--color-border-tertiary)",
-              }}
-            >
+            <li key={row.key} style={{ borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
                 aria-expanded={isOpen}
+                aria-controls={panelId}
                 style={{
                   width: "100%",
-                  textAlign: "left",
+                  textAlign: "start",
                   background: "transparent",
                   border: "none",
                   padding: "12px 0",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "var(--color-text-primary)",
+                  minHeight: 44,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "var(--ftp-text)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
+                  gap: 10,
                 }}
               >
-                <span>{row.title}</span>
-                <span aria-hidden style={{ fontSize: "10px", color: "var(--color-text-tertiary)" }}>
-                  {isOpen ? "▾" : "▸"}
+                <span className="ftp-emoji" aria-hidden>
+                  {ROW_EMOJI[i % ROW_EMOJI.length]}
                 </span>
+                <span style={{ flex: 1 }}>{t(`${group}.${row.key}.title`)}</span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden
+                  style={{ color: "var(--ftp-text-2)", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }}
+                />
               </button>
               {isOpen && (
-                <div
-                  style={{
-                    paddingBottom: "14px",
-                    fontSize: "13px",
-                    lineHeight: 1.6,
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  <p style={{ margin: "0 0 8px" }}>{row.body}</p>
+                <div id={panelId} style={{ padding: "0 0 14px 28px", fontSize: 14, lineHeight: 1.65, color: "var(--ftp-text-2)" }}>
+                  <p style={{ margin: "0 0 8px" }}>{t(`${group}.${row.key}.body`)}</p>
                   {row.pdfUrl && (
                     <a
                       href={row.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "var(--color-text-info)", fontSize: "12px" }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--hue-deep)", fontWeight: 600, fontSize: 13 }}
                     >
-                      View source PDF ↗
+                      {t("data.viewPdf")}
+                      <ExternalLink size={12} aria-hidden />
                     </a>
                   )}
                 </div>

@@ -16,8 +16,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Flag, Send, X } from "lucide-react";
 import { INDIA_DESIGN } from "@/lib/india/india-design";
+import { INDIA_NS } from "./i18n";
 
 interface Props {
   /**
@@ -26,9 +28,13 @@ interface Props {
    * still describe the issue in free text.
    */
   moduleSlug?: string;
+  /** Translated module name shown in the form (the slug is still what gets sent). */
+  moduleLabel?: string;
 }
 
-export default function IndiaReportIssueButton({ moduleSlug }: Props) {
+export default function IndiaReportIssueButton({ moduleSlug, moduleLabel }: Props) {
+  const t = useTranslations(INDIA_NS);
+  const ti = useTranslations("india");
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittedOk, setSubmittedOk] = useState(false);
@@ -41,7 +47,7 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!subject.trim() || !message.trim()) {
-      setError("Please add a short subject and a description.");
+      setError(t("report.needBoth"));
       return;
     }
     setSubmitting(true);
@@ -61,14 +67,13 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
         }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Submission failed (${res.status}).`);
+        throw new Error(t("report.failed", { status: res.status }));
       }
       setSubmittedOk(true);
       setSubject("");
       setMessage("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Submission failed.");
+      setError(err instanceof Error && err.message ? err.message : t("report.failedGeneric"));
     } finally {
       setSubmitting(false);
     }
@@ -85,7 +90,7 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Report an issue with the data on this page"
+        aria-label={t("report.openAria")}
         style={{
           position: "fixed",
           right: 18,
@@ -107,13 +112,13 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
         }}
       >
         <Flag size={16} aria-hidden="true" color={INDIA_DESIGN.accentBlue} />
-        Report an issue
+        {t("report.open")}
       </button>
 
       {open ? (
         <div
           role="dialog"
-          aria-label="Report an issue"
+          aria-label={t("report.title")}
           aria-modal="true"
           onClick={close}
           style={{
@@ -157,12 +162,12 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
                   fontFamily: INDIA_DESIGN.fontDisplay,
                 }}
               >
-                Report an issue
+                {t("report.title")}
               </h2>
               <button
                 type="button"
                 onClick={close}
-                aria-label="Close"
+                aria-label={t("report.close")}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -190,11 +195,8 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
                   lineHeight: 1.55,
                 }}
               >
-                <strong style={{ color: INDIA_DESIGN.textPrimary }}>
-                  Thanks — report received.
-                </strong>{" "}
-                We&apos;ll review it. You&apos;ll see a reply on the email you
-                provided if it qualifies for one.
+                <strong style={{ color: INDIA_DESIGN.textPrimary }}>{t("report.thanksTitle")}</strong>{" "}
+                {t("report.thanksBody")}
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10 }}>
@@ -206,33 +208,32 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
                     lineHeight: 1.55,
                   }}
                 >
-                  Spotted an error, missing source, or something out of date?
-                  Tell us — we&apos;ll fix it. Module:{" "}
-                  <code style={{ fontFamily: INDIA_DESIGN.fontMono }}>
-                    {moduleSlug ?? "india-page"}
-                  </code>
+                  {t.rich("report.intro", {
+                    module: moduleLabel ?? ti("breadcrumb.india"),
+                    b: (chunks) => <strong style={{ color: INDIA_DESIGN.textPrimary }}>{chunks}</strong>,
+                  })}
                 </p>
 
-                <Field label="What's wrong? (subject)">
+                <Field label={t("report.subject")}>
                   <input
                     type="text"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     maxLength={200}
                     required
-                    placeholder="e.g. Tiger count looks off for Karnataka"
+                    placeholder={t("report.subjectPlaceholder")}
                     style={inputStyle}
                   />
                 </Field>
 
-                <Field label="Description">
+                <Field label={t("report.message")}>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     maxLength={2000}
                     required
                     rows={4}
-                    placeholder="What did you see, and what should it have been? Link a source if you have one."
+                    placeholder={t("report.messagePlaceholder")}
                     style={{ ...inputStyle, resize: "vertical", minHeight: 100 }}
                   />
                 </Field>
@@ -240,11 +241,11 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
                     gap: 10,
                   }}
                 >
-                  <Field label="Your name (optional)">
+                  <Field label={t("report.name")}>
                     <input
                       type="text"
                       value={name}
@@ -253,13 +254,13 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
                       style={inputStyle}
                     />
                   </Field>
-                  <Field label="Your email (optional)">
+                  <Field label={t("report.email")}>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       maxLength={200}
-                      placeholder="we'll only use this to reply"
+                      placeholder={t("report.emailPlaceholder")}
                       style={inputStyle}
                     />
                   </Field>
@@ -303,7 +304,7 @@ export default function IndiaReportIssueButton({ moduleSlug }: Props) {
                   }}
                 >
                   <Send size={14} aria-hidden="true" />
-                  {submitting ? "Sending…" : "Send report"}
+                  {submitting ? t("report.sending") : t("report.send")}
                 </button>
               </form>
             )}

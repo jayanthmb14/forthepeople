@@ -1,25 +1,21 @@
 "use client";
 
 /**
- * CountUpNumber — animates a numeric value from 0 to its target on
- * first viewport entry. File 47 §4.6.3.
+ * CountUpNumber — shows a number and counts it up from 0 once, the first
+ * time it scrolls into view. File 47 §4.6.3.
  *
- * Uses requestAnimationFrame (not setInterval) for smooth ticking.
- * Respects prefers-reduced-motion: reduce → falls back to instant render.
- * Fires once per page load — never re-animates.
+ * Server HTML (and the first client render) always carries the real
+ * value, so the number is right before JavaScript runs, for crawlers and
+ * for anyone with scripts off. (It used to render "0" until the count-up
+ * fired.) The count-up only starts after mount, when the element becomes
+ * visible; prefers-reduced-motion skips it entirely. Screen readers get
+ * the final value only.
  *
- * Defaults:
- *   duration: 800ms
- *   easing:   cubic-bezier(0.22, 1, 0.36, 1)  (ease-out)
- *
- * Where to USE: hero KPI strip, super-category mini-stats, module deep-dive
- * headline KPI, table-view headline column.
- *
- * Where NOT to use: grid card numbers, hover-revealed values, delta percentages,
- * "India in the world" rank numbers, tooltip numbers.
+ * Numbers are formatted in the page language (Indian digit grouping).
  */
 
 import * as React from "react";
+import { useFormat } from "@/i18n/client";
 import { formatIndiaNumber, type FormatStyle } from "@/lib/india/format-number";
 
 export interface CountUpNumberProps {
@@ -41,17 +37,12 @@ export interface CountUpNumberProps {
 
 const EASE_OUT_CUBIC = (t: number): number => 1 - Math.pow(1 - t, 3);
 
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = React.useState(false);
-  React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mql.matches);
-    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mql.addEventListener?.("change", onChange);
-    return () => mql.removeEventListener?.("change", onChange);
-  }, []);
-  return reduced;
+/** Same magnitude rule as formatIndiaNumber, fixed from the final value so digits do not jump while counting. */
+function autoDecimals(n: number): number {
+  const abs = Math.abs(n);
+  if (abs < 10) return 2;
+  if (abs < 100) return 1;
+  return 0;
 }
 
 export function CountUpNumber({
@@ -66,94 +57,62 @@ export function CountUpNumber({
   className,
   inlineStyle,
 }: CountUpNumberProps) {
-  const reducedMotion = useReducedMotion();
-  const [current, setCurrent] = React.useState<number>(reducedMotion ? target : 0);
+  const { intl } = useFormat();
+  // null = show the final value (SSR, before the animation, after it ends).
+  const [frame, setFrame] = React.useState<number | null>(null);
   const elementRef = React.useRef<HTMLSpanElement | null>(null);
-  const fired = React.useRef(false);
 
   React.useEffect(() => {
-    if (reducedMotion) {
-      setCurrent(target);
-      return;
-    }
-    if (typeof window === "undefined") return;
-
     const node = elementRef.current;
-    if (!node) return;
+    if (!node || typeof window === "undefined" || target === 0) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
     let rafId: number | null = null;
-    let initialCheckRafId: number | null = null;
-    let observer: IntersectionObserver | null = null;
     let timeoutId: number | null = null;
+    let started = false;
 
-    const startAnimation = () => {
-      if (fired.current) return;
-      fired.current = true;
+    const run = () => {
       const startTime = performance.now();
       const tick = (now: number) => {
         const t = Math.min((now - startTime) / duration, 1);
-        const eased = EASE_OUT_CUBIC(t);
-        setCurrent(target * eased);
         if (t < 1) {
+          setFrame(target * EASE_OUT_CUBIC(t));
           rafId = requestAnimationFrame(tick);
+        } else {
+          setFrame(null);
         }
       };
       rafId = requestAnimationFrame(tick);
     };
 
-    const fire = () => {
-      if (delay > 0) {
-        timeoutId = window.setTimeout(startAnimation, delay);
-      } else {
-        startAnimation();
-      }
-      observer?.disconnect();
-    };
-
-    observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            fire();
-          }
-        }
+        if (started || !entries.some((e) => e.isIntersecting)) return;
+        started = true;
+        observer.disconnect();
+        if (delay > 0) timeoutId = window.setTimeout(run, delay);
+        else run();
       },
       { threshold: 0.3 },
     );
     observer.observe(node);
 
-    // IntersectionObserver only fires on threshold *crossings*. An element
-    // that's already visible at observer-init time (e.g. hero KPI tiles
-    // above the fold on initial page load) never crosses the threshold,
-    // so it stays at 0 indefinitely. Manually check visibility one
-    // animation frame after mount so layout has settled before we measure.
-    initialCheckRafId = requestAnimationFrame(() => {
-      if (fired.current) return;
-      const rect = node.getBoundingClientRect();
-      if (rect.height <= 0) return;
-      const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
-      const visibleHeight =
-        Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-      if (inViewport && visibleHeight >= rect.height * 0.3) {
-        fire();
-      }
-    });
-
     return () => {
+      observer.disconnect();
       if (rafId !== null) cancelAnimationFrame(rafId);
-      if (initialCheckRafId !== null) cancelAnimationFrame(initialCheckRafId);
       if (timeoutId !== null) window.clearTimeout(timeoutId);
-      observer?.disconnect();
     };
-  }, [target, duration, delay, reducedMotion]);
+  }, [target, duration, delay]);
 
-  const display = formatFn
-    ? formatFn(current)
-    : formatIndiaNumber(current, { decimals, style, prefix, suffix });
+  const fixedDecimals = decimals ?? (style === undefined || style === "auto" ? autoDecimals(target) : undefined);
+  const format = (v: number) =>
+    formatFn ? formatFn(v) : formatIndiaNumber(v, { decimals: fixedDecimals, style, prefix, suffix, locale: intl });
+  const finalText = format(target);
 
   return (
     <span ref={elementRef} className={className} style={inlineStyle}>
-      {display}
+      <span aria-hidden={frame !== null ? true : undefined}>{frame !== null ? format(frame) : finalText}</span>
+      {frame !== null ? <span className="sr-only">{finalText}</span> : null}
     </span>
   );
 }

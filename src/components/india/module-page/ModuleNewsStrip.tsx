@@ -2,26 +2,33 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Module-specific news strip — top 6 NewsItem rows whose title or
- * description matches any of the module.newsKeywords. Falls back to
- * top 6 newest district-tagged news if no keyword match exists.
+ * Module-specific news strip — up to 6 NewsItem rows whose title or
+ * description matches any of the module's news keywords, newest first.
+ * When nothing matches it says so (it no longer fills the strip with
+ * unrelated district news, which read as if it were about this module).
  *
- * Server component (Prisma query). Per file 31 §4: headline +
- * 1-line meta + outbound source link only — no article paragraphs.
+ * Server component (Prisma). Headlines are live data: they are shown in
+ * the stored translation when one exists (localizeRows), otherwise in
+ * English marked lang="en". Per file 31 §4: headline, one meta line and
+ * the outbound link only.
  */
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
-import { INDIA_DESIGN } from "@/lib/india/india-design";
-import { EmptyState } from "@/components/district/ui";
-import { IndiaSectionTitle } from "./v4";
+import { localizeRows } from "@/lib/translation/overlay";
+import { EmptyState, Section } from "@/components/district/ui";
+import { fmtDate } from "../format";
 
 interface Props {
+  locale: string;
   newsKeywords: string[];
   moduleTitle: string;
 }
 
-export default async function ModuleNewsStrip({ newsKeywords, moduleTitle }: Props) {
-  // Build OR clauses across all keywords against title + description
+export default async function ModuleNewsStrip({ locale, newsKeywords, moduleTitle }: Props) {
+  const t = await getTranslations({ locale, namespace: "page_india-module" });
+  const tn = await getTranslations({ locale, namespace: "moduleNews" });
+
   const orClauses = newsKeywords.flatMap((kw) => [
     { title: { contains: kw, mode: "insensitive" as const } },
     { description: { contains: kw, mode: "insensitive" as const } },
@@ -34,126 +41,90 @@ export default async function ModuleNewsStrip({ newsKeywords, moduleTitle }: Pro
     publisher: string | null;
     source: string;
     publishedAt: Date;
-    district: { name: string; slug: string; state: { slug: string } } | null;
+    district: { name: string } | null;
   }> = [];
 
   try {
-    items = await prisma.newsItem.findMany({
-      where: {
-        duplicateOf: null,
-        OR: orClauses,
-      },
+    const rows = await prisma.newsItem.findMany({
+      where: { duplicateOf: null, OR: orClauses },
       orderBy: { publishedAt: "desc" },
       take: 6,
-      include: {
-        district: { select: { slug: true, name: true, state: { select: { slug: true } } } },
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        publisher: true,
+        source: true,
+        publishedAt: true,
+        district: { select: { name: true } },
       },
     });
-
-    // Fallback if zero matches — show 6 most recent district-tagged
-    if (items.length === 0) {
-      items = await prisma.newsItem.findMany({
-        where: { duplicateOf: null, districtId: { not: null } },
-        orderBy: { publishedAt: "desc" },
-        take: 6,
-        include: {
-          district: { select: { slug: true, name: true, state: { select: { slug: true } } } },
-        },
-      });
-    }
+    items = await localizeRows("news", rows, locale === "en" ? null : locale);
   } catch {
     items = [];
   }
 
-  if (items.length === 0) {
-    return (
-      <section
-        style={{
-          padding: "28px 16px",
-          background: INDIA_DESIGN.bgPage,
-          borderBottom: `1px solid ${INDIA_DESIGN.border}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <IndiaSectionTitle emoji="📰">News on {moduleTitle}</IndiaSectionTitle>
-          <EmptyState
-            emoji="📰"
-            title={`No news matched ${moduleTitle} yet.`}
-            body="We index district-tagged news today; national news is not connected yet."
-          />
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section
-      style={{
-        padding: "28px 16px",
-        background: INDIA_DESIGN.bgPage,
-        borderBottom: `1px solid ${INDIA_DESIGN.border}`,
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <IndiaSectionTitle emoji="📰">News on {moduleTitle}</IndiaSectionTitle>
-        <div
+    <Section title={t("news.title", { module: moduleTitle })} emoji="📰">
+      {items.length === 0 ? (
+        <EmptyState
+          emoji="📰"
+          title={t("news.emptyTitle", { module: moduleTitle })}
+          body={t("news.emptyBody")}
+        />
+      ) : (
+        <ul
           style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 10,
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
+            gap: 12,
           }}
         >
-          {items.map((n) => (
-            <a
-              key={n.id}
-              href={n.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                background: INDIA_DESIGN.bgCard,
-                border: `1px solid ${INDIA_DESIGN.border}`,
-                borderRadius: 10,
-                padding: "12px 14px",
-                textDecoration: "none",
-                color: INDIA_DESIGN.textPrimary,
-                display: "block",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  lineHeight: 1.4,
-                  marginBottom: 4,
-                }}
-              >
-                {n.title}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: INDIA_DESIGN.textFaint,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span>{n.district?.name ?? "India"}</span>
-                <span>·</span>
-                <span>{n.publisher ?? n.source}</span>
-                <span>·</span>
-                <span className="ftp-num" style={{ fontWeight: 500 }}>
-                  {n.publishedAt.toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </span>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
+          {items.map((n) => {
+            const lang = (n as { lang?: string }).lang;
+            return (
+              <li key={n.id}>
+                <a
+                  href={n.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ftp-card-link"
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    height: "100%",
+                    background: "var(--ftp-surface)",
+                    border: "1px solid var(--ftp-border)",
+                    borderRadius: "var(--ftp-radius-card)",
+                    boxShadow: "var(--ftp-shadow-1)",
+                    padding: "14px 16px",
+                    textDecoration: "none",
+                    color: "var(--ftp-text)",
+                  }}
+                >
+                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 16, borderRadius: 10 }}>
+                    🗞️
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span lang={lang} style={{ display: "block", fontSize: 14, fontWeight: 600, lineHeight: 1.45, marginBottom: 4 }}>
+                      {n.title}
+                    </span>
+                    <span style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: "var(--ftp-text-2)" }}>
+                      <span>{n.district?.name ?? t("news.india")}</span>
+                      <span>{n.publisher ?? n.source}</span>
+                      <span className="ftp-num">{fmtDate(locale, n.publishedAt, { day: "numeric", month: "short" })}</span>
+                    </span>
+                    <span className="sr-only">{tn("opensOriginal")}</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Section>
   );
 }
-

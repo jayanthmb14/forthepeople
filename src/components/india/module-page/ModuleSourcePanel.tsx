@@ -2,102 +2,93 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Consolidated sources panel on the module deep-dive page. Lists every
- * source the module cites with type + refresh + URL.
+ * Every source the module cites: its official name and link (proper
+ * nouns, shown as published), what kind of source it is and how often it
+ * updates (translated). The one-line blurbs come from the source registry
+ * and stay in English (reference text), marked lang="en".
  */
 
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { ExternalLink } from "lucide-react";
 import type { IndiaModuleDef } from "@/lib/india/india-modules";
-import { INDIA_DESIGN } from "@/lib/india/india-design";
 import { INDIA_SOURCES } from "@/lib/india/india-sources";
-import { IndiaSectionTitle } from "./v4";
+import { Section } from "@/components/district/ui";
 
 interface Props {
+  locale: string;
   module: IndiaModuleDef;
+  moduleTitle: string;
 }
 
-export default function ModuleSourcePanel({ module }: Props) {
+const TYPE_EMOJI: Record<string, string> = {
+  API: "🔌",
+  Static: "📘",
+  Collected: "📑",
+  RSS: "📰",
+  Institutional: "🏛️",
+};
+
+export default async function ModuleSourcePanel({ locale, module, moduleTitle }: Props) {
+  const t = await getTranslations({ locale, namespace: "page_india-module" });
+  const rows = module.sources
+    .map((s) => ({ s, src: INDIA_SOURCES[s.sourceKey] }))
+    .filter((r) => Boolean(r.src));
+  if (rows.length === 0) return null;
+
   return (
-    <section
-      style={{
-        padding: "28px 16px",
-        borderBottom: `1px solid ${INDIA_DESIGN.border}`,
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <IndiaSectionTitle emoji="📚">Sources for {module.title}</IndiaSectionTitle>
-        <div
-          style={{
-            background: INDIA_DESIGN.bgCard,
-            border: `1px solid ${INDIA_DESIGN.border}`,
-            borderRadius: 12,
-            overflow: "hidden",
-          }}
-        >
-          {module.sources.map((s, idx) => {
-            const src = INDIA_SOURCES[s.sourceKey];
-            if (!src) return null;
-            return (
-              <div
-                key={s.sourceKey}
-                style={{
-                  padding: "12px 16px",
-                  borderTop: idx === 0 ? "none" : `1px solid ${INDIA_DESIGN.border}`,
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0, 2fr) 100px 100px",
-                  gap: 12,
-                  alignItems: "center",
-                }}
+    <Section title={t("sources.title", { module: moduleTitle })} emoji="📚">
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          background: "var(--ftp-surface)",
+          border: "1px solid var(--ftp-border)",
+          borderRadius: "var(--ftp-radius-card)",
+          boxShadow: "var(--ftp-shadow-1)",
+          overflow: "hidden",
+        }}
+      >
+        {rows.map(({ s, src }, idx) => (
+          <li
+            key={s.sourceKey}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              padding: "14px 16px",
+              borderTop: idx === 0 ? "none" : "1px solid var(--ftp-border)",
+            }}
+          >
+            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 17, borderRadius: 11 }}>
+              {TYPE_EMOJI[s.type] ?? "📄"}
+            </span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <a
+                href={src!.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--hue-deep)", fontWeight: 650, fontSize: 14, textDecoration: "none" }}
               >
-                <div>
-                  <Link
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: INDIA_DESIGN.accentBlue,
-                      textDecoration: "none",
-                      fontWeight: 600,
-                      fontSize: 13,
-                    }}
-                  >
-                    {src.name}
-                  </Link>
-                  {src.blurb ? (
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: INDIA_DESIGN.textFaint,
-                        marginTop: 2,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {src.blurb}
-                    </div>
-                  ) : null}
-                </div>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: INDIA_DESIGN.textMuted,
-                    fontFamily: "var(--ftp-font-sans)",
-                  }}
-                >
-                  {s.type}
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: INDIA_DESIGN.textMuted,
-                  }}
-                >
-                  {s.refresh}
-                </span>
+                {src!.name}
+                <ExternalLink size={12} aria-hidden />
+              </a>
+              {src!.blurb ? (
+                <p lang="en" style={{ margin: "2px 0 0", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
+                  {src!.blurb}
+                </p>
+              ) : null}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                <span className="india-src-tag">{t(`sources.type.${s.type}`)}</span>
+                <span className="india-src-tag">{t(`sources.refresh.${s.refresh}`)}</span>
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <style>{`
+        .india-src-tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 12px; line-height: 18px; background: var(--hue-tint); color: var(--hue-deep); font-weight: 500; }
+      `}</style>
+    </Section>
   );
 }

@@ -1,26 +1,40 @@
 /**
  * DataModulePage — full Phase 4 deep-dive page for a data module.
  *
- * Phase 4 wires Wildlife/Tigers; Phase 5 reuses for the other 52 data modules.
- * Validates all 8 authenticity moves (file 45 §6).
+ * Phase 4 wires Wildlife/Tigers; Phase 5 reuses it for the other data
+ * modules. Validates all 8 authenticity moves (file 45 §6).
+ *
+ * Design v4 + i18n (Sep 2026):
+ *   - every string comes from "page_india-module" / "page_india";
+ *   - the trend and top-states pictures use the shared ChartCard (simple
+ *     sentence, source, as-of date, table view) and read IndiaTimeSeries /
+ *     IndiaStateBreakdown only;
+ *   - the "State-level distribution map — coming soon" placeholder with a
+ *     made-up legend, the "View all states" text that went nowhere and the
+ *     "Related editorial — coming soon" box were removed.
  */
 
 import * as React from "react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { ChevronRight, Home } from "lucide-react";
 import type { IndiaModuleDef } from "@/lib/india/india-modules";
 import { getSuperCategoryBySlug } from "@/lib/india/india-super-categories";
-import { IndiaSuperCategoryAccents } from "@/lib/india/design-tokens";
+import { StatTile, StatStrip } from "@/components/district/ui";
+import { ChartCard } from "@/components/district/visuals";
 import { ModuleDropdown } from "@/components/india/primitives/ModuleDropdown";
-import { KPITile } from "@/components/india/primitives/KPITile";
 import { DataModuleHero } from "@/components/india/sections/DataModuleHero";
-import { MethodologyAccordion } from "@/components/india/sections/MethodologyAccordion";
+import { MethodologyAccordion, type MethodologyRow } from "@/components/india/sections/MethodologyAccordion";
 import { SourcesCard } from "@/components/india/sections/SourcesCard";
 import { RelevantNewsSection } from "@/components/india/sections/RelevantNewsSection";
-import { TimeSeriesChart } from "@/components/india/charts/TimeSeriesChart";
-import { StateLeaderboard } from "@/components/india/charts/StateLeaderboard";
-import { IndiaChoropleth } from "@/components/india/charts/IndiaChoropleth";
-import { prisma } from "@/lib/db";
+import { TopStatesBars } from "@/components/india/module-page/ModuleVisuals";
+import TrendLine from "@/components/india/module-page/TrendLine";
+import IndiaReportIssueButton from "@/components/india/IndiaReportIssueButton";
+import { indiaCategoryHue } from "@/components/india/module-page/v4";
+import { getModuleIndicators, getModuleSeries, getModuleStates } from "@/components/india/module-page/data";
 import type { ScraperCadence } from "@/components/india/primitives/SourceHealthDot";
+import { INDIA_NS, indiaText } from "@/components/india/i18n";
+import { fmtDecimal, formatIndicator, formatIndicatorText } from "@/components/india/format";
 
 export interface DataModulePageProps {
   module: IndiaModuleDef;
@@ -28,7 +42,9 @@ export interface DataModulePageProps {
   headlineMetricKey: string;
   expectedCadence?: ScraperCadence;
   scraperKey?: string;
-  methodologyRows: { title: string; body: string; pdfUrl?: string }[];
+  methodologyRows: MethodologyRow[];
+  /** Message group of the methodology rows in "page_india-module" (e.g. "tigers"). */
+  methodologyNamespace: string;
   supportingMetricKeys?: string[];
 }
 
@@ -39,61 +55,64 @@ export async function DataModulePage({
   expectedCadence = "annual",
   scraperKey,
   methodologyRows,
+  methodologyNamespace,
   supportingMetricKeys = [],
 }: DataModulePageProps) {
+  const [t, tp, ti, ts] = await Promise.all([
+    getTranslations({ locale, namespace: "page_india-module" }),
+    getTranslations({ locale, namespace: INDIA_NS }),
+    getTranslations({ locale, namespace: "india" }),
+    getTranslations({ locale, namespace: "states" }),
+  ]);
+  const x = indiaText(tp, ti);
   const sc = getSuperCategoryBySlug(module.superCategory);
-  const accent = sc ? IndiaSuperCategoryAccents[sc.accentColor] : IndiaSuperCategoryAccents.blue;
+  const title = x.moduleTitle(module);
 
-  const supportingIndicators =
-    supportingMetricKeys.length > 0
-      ? await prisma.indiaIndicator.findMany({
-          where: {
-            moduleSlug: module.slug,
-            metricKey: { in: supportingMetricKeys },
-          },
-          orderBy: { displayOrder: "asc" },
-        })
-      : [];
+  const [indicators, series, states] = await Promise.all([
+    getModuleIndicators(module.slug),
+    getModuleSeries(module.slug),
+    getModuleStates(module.slug),
+  ]);
+  const byKey = new Map(indicators.map((r) => [r.metricKey, r]));
+  const label = (metricKey: string, fallback: string) => {
+    const k = `metric.${module.slug}.${metricKey}`;
+    return t.has(k) ? t(k) : fallback;
+  };
+  const text = (v: number, unit: string | null) => formatIndicatorText(tp, locale, v, unit);
+
+  const supporting = supportingMetricKeys
+    .map((k) => byKey.get(k))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r && r.value !== null));
+
+  const trend = series.find((s) => s.metricKey === headlineMetricKey) ?? series[0];
+  const stateRows = states[headlineMetricKey] ?? Object.values(states)[0] ?? [];
+  const year = (iso: string) => String(new Date(iso).getUTCFullYear());
+  const headlineRow = byKey.get(headlineMetricKey);
 
   return (
-    <main
-      style={{
-        background: "var(--color-background)",
-        minHeight: "100vh",
-        padding: "1.25rem 1rem 3rem",
-      }}
-    >
-      <div style={{ width: "100%" }}>
-        {/* Breadcrumb */}
+    <main className={indiaCategoryHue(module.category)} style={{ minHeight: "100vh" }}>
+      <div className="ftp-container" style={{ maxWidth: 1200, paddingTop: 16, paddingBottom: 72 }}>
         <nav
-          aria-label="Breadcrumb"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            fontSize: "12px",
-            color: "var(--color-text-tertiary)",
-            marginBottom: "12px",
-            flexWrap: "wrap",
-          }}
+          aria-label={t("crumbs.aria")}
+          style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ftp-text-2)", marginBottom: 14, flexWrap: "wrap" }}
         >
-          <Link href={`/${locale}`} style={{ color: "var(--color-text-tertiary)" }}>
-            Home
+          <Link href={`/${locale}`} style={{ color: "inherit", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Home size={13} aria-hidden />
+            {ti("breadcrumb.home")}
           </Link>
-          <span>›</span>
-          <Link href={`/${locale}/india`} style={{ color: "var(--color-text-tertiary)" }}>
-            India
+          <ChevronRight size={13} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
+          <Link href={`/${locale}/india`} style={{ color: "inherit", textDecoration: "none" }}>
+            {ti("breadcrumb.india")}
           </Link>
-          <span>›</span>
-          <Link
-            href={`/${locale}/india/category/${module.superCategory}`}
-            style={{ color: "var(--color-text-tertiary)" }}
-          >
-            {sc?.title}
-          </Link>
-          <span>›</span>
+          <ChevronRight size={13} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
+          {sc ? (
+            <Link href={`/${locale}/india/category/${module.superCategory}`} style={{ color: "inherit", textDecoration: "none" }}>
+              {x.scTitle(sc)}
+            </Link>
+          ) : null}
+          <ChevronRight size={13} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
           <ModuleDropdown
-            currentLabel={`${module.icon} ${module.title}`}
+            currentLabel={`${module.icon} ${title}`}
             scope="super-category"
             superCategorySlug={module.superCategory}
             locale={locale}
@@ -102,164 +121,137 @@ export async function DataModulePage({
 
         <DataModuleHero
           module={module}
+          locale={locale}
           headlineMetricKey={headlineMetricKey}
           expectedCadence={expectedCadence}
           scraperKey={scraperKey}
         />
 
-        {/* Supporting KPI tiles */}
-        {supportingIndicators.length > 0 && (
-          <div
-            className="data-module-kpis"
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${Math.min(supportingIndicators.length, 3)}, minmax(0, 1fr))`,
-              gap: "12px",
-              marginBottom: "1.5rem",
-            }}
-          >
-            {supportingIndicators.map((i) => {
-              const v = i.numericValue ? Number(i.numericValue) : null;
-              const prev = i.previousValue ? Number(i.previousValue) : null;
-              const delta =
-                v !== null && prev !== null && prev !== 0 ? ((v - prev) / prev) * 100 : null;
-              return (
-                <KPITile
-                  key={i.id}
-                  label={i.metricLabel}
-                  value={v ?? "—"}
-                  unit={i.unit ?? undefined}
-                  delta={
-                    delta !== null
-                      ? {
-                          value: `${Math.abs(delta).toFixed(1)}% from ${
-                            i.previousAsOfDate ? new Date(i.previousAsOfDate).getFullYear() : "prior"
-                          }`,
-                          trend: delta > 0.1 ? "up" : delta < -0.1 ? "down" : "flat",
-                        }
-                      : undefined
-                  }
-                  quality={(i.dataQuality ?? "published") as "published" | "derived" | "estimated"}
-                  source={`${i.source} · ${new Date(i.asOfDate).toLocaleDateString("en-IN", {
-                    month: "short",
-                    year: "numeric",
-                  })}`}
-                />
-              );
-            })}
+        {supporting.length > 0 && (
+          <div style={{ marginBottom: "1.5rem" }}>
+            <StatStrip cols={supporting.length >= 3 ? 3 : 2}>
+              {supporting.map((r) => {
+                const f = formatIndicator(tp, locale, r.value ?? 0, r.unit);
+                const prev = r.previousValue;
+                const delta = r.value !== null && prev !== null && prev !== 0 ? ((r.value - prev) / prev) * 100 : null;
+                const dir = delta === null ? null : delta > 0.1 ? "up" : delta < -0.1 ? "down" : "flat";
+                const pct = delta === null ? "" : `${fmtDecimal(locale, Math.abs(delta), 1)}%`;
+                return (
+                  <StatTile
+                    key={r.metricKey}
+                    label={label(r.metricKey, r.metricLabel)}
+                    value={f.value}
+                    unit={f.unit || undefined}
+                    emoji={r.metricKey.includes("area") ? "🗺️" : "🏞️"}
+                    trend={dir === null ? undefined : dir === "flat" ? "neutral" : dir}
+                    sub={
+                      dir === null
+                        ? undefined
+                        : r.previousAsOf
+                          ? t("data.changeYear", { dir, pct, year: year(r.previousAsOf) })
+                          : t("data.changePrior", { dir, pct })
+                    }
+                    asOf={r.asOf}
+                    source={{ label: r.source, href: r.sourceUrl || undefined }}
+                  />
+                );
+              })}
+            </StatStrip>
           </div>
         )}
 
-        {/* Two-column: time series + state leaderboard */}
-        <div
-          className="data-module-charts"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 1fr",
-            gap: "20px",
-            marginBottom: "0",
-          }}
-        >
-          <TimeSeriesChart
-            moduleSlug={module.slug}
-            metricKey={headlineMetricKey}
-            title={module.headlineMetric?.label ?? "Trend"}
-            unit={module.headlineMetric?.mockUnit}
-            accentHex={accent.hex}
-          />
-          <StateLeaderboard
-            moduleSlug={module.slug}
-            metricKey={headlineMetricKey}
-            title="Top 5 states"
-            unit={module.headlineMetric?.mockUnit}
-            accentHex={accent.hex}
-          />
-        </div>
-
-        <IndiaChoropleth
-          moduleSlug={module.slug}
-          metricKey={headlineMetricKey}
-          title="State distribution"
-          unit={module.headlineMetric?.mockUnit}
-          accentHex={accent.hex}
-        />
-
-        <MethodologyAccordion rows={methodologyRows} />
-
-        <SourcesCard module={module} expectedCadence={expectedCadence} />
-
-        {/* RelevantNewsSection auto-hides if no news rows exist */}
-        <RelevantNewsSection moduleSlug={module.slug} />
-
-        {/* Continue exploring footer */}
-        <section
-          style={{
-            marginTop: "2rem",
-            padding: "18px 22px",
-            background: "var(--color-surface)",
-            border: "0.5px solid var(--color-border-tertiary)",
-            borderRadius: "var(--border-radius-lg)",
-          }}
-        >
-          <h2
+        {(trend || stateRows.length >= 3) && (
+          <div
             style={{
-              fontFamily: "var(--ftp-font-display)",
-              fontSize: "20px",
-              fontWeight: 600,
-              letterSpacing: "-0.01em",
-              margin: "0 0 12px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))",
+              gap: 16,
+              alignItems: "start",
             }}
           >
-            Continue exploring
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }} className="data-module-continue">
-            <Link
-              href={`/${locale}/india/category/${module.superCategory}`}
-              style={{
-                display: "block",
-                background: "var(--color-background-secondary)",
-                padding: "12px 14px",
-                borderRadius: "var(--border-radius-md)",
-                textDecoration: "none",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              <div style={{ fontSize: "12px", color: "var(--color-text-tertiary)" }}>Browse all</div>
-              <div style={{ fontSize: "14px", fontWeight: 500, marginTop: "2px" }}>
-                {sc?.title} modules
-              </div>
-            </Link>
-            <div
-              style={{
-                background: "var(--color-background-secondary)",
-                padding: "12px 14px",
-                borderRadius: "var(--border-radius-md)",
-              }}
-            >
-              <div style={{ fontSize: "12px", color: "var(--color-text-tertiary)" }}>
-                Related editorial
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--color-text-secondary)", marginTop: "2px" }}>
-                Editorial reading — coming soon
-              </div>
-            </div>
+            {trend ? (
+              <ChartCard
+                title={t("vis.trendTitle")}
+                emoji="📈"
+                units={headlineRow ? label(headlineRow.metricKey, headlineRow.metricLabel) : undefined}
+                simple={t("vis.trendSimple", {
+                  from: text(trend.points[0].value, trend.unit),
+                  fromYear: year(trend.points[0].date),
+                  to: text(trend.points[trend.points.length - 1].value, trend.unit),
+                  toYear: year(trend.points[trend.points.length - 1].date),
+                })}
+                source={{ label: trend.source, href: trend.sourceUrl || undefined }}
+                asOf={trend.points[trend.points.length - 1].date}
+                table={trend.points.map((p) => ({ label: year(p.date), value: text(p.value, trend.unit) }))}
+              >
+                <TrendLine
+                  points={trend.points.map((p) => ({ label: year(p.date), value: p.value }))}
+                  unitLabel={formatIndicator(tp, locale, trend.points[0].value, trend.unit).unit}
+                />
+                <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--ftp-text-2)" }}>
+                  {t("data.points", { n: trend.points.length })}
+                </p>
+              </ChartCard>
+            ) : null}
+            {stateRows.length >= 3 ? (
+              <TopStatesBars
+                title={t("data.topTitle")}
+                emoji="🏆"
+                simple={t("vis.topSimple", {
+                  first: ts.has(stateRows[0].stateSlug) ? ts(stateRows[0].stateSlug) : stateRows[0].stateName,
+                  value: text(stateRows[0].value, stateRows[0].unit),
+                })}
+                items={stateRows.slice(0, 5).map((r) => ({
+                  label: ts.has(r.stateSlug) ? ts(r.stateSlug) : r.stateName,
+                  value: r.value,
+                  display: text(r.value, r.unit),
+                }))}
+                source={{ label: stateRows[0].source, href: stateRows[0].sourceUrl || undefined }}
+                asOf={stateRows[0].asOf}
+              />
+            ) : null}
           </div>
-        </section>
+        )}
 
-        <style>{`
-          @media (max-width: 768px) {
-            .data-module-kpis {
-              grid-template-columns: 1fr 1fr !important;
-            }
-            .data-module-charts {
-              grid-template-columns: 1fr !important;
-            }
-            .data-module-continue {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}</style>
+        <MethodologyAccordion rows={methodologyRows} group={methodologyNamespace} />
+
+        <SourcesCard module={module} locale={locale} expectedCadence={expectedCadence} />
+
+        {/* RelevantNewsSection hides itself when there are no news rows. */}
+        <RelevantNewsSection moduleSlug={module.slug} locale={locale} />
+
+        {sc ? (
+          <Link
+            href={`/${locale}/india/category/${module.superCategory}`}
+            className="ftp-card-link"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              marginTop: "2rem",
+              padding: "16px 20px",
+              borderRadius: "var(--ftp-radius-card)",
+              border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
+              background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 75%)",
+              boxShadow: "var(--ftp-shadow-1)",
+              textDecoration: "none",
+              color: "var(--ftp-text)",
+            }}
+          >
+            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
+              {sc.icon}
+            </span>
+            <span>
+              <span style={{ display: "block", fontSize: 12, color: "var(--ftp-text-2)" }}>{t("data.continue")}</span>
+              <span className="ftp-display" style={{ fontSize: 17, fontWeight: 650 }}>
+                {t("data.allIn", { category: x.scTitle(sc) })}
+              </span>
+            </span>
+          </Link>
+        ) : null}
       </div>
+
+      <IndiaReportIssueButton moduleSlug={module.slug} moduleLabel={title} />
     </main>
   );
 }

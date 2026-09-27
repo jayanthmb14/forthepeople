@@ -80,18 +80,18 @@
     "title": "India in one page.",
     "subtitle": "Every key fact about your country, sourced from official government portals.",
     "hero": {
-      "tag": "INDIA AT A GLANCE",
+      "tag": "India at a glance",
       "tiles": {
         "population": "Population",
         "gdp": "Nominal GDP",
-        "area": "Geographic Area",
-        "states": "States & UTs",
+        "area": "Geographic area",
+        "states": "States and UTs",
         "districts": "Districts",
-        "languages": "Scheduled Languages"
+        "languages": "Scheduled languages"
       },
-      "eyebrow": "South Asia · Republic · Constitution adopted 26 Jan 1950",
+      "eyebrow": "A republic in South Asia, with a Constitution in force since 26 January 1950",
       "motto": "\"Sovereign, socialist, secular, democratic republic\"",
-      "readPreamble": "Read the Preamble — every Indian should"
+      "readPreamble": "Read the Preamble"
     },
     "nav": {
       "today": "Today",
@@ -117,13 +117,13 @@
       "title": "Vote for the next India module",
       "subtitle": "Help us decide what to build next.",
       "suggest": "Suggest a module",
-      "submitted": "Thanks — your idea is now visible to others to vote on.",
+      "submitted": "Thank you. Your idea is now open for others to vote on.",
       "rateLimit": "You've already voted on this. Try tomorrow.",
       "request": "Request your module"
     },
     "comingSoon": {
-      "title": "Coming Soon",
-      "tag": "COMING SOON",
+      "title": "Coming soon",
+      "tag": "Coming soon",
       "expected": "Expected",
       "voteToPrioritise": "Vote to prioritise"
     },
@@ -132,7 +132,7 @@
       "subtitle": "We will populate this section as soon as the source publishes."
     },
     "sources": {
-      "title": "Data Sources",
+      "title": "Data sources",
       "subtitle": "Every portal cited on this page.",
       "lastUpdated": "Last updated",
       "refresh": "Refresh"
@@ -147,44 +147,44 @@
     },
     "superCategory": {
       "macroSnapshot": {
-        "title": "India at a Glance",
-        "tagline": "How big India is, how fast it's growing, and how its 1.43 billion people earn and live."
+        "title": "India at a glance",
+        "tagline": "How big India is, how fast it is growing, and how its people earn and live."
       },
       "knowIndia": {
-        "title": "Know About India",
-        "tagline": "NCERT-aligned foundations: history, geography, polity, economy. How India works, explained."
+        "title": "Know about India",
+        "tagline": "NCERT-aligned basics of history, geography, polity and the economy: how India works, explained."
       },
       "livingStandards": {
-        "title": "Living Standards",
-        "tagline": "Health, education, water, food, housing — what daily life looks like across states."
+        "title": "Living standards",
+        "tagline": "Health, education, water, food and housing: what daily life looks like across states."
       },
       "wildlifeForests": {
-        "title": "Wildlife & Forests",
-        "tagline": "Tigers, forests, protected areas — what India safeguards in the wild."
+        "title": "Wildlife and forests",
+        "tagline": "Tigers, forests and protected areas: what India protects in the wild."
       },
       "agricultureLivestock": {
-        "title": "Agriculture & Livestock",
-        "tagline": "What India grows and raises — crops, livestock, and the lives of farmers."
+        "title": "Agriculture and livestock",
+        "tagline": "What India grows and raises: crops, livestock and the lives of farmers."
       },
       "naturalResourcesEnergy": {
-        "title": "Natural Resources & Energy",
-        "tagline": "Fuels, minerals, water — what powers India and what we draw from the earth."
+        "title": "Natural resources and energy",
+        "tagline": "Fuels, minerals and water: what powers India and what we draw from the earth."
       },
       "infrastructure": {
         "title": "Infrastructure",
-        "tagline": "Roads, rail, aviation, ports, telecom, smart cities — the country's backbone."
+        "tagline": "Roads, rail, air, ports, telecom and smart cities: the country's backbone."
       },
       "governance": {
-        "title": "Governance and Justice",
-        "tagline": "Defence, police, courts, prisons, elections — the institutions that hold India together."
+        "title": "Governance and justice",
+        "tagline": "Defence, police, courts, prisons and elections: the institutions that hold India together."
       },
       "innovation": {
-        "title": "Innovation and Industry",
-        "tagline": "Space, science, startups, digital, foreign trade — where India is going next."
+        "title": "Innovation and industry",
+        "tagline": "Space, science, startups, digital and foreign trade: where India is going next."
       },
       "culture": {
-        "title": "Culture and Heritage",
-        "tagline": "Tourism, monuments, sports, GI tags — what makes India distinctly Indian."
+        "title": "Culture and heritage",
+        "tagline": "Tourism, monuments, sports and GI tags: what makes India distinctly Indian."
       }
     },
     "breadcrumb": {
