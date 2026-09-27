@@ -22,6 +22,7 @@
 // Model routing: purpose "news-analysis" = free Tier 1 (src/lib/ai-models.ts).
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
+import { NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 import { AIDeadlineError, callAIJSON } from "@/lib/ai-provider";
 import {
   NEWS_INTEL_MODULES,
@@ -62,8 +63,12 @@ async function log(
 // ── Context for the prompt ────────────────────────────────
 async function fetchContextLines(districtId: string): Promise<string[]> {
   const [leaders, latestCrops, latestWeather, activeAlerts] = await Promise.all([
+    // Curated leaders only: rows once written from headlines ("D K Shivakumar —
+    // Chief Minister — BJP" under Mumbai) must not reach the prompt as fact.
+    // This job writes AIInsight rows only; leader changes found in news go
+    // to the admin queue (src/lib/news-action-rules.ts), never to Leader.
     prisma.leader.findMany({
-      where: { districtId, tier: { lte: 2 }, active: true },
+      where: { districtId, tier: { lte: 2 }, active: true, ...NOT_FROM_NEWS_OPTIONAL },
       select: { name: true, role: true },
       take: 5,
     }),
