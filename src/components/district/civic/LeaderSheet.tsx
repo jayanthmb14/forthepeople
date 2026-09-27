@@ -160,12 +160,11 @@ export function LeaderSheet({
         style={{
           padding: "12px 14px",
           borderRadius: 14,
-          background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)",
+          background: "var(--hue-tint)",
           border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
         }}
       >
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
-          <span className="ftp-emoji" aria-hidden>💼 </span>
           {t("sheet.whatTheyDo")}
         </p>
         <p style={{ margin: "4px 0 0", fontSize: 15, lineHeight: "23px", color: "var(--ftp-text)" }}>{roleDescription(l, t)}</p>
@@ -173,14 +172,13 @@ export function LeaderSheet({
 
       <DetailList
         rows={[
-          { emoji: meta.emoji, label: t("sheet.level"), value: meta.label },
-          { emoji: "🪪", label: t("sheet.role"), value: role.text, lang: role.lang },
-          { emoji: "🔤", label: t("sheet.localName"), value: nameLocal && nameLocal !== l.name ? nameLocal : null, lang: nameLocal ? scriptLang(nameLocal) : undefined },
-          { emoji: "🎗️", label: t("sheet.party"), value: partyValue },
-          { emoji: "📍", label: t("sheet.constituency"), value: l.constituency },
-          { emoji: "📅", label: t("sheet.since"), value: l.since?.trim() || null },
+          { label: t("sheet.level"), value: meta.label },
+          { label: t("sheet.role"), value: role.text, lang: role.lang },
+          { label: t("sheet.localName"), value: nameLocal && nameLocal !== l.name ? nameLocal : null, lang: nameLocal ? scriptLang(nameLocal) : undefined },
+          { label: t("sheet.party"), value: partyValue },
+          { label: t("sheet.constituency"), value: l.constituency },
+          { label: t("sheet.since"), value: l.since?.trim() || null },
           {
-            emoji: "☎️",
             label: t("sheet.phone"),
             value: phone ? (
               <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
@@ -189,7 +187,6 @@ export function LeaderSheet({
             ) : null,
           },
           {
-            emoji: "✉️",
             label: t("sheet.emailLabel"),
             value: email ? (
               <a href={`mailto:${email}`} style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
@@ -197,7 +194,7 @@ export function LeaderSheet({
               </a>
             ) : null,
           },
-          { emoji: "🔎", label: t("sheet.checked"), value: leaderProvenance(l, t, fmtDate) },
+          { label: t("sheet.checked"), value: leaderProvenance(l, t, fmtDate) },
         ]}
       />
       {!phone && !email && !isLoading && <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("sheet.noContact")}</p>}
@@ -207,7 +204,6 @@ export function LeaderSheet({
       {/* In the news */}
       <section aria-labelledby={`leader-news-${l.id}`}>
         <h3 id={`leader-news-${l.id}`} className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
-          <span className="ftp-emoji" aria-hidden>📰 </span>
           {t("sheet.newsTitle")}
         </h3>
         <p style={{ margin: "2px 0 10px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>

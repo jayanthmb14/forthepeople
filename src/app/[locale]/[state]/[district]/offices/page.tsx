@@ -40,11 +40,16 @@
 import { use, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Building } from "lucide-react";
+import {
+  Building, Building2, Car, Droplets, Gavel, Globe, GraduationCap, HandHeart, HardHat, Hospital, House, Landmark, Layers, Lock,
+  LockOpen, Mail, Map as MapIcon, MapPin, NotebookPen, Phone, ShieldCheck, Sprout, TreePine, Wheat, Zap,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleNews from "@/components/district/ModuleNews";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { useOffices, useServices } from "@/hooks/useRealtimeData";
 import type { GovOffice, ServiceGuide } from "@/hooks/useRealtimeData";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -56,7 +61,6 @@ import {
   ActionLink,
   LinkCard,
   MetaLine,
-  PageEnd,
   SearchBox,
   SheetBlock,
   SheetNote,
@@ -164,28 +168,28 @@ function ownStatus(o: OfficeRow, ms: number): { state: "open" | "lunch" | "close
   return { state: "open", today: range };
 }
 
-/** One emoji per department, from keywords in its free-text name; 🏛️ otherwise. */
-function deptEmoji(department: string): string {
+/** One small line icon per department, from keywords in its free-text name (v5: no emoji). */
+function deptIcon(department: string): LucideIcon {
   const d = department.toLowerCase();
-  if (/police/.test(d)) return "👮";
-  if (/health|hospital|medical/.test(d)) return "🏥";
-  if (/educat|school|public instruction/.test(d)) return "🎓";
-  if (/agri|horti|farm|seri|animal|veterin|fisher/.test(d)) return "🌾";
-  if (/water|irrigation|jal/.test(d)) return "💧";
-  if (/power|electric|energy/.test(d)) return "⚡";
-  if (/transport|rto|motor/.test(d)) return "🚗";
-  if (/forest/.test(d)) return "🌳";
-  if (/court|legal|judici|law/.test(d)) return "⚖️";
-  if (/panchayat|rural/.test(d)) return "🏘️";
-  if (/municipal|urban|city|corporation/.test(d)) return "🏙️";
-  if (/revenue|tahsil|taluk|land|survey/.test(d)) return "🗺️";
-  if (/registr|stamp/.test(d)) return "📝";
-  if (/treasury|finance|bank|tax/.test(d)) return "🏦";
-  if (/food|civil supplies|ration/.test(d)) return "🍚";
-  if (/women|child|welfare|social/.test(d)) return "🤝";
-  if (/labour|labor|employ/.test(d)) return "👷";
-  if (/post/.test(d)) return "📮";
-  return "🏛️";
+  if (/police/.test(d)) return ShieldCheck;
+  if (/health|hospital|medical/.test(d)) return Hospital;
+  if (/educat|school|public instruction/.test(d)) return GraduationCap;
+  if (/agri|horti|farm|seri|animal|veterin|fisher/.test(d)) return Sprout;
+  if (/water|irrigation|jal/.test(d)) return Droplets;
+  if (/power|electric|energy/.test(d)) return Zap;
+  if (/transport|rto|motor/.test(d)) return Car;
+  if (/forest/.test(d)) return TreePine;
+  if (/court|legal|judici|law/.test(d)) return Gavel;
+  if (/panchayat|rural/.test(d)) return House;
+  if (/municipal|urban|city|corporation/.test(d)) return Building2;
+  if (/revenue|tahsil|taluk|land|survey/.test(d)) return MapIcon;
+  if (/registr|stamp/.test(d)) return NotebookPen;
+  if (/treasury|finance|bank|tax/.test(d)) return Landmark;
+  if (/food|civil supplies|ration/.test(d)) return Wheat;
+  if (/women|child|welfare|social/.test(d)) return HandHeart;
+  if (/labour|labor|employ/.test(d)) return HardHat;
+  if (/post/.test(d)) return Mail;
+  return Building;
 }
 
 /**
@@ -234,9 +238,7 @@ function WeekStrip({ today, dayName, ariaLabel, caption }: { today: number | nul
                 ["--i" as string]: i,
               }}
             >
-              <span className="ftp-emoji" style={{ fontSize: 20, filter: open ? "none" : "grayscale(1)", opacity: open ? 1 : some ? 0.6 : 0.3 }}>
-                🏢
-              </span>
+              <Building2 size={18} aria-hidden style={{ color: open ? "var(--hue-deep)" : "var(--ftp-text-2)", opacity: open ? 1 : some ? 0.6 : 0.35 }} />
               <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: open ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>{dayName(d)}</span>
             </span>
           );
@@ -284,11 +286,13 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
   ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
   const withPhone = offices.filter((o) => phoneList(o.phone).length > 0).length;
-  const reach = [
-    { key: "phone", emoji: "📞", label: t("reach.phone"), count: withPhone },
-    { key: "email", emoji: "✉️", label: t("reach.email"), count: offices.filter((o) => Boolean(o.email)).length },
-    { key: "website", emoji: "🌐", label: t("reach.website"), count: offices.filter((o) => Boolean(extUrl(o.website))).length },
+  const reach: Array<{ key: string; icon: LucideIcon; label: string; count: number }> = [
+    { key: "phone", icon: Phone, label: t("reach.phone"), count: withPhone },
+    { key: "email", icon: Mail, label: t("reach.email"), count: offices.filter((o) => Boolean(o.email)).length },
+    { key: "website", icon: Globe, label: t("reach.website"), count: offices.filter((o) => Boolean(extUrl(o.website))).length },
   ];
+  // The page date: when these offices were last updated (newest row).
+  const updated = offices.reduce<string | null>((best, o) => (o.updatedAt && (!best || o.updatedAt > best) ? o.updatedAt : best), null);
 
   const byDept = filter === "all" ? offices : offices.filter((o) => o.department === filter);
   const shown = searchRows(byDept, search, (o) => [o.name, o.nameLocal, o.department, o.type, o.address, ...o.services]);
@@ -307,11 +311,16 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
   );
 
   const usualTile = usual === "open" ? t("tiles.usuallyOpen") : usual === "closed" ? t("tiles.usuallyClosed") : usual === "someSat" ? t("tiles.callFirst") : usual === "sunday" ? t("tiles.closed") : "—";
-  const usualEmoji = usual === "open" ? "🔓" : usual === "someSat" ? "📞" : "🔒";
+  const usualIcon = usual === "open" ? LockOpen : usual === "someSat" ? Phone : Lock;
 
   return (
     <ModulePage>
-      <PageHeader icon={Building} title={mt.label("offices")} description={t("description")} backHref={base} />
+      <PageHeader
+        icon={Building}
+        title={mt.label("offices")}
+        description={t("description")}
+        freshness={updated ? { asOf: updated, thresholdHours: 24 * 365 } : undefined}
+      />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
@@ -320,7 +329,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
       {!isLoading && !error && offices.length > 0 && (
         <>
           {/* 2. The answer in one sentence (the time part appears once the browser knows the time). */}
-          <Explainer emoji="🏢">
+          <Explainer>
             {t.rich("answer", { district: districtName, offices: offices.length, departments: deptCounts.length, b: bold })}
             {usual && now > 0 && (
               <>
@@ -332,14 +341,14 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
 
           {/* 3. Four big numbers. */}
           <StatStrip cols={4}>
-            <StatTile emoji="🏢" label={t("tiles.offices")} value={n(offices.length)} sub={t("tiles.officesSub")} />
-            <StatTile emoji="🗂️" label={t("tiles.departments")} value={n(deptCounts.length)} sub={t("tiles.departmentsSub")} />
-            <StatTile emoji="📞" label={t("tiles.phone")} value={n(withPhone)} sub={t("tiles.phoneSub", { total: n(offices.length) })} />
-            <StatTile emoji={usualEmoji} label={t("tiles.now")} value={usualTile} sub={t("tiles.nowSub")} countUp={false} />
+            <StatTile icon={Building2} label={t("tiles.offices")} value={n(offices.length)} sub={t("tiles.officesSub")} />
+            <StatTile icon={Layers} label={t("tiles.departments")} value={n(deptCounts.length)} sub={t("tiles.departmentsSub")} />
+            <StatTile icon={Phone} label={t("tiles.phone")} value={n(withPhone)} sub={t("tiles.phoneSub", { total: n(offices.length) })} />
+            <StatTile icon={usualIcon} label={t("tiles.now")} value={usualTile} sub={t("tiles.nowSub")} countUp={false} />
           </StatStrip>
 
           {/* 4. The picture: the usual week, today ringed. */}
-          <Card tinted padding={18} style={{ marginTop: 16 }}>
+          <Card padding={18} style={{ marginTop: 16 }}>
             <p className="ftp-label" style={{ margin: "0 0 10px", color: "var(--hue-deep)" }}>
               {t("week.title")}
             </p>
@@ -352,7 +361,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
           </Card>
 
           {/* 5. Find an office; tap a card for everything. */}
-          <Section title={t("list.title")} emoji="📇">
+          <Section title={t("list.title")}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
               <SearchBox id="office-search" label={t("list.searchLabel")} placeholder={t("list.searchPlaceholder")} value={search} onChange={setSearch} />
               {deptCounts.length > 1 && (
@@ -365,7 +374,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
               )}
             </div>
             {shown.length === 0 ? (
-              <EmptyState emoji="🔍" title={t("list.noMatch")} body={t("list.noMatchBody")} />
+              <EmptyState title={t("list.noMatch")} body={t("list.noMatchBody")} />
             ) : (
               <div className="ftp-grid">
                 {shown.map((o) => {
@@ -374,7 +383,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                   return (
                     <TapCard
                       key={o.id}
-                      emoji={deptEmoji(o.department)}
+                      icon={deptIcon(o.department)}
                       title={o.name}
                       titleLang={dataLang(o.name, locale)}
                       subtitle={o.nameLocal ?? undefined}
@@ -383,14 +392,14 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                       onOpen={() => setOpenId(o.id)}
                       aside={st ? statusPill(st) : undefined}
                     >
-                      <MetaLine emoji="🗂️" lang={dataLang(o.department, locale)}>
+                      <MetaLine icon={Layers} lang={dataLang(o.department, locale)}>
                         {o.type && o.type !== o.department ? `${o.department} · ${o.type}` : o.department}
                       </MetaLine>
-                      <MetaLine emoji="📍" lang={dataLang(o.address, locale)} clamp={2}>
+                      <MetaLine icon={MapPin} lang={dataLang(o.address, locale)} clamp={2}>
                         {o.address}
                       </MetaLine>
                       {phones.length > 0 && (
-                        <MetaLine emoji="📞">
+                        <MetaLine icon={Phone}>
                           <span className="ftp-num">{phones[0]}</span>
                         </MetaLine>
                       )}
@@ -402,30 +411,28 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
           </Section>
 
           <div style={{ marginTop: 20 }}>
-            <LinkCard href={`${base}/services`} emoji="🧾" title={t("toGuides.title")} body={t("toGuides.body")} />
+            <LinkCard href={`${base}/services`} icon={NotebookPen} title={t("toGuides.title")} body={t("toGuides.body")} />
           </div>
 
           {/* 6. Charts: where the offices are, and how you can reach them. */}
           {(deptCounts.length > 1 || reach.some((r) => r.count > 0)) && (
-            <Section title={t("charts.title")} emoji="📊">
+            <Section title={t("charts.title")}>
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
                 {deptCounts.length > 1 && (
                   <ChartCard
                     title={t("dept.title")}
-                    emoji="🗂️"
                     units={t("dept.units")}
                     simple={t.rich("dept.simple", { dept: deptCounts[0][0], n: n(deptCounts[0][1]), total: n(offices.length), b: bold })}
                     table={deptCounts.map(([d, c]) => ({ label: d, value: n(c) }))}
                   >
                     <BarList
-                      items={deptCounts.slice(0, TOP_DEPARTMENTS).map(([d, c]) => ({ key: d, label: d, lang: dataLang(d, locale), value: c, display: n(c), emoji: deptEmoji(d) }))}
+                      items={deptCounts.slice(0, TOP_DEPARTMENTS).map(([d, c]) => ({ key: d, label: d, lang: dataLang(d, locale), value: c, display: n(c) }))}
                     />
                   </ChartCard>
                 )}
                 {reach.some((r) => r.count > 0) && (
                   <ChartCard
                     title={t("reach.title")}
-                    emoji="☎️"
                     units={t("reach.units")}
                     simple={withPhone > 0 ? t.rich("reach.simple", { n: n(withPhone), total: n(offices.length), b: bold }) : t("reach.simpleNoPhone", { total: n(offices.length) })}
                     table={reach.map((r) => ({ label: r.label, value: t("reach.count", { n: n(r.count), total: n(offices.length) }) }))}
@@ -434,9 +441,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                       {reach.map((r, i) => (
                         <li key={r.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", minWidth: 0 }}>
                           <ProgressRing pct={(r.count / offices.length) * 100} size={76} i={i} label={t("reach.ringAria", { what: r.label, n: n(r.count), total: n(offices.length) })}>
-                            <span className="ftp-emoji" style={{ fontSize: 24 }}>
-                              {r.emoji}
-                            </span>
+                            <r.icon size={22} aria-hidden style={{ color: "var(--hue-deep)" }} />
                           </ProgressRing>
                           <span style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600, color: "var(--ftp-text)" }}>{r.label}</span>
                           <span className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: "var(--hue-deep)" }}>
@@ -457,18 +462,9 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
         </>
       )}
 
+      <MoneyToolbar shareTitle={mt.label("offices")} compareHref={`/${locale}/compare?module=offices&a=${district}`} />
+
       <ModuleNews district={district} state={state} locale={locale} module="offices" />
-      <PageEnd
-        ns="page_offices"
-        sourceModule="offices"
-        moduleSlug="offices"
-        state={state}
-        district={district}
-        locale={locale}
-        districtName={districtName}
-        about={t("summary", { district: districtName })}
-        shareText={t("share", { district: districtName, offices: offices.length, departments: deptCounts.length })}
-      />
 
       {/* Everything about one office. */}
       <DetailSheet
@@ -477,20 +473,19 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
         title={open?.name ?? ""}
         titleLang={open ? dataLang(open.name, locale) : undefined}
         subtitle={open?.nameLocal ? <span lang={dataLang(open.nameLocal, locale)}>{open.nameLocal}</span> : open?.department}
-        emoji={open ? deptEmoji(open.department) : undefined}
         footer={
           open && (
             <>
               {openPhones.length > 0 && (
-                <ActionLink href={telHref(openPhones[0])} emoji="📞" primary>
+                <ActionLink href={telHref(openPhones[0])} primary>
                   {t("sheet.call")}
                 </ActionLink>
               )}
-              <ActionLink href={mapsUrl(`${open.name}, ${open.address}`, open.latitude, open.longitude)} emoji="🗺️" newTab primary={openPhones.length === 0}>
+              <ActionLink href={mapsUrl(`${open.name}, ${open.address}`, open.latitude, open.longitude)} newTab primary={openPhones.length === 0}>
                 {t("sheet.directions")}
               </ActionLink>
               {openSite && (
-                <ActionLink href={openSite} emoji="🌐" newTab>
+                <ActionLink href={openSite} newTab>
                   {t("sheet.website")}
                 </ActionLink>
               )}
@@ -502,7 +497,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
           <>
             {/* Open or closed now, from the office's own hours when it lists them. */}
             {now > 0 && (
-              <SheetNote emoji={openStatus ? (openStatus.state === "open" ? "🔓" : openStatus.state === "lunch" ? "🍱" : "🔒") : "📞"}>
+              <SheetNote>
                 {openStatus
                   ? openStatus.today
                     ? t.rich(`sheet.own.${openStatus.state}`, { hours: rangeText(openStatus.today), b: bold })
@@ -513,17 +508,15 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
 
             <DetailList
               rows={[
-                { emoji: "🗂️", label: t("sheet.department"), value: open.department, lang: dataLang(open.department, locale) },
-                { emoji: "🏷️", label: t("sheet.type"), value: open.type && open.type !== open.department ? open.type : null, lang: dataLang(open.type, locale) },
+                { label: t("sheet.department"), value: open.department, lang: dataLang(open.department, locale) },
+                { label: t("sheet.type"), value: open.type && open.type !== open.department ? open.type : null, lang: dataLang(open.type, locale) },
                 {
-                  emoji: "👤",
                   label: t("sheet.head"),
                   value: open.headName ? (open.headDesignation ? `${open.headName} (${open.headDesignation})` : open.headName) : null,
                   lang: dataLang(open.headName, locale),
                 },
-                { emoji: "📍", label: t("sheet.address"), value: open.address, lang: dataLang(open.address, locale) },
+                { label: t("sheet.address"), value: open.address, lang: dataLang(open.address, locale) },
                 {
-                  emoji: "📞",
                   label: t("sheet.phone"),
                   value:
                     openPhones.length > 0 ? (
@@ -537,7 +530,6 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                     ) : null,
                 },
                 {
-                  emoji: "✉️",
                   label: t("sheet.email"),
                   value: open.email ? (
                     <a href={`mailto:${open.email}`} style={{ color: "var(--hue-deep)" }}>
@@ -546,7 +538,6 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                   ) : null,
                 },
                 {
-                  emoji: "🌐",
                   label: t("sheet.website"),
                   value: openSite ? (
                     <a href={openSite} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)" }}>
@@ -554,13 +545,13 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                     </a>
                   ) : null,
                 },
-                { emoji: "🗓️", label: t("sheet.holidays"), value: open.holidays, lang: dataLang(open.holidays, locale) },
-                { emoji: "📝", label: t("sheet.notes"), value: open.notes, lang: dataLang(open.notes, locale) },
+                { label: t("sheet.holidays"), value: open.holidays, lang: dataLang(open.holidays, locale) },
+                { label: t("sheet.notes"), value: open.notes, lang: dataLang(open.notes, locale) },
               ]}
             />
 
             {hasOwnHours(open) && (
-              <SheetBlock emoji="🕙" title={t("sheet.hoursTitle")}>
+              <SheetBlock title={t("sheet.hoursTitle")}>
                 <DetailList
                   rows={[
                     ...WEEK_ORDER.map((d) => {
@@ -578,16 +569,16 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
             )}
 
             {open.services.length > 0 && (
-              <SheetBlock emoji="🧾" title={t("sheet.services")}>
+              <SheetBlock title={t("sheet.services")}>
                 <TagList items={open.services} lang={dataLang(open.services[0], locale)} />
               </SheetBlock>
             )}
 
             {openGuides.length > 0 && (
-              <SheetBlock emoji="📋" title={t("sheet.guides")}>
+              <SheetBlock title={t("sheet.guides")}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {openGuides.slice(0, 6).map((g) => (
-                    <ActionLink key={g.id} href={`${base}/services?open=${encodeURIComponent(g.id)}`} emoji="🧾" internal>
+                    <ActionLink key={g.id} href={`${base}/services?open=${encodeURIComponent(g.id)}`} internal>
                       <span lang={dataLang(g.serviceName, locale)}>{g.serviceName}</span>
                     </ActionLink>
                   ))}

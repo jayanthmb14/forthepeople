@@ -2,7 +2,7 @@
   "call112": "Emergency? Call 112",
   "call112Aria": "Call 112, the emergency number for police, fire and ambulance",
   "emptyTitle": "No police data yet for {district}.",
-  "emptyBody": "We are collecting the police station list, crime figures from the National Crime Records Bureau (NCRB) and traffic fine data. NCRB publishes district figures once a year.",
+  "emptyBody": "We have no police station list or crime figures for this district yet. The National Crime Records Bureau (NCRB) publishes district figures once a year.",
   "explainStations": "Our list has <b>{n, plural, one {# police station} other {# police stations}}</b> in {district}.",
   "explainPhones": "{phones, plural, one {# of them has a phone number} other {# of them have a phone number}}: tap a station to call it.",
   "explainCrimeUp": "The National Crime Records Bureau (NCRB) counted <b>{count}</b> cases in {year}, <b>{pct} more</b> than in {prev}.",
@@ -82,7 +82,7 @@
   "staffExplain": "<b>{working}</b> of <b>{sanctioned}</b> sanctioned police posts are filled. <b>{vacant}</b> are empty.",
   "staffPicto": "About {n} of every 10 posts are filled.",
   "staffRole": "{working} of {sanctioned} filled",
-  "staffSource": "Official staffing data",
+  "staffSource": "Staffing data source",
   "allFiguresTitle": "Every crime figure we hold",
   "allFiguresSummary": "Show all {n, plural, one {# figure} other {# figures}} with their sources",
   "sourceLabel": "Source: {source}"

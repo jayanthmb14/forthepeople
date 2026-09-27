@@ -120,7 +120,6 @@ const KARNATAKA: StateConfig = {
   gramPanchayatApplicable: true,
   jjmApplicable: true,
   stateHealthScheme: "Arogya Karnataka",
-  municipalBody: "BBMP",
   lastElectionYear: 2023,
   lastElectionType: "Karnataka assembly",
   dataSources: [
@@ -233,44 +232,45 @@ const DELHI: StateConfig = {
 };
 
 // ── Maharashtra ────────────────────────────────────────────
+// State-wide values. Mumbai (BEST/Adani power, BMC, no village councils)
+// is an exception and lives in DISTRICT_OVERRIDES below, so Pune and every
+// other Maharashtra district no longer inherit Mumbai's settings.
 const MAHARASHTRA: StateConfig = {
   slug: "maharashtra",
   name: "Maharashtra",
   nameLocal: "महाराष्ट्र",
-  discomName: "BEST / Adani",
-  discomFullName: "BEST Undertaking / Adani Electricity Mumbai Limited",
-  discomPortalUrl: "https://www.bestundertaking.com",
+  discomName: "MSEDCL (Mahavitaran)",
+  discomFullName: "Maharashtra State Electricity Distribution Company Limited (MSEDCL / Mahavitaran)",
+  discomPortalUrl: "https://www.mahadiscom.in",
   waterPortalName: "Maharashtra Water Resources Department",
   waterPortalUrl: "https://wrd.maharashtra.gov.in",
-  stateTransportName: "MSRTC / BEST",
-  stateTransportFullName: "Maharashtra State Road Transport Corporation (MSRTC) / BEST",
+  stateTransportName: "MSRTC",
+  stateTransportFullName: "Maharashtra State Road Transport Corporation (MSRTC)",
   stateTransportUrl: "https://msrtc.maharashtra.gov.in",
   boardExamName: "SSC",
   boardName: "Maharashtra State Board of Secondary Education",
   stateInformationCommission: "Maharashtra State Information Commission",
   rtiPortalUrl: "https://maic.gov.in",
-  agroClimaticZone: "West Coast Plains and Ghats / Western Plateau",
+  agroClimaticZone: "Western Plateau and Hills",
   districtHeadTitle: "Collector & District Magistrate",
   subDistrictUnit: "Taluka",
   subDistrictUnitPlural: "Talukas",
   policeSystemType: "commissionerate",
   healthSubLabel: "Sub-District Hospitals",
   villageLabel: "Villages",
-  showVillages: false,
-  gramPanchayatApplicable: false,
-  jjmApplicable: false,
-  municipalBody: "BMC",
-  waterBoard: "BMC Water Dept",
+  showVillages: true,
+  gramPanchayatApplicable: true,
+  jjmApplicable: true,
   stateHealthScheme: "MJPJAY",
   lastElectionYear: 2024,
   lastElectionType: "Maharashtra assembly",
   dataSources: [
-    { module: "Power Outages", source: "BEST / Adani Electricity", type: "Collected", frequency: "When the source publishes", url: "https://www.bestundertaking.com", status: "static" },
+    { module: "Power Outages", source: "MSEDCL (Mahavitaran)", type: "Collected", frequency: "When the source publishes", url: "https://www.mahadiscom.in", status: "static" },
     { module: "Dam Levels", source: "Maharashtra Water Resources Department", type: "Collected", frequency: "Daily", url: "https://wrd.maharashtra.gov.in", status: "static" },
     { module: "Budget & Revenue", source: "Maharashtra Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "Maharashtra State Information Commission", type: "Collected", frequency: "Annual", url: "https://maic.gov.in", status: "static" },
-    { module: "Transport", source: "MSRTC / BEST / IRCTC", type: "API", frequency: "Monthly", url: "https://msrtc.maharashtra.gov.in", status: "static" },
-    { module: "Rainfall", source: "India Meteorological Department (IMD), Mumbai", type: "API", frequency: "Daily", url: null, status: "live" },
+    { module: "Transport", source: "MSRTC / IRCTC", type: "API", frequency: "Monthly", url: "https://msrtc.maharashtra.gov.in", status: "static" },
+    { module: "Rainfall", source: "India Meteorological Department (IMD)", type: "API", frequency: "Daily", url: null, status: "live" },
   ],
 };
 
@@ -401,6 +401,12 @@ const UTTAR_PRADESH: StateConfig = {
 };
 
 // ── Config registry ────────────────────────────────────────
+// NOTE: Telangana, Delhi, West Bengal and Tamil Nadu have one live district
+// each (Hyderabad, New Delhi, Kolkata, Chennai), all fully urban, so their
+// state entries above still carry metro values (no village councils, city
+// water board). When a rural district of one of these states goes live,
+// move the metro values into DISTRICT_OVERRIDES and make the state entry
+// state-wide, as was done for Maharashtra.
 const STATE_CONFIGS: Record<string, StateConfig> = {
   karnataka: KARNATAKA,
   telangana: TELANGANA,
@@ -409,6 +415,64 @@ const STATE_CONFIGS: Record<string, StateConfig> = {
   "west-bengal": WEST_BENGAL,
   "tamil-nadu": TAMIL_NADU,
   "uttar-pradesh": UTTAR_PRADESH,
+};
+
+// ── Per-district overrides ─────────────────────────────────
+// Only what differs from the state entry. Keyed "<state>/<district>".
+// Read through getStateConfig(state, district): pages under
+// /[state]/[district]/ should always pass the district.
+type DistrictOverride = Partial<Omit<StateConfig, "slug" | "name" | "nameLocal">>;
+
+const DISTRICT_OVERRIDES: Record<string, DistrictOverride> = {
+  // Mumbai city + suburbs: BEST (island city) and Adani Electricity
+  // (suburbs); BMC runs water; no village councils or JJM (fully urban).
+  "maharashtra/mumbai": {
+    discomName: "BEST / Adani",
+    discomFullName: "BEST Undertaking / Adani Electricity Mumbai Limited",
+    discomPortalUrl: "https://www.bestundertaking.com",
+    stateTransportName: "MSRTC / BEST",
+    stateTransportFullName: "Maharashtra State Road Transport Corporation (MSRTC) / BEST",
+    agroClimaticZone: "West Coast Plains and Ghats",
+    showVillages: false,
+    gramPanchayatApplicable: false,
+    jjmApplicable: false,
+    municipalBody: "BMC",
+    waterBoard: "BMC Water Dept",
+    dataSources: [
+      { module: "Power Outages", source: "BEST / Adani Electricity", type: "Collected", frequency: "When the source publishes", url: "https://www.bestundertaking.com", status: "static" },
+      { module: "Dam Levels", source: "Maharashtra Water Resources Department", type: "Collected", frequency: "Daily", url: "https://wrd.maharashtra.gov.in", status: "static" },
+      { module: "Budget & Revenue", source: "Maharashtra Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
+      { module: "RTI", source: "Maharashtra State Information Commission", type: "Collected", frequency: "Annual", url: "https://maic.gov.in", status: "static" },
+      { module: "Transport", source: "MSRTC / BEST / IRCTC", type: "API", frequency: "Monthly", url: "https://msrtc.maharashtra.gov.in", status: "static" },
+      { module: "Rainfall", source: "India Meteorological Department (IMD), Mumbai", type: "API", frequency: "Daily", url: null, status: "live" },
+    ],
+  },
+  // Pune: two city corporations (PMC, PCMC) plus about 1,400 gram
+  // panchayats in the rural talukas; MSEDCL supplies power; PMPML runs
+  // city buses. Village councils and JJM apply (state defaults).
+  "maharashtra/pune": {
+    stateTransportName: "MSRTC / PMPML",
+    stateTransportFullName: "Maharashtra State Road Transport Corporation (MSRTC) / Pune Mahanagar Parivahan Mahamandal (PMPML)",
+    municipalBody: "PMC / PCMC",
+    waterBoard: "PMC / PCMC Water Supply Departments",
+  },
+  // Mandya and Mysuru get power from CESC (Chamundeshwari Electricity
+  // Supply Corporation), not BESCOM.
+  "karnataka/mandya": {
+    discomName: "CESC",
+    discomFullName: "Chamundeshwari Electricity Supply Corporation Limited (CESC Mysore)",
+    discomPortalUrl: "https://cescmysore.karnataka.gov.in",
+    municipalBody: "Mandya City Municipal Council",
+  },
+  "karnataka/mysuru": {
+    discomName: "CESC",
+    discomFullName: "Chamundeshwari Electricity Supply Corporation Limited (CESC Mysore)",
+    discomPortalUrl: "https://cescmysore.karnataka.gov.in",
+    municipalBody: "Mysuru City Corporation",
+  },
+  "karnataka/bengaluru-urban": {
+    municipalBody: "BBMP",
+  },
 };
 
 // ── Universal data sources (apply to ALL districts) ────────
@@ -437,14 +501,40 @@ export interface ModuleSourceInfo {
   sources: string[];
   frequency: string;
   isLive?: boolean;
+  /** Official website for a source name in `sources`, when there is one (for the verification panel). */
+  links?: Record<string, string>;
 }
+
+/** Official websites for source names used in getModuleSources(). */
+const SOURCE_LINKS: Record<string, string> = {
+  "PFMS (Public Financial Management System)": "https://pfms.nic.in",
+  "State Treasury / eGramSwaraj": "https://egramswaraj.gov.in",
+  "NCRB (National Crime Records Bureau)": "https://ncrb.gov.in",
+  "data.gov.in": "https://data.gov.in",
+  "Election Commission of India (ECI)": "https://eci.gov.in",
+  "NJDG (National Judicial Data Grid)": "https://njdg.ecourts.gov.in",
+  "MyScheme.gov.in": "https://www.myscheme.gov.in",
+  "AwaasSoft (PMAY Dashboard)": "https://pmayg.nic.in",
+  eGramSwaraj: "https://egramswaraj.gov.in",
+  "NREGA.nic.in": "https://nrega.nic.in",
+  UPSC: "https://upsc.gov.in",
+  SSC: "https://ssc.gov.in",
+  "KPPP (Karnataka eProc)": "https://kppp.karnataka.gov.in",
+  "CPPP (GePNIC)": "https://eprocure.gov.in/cppp/",
+  IREPS: "https://www.ireps.gov.in",
+  "defproc.gov.in": "https://defproc.gov.in",
+  "Jal Jeevan Mission National Dashboard (eJalShakti)": "https://ejalshakti.gov.in/jjmreport",
+  "UDISE+ (Unified District Information System for Education)": "https://udiseplus.gov.in",
+  "AGMARKNET (Agricultural Marketing Information Network)": "https://agmarknet.gov.in",
+  "India Meteorological Department (IMD)": "https://mausam.imd.gov.in",
+};
 
 // Honesty rule (Sept 2026 audit): `isLive` is true ONLY for modules that a
 // Vercel cron in vercel.json actually refreshes — weather (every 30 min) and
 // dams/water (every 6 h). Every other `frequency` describes when the upstream
 // source publishes, not a poller we run. Update this when vercel.json changes.
-export function getModuleSources(moduleName: string, stateSlug: string): ModuleSourceInfo {
-  const config = getStateConfig(stateSlug);
+export function getModuleSources(moduleName: string, stateSlug: string, districtSlug?: string): ModuleSourceInfo {
+  const config = getStateConfig(stateSlug, districtSlug);
   const map: Record<string, ModuleSourceInfo> = {
     weather:           { sources: ["India Meteorological Department (IMD)", "OpenWeatherMap"], frequency: "Every 30 minutes", isLive: true },
     crops:             { sources: ["AGMARKNET (Agricultural Marketing Information Network)"], frequency: "Daily" },
@@ -494,7 +584,7 @@ export function getModuleSources(moduleName: string, stateSlug: string): ModuleS
     news:              { sources: ["Google News RSS", "Regional news aggregation"], frequency: "Daily" },
     "famous-personalities": { sources: ["Wikipedia (CC-BY-SA licensed)"], frequency: "Static" },
     offices:           { sources: ["District NIC Portal", "State Government Directory"], frequency: "Quarterly" },
-    exams:             { sources: ["UPSC", "SSC", "State PSC / Recruitment Boards"], frequency: "Daily" },
+    exams:             { sources: ["UPSC", "SSC", "State PSC / Recruitment Boards", "News articles (Google News RSS + regional media)"], frequency: "When the source publishes" },
     "data-sources":    { sources: ["ForThePeople.in transparency page"], frequency: "Updated with each release" },
     "citizen-corner":  { sources: ["District Administration", "Citizen feedback"], frequency: "Weekly" },
     alerts:            { sources: ["IMD", "District Administration", "NDMA"], frequency: "When the source publishes" },
@@ -503,7 +593,13 @@ export function getModuleSources(moduleName: string, stateSlug: string): ModuleS
     services:          { sources: ["District NIC Portal", "State Government Directory", "MyScheme.gov.in"], frequency: "When the source publishes" },
     tenders:           { sources: ["KPPP (Karnataka eProc)", "CPPP (GePNIC)", "IREPS", "defproc.gov.in", "BEL eProc", "HAL TenderWizard"], frequency: "When the source publishes" },
   };
-  return map[moduleName] ?? { sources: ["Government public data portals"], frequency: "Periodic" };
+  const info = map[moduleName] ?? { sources: ["Government public data portals"], frequency: "Periodic" };
+  const links: Record<string, string> = {};
+  for (const name of info.sources) if (SOURCE_LINKS[name]) links[name] = SOURCE_LINKS[name];
+  // The state's own portals (power company, water department) where the registry names them.
+  if (config?.discomPortalUrl && info.sources.includes(config.discomFullName)) links[config.discomFullName] = config.discomPortalUrl;
+  if (config?.stateTransportUrl && info.sources.includes(config.stateTransportFullName)) links[config.stateTransportFullName] = config.stateTransportUrl;
+  return Object.keys(links).length ? { ...info, links } : info;
 }
 
 // ── AI insight update frequency by module ───────────────────
@@ -519,16 +615,24 @@ export function getInsightFrequencyLabel(moduleName: string): string {
 }
 
 // ── Public API ─────────────────────────────────────────────
-export function getStateConfig(stateSlug: string): StateConfig | null {
-  return STATE_CONFIGS[stateSlug] ?? null;
+/**
+ * The configuration for a state, with the district's own values on top
+ * when `districtSlug` is given (Pune is not Mumbai; Mandya is not
+ * Bengaluru). Pages under /[state]/[district]/ should pass the district.
+ */
+export function getStateConfig(stateSlug: string, districtSlug?: string): StateConfig | null {
+  const base = STATE_CONFIGS[stateSlug] ?? null;
+  if (!base || !districtSlug) return base;
+  const override = DISTRICT_OVERRIDES[`${stateSlug}/${districtSlug}`];
+  return override ? { ...base, ...override } : base;
 }
 
 export function getStateConfigForDistrict(districtSlug: string, stateSlug: string): StateConfig | null {
-  return getStateConfig(stateSlug);
+  return getStateConfig(stateSlug, districtSlug);
 }
 
-export function getAllDataSources(stateSlug: string): DataSourceEntry[] {
-  const stateConfig = getStateConfig(stateSlug);
+export function getAllDataSources(stateSlug: string, districtSlug?: string): DataSourceEntry[] {
+  const stateConfig = getStateConfig(stateSlug, districtSlug);
   const stateSources = stateConfig?.dataSources ?? [];
   return [...UNIVERSAL_DATA_SOURCES, ...stateSources];
 }

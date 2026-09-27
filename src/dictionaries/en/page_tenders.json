@@ -128,10 +128,7 @@
   },
   "locked": {
     "title": "Tender tracking for {district} is coming soon",
-    "description": "We’re gathering procurement data from {state}’s government eProc portals. Support the project to prioritise your district — each supporter shortens the wait for a new district to come online.",
-    "helpTitle": "Help bring tenders to {district}",
-    "helpBody": "Covering a new district costs time (legal review, data-collection setup, state-specific disclaimer). Supporters decide where we go next.",
-    "support": "Support this district",
+    "description": "We are gathering procurement data from {state}’s government eProc portals. Until then, the districts below are tracked.",
     "tracked": "Currently tracked"
   },
   "wizard": {
@@ -315,7 +312,6 @@
     "ofEstimate": "Of estimate:",
     "awardedOn": "Awarded <num>{date}</num>",
     "documents": "Documents",
-    "noticeSource": "{portal}: this tender's notice",
     "explainer": "{authority} is asking firms to bid for this work{hasValue, select, yes {, worth about <b>{value}</b>} other {}}. {closed, select, yes {Bids closed on <b>{date}</b>.} other {Bids close on <b>{date}</b>.}}"
   },
   "apply": {

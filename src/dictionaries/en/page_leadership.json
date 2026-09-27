@@ -46,7 +46,7 @@
   "electionAlert": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "electionAlertDate": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results on {date}. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "emptyTitle": "No leadership data yet",
-  "emptyBody": "We add elected representatives and officers for this district as soon as they are checked against official records.",
+  "emptyBody": "We have not added elected representatives and officers for this district yet. We add them only after checking official records.",
   "tilePeople": "People listed",
   "tileElected": "Chosen by voters",
   "tileElectedSub": "MP and MLAs",
@@ -108,7 +108,6 @@
     "about": "expected about {date}",
     "link": "See the dates, and how to vote"
   },
-  "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
   "roleFallback": "Government official serving the district.",
   "roles": {
     "president-of-india": "Constitutional head of state. Appoints the PM, Governors, and judges. Commander-in-chief of armed forces.",
@@ -138,16 +137,5 @@
     "managing-director": "Head of a state public-sector undertaking or development authority. Runs day-to-day operations.",
     "chairman": "Top governing officer of a board, authority or commission. Sets strategic direction.",
     "tahsildar": "Sub-district revenue officer. Handles land records, mutations and revenue collection at the taluk level."
-  },
-  "downloadCsv": "Download CSV",
-  "share": "Share",
-  "linkCopied": "Link copied",
-  "compare": "Compare with another district",
-  "toolbar": "Page actions",
-  "freq": {
-    "whenPublished": "When the source publishes"
-  },
-  "sourceNames": {
-    "districtAdministration": "District Administration"
   }
 }

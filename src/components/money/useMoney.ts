@@ -24,6 +24,12 @@ const SOURCE_KEY: Record<string, string> = {
   "Government press releases": "pressReleases",
   "State Industrial Dev. Corp.": "stateIndustrialCorp",
   "State Treasury / eGramSwaraj": "stateTreasury",
+  "District Administration": "districtAdmin",
+  "District NIC Portal": "districtNic",
+  "State Government Directory": "stateDirectory",
+  "District Industries Centre": "districtIndustries",
+  "State PSC / Recruitment Boards": "statePsc",
+  "Government public data portals": "govPortals",
 };
 const FREQ_KEY: Record<string, string> = {
   "When the source publishes": "whenPublished",

@@ -23,7 +23,8 @@ import { useTranslations } from "next-intl";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import { useFormat } from "@/i18n/client";
 import { Section, Card, ProgressBar, AsOfText, SourcePill } from "@/components/district/ui";
-import { Pictogram } from "@/components/district/visuals";
+import { UserCheck } from "lucide-react";
+import { IconPictogram } from "@/components/district/calm-parts";
 
 interface StaffingRecord {
   id: string;
@@ -59,14 +60,14 @@ export default function PoliceStaffing({ district, state }: { district: string; 
   const num = (n: number) => f.number(n);
 
   return (
-    <Section title={t("staffTitle")} emoji="👮">
-      <Card tinted padding={18}>
+    <Section title={t("staffTitle")}>
+      <Card padding={18}>
         <div className="ftp-picture-row">
           <div style={{ minWidth: 0 }}>
             <p className="ftp-prose" style={{ margin: "0 0 14px", fontSize: 15, lineHeight: 1.6 }}>
               {t.rich("staffExplain", { working: num(working), sanctioned: num(sanctioned), vacant: num(vacant), b: bold })}
             </p>
-            <Pictogram filled={share * 10} emoji="👮" label={t("staffPicto", { n: num(Math.round(share * 10)) })} />
+            <IconPictogram filled={share * 10} icon={UserCheck} label={t("staffPicto", { n: num(Math.round(share * 10)) })} />
           </div>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
             {roles.map((r) => {
@@ -78,11 +79,11 @@ export default function PoliceStaffing({ district, state }: { district: string; 
                     <span lang="en" style={{ fontWeight: 600, color: "var(--ftp-text)", minWidth: 0, overflowWrap: "anywhere" }}>
                       {r.roleName}
                     </span>
-                    <span className="ftp-num" style={{ color: short ? "var(--ftp-danger)" : "var(--hue-deep)" }}>
+                    <span className="ftp-num" style={{ color: short ? "var(--ftp-warn)" : "var(--hue-deep)" }}>
                       {t("staffRole", { working: num(r.workingStrength), sanctioned: num(r.sanctionedPosts) })}
                     </span>
                   </div>
-                  <ProgressBar pct={pct} tone={short ? "danger" : "brand"} height={8} />
+                  <ProgressBar pct={pct} tone={short ? "warn" : "brand"} height={8} />
                 </li>
               );
             })}

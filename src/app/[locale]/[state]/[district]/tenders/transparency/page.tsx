@@ -24,7 +24,7 @@ import { AlertTriangle, Flag } from "lucide-react";
 import { ModulePage, PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { TopBarList } from "@/components/money/visuals";
 import { useMoney } from "@/components/money/useMoney";
 import { useDistrictName, useModuleText } from "@/i18n/client";
@@ -34,17 +34,6 @@ type TransparencyResp = {
   districtName: string;
   flagGroups: Record<string, Array<{ tenderId: string; title: string; factualStatement: string; referenceRule: string | null; authority: string; value: string | null }>>;
   totalTenders: number;
-};
-
-/** One emoji per indicator type. */
-const FLAG_EMOJI: Record<string, string> = {
-  SINGLE_BIDDER: "1️⃣",
-  SHORT_WINDOW: "⏱️",
-  PRICE_HIT_RATE: "🎯",
-  REPEAT_WINNER: "🔁",
-  RETENDERED: "♻️",
-  RESTRICTIVE_TURNOVER: "📈",
-  DIRECT_NOMINATION: "👉",
 };
 
 const b = (c: React.ReactNode) => <strong>{c}</strong>;
@@ -78,7 +67,6 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
       <ModulePage>
         <PageHeader
           icon={AlertTriangle}
-          emoji="🔎"
           title={t("transparency.title")}
           description={t("transparency.descriptionIn", { district: districtName })}
           backHref={tendersBase}
@@ -87,7 +75,7 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
 
         {/* The answer in one sentence. */}
         {data && flaggedTenders > 0 && (
-          <Explainer emoji="🚩">{t.rich("transparency.explainer", { n: flaggedTenders, total: data.totalTenders, district: districtName, b })}</Explainer>
+          <Explainer>{t.rich("transparency.explainer", { n: flaggedTenders, total: data.totalTenders, district: districtName, b })}</Explainer>
         )}
 
         <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
@@ -97,7 +85,6 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
         {data && data.totalTenders === 0 && (
           // Honest cadence: no tender cron is scheduled, so no fixed interval is promised.
           <EmptyState
-            emoji="🔎"
             title={t("transparency.emptyTitle", { district: data.districtName })}
             body={t("transparency.emptyBody")}
           />
@@ -108,7 +95,6 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
           <div style={{ marginBottom: 8 }}>
             <ChartCard
               title={t("transparency.chartTitle")}
-              emoji="🚩"
               units={t("transparency.chartUnits")}
               simple={t.rich("transparency.chartSimple", { name: flagName(groups[0].type), n: groups[0].rows.length, b })}
               source={{ label: t("sourceLabel") }}
@@ -119,7 +105,6 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
                 rows={groups.map((g) => ({
                   key: g.type,
                   label: flagName(g.type),
-                  emoji: FLAG_EMOJI[g.type] ?? "🚩",
                   value: g.rows.length,
                   display: t("transparency.count", { n: g.rows.length }),
                 }))}
@@ -131,9 +116,8 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
         {groups.map(({ type, rows }) => (
           <Section
             key={type}
-            emoji={FLAG_EMOJI[type] ?? "🚩"}
             title={flagName(type)}
-            action={<Pill tone="danger" icon={Flag}>{t("transparency.count", { n: rows.length })}</Pill>}
+            action={<Pill tone="warn" icon={Flag}>{t("transparency.count", { n: rows.length })}</Pill>}
           >
             <Card>
               <details style={{ marginBottom: 12 }}>
@@ -170,7 +154,7 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
           <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
         </div>
 
-        <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} showCompare={false} />
+        <MoneyToolbar shareTitle={mt.label("tenders")} />
       </ModulePage>
     </ModuleErrorBoundary>
   );

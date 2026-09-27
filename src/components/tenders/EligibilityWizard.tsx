@@ -15,7 +15,7 @@
 import type React from "react";
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, CircleDashed, XCircle, Info } from "lucide-react";
+import { Calculator, CheckCircle2, CircleDashed, XCircle, Info } from "lucide-react";
 import { Card } from "@/components/district/ui";
 import { useMoney } from "@/components/money/useMoney";
 
@@ -142,7 +142,7 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
   return (
     <Card>
       <div className="ftp-title" style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>🧮</span>
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}><Calculator size={15} /></span>
         {t("wizard.title")}
       </div>
       <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 14px" }}>

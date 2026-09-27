@@ -9,49 +9,59 @@
 //  each date?"  (docs/LAYOUT.md recipe, docs/MODULE-MAP.md "Help for you")
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  ModulePage → PageHeader → AI summary → Explainer (one sentence: how many
-//  are open now and the very next date) → 4 StatTiles → ONE picture: "Where
-//  each exam is right now" (the six steps, with how many exams sit at each)
-//  → who-runs-it Chips → the lists, as TapCards:
-//      ⏰ Coming up         sorted by the next date, each with a CountdownBar
-//                           ("Exam in 12 days") and the six-dot timeline
-//                           with a 📍 Today pin
-//      🗓️ Dates not out yet  active exams with no date announced
-//      🏁 Finished           folded away behind a button
+//  ModulePage → PageHeader → Explainer (how many are open now, the very
+//  next CONFIRMED date, and how many are not confirmed) → 4 StatTiles →
+//  ONE picture: "How sure are these dates?" (confirmed / not confirmed /
+//  finished) → who-runs-it Chips → the lists, as TapCards:
+//      Coming up             confirmed exams, sorted by the next date, each
+//                            with a CountdownBar ("Exam in 12 days") and
+//                            the six-dot timeline
+//      Dates not confirmed   active exams we could not re-check against an
+//                            official notice in the last 30 days: no
+//                            countdown, no "open", a clear note
+//      Dates not out yet     confirmed exams with no date announced
+//      Finished              folded away behind a button
 //  Tapping a card opens a DetailSheet: countdown, the full timeline with a
 //  "Today" row, eligibility, age, fee, posts, pay, selection, who can apply,
 //  news headlines that mention the exam (/api/data/exam-news), the sources,
 //  and Apply / Official notice / Syllabus buttons.
 //  → charts (ChartCard, 2 per row on laptop/PC): who runs the exams, and
-//  government posts filled in the district → sources → related news →
-//  Share / Compare.
+//  government posts filled in the district → AI insight → Share / Compare
+//  → related news. Sources and "report a mistake" live in the district
+//  shell's verification panel.
 //
-//  Honesty: dates are the boards' dates as stored; a missing date says "Not
-//  announced yet". Exams not confirmed by the news lately carry a warning.
+//  Honesty (v5): dates are the boards' dates as stored; a missing date says
+//  "Not announced yet". An exam shows as "open", and gets a countdown, only
+//  when its dates were re-checked in the last 30 days AND it has an
+//  official link (examConfirmation in community/examTimeline.ts).
+//  Everything else says "Dates not confirmed". No emoji.
 //
 //  i18n: page_exams (en / kn / hi). Exam titles, departments, fees, pay
 //  scales and qualifications are data from the boards, shown as published.
 "use client";
 import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { GraduationCap, ExternalLink, AlertTriangle, GitCompare } from "lucide-react";
+import { AlertTriangle, CalendarClock, CircleCheck, ExternalLink, GraduationCap, Users } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ExamStepper from "@/components/district/ExamStepper";
 import ModuleNews from "@/components/district/ModuleNews";
 import {
   ModulePage, PageHeader, Section, Card, Pill, Chips, StatStrip, StatTile,
-  LoadingShell, ErrorBlock, EmptyState, SourcesFooter, Toolbar, ToolbarButton, AsOfText,
+  LoadingShell, ErrorBlock, EmptyState, ToolbarButton, AsOfText,
 } from "@/components/district/ui";
-import { ChartCard, CountdownBar, Explainer, Gauge, HowItWorks } from "@/components/district/visuals";
+import { ChartCard, CountdownBar, Explainer, Gauge } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { RingMeter, ShareDonut, type DonutSlice } from "@/components/community/CommunityVisuals";
-import { EmojiChip, TapCard } from "@/components/community/TapCard";
-import { SharePageButton, cleanText, useNow, withScheme } from "@/components/community/pageTools";
+import { TapCard } from "@/components/community/TapCard";
+import { cleanText, useNow, withScheme } from "@/components/community/pageTools";
 import {
-  EXAM_PHASES, PHASE_EMOJI, canApply, examPhase, lastPassedDate, nextExamStep,
-  type ExamPhase, type ExamStep,
+  CONFIRM_DAYS, canApply, examConfirmation, examPhase, lastPassedDate, nextExamStep,
+  type ExamConfirmation, type ExamPhase, type ExamStep,
 } from "@/components/community/examTimeline";
+import { CalmNote } from "@/components/district/calm-parts";
+import { StageBar } from "@/components/money/visuals";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { hueClass } from "@/lib/design/hues";
@@ -125,14 +135,13 @@ interface ExamView {
   phase: ExamPhase;
   next: ExamStep | null;
   category: ExamCategory;
-  emoji: string;
+  /** Are the dates re-checked (≤ 30 days) and backed by an official link? */
+  confirm: ExamConfirmation;
   /** Short name for sentences ("SSC MTS 2026"), else the title. */
   name: string;
 }
 
 // ── Who runs it ───────────────────────────────────────────
-const CATEGORY_EMOJI: Record<ExamCategory, string> = { central: "🏛️", state: "🏢", banking: "🏦" };
-
 /** Central / state / banking: the stored category first, else the department name. */
 function examCategory(e: GovernmentExam): ExamCategory {
   const c = (e.category ?? "").toUpperCase();
@@ -144,17 +153,6 @@ function examCategory(e: GovernmentExam): ExamCategory {
   if (/union public service|staff selection|railway|\bnta\b|upsc|\bssc\b|rrb|cbse/.test(who)) return "central";
   if (e.level === "national") return "central";
   return "state";
-}
-
-/** A picture for the kind of job: trains, uniforms and classrooms get their own. */
-function examEmoji(e: GovernmentExam, category: ExamCategory): string {
-  const c = (e.category ?? "").toUpperCase();
-  const who = `${e.department} ${e.organizingBody ?? ""} ${e.title}`.toLowerCase();
-  if (c === "RAILWAY" || /railway|\brrb\b/.test(who)) return "🚆";
-  if (c === "DEFENCE" || /defence|army|navy|air force|\bnda\b|\bcds\b/.test(who)) return "🎖️";
-  if (c === "TEACHING" || /teacher|\btet\b|ctet/.test(who)) return "👩‍🏫";
-  if (/police|constable/.test(who)) return "👮";
-  return CATEGORY_EMOJI[category];
 }
 
 /** Who can apply: the whole country, this state, or this district. */
@@ -178,53 +176,34 @@ function lastKnownDate(e: GovernmentExam): string {
 
 // ── Small pieces ──────────────────────────────────────────
 
-/** Where the exam is now, as a pill: open = green, exam soon = amber, finished = grey, else the page hue. */
-function PhasePill({ phase }: { phase: ExamPhase }) {
+/**
+ * Where the exam is now, as a pill. Honesty first: an active exam whose
+ * dates are not confirmed says "Dates not confirmed" (calm amber) instead
+ * of "Applications open" or "Exam soon".
+ */
+function PhasePill({ phase, confirmed }: { phase: ExamPhase; confirmed: boolean }) {
   const t = useTranslations("page_exams");
-  const label = (
-    <>
-      <span className="ftp-emoji" aria-hidden>{PHASE_EMOJI[phase]}</span>
-      {t(`phase.${phase}`)}
-    </>
-  );
+  if (!confirmed && phase !== "done") {
+    return (
+      <Pill tone="warn" icon={AlertTriangle} title={t("v5.unconfirmedHint")}>
+        {t("v5.notConfirmed")}
+      </Pill>
+    );
+  }
+  const label = t(`phase.${phase}`);
   if (phase === "applyOpen") return <Pill tone="live">{label}</Pill>;
-  if (phase === "examSoon") return <Pill tone="warn">{label}</Pill>;
-  if (phase === "done") return <Pill tone="neutral">{label}</Pill>;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        height: 24,
-        padding: "0 10px",
-        borderRadius: "var(--ftp-radius-pill)",
-        background: "var(--hue-tint)",
-        color: "var(--hue-deep)",
-        fontSize: 11,
-        lineHeight: "16px",
-        fontWeight: 600,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-    </span>
-  );
+  if (phase === "examSoon") return <Pill tone="brand">{label}</Pill>;
+  return <Pill tone="neutral">{label}</Pill>;
 }
 
-/** "Not confirmed lately" warning for exams the news has not mentioned in a while. */
-function UnverifiedPill({ exam }: { exam: GovernmentExam }) {
+/** "Last checked 96 days ago" / "Not checked against an official notice yet". */
+function CheckedLine({ confirm }: { confirm: ExamConfirmation }) {
   const t = useTranslations("page_exams");
-  const f = useFormat();
-  if (!exam.needsVerification) return null;
   return (
-    <Pill
-      tone="warn"
-      icon={AlertTriangle}
-      title={exam.lastVerifiedAt ? t("unverifiedTitle", { when: f.ago(exam.lastVerifiedAt) }) : t("unverifiedNever")}
-    >
-      {t("unverified")}
-    </Pill>
+    <p style={{ margin: 0, fontSize: 12, lineHeight: "17px", color: "var(--ftp-text-2)" }}>
+      {confirm.checkedDays === null ? t("v5.neverChecked") : t("v5.checked", { n: confirm.checkedDays })}
+      {!confirm.officialUrl && <> · {t("v5.noOfficialLink")}</>}
+    </p>
   );
 }
 
@@ -233,7 +212,8 @@ function ExamCountdown({ view, now, withName }: { view: ExamView; now: number; w
   const t = useTranslations("page_exams");
   const f = useFormat();
   const next = view.next;
-  if (!next || !next.date) return null;
+  // Countdowns only for confirmed dates.
+  if (!view.confirm.confirmed || !next || !next.date) return null;
   const when = t("whenLower", { n: next.days ?? 0 });
   const label = withName ? t(`countdown.${next.key}`, { name: view.name, when }) : t(`countdownShort.${next.key}`, { when });
   const start = lastPassedDate(view.exam, now) ?? new Date(now).toISOString();
@@ -255,23 +235,21 @@ function ExamCard({ view, now, onOpen }: { view: ExamView; now: number; onOpen: 
   return (
     <TapCard
       onOpen={() => onOpen(view)}
-      leading={<EmojiChip emoji={view.emoji} />}
       title={e.title}
       subtitle={e.organizingBody ?? e.department}
-      badge={
-        <>
-          <PhasePill phase={view.phase} />
-          <UnverifiedPill exam={e} />
-        </>
-      }
+      badge={<PhasePill phase={view.phase} confirmed={view.confirm.confirmed} />}
       hint={t("details")}
-      tinted={view.phase === "applyOpen"}
     >
-      <ExamCountdown view={view} now={now} />
-      <ExamStepper now={now} {...e} />
+      {view.confirm.confirmed ? (
+        <>
+          <ExamCountdown view={view} now={now} />
+          <ExamStepper now={now} {...e} />
+        </>
+      ) : (
+        view.phase !== "done" && <CheckedLine confirm={view.confirm} />
+      )}
       {e.vacancies != null && e.vacancies > 0 && (
         <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
-          <span className="ftp-emoji" aria-hidden>🪑 </span>
           {t.rich("postsLine", { n: e.vacancies, count: f.number(e.vacancies), b: (c) => <strong className="ftp-num" style={{ color: "var(--hue-deep)" }}>{c}</strong> })}
         </p>
       )}
@@ -280,10 +258,9 @@ function ExamCard({ view, now, onOpen }: { view: ExamView; now: number; onOpen: 
 }
 
 /** A heading inside the detail sheet. */
-function SheetHeading({ emoji, children }: { emoji: string; children: React.ReactNode }) {
+function SheetHeading({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="ftp-display" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-      <span className="ftp-emoji" aria-hidden>{emoji}</span>
       {children}
     </h3>
   );
@@ -322,6 +299,7 @@ function ExamSheet({
   const t = useTranslations("page_exams");
   const f = useFormat();
   const e = view.exam;
+  const confirmed = view.confirm.confirmed;
   const notGiven = t("notGiven");
   const sources = (Array.isArray(e.sourceUrls) ? e.sourceUrls : []).filter((u) => typeof u === "string" && u).slice(0, 3);
   const host = (u: string) => {
@@ -334,30 +312,27 @@ function ExamSheet({
 
   const footer = (
     <>
-      {e.applyUrl && canApply(view.phase) && (
+      {e.applyUrl && confirmed && canApply(view.phase) && (
         <a href={withScheme(e.applyUrl)} target="_blank" rel="noopener noreferrer" style={{ ...sheetButton, background: "var(--hue)", color: "#fff", border: "1px solid var(--hue)" }}>
-          <span className="ftp-emoji" aria-hidden>📝</span>
           {t("applyNow")}
           <ExternalLink size={14} aria-hidden />
         </a>
       )}
       {e.notificationUrl && (
         <a href={withScheme(e.notificationUrl)} target="_blank" rel="noopener noreferrer" style={{ ...sheetButton, background: "#fff", color: "var(--ftp-text)", border: "1px solid var(--ftp-border)" }}>
-          <span className="ftp-emoji" aria-hidden>📄</span>
-          {t("notification")}
+          {view.confirm.officialUrl === e.notificationUrl ? t("notification") : t("v5.noticeLink")}
           <ExternalLink size={14} aria-hidden />
         </a>
       )}
       {e.syllabusUrl && (
         <a href={withScheme(e.syllabusUrl)} target="_blank" rel="noopener noreferrer" style={{ ...sheetButton, background: "#fff", color: "var(--ftp-text)", border: "1px solid var(--ftp-border)" }}>
-          <span className="ftp-emoji" aria-hidden>📚</span>
           {t("syllabus")}
           <ExternalLink size={14} aria-hidden />
         </a>
       )}
     </>
   );
-  const hasFooter = Boolean((e.applyUrl && canApply(view.phase)) || e.notificationUrl || e.syllabusUrl);
+  const hasFooter = Boolean((e.applyUrl && confirmed && canApply(view.phase)) || e.notificationUrl || e.syllabusUrl);
 
   return (
     <DetailSheet
@@ -365,44 +340,51 @@ function ExamSheet({
       onClose={onClose}
       title={e.title}
       subtitle={e.organizingBody ?? e.department}
-      emoji={view.emoji}
       hueClassName={hueClass("exams")}
       footer={hasFooter ? footer : undefined}
     >
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <PhasePill phase={view.phase} />
-        <UnverifiedPill exam={e} />
+        <PhasePill phase={view.phase} confirmed={confirmed} />
       </div>
 
-      {view.next && (
+      {!confirmed && view.phase !== "done" && (
+        <CalmNote tone="warn" icon={AlertTriangle}>
+          <strong>{t("v5.notConfirmed")}.</strong> {t("v5.datesAsStored")}
+          <div style={{ marginTop: 4 }}>
+            <CheckedLine confirm={view.confirm} />
+          </div>
+        </CalmNote>
+      )}
+
+      {confirmed && view.next && (
         <div style={{ padding: 14, borderRadius: "var(--ftp-radius-card)", background: "var(--hue-tint)" }}>
           <ExamCountdown view={view} now={now} withName />
         </div>
       )}
 
       <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <SheetHeading emoji="📅">{t("sheet.dates")}</SheetHeading>
-        <ExamStepper now={now} variant="full" {...e} />
+        <SheetHeading>{t("sheet.dates")}</SheetHeading>
+        <ExamStepper now={now} variant="full" relative={confirmed} {...e} />
       </section>
 
       <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <SheetHeading emoji="📋">{t("sheet.facts")}</SheetHeading>
+        <SheetHeading>{t("sheet.facts")}</SheetHeading>
         <DetailList
           rows={[
-            { emoji: "🪑", label: t("facts.vacancies"), value: e.vacancies != null ? <span className="ftp-num">{f.number(e.vacancies)}</span> : notGiven },
-            { emoji: "🎓", label: t("facts.qualification"), value: e.qualification ?? notGiven },
-            { emoji: "🎂", label: t("facts.ageLimit"), value: e.ageLimit ?? notGiven },
-            { emoji: "💳", label: t("facts.fee"), value: e.applicationFee ?? notGiven },
-            { emoji: "💰", label: t("facts.pay"), value: e.payScale },
-            { emoji: "🧭", label: t("facts.selection"), value: e.selectionProcess },
-            { emoji: "🗺️", label: t("facts.reach"), value: t(`reach.${examReach(e)}`) },
-            { emoji: "🏛️", label: t("facts.department"), value: e.department },
+            { label: t("facts.vacancies"), value: e.vacancies != null ? <span className="ftp-num">{f.number(e.vacancies)}</span> : notGiven },
+            { label: t("facts.qualification"), value: e.qualification ?? notGiven },
+            { label: t("facts.ageLimit"), value: e.ageLimit ?? notGiven },
+            { label: t("facts.fee"), value: e.applicationFee ?? notGiven },
+            { label: t("facts.pay"), value: e.payScale },
+            { label: t("facts.selection"), value: e.selectionProcess },
+            { label: t("facts.reach"), value: t(`reach.${examReach(e)}`) },
+            { label: t("facts.department"), value: e.department },
           ]}
         />
       </section>
 
       <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <SheetHeading emoji="📰">{t("sheet.news")}</SheetHeading>
+        <SheetHeading>{t("sheet.news")}</SheetHeading>
         {newsLoading ? (
           <LoadingShell rows={2} />
         ) : newsError ? (
@@ -446,7 +428,7 @@ function ExamSheet({
       </section>
 
       <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <SheetHeading emoji="🔎">{t("sheet.source")}</SheetHeading>
+        <SheetHeading>{t("sheet.source")}</SheetHeading>
         {e.lastVerifiedAt && (
           <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
             {t.rich("lastFromNews", { when: f.ago(e.lastVerifiedAt), n: (c) => <span className="ftp-num">{c}</span> })}
@@ -468,19 +450,15 @@ function ExamSheet({
             ))}
           </div>
         )}
-        <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
-          <span className="ftp-emoji" aria-hidden>☝️ </span>
-          {t("sheet.checkOfficial")}
-        </p>
+        <CalmNote>{t("sheet.checkOfficial")}</CalmNote>
       </section>
     </DetailSheet>
   );
 }
 
-/** A titled grid of exam cards ("⏰ Coming up (4)"). */
+/** A titled grid of exam cards ("Coming up (4)"). */
 function ExamList({
   title,
-  emoji,
   views,
   now,
   onOpen,
@@ -488,7 +466,6 @@ function ExamList({
   action,
 }: {
   title: string;
-  emoji: string;
   views: ExamView[];
   now: number;
   onOpen: (v: ExamView) => void;
@@ -500,7 +477,6 @@ function ExamList({
   if (views.length === 0 && !action) return null;
   return (
     <Section
-      emoji={emoji}
       title={
         <>
           {title}{" "}
@@ -527,7 +503,6 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const t = useTranslations("page_exams");
   const f = useFormat();
   const now = useNow();
-  const base = `/${locale}/${state}/${district}`;
   const districtName = useDistrictName(state, district);
 
   const { data: apiResponse, isLoading, error } = useDistrictData<ExamsResponse>("exams", district, state);
@@ -555,36 +530,40 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
       phase: examPhase(exam, now),
       next: nextExamStep(exam, now),
       category: cat,
-      emoji: examEmoji(exam, cat),
+      confirm: examConfirmation(exam, now),
       name: exam.shortName?.trim() || exam.title,
     };
   });
   const shown = category === "all" ? views : views.filter((v) => v.category === category);
 
+  // Only CONFIRMED exams can be "coming up" (with a countdown) or "open".
   const comingUp = shown
-    .filter((v) => v.next && v.phase !== "done")
+    .filter((v) => v.confirm.confirmed && v.next && v.phase !== "done")
     .sort((a, b) => (a.next?.days ?? 0) - (b.next?.days ?? 0) || a.name.localeCompare(b.name));
-  const waiting = shown.filter((v) => !v.next && v.phase !== "done").sort((a, b) => a.name.localeCompare(b.name));
+  const unconfirmed = shown
+    .filter((v) => !v.confirm.confirmed && v.phase !== "done")
+    .sort((a, b) => (a.confirm.checkedDays ?? Infinity) - (b.confirm.checkedDays ?? Infinity) || a.name.localeCompare(b.name));
+  const waiting = shown.filter((v) => v.confirm.confirmed && !v.next && v.phase !== "done").sort((a, b) => a.name.localeCompare(b.name));
   const finished = shown.filter((v) => v.phase === "done").sort((a, b) => lastKnownDate(b.exam).localeCompare(lastKnownDate(a.exam)));
 
-  // Headline numbers, from every exam (not the filter).
+  // Headline numbers, from every exam (not the filter), confirmed ones only.
   const active = views.filter((v) => v.phase !== "done");
-  const openNow = views.filter((v) => v.phase === "applyOpen").length;
-  const soonest = views
-    .filter((v) => v.next && v.phase !== "done")
-    .sort((a, b) => (a.next?.days ?? 0) - (b.next?.days ?? 0))[0];
-  const withPosts = active.filter((v) => typeof v.exam.vacancies === "number" && v.exam.vacancies > 0);
+  const activeConfirmed = active.filter((v) => v.confirm.confirmed);
+  const unconfirmedCount = active.length - activeConfirmed.length;
+  const openNow = activeConfirmed.filter((v) => v.phase === "applyOpen").length;
+  const soonest = activeConfirmed.filter((v) => v.next).sort((a, b) => (a.next?.days ?? 0) - (b.next?.days ?? 0))[0];
+  const withPosts = activeConfirmed.filter((v) => typeof v.exam.vacancies === "number" && v.exam.vacancies > 0);
   const posts = withPosts.reduce((s, v) => s + (v.exam.vacancies ?? 0), 0);
   const finishedCount = views.length - active.length;
-  const phaseCounts = EXAM_PHASES.map((p) => ({ phase: p, n: views.filter((v) => v.phase === p).length }));
-  const dataAsOf = newest(allExams.map((e) => e.updatedAt ?? e.lastVerifiedAt));
+  // The page date is the newest time anyone CHECKED an exam (not a nightly date roll-over).
+  const dataAsOf = newest(allExams.map((e) => e.lastVerifiedAt));
 
   // Charts: who runs the exams; government posts filled here.
   const categoryCounts = (["central", "state", "banking"] as const)
     .map((c) => ({ key: c, count: views.filter((v) => v.category === c).length }))
     .filter((c) => c.count > 0)
     .sort((a, b) => b.count - a.count);
-  const whoSlices: DonutSlice[] = categoryCounts.map((c) => ({ key: c.key, label: t(`categoryShort.${c.key}`), value: c.count, emoji: CATEGORY_EMOJI[c.key] }));
+  const whoSlices: DonutSlice[] = categoryCounts.map((c) => ({ key: c.key, label: t(`categoryShort.${c.key}`), value: c.count }));
   const topWho = categoryCounts[0];
   const showWho = categoryCounts.length >= 2 && views.length >= 3;
 
@@ -601,6 +580,11 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const soonestText = soonest?.next
     ? t(`countdown.${soonest.next.key}`, { name: soonest.name, when: t("whenLower", { n: soonest.next.days ?? 0 }) })
     : null;
+  const sureParts = [
+    { key: "confirmed", label: t("v5.bar.confirmed"), value: activeConfirmed.length, fill: "var(--hue-deep)" },
+    { key: "unconfirmed", label: t("v5.bar.unconfirmed"), value: unconfirmedCount, fill: "var(--ftp-warn)" },
+    { key: "finished", label: t("v5.bar.finished"), value: finishedCount, fill: "var(--ftp-border-strong)" },
+  ];
 
   return (
     <ModulePage>
@@ -608,59 +592,53 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
         icon={GraduationCap}
         title={t("title")}
         description={t("description")}
-        backHref={base}
-        freshness={dataAsOf ? { asOf: dataAsOf, thresholdHours: 72 } : undefined}
+        freshness={dataAsOf ? { asOf: dataAsOf, thresholdHours: CONFIRM_DAYS * 24 } : undefined}
         source={{ label: t("sourcePill") }}
       />
-      <AIInsightCard module="exams" district={district} />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && (!examsData || views.length === 0) && (
-        <EmptyState emoji="📝" title={t("noData")} body={t("noDataBody")} />
+        <EmptyState title={t("noData")} body={t("noDataBody")} />
       )}
 
       {!isLoading && examsData && views.length > 0 && (
         <>
-          <Explainer emoji="📝">
-            {soonestText
-              ? t.rich("simpleNext", { open: openNow, next: soonestText, b: bold })
-              : t.rich("simpleNoNext", { open: openNow, b: bold })}
+          <Explainer>
+            {activeConfirmed.length === 0
+              ? t.rich("v5.explainerNone", { total: views.length, b: bold })
+              : soonestText
+                ? t.rich("simpleNext", { open: openNow, next: soonestText, b: bold })
+                : t.rich("simpleNoNext", { open: openNow, b: bold })}
+            {activeConfirmed.length > 0 && unconfirmedCount > 0 && <> {t.rich("v5.explainerSome", { n: unconfirmedCount, b: bold })}</>}
           </Explainer>
 
-          <StatStrip cols={posts > 0 ? 4 : 3}>
-            <StatTile emoji="📝" label={t("statOpen")} value={f.number(openNow)} sub={t("statOpenSub")} />
+          <StatStrip cols={4}>
+            <StatTile icon={CircleCheck} label={t("statOpen")} value={f.number(openNow)} sub={t("v5.statOpenSub")} />
             <StatTile
-              emoji="⏰"
+              icon={CalendarClock}
               label={t("statNext")}
               value={soonest?.next ? (soonest.next.days === 0 ? t("todayWord") : f.number(soonest.next.days ?? 0)) : "—"}
               unit={soonest?.next && (soonest.next.days ?? 0) > 0 ? t("daysUnit", { n: soonest.next.days ?? 0 }) : undefined}
               sub={soonest?.next ? t("statNextSub", { name: soonest.name, step: t(`stepper.${soonest.next.key}`) }) : t("statNextNone")}
             />
-            {posts > 0 && (
-              <StatTile emoji="🪑" label={t("statPosts")} value={f.number(posts)} sub={t("statPostsSub", { n: withPosts.length })} />
+            {posts > 0 ? (
+              <StatTile icon={Users} label={t("statPosts")} value={f.number(posts)} sub={t("statPostsSub", { n: withPosts.length })} />
+            ) : (
+              <StatTile icon={AlertTriangle} label={t("v5.notConfirmed")} value={f.number(unconfirmedCount)} sub={t("v5.statUnconfirmedSub")} />
             )}
-            <StatTile emoji="🗂️" label={t("statTracked")} value={f.number(views.length)} sub={t("statTrackedSub", { n: finishedCount })} asOf={dataAsOf} />
+            <StatTile icon={GraduationCap} label={t("statTracked")} value={f.number(views.length)} sub={t("statTrackedSub", { n: finishedCount })} asOf={dataAsOf} />
           </StatStrip>
 
-          {/* The one picture: the six steps, with how many exams sit at each today. */}
-          <div style={{ marginTop: 20 }}>
-            <Card tinted padding={18}>
-              <HowItWorks
-                title={
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span className="ftp-emoji" aria-hidden>🧭</span>
-                    {t("stagesTitle")}
-                  </span>
-                }
-                steps={phaseCounts.map(({ phase, n }) => ({
-                  emoji: PHASE_EMOJI[phase],
-                  title: t(`phase.${phase}`),
-                  body: <span className="ftp-num">{t("phaseCount", { n, count: f.number(n) })}</span>,
-                }))}
-              />
-            </Card>
-          </div>
+          {/* The one picture: how sure are these dates? */}
+          <Card padding={18} style={{ marginTop: 20 }}>
+            <p className="ftp-title" style={{ margin: "0 0 12px", fontWeight: 650 }}>{t("v5.bar.title")}</p>
+            <StageBar
+              parts={sureParts}
+              format={(n) => f.number(n)}
+              ariaLabel={t("v5.bar.aria", { confirmed: activeConfirmed.length, unconfirmed: unconfirmedCount, finished: finishedCount })}
+            />
+          </Card>
 
           {/* Who runs it */}
           <div style={{ marginTop: 20 }}>
@@ -670,18 +648,18 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
               onChange={(v) => setCategory(v as typeof category)}
               items={(["all", "central", "state", "banking"] as const).map((cat) => ({
                 value: cat,
-                label: cat === "all" ? t("categories.all") : `${CATEGORY_EMOJI[cat]} ${t(`categories.${cat}`)}`,
+                label: t(`categories.${cat}`),
                 count: cat === "all" ? views.length : views.filter((v) => v.category === cat).length,
               }))}
             />
           </div>
 
-          <ExamList title={t("comingTitle")} emoji="⏰" views={comingUp} now={now} onOpen={setSelected} intro={t("comingIntro")} />
-          <ExamList title={t("waitingTitle")} emoji="🗓️" views={waiting} now={now} onOpen={setSelected} intro={t("waitingIntro")} />
+          <ExamList title={t("comingTitle")} views={comingUp} now={now} onOpen={setSelected} intro={t("comingIntro")} />
+          <ExamList title={t("v5.unconfirmedTitle")} views={unconfirmed} now={now} onOpen={setSelected} intro={t("v5.unconfirmedIntro")} />
+          <ExamList title={t("waitingTitle")} views={waiting} now={now} onOpen={setSelected} intro={t("waitingIntro")} />
           {finished.length > 0 && (
             <ExamList
               title={t("finishedTitle")}
-              emoji="🏁"
               views={showFinished ? finished : []}
               now={now}
               onOpen={setSelected}
@@ -694,18 +672,17 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
           )}
           {shown.length === 0 && (
             <div style={{ marginTop: 20 }}>
-              <EmptyState emoji="🔍" title={t("noExams")} body={t("noExamsBody")} />
+              <EmptyState title={t("noExams")} body={t("noExamsBody")} />
             </div>
           )}
 
           {/* Charts: 2 per row on laptop and PC, stacked on phones. */}
           {(showWho || sanctioned > 0) && (
-            <Section emoji="📊" title={t("chartsTitle")}>
+            <Section title={t("chartsTitle")}>
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
                 {showWho && topWho && (
                   <ChartCard
                     title={t("whoTitle")}
-                    emoji="🧑‍🎓"
                     units={t("whoUnits")}
                     simple={t.rich("whoSimple", {
                       name: t(`categoryShort.${topWho.key}`),
@@ -728,7 +705,6 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
                 {sanctioned > 0 && (
                   <ChartCard
                     title={t("staffingTitle", { name: districtName })}
-                    emoji="🪑"
                     units={t("staffingUnits")}
                     simple={t.rich("staffingSentence", { sanctioned: f.number(sanctioned), working: f.number(working), vacant: f.number(vacant), b: bold })}
                     asOf={staffingAsOf}
@@ -747,10 +723,10 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
                         const short = 1 - p > 0.3;
                         return (
                           <li key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                            <RingMeter pct={p * 100} size={44} color={short ? "var(--ftp-danger)" : "var(--hue)"} ariaLabel={t("ringAria", { role: s.roleName, pct: pctText(p) })} />
+                            <RingMeter pct={p * 100} size={44} color={short ? "var(--ftp-warn)" : "var(--hue)"} ariaLabel={t("ringAria", { role: s.roleName, pct: pctText(p) })} />
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600, color: "var(--ftp-text)" }}>{s.roleName}</div>
-                              <div className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: short ? "var(--ftp-danger)" : "var(--ftp-text-2)" }}>
+                              <div className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: short ? "var(--ftp-warn)" : "var(--ftp-text-2)" }}>
                                 {t("rowCounts", { working: f.number(s.workingStrength), vacant: f.number(s.vacantPosts) })}
                               </div>
                             </div>
@@ -771,23 +747,13 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
         </>
       )}
 
-      <SourcesFooter
-        sources={[
-          { name: "UPSC", url: "https://upsc.gov.in", frequency: t("frequency") },
-          { name: "SSC", url: "https://ssc.gov.in", frequency: t("frequency") },
-          { name: t("sourceBoards"), frequency: t("frequency") },
-          { name: t("sourceNews"), frequency: t("frequency") },
-        ]}
-      />
+      <div style={{ marginTop: 24 }}>
+        <AIInsightCard module="exams" district={district} />
+      </div>
+
+      <MoneyToolbar shareTitle={t("title")} compareHref={`/${locale}/compare?module=exams&a=${district}`} />
 
       {!isLoading && examsData && <ModuleNews district={district} state={state} locale={locale} module="exams" />}
-
-      <Toolbar>
-        <SharePageButton />
-        <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=exams&a=${district}`}>
-          {t("compare")}
-        </ToolbarButton>
-      </Toolbar>
 
       {selected && (
         <ExamSheet

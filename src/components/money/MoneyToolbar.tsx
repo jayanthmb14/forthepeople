@@ -4,8 +4,9 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// The end of a money-group module page: the "not an official website"
-// line and the Download CSV / Share / Compare buttons, translated. Share
+// The end of a module page: the Download CSV / Share / Compare buttons,
+// translated (v5: the "not an official website" line lives once in the
+// district shell's verification panel). Share
 // uses the phone's share sheet when there is one, otherwise it copies the
 // link and says so for two seconds.
 "use client";
@@ -14,15 +15,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeftRight, Check, Download, Share2 } from "lucide-react";
 import { Toolbar, ToolbarButton } from "@/components/district/ui";
-
-export function NotOfficialNote() {
-  const t = useTranslations("page_money");
-  return (
-    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
-      {t("notOfficial")}
-    </p>
-  );
-}
 
 export default function MoneyToolbar({
   shareTitle,

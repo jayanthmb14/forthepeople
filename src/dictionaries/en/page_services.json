@@ -1,6 +1,5 @@
 {
   "description": "Step-by-step guides: which office to go to, the documents to carry, the fee and how long it takes",
-  "summary": "Step-by-step guides for common certificates and government services in {district}: which office handles each one, which documents to carry, the fee, how long it usually takes, and where you can apply online.",
   "explainer": "We have {total, plural, one {<b>#</b> step-by-step guide} other {<b>#</b> step-by-step guides}} for {district}. <b>{online}</b> of them link to an official page where you can apply online. For the rest, go to the office named in the guide.",
   "explainerNone": "We have {total, plural, one {<b>#</b> step-by-step guide} other {<b>#</b> step-by-step guides}} for {district}. None of them has an online link yet, so each one names the office to go to.",
   "tiles": {
@@ -75,29 +74,5 @@
     "tip": "Tip",
     "check": "Fees and papers can change: confirm at the office before you go.",
     "updated": "Guide updated {date}"
-  },
-  "share": "How to get certificates and services in {district}: {n, plural, one {# step-by-step guide} other {# step-by-step guides}}",
-  "end": {
-    "about": "About this page",
-    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
-    "freq": {
-      "every30": "Checked every 30 minutes",
-      "every6h": "Checked every 6 hours",
-      "daily": "Updated every day",
-      "weekly": "Updated every week",
-      "monthly": "Updated every month",
-      "quarterly": "Updated every 3 months",
-      "annual": "Updated every year",
-      "whenPublished": "Updated when the source publishes"
-    },
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "csv": "Download CSV",
-    "shareHead": "{district} district update",
-    "shareSource": "Source: {url}",
-    "actions": "Page actions"
   }
 }

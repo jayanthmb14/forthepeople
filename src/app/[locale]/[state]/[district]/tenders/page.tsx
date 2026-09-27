@@ -14,8 +14,10 @@
  *   chips + filters + guide links → tender cards in .ftp-grid; tapping a
  *   card opens its DetailSheet (time left, money, buyer, indicators,
  *   summary, "Can I apply?", changes, award, documents) → pagination →
- *   charts (kind of work, who is buying, when they close) → full legal
- *   disclaimer → sources + Share/Compare.
+ *   charts (kind of work, who is buying, when they close) → legal
+ *   disclaimer (collapsed) → Share / Compare. v5: no emoji; sources, "not
+ *   an official website" and the stale-data note come from the district
+ *   shell.
  * Data hooks, filters, red-flag logic and legal text are unchanged. Words
  * live in "page_tenders"; tender titles, authorities and category names
  * stay as the portals published them.
@@ -28,7 +30,7 @@ import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Gavel, AlertTriangle, BookOpen, ShieldCheck, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { AlarmClock, AlertTriangle, BookOpen, ChevronLeft, ChevronRight, Flag, Gavel, Megaphone, Search, ShieldCheck, Store, Wallet } from "lucide-react";
 import {
   ModulePage,
   PageHeader,
@@ -44,9 +46,10 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, Explainer, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/calm-parts";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
 import TenderLockedState from "@/components/tenders/TenderLockedState";
 import { ShareDonut, TopBarList, type DonutSlice } from "@/components/money/visuals";
@@ -219,7 +222,6 @@ export default function TendersPage({
           icon={Gavel}
           title={districtName ? t("header.titleIn", { district: districtName }) : t("header.title")}
           description={t("header.description")}
-          backHref={`/${locale}/${stateSlug}/${districtSlug}`}
           actions={
             newestPublished ? (
               <span style={{ display: "inline-flex", alignItems: "center", minHeight: 24, padding: "2px 10px", borderRadius: 999, background: "rgba(255,255,255,0.92)" }}>
@@ -231,7 +233,7 @@ export default function TendersPage({
 
         {/* 1. The answer in one sentence. */}
         {live && liveCount > 0 && (
-          <Explainer emoji="📑">
+          <Explainer>
             {t.rich(liveValue !== "—" ? "explainer.withValueIn" : "explainer.plainIn", {
               n: liveCount,
               district: districtName,
@@ -246,10 +248,10 @@ export default function TendersPage({
         {/* 2. Four big numbers — counts from the tender database for this district. */}
         {stats.data && (
           <StatStrip cols={4}>
-            <StatTile emoji="📢" label={t("tiles.live")} value={m.num(stats.data.live.count)} asOf={statsAsOf} />
-            <StatTile emoji="💰" label={t("tiles.value")} value={m.short(stats.data.live.totalValueInr)} countUp={false} />
-            <StatTile emoji="⏰" label={t("tiles.closing48")} value={m.num(closing48)} />
-            <StatTile emoji="🚩" label={t("tiles.flagged")} value={m.num(stats.data.live.redFlaggedCount)} sub={t("tiles.flaggedSub")} />
+            <StatTile icon={Megaphone} label={t("tiles.live")} value={m.num(stats.data.live.count)} asOf={statsAsOf} />
+            <StatTile icon={Wallet} label={t("tiles.value")} value={m.short(stats.data.live.totalValueInr)} countUp={false} />
+            <StatTile icon={AlarmClock} label={t("tiles.closing48")} value={m.num(closing48)} />
+            <StatTile icon={Flag} label={t("tiles.flagged")} value={m.num(stats.data.live.redFlaggedCount)} sub={t("tiles.flaggedSub")} />
           </StatStrip>
         )}
 
@@ -259,17 +261,17 @@ export default function TendersPage({
 
         {/* 3. The picture: of every 10 open tenders, how many are kept for small businesses. */}
         {live && liveCount >= 2 && (
-          <Card tinted padding={18}>
-            <Pictogram
+          <Card padding={18}>
+            <IconPictogram
               filled={mseOf10}
-              emoji="🏪"
+              icon={Store}
               label={live.mseReservedCount === 0 ? t("pictogramNone") : t("pictogram", { n: Math.round(mseOf10) })}
             />
           </Card>
         )}
 
         {/* 4. The list: every tender as a card; tap for the full story. */}
-        <Section title={t("list.title")} emoji="📑">
+        <Section title={t("list.title")}>
           <div style={{ marginBottom: 12 }}>
             <Chips
               label={t("list.statusAria")}
@@ -283,7 +285,7 @@ export default function TendersPage({
           </div>
 
           {/* Filter ribbon */}
-          <Card tinted padding={12} style={{ marginBottom: 12 }}>
+          <Card padding={12} style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
               <div style={{ flex: "1 1 160px", minWidth: 0 }}>
                 <label htmlFor="tender-value" className="ftp-label" style={{ display: "block", marginBottom: 4 }}>{t("filters.value")}</label>
@@ -337,7 +339,6 @@ export default function TendersPage({
             {listQuery.error && <ErrorBlock message={t("list.error")} />}
             {!listQuery.isLoading && !listQuery.error && tenders.length === 0 && (
               <EmptyState
-                emoji="🔍"
                 title={t("list.empty")}
                 // Honest cadence: no tender cron is scheduled, so we do not promise a refresh interval.
                 body={tab === "LIVE" ? t("list.emptyLive") : t("list.emptyOther")}
@@ -377,7 +378,6 @@ export default function TendersPage({
             {workSlices.length >= 2 && (
               <ChartCard
                 title={t("work.title")}
-                emoji="🧰"
                 units={t("work.units")}
                 simple={t.rich("work.simple", { name: workSlices[0].label, n: workSlices[0].value, total: liveCount, b })}
                 source={{ label: t("sourceLabel") }}
@@ -397,7 +397,6 @@ export default function TendersPage({
             {buyers.length >= 2 && (
               <ChartCard
                 title={t("buyers.title")}
-                emoji="🏛️"
                 units={t("buyers.units")}
                 simple={t.rich("buyers.simple", { name: buyers[0].authority.name, n: buyers[0].count, b })}
                 source={{ label: t("sourceLabel") }}
@@ -409,7 +408,6 @@ export default function TendersPage({
                     key: x.authority.shortCode + x.authority.name,
                     label: x.authority.name,
                     sub: x.authority.shortCode,
-                    emoji: "🏛️",
                     value: x.count,
                     display: t("buyers.value", { n: x.count }),
                   }))}
@@ -419,7 +417,6 @@ export default function TendersPage({
             {deadlineChart.length > 1 && (
               <ChartCard
                 title={t("deadline.title")}
-                emoji="⏳"
                 units={t("deadline.units")}
                 simple={t.rich("deadline.simple", { week: closingInWeek, total: liveCount, num: (c) => <span className="ftp-num">{c}</span> })}
                 legend={[{ label: t("deadline.legend"), swatch: "var(--hue)" }]}
@@ -444,7 +441,7 @@ export default function TendersPage({
 
         <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
-        <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} />
+        <MoneyToolbar shareTitle={mt.label("tenders")} compareHref={`/${locale}/compare?module=tenders&a=${districtSlug}`} />
 
         <TenderSheet tender={open} onClose={closeSheet} districtSlug={districtSlug} stateSlug={stateSlug} locale={locale} />
       </ModulePage>

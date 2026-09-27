@@ -4,6 +4,9 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+import type { LucideIcon } from "lucide-react";
+import { Building, Building2, House } from "lucide-react";
+
 // Plain helpers for the Housing schemes page.
 //
 // A housing row only carries a name, a year and counts. To say WHAT a
@@ -75,14 +78,13 @@ export function whereOfLevel(level: string | null | undefined): Where | null {
   return null;
 }
 
-export const WHERE_EMOJI: Record<Where, string> = { india: "🇮🇳", state: "🏛️", local: "📍" };
-
-export const FAMILY_EMOJI: Record<Family, string> = {
-  pmayg: "🏡",
-  pmayu: "🏙️",
-  state: "🏠",
-  city: "🏢",
-  other: "🏠",
+/** A small line icon per kind of housing scheme (v5: no emoji). */
+export const FAMILY_ICON: Record<Family, LucideIcon> = {
+  pmayg: House,
+  pmayu: Building,
+  state: House,
+  city: Building2,
+  other: House,
 };
 
 /** Official website per family, for "check your name / apply" when the scheme list has no link. */
@@ -113,12 +115,3 @@ export function stepsOf(f: Family): string[] {
   return f === "pmayg" ? ["list", "gramSabha", "sanction", "build", "money"] : ["apply", "survey", "sanction", "build", "money"];
 }
 
-export const STEP_EMOJI: Record<string, string> = {
-  apply: "📝",
-  list: "📋",
-  survey: "🔎",
-  gramSabha: "👥",
-  sanction: "✅",
-  build: "🧱",
-  money: "💰",
-};

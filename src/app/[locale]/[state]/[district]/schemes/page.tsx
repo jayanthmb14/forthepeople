@@ -29,7 +29,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ExternalLink, ScrollText } from "lucide-react";
+import { ClipboardList, ExternalLink, Flag, Landmark, Layers, Link2, ScrollText, Wallet } from "lucide-react";
 import { useSchemes, type Scheme } from "@/hooks/useRealtimeData";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import {
@@ -42,24 +42,20 @@ import {
   LoadingShell,
   ErrorBlock,
   EmptyState,
-  SourcesFooter,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { ChartCard, ChartGradients, Explainer, HowItWorks, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
-import { getModuleSources } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
 import ModuleNews from "@/components/district/ModuleNews";
 import { useDistrictName, useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import { TopBarList } from "@/components/money/visuals";
-import { useMoney, useSourceText } from "@/components/money/useMoney";
-import MoneyToolbar, { NotOfficialNote, downloadCsv } from "@/components/money/MoneyToolbar";
+import { useMoney } from "@/components/money/useMoney";
+import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import { CardHead, HueTag, SheetHighlight, SheetLink, SheetSection, TagRow, TapCard, hostOf, safeUrl, sourceParts } from "@/components/money/TapCard";
 import knDict from "@/dictionaries/kn.json";
 import {
-  AUD_EMOJI,
-  KIND_EMOJI,
-  LEVEL_EMOJI,
+  KIND_ICON,
   audiences,
   catKey,
   docsFor,
@@ -123,12 +119,10 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
   const t = useTranslations("page_schemes");
   const f = useFormat();
   const m = useMoney();
-  const st = useSourceText();
   const mt = useModuleText();
   const place = usePlaceText();
   const districtName = useDistrictName(state, district);
   const stateName = place.state(state, state.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
-  const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useSchemes(district, state);
   const { data: coverageData } = useDistrictData<Coverage>("scheme-coverage", district, state);
   const coverage = coverageData?.data ?? {};
@@ -168,7 +162,6 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
     .filter((s) => typeof s.beneficiaryCount === "number" && s.beneficiaryCount > 0)
     .sort((a, b2) => (b2.beneficiaryCount ?? 0) - (a.beneficiaryCount ?? 0));
 
-  const src = getModuleSources("schemes", state);
   // The module's own name (same as the sidebar), in the reader's language.
   const title = mt.label("schemes");
   // Local-script title: the module name in the state's language (Kannada
@@ -198,35 +191,34 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
         title={title}
         titleLocal={titleLocal}
         description={t("description")}
-        backHref={base}
         freshness={asOf ? { asOf } : undefined}
         source={{ label: "MyScheme", href: SOURCE_URLS["MyScheme.gov.in"] }}
       />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
-      {!isLoading && !error && schemes.length === 0 && <EmptyState emoji="📋" title={t("empty.title")} body={t("empty.body")} />}
+      {!isLoading && !error && schemes.length === 0 && <EmptyState title={t("empty.title")} body={t("empty.body")} />}
 
       {!isLoading && schemes.length > 0 && (
         <>
           {/* 1. The answer in one sentence. */}
-          <Explainer emoji="📋">
+          <Explainer>
             {t.rich("explainer", { district: districtName, total: schemes.length, withLink, num })} {t("explainerTap")}
           </Explainer>
 
           {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
-            <StatTile emoji="📋" label={t("tiles.listed")} value={m.num(schemes.length)} asOf={asOf} />
-            <StatTile emoji="🔗" label={t("tiles.withLink")} value={m.num(withLink)} sub={t("tiles.ofTotal", { n: m.num(schemes.length) })} />
+            <StatTile icon={ClipboardList} label={t("tiles.listed")} value={m.num(schemes.length)} asOf={asOf} />
+            <StatTile icon={Link2} label={t("tiles.withLink")} value={m.num(withLink)} sub={t("tiles.ofTotal", { n: m.num(schemes.length) })} />
             {knownLevels.length > 0 ? (
               <>
-                <StatTile emoji="🇮🇳" label={t("tiles.allIndia")} value={m.num(levelCount.central)} sub={t("tiles.allIndiaSub")} />
-                <StatTile emoji="🏛️" label={t("tiles.state")} value={m.num(levelCount.state)} sub={t("tiles.stateSub", { state: stateName })} />
+                <StatTile icon={Flag} label={t("tiles.allIndia")} value={m.num(levelCount.central)} sub={t("tiles.allIndiaSub")} />
+                <StatTile icon={Landmark} label={t("tiles.state")} value={m.num(levelCount.state)} sub={t("tiles.stateSub", { state: stateName })} />
               </>
             ) : (
               <>
-                <StatTile emoji="🗂️" label={t("tiles.categories")} value={m.num(kinds.length)} />
-                <StatTile emoji="💰" label={t("tiles.biggest")} value={biggestAmount > 0 ? m.short(biggestAmount, 1) : "—"} countUp={false} />
+                <StatTile icon={Layers} label={t("tiles.categories")} value={m.num(kinds.length)} />
+                <StatTile icon={Wallet} label={t("tiles.biggest")} value={biggestAmount > 0 ? m.short(biggestAmount, 1) : "—"} countUp={false} />
               </>
             )}
           </StatStrip>
@@ -236,16 +228,16 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
             <HowItWorks
               title={t("how.title")}
               steps={[
-                { emoji: "📝", title: t("how.apply"), body: t("how.applyBody") },
-                { emoji: "🔎", title: t("how.check"), body: t("how.checkBody") },
-                { emoji: "✅", title: t("how.approved"), body: t("how.approvedBody") },
-                { emoji: "💰", title: t("how.benefit"), body: t("how.benefitBody") },
+                { emoji: "", title: t("how.apply"), body: t("how.applyBody") },
+                { emoji: "", title: t("how.check"), body: t("how.checkBody") },
+                { emoji: "", title: t("how.approved"), body: t("how.approvedBody") },
+                { emoji: "", title: t("how.benefit"), body: t("how.benefitBody") },
               ]}
             />
           </div>
 
           {/* 4. The list: every scheme as a card; tap for everything. */}
-          <Section title={t("list.title")} emoji="🤲">
+          <Section title={t("list.title")}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
               {knownLevels.length >= 2 && (
                 <div>
@@ -256,7 +248,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
                     onChange={setLevelFilter}
                     items={[
                       { value: "all", label: t("list.all"), count: schemes.length },
-                      ...knownLevels.map((k) => ({ value: k, label: `${LEVEL_EMOJI[k]} ${levelLabel(k)}`, count: levelCount[k] })),
+                      ...knownLevels.map((k) => ({ value: k, label: levelLabel(k), count: levelCount[k] })),
                     ]}
                   />
                 </div>
@@ -270,7 +262,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
                     onChange={setKindFilter}
                     items={[
                       { value: "all", label: t("list.all"), count: schemes.length },
-                      ...kinds.map(([k, n]) => ({ value: k, label: `${KIND_EMOJI[k]} ${t(`kind.${k}`)}`, count: n })),
+                      ...kinds.map(([k, n]) => ({ value: k, label: t(`kind.${k}`), count: n })),
                     ]}
                   />
                 </div>
@@ -278,7 +270,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
             </div>
 
             {filtered.length === 0 ? (
-              <EmptyState emoji="🔍" title={t("list.noMatch")} body={t("list.noMatchBody")} />
+              <EmptyState title={t("list.noMatch")} body={t("list.noMatchBody")} />
             ) : (
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "290px" } as React.CSSProperties}>
                 {filtered.map((v) => (
@@ -294,7 +286,6 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
               {kindChart.length >= 2 && (
                 <ChartCard
                   title={t("byKind.title")}
-                  emoji="📊"
                   units={t("byKind.units")}
                   simple={t.rich("byKind.simple", { name: kindChart[0].name, n: kindChart[0].count, total: schemes.length, b })}
                   source={{ label: "MyScheme", href: SOURCE_URLS["MyScheme.gov.in"] }}
@@ -321,7 +312,6 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
               {reach.length >= 2 && (
                 <ChartCard
                   title={t("reach.title")}
-                  emoji="👥"
                   units={t("reach.units")}
                   simple={t.rich("reach.simple", { name: reach[0].name, n: m.num(reach[0].beneficiaryCount ?? 0), b })}
                   source={{ label: "MyScheme", href: SOURCE_URLS["MyScheme.gov.in"] }}
@@ -333,7 +323,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
                       key: s.id,
                       label: s.name,
                       sub: t(`kind.${schemeKind(s.category, s.name)}`),
-                      emoji: KIND_EMOJI[schemeKind(s.category, s.name)],
+                      icon: KIND_ICON[schemeKind(s.category, s.name)],
                       value: s.beneficiaryCount ?? 0,
                       display: m.num(s.beneficiaryCount ?? 0),
                     }))}
@@ -349,16 +339,6 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
         <AIInsightCard module="schemes" district={district} />
       </div>
 
-      {/* Plain summary for search engines and screen readers. */}
-      <p className="ftp-body ftp-prose" style={{ color: "var(--ftp-text-2)", marginTop: 24 }}>
-        {t("summary", { district: districtName })}
-      </p>
-
-      <SourcesFooter sources={src.sources.map((name) => ({ name: st.name(name), url: SOURCE_URLS[name], frequency: st.freq(src.frequency) }))} />
-      <NotOfficialNote />
-
-      <ModuleNews district={district} state={state} locale={locale} module="schemes" />
-
       <MoneyToolbar
         shareTitle={title}
         onCsv={onCsv}
@@ -366,12 +346,13 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
         compareHref={`/${locale}/compare?module=schemes&a=${district}`}
       />
 
+      <ModuleNews district={district} state={state} locale={locale} module="schemes" />
+
       <DetailSheet
         open={!!open}
         onClose={closeSheet}
         title={open?.s.name ?? ""}
         subtitle={open ? [t(`kind.${open.kind}`), open.level ? t(`runBy.${open.level}`) : null].filter(Boolean).join(" · ") : undefined}
-        emoji={open ? KIND_EMOJI[open.kind] : undefined}
         hueClassName={hueClass("schemes")}
         footer={
           open && (open.apply || sourceParts(open.s.source).url) ? (
@@ -420,30 +401,29 @@ function SchemeCard({ v, levelLabel, onOpen }: { v: SchemeView; levelLabel: (k: 
   const shownAud = v.aud.slice(0, 3);
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("list.cardAria", { name: v.s.name })} more={t("list.more")}>
-      <CardHead emoji={KIND_EMOJI[v.kind]} title={v.s.name} titleLocal={v.s.nameLocal} />
+      <CardHead icon={KIND_ICON[v.kind]} title={v.s.name} titleLocal={v.s.nameLocal} />
       <span
         lang={get.lang}
         style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 15, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}
       >
-        <span className="ftp-emoji" aria-hidden>🎁</span>
         {/* One short line: long published text is cut to two lines here and shown in full in the sheet. */}
         <span style={{ minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{get.text}</span>
       </span>
       <TagRow>
-        {v.level && <HueTag emoji={LEVEL_EMOJI[v.level]}>{levelLabel(v.level)}</HueTag>}
+        {v.level && <HueTag>{levelLabel(v.level)}</HueTag>}
         {shownAud.map((a) => (
-          <HueTag key={a} outline emoji={AUD_EMOJI[a]}>
+          <HueTag key={a} outline>
             {t(`aud.${a}`)}
           </HueTag>
         ))}
         {v.aud.length > shownAud.length && <HueTag outline>{t("list.moreWho", { n: v.aud.length - shownAud.length })}</HueTag>}
         {/* No known group in the text: show who it is for as published (short). */}
         {v.aud.length === 0 && v.who && (
-          <HueTag outline emoji="👥">
+          <HueTag outline>
             <span lang="en">{v.who.length > 48 ? `${v.who.slice(0, 47)}…` : v.who}</span>
           </HueTag>
         )}
-        {v.apply && <HueTag emoji="🔗">{t("list.applyOnline")}</HueTag>}
+        {v.apply && <HueTag>{t("list.applyOnline")}</HueTag>}
       </TagRow>
     </TapCard>
   );
@@ -480,7 +460,7 @@ function SchemeSheet({
 
   return (
     <>
-      <SheetHighlight emoji="🎁" label={t("sheet.whatYouGet")} lang={get.lang}>
+      <SheetHighlight label={t("sheet.whatYouGet")} lang={get.lang}>
         {get.text}
       </SheetHighlight>
       {v.what && get.lang !== "en" && (
@@ -489,12 +469,12 @@ function SchemeSheet({
         </p>
       )}
 
-      <SheetSection emoji="👥" title={t("sheet.who")}>
+      <SheetSection title={t("sheet.who")}>
         {v.aud.length > 0 && (
           <div style={{ marginBottom: 8 }}>
             <TagRow>
               {v.aud.map((a) => (
-                <HueTag key={a} emoji={AUD_EMOJI[a]}>
+                <HueTag key={a}>
                   {t(`aud.${a}`)}
                 </HueTag>
               ))}
@@ -511,7 +491,7 @@ function SchemeSheet({
         )}
       </SheetSection>
 
-      <SheetSection emoji={v.level ? LEVEL_EMOJI[v.level] : "📍"} title={t("sheet.where")}>
+      <SheetSection title={t("sheet.where")}>
         <p className="ftp-body" style={{ fontSize: 14, lineHeight: "21px" }}>{where}</p>
         {coverage.length > 0 && (
           <>
@@ -543,12 +523,12 @@ function SchemeSheet({
         )}
       </SheetSection>
 
-      <SheetSection emoji="🪜" title={t("sheet.how")}>
-        <HowItWorks steps={stepsFor(v.kind, s.name).map((st) => ({ emoji: st.emoji, title: t(`step.${st.key}`) }))} />
+      <SheetSection title={t("sheet.how")}>
+        <HowItWorks steps={stepsFor(v.kind, s.name).map((st) => ({ emoji: "", title: t(`step.${st.key}`) }))} />
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>{t("sheet.howNote")}</p>
       </SheetSection>
 
-      <SheetSection emoji="📄" title={t("sheet.docs")}>
+      <SheetSection title={t("sheet.docs")}>
         <ul style={{ margin: 0, paddingInlineStart: 20, fontSize: 14, lineHeight: "22px" }}>
           {docsFor(v.kind).map((d) => (
             <li key={d}>{t(`doc.${d}`)}</li>
@@ -557,16 +537,15 @@ function SchemeSheet({
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6 }}>{t("sheet.docsNote")}</p>
       </SheetSection>
 
-      <SheetSection emoji="🧾" title={t("sheet.facts")}>
+      <SheetSection title={t("sheet.facts")}>
         <DetailList
           rows={[
-            { emoji: "💰", label: t("sheet.benefit"), value: s.amount && s.amount > 0 ? m.rupees(s.amount) : null },
-            { emoji: "👥", label: t("sheet.people"), value: s.beneficiaryCount ? m.num(s.beneficiaryCount) : null },
-            { emoji: "🗂️", label: t("sheet.category"), value: category },
-            { emoji: "🏛️", label: t("sheet.runBy"), value: v.level ? t(`runBy.${v.level}`) : s.level || null },
-            { emoji: "📝", label: t("sheet.howApply"), value: site ? t("sheet.applyOnlineAt", { site }) : t("sheet.applyOffice") },
+            { label: t("sheet.benefit"), value: s.amount && s.amount > 0 ? m.rupees(s.amount) : null },
+            { label: t("sheet.people"), value: s.beneficiaryCount ? m.num(s.beneficiaryCount) : null },
+            { label: t("sheet.category"), value: category },
+            { label: t("sheet.runBy"), value: v.level ? t(`runBy.${v.level}`) : s.level || null },
+            { label: t("sheet.howApply"), value: site ? t("sheet.applyOnlineAt", { site }) : t("sheet.applyOffice") },
             {
-              emoji: "🔗",
               label: t("sheet.source"),
               value: src.name ? (
                 src.url ? (
@@ -580,7 +559,7 @@ function SchemeSheet({
                 t("sheet.sourceNone")
               ),
             },
-            { emoji: "🕒", label: t("sheet.updated"), value: updated },
+            { label: t("sheet.updated"), value: updated },
           ]}
         />
       </SheetSection>

@@ -18,8 +18,9 @@
 //    (factories that still owe farmers / a row of counts by kind) →
 //    cards in .ftp-grid; tapping a card opens a DetailSheet with every
 //    stored detail, the seasons, the source and Call / Directions →
-//    charts two to a row → AI insight → sources → Download / Share /
-//    Compare.
+//    charts two to a row → AI insight → Download / Share / Compare.
+//  v5: no emoji (small line icons for kinds of place); sources, "not an
+//  official website" and the stale-data note come from the district shell.
 //  Every number is counted from the rows the API sends; nothing is typed
 //  in by hand. Names, descriptions and figures from the database stay as
 //  published. Words live in "page_industries".
@@ -28,7 +29,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Cpu, Factory, Landmark } from "lucide-react";
+import { Briefcase, Building2, Coins, Cpu, Factory, Landmark, Layers, Luggage, Sprout, Tractor, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useFactories, useLocalIndustries } from "@/hooks/useRealtimeData";
 import {
@@ -42,22 +43,21 @@ import {
   LoadingShell,
   ErrorBlock,
   EmptyState,
-  SourcesFooter,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import { ChartCard, ChartGradients, Explainer, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
-import { getModuleSources } from "@/lib/constants/state-config";
+import { ChartCard, ChartGradients, Explainer, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/calm-parts";
 import { useDistrictName, useModuleText } from "@/i18n/client";
 import { IconCountRow, TopBarList } from "@/components/money/visuals";
-import { useMoney, useSourceText } from "@/components/money/useMoney";
-import MoneyToolbar, { NotOfficialNote, downloadCsv } from "@/components/money/MoneyToolbar";
+import { useMoney } from "@/components/money/useMoney";
+import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import {
   FactoryCard,
   FactorySheet,
   IndustryCard,
   IndustrySheet,
   companiesOf,
-  industryEmoji,
+  industryIcon,
   jobsOf,
   numeric,
   useGloss,
@@ -181,13 +181,13 @@ function SugarView({ district, state, onData }: { district: string; state: strin
 
   if (isLoading) return <LoadingShell rows={4} />;
   if (error) return <ErrorBlock />;
-  if (factories.length === 0) return <EmptyState emoji="🏭" title={t("sugar.empty.title")} body={t("sugar.empty.body")} />;
+  if (factories.length === 0) return <EmptyState title={t("sugar.empty.title")} body={t("sugar.empty.body")} />;
 
   return (
     <>
       {/* 1. The answer in one sentence. */}
       {withArrearsFigure.length > 0 && (
-        <Explainer emoji="🍬">
+        <Explainer>
           {totalArrears > 0
             ? t.rich("sugar.explainer", { amount: m.crore(totalArrears / CRORE, 2), owing: owing.length, total: withArrearsFigure.length, num })
             : t.rich("sugar.explainerNone", { total: withArrearsFigure.length, num })}{" "}
@@ -197,25 +197,25 @@ function SugarView({ district, state, onData }: { district: string; state: strin
 
       {/* 2. The big numbers. */}
       <StatStrip cols={4}>
-        <StatTile emoji="🏭" label={t("sugar.tiles.factories")} value={m.num(factories.length)} asOf={asOf} />
+        <StatTile icon={Factory} label={t("sugar.tiles.factories")} value={m.num(factories.length)} asOf={asOf} />
         <StatTile
-          emoji="💸"
+          icon={Coins}
           label={t("sugar.tiles.arrears")}
           value={totalArrears > 0 ? m.num(totalArrears / CRORE, 2) : "—"}
           unit={totalArrears > 0 ? t("units.crore") : undefined}
           sub={latestSeason ? t("sugar.tiles.arrearsSubSeason", { season: latestSeason }) : t("sugar.tiles.arrearsSub")}
         />
-        <StatTile emoji="🌾" label={t("sugar.tiles.farmers")} value={totalFarmers ? m.num(totalFarmers) : "—"} sub={latestSeason ? t("season", { season: latestSeason }) : undefined} />
-        <StatTile emoji="🚜" label={t("sugar.tiles.cane")} value={totalCane ? m.num(totalCane) : "—"} sub={t("sugar.tiles.caneSub")} />
+        <StatTile icon={Sprout} label={t("sugar.tiles.farmers")} value={totalFarmers ? m.num(totalFarmers) : "—"} sub={latestSeason ? t("season", { season: latestSeason }) : undefined} />
+        <StatTile icon={Tractor} label={t("sugar.tiles.cane")} value={totalCane ? m.num(totalCane) : "—"} sub={t("sugar.tiles.caneSub")} />
       </StatStrip>
 
       {/* 3. The picture: who still owes farmers money. Needs two factories with a figure. */}
       {withArrearsFigure.length >= 2 && (
-        <Card tinted padding={18} style={{ marginTop: 16 }}>
-          <Pictogram
+        <Card padding={18} style={{ marginTop: 16 }}>
+          <IconPictogram
             total={pictoTotal}
             filled={pictoFilled}
-            emoji="🏭"
+            icon={Factory}
             label={
               withArrearsFigure.length <= 12
                 ? t("sugar.pictogramCount", { owing: owing.length, total: withArrearsFigure.length })
@@ -226,7 +226,7 @@ function SugarView({ district, state, onData }: { district: string; state: strin
       )}
 
       {/* 4. Factories as cards; tap one for its seasons, Call and Directions. */}
-      <Section emoji="🏭" title={t("sugar.listTitle", { n: factories.length })}>
+      <Section title={t("sugar.listTitle", { n: factories.length })}>
         <div className="ftp-grid" style={GRID_CARDS}>
           {factories.map((f) => (
             <FactoryCard key={f.id} f={f} onOpen={() => setOpenId(f.id)} />
@@ -240,7 +240,6 @@ function SugarView({ district, state, onData }: { district: string; state: strin
           {arrearsChart.length >= 2 && (
             <ChartCard
               title={t("sugar.arrearsChart.title")}
-              emoji="💸"
               units={t("sugar.arrearsChart.units")}
               simple={t.rich("sugar.arrearsChart.simple", { name: arrearsChart[0].name, amount: m.crore(arrearsChart[0].value, 2), b })}
               source={source}
@@ -253,7 +252,6 @@ function SugarView({ district, state, onData }: { district: string; state: strin
           {crushed.length >= 2 && (
             <ChartCard
               title={t("sugar.crushed.title")}
-              emoji="🚜"
               units={t("sugar.crushed.units")}
               simple={t.rich("sugar.crushed.simple", { name: crushed[0].f.name, amount: tonnes(crushed[0].value), b })}
               source={source}
@@ -265,7 +263,6 @@ function SugarView({ district, state, onData }: { district: string; state: strin
                   key: r.f.id,
                   label: r.f.name,
                   sub: r.season ? t("season", { season: r.season }) : undefined,
-                  emoji: "🍬",
                   value: r.value,
                   display: tonnes(r.value),
                 }))}
@@ -334,28 +331,28 @@ function LocalView({ district, state, metaKey, onData }: { district: string; sta
 
   if (isLoading) return <LoadingShell rows={5} />;
   if (error) return <ErrorBlock />;
-  if (industries.length === 0) return <EmptyState emoji="🏭" title={metaKey === "tech" ? t("tech.empty") : t("general.empty")} />;
+  if (industries.length === 0) return <EmptyState title={metaKey === "tech" ? t("tech.empty") : t("general.empty")} />;
 
   const topKind = kinds[0];
   return (
     <>
       {/* 1. The answer in one sentence. */}
-      <Explainer emoji={industryEmoji(topKind[1].sample)}>
+      <Explainer>
         {t.rich("local.explainer", { total: industries.length, district: districtName, name: gloss("cat", topKind[0]), n: topKind[1].n, num, b })}
         {withJobs.length > 0 && <> {t.rich("local.explainerJobs", { people: m.num(jobsTotal), places: withJobs.length, num })}</>} {t("local.explainerTap")}
       </Explainer>
 
       {/* 2. The big numbers — only figures the rows report. */}
       <StatStrip>
-        <StatTile emoji="🏢" label={t("local.tiles.listed")} value={m.num(industries.length)} asOf={asOf} />
-        <StatTile emoji="🗂️" label={t("local.tiles.kinds")} value={m.num(kinds.length)} />
+        <StatTile icon={Building2} label={t("local.tiles.listed")} value={m.num(industries.length)} asOf={asOf} />
+        <StatTile icon={Layers} label={t("local.tiles.kinds")} value={m.num(kinds.length)} />
         {withJobs.length > 0 && (
-          <StatTile emoji="👷" label={t("local.tiles.jobs")} value={m.num(jobsTotal)} sub={t("local.tiles.reportedBy", { n: withJobs.length })} />
+          <StatTile icon={Users} label={t("local.tiles.jobs")} value={m.num(jobsTotal)} sub={t("local.tiles.reportedBy", { n: withJobs.length })} />
         )}
         {withVisitors.length > 0 ? (
-          <StatTile emoji="🧳" label={t("facts.visitors")} value={m.num(visitorsTotal)} sub={t("local.tiles.reportedBy", { n: withVisitors.length })} />
+          <StatTile icon={Luggage} label={t("facts.visitors")} value={m.num(visitorsTotal)} sub={t("local.tiles.reportedBy", { n: withVisitors.length })} />
         ) : withCompanies.length > 0 ? (
-          <StatTile emoji="💼" label={t("facts.companies")} value={m.num(companiesTotal)} sub={t("local.tiles.reportedBy", { n: withCompanies.length })} />
+          <StatTile icon={Briefcase} label={t("facts.companies")} value={m.num(companiesTotal)} sub={t("local.tiles.reportedBy", { n: withCompanies.length })} />
         ) : null}
       </StatStrip>
 
@@ -364,13 +361,13 @@ function LocalView({ district, state, metaKey, onData }: { district: string; sta
         <div style={{ marginTop: 16 }}>
           <IconCountRow
             label={t("local.kindsAria")}
-            items={kinds.slice(0, 8).map(([c, v]) => ({ key: c, emoji: industryEmoji(v.sample), count: m.num(v.n), label: gloss("cat", c) }))}
+            items={kinds.slice(0, 8).map(([c, v]) => ({ key: c, icon: industryIcon(v.sample), count: m.num(v.n), label: gloss("cat", c) }))}
           />
         </div>
       )}
 
       {/* 4. The list: every place as a card; tap for everything stored about it. */}
-      <Section emoji="🏢" title={t("local.listTitle", { n: industries.length })}>
+      <Section title={t("local.listTitle", { n: industries.length })}>
         {kinds.length >= 2 && (
           <div style={{ marginBottom: 16 }}>
             <Chips
@@ -395,7 +392,6 @@ function LocalView({ district, state, metaKey, onData }: { district: string; sta
           {withJobs.length >= 2 && (
             <ChartCard
               title={t("general.jobs.title")}
-              emoji="👷"
               units={t("general.jobs.units")}
               simple={t.rich("general.jobs.simple", { name: withJobs[0].p.name, n: m.num(withJobs[0].value), b })}
               source={source}
@@ -407,7 +403,7 @@ function LocalView({ district, state, metaKey, onData }: { district: string; sta
                   key: r.p.id,
                   label: r.p.name,
                   sub: gloss("cat", r.p.category) || undefined,
-                  emoji: industryEmoji(r.p),
+                  icon: industryIcon(r.p),
                   value: r.value,
                   display: m.num(r.value),
                 }))}
@@ -417,7 +413,6 @@ function LocalView({ district, state, metaKey, onData }: { district: string; sta
           {withVisitors.length >= 2 && (
             <ChartCard
               title={t("local.visitors.title")}
-              emoji="🧳"
               units={t("local.visitors.units")}
               simple={t.rich("local.visitors.simple", { name: withVisitors[0].p.name, n: m.num(withVisitors[0].value), b })}
               source={source}
@@ -425,14 +420,13 @@ function LocalView({ district, state, metaKey, onData }: { district: string; sta
               table={withVisitors.slice(0, 5).map((r) => ({ label: r.p.name, value: m.num(r.value) }))}
             >
               <TopBarList
-                rows={withVisitors.map((r) => ({ key: r.p.id, label: r.p.name, emoji: industryEmoji(r.p), value: r.value, display: m.num(r.value) }))}
+                rows={withVisitors.map((r) => ({ key: r.p.id, label: r.p.name, icon: industryIcon(r.p), value: r.value, display: m.num(r.value) }))}
               />
             </ChartCard>
           )}
           {withCompanies.length >= 2 && (
             <ChartCard
               title={t("tech.companies.title")}
-              emoji="🏢"
               units={t("tech.companies.units")}
               simple={t.rich("tech.companies.simple", { name: withCompanies[0].p.name, n: m.num(withCompanies[0].value), b })}
               source={source}
@@ -459,11 +453,8 @@ export default function IndustriesPage({ params }: { params: Promise<{ locale: s
   const { locale, state, district } = use(params);
   const t = useTranslations("page_industries");
   const mt = useModuleText();
-  const st = useSourceText();
-  const base = `/${locale}/${state}/${district}`;
   const meta = getIndustryMeta(district);
   const title = meta.key === "sugar" || meta.key === "general" ? mt.label("industries") : t(`meta.${meta.key}.title`);
-  const src = getModuleSources("industries", state);
   // Filled in by whichever view is showing (see ViewData above).
   const [view, setView] = useState<ViewData>({ asOf: null, rows: [] });
 
@@ -473,7 +464,6 @@ export default function IndustriesPage({ params }: { params: Promise<{ locale: s
         icon={meta.icon}
         title={title}
         description={t(`meta.${meta.key}.description`)}
-        backHref={base}
         freshness={view.asOf ? { asOf: view.asOf } : undefined}
         source={{ label: t("sourceLabel") }}
       />
@@ -486,9 +476,6 @@ export default function IndustriesPage({ params }: { params: Promise<{ locale: s
       <div style={{ marginTop: 24 }}>
         <AIInsightCard module="industries" district={district} />
       </div>
-
-      <SourcesFooter sources={src.sources.map((name) => ({ name: st.name(name), frequency: st.freq(src.frequency) }))} />
-      <NotOfficialNote />
 
       <MoneyToolbar
         shareTitle={title}

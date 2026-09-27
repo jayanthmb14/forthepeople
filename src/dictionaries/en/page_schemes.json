@@ -1,6 +1,5 @@
 {
   "description": "Help you can get from the government: what each scheme gives, who can apply, where it runs and how to apply",
-  "summary": "This page lists government schemes for {district}: what each one gives, who can get it, where it runs and how to apply. Details come from MyScheme.gov.in and the state scheme portals, as each source published them.",
   "empty": {
     "title": "No schemes data yet for this district.",
     "body": "We add schemes as MyScheme.gov.in and the state scheme portals publish them."

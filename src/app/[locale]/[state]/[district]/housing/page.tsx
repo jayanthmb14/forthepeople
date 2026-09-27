@@ -18,7 +18,9 @@
 //  card for everything: who can get it, the steps, the money, the source
 //  and the apply / check-your-name link → housing schemes listed for the
 //  district without progress numbers → how a scheme reaches you → link to
-//  Govt schemes → charts → AI insight → news → sources.
+//  Govt schemes → charts → AI insight → CSV / Share / Compare → news.
+//  v5: no emoji (a small line icon per kind of scheme); sources, "not an
+//  official website" and the stale note come from the district shell.
 //
 //  Data: useHousing() (HousingScheme: counts + money per scheme per
 //  fiscal year) and useSchemes() (the district's scheme list; rows about
@@ -31,7 +33,7 @@
 
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Home } from "lucide-react";
+import { CircleCheck, Construction, FileText, Hammer, Home, Target } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -40,7 +42,9 @@ import { useHousing, useSchemes } from "@/hooks/useRealtimeData";
 import type { HousingScheme, Scheme } from "@/hooks/useRealtimeData";
 import { useDistrictName, useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import { Card, ErrorBlock, LoadingShell, ModulePage, PageHeader, ProgressBar, Section, StatStrip, StatTile } from "@/components/district/ui";
-import { ChartCard, Explainer, HowItWorks, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer, HowItWorks } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/calm-parts";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { HueDonut, MUTED_SHADE, ProgressRing, type DonutSegment } from "@/components/district/daily-services/HueCharts";
 import {
@@ -48,7 +52,6 @@ import {
   Chip,
   LinkCard,
   MetaLine,
-  PageEnd,
   SheetBlock,
   SheetNote,
   SheetSmall,
@@ -62,10 +65,8 @@ import {
 } from "@/components/services-2/kit";
 import { downloadCSV, todayISO } from "@/lib/csv";
 import {
-  FAMILY_EMOJI,
+  FAMILY_ICON,
   FAMILY_SITE,
-  STEP_EMOJI,
-  WHERE_EMOJI,
   brandOf,
   familyOf,
   isHousingScheme,
@@ -226,13 +227,13 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
   const fundSegments: DonutSegment[] = funds
     ? funds.released !== null
       ? [
-          { key: "spent", label: t("funds.spent"), value: funds.spent, display: crore(funds.spent), emoji: "✅", color: "var(--hue-deep)" },
-          { key: "released", label: t("funds.releasedUnspent"), value: funds.released - funds.spent, display: crore(funds.released - funds.spent), emoji: "📤", color: "var(--hue-pop)" },
-          { key: "held", label: t("funds.notReleased"), value: funds.alloc - funds.released, display: crore(funds.alloc - funds.released), emoji: "⏳", color: MUTED_SHADE },
+          { key: "spent", label: t("funds.spent"), value: funds.spent, display: crore(funds.spent), color: "var(--hue-deep)" },
+          { key: "released", label: t("funds.releasedUnspent"), value: funds.released - funds.spent, display: crore(funds.released - funds.spent), color: "var(--hue-pop)" },
+          { key: "held", label: t("funds.notReleased"), value: funds.alloc - funds.released, display: crore(funds.alloc - funds.released), color: MUTED_SHADE },
         ]
       : [
-          { key: "spent", label: t("funds.spent"), value: funds.spent, display: crore(funds.spent), emoji: "✅", color: "var(--hue-deep)" },
-          { key: "left", label: t("funds.notSpent"), value: funds.alloc - funds.spent, display: crore(funds.alloc - funds.spent), emoji: "⏳", color: MUTED_SHADE },
+          { key: "spent", label: t("funds.spent"), value: funds.spent, display: crore(funds.spent), color: "var(--hue-deep)" },
+          { key: "left", label: t("funds.notSpent"), value: funds.alloc - funds.spent, display: crore(funds.alloc - funds.spent), color: MUTED_SHADE },
         ]
     : [];
 
@@ -265,7 +266,7 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
     return (
       <TapCard
         key={it.id}
-        emoji={FAMILY_EMOJI[it.family]}
+        icon={FAMILY_ICON[it.family]}
         title={it.name}
         titleLang={dataLang(it.name, locale)}
         subtitle={t(`family.${it.family}.what`)}
@@ -282,13 +283,13 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
         }
       >
         <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {it.where && <Chip emoji={WHERE_EMOJI[it.where]}>{whereText(it.where)}</Chip>}
-          {r && <Chip emoji="📅">{fy(r.fiscalYear)}</Chip>}
-          {!r && it.info?.amount ? <Chip emoji="💰">{t("card.amount", { amount: rupees(it.info.amount) })}</Chip> : null}
+          {it.where && <Chip>{whereText(it.where)}</Chip>}
+          {r && <Chip>{fy(r.fiscalYear)}</Chip>}
+          {!r && it.info?.amount ? <Chip>{t("card.amount", { amount: rupees(it.info.amount) })}</Chip> : null}
         </span>
         {r ? (
           <>
-            <MetaLine emoji="🏗️">
+            <MetaLine icon={Construction}>
               {r.sanctioned > 0
                 ? t.rich("card.progress", { done: n(r.completed), sanctioned: n(r.sanctioned), b: bold })
                 : t.rich("card.progressPlanned", { target: n(r.targetHouses), b: bold })}
@@ -301,7 +302,7 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
             />
           </>
         ) : it.info?.eligibility ? (
-          <MetaLine emoji="👪" lang={dataLang(it.info.eligibility, locale)}>
+          <MetaLine lang={dataLang(it.info.eligibility, locale)}>
             {it.info.eligibility}
           </MetaLine>
         ) : null}
@@ -315,7 +316,6 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
         icon={Home}
         title={mt.label("housing")}
         description={t("description")}
-        backHref={base}
         source={AWAASSOFT}
         freshness={updated ? { asOf: updated, thresholdHours: 24 * 35 } : undefined}
       />
@@ -327,33 +327,33 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
       {!isLoading && !error && (rows.length > 0 || extra.length > 0) && (
         <>
           {/* 2. The answer in one sentence. */}
-          <Explainer emoji="🏠">{answer}</Explainer>
+          <Explainer>{answer}</Explainer>
 
           {rows.length > 0 && (
             <>
               {/* 3. Four big numbers. */}
               <StatStrip cols={4}>
-                <StatTile emoji="🎯" label={t("tiles.target")} value={n(total.targetHouses)} sub={fyLabel} />
-                <StatTile emoji="✅" label={t("tiles.sanctioned")} value={n(total.sanctioned)} sub={fyLabel} />
-                <StatTile emoji="🏠" label={t("tiles.completed")} value={n(total.completed)} sub={fyLabel} />
-                <StatTile emoji="🏗️" label={t("tiles.inProgress")} value={n(total.inProgress)} sub={fyLabel} />
+                <StatTile icon={Target} label={t("tiles.target")} value={n(total.targetHouses)} sub={fyLabel} />
+                <StatTile icon={CircleCheck} label={t("tiles.sanctioned")} value={n(total.sanctioned)} sub={fyLabel} />
+                <StatTile icon={Home} label={t("tiles.completed")} value={n(total.completed)} sub={fyLabel} />
+                <StatTile icon={Hammer} label={t("tiles.inProgress")} value={n(total.inProgress)} sub={fyLabel} />
               </StatStrip>
 
               {/* 4. The picture: 10 houses, lit for the share finished, and
                   where all the planned houses are now. Same totals as above. */}
               {total.targetHouses > 0 && (
                 <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-                  <Card tinted padding={18}>
+                  <Card padding={18}>
                     <p className="ftp-label" style={{ margin: "0 0 10px", color: "var(--hue-deep)" }}>
                       {t("picture.title")}
                     </p>
-                    <Pictogram
+                    <IconPictogram
                       filled={doneShare * 10}
-                      emoji="🏠"
+                      icon={Home}
                       label={total.completed === 0 ? t("pictogramNone") : t("pictogram", { n: Math.round(Math.min(10, doneShare * 10)) })}
                     />
                   </Card>
-                  <Card tinted padding={18}>
+                  <Card padding={18}>
                     <p className="ftp-label" style={{ margin: "0 0 12px", color: "var(--hue-deep)" }}>
                       {t("picture.stagesTitle", { target: n(total.targetHouses) })}
                     </p>
@@ -370,13 +370,13 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
 
           {/* 5. One card per scheme; tap for everything. */}
           {items.length > 0 && (
-            <Section title={t("list.title", { district: districtName })} emoji="📋">
+            <Section title={t("list.title", { district: districtName })}>
               <div className="ftp-grid">{items.map(renderCard)}</div>
             </Section>
           )}
 
           {extra.length > 0 && (
-            <Section title={t("more.title")} emoji="🗂️">
+            <Section title={t("more.title")}>
               <p className="ftp-body ftp-prose" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px" }}>
                 {t("more.body")}
               </p>
@@ -385,9 +385,9 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
           )}
 
           {/* How a housing scheme reaches you. */}
-          <Section title={t("how.title")} emoji="🧭">
+          <Section title={t("how.title")}>
             <HowItWorks
-              steps={stepsOf("pmayu").map((k) => ({ emoji: STEP_EMOJI[k], title: t(`how.${k}.title`), body: t(`how.${k}.body`) }))}
+              steps={stepsOf("pmayu").map((k) => ({ emoji: "", title: t(`how.${k}.title`), body: t(`how.${k}.body`) }))}
             />
             <p className="ftp-body ftp-prose" style={{ color: "var(--ftp-text-2)", margin: "10px 0 0" }}>
               {t("how.pmaygNote")}
@@ -395,17 +395,16 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
           </Section>
 
           <div style={{ marginTop: 20 }}>
-            <LinkCard href={`${base}/schemes`} emoji="📋" title={t("otherSchemes.title")} body={t("otherSchemes.body")} />
+            <LinkCard href={`${base}/schemes`} icon={FileText} title={t("otherSchemes.title")} body={t("otherSchemes.body")} />
           </div>
 
           {/* 6. Charts, each with a one-line takeaway. */}
           {(rows.length > 1 || fundSegments.length > 0) && (
-            <Section title={t("charts.title")} emoji="📊">
+            <Section title={t("charts.title")}>
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
                 {rows.length > 1 && biggest && (
                   <ChartCard
                     title={t("chart.title")}
-                    emoji="🏗️"
                     units={t("chart.units")}
                     simple={t.rich("chart.simple", { scheme: biggest.schemeName, done: n(biggest.completed), target: n(biggest.targetHouses), b: bold })}
                     source={AWAASSOFT}
@@ -450,7 +449,6 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
                 {funds && fundSegments.length > 0 && (
                   <ChartCard
                     title={t("funds.title")}
-                    emoji="💰"
                     units={t("funds.units")}
                     simple={
                       funds.released !== null
@@ -480,23 +478,13 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
         </>
       )}
 
-      <ModuleNews district={district} state={state} locale={locale} module="housing" />
-      <PageEnd
-        ns="page_housing"
-        sourceModule="housing"
-        moduleSlug="housing"
-        state={state}
-        district={district}
-        locale={locale}
-        districtName={districtName}
-        about={t("summary", { district: districtName })}
-        shareText={
-          rows.length > 0
-            ? t("share", { district: districtName, done: n(total.completed), target: n(total.targetHouses), pct: pct(doneShare, 1) })
-            : t("shareEmpty", { district: districtName })
-        }
+      <MoneyToolbar
+        shareTitle={mt.label("housing")}
         onCsv={rows.length > 0 ? handleCsv : undefined}
+        compareHref={`/${locale}/compare?module=housing&a=${district}`}
       />
+
+      <ModuleNews district={district} state={state} locale={locale} module="housing" />
 
       {/* Everything about one scheme. */}
       <DetailSheet
@@ -505,21 +493,20 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
         title={open?.name ?? ""}
         titleLang={open ? dataLang(open.name, locale) : undefined}
         subtitle={open?.row ? t("sheet.sub", { district: districtName, fy: fy(open.row.fiscalYear) }) : open ? t("sheet.subListed", { district: districtName }) : undefined}
-        emoji={open ? FAMILY_EMOJI[open.family] : undefined}
         footer={
           open && (
             <>
               {open.applyUrl && (
-                <ActionLink href={open.applyUrl} emoji={open.family === "pmayg" ? "🔎" : "📝"} primary newTab>
+                <ActionLink href={open.applyUrl} primary newTab>
                   {open.family === "pmayg" ? t("sheet.checkName") : t("sheet.apply")}
                 </ActionLink>
               )}
               {open.family === "pmayg" || open.family === "state" ? (
-                <ActionLink href={`${base}/gram-panchayat`} emoji="🏘️" internal>
+                <ActionLink href={`${base}/gram-panchayat`} internal>
                   {t("sheet.panchayat")}
                 </ActionLink>
               ) : (
-                <ActionLink href={`${base}/offices`} emoji="🏢" internal>
+                <ActionLink href={`${base}/offices`} internal>
                   {t("sheet.offices")}
                 </ActionLink>
               )}
@@ -529,45 +516,43 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
       >
         {open && (
           <>
-            <SheetNote emoji="🎁">{t(`family.${open.family}.what`)}</SheetNote>
+            <SheetNote>{t(`family.${open.family}.what`)}</SheetNote>
             <DetailList
               rows={[
-                { emoji: "🗺️", label: t("sheet.where"), value: open.where ? whereText(open.where) : null },
+                { label: t("sheet.where"), value: open.where ? whereText(open.where) : null },
                 {
-                  emoji: "🏛️",
                   label: t("sheet.by"),
                   value: open.family === "pmayg" || open.family === "pmayu" || open.family === "city" ? t(`family.${open.family}.by`) : open.family === "state" ? t("family.state.by", { state: stateName }) : null,
                 },
                 {
-                  emoji: "👪",
                   label: t("sheet.who"),
                   value: open.info?.eligibility ?? t(`family.${open.family}.who`),
                   lang: open.info?.eligibility ? dataLang(open.info.eligibility, locale) : undefined,
                 },
-                { emoji: "💰", label: t("sheet.amount"), value: open.info?.amount ? t("sheet.amountValue", { amount: rupees(open.info.amount) }) : null },
-                { emoji: "📅", label: t("sheet.year"), value: open.row ? fy(open.row.fiscalYear) : null },
+                { label: t("sheet.amount"), value: open.info?.amount ? t("sheet.amountValue", { amount: rupees(open.info.amount) }) : null },
+                { label: t("sheet.year"), value: open.row ? fy(open.row.fiscalYear) : null },
               ]}
             />
 
             {open.row && (
-              <SheetBlock emoji="🏗️" title={t("sheet.progress")}>
+              <SheetBlock title={t("sheet.progress")}>
                 <StageBar
                   stages={stagesOf(open.row, stageLabel, n)}
                   ariaLabel={t("card.barAria", { done: n(open.row.completed), building: n(open.row.inProgress), target: n(open.row.targetHouses) })}
                 />
                 <DetailList
                   rows={[
-                    { emoji: "🎯", label: t("tiles.target"), value: n(open.row.targetHouses) },
-                    { emoji: "✅", label: t("tiles.sanctioned"), value: n(open.row.sanctioned) },
-                    { emoji: "🏠", label: t("tiles.completed"), value: n(open.row.completed) },
-                    { emoji: "🏗️", label: t("tiles.inProgress"), value: n(open.row.inProgress) },
+                    { label: t("tiles.target"), value: n(open.row.targetHouses) },
+                    { label: t("tiles.sanctioned"), value: n(open.row.sanctioned) },
+                    { label: t("tiles.completed"), value: n(open.row.completed) },
+                    { label: t("tiles.inProgress"), value: n(open.row.inProgress) },
                   ]}
                 />
               </SheetBlock>
             )}
 
             {open.row && (open.row.fundsAllocated ?? 0) > 0 && (
-              <SheetBlock emoji="💰" title={t("sheet.money")}>
+              <SheetBlock title={t("sheet.money")}>
                 <DetailList
                   rows={[
                     { label: t("details.allocated"), value: crore(open.row.fundsAllocated ?? 0) },
@@ -581,11 +566,11 @@ function HousingPageInner({ params }: { params: Promise<{ locale: string; state:
               </SheetBlock>
             )}
 
-            <SheetBlock emoji="🧭" title={t("sheet.steps")}>
-              <HowItWorks steps={stepsOf(open.family).map((k) => ({ emoji: STEP_EMOJI[k], title: t(`how.${k}.title`) }))} />
+            <SheetBlock title={t("sheet.steps")}>
+              <HowItWorks steps={stepsOf(open.family).map((k) => ({ emoji: "", title: t(`how.${k}.title`) }))} />
             </SheetBlock>
 
-            <SheetBlock emoji="📝" title={t("sheet.howApply")}>
+            <SheetBlock title={t("sheet.howApply")}>
               <p className="ftp-body" style={{ margin: 0, fontSize: 14, lineHeight: "21px" }}>
                 {t(`family.${open.family}.apply`)}
               </p>

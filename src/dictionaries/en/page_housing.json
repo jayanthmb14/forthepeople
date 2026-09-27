@@ -1,6 +1,5 @@
 {
   "description": "Government housing schemes: what you get, who can get it, and how many houses are really built",
-  "summary": "This page tracks government housing schemes such as PMAY in {district}: what each scheme gives, who can get it, where it runs, how many houses were planned, sanctioned, finished and are still being built, and how much money was set aside, released and spent. Progress figures come from the scheme dashboards (such as AwaasSoft) and district records, grouped by financial year; each scheme names its own source.",
   "fy": "FY {year}",
   "fyRange": "FY {from} to {to}",
   "crore": "₹{n} Cr",
@@ -79,13 +78,34 @@
   "how": {
     "title": "How a housing scheme reaches you",
     "pmaygNote": "In villages (PMAY-G) there is no form: names come from the Awaas+ list, and the Gram Sabha checks it.",
-    "apply": { "title": "Apply", "body": "Fill the form online or at the office" },
-    "list": { "title": "Name on the list", "body": "From the Awaas+ survey of families without a pucca house" },
-    "survey": { "title": "Checked", "body": "Officials check your details and your land" },
-    "gramSabha": { "title": "Gram Sabha checks", "body": "The village meeting confirms the list" },
-    "sanction": { "title": "Sanctioned", "body": "Your house is approved" },
-    "build": { "title": "Build in stages", "body": "Foundation, walls, roof: officials check each stage" },
-    "money": { "title": "Money released", "body": "Paid into your bank account after each stage" }
+    "apply": {
+      "title": "Apply",
+      "body": "Fill the form online or at the office"
+    },
+    "list": {
+      "title": "Name on the list",
+      "body": "From the Awaas+ survey of families without a pucca house"
+    },
+    "survey": {
+      "title": "Checked",
+      "body": "Officials check your details and your land"
+    },
+    "gramSabha": {
+      "title": "Gram Sabha checks",
+      "body": "The village meeting confirms the list"
+    },
+    "sanction": {
+      "title": "Sanctioned",
+      "body": "Your house is approved"
+    },
+    "build": {
+      "title": "Build in stages",
+      "body": "Foundation, walls, roof: officials check each stage"
+    },
+    "money": {
+      "title": "Money released",
+      "body": "Paid into your bank account after each stage"
+    }
   },
   "otherSchemes": {
     "title": "Looking for other help?",
@@ -142,30 +162,5 @@
     "sourceList": "Scheme details source: {source}",
     "sourceListNone": "Scheme details from the district's scheme list.",
     "updated": "Updated {date}"
-  },
-  "share": "Housing in {district}: {done} of {target} planned houses finished ({pct})",
-  "shareEmpty": "Housing schemes in {district}",
-  "end": {
-    "about": "About this page",
-    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
-    "freq": {
-      "every30": "Checked every 30 minutes",
-      "every6h": "Checked every 6 hours",
-      "daily": "Updated every day",
-      "weekly": "Updated every week",
-      "monthly": "Updated every month",
-      "quarterly": "Updated every 3 months",
-      "annual": "Updated every year",
-      "whenPublished": "Updated when the source publishes"
-    },
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "csv": "Download CSV",
-    "shareHead": "{district} district update",
-    "shareSource": "Source: {url}",
-    "actions": "Page actions"
   }
 }

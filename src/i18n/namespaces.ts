@@ -35,6 +35,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_leadership",
   "page_locked",
   "page_map",
+  "page_modules-a",
   "page_money",
   "page_news",
   "page_offices",

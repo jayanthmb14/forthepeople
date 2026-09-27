@@ -23,7 +23,9 @@ import { useTranslations } from "next-intl";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import type { ElectionResult } from "@/hooks/useRealtimeData";
 import { Card, Chips, Section } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, Explainer, Gauge, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { Building2, Hand, Landmark } from "lucide-react";
+import { IconPictogram } from "@/components/district/calm-parts";
 import { HueDonut } from "@/components/district/civic/HueDonut";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import { useFormat } from "@/i18n/client";
@@ -68,7 +70,7 @@ function VoteSplit({ r }: { r: ElectionResult }) {
         aria-label={t("splitAria", { winner: r.winnerName, wv: f.number(wv), runner: r.runnerUpName, rv: f.number(rv) })}
         style={{ display: "flex", gap: 2, height: 10, borderRadius: "var(--ftp-radius-pill)", overflow: "hidden" }}
       >
-        <span className="ftp-grow-x" style={{ width: `${share * 100}%`, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
+        <span className="ftp-grow-x" style={{ width: `${share * 100}%`, background: "var(--hue)" }} />
         <span style={{ flex: 1, background: "color-mix(in srgb, var(--ftp-text-2) 28%, #fff)" }} />
       </div>
       <figcaption style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
@@ -106,7 +108,6 @@ function SeatsRing({ results, typeLabel }: { results: ElectionResult[]; typeLabe
   return (
     <ChartCard
       title={t("seatsTitle")}
-      emoji="🏆"
       units={t("seatsUnits", { type: typeLabel(pick[0].electionType), year })}
       simple={simple}
       source={ECI}
@@ -167,14 +168,14 @@ export function ElectionResults({ results }: { results: ElectionResult[] }) {
   const chartLow = turnoutChart.length > 0 ? turnoutChart.reduce((a, c) => (c.turnout < a.turnout ? c : a)) : null;
 
   return (
-    <Section title={t("results")} emoji="🏆">
+    <Section title={t("results")}>
       {turnoutCount > 0 && (
         <div className="ftp-picture-row" style={{ marginBottom: 16 }}>
-          <Card tinted padding={18}>
-            <Explainer emoji="🗳️">{t.rich("simple", { year: recentYear, pct: Math.round(avgTurnout), count: turnoutCount, b })}</Explainer>
-            <Pictogram filled={avgTurnout / 10} emoji="🙋" label={t("pictogram", { n: Math.round(avgTurnout / 10), year: recentYear })} />
+          <Card padding={18}>
+            <Explainer>{t.rich("simple", { year: recentYear, pct: Math.round(avgTurnout), count: turnoutCount, b })}</Explainer>
+            <IconPictogram filled={avgTurnout / 10} icon={Hand} label={t("pictogram", { n: Math.round(avgTurnout / 10), year: recentYear })} />
           </Card>
-          <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Card padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Gauge value={avgTurnout} label={t("gaugeLabel")} caption={t("gaugeCaption", { year: recentYear })} />
           </Card>
         </div>
@@ -185,7 +186,6 @@ export function ElectionResults({ results }: { results: ElectionResult[] }) {
         {turnoutChart.length > 1 && chartHigh && chartLow && (
           <ChartCard
             title={t("chartTitle")}
-            emoji="📊"
             units={t("chartUnits")}
             simple={t.rich("chartSimple", {
               high: chartHigh.nameFull,
@@ -194,7 +194,7 @@ export function ElectionResults({ results }: { results: ElectionResult[] }) {
               lowPct: pctText(chartLow.turnout),
               b: (c) => <strong>{c}</strong>,
             })}
-            legend={[{ label: t("chartLegend"), swatch: "linear-gradient(180deg, var(--hue), var(--hue-pop))" }]}
+            legend={[{ label: t("chartLegend"), swatch: "var(--hue)" }]}
             source={ECI}
             asOfPeriod={chartPeriod}
             table={turnoutChart.map((r) => ({ label: t("chartRow", { name: r.nameFull, type: r.type, year: r.year }), value: pctText(r.turnout) }))}
@@ -241,8 +241,8 @@ export function ElectionResults({ results }: { results: ElectionResult[] }) {
             <Card key={r.id} as="article" padding={16}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 16, borderRadius: 10 }}>
-                    {typeKey(r.electionType) === "loksabha" ? "🏛️" : "🏢"}
+                  <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}>
+                    {typeKey(r.electionType) === "loksabha" ? <Landmark size={15} /> : <Building2 size={15} />}
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <h3 className="ftp-title" style={{ fontWeight: 600 }}>{r.constituency}</h3>

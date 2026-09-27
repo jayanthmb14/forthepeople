@@ -1,4 +1,5 @@
 "use client";
+import { CalendarDays } from "lucide-react";
 
 // Horizontal Gantt-style tender lifecycle timeline.
 // Past events: filled dot. Current event: larger filled dot. Future: outlined.
@@ -68,7 +69,7 @@ export default function TenderGanttTimeline({ events }: { events: TimelineEvent[
   return (
     <Card>
       <div className="ftp-title" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>🗓️</span>
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}><CalendarDays size={15} /></span>
         {t("timeline.title")}
       </div>
       {/* The bar: every event placed by date between the first and last one. */}

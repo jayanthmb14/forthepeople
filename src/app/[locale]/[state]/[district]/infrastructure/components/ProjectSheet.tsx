@@ -4,13 +4,14 @@
  *
  * Infrastructure Tracker — everything about one project, in the shared
  * DetailSheet (bottom sheet on phones, right panel on laptops). Replaces
- * the old full-screen timeline dialog. Top to bottom: where it stands
- * (status + progress bar + "as of" date), the honesty notes (from news,
- * single source, court), money (first budget → now, change, released),
- * dates (announced → finished), who is involved, what the project is,
- * every news update (TimelineEntry), the source articles, and the cached
- * AI analysis. Words from page_infrastructure; names, agencies and news
- * text stay as published.
+ * the old full-screen timeline dialog. Top to bottom (v5): what it is (the
+ * description, first), where it stands (stage + progress + "as of" date),
+ * our notes (every point worked out from the row), the honesty notes
+ * (from news, single source, court), money (first budget → now, change,
+ * released), dates (announced → finished), who is involved, every news
+ * update (TimelineEntry), the source articles, and the cached AI
+ * analysis. No emoji. Words from page_infrastructure; names, agencies and
+ * news text stay as published.
  */
 
 "use client";
@@ -21,8 +22,10 @@ import { Pill, ProgressBar } from "@/components/district/ui";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { hueClass } from "@/lib/design/hues";
 import { SheetHighlight, SheetLink, SheetSection, hostOf, safeUrl } from "@/components/money/TapCard";
-import { categoryEmoji, normalizeStatus, isCancelled, hasCourtMention } from "./infra-utils";
+import { ownSourceLinks, type ProjectPoint } from "@/lib/civic/project-facts";
+import { hasCourtMention, kindOf, stageOf } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
+import { PointList } from "./ProjectCard";
 import PeopleRow from "./PeopleRow";
 import TimelineEntry from "./TimelineEntry";
 import PrecomputedAnalysis from "./PrecomputedAnalysis";
@@ -31,13 +34,23 @@ import { budgetOf } from "./ProjectCard";
 /** Update rows that are our own records, not news articles. */
 const NOT_NEWS = new Set(["admin-panel", "seed-data", "manual-research", "ai-enrichment"]);
 
-export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; onClose: () => void }) {
-  const { t, m, category, status, inr, monthYear, fullDate } = useInfraText();
+export default function ProjectSheet({
+  p,
+  points = [],
+  place,
+  onClose,
+}: {
+  p: InfraProject | null;
+  points?: ProjectPoint[];
+  place?: string | null;
+  onClose: () => void;
+}) {
+  const { t, m, kind, stage, inr, monthYear, fullDate } = useInfraText();
   if (!p) return null;
 
-  const s = normalizeStatus(p.status);
-  const finished = s === "COMPLETED";
-  const cancelled = isCancelled(p);
+  const st = stageOf(p);
+  const finished = st === "completed";
+  const cancelled = st === "cancelled";
   const progress = p.progressPct ?? 0;
   const updates = p.updates ?? [];
   const verified = p.verificationCount ?? 0;
@@ -48,9 +61,10 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
     const url = NOT_NEWS.has(u.newsUrl) ? null : safeUrl(u.newsUrl);
     if (url && !links.has(url)) links.set(url, u.newsSource ?? hostOf(url) ?? url);
   }
-  for (const raw of p.sourceUrls ?? []) {
-    const url = safeUrl(raw);
-    if (url && !links.has(url)) links.set(url, hostOf(url) ?? url);
+  // sourceUrls is a list of links or (hand-researched rows) { primary: { url, publication }, … }.
+  for (const l of ownSourceLinks(p)) {
+    const url = safeUrl(l.url);
+    if (url && !links.has(url)) links.set(url, l.name ?? hostOf(url) ?? url);
   }
   const first = p.originalBudget ?? p.budget ?? null;
   const now = budgetOf(p);
@@ -60,8 +74,7 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
       open
       onClose={onClose}
       title={p.name}
-      subtitle={[category(p.category), p.executingAgency].filter(Boolean).join(" · ")}
-      emoji={categoryEmoji(p.category)}
+      subtitle={[kind(kindOf(p)), place, p.executingAgency].filter(Boolean).join(" · ")}
       hueClassName={hueClass("infrastructure")}
       footer={
         latestNews ? (
@@ -71,9 +84,16 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
         ) : undefined
       }
     >
+      {/* What it is, first. */}
+      <SheetSection title={t("v5.what")}>
+        <p className="ftp-body" style={{ fontSize: 15, lineHeight: "23px", color: p.description ? "var(--ftp-text)" : "var(--ftp-text-2)" }}>
+          {p.description ?? t("v5.card.noDescription")}
+        </p>
+      </SheetSection>
+
       {/* Where it stands. */}
-      <SheetHighlight emoji={finished ? "✅" : cancelled ? "🚫" : "🚧"} label={t("sheet.statusNow")}>
-        {progress > 0 && !cancelled ? t("sheet.statusLine", { status: status(p.status), pct: m.num(progress) }) : status(p.status)}
+      <SheetHighlight label={t("sheet.statusNow")}>
+        {progress > 0 && !cancelled ? t("sheet.statusLine", { status: stage(st), pct: m.num(progress) }) : stage(st)}
       </SheetHighlight>
       {!cancelled && (
         <div>
@@ -88,6 +108,14 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
         </div>
       )}
 
+      {/* Our notes: worked out from the row, not a judgement. */}
+      {points.length > 0 && (
+        <SheetSection title={t("v5.pointsTitle")}>
+          <PointList points={points} />
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6, fontSize: 12, lineHeight: "18px" }}>{t("v5.pointsHint")}</p>
+        </SheetSection>
+      )}
+
       {/* Honesty notes. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {hasCourtMention(p) && (
@@ -95,14 +123,14 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
             <Pill tone="warn">{t("card.court")}</Pill> {t("card.courtHint")}
           </p>
         )}
-        {["STALLED", "CANCELLED", "DELAYED"].includes(s) && (
+        {(st === "stalled" || st === "cancelled" || /^delayed$/i.test((p.status ?? "").trim())) && (
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
             {t("card.statusFromNews")} {p.executingAgency ? t("sheet.contactAgency", { agency: p.executingAgency }) : null}
           </p>
         )}
         {cancelled && p.cancellationReason && (
           <p className="ftp-body" style={{ color: "var(--ftp-text)" }}>
-            <span style={{ fontWeight: 600, color: "var(--ftp-danger)" }}>{t("card.cancelReason")}</span> {p.cancellationReason}
+            <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{t("card.cancelReason")}</span> {p.cancellationReason}
           </p>
         )}
         <p className="ftp-body" style={{ color: verified === 1 ? "var(--ftp-warn)" : "var(--ftp-text-2)" }}>
@@ -110,7 +138,7 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
         </p>
       </div>
 
-      <SheetSection emoji="💰" title={t("sheet.money")}>
+      <SheetSection title={t("sheet.money")}>
         <DetailList
           rows={[
             { label: t("sheet.firstBudget"), value: first != null ? <span className="ftp-num">{inr(first)}</span> : t("card.budgetUnknown") },
@@ -132,7 +160,7 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6 }}>{t("card.asReported")}</p>
       </SheetSection>
 
-      <SheetSection emoji="📅" title={t("sheet.dates")}>
+      <SheetSection title={t("sheet.dates")}>
         <DetailList
           rows={[
             { label: t("sheet.announced"), value: p.announcedDate ? monthYear(p.announcedDate) : null },
@@ -158,20 +186,14 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
         )}
       </SheetSection>
 
-      <SheetSection emoji="👥" title={t("sheet.people")}>
+      <SheetSection title={t("sheet.people")}>
         <PeopleRow p={p} />
         {p.contractor && (
           <DetailList rows={[{ label: t("sheet.contractor"), value: p.contractor }]} />
         )}
       </SheetSection>
 
-      {p.description && (
-        <SheetSection emoji="📖" title={t("timeline.about")}>
-          <p className="ftp-body" style={{ fontSize: 14, lineHeight: "22px" }}>{p.description}</p>
-        </SheetSection>
-      )}
-
-      <SheetSection emoji="📰" title={t("sheet.updates", { n: updates.length })}>
+      <SheetSection title={t("sheet.updates", { n: updates.length })}>
         {updates.length > 0 ? (
           <div>
             {updates.map((u) => (
@@ -184,7 +206,7 @@ export default function ProjectSheet({ p, onClose }: { p: InfraProject | null; o
       </SheetSection>
 
       {links.size > 0 && (
-        <SheetSection emoji="🔗" title={t("sheet.sources")}>
+        <SheetSection title={t("sheet.sources")}>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
             {[...links.entries()].slice(0, 12).map(([url, name]) => (
               <li key={url}>

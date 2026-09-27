@@ -19,10 +19,11 @@ import type React from "react";
 import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldCheck } from "lucide-react";
+import { CreditCard, KeyRound, ListChecks, Megaphone, Rocket, ShieldCheck, Store } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { ModulePage, PageHeader, Section, Card, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { IconCountRow } from "@/components/money/visuals";
 import { useMoney } from "@/components/money/useMoney";
 import { TenderSheet, TenderTapCard } from "@/components/money/TenderSheet";
@@ -70,7 +71,6 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
       <ModulePage>
         <PageHeader
           icon={ShieldCheck}
-          emoji="🧭"
           title={t("apply.title")}
           description={t("apply.descriptionIn", { district: districtName })}
           backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
@@ -83,9 +83,9 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
             <IconCountRow
               label={t("apply.countsAria")}
               items={[
-                { key: "open", emoji: "📢", count: m.num(all.length), label: t("apply.countOpen") },
-                { key: "mse", emoji: "🏪", count: m.num(all.filter((x) => x.mseReserved).length), label: t("apply.countMse") },
-                { key: "startup", emoji: "🚀", count: m.num(all.filter((x) => x.startupExempt).length), label: t("apply.countStartup") },
+                { key: "open", icon: Megaphone, count: m.num(all.length), label: t("apply.countOpen") },
+                { key: "mse", icon: Store, count: m.num(all.filter((x) => x.mseReserved).length), label: t("apply.countMse") },
+                { key: "startup", icon: Rocket, count: m.num(all.filter((x) => x.startupExempt).length), label: t("apply.countStartup") },
               ]}
             />
           </div>
@@ -94,7 +94,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
         {/* Main list + reference cards: side by side when there is room, stacked on phones. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
           <div style={{ flex: "2 1 520px", minWidth: 0 }}>
-            <Card tinted padding={14} style={{ marginBottom: 16 }}>
+            <Card padding={14} style={{ marginBottom: 16 }}>
               <div className="ftp-title" style={{ marginBottom: 6 }}>{t("apply.filterTitle")}</div>
               <div style={{ display: "flex", flexWrap: "wrap", columnGap: 16 }}>
                 <label style={checkboxLabel}>
@@ -109,10 +109,10 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
               </div>
             </Card>
 
-            <Section emoji="🎯" title={t.rich("apply.matches", { n: filtered.length, num })}>
+            <Section title={t.rich("apply.matches", { n: filtered.length, num })}>
               {isLoading && <LoadingShell rows={3} />}
               {error && <ErrorBlock message={t("list.error")} />}
-              {!isLoading && !error && filtered.length === 0 && <EmptyState emoji="🔍" title={t("apply.empty")} />}
+              {!isLoading && !error && filtered.length === 0 && <EmptyState title={t("apply.empty")} />}
               {filtered.length > 0 && (
                 <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "280px" } as React.CSSProperties}>
                   {filtered.map((x) => (
@@ -125,7 +125,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
 
           {/* Reference cards */}
           <aside style={{ flex: "1 1 280px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-            <SidebarCard emoji="🔏" title={t("apply.dsc.title")}>
+            <SidebarCard icon={KeyRound} title={t("apply.dsc.title")}>
               <ul style={listStyle}>
                 <li>{t("apply.dsc.l1")}</li>
                 <li>{t.rich("apply.dsc.l2", { num })}</li>
@@ -133,7 +133,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
                 <li>{t("apply.dsc.l4")}</li>
               </ul>
             </SidebarCard>
-            <SidebarCard emoji="💳" title={t("apply.emd.title")}>
+            <SidebarCard icon={CreditCard} title={t("apply.emd.title")}>
               <ul style={listStyle}>
                 <li>{t("apply.emd.l1")}</li>
                 <li>{t("apply.emd.l2")}</li>
@@ -142,7 +142,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
                 <li style={{ color: "var(--ftp-live-text)", fontWeight: 500 }}>{t("apply.emd.l5")}</li>
               </ul>
             </SidebarCard>
-            <SidebarCard emoji="✅" title={t("apply.checklist.title")}>
+            <SidebarCard icon={ListChecks} title={t("apply.checklist.title")}>
               <ul style={listStyle}>
                 <li>{t("apply.checklist.l1")}</li>
                 <li>{t("apply.checklist.l2")}</li>
@@ -159,7 +159,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
           <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
         </div>
 
-        <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} showCompare={false} />
+        <MoneyToolbar shareTitle={mt.label("tenders")} />
 
         <TenderSheet tender={open} onClose={closeSheet} districtSlug={districtSlug} stateSlug={stateSlug} locale={locale} />
       </ModulePage>
@@ -167,12 +167,14 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
   );
 }
 
-/** A small reference card with an emoji chip and a sentence-case title. */
-function SidebarCard({ title, emoji, children }: { title: string; emoji: string; children: React.ReactNode }) {
+/** A small reference card with a line-icon chip and a sentence-case title. */
+function SidebarCard({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: React.ReactNode }) {
   return (
     <Card padding={14}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>{emoji}</span>
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}>
+          <Icon size={15} />
+        </span>
         <span style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{title}</span>
       </div>
       {children}

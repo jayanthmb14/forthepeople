@@ -100,8 +100,6 @@
   "emptyTitle": "No election results or polling booths yet for this district.",
   "emptyBody": "We add constituency results and booths as the Election Commission of India publishes them.",
   "checkNameButton": "Check your name in the voter list",
-  "sourceVoters": "Voters' Service Portal (Election Commission of India)",
-  "sourceSearch": "Voter list search (Election Commission of India)",
   "simple": "In the {year} results, on average about <b>{pct}</b> of every <b>100</b> voters in {count, plural, one {this constituency} other {these # constituencies}} went out and voted.",
   "pictogram": "About {n} of every 10 voters voted in {year}.",
   "gaugeLabel": "Voter turnout",
@@ -139,13 +137,9 @@
   "colConstituency": "Constituency",
   "colVoters": "Voters",
   "boothsTitle": "Polling booths ({n})",
-  "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
   "downloadCsv": "Download CSV",
   "share": "Share",
   "linkCopied": "Link copied",
   "compare": "Compare with another district",
-  "toolbar": "Page actions",
-  "freq": {
-    "postElection": "After each election"
-  }
+  "toolbar": "Page actions"
 }

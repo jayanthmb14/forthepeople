@@ -1,6 +1,6 @@
 {
   "emptyTitle": "No court data yet for {district}.",
-  "emptyBody": "We are collecting case figures from the National Judicial Data Grid (NJDG). You can still look up any case on eCourts.",
+  "emptyBody": "We have no case figures for this district yet. The National Judicial Data Grid (NJDG) publishes them, and you can look up any case on eCourts.",
   "explain": "In {year}, the courts of {district} received <b>{filed}</b> new cases and decided <b>{disposed}</b>. <b>{pending}</b> cases are still waiting for a decision.",
   "explainPace": "For every 10 new cases, they decided about <b>{n}</b>.",
   "explainHighCourt": "The High Court serves the whole state, so it is shown on its own card and not added here.",

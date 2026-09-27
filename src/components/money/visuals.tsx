@@ -16,13 +16,17 @@
 //    ShareDonut    a ring cut into shares ("how each ₹100 is shared"),
 //                  darkest shade for the biggest share, grey for "Other"
 //    TopBarList    a ranked list of up to 5 rows with a bar each
-//    IconCountRow  a row of emoji tiles, each with a big count
+//    IconCountRow  a row of tiles, each with a small line icon and a count
+//    StageBar      one bar split into stages (announced → completed) with
+//                  a count legend under it
+//  v5: no emoji; small lucide icons in the hue where an icon helps.
 //
 //  None of them contains words of its own: every label, value and
 //  aria-label comes from the page, already translated.
 "use client";
 
 import React from "react";
+import type { LucideIcon } from "lucide-react";
 
 /** Shades of the page hue, darkest first (biggest share gets the darkest). */
 export const HUE_SHADES = [
@@ -33,8 +37,8 @@ export const HUE_SHADES = [
   "color-mix(in srgb, var(--hue-pop) 45%, #fff)",
 ] as const;
 
-/** The "Other" slice / comparison colour (same grey as the kit's muted chart fill). */
-export const OTHER_SHADE = "#D8D5CB";
+/** The "Other" slice / comparison colour: a quiet blue-grey (v5 palette). */
+export const OTHER_SHADE = "var(--ftp-border-strong, #C9D5E6)";
 
 export interface DonutSlice {
   key: string;
@@ -164,8 +168,8 @@ export interface TopBarRow {
   value: number;
   /** Formatted value shown at the end of the row. */
   display: string;
-  /** One emoji in a hue chip before the label. */
-  emoji?: string;
+  /** Small line icon in a hue chip before the label. */
+  icon?: LucideIcon;
   /** Small second line under the label. */
   sub?: React.ReactNode;
 }
@@ -184,9 +188,9 @@ export function TopBarList({ rows, max = 5 }: { rows: TopBarRow[]; max?: number 
       {list.map((r, i) => (
         <li key={r.key}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            {r.emoji && (
-              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>
-                {r.emoji}
+            {r.icon && (
+              <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}>
+                <r.icon size={15} />
               </span>
             )}
             <span style={{ flex: 1, minWidth: 0 }}>
@@ -204,7 +208,7 @@ export function TopBarList({ rows, max = 5 }: { rows: TopBarRow[]; max?: number 
                 width: `${Math.max(2, (r.value / top) * 100)}%`,
                 height: "100%",
                 borderRadius: 999,
-                background: i === 0 ? "linear-gradient(90deg, var(--hue) 0%, var(--hue-deep) 100%)" : "linear-gradient(90deg, var(--hue-pop) 0%, var(--hue) 100%)",
+                background: i === 0 ? "var(--hue-deep)" : "var(--hue)",
                 ["--i" as string]: i,
               }}
             />
@@ -217,7 +221,7 @@ export function TopBarList({ rows, max = 5 }: { rows: TopBarRow[]; max?: number 
 
 export interface IconCount {
   key: string;
-  emoji: string;
+  icon?: LucideIcon;
   /** Already formatted count ("12", "₹4.2 Cr"). */
   count: string;
   label: string;
@@ -226,8 +230,9 @@ export interface IconCount {
 }
 
 /**
- * IconCountRow — a row of emoji tiles, each with a big count and a short
- * label ("🚧 12 being built", "✅ 5 finished"). Tiles wrap on phones.
+ * IconCountRow — a row of tiles, each with a big count and a short label
+ * ("12 being built", "5 finished"), and an optional line icon. Tiles wrap
+ * on phones.
  */
 export function IconCountRow({ items, label }: { items: IconCount[]; label: string }) {
   if (items.length === 0) return null;
@@ -253,14 +258,16 @@ export function IconCountRow({ items, label }: { items: IconCount[]; label: stri
             gap: 10,
             padding: "12px 14px",
             borderRadius: 16,
-            background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)",
-            border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
+            background: "var(--ftp-surface)",
+            border: "1px solid var(--ftp-border)",
             ["--i" as string]: i,
           }}
         >
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 22, borderRadius: 12, background: "#fff" }}>
-            {it.emoji}
-          </span>
+          {it.icon && (
+            <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10 }}>
+              <it.icon size={16} />
+            </span>
+          )}
           <span style={{ minWidth: 0 }}>
             <span className="ftp-bignum" style={{ display: "block", fontSize: 24, lineHeight: 1.1, color: "var(--hue-deep)" }}>
               {it.count}
@@ -270,5 +277,48 @@ export function IconCountRow({ items, label }: { items: IconCount[]; label: stri
         </li>
       ))}
     </ul>
+  );
+}
+
+export interface StagePart {
+  key: string;
+  label: string;
+  value: number;
+  /** CSS colour for the segment and the legend dot. */
+  fill: string;
+}
+
+/**
+ * StageBar — one bar split into stages, with "N label" under it. Stages
+ * with 0 stay in the legend (so "0 stalled" is visible) but draw nothing.
+ * `ariaLabel` is the whole picture in one sentence.
+ */
+export function StageBar({ parts, ariaLabel, format }: { parts: StagePart[]; ariaLabel: string; format: (n: number) => string }) {
+  const total = parts.reduce((s, p) => s + Math.max(0, p.value), 0);
+  if (total <= 0) return null;
+  return (
+    <figure style={{ margin: 0 }}>
+      <div role="img" aria-label={ariaLabel} dir="ltr" style={{ display: "flex", gap: 2, height: 16, borderRadius: 999, overflow: "hidden", background: "var(--ftp-surface-2)" }}>
+        {parts.map((p, i) =>
+          p.value > 0 ? (
+            <span
+              key={p.key}
+              aria-hidden
+              className="ftp-grow-x"
+              style={{ width: `${(p.value / total) * 100}%`, background: p.fill, ["--i" as string]: i }}
+            />
+          ) : null,
+        )}
+      </div>
+      <ul aria-hidden style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "flex", flexWrap: "wrap", gap: "8px 18px" }}>
+        {parts.map((p) => (
+          <li key={p.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: p.fill, flexShrink: 0 }} />
+            <strong className="ftp-num" style={{ color: "var(--ftp-text)", fontWeight: 650 }}>{format(p.value)}</strong>
+            {p.label}
+          </li>
+        ))}
+      </ul>
+    </figure>
   );
 }

@@ -55,12 +55,12 @@ export function TenderTapCard({ tender, onOpen }: { tender: TenderListRow; onOpe
   const flags = tender.redFlags.length;
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("card.openAria", { title: tender.title })} more={t("card.more")} dimmed={closed}>
-      <CardHead emoji="📑" title={tender.title} side={<Pill tone={status.tone}>{status.label}</Pill>} />
+      <CardHead title={tender.title} side={<Pill tone={status.tone}>{status.label}</Pill>} />
       <TagRow>
         <HueTag>{tender.authority.shortCode}</HueTag>
         {tender.category && <HueTag outline>{tender.category.name}</HueTag>}
-        {tender.mseReserved && <HueTag emoji="🏪">{t("tag.mse")}</HueTag>}
-        {tender.startupExempt && <HueTag outline emoji="🚀">{t("tag.startup")}</HueTag>}
+        {tender.mseReserved && <HueTag>{t("tag.mse")}</HueTag>}
+        {tender.startupExempt && <HueTag outline>{t("tag.startup")}</HueTag>}
       </TagRow>
       <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <span>
@@ -92,7 +92,7 @@ export function TenderTapCard({ tender, onOpen }: { tender: TenderListRow; onOpe
       <span style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 2, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         <span suppressHydrationWarning>{t.rich("card.published", { n: daysSince(tender.publishedAt), num })}</span>
         {tender._count.corrigenda > 0 && <span style={{ color: "var(--ftp-warn)" }}>{t.rich("card.corrigenda", { n: tender._count.corrigenda, num })}</span>}
-        {flags > 0 && <span style={{ color: "var(--ftp-danger)" }}>{t.rich("card.flags", { n: flags, num })}</span>}
+        {flags > 0 && <span style={{ color: "var(--ftp-warn)" }}>{t.rich("card.flags", { n: flags, num })}</span>}
       </span>
     </TapCard>
   );
@@ -148,7 +148,6 @@ export function TenderSheet({
       onClose={onClose}
       title={tender.title}
       subtitle={t("detail.byline", { authority: tender.authority.name, place })}
-      emoji="📑"
       hueClassName={hueClass("tenders")}
       footer={
         <>
@@ -180,7 +179,7 @@ export function TenderSheet({
         </>
       }
     >
-      <SheetHighlight emoji={closed ? "✅" : "⏳"} label={t("sheet.timeLeft")}>
+      <SheetHighlight label={t("sheet.timeLeft")}>
         {closed ? t("countdown.closed") : <CountdownTimer deadline={tender.bidSubmissionEnd} />}
       </SheetHighlight>
       <CountdownBar
@@ -191,30 +190,29 @@ export function TenderSheet({
       />
       <TagRow>
         <Pill tone={status.tone}>{status.label}</Pill>
-        {tender.mseReserved && <HueTag emoji="🏪">{t("tag.mse")}</HueTag>}
-        {tender.startupExempt && <HueTag outline emoji="🚀">{t("tag.startup")}</HueTag>}
+        {tender.mseReserved && <HueTag>{t("tag.mse")}</HueTag>}
+        {tender.startupExempt && <HueTag outline>{t("tag.startup")}</HueTag>}
       </TagRow>
 
       <DetailList
         rows={[
-          { emoji: "💰", label: t("sheet.value"), value: <span className="ftp-num">{m.short(tender.estimatedValueInr)}</span> },
+          { label: t("sheet.value"), value: <span className="ftp-num">{m.short(tender.estimatedValueInr)}</span> },
           {
-            emoji: "🔐",
             label: t("sheet.emd"),
             value: emd ? <span className="ftp-num">{m.short(emd)}</span> : tender.mseReserved || tender.startupExempt ? t("detail.tiles.exempt") : null,
           },
-          { emoji: "🧾", label: t("sheet.fee"), value: fee ? <span className="ftp-num">{m.short(fee)}</span> : null },
-          { emoji: "🏛️", label: t("sheet.buyer"), value: tender.authority.name },
-          { emoji: "🗂️", label: t("sheet.category"), value: tender.category?.name ?? null },
-          { emoji: "📍", label: t("sheet.place"), value: place },
-          { emoji: "🤝", label: t("sheet.preBid"), value: tender.preBidMeetingAt ? formatIST(tender.preBidMeetingAt, f.intl) : null },
-          { emoji: "✏️", label: t("sheet.corrigenda"), value: tender._count.corrigenda > 0 ? m.num(tender._count.corrigenda) : null },
-          { emoji: "🌐", label: t("sheet.portal"), value: portal },
+          { label: t("sheet.fee"), value: fee ? <span className="ftp-num">{m.short(fee)}</span> : null },
+          { label: t("sheet.buyer"), value: tender.authority.name },
+          { label: t("sheet.category"), value: tender.category?.name ?? null },
+          { label: t("sheet.place"), value: place },
+          { label: t("sheet.preBid"), value: tender.preBidMeetingAt ? formatIST(tender.preBidMeetingAt, f.intl) : null },
+          { label: t("sheet.corrigenda"), value: tender._count.corrigenda > 0 ? m.num(tender._count.corrigenda) : null },
+          { label: t("sheet.portal"), value: portal },
         ]}
       />
 
       {flags.length > 0 && (
-        <SheetSection emoji="🚩" title={t("detail.flagsTitle")}>
+        <SheetSection title={t("detail.flagsTitle")}>
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 8 }}>{t("detail.flagsIntro")}</p>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             {flags.map((fl) => (
@@ -231,7 +229,7 @@ export function TenderSheet({
 
       {d && (
         <>
-          <SheetSection emoji="💬" title={t("detail.plainTitle")}>
+          <SheetSection title={t("detail.plainTitle")}>
             {bullets && (bullets.what || bullets.whoCanApply || bullets.deadline) ? (
               <ul className="ftp-body" style={{ margin: 0, paddingInlineStart: 18, fontSize: 14, lineHeight: "22px" }}>
                 {bullets.what && <li>{t.rich("detail.what", { text: bullets.what, s: (c) => <strong>{c}</strong> })}</li>}
@@ -245,12 +243,12 @@ export function TenderSheet({
             )}
           </SheetSection>
 
-          <SheetSection emoji="✅" title={t("detail.canApply")}>
+          <SheetSection title={t("detail.canApply")}>
             <EligibilityWizard eligibility={d.eligibility} tenderMseReserved={d.mseReserved} tenderStartupExempt={d.startupExempt} />
           </SheetSection>
 
           {d.corrigenda.length > 0 && (
-            <SheetSection emoji="✏️" title={t("detail.corrigendaTitle")}>
+            <SheetSection title={t("detail.corrigendaTitle")}>
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                 {d.corrigenda.map((c) => (
                   <li key={c.id} className="ftp-body" style={{ fontSize: 14, lineHeight: "21px" }}>
@@ -264,7 +262,7 @@ export function TenderSheet({
           )}
 
           {d.awards.length > 0 && (
-            <SheetSection emoji="🏆" title={t("detail.awardTitle")}>
+            <SheetSection title={t("detail.awardTitle")}>
               {d.awards.map((a) => (
                 <DetailList
                   key={a.id}
@@ -283,7 +281,7 @@ export function TenderSheet({
           )}
 
           {d.documents.length > 0 && (
-            <SheetSection emoji="📂" title={t("detail.documents")}>
+            <SheetSection title={t("detail.documents")}>
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {d.documents.map((doc) => {
                   const url = safeUrl(doc.sourceUrl);

@@ -11,9 +11,16 @@
 // about a scheme: kinds, audiences and levels are read from the stored
 // text, and steps / documents are the usual ones for that kind of help,
 // shown on the page as "usually" with a pointer to the official site.
-// Every label is a message key in "page_schemes".
+// Every label is a message key in "page_schemes". v5: no emoji — a small
+// line icon per kind of help (KIND_ICON), text tags for level and audience,
+// numbered steps.
 
-/** The kind of help, used for the emoji, the "what you get" line, the steps and the documents. */
+import type { LucideIcon } from "lucide-react";
+import {
+  Briefcase, Bus, ClipboardList, Droplets, Flame, GraduationCap, HandHeart, HeartPulse, House, Landmark, Sprout, Users, Wheat,
+} from "lucide-react";
+
+/** The kind of help, used for the icon, the "what you get" line, the steps and the documents. */
 export type SchemeKind =
   | "health"
   | "housing"
@@ -53,20 +60,20 @@ export function schemeKind(category: string | null | undefined, name?: string | 
   return "other";
 }
 
-export const KIND_EMOJI: Record<SchemeKind, string> = {
-  health: "🏥",
-  housing: "🏠",
-  education: "🎓",
-  farm: "🌾",
-  women: "👩‍👧",
-  jobs: "💼",
-  food: "🍚",
-  water: "💧",
-  energy: "🔥",
-  pension: "🤝",
-  business: "🏦",
-  transport: "🚌",
-  other: "📋",
+export const KIND_ICON: Record<SchemeKind, LucideIcon> = {
+  health: HeartPulse,
+  housing: House,
+  education: GraduationCap,
+  farm: Sprout,
+  women: Users,
+  jobs: Briefcase,
+  food: Wheat,
+  water: Droplets,
+  energy: Flame,
+  pension: HandHeart,
+  business: Landmark,
+  transport: Bus,
+  other: ClipboardList,
 };
 
 /** "Women & Child Development" → "womenandchilddevelopment" (message key for a category word). */
@@ -89,8 +96,6 @@ export function levelKey(level: string | null | undefined): LevelKey | null {
   if (l.startsWith("local") || l.startsWith("district") || l.startsWith("municipal") || l.startsWith("zilla")) return "local";
   return null;
 }
-
-export const LEVEL_EMOJI: Record<LevelKey, string> = { central: "🇮🇳", state: "🏛️", local: "📍" };
 
 /**
  * Many rows pack "who — what" into eligibility ("BPL families — ₹5 lakh
@@ -157,106 +162,85 @@ export function audiences(text: string | null | undefined): Audience[] {
   return out;
 }
 
-export const AUD_EMOJI: Record<Audience, string> = {
-  farmers: "🌾",
-  fishers: "🎣",
-  women: "👩",
-  children: "🧒",
-  students: "🎓",
-  scst: "🤝",
-  obc: "🤝",
-  lowIncome: "💵",
-  seniors: "👴",
-  disabled: "♿",
-  rural: "🏡",
-  urban: "🏙️",
-  noHome: "🏠",
-  youth: "🧑",
-  workers: "👷",
-  business: "🧵",
-  residents: "📍",
-  everyone: "👨‍👩‍👧",
-};
-
 /** The usual steps for this kind of help (page_schemes.step.<key>). */
-export function stepsFor(kind: SchemeKind, name?: string | null): Array<{ emoji: string; key: string }> {
+export function stepsFor(kind: SchemeKind, name?: string | null): Array<{ key: string }> {
   const insurance = /insurance|pm-?jay|ayushman|arogya|jeevandayee/i.test(name ?? "");
   switch (kind) {
     case "health":
       return insurance
         ? [
-            { emoji: "🪪", key: "getCard" },
-            { emoji: "🏥", key: "goHospital" },
-            { emoji: "🔎", key: "cardChecked" },
-            { emoji: "✅", key: "treatmentPaid" },
+            { key: "getCard" },
+            { key: "goHospital" },
+            { key: "cardChecked" },
+            { key: "treatmentPaid" },
           ]
         : [
-            { emoji: "🏥", key: "visitCentre" },
-            { emoji: "🔎", key: "check" },
-            { emoji: "✅", key: "careGiven" },
+            { key: "visitCentre" },
+            { key: "check" },
+            { key: "careGiven" },
           ];
     case "housing":
       return [
-        { emoji: "📝", key: "apply" },
-        { emoji: "🔎", key: "survey" },
-        { emoji: "✅", key: "approved" },
-        { emoji: "🧱", key: "stages" },
-        { emoji: "🏠", key: "home" },
+        { key: "apply" },
+        { key: "survey" },
+        { key: "approved" },
+        { key: "stages" },
+        { key: "home" },
       ];
     case "education":
       return [
-        { emoji: "📝", key: "applyPortal" },
-        { emoji: "🏫", key: "schoolChecks" },
-        { emoji: "✅", key: "approved" },
-        { emoji: "💰", key: "moneyBank" },
+        { key: "applyPortal" },
+        { key: "schoolChecks" },
+        { key: "approved" },
+        { key: "moneyBank" },
       ];
     case "water":
       return [
-        { emoji: "🗣️", key: "askPanchayat" },
-        { emoji: "🔎", key: "survey" },
-        { emoji: "🚰", key: "tapFitted" },
+        { key: "askPanchayat" },
+        { key: "survey" },
+        { key: "tapFitted" },
       ];
     case "food":
       return [
-        { emoji: "🪪", key: "rationCard" },
-        { emoji: "🏪", key: "rationShop" },
-        { emoji: "🍚", key: "getGrain" },
+        { key: "rationCard" },
+        { key: "rationShop" },
+        { key: "getGrain" },
       ];
     case "jobs":
       return [
-        { emoji: "📝", key: "register" },
-        { emoji: "🙋", key: "askWork" },
-        { emoji: "👷", key: "work" },
-        { emoji: "💰", key: "wagesBank" },
+        { key: "register" },
+        { key: "askWork" },
+        { key: "work" },
+        { key: "wagesBank" },
       ];
     case "business":
       return [
-        { emoji: "📝", key: "applyBank" },
-        { emoji: "🔎", key: "check" },
-        { emoji: "✅", key: "approved" },
-        { emoji: "💰", key: "moneyReleased" },
+        { key: "applyBank" },
+        { key: "check" },
+        { key: "approved" },
+        { key: "moneyReleased" },
       ];
     case "transport":
       return [
-        { emoji: "🪪", key: "showId" },
-        { emoji: "🚌", key: "travel" },
+        { key: "showId" },
+        { key: "travel" },
       ];
     case "farm":
     case "women":
     case "pension":
     case "energy":
       return [
-        { emoji: "📝", key: "apply" },
-        { emoji: "🔎", key: "papersChecked" },
-        { emoji: "✅", key: "approved" },
-        { emoji: "💰", key: "moneyBank" },
+        { key: "apply" },
+        { key: "papersChecked" },
+        { key: "approved" },
+        { key: "moneyBank" },
       ];
     default:
       return [
-        { emoji: "📝", key: "apply" },
-        { emoji: "🔎", key: "check" },
-        { emoji: "✅", key: "approved" },
-        { emoji: "🎁", key: "benefit" },
+        { key: "apply" },
+        { key: "check" },
+        { key: "approved" },
+        { key: "benefit" },
       ];
   }
 }
