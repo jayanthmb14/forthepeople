@@ -139,7 +139,7 @@ export function ShareDonut({
           )}
         </div>
       </div>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, flex: "1 1 220px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, flex: "1 1 220px", maxWidth: 480, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {arcs.map((a) => (
           <li key={a.key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, lineHeight: "19px" }}>
             <span aria-hidden style={{ width: 14, height: 14, borderRadius: 5, background: a.color, flexShrink: 0 }} />
