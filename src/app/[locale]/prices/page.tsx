@@ -21,7 +21,8 @@
 //    • the source, the "as of" time and a link to check it,
 //    • a calm amber note when the newest value is older than a few days.
 //  At the bottom: "Check these prices yourself" (the verification section),
-//  why petrol and diesel are not shown, and that this is not advice.
+//  why petrol and diesel are not shown, that this is not advice, and the
+//  All-India supporters line (after the data, never above it).
 //
 //  Server component, no client JavaScript: the data comes from the cached
 //  snapshot in src/lib/markets/prices.ts and the page is re-rendered at most
@@ -34,6 +35,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import PlainPageHeader from "@/components/site/PlainPageHeader";
+import NationalSupporters from "@/components/support/NationalSupporters";
 import PriceCard from "@/components/prices/PriceCard";
 import { makePriceViewBuilder } from "@/components/prices/price-view";
 import { ModulePage, Section } from "@/components/district/ui";
@@ -120,6 +122,9 @@ export default async function PricesPage({ params }: Props) {
             <p style={NOTE}>{t("notAdvice")}</p>
           </div>
         </Section>
+
+        {/* Supporters come after the data (renders nothing when there are none). */}
+        <NationalSupporters style={{ marginTop: 24 }} />
       </ModulePage>
     </main>
   );
