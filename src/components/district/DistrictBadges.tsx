@@ -19,6 +19,7 @@
 //  The emoji keys below are written as \u{…} escapes (not the glyphs
 //  themselves) so the source file stays emoji-free.
 
+import { useTranslations } from "next-intl";
 import { usePlaceText } from "@/i18n/client";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -90,6 +91,7 @@ interface Props {
  */
 export default function DistrictBadges({ badges, tagline, tone = "neutral" }: Props) {
   const place = usePlaceText();
+  const t = useTranslations("district");
   // Drop a badge that just repeats the tagline (Mandya's registry has
   // "Sugar Capital of Karnataka" as both), so the chip row never doubles up.
   const norm = (t: string) => t.trim().toLowerCase();
@@ -98,7 +100,7 @@ export default function DistrictBadges({ badges, tagline, tone = "neutral" }: Pr
 
   return (
     <ul
-      aria-label="What this district is known for"
+      aria-label={t("badgesAria")}
       style={{ display: "flex", flexWrap: "wrap", gap: 6, listStyle: "none", padding: 0, margin: 0 }}
     >
       {tagline && (

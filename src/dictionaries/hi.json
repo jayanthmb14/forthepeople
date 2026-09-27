@@ -41,7 +41,8 @@
     "area": "क्षेत्रफल",
     "literacy": "साक्षरता",
     "taluks": "तालुक",
-    "villages": "गांव"
+    "villages": "गांव",
+    "badgesAria": "यह ज़िला किस लिए जाना जाता है"
   },
   "modules": {
     "leadership": "नेतृत्व",

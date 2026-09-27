@@ -45,6 +45,7 @@
     "onChange": "ಬದಲಾದಾಗ"
   },
   "periodFy": "ಆರ್ಥಿಕ ವರ್ಷ {period}",
+  "periodCensus": "ಜನಗಣತಿ {year}",
   "noDate": "ಪ್ರಕಟವಾಗಿಲ್ಲ",
   "none": "—",
   "checkYourself": "ನೀವೇ ಪರಿಶೀಲಿಸಿ",

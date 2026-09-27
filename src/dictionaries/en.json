@@ -37,7 +37,8 @@
     "area": "Area",
     "literacy": "Literacy",
     "taluks": "Taluks",
-    "villages": "Villages"
+    "villages": "Villages",
+    "badgesAria": "What this district is known for"
   },
   "modules": {
     "leadership": "Leadership",

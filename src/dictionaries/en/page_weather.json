@@ -231,5 +231,23 @@
     "old": "Our last weather reading is from {date} ({n, plural, one {# day} other {# days}} old).",
     "source": "{source} · fetched {time} IST",
     "link": "Full forecast"
+  },
+  "compass": {
+    "N": "N",
+    "NNE": "NNE",
+    "NE": "NE",
+    "ENE": "ENE",
+    "E": "E",
+    "ESE": "ESE",
+    "SE": "SE",
+    "SSE": "SSE",
+    "S": "S",
+    "SSW": "SSW",
+    "SW": "SW",
+    "WSW": "WSW",
+    "W": "W",
+    "WNW": "WNW",
+    "NW": "NW",
+    "NNW": "NNW"
   }
 }

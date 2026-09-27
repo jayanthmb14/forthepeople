@@ -57,6 +57,7 @@ import { LeaderAvatar, isPlaceholderName, orderTiers, roleText, tierMeta } from 
 import { COURTS_TIER, ladderTier } from "@/lib/civic/leader-level";
 import { daysUntil, findActiveElection, findNextElection, type ElectionEvent } from "@/components/district/ElectionSection";
 import { getPartyColor } from "@/lib/constants/party-colors";
+import { usePlaceText } from "@/i18n/client";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { scriptLang } from "@/lib/utils/script-lang";
@@ -222,6 +223,17 @@ function PartyRing({ reps, asOf }: { reps: Leader[]; asOf: string | null }) {
 function NextElectionCard({ event, href }: { event: ElectionEvent; href: string }) {
   const t = useTranslations("page_leadership");
   const f = useFormat();
+  const place = usePlaceText();
+  // The stored label is English ("Karnataka Vidhan Sabha"); other languages
+  // name the body from its type ("ಕರ್ನಾಟಕ ವಿಧಾನಸಭೆ").
+  const body =
+    f.locale === "en"
+      ? event.label
+      : event.type === "STATE_ASSEMBLY" && event.state
+        ? t("next.assembly", { state: place.state(event.state) })
+        : event.type === "LOK_SABHA"
+          ? t("next.lokSabha")
+          : event.label;
   const target = event.pollingDate ?? event.nextExpected;
   if (!target) return null;
   const days = daysUntil(target) ?? 0;
@@ -238,7 +250,7 @@ function NextElectionCard({ event, href }: { event: ElectionEvent; href: string 
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>{t("next.title")}</span>
             <span style={{ display: "block", fontSize: 15, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
-              {event.label} · <span className="ftp-num">{when}</span>
+              {body} · <span className="ftp-num">{when}</span>
             </span>
             <span style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("next.link")}</span>
           </span>

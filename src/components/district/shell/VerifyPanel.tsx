@@ -122,7 +122,12 @@ function useDateText() {
   const f = useFormat();
   const tv = useTranslations("page_verify");
   return (d: DatasetFreshness): string => {
-    if (d.period) return d.periodKind === "fy" ? tv("periodFy", { period: d.period }) : d.period;
+    if (d.period) {
+      if (d.periodKind === "fy") return tv("periodFy", { period: d.period });
+      // "Census 2011" is stored in English; say it in the reader's language.
+      const census = /^Census (\d{4})$/.exec(d.period);
+      return census ? tv("periodCensus", { year: census[1] }) : d.period;
+    }
     if (d.dataDate) return f.date(d.dataDate, { day: "numeric", month: "short", year: "numeric" });
     return d.status === "not_collected" || d.status === "reference" ? tv("none") : tv("noDate");
   };

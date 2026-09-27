@@ -749,7 +749,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                 { label: t("tiles.humidity"), value: openReading.humidity !== null && openReading.humidity !== undefined ? `${num(openReading.humidity, 0)}%` : null },
                 {
                   label: t("tiles.wind"),
-                  value: windKmh(openReading) !== null ? `${num(windKmh(openReading) as number, 0)} ${t("kmh")}${openReading.windDir ? ` · ${openReading.windDir}` : ""}` : null,
+                  value: windKmh(openReading) !== null ? `${num(windKmh(openReading) as number, 0)} ${t("kmh")}${openReading.windDir ? ` · ${t.has(`compass.${openReading.windDir}`) ? t(`compass.${openReading.windDir}`) : openReading.windDir}` : ""}` : null,
                 },
                 { label: rainLabel(openReading), value: openReading.rainfall !== null && openReading.rainfall !== undefined ? mm(openReading.rainfall) : null },
                 { label: t("sheet.pressure"), value: openReading.pressure !== null && openReading.pressure !== undefined ? t("hpa", { v: num(openReading.pressure, 0) }) : null },

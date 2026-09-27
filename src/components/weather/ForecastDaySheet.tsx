@@ -63,7 +63,7 @@ export function ForecastDaySheet({
               {
                 icon: Wind,
                 label: t("forecast.sheet.wind"),
-                value: day.windMaxKmh !== null ? `${w.kmh(day.windMaxKmh)}${day.windDir ? ` · ${day.windDir}` : ""}` : null,
+                value: day.windMaxKmh !== null ? `${w.kmh(day.windMaxKmh)}${day.windDir ? ` · ${w.dir(day.windDir)}` : ""}` : null,
               },
               { icon: SunMedium, label: t("forecast.uv"), value: w.uv(day.uvMax) },
               { icon: Sunrise, label: t("forecast.sunrise"), value: day.sunrise ? w.time(day.sunrise) : null },

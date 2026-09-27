@@ -111,7 +111,9 @@
     "title": "Next election",
     "inDays": "{n, plural, =0 {voting today} one {voting in # day} other {voting in # days}}",
     "about": "expected about {date}",
-    "link": "See the dates, and how to vote"
+    "link": "See the dates, and how to vote",
+    "assembly": "{state} Legislative Assembly",
+    "lokSabha": "Lok Sabha"
   },
   "roleFallback": "Government official serving the district.",
   "roles": {

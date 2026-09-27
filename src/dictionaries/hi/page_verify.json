@@ -45,6 +45,7 @@
     "onChange": "जब बदले"
   },
   "periodFy": "वित्त वर्ष {period}",
+  "periodCensus": "जनगणना {year}",
   "noDate": "प्रकाशित नहीं",
   "none": "—",
   "checkYourself": "खुद जाँचें",
