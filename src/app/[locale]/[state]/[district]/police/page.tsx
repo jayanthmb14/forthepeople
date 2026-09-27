@@ -19,7 +19,8 @@
 //      email, address; Call / Directions / Email)
 //    → charts (NCRB only): cases by type, up or down by type, traffic fines
 //    → police posts filled vs sanctioned → every crime figure with its source
-//    → sources, news, Share / Compare
+//    → AI insight → Share / Compare → news. v5: no emoji; sources, "not
+//    an official website" and the stale note come from the district shell.
 //
 //  Honesty: crime CHARTS use NCRB rows only (source mentions NCRB / Crime
 //  in India). Rows from a police department's own report are listed at the
@@ -32,7 +33,7 @@ import { use, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Shield } from "lucide-react";
+import { FileText, Hash, Phone, Receipt, Shield, Siren, TrendingUp } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -53,19 +54,17 @@ import { ChartCard, ChartGradients, Explainer, HowItWorks, CHART_AXIS, chartTool
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { ThenNowRow } from "@/components/accountability/AccountabilityVisuals";
 import {
-  AccountabilityFooter,
   CardChip,
   CardList,
   ChartRow,
-  ListSearch,
   SheetAction,
   SheetNote,
   ShowAllButton,
-  TapCard,
-  ThenNowPicture,
   mapsHref,
   telHref,
 } from "@/components/accountability/AccountabilityKit";
+import { ListCard, SearchBox, ThenNowBars } from "@/components/district/calm-parts";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import PoliceStaffing from "@/components/accountability/PoliceStaffing";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -88,9 +87,9 @@ const NCRB = { label: "NCRB", href: "https://ncrb.gov.in" };
 
 /** National helplines (fixed numbers, not district data). */
 const HELPLINES = [
-  { key: "helpCyber", number: "1930", emoji: "💻" },
-  { key: "helpWomen", number: "1091", emoji: "👩" },
-  { key: "helpChild", number: "1098", emoji: "🧒" },
+  { key: "helpCyber", number: "1930" },
+  { key: "helpWomen", number: "1091" },
+  { key: "helpChild", number: "1098" },
 ] as const;
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
@@ -98,6 +97,7 @@ const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 function PolicePageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const t = useTranslations("page_police");
+  const ta = useTranslations("page_accountability");
   const f = useFormat();
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
@@ -201,14 +201,14 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   }
 
   const howSteps = [
-    { emoji: "🆘", title: t("how1"), body: t("how1Body") },
-    { emoji: "🚓", title: t("how2"), body: t("how2Body") },
-    { emoji: "📝", title: t("how3"), body: t("how3Body") },
-    { emoji: "📨", title: t("how4"), body: t("how4Body") },
+    { emoji: "", title: t("how1"), body: t("how1Body") },
+    { emoji: "", title: t("how2"), body: t("how2Body") },
+    { emoji: "", title: t("how3"), body: t("how3Body") },
+    { emoji: "", title: t("how4"), body: t("how4Body") },
   ];
   // The steps carry their own title where no Section heading sits above them.
   const howToReport = (withTitle: boolean) => (
-    <Card tinted padding={18}>
+    <Card padding={18}>
       <HowItWorks title={withTitle ? t("howTitle") : undefined} steps={howSteps} />
       <div style={{ marginTop: 12 }}>
         <SourcePill label={t("howSource")} />
@@ -235,9 +235,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
         boxShadow: "0 8px 18px -10px rgba(0,0,0,0.45)",
       }}
     >
-      <span className="ftp-emoji" aria-hidden>
-        🆘
-      </span>
+      <Phone size={16} aria-hidden />
       {t("call112")}
     </a>
   );
@@ -250,7 +248,6 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
         icon={Shield}
         title={mt.label("police")}
         description={mt.description("police")}
-        backHref={base}
         freshness={lastUpdated ? { asOf: lastUpdated } : undefined}
         source={ncrb.length > 0 ? NCRB : undefined}
       >
@@ -262,7 +259,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
 
       {!isLoading && !error && !hasAnyData && (
         <>
-          <EmptyState emoji="👮" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+          <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
           <div style={{ marginTop: 20 }}>{howToReport(true)}</div>
         </>
       )}
@@ -270,7 +267,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
       {!isLoading && hasAnyData && (
         <>
           {explainParts.length > 0 && (
-            <Explainer emoji="🚓">
+            <Explainer>
               {explainParts.map((part, i) => (
                 <span key={i}>
                   {i > 0 ? " " : ""}
@@ -283,14 +280,14 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
           {/* Only figures we actually have — never a fake zero. */}
           <StatStrip>
             {stations.length > 0 && (
-              <StatTile emoji="🚓" label={t("tileStations")} value={num(stations.length)} sub={t("tileStationsSub", { phones: num(withPhone) })} />
+              <StatTile icon={Siren} label={t("tileStations")} value={num(stations.length)} sub={t("tileStationsSub", { phones: num(withPhone) })} />
             )}
             {totalNow !== null && latestYear !== null && (
-              <StatTile emoji="📁" label={t("tileCases")} value={num(totalNow)} sub={t("tileCasesSub", { year: String(latestYear) })} />
+              <StatTile icon={FileText} label={t("tileCases")} value={num(totalNow)} sub={t("tileCasesSub", { year: String(latestYear) })} />
             )}
             {hasChange && latestYear !== null && prevYear !== null && (
               <StatTile
-                emoji="📈"
+                icon={TrendingUp}
                 label={t("tileChange")}
                 value={f.number(change, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" })}
                 sub={t("tileChangeSub", { prev: String(prevYear), year: String(latestYear) })}
@@ -300,7 +297,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
             )}
             {latestTraffic && (
               <StatTile
-                emoji="🧾"
+                icon={Receipt}
                 label={t("tileTraffic")}
                 value={`₹${lakh(latestTraffic.amount)}`}
                 unit={t("lakhUnit")}
@@ -315,12 +312,11 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
           <div style={{ marginTop: 16 }}>
             {hasChange && latestYear !== null && prevYear !== null && totalNow !== null && totalPrev !== null ? (
               <div className="ftp-picture-row">
-                <Card tinted padding={18}>
+                <Card padding={18}>
                   <h2 className="ftp-display" style={{ margin: "0 0 14px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
                     {t("pictureTitle", { prev: String(prevYear), year: String(latestYear) })}
                   </h2>
-                  <ThenNowPicture
-                    emoji="📁"
+                  <ThenNowBars
                     thenLabel={String(prevYear)}
                     nowLabel={String(latestYear)}
                     thenValue={totalPrev}
@@ -338,7 +334,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                     style={{
                       fontSize: 40,
                       lineHeight: 1.05,
-                      color: change > 0 ? "var(--ftp-danger)" : change < 0 ? "var(--ftp-live-text)" : "var(--hue-deep)",
+                      color: change > 0 ? "var(--ftp-warn)" : "var(--hue-deep)",
                     }}
                   >
                     {f.number(change, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" })}
@@ -354,41 +350,39 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
             )}
           </div>
 
-          <AIInsightCard module="police" district={district} />
-
           {/* The station list: tap a card, see everything. */}
           {stations.length > 0 && (
-            <Section title={t("stationsTitle")} emoji="🚓">
+            <Section title={t("stationsTitle")}>
               <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)" }}>
                 {t("stationsHint")}
               </p>
               {stations.length > SEARCH_FROM && (
-                <ListSearch value={query} onChange={setQuery} label={t("searchLabel")} placeholder={t("searchPlaceholder")} />
+                <SearchBox value={query} onChange={setQuery} label={t("searchLabel")} placeholder={t("searchPlaceholder")} />
               )}
               {matches.length === 0 ? (
-                <EmptyState emoji="🔎" title={t("noMatch", { q: query.trim() })} />
+                <EmptyState title={t("noMatch", { q: query.trim() })} />
               ) : (
                 <CardList label={t("stationsTitle")}>
                   {shown.map((s) => {
                     const local = s.nameLocal && s.nameLocal !== s.name ? s.nameLocal : null;
                     return (
-                      <TapCard
+                      <ListCard
                         key={s.id}
-                        emoji="🚓"
                         title={s.name}
                         titleLang="en"
                         sub={local ? <span lang={scriptLang(local)}>{local}</span> : s.address ?? undefined}
+                        hint={ta("seeDetails")}
                         onOpen={() => setOpen(s)}
                       >
                         {s.phone ? (
-                          <CardChip emoji="📞">
+                          <CardChip>
                             <span className="ftp-num">{s.phone}</span>
                           </CardChip>
                         ) : (
-                          <CardChip emoji="📵">{t("noPhone")}</CardChip>
+                          <CardChip>{t("noPhone")}</CardChip>
                         )}
-                        {s.sho && <CardChip emoji="👮">{t("chipSho", { name: s.sho })}</CardChip>}
-                      </TapCard>
+                        {s.sho && <CardChip>{t("chipSho", { name: s.sho })}</CardChip>}
+                      </ListCard>
                     );
                   })}
                 </CardList>
@@ -421,9 +415,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                         textDecoration: "none",
                       }}
                     >
-                      <span className="ftp-emoji" aria-hidden>
-                        {h.emoji}
-                      </span>
+                      <Hash size={14} aria-hidden style={{ color: "var(--hue-deep)" }} />
                       <strong className="ftp-num">{h.number}</strong>
                       <span style={{ color: "var(--ftp-text-2)" }}>{t(h.key)}</span>
                     </a>
@@ -441,7 +433,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
 
           {/* The steps live here when the picture slot showed the NCRB change. */}
           {hasChange && (
-            <Section title={t("howTitle")} emoji="📝">
+            <Section title={t("howTitle")}>
               {howToReport(false)}
             </Section>
           )}
@@ -452,7 +444,6 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
               {typeChart.length > 1 && latestYear !== null && (
                 <ChartCard
                   title={t("crimeTitle", { year: String(latestYear) })}
-                  emoji="🚨"
                   units={totalNow !== null ? t("crimeUnitsTotal") : t("crimeUnits")}
                   simple={topType ? t.rich("crimeSimple", { name: topType.nameFull, n: topType.count, count: num(topType.count), b: bold }) : null}
                   source={NCRB}
@@ -480,7 +471,6 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
               {prevYear !== null && latestYear !== null && trendRows.length > 0 && (
                 <ChartCard
                   title={t("trendTitle", { prev: String(prevYear) })}
-                  emoji="📈"
                   units={t("trendUnits", { prev: String(prevYear) })}
                   simple={t.rich("trendSimple", { up: trendUp, n: trendRows.length, prev: String(prevYear), latest: String(latestYear), b: bold })}
                   legend={[
@@ -516,7 +506,6 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
               {trafficChart.length > 1 && latestTraffic && (
                 <ChartCard
                   title={t("trafficTitle")}
-                  emoji="🧾"
                   units={t("trafficUnits")}
                   simple={
                     target && target > 0
@@ -553,7 +542,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
 
           {/* Every crime row we hold, grouped by year, each with its source. */}
           {crime.length > 0 && (
-            <Section title={t("allFiguresTitle")} emoji="📋">
+            <Section title={t("allFiguresTitle")}>
               <details>
                 <summary
                   style={{ cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }}
@@ -595,16 +584,12 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
       )}
 
       <div style={{ marginTop: 28 }}>
-        <AccountabilityFooter
-          moduleSlug="police"
-          locale={locale}
-          state={state}
-          district={district}
-          sourceUrls={{ "NCRB (National Crime Records Bureau)": "https://ncrb.gov.in", "data.gov.in": "https://data.gov.in" }}
-        >
-          <ModuleNews district={district} state={state} locale={locale} module="police" />
-        </AccountabilityFooter>
+        <AIInsightCard module="police" district={district} />
       </div>
+
+      <MoneyToolbar shareTitle={mt.label("police")} compareHref={`/${locale}/compare?module=police&a=${district}`} />
+
+      <ModuleNews district={district} state={state} locale={locale} module="police" />
 
       {/* Everything about one station, without leaving the page. */}
       <DetailSheet
@@ -619,26 +604,24 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
             t("stationSub", { district: districtName })
           )
         }
-        emoji="🚓"
         hueClassName={hue}
         footer={
           open ? (
             <>
               {openTel && (
-                <SheetAction href={openTel} emoji="📞" ariaLabel={t("callAria", { name: open.name, phone: open.phone ?? "" })}>
+                <SheetAction href={openTel} ariaLabel={t("callAria", { name: open.name, phone: open.phone ?? "" })}>
                   {t("call")}
                 </SheetAction>
               )}
               <SheetAction
                 href={mapsHref({ lat: open.lat, lng: open.lng, query: [open.name, open.address ?? districtName].join(", ") })}
-                emoji="🗺️"
                 quiet={Boolean(openTel)}
                 external
               >
                 {t("directions")}
               </SheetAction>
               {open.email && (
-                <SheetAction href={`mailto:${open.email}`} emoji="✉️" quiet>
+                <SheetAction href={`mailto:${open.email}`} quiet>
                   {t("email")}
                 </SheetAction>
               )}
@@ -650,9 +633,8 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
           <>
             <DetailList
               rows={[
-                { emoji: "👮", label: t("rowSho"), value: open.sho, lang: "en" },
+                { label: t("rowSho"), value: open.sho, lang: "en" },
                 {
-                  emoji: "📞",
                   label: t("rowPhone"),
                   value: open.phone ? (
                     openTel ? (
@@ -666,11 +648,11 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                     t("noPhone")
                   ),
                 },
-                { emoji: "✉️", label: t("rowEmail"), value: open.email ? <a href={`mailto:${open.email}`}>{open.email}</a> : null },
-                { emoji: "📍", label: t("rowAddress"), value: open.address, lang: "en" },
+                { label: t("rowEmail"), value: open.email ? <a href={`mailto:${open.email}`}>{open.email}</a> : null },
+                { label: t("rowAddress"), value: open.address, lang: "en" },
               ]}
             />
-            <SheetNote emoji="⚠️">{t("sheetNote")}</SheetNote>
+            <SheetNote>{t("sheetNote")}</SheetNote>
           </>
         )}
       </DetailSheet>

@@ -82,7 +82,7 @@
   "staffExplain": "पुलिस के <b>{sanctioned}</b> स्वीकृत पदों में से <b>{working}</b> भरे हुए हैं। <b>{vacant}</b> खाली हैं।",
   "staffPicto": "हर 10 पदों में से लगभग {n} भरे हुए हैं।",
   "staffRole": "{sanctioned} में से {working} भरे",
-  "staffSource": "आधिकारिक स्टाफ़ आँकड़े",
+  "staffSource": "स्टाफ़ आँकड़ों का स्रोत",
   "allFiguresTitle": "हमारे पास मौजूद सभी अपराध आँकड़े",
   "allFiguresSummary": "{n, plural, one {# आँकड़ा} other {सभी # आँकड़े}} उनके स्रोत के साथ दिखाएँ",
   "sourceLabel": "स्रोत: {source}"

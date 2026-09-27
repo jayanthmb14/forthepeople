@@ -82,7 +82,7 @@
   "staffExplain": "<b>{working}</b> of <b>{sanctioned}</b> sanctioned police posts are filled. <b>{vacant}</b> are empty.",
   "staffPicto": "About {n} of every 10 posts are filled.",
   "staffRole": "{working} of {sanctioned} filled",
-  "staffSource": "Official staffing data",
+  "staffSource": "Staffing data source",
   "allFiguresTitle": "Every crime figure we hold",
   "allFiguresSummary": "Show all {n, plural, one {# figure} other {# figures}} with their sources",
   "sourceLabel": "Source: {source}"

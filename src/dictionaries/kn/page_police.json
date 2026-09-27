@@ -82,7 +82,7 @@
   "staffExplain": "ಮಂಜೂರಾದ <b>{sanctioned}</b> ಪೊಲೀಸ್ ಹುದ್ದೆಗಳಲ್ಲಿ <b>{working}</b> ಭರ್ತಿಯಾಗಿವೆ. <b>{vacant}</b> ಖಾಲಿ ಇವೆ.",
   "staffPicto": "ಪ್ರತಿ 10 ಹುದ್ದೆಗಳಲ್ಲಿ ಸುಮಾರು {n} ಭರ್ತಿಯಾಗಿವೆ.",
   "staffRole": "{sanctioned}ರಲ್ಲಿ {working} ಭರ್ತಿ",
-  "staffSource": "ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿ ಮಾಹಿತಿ",
+  "staffSource": "ಸಿಬ್ಬಂದಿ ಮಾಹಿತಿಯ ಮೂಲ",
   "allFiguresTitle": "ನಮ್ಮ ಬಳಿ ಇರುವ ಎಲ್ಲಾ ಅಪರಾಧ ಅಂಕಿಅಂಶಗಳು",
   "allFiguresSummary": "{n, plural, one {# ಅಂಕಿಯನ್ನು} other {ಎಲ್ಲಾ # ಅಂಕಿಗಳನ್ನು}} ಅವುಗಳ ಮೂಲದೊಂದಿಗೆ ತೋರಿಸಿ",
   "sourceLabel": "ಮೂಲ: {source}"

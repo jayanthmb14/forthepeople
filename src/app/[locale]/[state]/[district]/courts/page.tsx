@@ -15,7 +15,10 @@
 //    were decided" plus the pile still waiting → court cards; tapping one
 //    opens a DetailSheet (new / decided / waiting / average days, year by
 //    year, source; "Check a case on eCourts") → "find your own case" steps
-//    → charts (where cases wait; new vs decided each year) → sources.
+//    → charts (where cases wait; new vs decided each year) → AI insight →
+//    Share / Compare. v5: no emoji (a small line icon per kind of court);
+//    sources, "not an official website" and the stale note come from the
+//    district shell.
 //
 //  Honesty:
 //    • rows whose source says "estimated" are dropped (old fallback rows,
@@ -29,7 +32,11 @@
 import type React from "react";
 import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Scale } from "lucide-react";
+import {
+  Archive, Baby, Briefcase, CalendarClock, Car, CheckCircle2, FolderCheck, Gavel, HardHat, Hourglass, House, Inbox, Landmark, Scale,
+  ScrollText, ShoppingCart, Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
@@ -47,11 +54,13 @@ import {
   EmptyState,
   SourcePill,
 } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, HowItWorks, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, Explainer, HowItWorks, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { IconPictogram, ListCard } from "@/components/district/calm-parts";
+import { OTHER_SHADE } from "@/components/money/visuals";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { RankBars } from "@/components/accountability/AccountabilityVisuals";
 import {
-  AccountabilityFooter,
   CardChip,
   CardList,
   ChartRow,
@@ -59,7 +68,6 @@ import {
   SheetHeading,
   SheetNote,
   ShowAllButton,
-  TapCard,
 } from "@/components/accountability/AccountabilityKit";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -74,20 +82,20 @@ const FIRST_CARDS = 12;
 /** Bars in "where cases are waiting". */
 const MAX_BARS = 8;
 
-/** An emoji for a court, from words in its (English) name. */
-const COURT_EMOJI: Array<[RegExp, string]> = [
-  [/high court/i, "🏛️"],
-  [/family/i, "👪"],
-  [/pocso|child/i, "🧒"],
-  [/consumer/i, "🛒"],
-  [/motor|mact|accident/i, "🚗"],
-  [/labou?r|industrial/i, "👷"],
-  [/commercial/i, "💼"],
-  [/small causes/i, "🏠"],
-  [/magistrate|jmfc|cjm|criminal/i, "🧑‍⚖️"],
-  [/civil|munsif/i, "📜"],
+/** A small line icon for a court, from words in its (English) name. */
+const COURT_ICON: Array<[RegExp, LucideIcon]> = [
+  [/high court/i, Landmark],
+  [/family/i, Users],
+  [/pocso|child/i, Baby],
+  [/consumer/i, ShoppingCart],
+  [/motor|mact|accident/i, Car],
+  [/labou?r|industrial/i, HardHat],
+  [/commercial/i, Briefcase],
+  [/small causes/i, House],
+  [/magistrate|jmfc|cjm|criminal/i, Gavel],
+  [/civil|munsif/i, ScrollText],
 ];
-const courtEmoji = (name: string) => COURT_EMOJI.find(([re]) => re.test(name))?.[1] ?? "⚖️";
+const courtIcon = (name: string): LucideIcon => COURT_ICON.find(([re]) => re.test(name))?.[1] ?? Scale;
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
@@ -97,7 +105,6 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
   const f = useFormat();
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
-  const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useCourts(district, state);
   const [open, setOpen] = useState<string | null>(null);
   // Stable, so the sheet's focus handling does not re-run on every render.
@@ -148,12 +155,13 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
   });
 
   const howSteps = [
-    { emoji: "🌐", title: t("find1"), body: t("find1Body") },
-    { emoji: "🔢", title: t("find2"), body: t("find2Body") },
-    { emoji: "📅", title: t("find3"), body: t("find3Body") },
+    { emoji: "", title: t("find1"), body: t("find1Body") },
+    { emoji: "", title: t("find2"), body: t("find2Body") },
+    { emoji: "", title: t("find3"), body: t("find3Body") },
   ];
 
-  const keepUpTone = (share: number): "live" | "warn" | "danger" => (share >= 1 ? "live" : share >= 0.7 ? "warn" : "danger");
+  const keepUpTone = (share: number): "live" | "warn" => (share >= 1 ? "live" : "warn");
+  const ta = useTranslations("page_accountability");
 
   return (
     <ModulePage>
@@ -161,7 +169,6 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
         icon={Scale}
         title={mt.label("courts")}
         description={mt.description("courts")}
-        backHref={base}
         freshness={lastUpdated ? { asOf: lastUpdated } : undefined}
         source={NJDG}
       />
@@ -171,11 +178,10 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
 
       {!isLoading && !error && stats.length === 0 && (
         <EmptyState
-          emoji="⚖️"
           title={t("emptyTitle", { district: districtName })}
           body={t("emptyBody")}
           action={
-            <SheetAction href={ECOURTS} emoji="🌐" external>
+            <SheetAction href={ECOURTS} external>
               {t("checkCase")}
             </SheetAction>
           }
@@ -184,37 +190,37 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
 
       {!isLoading && stats.length > 0 && (
         <>
-          <Explainer emoji="⚖️">
+          <Explainer>
             {t.rich("explain", { year, district: districtName, filed: num(filed), disposed: num(disposed), pending: num(pending), b: bold })}
             {perTen !== null && <> {t.rich("explainPace", { n: num(Math.round(perTen)), b: bold })}</>}
             {hasHighCourt && <> {t("explainHighCourt")}</>}
           </Explainer>
 
           <StatStrip>
-            <StatTile emoji="📥" label={t("tileFiled")} value={num(filed)} sub={t("yearSub", { year })} />
-            <StatTile emoji="✅" label={t("tileDisposed")} value={num(disposed)} sub={t("yearSub", { year })} />
-            <StatTile emoji="⏳" label={t("tilePending")} value={num(pending)} sub={t("yearSub", { year })} />
+            <StatTile icon={Inbox} label={t("tileFiled")} value={num(filed)} sub={t("yearSub", { year })} />
+            <StatTile icon={CheckCircle2} label={t("tileDisposed")} value={num(disposed)} sub={t("yearSub", { year })} />
+            <StatTile icon={Hourglass} label={t("tilePending")} value={num(pending)} sub={t("yearSub", { year })} />
             {avgDays !== null && (
-              <StatTile emoji="📅" label={t("tileAvg")} value={num(Math.round(avgDays))} unit={t("daysUnit")} sub={t("yearSub", { year })} />
+              <StatTile icon={CalendarClock} label={t("tileAvg")} value={num(Math.round(avgDays))} unit={t("daysUnit")} sub={t("yearSub", { year })} />
             )}
           </StatStrip>
 
           {/* ONE picture: new cases vs decided, and the pile still waiting. */}
           {perTen !== null && (
             <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-              <Card tinted padding={18}>
+              <Card padding={18}>
                 <h2 className="ftp-display" style={{ margin: "0 0 12px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
                   {t("pictureTitle", { year })}
                 </h2>
-                <Pictogram
+                <IconPictogram
                   filled={Math.min(10, perTen)}
-                  emoji="📁"
+                  icon={FolderCheck}
                   label={perTen >= 10 ? t("pictoAll", { year }) : t("picto", { n: num(Math.round(perTen)), year })}
                 />
               </Card>
               <Card padding={18} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
-                <span className="ftp-emoji" aria-hidden style={{ fontSize: 34 }}>
-                  🗄️
+                <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11 }}>
+                  <Archive size={18} />
                 </span>
                 <p className="ftp-label">{t("pileLabel")}</p>
                 <div className="ftp-bignum" style={{ fontSize: 36, lineHeight: 1.05, color: "var(--hue-deep)" }}>
@@ -229,10 +235,8 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
             </div>
           )}
 
-          <AIInsightCard module="courts" district={district} />
-
           {/* Every court as a card; tap for everything about it. */}
-          <Section title={t("courtsTitle", { year })} emoji="🏛️">
+          <Section title={t("courtsTitle", { year })}>
             <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)" }}>
               {t("courtsHint")}
             </p>
@@ -241,22 +245,23 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
                 const share = (c.filed ?? 0) > 0 ? (c.disposed ?? 0) / (c.filed ?? 1) : null;
                 const isHigh = HIGH_COURT_RE.test(c.courtName);
                 return (
-                  <TapCard
+                  <ListCard
                     key={c.id}
-                    emoji={courtEmoji(c.courtName)}
+                    icon={courtIcon(c.courtName)}
                     title={c.courtName}
                     titleLang="en"
                     sub={t("cardWaiting", { n: c.pending ?? 0, count: num(c.pending ?? 0) })}
+                    hint={ta("seeDetails")}
                     onOpen={() => setOpen(c.courtName)}
                   >
                     {share !== null && (
-                      <CardChip emoji={share >= 1 ? "✅" : "⏳"} tone={keepUpTone(share)}>
+                      <CardChip tone={keepUpTone(share)}>
                         {t("cardPace", { n: num(Math.round(share * 10)) })}
                       </CardChip>
                     )}
-                    {c.avgDays != null && <CardChip emoji="📅">{t("cardDays", { days: num(Math.round(c.avgDays)) })}</CardChip>}
-                    {isHigh && hasHighCourt && <CardChip emoji="🏛️">{t("cardHighCourt")}</CardChip>}
-                  </TapCard>
+                    {c.avgDays != null && <CardChip>{t("cardDays", { days: num(Math.round(c.avgDays)) })}</CardChip>}
+                    {isHigh && hasHighCourt && <CardChip>{t("cardHighCourt")}</CardChip>}
+                  </ListCard>
                 );
               })}
             </CardList>
@@ -264,11 +269,11 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
           </Section>
 
           {/* Find your own case on eCourts. */}
-          <Section title={t("findTitle")} emoji="🔎">
-            <Card tinted padding={18}>
+          <Section title={t("findTitle")}>
+            <Card padding={18}>
               <HowItWorks steps={howSteps} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-                <SheetAction href={ECOURTS} emoji="🌐" external>
+                <SheetAction href={ECOURTS} external>
                   {t("checkCase")}
                 </SheetAction>
               </div>
@@ -280,7 +285,6 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
               {waitingBars.length > 1 && (
                 <ChartCard
                   title={t("waitingTitle", { year })}
-                  emoji="⏳"
                   units={t("waitingUnits")}
                   simple={t.rich("waitingSimple", { court: waitingBars[0].courtName, count: num(waitingBars[0].pending ?? 0), b: bold })}
                   source={NJDG}
@@ -294,7 +298,6 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
                       label: c.courtName,
                       value: c.pending ?? 0,
                       display: num(c.pending ?? 0),
-                      emoji: courtEmoji(c.courtName),
                     }))}
                   />
                 </ChartCard>
@@ -302,7 +305,6 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
               {byYear.length > 1 && (
                 <ChartCard
                   title={t("yearsTitle")}
-                  emoji="📊"
                   units={t("yearsUnits")}
                   simple={t.rich("yearsSimple", {
                     year: byYear[byYear.length - 1].year,
@@ -311,7 +313,7 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
                     b: bold,
                   })}
                   legend={[
-                    { label: t("legendFiled"), swatch: "#D8D5CB" },
+                    { label: t("legendFiled"), swatch: OTHER_SHADE },
                     { label: t("legendDisposed"), swatch: "var(--hue)" },
                   ]}
                   source={NJDG}
@@ -337,14 +339,10 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
       )}
 
       <div style={{ marginTop: 28 }}>
-        <AccountabilityFooter
-          moduleSlug="courts"
-          locale={locale}
-          state={state}
-          district={district}
-          sourceUrls={{ "NJDG (National Judicial Data Grid)": "https://njdg.ecourts.gov.in" }}
-        />
+        <AIInsightCard module="courts" district={district} />
       </div>
+
+      <MoneyToolbar shareTitle={mt.label("courts")} compareHref={`/${locale}/compare?module=courts&a=${district}`} />
 
       {/* Everything about one court. */}
       <DetailSheet
@@ -353,14 +351,13 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
         title={openLatest?.courtName ?? ""}
         titleLang="en"
         subtitle={openLatest ? t("sheetSub", { year: String(openLatest.year) }) : undefined}
-        emoji={openLatest ? courtEmoji(openLatest.courtName) : "⚖️"}
         hueClassName={hueClass("courts")}
         footer={
           <>
-            <SheetAction href={ECOURTS} emoji="🌐" external>
+            <SheetAction href={ECOURTS} external>
               {t("checkCase")}
             </SheetAction>
-            <SheetAction href={NJDG.href} emoji="📊" quiet external>
+            <SheetAction href={NJDG.href} quiet external>
               {t("openNjdg")}
             </SheetAction>
           </>
@@ -378,27 +375,26 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
                 </p>
                 <ProgressBar
                   pct={Math.min(100, ((openLatest.disposed ?? 0) / (openLatest.filed ?? 1)) * 100)}
-                  tone={keepUpTone((openLatest.disposed ?? 0) / (openLatest.filed ?? 1)) === "danger" ? "danger" : "brand"}
+                  tone={keepUpTone((openLatest.disposed ?? 0) / (openLatest.filed ?? 1)) === "warn" ? "warn" : "brand"}
                   height={10}
                 />
               </div>
             )}
             <DetailList
               rows={[
-                { emoji: "📥", label: t("tileFiled"), value: num(openLatest.filed ?? 0) },
-                { emoji: "✅", label: t("tileDisposed"), value: num(openLatest.disposed ?? 0) },
-                { emoji: "⏳", label: t("tilePending"), value: num(openLatest.pending ?? 0) },
+                { label: t("tileFiled"), value: num(openLatest.filed ?? 0) },
+                { label: t("tileDisposed"), value: num(openLatest.disposed ?? 0) },
+                { label: t("tilePending"), value: num(openLatest.pending ?? 0) },
                 {
-                  emoji: "📅",
                   label: t("tileAvg"),
                   value: openLatest.avgDays != null ? t("cardDays", { days: num(Math.round(openLatest.avgDays)) }) : null,
                 },
               ]}
             />
-            {HIGH_COURT_RE.test(openLatest.courtName) && hasHighCourt && <SheetNote emoji="🏛️">{t("sheetHighCourt")}</SheetNote>}
+            {HIGH_COURT_RE.test(openLatest.courtName) && hasHighCourt && <SheetNote>{t("sheetHighCourt")}</SheetNote>}
             {openRows.length > 1 && (
               <>
-                <SheetHeading emoji="📆">{t("sheetYears")}</SheetHeading>
+                <SheetHeading>{t("sheetYears")}</SheetHeading>
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                   {openRows.map((r) => (
                     <li key={r.id} style={{ display: "flex", gap: 10, fontSize: 14, lineHeight: "20px" }}>
