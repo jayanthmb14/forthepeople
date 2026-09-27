@@ -1,12 +1,11 @@
 "use client";
 
-import EmptyBlock from "../../common/EmptyBlock";
-import {
-  OKABE_ITO,
-  isNonEmptyObject,
-  type EconomicClassData,
-  type ProfileLike,
-} from "../types";
+// NITI Aayog Multidimensional Poverty Index for the district, as a row of
+// kit StatTiles (headcount, intensity, MPI value, rank). Tiles carry no
+// colour — the numbers speak for themselves (Design v3).
+import { StatStrip, StatTile } from "@/components/district/ui";
+import { isNonEmptyObject, type EconomicClassData, type ProfileLike } from "../types";
+import { ChartEmpty, ChartNote } from "../chartKit";
 
 interface Props {
   economicClass: EconomicClassData | null | undefined;
@@ -24,107 +23,35 @@ export default function MPIIndicatorCard({ economicClass }: Props) {
     (typeof economicClass.mpiHeadcount !== "number" && typeof economicClass.mpi !== "number")
   ) {
     return (
-      <EmptyBlock
-        icon="📊"
-        message="Multidimensional Poverty Index not yet published at district level for this district."
-      />
+      <ChartEmpty message="The Multidimensional Poverty Index is not yet published at district level for this district." />
+    );
+  }
+
+  // Build only the tiles we have numbers for (never show a fake zero).
+  const tiles: React.ReactNode[] = [];
+  if (typeof economicClass.mpiHeadcount === "number") {
+    tiles.push(
+      <StatTile key="headcount" label="MPI headcount" value={economicClass.mpiHeadcount.toFixed(2)} unit="%" sub="of population is poor" />,
+    );
+  }
+  if (typeof economicClass.mpiIntensity === "number") {
+    tiles.push(
+      <StatTile key="intensity" label="Intensity" value={economicClass.mpiIntensity.toFixed(2)} unit="%" sub="average deprivation" />,
+    );
+  }
+  if (typeof economicClass.mpi === "number") {
+    tiles.push(<StatTile key="mpi" label="MPI value" value={economicClass.mpi.toFixed(4)} sub="composite" />);
+  }
+  if (typeof economicClass.districtRankInState === "number") {
+    tiles.push(
+      <StatTile key="rank" label="District rank" value={`#${economicClass.districtRankInState}`} sub="within state" />,
     );
   }
 
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: "1px solid #E8E8E4",
-        borderRadius: 10,
-        padding: "16px 20px",
-      }}
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 16,
-        }}
-      >
-        {typeof economicClass.mpiHeadcount === "number" && (
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#9B9B9B",
-                textTransform: "uppercase",
-                letterSpacing: 0.3,
-              }}
-            >
-              MPI Headcount
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: OKABE_ITO.vermillion }}>
-              {economicClass.mpiHeadcount.toFixed(2)}%
-            </div>
-            <div style={{ fontSize: 11, color: "#6B6B6B" }}>of population is poor</div>
-          </div>
-        )}
-        {typeof economicClass.mpiIntensity === "number" && (
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#9B9B9B",
-                textTransform: "uppercase",
-                letterSpacing: 0.3,
-              }}
-            >
-              Intensity
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: "#4B4B4B" }}>
-              {economicClass.mpiIntensity.toFixed(2)}%
-            </div>
-            <div style={{ fontSize: 11, color: "#6B6B6B" }}>avg deprivation</div>
-          </div>
-        )}
-        {typeof economicClass.mpi === "number" && (
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#9B9B9B",
-                textTransform: "uppercase",
-                letterSpacing: 0.3,
-              }}
-            >
-              MPI value
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: "#4B4B4B" }}>
-              {economicClass.mpi.toFixed(4)}
-            </div>
-            <div style={{ fontSize: 11, color: "#6B6B6B" }}>composite</div>
-          </div>
-        )}
-        {typeof economicClass.districtRankInState === "number" && (
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#9B9B9B",
-                textTransform: "uppercase",
-                letterSpacing: 0.3,
-              }}
-            >
-              District rank
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 600, color: "#4B4B4B" }}>
-              #{economicClass.districtRankInState}
-            </div>
-            <div style={{ fontSize: 11, color: "#6B6B6B" }}>within state</div>
-          </div>
-        )}
-      </div>
-      {economicClass.source && (
-        <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 10 }}>
-          Source: {economicClass.source}
-        </div>
-      )}
+    <div>
+      <StatStrip cols={Math.min(4, Math.max(2, tiles.length)) as 2 | 3 | 4}>{tiles}</StatStrip>
+      {economicClass.source && <ChartNote>Source: {economicClass.source}</ChartNote>}
     </div>
   );
 }

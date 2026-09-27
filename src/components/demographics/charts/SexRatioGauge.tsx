@@ -1,7 +1,10 @@
 "use client";
 
-import EmptyBlock from "../../common/EmptyBlock";
+// Sex ratio (females per 1,000 males) on a flat 700–1,100 scale with
+// reference marks at 900, 950 and 1,000 (parity). Design v3: no gradient —
+// the track is a flat surface and the marker is the text colour.
 import { type ProfileLike } from "../types";
+import { ChartEmpty, ChartNote } from "../chartKit";
 
 interface Props {
   sexRatio?: number | null;
@@ -16,51 +19,47 @@ const MIN = 700;
 const MAX = 1100;
 const MARKS = [900, 950, 1000];
 
+/** Position of a value on the scale, in percent (0–100). */
+function toPct(v: number): number {
+  const clamped = Math.max(MIN, Math.min(MAX, v));
+  return ((clamped - MIN) / (MAX - MIN)) * 100;
+}
+
 function Track({ ratio, label }: { ratio: number; label: string }) {
-  const clamped = Math.max(MIN, Math.min(MAX, ratio));
-  const pct = ((clamped - MIN) / (MAX - MIN)) * 100;
+  const pct = toPct(ratio);
+  // Scale labels sit exactly under their marks (absolute positions).
+  const scaleLabels = [
+    { v: MIN, text: String(MIN) },
+    ...MARKS.map((m) => ({ v: m, text: m === 1000 ? "1000 parity" : String(m) })),
+    { v: MAX, text: String(MAX) },
+  ];
   return (
-    <div style={{ margin: "10px 0" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: 11,
-          color: "#6B6B6B",
-          marginBottom: 4,
-        }}
-      >
+    <div style={{ margin: "12px 0 20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", fontSize: 11, color: "var(--ftp-text-2)", marginBottom: 6 }}>
         <span>{label}</span>
-        <span style={{ fontWeight: 600, color: "#4B4B4B" }}>
-          {ratio} females / 1000 males
+        <span>
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{ratio}</span> females / 1,000 males
         </span>
       </div>
       <div
-        style={{
-          position: "relative",
-          height: 12,
-          background:
-            "linear-gradient(90deg,#FEE2E2 0%,#FEF3C7 50%,#DCFCE7 100%)",
-          borderRadius: 6,
-        }}
+        role="img"
+        aria-label={`${label}: ${ratio} females per 1,000 males`}
+        style={{ position: "relative", height: 12, background: "var(--ftp-surface-2)", borderRadius: 6 }}
       >
-        {MARKS.map((m) => {
-          const mp = ((m - MIN) / (MAX - MIN)) * 100;
-          return (
-            <div
-              key={m}
-              title={`${m}`}
-              style={{
-                position: "absolute",
-                top: -2,
-                left: `calc(${mp}% - 0.5px)`,
-                width: 1,
-                height: 16,
-                background: "#9B9B9B",
-              }}
-            />
-          );
-        })}
+        {MARKS.map((m) => (
+          <div
+            key={m}
+            title={`${m}`}
+            style={{
+              position: "absolute",
+              top: -2,
+              left: `calc(${toPct(m)}% - 0.5px)`,
+              width: 1,
+              height: 16,
+              background: "var(--ftp-border-strong)",
+            }}
+          />
+        ))}
         <div
           style={{
             position: "absolute",
@@ -68,25 +67,30 @@ function Track({ ratio, label }: { ratio: number; label: string }) {
             left: `calc(${pct}% - 4px)`,
             width: 8,
             height: 18,
-            background: "#000000",
+            background: "var(--ftp-text)",
             borderRadius: 2,
           }}
         />
       </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: 10,
-          color: "#9B9B9B",
-          marginTop: 2,
-        }}
-      >
-        <span>{MIN}</span>
-        <span>900</span>
-        <span>950</span>
-        <span>1000 (parity)</span>
-        <span>{MAX}</span>
+      <div aria-hidden style={{ position: "relative", height: 16, marginTop: 4 }}>
+        {scaleLabels.map((s, i) => (
+          <span
+            key={s.v}
+            className="ftp-num"
+            style={{
+              position: "absolute",
+              left: `${toPct(s.v)}%`,
+              // First label hugs the left edge, last hugs the right, the rest centre on the mark.
+              transform: i === 0 ? "none" : i === scaleLabels.length - 1 ? "translateX(-100%)" : "translateX(-50%)",
+              fontSize: 10,
+              fontWeight: 400,
+              color: "var(--ftp-text-2)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {s.text}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -94,18 +98,18 @@ function Track({ ratio, label }: { ratio: number; label: string }) {
 
 export default function SexRatioGauge({ sexRatio, childSexRatio }: Props) {
   if (typeof sexRatio !== "number") {
-    return <EmptyBlock icon="📊" message="Sex ratio not available for this district yet" />;
+    return <ChartEmpty message="The sex ratio is not available for this district yet." />;
   }
   return (
     <div>
-      <Track ratio={sexRatio} label="Sex Ratio (all ages)" />
+      <Track ratio={sexRatio} label="Sex ratio (all ages)" />
       {typeof childSexRatio === "number" && (
         <>
-          <Track ratio={childSexRatio} label="Child Sex Ratio (0–6)" />
-          <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 4 }}>
+          <Track ratio={childSexRatio} label="Child sex ratio (0–6)" />
+          <ChartNote>
             * Published in the public interest. See the &quot;Child sex ratio (PCPNDT Act
             context)&quot; section of the disclosure panel.
-          </div>
+          </ChartNote>
         </>
       )}
     </div>

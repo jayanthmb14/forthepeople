@@ -4,21 +4,41 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Population & Demographics — Design v3 "Civic Ledger" module page
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Order (CONCEPT-v3 §5): PageHeader → honest data-currency sentence →
+//  disclosure panel → AI summary → StatStrip (6 Census figures, each with
+//  its reference year) → one Section + Card per chart (every chart keeps
+//  its own DataSourceCard citation) → SourcesFooter → related news →
+//  Toolbar (Share, Compare).
+//
+//  Accent: "blue" — the data accent (CONCEPT-v3 §3), because this module
+//  is reference data rather than community content.
+//
+//  Chart series colours stay on the colour-blind-safe Okabe-Ito / Viridis
+//  palettes (see src/components/demographics/types.ts); everything around
+//  the charts uses design tokens.
+//
 "use client";
-import { use } from "react";
-import { Users } from "lucide-react";
+import { use, useState } from "react";
+import { Users, Share2, GitCompare } from "lucide-react";
 
 import { usePopulation, usePopulationProfile } from "@/hooks/useRealtimeData";
 import {
-  ModuleHeader,
-  LastUpdatedBadge,
-  StatCard,
-  SectionLabel,
+  PageHeader,
+  StatStrip,
+  StatTile,
+  Section,
+  Card,
   LoadingShell,
   ErrorBlock,
+  SourcesFooter,
+  Toolbar,
+  ToolbarButton,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -59,13 +79,24 @@ function titleCase(slug: string): string {
   return slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const cardShell: React.CSSProperties = {
-  background: "#FFF",
-  border: "1px solid #E8E8E4",
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 20,
-};
+/** Share button: the phone's share sheet when available, else copy the link. */
+function SharePageButton() {
+  const [copied, setCopied] = useState(false);
+  function share() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: document.title, url }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
+    }
+  }
+  return <ToolbarButton icon={Share2} onClick={share}>{copied ? "Link copied" : "Share"}</ToolbarButton>;
+}
+
+/** Small caption above a chart inside a Card (11 px uppercase label). */
+function CardCaption({ children }: { children: React.ReactNode }) {
+  return <p className="ftp-label" style={{ marginBottom: 8 }}>{children}</p>;
+}
 
 export default function PopulationPage({
   params,
@@ -108,26 +139,37 @@ export default function PopulationPage({
   const isLoading = profileQ.isLoading && historyQ.isLoading;
   const hasAnyData = Boolean(profile) || history.length > 0;
 
+  // Reference year shown under each Census tile ("Census 2011").
+  const refYear = profile?.year ?? 2011;
+  const censusSub = `Census ${refYear}`;
+
+  // Headline population: the profile figure, else the 2011 Census row from
+  // history, else the latest non-estimate row. Never an estimate.
+  const headlinePopulation = (() => {
+    if (profile?.totalPopulation) {
+      return { year: profile.year, value: profile.totalPopulation };
+    }
+    const census2011 = history.find((h) => h.year === 2011 && !h.source?.startsWith("Estimate"));
+    if (census2011) return { year: 2011, value: census2011.population };
+    const nonEstimate = [...history].reverse().find((h) => !h.source?.startsWith("Estimate"));
+    if (nonEstimate) return { year: nonEstimate.year, value: nonEstimate.population };
+    return null;
+  })();
+
   return (
     <ModuleErrorBoundary moduleName="Population & Demographics">
-      <div style={{ padding: 24 }}>
-        <ModuleHeader
+      <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
+        <PageHeader
           icon={Users}
           title="Population & Demographics"
           description="Census data, literacy, sex ratio, religion, caste, age, economy, migration, household amenities"
           backHref={base}
-        >
-          <LastUpdatedBadge lastUpdated={profileQ.data?.meta.lastUpdated ?? null} />
-        </ModuleHeader>
+          accent="blue"
+          freshness={{ asOf: profileQ.data?.meta.lastUpdated ?? null }}
+          source={{ label: "Census of India", href: "https://censusindia.gov.in" }}
+        />
 
         <DemographicDisclaimer districtName={districtName} defaultOpen={false} />
-
-        <DataSourceBanner
-          moduleName="population"
-          sources={sources.sources}
-          updateFrequency={sources.frequency}
-          isLive={sources.isLive}
-        />
 
         <AIInsightCard module="population" district={district} />
 
@@ -145,294 +187,208 @@ export default function PopulationPage({
 
         {!isLoading && hasAnyData && (
           <>
-            {/* Data-currency notice — Census 2011 is the primary baseline */}
-            <div
-              style={{
-                background: "#FFF7ED",
-                border: "1px solid #FED7AA",
-                borderRadius: 8,
-                padding: "10px 14px",
-                marginBottom: 16,
-                fontSize: 13,
-                color: "#9A3412",
-                lineHeight: 1.5,
-              }}
-            >
-              <strong>Headline figures are from Census of India 2011.</strong>{" "}
+            {/* Data-currency notice — Census 2011 is the primary baseline.
+                Plain body text (no tinted box), first sentence in weight 500. */}
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>
+              <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>
+                Headline figures are from Census of India 2011.
+              </span>{" "}
               India&apos;s next decennial Census is in progress — Phase I
               houselisting April–September 2026, population enumeration reference
               date 1 March 2027. Updated figures will appear here within 90 days
               of official release. Recent survey indicators (NFHS, NITI MPI,
               PLFS) are shown separately in their own sections with the survey
               year clearly labelled.
-            </div>
+            </p>
 
-            {/* 5. Headline stats */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-                gap: 10,
-                marginBottom: 24,
-              }}
-            >
-              {(() => {
-                if (profile?.totalPopulation) {
-                  return (
-                    <StatCard
-                      label={`Population (${profile.year})`}
-                      value={formatInt(profile.totalPopulation)}
-                      icon={Users}
-                    />
-                  );
-                }
-                const census2011 = history.find(
-                  (h) => h.year === 2011 && !h.source?.startsWith("Estimate"),
-                );
-                if (census2011) {
-                  return (
-                    <StatCard
-                      label={`Population (2011)`}
-                      value={formatInt(census2011.population)}
-                      icon={Users}
-                    />
-                  );
-                }
-                const nonEstimate = [...history]
-                  .reverse()
-                  .find((h) => !h.source?.startsWith("Estimate"));
-                if (nonEstimate) {
-                  return (
-                    <StatCard
-                      label={`Population (${nonEstimate.year})`}
-                      value={formatInt(nonEstimate.population)}
-                      icon={Users}
-                    />
-                  );
-                }
-                return <StatCard label="Population" value="—" icon={Users} />;
-              })()}
-              <StatCard
-                label="Sex Ratio"
-                value={profile?.sexRatio ? `${profile.sexRatio}/1k` : "—"}
-                sub="♀/1000 ♂"
+            {/* Headline stats — six Census figures, each labelled with its year. */}
+            <StatStrip cols={3}>
+              <StatTile
+                label={headlinePopulation ? `Population (${headlinePopulation.year})` : "Population"}
+                value={headlinePopulation ? formatInt(headlinePopulation.value) : "—"}
+                icon={Users}
+                sub={headlinePopulation ? `Census ${headlinePopulation.year}` : undefined}
               />
-              <StatCard
-                label="Child Sex Ratio"
-                value={
-                  profile?.childSexRatio ? `${profile.childSexRatio}/1k` : "—"
-                }
-                sub="0–6 age*"
+              <StatTile
+                label="Sex ratio"
+                value={profile?.sexRatio ? String(profile.sexRatio) : "—"}
+                sub={`Females per 1,000 males · ${censusSub}`}
               />
-              <StatCard
+              <StatTile
+                label="Child sex ratio"
+                value={profile?.childSexRatio ? String(profile.childSexRatio) : "—"}
+                sub={`Age 0–6* · ${censusSub}`}
+              />
+              <StatTile
                 label="Literacy"
-                value={
-                  profile?.literacyTotal
-                    ? `${profile.literacyTotal.toFixed(1)}%`
-                    : "—"
-                }
-                accent="#16A34A"
+                value={profile?.literacyTotal ? profile.literacyTotal.toFixed(1) : "—"}
+                unit={profile?.literacyTotal ? "%" : undefined}
+                sub={censusSub}
               />
-              <StatCard
+              <StatTile
                 label="Urban share"
-                value={profile?.urbanPct ? `${profile.urbanPct.toFixed(1)}%` : "—"}
+                value={profile?.urbanPct ? profile.urbanPct.toFixed(1) : "—"}
+                unit={profile?.urbanPct ? "%" : undefined}
+                sub={censusSub}
               />
-              <StatCard
+              <StatTile
                 label="Density"
-                value={profile?.density ? `${formatInt(profile.density)}/km²` : "—"}
-                sub="persons / sq km"
+                value={profile?.density ? formatInt(profile.density) : "—"}
+                unit={profile?.density ? "/km²" : undefined}
+                sub={`Persons per sq km · ${censusSub}`}
               />
-            </div>
+            </StatStrip>
 
-            {/* 6. Age pyramid (4-group fallback — schema doesn't store 5-year bands yet) */}
-            <SectionLabel>Age Structure</SectionLabel>
-            <div style={cardShell}>
-              <AgePyramidStacked
-                pop_0_6={profile?.pop_0_6 ?? null}
-                pop_7_14={profile?.pop_7_14 ?? null}
-                pop_15_59={profile?.pop_15_59 ?? null}
-                pop_60_plus={profile?.pop_60_plus ?? null}
-              />
-              {cite()}
-            </div>
+            {/* Age pyramid (4-group fallback — schema doesn't store 5-year bands yet) */}
+            <Section title="Age structure">
+              <Card>
+                <AgePyramidStacked
+                  pop_0_6={profile?.pop_0_6 ?? null}
+                  pop_7_14={profile?.pop_7_14 ?? null}
+                  pop_15_59={profile?.pop_15_59 ?? null}
+                  pop_60_plus={profile?.pop_60_plus ?? null}
+                />
+                {cite()}
+              </Card>
+            </Section>
 
-            {/* 7. Religion */}
-            <SectionLabel>Religion (Alphabetical)</SectionLabel>
-            <div style={cardShell}>
-              <ReligionDonut religion={profile?.religion ?? null} />
-              {profile?.religion && (
-                <details style={{ marginTop: 8, fontSize: 12 }}>
-                  <summary style={{ cursor: "pointer", color: "#6B6B6B" }}>
-                    Show exact percentages
-                  </summary>
-                  <table
-                    style={{
-                      marginTop: 8,
-                      borderCollapse: "collapse",
-                      width: "100%",
-                    }}
-                  >
-                    <tbody>
-                      {Object.keys(profile.religion)
-                        .sort()
-                        .map((k) => (
-                          <tr key={k}>
-                            <td
-                              style={{
-                                padding: "4px 8px",
-                                color: "#4B4B4B",
-                                width: "60%",
-                              }}
-                            >
-                              {k === "NotStated" ? "Not Stated" : k}
-                            </td>
-                            <td
-                              style={{
-                                padding: "4px 8px",
-                                fontFamily: "var(--font-mono)",
-                                color: "#1A1A1A",
-                              }}
-                            >
-                              {(profile.religion![k] as number).toFixed(2)}%
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </details>
-              )}
-              {cite()}
-            </div>
+            {/* Religion */}
+            <Section title="Religion (alphabetical)">
+              <Card>
+                <ReligionDonut religion={profile?.religion ?? null} />
+                {profile?.religion && (
+                  <details style={{ marginTop: 8, fontSize: 13, lineHeight: "20px" }}>
+                    <summary style={{ cursor: "pointer", color: "var(--ftp-text-2)", minHeight: 44, display: "flex", alignItems: "center" }}>
+                      Show exact percentages
+                    </summary>
+                    <table style={{ marginTop: 4, borderCollapse: "collapse", width: "100%" }}>
+                      <caption className="sr-only">Religion shares, exact percentages</caption>
+                      <tbody>
+                        {Object.keys(profile.religion)
+                          .sort()
+                          .map((k, i) => (
+                            <tr key={k} style={{ background: i % 2 ? "var(--ftp-surface-2)" : "transparent" }}>
+                              <th scope="row" style={{ padding: "6px 8px", color: "var(--ftp-text)", fontWeight: 400, textAlign: "left", width: "60%" }}>
+                                {k === "NotStated" ? "Not Stated" : k}
+                              </th>
+                              <td className="ftp-num" style={{ padding: "6px 8px", color: "var(--ftp-text)", textAlign: "right" }}>
+                                {(profile.religion![k] as number).toFixed(2)}%
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </details>
+                )}
+                {cite()}
+              </Card>
+            </Section>
 
-            {/* 8. Caste categories */}
-            <SectionLabel>Caste Categories</SectionLabel>
-            <div style={cardShell}>
-              <CasteStackedBar
-                caste={(profile?.caste ?? null) as CasteMap | null}
-              />
-              {cite()}
-            </div>
+            {/* Caste categories */}
+            <Section title="Caste categories">
+              <Card>
+                <CasteStackedBar caste={(profile?.caste ?? null) as CasteMap | null} />
+                {cite()}
+              </Card>
+            </Section>
 
-            {/* 9. Literacy & Education */}
-            <SectionLabel>Literacy &amp; Education</SectionLabel>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 16,
-                marginBottom: 12,
-              }}
-            >
+            {/* Literacy & Education — two cards side by side, one column on phones */}
+            <Section title="Literacy & education">
               <div
                 style={{
-                  background: "#FFF",
-                  border: "1px solid #E8E8E4",
-                  borderRadius: 12,
-                  padding: 16,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+                  gap: 16,
                 }}
               >
-                <div style={{ fontSize: 12, color: "#9B9B9B", marginBottom: 6 }}>
-                  Literacy by sex
-                </div>
-                <LiteracyDumbbell
-                  literacyTotal={profile?.literacyTotal ?? null}
-                  literacyMale={profile?.literacyMale ?? null}
-                  literacyFemale={profile?.literacyFemale ?? null}
-                />
+                <Card>
+                  <CardCaption>Literacy by sex</CardCaption>
+                  <LiteracyDumbbell
+                    literacyTotal={profile?.literacyTotal ?? null}
+                    literacyMale={profile?.literacyMale ?? null}
+                    literacyFemale={profile?.literacyFemale ?? null}
+                  />
+                </Card>
+                <Card>
+                  <CardCaption>Education attainment</CardCaption>
+                  <EducationBreakdownBar education={(profile?.education ?? null) as EducationData | null} />
+                </Card>
               </div>
-              <div
-                style={{
-                  background: "#FFF",
-                  border: "1px solid #E8E8E4",
-                  borderRadius: 12,
-                  padding: 16,
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#9B9B9B", marginBottom: 6 }}>
-                  Education attainment
-                </div>
-                <EducationBreakdownBar
-                  education={(profile?.education ?? null) as EducationData | null}
+              {cite()}
+            </Section>
+
+            {/* Employment */}
+            <Section title="Employment">
+              <Card>
+                <EmploymentStackedBar employment={(profile?.employment ?? null) as EmploymentData | null} />
+                {cite()}
+              </Card>
+            </Section>
+
+            {/* Economic class (NITI MPI) — the component renders its own tiles */}
+            <Section title="Multidimensional poverty (NITI MPI)">
+              <MPIIndicatorCard economicClass={(profile?.economicClass ?? null) as EconomicClassData | null} />
+            </Section>
+
+            {/* Household amenities */}
+            <Section title="Household amenities">
+              <Card>
+                <HouseholdAmenitiesWaffle
+                  amenities={(profile?.householdAmenities ?? null) as HouseholdAmenitiesData | null}
                 />
-              </div>
-            </div>
-            <div style={{ marginBottom: 20 }}>{cite()}</div>
+                {cite()}
+              </Card>
+            </Section>
 
-            {/* 10. Employment */}
-            <SectionLabel>Employment</SectionLabel>
-            <div style={cardShell}>
-              <EmploymentStackedBar
-                employment={(profile?.employment ?? null) as EmploymentData | null}
-              />
-              {cite()}
-            </div>
+            {/* Migration */}
+            <Section title="Migration">
+              <Card>
+                <MigrationBreakdown migration={(profile?.migration ?? null) as MigrationData | null} />
+                {cite()}
+              </Card>
+            </Section>
 
-            {/* 11. Economic class (NITI MPI) */}
-            <SectionLabel>Multidimensional Poverty (NITI MPI)</SectionLabel>
-            <div style={{ marginBottom: 20 }}>
-              <MPIIndicatorCard
-                economicClass={
-                  (profile?.economicClass ?? null) as EconomicClassData | null
-                }
-              />
-            </div>
+            {/* Language (mother tongue) */}
+            <Section title="Mother tongue — top 10">
+              <Card>
+                <LanguageBarChart language={(profile?.language ?? null) as LanguageData | null} />
+                {cite()}
+              </Card>
+            </Section>
 
-            {/* 12. Household amenities */}
-            <SectionLabel>Household Amenities</SectionLabel>
-            <div style={cardShell}>
-              <HouseholdAmenitiesWaffle
-                amenities={
-                  (profile?.householdAmenities ?? null) as
-                    | HouseholdAmenitiesData
-                    | null
-                }
-              />
-              {cite()}
-            </div>
-
-            {/* 13. Migration */}
-            <SectionLabel>Migration</SectionLabel>
-            <div style={cardShell}>
-              <MigrationBreakdown
-                migration={(profile?.migration ?? null) as MigrationData | null}
-              />
-              {cite()}
-            </div>
-
-            {/* 14. Language (mother tongue) */}
-            <SectionLabel>Mother Tongue — Top 10</SectionLabel>
-            <div style={cardShell}>
-              <LanguageBarChart
-                language={(profile?.language ?? null) as LanguageData | null}
-              />
-              {cite()}
-            </div>
-
-            {/* Bonus: Sex Ratio gauge (only if sex ratio data present) */}
+            {/* Sex ratio gauge (only if sex ratio data present) */}
             {canRenderSexRatioGauge(profile) && (
-              <>
-                <SectionLabel>Sex Ratio</SectionLabel>
-                <div style={cardShell}>
+              <Section title="Sex ratio">
+                <Card>
                   <SexRatioGauge
                     sexRatio={profile?.sexRatio ?? null}
                     childSexRatio={profile?.childSexRatio ?? null}
                   />
                   {cite()}
-                </div>
-              </>
+                </Card>
+              </Section>
             )}
           </>
         )}
 
         {/* Rainfall removed — it belongs on /weather, not /population. */}
 
-        {/* 16. Related news (filtered by targetModule === "population") */}
-        <ModuleNews
-          district={district}
-          state={state}
-          locale={locale}
-          module="population"
+        <SourcesFooter
+          sources={sources.sources.map((name) => ({ name }))}
         />
+        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "8px 0 0" }}>
+          {sources.frequency}
+        </p>
+
+        {/* Related news (filtered by targetModule === "population") */}
+        <ModuleNews district={district} state={state} locale={locale} module="population" />
+
+        <Toolbar>
+          <SharePageButton />
+          <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=population&a=${district}`}>
+            Compare with another district
+          </ToolbarButton>
+        </Toolbar>
       </div>
     </ModuleErrorBoundary>
   );

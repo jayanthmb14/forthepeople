@@ -103,6 +103,15 @@ export function isNonEmptyObject(v: unknown): v is Record<string, unknown> {
   );
 }
 
+// ── DATA PALETTE (series colours) ─────────────────────────────────────
+// Design v3 says "no hex in components" — this block is the deliberate,
+// documented exception. The Okabe-Ito palette (Okabe & Ito, 2008) and the
+// Viridis ramp below are colour-blind-safe: people with red/green colour
+// vision deficiency can still tell every series apart. A brand palette
+// cannot promise that, so chart SERIES keep these colours on purpose
+// (an accessibility choice). Chart CHROME — axes, tooltips, legends,
+// cards — uses the var(--ftp-*) tokens via ../chartKit.tsx.
+//
 // Okabe-Ito colorblind-safe 8-color palette.
 export const OKABE_ITO = {
   black: "#000000",
@@ -134,16 +143,17 @@ export const RELIGION_COLORS: Record<string, string> = {
   Hindu: OKABE_ITO.bluishGreen,
   Jain: OKABE_ITO.yellow,
   Muslim: OKABE_ITO.blue,
-  NotStated: "#9CA3AF",
+  NotStated: "var(--ftp-border-strong)", // neutral token, not a series hue
   Other: OKABE_ITO.reddishPurple,
   Sikh: OKABE_ITO.vermillion,
 };
 
-// Neutral grays + one accent for caste (avoid saturated color on any category).
+// Neutral greys for caste (avoid saturated colour on any category).
+// Built from design tokens so they follow light / dark mode.
 export const CASTE_COLORS = {
-  SC: "#6B7280",
-  ST: "#9CA3AF",
-  Other: "#D1D5DB",
+  SC: "var(--ftp-text-2)",
+  ST: "color-mix(in srgb, var(--ftp-text-2) 55%, var(--ftp-surface))",
+  Other: "var(--ftp-border-strong)",
 };
 
 // Viridis-like sequential palette (for ordinal data: education, MPI heatmaps, etc).

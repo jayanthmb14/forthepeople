@@ -1,8 +1,13 @@
 "use client";
 
+// District choropleth for Karnataka. Each district is shaded on a five-step
+// single-hue ramp built from the brand token (light → dark), so the scale
+// follows light / dark mode and stays readable for colour-blind readers
+// (single-hue sequential ramps only vary in lightness). Districts without a
+// value use the "locked" map token.
 import { useState } from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import EmptyBlock from "../../common/EmptyBlock";
+import { ChartEmpty } from "../chartKit";
 
 export interface DistrictValue {
   districtId?: string;
@@ -16,11 +21,13 @@ interface Props {
   colorScale?: (v: number | null, min: number, max: number) => string;
 }
 
-// Sequential green scale (Color-Brewer YlGn 5-class) — neutral, safe for most metrics.
-const DEFAULT_PALETTE = ["#EDF8E9", "#BAE4B3", "#74C476", "#31A354", "#006D2C"];
+// Five-step sequential ramp: brand mixed into the surface at 15 → 100 %.
+const DEFAULT_PALETTE = [15, 35, 55, 75, 100].map(
+  (p) => `color-mix(in srgb, var(--ftp-map-live) ${p}%, var(--ftp-surface))`,
+);
 
 function defaultColorScale(v: number | null, min: number, max: number): string {
-  if (v == null || !isFinite(v)) return "#E8E8E4";
+  if (v == null || !isFinite(v)) return "var(--ftp-map-locked)";
   const span = max - min || 1;
   const ratio = Math.max(0, Math.min(1, (v - min) / span));
   const idx = Math.min(DEFAULT_PALETTE.length - 1, Math.floor(ratio * DEFAULT_PALETTE.length));
@@ -46,9 +53,7 @@ export default function KarnatakaChoropleth({
   const [hovered, setHovered] = useState<{ name: string; v: number | null } | null>(null);
 
   if (!Array.isArray(values) || values.length === 0) {
-    return (
-      <EmptyBlock icon="🗺️" message="District-level data not yet loaded for Karnataka choropleth" />
-    );
+    return <ChartEmpty message="District-level data is not loaded yet for the Karnataka map." />;
   }
 
   const bySlug = new Map(values.map((v) => [v.slug, v.value]));
@@ -77,7 +82,7 @@ export default function KarnatakaChoropleth({
                     key={geo.rsmKey}
                     geography={geo}
                     fill={fill}
-                    stroke="#FFFFFF"
+                    stroke="var(--ftp-surface)"
                     strokeWidth={0.5}
                     onMouseEnter={() =>
                       setHovered({ name: String(geo.properties.name ?? slug), v })
@@ -85,7 +90,7 @@ export default function KarnatakaChoropleth({
                     onMouseLeave={() => setHovered(null)}
                     style={{
                       default: { outline: "none" },
-                      hover: { outline: "none", filter: "brightness(1.1)" },
+                      hover: { outline: "none", stroke: "var(--ftp-text)", strokeWidth: 1 },
                       pressed: { outline: "none" },
                     }}
                   />
@@ -95,14 +100,18 @@ export default function KarnatakaChoropleth({
           </Geographies>
         </ComposableMap>
       </div>
-      <div style={{ fontSize: 12, color: "#4B4B4B", marginTop: 6, minHeight: 18 }}>
+      <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", marginTop: 6, minHeight: 20 }}>
         {hovered ? (
           <>
-            <strong>{hovered.name}</strong>:{" "}
-            {hovered.v != null ? `${hovered.v.toFixed(2)} ${metric}` : "data not available"}
+            <span style={{ fontWeight: 500 }}>{hovered.name}</span>:{" "}
+            {hovered.v != null ? (
+              <><span className="ftp-num">{hovered.v.toFixed(2)}</span> {metric}</>
+            ) : (
+              "data not available"
+            )}
           </>
         ) : (
-          <span style={{ color: "#9B9B9B" }}>Hover a district to see its {metric}.</span>
+          <span style={{ color: "var(--ftp-text-2)" }}>Hover a district to see its {metric}.</span>
         )}
       </div>
       <div
@@ -111,16 +120,13 @@ export default function KarnatakaChoropleth({
           alignItems: "center",
           gap: 8,
           marginTop: 6,
-          fontSize: 10,
-          color: "#9B9B9B",
+          fontSize: 11,
+          color: "var(--ftp-text-2)",
         }}
       >
         <span>Low</span>
         {DEFAULT_PALETTE.map((c) => (
-          <span
-            key={c}
-            style={{ width: 20, height: 10, background: c, display: "inline-block" }}
-          />
+          <span key={c} aria-hidden style={{ width: 20, height: 10, background: c, display: "inline-block" }} />
         ))}
         <span>High</span>
       </div>

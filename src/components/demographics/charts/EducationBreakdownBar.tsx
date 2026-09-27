@@ -1,13 +1,16 @@
 "use client";
 
+// Education attainment as one stacked bar, ordered from "Illiterate" to
+// "Postgraduate". The ordinal series use the colour-blind-safe Viridis ramp
+// (../types); chrome comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import EmptyBlock from "../../common/EmptyBlock";
 import {
   VIRIDIS,
   isNonEmptyObject,
   type EducationData,
   type ProfileLike,
 } from "../types";
+import { AXIS_LINE, AXIS_TICK, ChartEmpty, LEGEND_STYLE, TOOLTIP_PROPS } from "../chartKit";
 
 interface Props {
   education: EducationData | null | undefined;
@@ -32,7 +35,7 @@ export function canRenderEducationBreakdownBar(
 
 export default function EducationBreakdownBar({ education }: Props) {
   if (!education) {
-    return <EmptyBlock icon="📊" message="Education data not available for this district yet" />;
+    return <ChartEmpty message="Education data is not available for this district yet." />;
   }
 
   const row: Record<string, number | string> = { name: "Education attainment" };
@@ -47,17 +50,17 @@ export default function EducationBreakdownBar({ education }: Props) {
     }
   }
   if (!any) {
-    return <EmptyBlock icon="📊" message="Education data not available for this district yet" />;
+    return <ChartEmpty message="Education data is not available for this district yet." />;
   }
 
   return (
     <div style={{ width: "100%", height: 180 }}>
       <ResponsiveContainer>
         <BarChart data={[row]} layout="vertical" margin={{ left: 10, right: 10 }}>
-          <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+          <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
           <YAxis type="category" dataKey="name" hide />
-          <Tooltip formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
-          <Legend wrapperStyle={{ fontSize: 10 }} />
+          <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+          <Legend wrapperStyle={{ ...LEGEND_STYLE, fontSize: 10 }} />
           {LEVELS.map((l) => (
             <Bar key={l.key} dataKey={l.key} name={l.label} stackId="edu" fill={l.color} />
           ))}

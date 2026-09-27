@@ -1,13 +1,16 @@
 "use client";
 
+// In-migrants by origin and by reason, as two small bar charts side by side
+// (stacked on phones). Bar colours come from the colour-blind-safe Okabe-Ito
+// palette (../types); "Other" is a neutral token. Chrome from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import EmptyBlock from "../../common/EmptyBlock";
 import {
   OKABE_ITO,
   isNonEmptyObject,
   type MigrationData,
   type ProfileLike,
 } from "../types";
+import { AXIS_LINE, AXIS_TICK, CATEGORY_TICK, ChartEmpty, ChartNote, NEUTRAL_SERIES, TOOLTIP_PROPS } from "../chartKit";
 
 interface Props {
   migration: MigrationData | null | undefined;
@@ -19,9 +22,14 @@ export function canRenderMigrationBreakdown(
   return isNonEmptyObject(profile?.migration);
 }
 
+/** Small sub-heading above each of the two charts. */
+function ChartTitle({ children }: { children: React.ReactNode }) {
+  return <p className="ftp-label" style={{ marginBottom: 4 }}>{children}</p>;
+}
+
 export default function MigrationBreakdown({ migration }: Props) {
   if (!migration) {
-    return <EmptyBlock icon="📊" message="Migration data not available for this district yet" />;
+    return <ChartEmpty message="Migration data is not available for this district yet." />;
   }
 
   const origins = [
@@ -36,27 +44,27 @@ export default function MigrationBreakdown({ migration }: Props) {
         { name: "Marriage", value: migration.reasons.marriage ?? 0, color: OKABE_ITO.vermillion },
         { name: "Education", value: migration.reasons.education ?? 0, color: OKABE_ITO.reddishPurple },
         { name: "Family", value: migration.reasons.family ?? 0, color: OKABE_ITO.yellow },
-        { name: "Other", value: migration.reasons.other ?? 0, color: "#9CA3AF" },
+        { name: "Other", value: migration.reasons.other ?? 0, color: NEUTRAL_SERIES.mid },
       ].filter((r) => r.value > 0))
     : [];
 
   if (origins.length === 0 && reasonsData.length === 0) {
-    return <EmptyBlock icon="📊" message="Migration data not available for this district yet" />;
+    return <ChartEmpty message="Migration data is not available for this district yet." />;
   }
 
+  const tooltipFormat = (v: unknown) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—");
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "#4B4B4B", marginBottom: 4 }}>
-          In-migrants by origin (%)
-        </div>
+        <ChartTitle>In-migrants by origin (%)</ChartTitle>
         {origins.length > 0 ? (
           <div style={{ width: "100%", height: 180 }}>
             <ResponsiveContainer>
               <BarChart data={origins} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <XAxis type="number" tickFormatter={(v) => `${v}%`} />
-                <YAxis type="category" dataKey="name" width={90} style={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+                <XAxis type="number" tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
+                <YAxis type="category" dataKey="name" width={90} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={tooltipFormat} />
                 <Bar dataKey="value">
                   {origins.map((o) => (
                     <Cell key={o.name} fill={o.color} />
@@ -66,20 +74,18 @@ export default function MigrationBreakdown({ migration }: Props) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <EmptyBlock icon="📊" message="Origin breakdown not available" />
+          <ChartEmpty message="Origin breakdown is not available." />
         )}
       </div>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "#4B4B4B", marginBottom: 4 }}>
-          Reasons for migration (%)
-        </div>
+        <ChartTitle>Reasons for migration (%)</ChartTitle>
         {reasonsData.length > 0 ? (
           <div style={{ width: "100%", height: 220 }}>
             <ResponsiveContainer>
               <BarChart data={reasonsData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <XAxis type="number" tickFormatter={(v) => `${v}%`} />
-                <YAxis type="category" dataKey="name" width={80} style={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+                <XAxis type="number" tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
+                <YAxis type="category" dataKey="name" width={80} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={tooltipFormat} />
                 <Bar dataKey="value">
                   {reasonsData.map((r) => (
                     <Cell key={r.name} fill={r.color} />
@@ -89,14 +95,16 @@ export default function MigrationBreakdown({ migration }: Props) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <EmptyBlock icon="📊" message="Reason breakdown not available" />
+          <ChartEmpty message="Reason breakdown is not available." />
         )}
       </div>
       {typeof migration.totalInMigrantsPct === "number" && (
-        <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#9B9B9B" }}>
-          Total in-migrants:{" "}
-          <strong>{migration.totalInMigrantsPct.toFixed(1)}%</strong> of residents were born
-          outside this district.
+        <div style={{ gridColumn: "1 / -1" }}>
+          <ChartNote>
+            Total in-migrants:{" "}
+            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{migration.totalInMigrantsPct.toFixed(1)}%</span>{" "}
+            of residents were born outside this district.
+          </ChartNote>
         </div>
       )}
     </div>

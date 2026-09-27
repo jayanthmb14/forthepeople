@@ -155,16 +155,20 @@ export default function DemographicDisclaimer({
     (s) => s.key !== "electionMode" || electionModeActive,
   );
 
+  // Design v3 chrome: a plain Card-style panel (surface, 1 px border,
+  // 12 px radius, no tint). Toggle rows are at least 44 px tall so they are
+  // easy to tap on a phone. The legal text above is unchanged.
   return (
     <div
       style={{
-        background: "#FAFAF8",
-        border: "1px solid #E8E8E4",
-        borderRadius: 10,
-        padding: "10px 14px",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        borderRadius: "var(--ftp-radius-card)",
+        padding: "0 16px",
         marginBottom: 16,
         fontSize: 13,
-        color: "#4B4B4B",
+        lineHeight: "20px",
+        color: "var(--ftp-text)",
       }}
     >
       <button
@@ -174,19 +178,21 @@ export default function DemographicDisclaimer({
         style={{
           background: "transparent",
           border: "none",
-          padding: 0,
+          padding: "12px 0",
+          minHeight: 44,
           display: "flex",
           alignItems: "center",
           gap: 8,
           cursor: "pointer",
+          fontFamily: "var(--ftp-font-sans)",
           fontSize: 13,
-          fontWeight: 600,
-          color: "#4B4B4B",
+          fontWeight: 500,
+          color: "var(--ftp-text)",
           width: "100%",
           textAlign: "left",
         }}
       >
-        {panelOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        {panelOpen ? <ChevronDown size={16} aria-hidden /> : <ChevronRight size={16} aria-hidden />}
         <span>
           Disclosure &amp; methodology
           {districtName ? ` — ${districtName}` : ""}
@@ -194,11 +200,11 @@ export default function DemographicDisclaimer({
       </button>
 
       {panelOpen && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #E8E8E4" }}>
-          {sections.map((s) => {
+        <div style={{ paddingBottom: 4, borderTop: "1px solid var(--ftp-border)" }}>
+          {sections.map((s, i) => {
             const open = expanded.has(s.key);
             return (
-              <div key={s.key} style={{ borderBottom: "1px solid #EFEFEB" }}>
+              <div key={s.key} style={{ borderBottom: i < sections.length - 1 ? "1px solid var(--ftp-border)" : "none" }}>
                 <button
                   type="button"
                   onClick={() => toggle(s.key)}
@@ -207,27 +213,29 @@ export default function DemographicDisclaimer({
                     background: "transparent",
                     border: "none",
                     padding: "10px 0",
+                    minHeight: 44,
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
                     cursor: "pointer",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: "#4B4B4B",
+                    fontFamily: "var(--ftp-font-sans)",
+                    fontSize: 13,
+                    fontWeight: 400,
+                    color: "var(--ftp-text)",
                     width: "100%",
                     textAlign: "left",
                   }}
                 >
-                  {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                  {open ? <ChevronDown size={14} aria-hidden /> : <ChevronRight size={14} aria-hidden />}
                   <span>{s.title}</span>
                 </button>
                 {open && (
                   <div
                     style={{
                       padding: "0 0 12px 20px",
-                      fontSize: 12,
-                      lineHeight: 1.6,
-                      color: "#6B6B6B",
+                      fontSize: 13,
+                      lineHeight: "20px",
+                      color: "var(--ftp-text-2)",
                     }}
                   >
                     {s.body}
