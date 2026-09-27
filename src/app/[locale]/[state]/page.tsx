@@ -8,21 +8,31 @@
 //  State page — Design v4 "Rang"
 // ═══════════════════════════════════════════════════════════
 //
+//  The question it answers: "Which districts of this state can I open,
+//  and which are still coming?" (docs/LAYOUT.md recipe, v4.1 frame).
+//
 //  1. SiteHeader band: state name + local-script name, live / coming pills.
-//  2. StatStrip of emoji tiles: live districts, coming, and population
+//  2. The answer in one sentence (Explainer), from the registry counts.
+//  3. StatStrip of emoji tiles: live districts, coming, and population
 //     (Census 2011 rows) and area covered by the live districts (summed
 //     from the registry — we do not have state-wide census figures in the
 //     registry, so we only show what we can add up honestly, and label it).
-//  3. The pictures, side by side:
+//  4. The pictures, side by side on tablet and up:
 //       • one symbol per district, the live ones lit;
 //       • a ring of the live districts' people, one slice per district in
 //         that district's own colour (only when two or more live districts
 //         have a population on record).
-//  4. District grid: live districts as colourful cards, each in its own
-//     district hue (name, script, tagline, health grade, 2 numbers, a New
-//     pill for the first 30 days), then the not-live districts as compact
-//     slate cards with a "Coming soon" pill.
-//  5. Map, "Vote for the next district" list, and supporters.
+//  5. District grid (.ftp-grid): live districts as colourful link cards,
+//     each in its own district hue (name, script, tagline, health grade,
+//     2 numbers, a New pill for the first 30 days), then the not-live
+//     districts as compact slate cards with a "Coming soon" pill. Cards
+//     link straight to the district (no detail sheet: the district page
+//     IS the detail).
+//  6. Map and "Vote for the next district" side by side on laptop / PC,
+//     stacked below that; supporters; the sources footer.
+//
+//  Frame: <ModulePage> (full width on phones and tablets, 1320 px on
+//  laptops and PCs), so wide screens have no empty band beside the grid.
 //
 //  Every count is derived from the registry (src/lib/constants/districts.ts)
 //  — never typed by hand. All text comes from the "page_state" messages;
@@ -48,10 +58,11 @@ import StateSponsorSection from "@/components/common/StateSponsorSection";
 import StateVoteList from "@/components/district/StateVoteList";
 import { HealthScoreRing } from "@/components/district/DistrictHealthScoreCard";
 import { getDistrictIcon } from "@/components/district/icons";
-import { Card, EmptyState, Pill, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { Card, EmptyState, ModulePage, Pill, Section, SourcesFooter, StatStrip, StatTile } from "@/components/district/ui";
 import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
 import { Donut, type DonutSlice } from "@/components/site/SiteVisuals";
+import styles from "./state.module.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -213,13 +224,9 @@ export default async function StatePage({ params }: Props) {
   const showPeopleRing = withPop.length >= 2;
   const biggest = withPop[0];
 
+  const registrySource = { label: t("srcRegistry") };
   const pictogramCard = totalDistricts > 0 && (
-    <Card tinted padding={18}>
-      <Explainer emoji="🧭">
-        {live.length === 0
-          ? t.rich("simpleNone", { total: totalDistricts, state: stateName, b })
-          : t.rich("simpleSome", { live: live.length, total: totalDistricts, coming: coming.length, state: stateName, b })}
-      </Explainer>
+    <ChartCard title={t("pictoTitle", { state: stateName })} emoji="🏙️" units={t("pictoUnits")} source={registrySource}>
       <Pictogram
         filled={pictoFilled}
         total={oneEach ? totalDistricts : 10}
@@ -227,12 +234,12 @@ export default async function StatePage({ params }: Props) {
         size={oneEach && totalDistricts > 12 ? 18 : 26}
         label={pictoLabel}
       />
-    </Card>
+    </ChartCard>
   );
 
   return (
     <main className="ftp-hue-blue" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px - 32px)" }}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48 }}>
+      <ModulePage>
         {/* ═══ 1. Header ═══ */}
         <SiteHeader
           emoji="🗺️"
@@ -269,7 +276,16 @@ export default async function StatePage({ params }: Props) {
           {stateData.capital && <Pill tone="neutral">{t("pillCapital", { capital: stateData.capital })}</Pill>}
         </SiteHeader>
 
-        {/* ═══ 2. Numbers ═══ */}
+        {/* ═══ 2. The answer in one sentence ═══ */}
+        {totalDistricts > 0 && (
+          <Explainer emoji="🧭">
+            {live.length === 0
+              ? t.rich("simpleNone", { total: totalDistricts, state: stateName, b })
+              : t.rich("simpleSome", { live: live.length, total: totalDistricts, coming: coming.length, state: stateName, b })}
+          </Explainer>
+        )}
+
+        {/* ═══ 3. Numbers ═══ */}
         <StatStrip cols={4}>
           <StatTile emoji="🏙️" label={t("tileLive")} value={live.length} />
           <StatTile emoji="⏳" label={t("tileComing")} value={coming.length} sub={t("tileComingSub", { total: totalDistricts })} />
@@ -290,7 +306,7 @@ export default async function StatePage({ params }: Props) {
           />
         </StatStrip>
 
-        {/* ═══ 3. The pictures — straight from the registry / census rows ═══ */}
+        {/* ═══ 4. The pictures — straight from the registry / census rows ═══ */}
         {pictogramCard && (
           <div className={showPeopleRing ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
             {pictogramCard}
@@ -315,7 +331,7 @@ export default async function StatePage({ params }: Props) {
           </div>
         )}
 
-        {/* ═══ 4a. Live districts ═══ */}
+        {/* ═══ 5a. Live districts ═══ */}
         <Section title={t("sectionLive")} emoji="🏙️">
           {live.length === 0 ? (
             <EmptyState
@@ -324,12 +340,7 @@ export default async function StatePage({ params }: Props) {
               body={t("emptyLiveBody")}
             />
           ) : (
-            <ul
-              style={{
-                listStyle: "none", margin: 0, padding: 0,
-                display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))", gap: 12,
-              }}
-            >
+            <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {live.map((d) => {
                 const Landmark = getDistrictIcon(d.slug);
                 return (
@@ -367,15 +378,12 @@ export default async function StatePage({ params }: Props) {
           )}
         </Section>
 
-        {/* ═══ 4b. Coming districts (compact, quiet slate) ═══ */}
+        {/* ═══ 5b. Coming districts (compact, quiet slate) ═══ */}
         {coming.length > 0 && (
           <Section title={t("sectionComing")} emoji="⏳">
             <ul
-              className="ftp-hue-slate"
-              style={{
-                listStyle: "none", margin: 0, padding: 0,
-                display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 8,
-              }}
+              className="ftp-hue-slate ftp-grid"
+              style={{ listStyle: "none", margin: 0, padding: 0, gap: 8, ["--ftp-grid-min" as string]: "200px" } as React.CSSProperties}
             >
               {coming.map((d) => (
                 <li key={d.slug}>
@@ -396,32 +404,43 @@ export default async function StatePage({ params }: Props) {
           </Section>
         )}
 
-        {/* ═══ 5a. Map ═══ */}
-        <Section title={t("sectionMap")} emoji="🗺️">
-          <Card padding={0} style={{ overflow: "hidden" }}>
-            <StateMapSection locale={locale} stateSlug={stateSlug} activeDistrictSlugs={live.map((d) => d.slug)} />
-          </Card>
-        </Section>
+        {/* ═══ 6a–b. Map and the vote list: side by side on laptop / PC ═══ */}
+        <div className={coming.length > 0 ? styles.pair : undefined}>
+          <Section title={t("sectionMap")} emoji="🗺️">
+            <Card padding={0} style={{ overflow: "hidden" }}>
+              <StateMapSection locale={locale} stateSlug={stateSlug} activeDistrictSlugs={live.map((d) => d.slug)} />
+            </Card>
+          </Section>
 
-        {/* ═══ 5b. Vote list (the vote colour from the home page) ═══ */}
-        {coming.length > 0 && (
-          <div className="ftp-hue-yellow">
-            <Section title={t("sectionVote")} emoji="🗳️">
-              <StateVoteList
-                locale={locale}
-                stateSlug={stateSlug}
-                stateName={stateData.name}
-                lockedDistricts={coming.map((d) => ({ name: d.name, slug: d.slug }))}
-              />
-            </Section>
-          </div>
-        )}
+          {/* Vote list (the vote colour from the home page) */}
+          {coming.length > 0 && (
+            <div className="ftp-hue-yellow">
+              <Section title={t("sectionVote")} emoji="🗳️">
+                <StateVoteList
+                  locale={locale}
+                  stateSlug={stateSlug}
+                  stateName={stateData.name}
+                  lockedDistricts={coming.map((d) => ({ name: d.name, slug: d.slug }))}
+                />
+              </Section>
+            </div>
+          )}
+        </div>
 
-        {/* ═══ 5c. Supporters (the support colour) ═══ */}
+        {/* ═══ 6c. Supporters (the support colour) ═══ */}
         <div className="ftp-hue-rose" style={{ marginTop: 32 }}>
           <StateSponsorSection locale={locale} stateSlug={stateSlug} stateName={stateData.name} />
         </div>
-      </div>
+
+        {/* ═══ 7. Sources ═══ */}
+        <SourcesFooter
+          sources={[
+            { name: t("srcRegistry") },
+            ...(allCensus && livePopulation > 0 ? [{ name: t("censusOfIndia"), url: censusSource.href }] : []),
+            { name: t("srcMap"), url: "https://github.com/datameet/maps" },
+          ]}
+        />
+      </ModulePage>
     </main>
   );
 }

@@ -23,13 +23,23 @@
  *   - Paginated list, 20 per page
  *   - Preselected district (from ?d=<slug>) gets a hue-tint row
  *
- * Design v4 "Rang" (amber — the vote colour, deep enough for white text):
- * SiteHeader band; two pictures from the same vote counts as the list,
- * shown once they have loaded:
- *   • one plain sentence and the five most-requested districts as bars;
- *   • a ring of all votes by state (the top six states, the rest as one
- *     slice), one colour per state;
- * hue-coloured vote buttons; 44 px targets; tabular vote counts. Vote
+ * Design v4.1 (amber — the vote colour, deep enough for white text),
+ * docs/LAYOUT.md recipe inside <ModulePage> (full width on phones and
+ * tablets, 1320 px on laptop / PC). The question it answers: "Which
+ * district goes live next, and how do I push mine up?"
+ *   1. SiteHeader band
+ *   2. The answer in one sentence (Explainer), once the counts load
+ *   3. Emoji tiles: votes so far, districts waiting, districts with votes,
+ *      the leader's votes ("—" until the counts load, never a fake 0)
+ *   4. Pictures from the same vote counts as the list: the five
+ *      most-requested districts as bars, and a ring of all votes by state
+ *      (the top six states, the rest as one slice)
+ *   5. Search / state / sort, then the districts as cards on .ftp-grid
+ *      (1–3 across). Tapping a district's name opens a DetailSheet (state,
+ *      votes, rank, share of all votes, why votes matter) with Vote,
+ *      "Open its preview page" and "Sponsor it" actions; the card keeps
+ *      its own Vote button.
+ * Hue-coloured vote buttons; 44 px targets; tabular vote counts. Vote
  * logic unchanged. Text: "page_vote" messages; state names via
  * usePlaceText; district names are proper nouns.
  */
@@ -38,12 +48,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, ArrowRight, ChevronUp, Lock, Search, Vote } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, ChevronUp, Lock, Search, Vote } from "lucide-react";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { HUE_HEX, type Hue } from "@/lib/design/hues";
-import { Card, EmptyState } from "@/components/district/ui";
+import { EmptyState, ModulePage, PrimaryButton, StatStrip, StatTile, ToolbarButton } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import SiteHeader from "@/components/site/SiteHeader";
 import { BarList, Donut, type DonutSlice } from "@/components/site/SiteVisuals";
 import { useFormat, usePlaceText } from "@/i18n/client";
@@ -225,6 +236,33 @@ export default function VoteDistrictPage({
     return slices;
   }, [voteSummary, number, place, t]);
 
+  // Rank of each district with votes among ALL waiting districts (ignores
+  // search and filters), for the detail sheet.
+  const rankOf = useMemo(() => {
+    const m = new Map<string, number>();
+    allLocked
+      .map((d) => ({
+        slug: d.slug,
+        name: d.name,
+        votes: (voteMap[`${d.stateName}::${d.name}`.toLowerCase()] ?? d.voteCount) + (bumps[d.slug] ?? 0),
+      }))
+      .filter((d) => d.votes > 0)
+      .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name))
+      .forEach((d, i) => m.set(d.slug, i + 1));
+    return m;
+  }, [allLocked, voteMap, bumps]);
+
+  // The district whose sheet is open (read from the live counts so it updates after a vote).
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const openRow = openSlug ? allLocked.find((d) => d.slug === openSlug) ?? null : null;
+  const openCurrent = openRow
+    ? {
+        ...openRow,
+        voteCount: (voteMap[`${openRow.stateName}::${openRow.name}`.toLowerCase()] ?? openRow.voteCount) + (bumps[openRow.slug] ?? 0),
+      }
+    : null;
+  const openRank = openCurrent ? rankOf.get(openCurrent.slug) ?? null : null;
+
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pageItems = filteredSorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
@@ -238,12 +276,13 @@ export default function VoteDistrictPage({
     }
   }, [preselected]);
 
-  async function handleVote(d: LockedDistrict) {
+  /** `stamp` is the click event's timeStamp (ms since page load), used only for the debounce. */
+  async function handleVote(d: LockedDistrict, stamp: number) {
     // 200ms debounce — prevents accidental triple-fires from latency,
     // not a vote cap. Each separate click is still one POST.
-    const now = Date.now();
-    if (now - (lastClickRef.current[d.slug] ?? 0) < 200) return;
-    lastClickRef.current[d.slug] = now;
+    const last = lastClickRef.current[d.slug];
+    if (last !== undefined && stamp - last < 200) return;
+    lastClickRef.current[d.slug] = stamp;
 
     setBumps((prev) => ({ ...prev, [d.slug]: (prev[d.slug] ?? 0) + 1 }));
     setErrorSlug(null);
@@ -304,7 +343,6 @@ export default function VoteDistrictPage({
     <main className="ftp-vote-page ftp-hue-amber" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
       {/* Page-scoped styles. Colours are tokens and hue variables only. */}
       <style>{`
-        .ftp-vote-inner { max-width: var(--ftp-reading-max); padding-top: 24px; padding-bottom: 56px; }
         .ftp-vote-toolbar {
           display: grid;
           grid-template-columns: 1.5fr 1fr 1fr;
@@ -347,30 +385,39 @@ export default function VoteDistrictPage({
           list-style: none;
           margin: 0;
           padding: 0;
-          background: var(--ftp-surface);
-          border: 1px solid var(--ftp-border);
-          border-radius: var(--ftp-radius-card);
-          box-shadow: var(--ftp-shadow-1);
-          overflow: hidden;
+          gap: 10px;
+          --ftp-grid-min: 320px;
         }
         .ftp-vote-row {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
-          gap: 4px 12px;
-          padding: 10px 16px;
-          min-height: 56px;
-          border-bottom: 1px solid var(--ftp-border);
+          gap: 4px 10px;
+          padding: 8px 12px 8px 8px;
+          min-height: 60px;
+          background: var(--ftp-surface);
+          border: 1px solid var(--ftp-border);
+          border-radius: var(--ftp-radius-card);
+          box-shadow: var(--ftp-shadow-1);
         }
-        .ftp-vote-row:last-child { border-bottom: none; }
-        .ftp-vote-row-pre { background: var(--hue-tint); box-shadow: inset 3px 0 0 var(--hue); }
+        .ftp-vote-row-pre { background: var(--hue-tint); border-color: var(--hue); }
         .ftp-vote-row-info {
-          flex: 1 1 180px;
+          flex: 1 1 160px;
           display: flex;
           align-items: center;
           gap: 10px;
           min-width: 0;
+          min-height: 44px;
+          padding: 4px 6px;
+          background: none;
+          border: none;
+          border-radius: 10px;
+          text-align: start;
+          font: inherit;
+          color: inherit;
+          cursor: pointer;
         }
+        .ftp-vote-row-info:hover .ftp-vote-name { color: var(--hue-deep); text-decoration: underline; text-underline-offset: 2px; }
         .ftp-vote-name { font-size: 15px; line-height: 22px; font-weight: 600; color: var(--ftp-text); }
         .ftp-vote-state { font-size: 13px; line-height: 20px; font-weight: 400; color: var(--ftp-text-2); }
         .ftp-vote-btn {
@@ -428,8 +475,7 @@ export default function VoteDistrictPage({
         }
       `}</style>
 
-      <div className="ftp-container">
-        <div className="ftp-vote-inner">
+      <ModulePage>
           <SiteHeader
             emoji="🗳️"
             icon={Vote}
@@ -439,23 +485,36 @@ export default function VoteDistrictPage({
             backLabel={t("backHome")}
           />
 
+          {/* The answer in one sentence — once the counts have loaded, and only if someone has voted */}
+          {votesLoaded && leader && (
+            <Explainer>
+              {t.rich("simple", {
+                total: voteSummary.total,
+                voted: voteSummary.voted,
+                leader: leader.name,
+                votes: leader.votes,
+                b,
+              })}
+            </Explainer>
+          )}
+
+          {/* Numbers — "—" until the counts load */}
+          <StatStrip cols={4}>
+            <StatTile emoji="🗳️" label={t("tileTotal")} value={votesLoaded ? number(voteSummary.total) : "—"} />
+            <StatTile emoji="⏳" label={t("tileWaiting")} value={number(comingDistricts)} />
+            <StatTile emoji="📍" label={t("tileVoted")} value={votesLoaded ? number(voteSummary.voted) : "—"} />
+            <StatTile
+              emoji="🏆"
+              label={t("tileLeader")}
+              value={votesLoaded && leader ? number(leader.votes) : "—"}
+              sub={votesLoaded && leader ? leader.name : undefined}
+            />
+          </StatStrip>
+
           {/* The pictures — once the counts have loaded, and only if someone has voted */}
           {votesLoaded && leader && (
-            <div className={stateSlices.length >= 2 ? "ftp-picture-row" : undefined} style={{ marginBottom: 20 }}>
-              <Card tinted padding={18}>
-                <Explainer>
-                  {t.rich("simple", {
-                    total: voteSummary.total,
-                    voted: voteSummary.voted,
-                    leader: leader.name,
-                    votes: leader.votes,
-                    b,
-                  })}
-                </Explainer>
-                <p className="ftp-label" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span className="ftp-emoji" aria-hidden>🏆</span>
-                  {t("topLabel")}
-                </p>
+            <div className={stateSlices.length >= 2 ? "ftp-picture-row" : undefined} style={{ margin: "16px 0 8px" }}>
+              <ChartCard title={t("topLabel")} emoji="🏆" units={t("topUnits")} source={{ label: t("statesSource") }}>
                 <BarList
                   rows={voteSummary.top.map((d) => ({
                     key: `${d.stateName}-${d.name}`,
@@ -471,7 +530,7 @@ export default function VoteDistrictPage({
                     display: t("votes", { n: d.votes }),
                   }))}
                 />
-              </Card>
+              </ChartCard>
               {stateSlices.length >= 2 && voteSummary.byState[0] && (
                 <ChartCard
                   title={t("statesTitle")}
@@ -496,6 +555,7 @@ export default function VoteDistrictPage({
             </div>
           )}
 
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, margin: "24px 0 10px" }}>{t("tapHint")}</p>
           <div className="ftp-vote-toolbar">
             <label className="ftp-vote-field">
               <Search size={16} aria-hidden="true" />
@@ -544,7 +604,7 @@ export default function VoteDistrictPage({
           {pageItems.length === 0 ? (
             <EmptyState emoji="🔍" title={t("emptyTitle")} body={t("emptyBody")} />
           ) : (
-            <ul className="ftp-vote-list">
+            <ul className="ftp-vote-list ftp-grid">
               {pageItems.map((d) => {
                 const isPre = preselected === d.slug;
                 const hadError = errorSlug === d.slug;
@@ -555,17 +615,24 @@ export default function VoteDistrictPage({
                     className={`ftp-vote-row${isPre ? " ftp-vote-row-pre" : ""}`}
                     aria-current={isPre ? "true" : undefined}
                   >
-                    <div className="ftp-vote-row-info">
+                    <button
+                      type="button"
+                      className="ftp-vote-row-info"
+                      onClick={() => setOpenSlug(d.slug)}
+                      aria-haspopup="dialog"
+                      aria-label={t("openDetails", { district: d.name })}
+                    >
                       <Lock size={14} aria-hidden="true" style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
-                      <div style={{ minWidth: 0 }}>
-                        <span className="ftp-vote-name">{d.name}</span>
-                        <span className="ftp-vote-state">, {place.state(d.stateSlug, d.stateName)}</span>
-                      </div>
-                    </div>
+                      <span style={{ minWidth: 0, flex: 1 }}>
+                        <span className="ftp-vote-name" style={{ display: "block" }}>{d.name}</span>
+                        <span className="ftp-vote-state" style={{ display: "block" }}>{place.state(d.stateSlug, d.stateName)}</span>
+                      </span>
+                      <ChevronRight size={14} aria-hidden="true" style={{ color: "var(--hue)", flexShrink: 0 }} />
+                    </button>
                     <button
                       type="button"
                       className="ftp-vote-btn"
-                      onClick={() => handleVote(d)}
+                      onClick={(e) => handleVote(d, e.timeStamp)}
                       aria-label={t("voteAria", { district: d.name, state: place.state(d.stateSlug, d.stateName), n: d.voteCount })}
                     >
                       <ChevronUp size={16} aria-hidden="true" />
@@ -604,8 +671,60 @@ export default function VoteDistrictPage({
               {t("next")} <ArrowRight size={14} aria-hidden="true" />
             </button>
           </nav>
-        </div>
-      </div>
+      </ModulePage>
+
+      {/* The district's detail sheet */}
+      <DetailSheet
+        open={!!openCurrent}
+        onClose={() => setOpenSlug(null)}
+        hueClassName="ftp-hue-amber"
+        emoji="🗳️"
+        title={openCurrent?.name ?? ""}
+        subtitle={openCurrent ? place.state(openCurrent.stateSlug, openCurrent.stateName) : undefined}
+        footer={
+          openCurrent && (
+            <>
+              <button type="button" className="ftp-vote-btn" onClick={(e) => handleVote(openCurrent, e.timeStamp)}>
+                <ChevronUp size={16} aria-hidden="true" />
+                <span className="ftp-num">{number(openCurrent.voteCount)}</span>
+                {t("vote")}
+              </button>
+              <ToolbarButton href={`/${locale}/${openCurrent.stateSlug}/${openCurrent.slug}`}>{t("openPreview")}</ToolbarButton>
+              <PrimaryButton href={`/${locale}/support`}>{t("sponsor")}</PrimaryButton>
+            </>
+          )
+        }
+      >
+        {openCurrent && (
+          <>
+            <DetailList
+              rows={[
+                { emoji: "🗺️", label: t("rowState"), value: place.state(openCurrent.stateSlug, openCurrent.stateName) },
+                { emoji: "🗳️", label: t("rowVotes"), value: t("votes", { n: openCurrent.voteCount }) },
+                {
+                  emoji: "🏆",
+                  label: t("rowRank"),
+                  value: openRank ? t("rankValue", { rank: openRank, total: comingDistricts }) : null,
+                },
+                {
+                  emoji: "🥧",
+                  label: t("rowShare"),
+                  value:
+                    voteSummary.total > 0 && openCurrent.voteCount > 0
+                      ? `${number((openCurrent.voteCount / voteSummary.total) * 100, { maximumFractionDigits: 1 })}%`
+                      : null,
+                },
+              ]}
+            />
+            {errorSlug === openCurrent.slug && (
+              <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--ftp-danger)" }}>
+                {errorKind === "rate" ? t("errRate") : t("errGeneric")}
+              </p>
+            )}
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>{t("sheetWhy")}</p>
+          </>
+        )}
+      </DetailSheet>
     </main>
   );
 }

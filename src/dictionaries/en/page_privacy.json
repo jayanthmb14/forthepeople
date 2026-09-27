@@ -2,6 +2,12 @@
   "metaTitle": "Privacy policy",
   "metaDescription": "How ForThePeople.in handles your data. Fully compliant with India's Digital Personal Data Protection (DPDP) Act, 2023.",
   "title": "Privacy policy",
+  "simple": "We collect as little about you as we can, we never sell it, and you can ask us to show, correct or delete it.",
+  "glanceLabel": "The privacy policy at a glance",
+  "glance1": "No cookies and no advertising trackers.",
+  "glance2": "We never ask for Aadhaar, PAN or any other ID.",
+  "glance3": "Payments go through Razorpay. We never see your card or UPI details.",
+  "glance4": "Ask to see, correct or delete your data by writing to support@forthepeople.in.",
   "s1": "About this policy",
   "s2": "What data we process",
   "s3": "What we do not collect",
@@ -42,13 +48,48 @@
     "s1operator": "Operator: Jayanth M B, Bengaluru, Karnataka, India",
     "s1contact": "Contact: <mail>support@forthepeople.in</mail>",
     "t2": {
-      "r1": { "data": "Vote fingerprint", "what": "SHA-256 hash of IP + browser user-agent (not reversible)", "purpose": "Prevent duplicate votes on the features page", "basis": "Legitimate interest (platform integrity)" },
-      "r2": { "data": "Feedback email", "what": "Email you voluntarily enter in the feedback form", "purpose": "Respond to your feedback", "basis": "Your consent" },
-      "r3": { "data": "Supporter info", "what": "Name, email, contribution amount, optional social handle", "purpose": "Process contributions, display on contributor page if opted in", "basis": "Contractual necessity + consent" },
-      "r4": { "data": "Payment details", "what": "Card, UPI, bank details — processed entirely by Razorpay. We never see or store these.", "purpose": "Complete your contribution", "basis": "Contractual necessity" },
-      "r5": { "data": "Server logs", "what": "IP address, browser type, request URL, timestamp", "purpose": "Security, abuse prevention, debugging", "basis": "Legitimate interest" },
-      "r6": { "data": "Error logs (Sentry)", "what": "Stack traces, browser type, URL. No personal identifiers captured.", "purpose": "Fix bugs", "basis": "Legitimate interest" },
-      "r7": { "data": "Analytics (Plausible)", "what": "Aggregated page views, referrer country. No cookies, no personal identifiers.", "purpose": "Understand which districts and modules are useful", "basis": "Legitimate interest" }
+      "r1": {
+        "data": "Vote fingerprint",
+        "what": "SHA-256 hash of IP + browser user-agent (not reversible)",
+        "purpose": "Prevent duplicate votes on the features page",
+        "basis": "Legitimate interest (platform integrity)"
+      },
+      "r2": {
+        "data": "Feedback email",
+        "what": "Email you voluntarily enter in the feedback form",
+        "purpose": "Respond to your feedback",
+        "basis": "Your consent"
+      },
+      "r3": {
+        "data": "Supporter info",
+        "what": "Name, email, contribution amount, optional social handle",
+        "purpose": "Process contributions, display on contributor page if opted in",
+        "basis": "Contractual necessity + consent"
+      },
+      "r4": {
+        "data": "Payment details",
+        "what": "Card, UPI, bank details — processed entirely by Razorpay. We never see or store these.",
+        "purpose": "Complete your contribution",
+        "basis": "Contractual necessity"
+      },
+      "r5": {
+        "data": "Server logs",
+        "what": "IP address, browser type, request URL, timestamp",
+        "purpose": "Security, abuse prevention, debugging",
+        "basis": "Legitimate interest"
+      },
+      "r6": {
+        "data": "Error logs (Sentry)",
+        "what": "Stack traces, browser type, URL. No personal identifiers captured.",
+        "purpose": "Fix bugs",
+        "basis": "Legitimate interest"
+      },
+      "r7": {
+        "data": "Analytics (Plausible)",
+        "what": "Aggregated page views, referrer country. No cookies, no personal identifiers.",
+        "purpose": "Understand which districts and modules are useful",
+        "basis": "Legitimate interest"
+      }
     },
     "s3": {
       "n1": "Aadhaar, PAN, voter ID, driving licence, or any government-issued ID",
@@ -62,12 +103,36 @@
       "noSale": "We do NOT sell, rent, license, or share your data with advertisers or data brokers."
     },
     "t4": {
-      "r1": { "data": "Feedback", "howLong": "12 months from submission", "why": "Support and follow-up, then deleted" },
-      "r2": { "data": "Vote fingerprints", "howLong": "Until the feature is built, shipped, or removed — max 24 months", "why": "Prevent duplicate voting" },
-      "r3": { "data": "Supporter data", "howLong": "7 years minimum", "why": "Indian Income Tax Act record-keeping requirement" },
-      "r4": { "data": "Server logs", "howLong": "30 days", "why": "Vercel platform default; security investigations" },
-      "r5": { "data": "Error logs (Sentry)", "howLong": "90 days", "why": "Debugging" },
-      "r6": { "data": "Analytics (Plausible)", "howLong": "Aggregated indefinitely; individual visit data not retained", "why": "Analysis is stateless" }
+      "r1": {
+        "data": "Feedback",
+        "howLong": "12 months from submission",
+        "why": "Support and follow-up, then deleted"
+      },
+      "r2": {
+        "data": "Vote fingerprints",
+        "howLong": "Until the feature is built, shipped, or removed — max 24 months",
+        "why": "Prevent duplicate voting"
+      },
+      "r3": {
+        "data": "Supporter data",
+        "howLong": "7 years minimum",
+        "why": "Indian Income Tax Act record-keeping requirement"
+      },
+      "r4": {
+        "data": "Server logs",
+        "howLong": "30 days",
+        "why": "Vercel platform default; security investigations"
+      },
+      "r5": {
+        "data": "Error logs (Sentry)",
+        "howLong": "90 days",
+        "why": "Debugging"
+      },
+      "r6": {
+        "data": "Analytics (Plausible)",
+        "howLong": "Aggregated indefinitely; individual visit data not retained",
+        "why": "Analysis is stateless"
+      }
     },
     "s5": {
       "intro": "You have the following rights over your personal data:",
@@ -90,13 +155,34 @@
     "s7b": "Under DPDP Act 2023, we do not engage in targeted advertising or behavioural monitoring of children.",
     "s8intro": "Some of our processors store or process data on servers outside India. We disclose these clearly:",
     "t8": {
-      "vercel": { "purpose": "Hosting", "location": "Global edge + US origin" },
-      "razorpay": { "purpose": "Payments", "location": "India" },
-      "neon": { "purpose": "Database", "location": "Can be configured per region; currently hosted in an Asia region" },
-      "upstash": { "purpose": "Cache", "location": "Global (AWS regions)" },
-      "plausible": { "purpose": "Analytics", "location": "EU (Germany)" },
-      "resend": { "purpose": "Admin email", "location": "US" },
-      "sentry": { "purpose": "Error logs", "location": "US" }
+      "vercel": {
+        "purpose": "Hosting",
+        "location": "Global edge + US origin"
+      },
+      "razorpay": {
+        "purpose": "Payments",
+        "location": "India"
+      },
+      "neon": {
+        "purpose": "Database",
+        "location": "Can be configured per region; currently hosted in an Asia region"
+      },
+      "upstash": {
+        "purpose": "Cache",
+        "location": "Global (AWS regions)"
+      },
+      "plausible": {
+        "purpose": "Analytics",
+        "location": "EU (Germany)"
+      },
+      "resend": {
+        "purpose": "Admin email",
+        "location": "US"
+      },
+      "sentry": {
+        "purpose": "Error logs",
+        "location": "US"
+      }
     },
     "s8outro": "These transfers are made under contractual safeguards with each processor. The Government of India may from time to time restrict certain countries for cross-border transfers under DPDP Act 2023; we will update this list if that happens.",
     "s9": {

@@ -11,6 +11,20 @@
   "simpleSome": "<b>{n}</b> of the <b>{live}</b> live districts {n, plural, one {has} other {have}} at least one monthly district champion keeping its data free.",
   "pictoOneEach": "{n} of {live} live districts have a district champion.",
   "pictoOutOf10": "About {n} of every 10 live districts have a district champion.",
+  "tapHint": "Tap a name to see everything that supporter chose to share.",
+  "openDetails": "Details of {name}",
+  "pictoTitle": "Districts with a champion",
+  "pictoUnits": "One symbol for each live district. The coloured ones have a monthly champion.",
+  "rowRank": "Place on the leaderboard",
+  "rowBadge": "Badge",
+  "rowPlace": "Backs",
+  "rowMonths": "Supporting for",
+  "rowAmount": "Gave",
+  "rowJoined": "Joined on",
+  "rowMessage": "Their message",
+  "openProfile": "Open their profile",
+  "sheetPrivacy": "We only show what the supporter chose to make public.",
+  "srcRecords": "ForThePeople.in supporter records (payments through Razorpay)",
   "whyTitle": "Why it matters",
   "whyBody": "ForThePeople.in tracks <hl>{points}+ data points</hl> across <hl>{live, plural, one {# active district} other {# active districts}}</hl>, refreshed every 5 to 30 minutes from official government portals. Each {amount} a month keeps one district's <hl>{modules} dashboards</hl> free, covering crop prices, dam levels, school data, police stats, weather and {more} more modules, for every citizen in that district. <strong>Zero ads. Zero paywalls. 100% citizen-funded.</strong>",
   "filterLabel": "Filter contributors",
@@ -48,6 +62,5 @@
   "showing": "Showing {shown} of {total}",
   "ctaTitle": "Every district needs a champion. Will you be one?",
   "ctaBody": "{amount} a month is all it takes to keep an entire district's data free for every citizen.",
-  "ctaButton": "Become a champion",
-  "back": "Back to ForThePeople.in"
+  "ctaButton": "Become a champion"
 }

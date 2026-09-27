@@ -7,8 +7,18 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { X } from "lucide-react";
 import LegalPageHeader from "@/components/common/LegalPageHeader";
-import { DataTable } from "@/components/district/ui";
-import { LEGAL_LINK, LegalBody, LegalEnglishNote, LegalSection, LegalSeeAlso } from "@/components/site/LegalSection";
+import { ModulePage } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
+import {
+  LEGAL_LINK,
+  LegalBody,
+  LegalEnglishNote,
+  LegalGlance,
+  LegalLayout,
+  LegalSection,
+  LegalSeeAlso,
+  LegalTable,
+} from "@/components/site/LegalSection";
 import { languageAlternates } from "@/i18n/seo";
 
 type Props = { params: Promise<{ locale?: string }> };
@@ -23,12 +33,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// ── Design v4 "Rang" (slate, the quiet legal colour) ─────────────────
-// Presentation only: SiteHeader band via LegalPageHeader, numbered clause
-// headings in sentence case (LegalSection), the tables are kit DataTables
-// (hue header, horizontal scroll on phones so the page never scrolls
-// sideways), links in the page hue. No picture: this page has no data.
-// The legal text is unchanged.
+// ── Design v4.1 (slate, the quiet legal colour) ──────────────────────
+// Presentation only: SiteHeader band via LegalPageHeader, then the answer
+// in one sentence (Explainer) and the policy "at a glance" in four emoji
+// cards (translated), then the clauses beside a sticky clause list on
+// laptop / PC (a "Jump to a part" drop-down on phones). Numbered clause
+// headings in sentence case (LegalSection); the tables are LegalTables (a
+// table from 640 px up, one card per row on phones — never sideways
+// scrolling); links in the page hue. The legal text is unchanged.
 //
 // Languages (docs/I18N.md, legal pages): the title, clause headings, table
 // headings and captions and "See also" links are translated
@@ -39,7 +51,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // Served at /<locale>/privacy through src/app/[locale]/privacy/page.tsx.
 const pStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)", margin: "0 0 10px" };
 const linkStyle = LEGAL_LINK;
-const TABLE_GAP: React.CSSProperties = { marginBottom: 12 };
+/** Clause numbers; the heading of clause n is `s<n>`. */
+const CLAUSES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
 const LIST: React.CSSProperties = { ...pStyle, paddingInlineStart: 20, margin: "0 0 12px" };
 const ITEM: React.CSSProperties = { marginBottom: 6 };
 
@@ -84,9 +97,19 @@ export default async function PrivacyPage({ params }: Props) {
 
   return (
     <main className="ftp-hue-slate" style={{ background: "var(--ftp-bg)", minHeight: "100vh" }}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 64 }}>
-        <div style={{ maxWidth: 760 }}>
+      <ModulePage>
           <LegalPageHeader title={t("title")} lastUpdated="2026-04-16" emoji="🔒" />
+          <Explainer emoji="🔒">{t("simple")}</Explainer>
+          <LegalGlance
+            label={t("glanceLabel")}
+            items={[
+              { emoji: "🍪", text: t("glance1") },
+              { emoji: "📵", text: t("glance2") },
+              { emoji: "💳", text: t("glance3") },
+              { emoji: "🙋", text: t("glance4") },
+            ]}
+          />
+          <LegalLayout clauses={CLAUSES.map((n) => ({ n, title: t(`s${n}`) }))}>
           <LegalEnglishNote />
 
           <LegalSection n={1} title={t("s1")}>
@@ -102,8 +125,8 @@ export default async function PrivacyPage({ params }: Props) {
           </LegalSection>
 
           <LegalSection n={2} title={t("s2")}>
-            <div style={TABLE_GAP}>
-              <DataTable
+            <div>
+              <LegalTable
                 caption={t("t2Caption")}
                 columns={[
                   { key: "data", label: t("t2Data") },
@@ -129,8 +152,8 @@ export default async function PrivacyPage({ params }: Props) {
           </LegalSection>
 
           <LegalSection n={4} title={t("s4")}>
-            <div style={TABLE_GAP}>
-              <DataTable
+            <div>
+              <LegalTable
                 caption={t("t4Caption")}
                 columns={[
                   { key: "data", label: t("t4Data") },
@@ -176,8 +199,8 @@ export default async function PrivacyPage({ params }: Props) {
             <LegalBody>
               <p style={pStyle}>{t("body.s8intro")}</p>
             </LegalBody>
-            <div style={TABLE_GAP}>
-              <DataTable
+            <div>
+              <LegalTable
                 caption={t("t8Caption")}
                 columns={[
                   { key: "processor", label: t("t8Processor") },
@@ -225,8 +248,8 @@ export default async function PrivacyPage({ params }: Props) {
           </LegalSection>
 
           <LegalSection n={12} title={t("s12")}>
-            <div style={TABLE_GAP}>
-              <DataTable
+            <div>
+              <LegalTable
                 caption={t("t12Caption")}
                 columns={[
                   { key: "service", label: t("t12Service") },
@@ -267,8 +290,8 @@ export default async function PrivacyPage({ params }: Props) {
               { href: `/${locale}/about`, label: t("seeAbout"), emoji: "📖" },
             ]}
           />
-        </div>
-      </div>
+          </LegalLayout>
+      </ModulePage>
     </main>
   );
 }

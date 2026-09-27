@@ -1,0 +1,10 @@
+/* State page — the map and the vote list sit side by side on laptops and
+   PCs (≥ 1024 px, docs/LAYOUT.md) and stack on phones and tablets. */
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 20px;
+}
+@media (min-width: 1024px) {
+  .pair { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: start; }
+}

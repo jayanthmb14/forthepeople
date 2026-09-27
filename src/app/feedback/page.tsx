@@ -9,18 +9,24 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  /feedback — full-page feedback form (POST /api/feedback)
 //
-//  Design v4 "Rang" (teal): SiteHeader band, the feedback types as big
-//  emoji cards (a radio group), 44 px inputs, and one primary button in
-//  the page hue. No picture: this page has no data. The submit logic and
-//  the request body are unchanged. Text: "page_feedback" messages; an
-//  error message written by the API is shown as it comes. Metadata lives
-//  in the [locale] route file (this is a client component).
+//  The question it answers: "How do I tell them something is wrong, and
+//  what happens after I do?"
+//
+//  Design v4.1 (teal) inside <ModulePage>: SiteHeader band → the answer in
+//  one sentence (Explainer) → the form (feedback types as big emoji cards
+//  in a radio group, 44 px inputs, one primary button in the page hue)
+//  beside the picture: "What happens next" in HowItWorks steps. Side by
+//  side on laptop / PC, stacked on phones and tablets (form first). The
+//  submit logic and the request body are unchanged. Text: "page_feedback"
+//  messages; an error message written by the API is shown as it comes.
+//  Metadata lives in the [locale] route file (this is a client component).
 // ═══════════════════════════════════════════════════════════════════════
 import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { AlertCircle, MessageSquare } from "lucide-react";
-import { Card } from "@/components/district/ui";
+import { Card, ModulePage } from "@/components/district/ui";
+import { Explainer, HowItWorks } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
 import { useFormat } from "@/i18n/client";
 
@@ -146,11 +152,13 @@ export default function FeedbackPage() {
   }
 
   return (
-    <main className="ftp-hue-teal" style={{ minHeight: "calc(100vh - 56px)", background: "var(--ftp-bg)", paddingBottom: 64 }}>
-      <div className="ftp-container" style={{ paddingTop: 24 }}>
-        <div style={{ maxWidth: 680 }}>
+    <main className="ftp-hue-teal" style={{ minHeight: "calc(100vh - 56px)", background: "var(--ftp-bg)", paddingBottom: 32 }}>
+      <ModulePage>
           <SiteHeader emoji="💬" icon={MessageSquare} title={t("title")} description={t("description")} backHref={`/${locale}`} />
 
+          <Explainer emoji="📬">{t("simple")}</Explainer>
+
+          <div className="ftp-picture-row" style={{ alignItems: "start" }}>
           <Card padding={20}>
             <form onSubmit={handleSubmit}>
               {/* Feedback type — a radio group drawn as emoji cards */}
@@ -291,9 +299,21 @@ export default function FeedbackPage() {
             </form>
           </Card>
 
-          <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--ftp-text-2)", textAlign: "center", marginTop: 20 }}>{t("footnote")}</p>
-        </div>
-      </div>
+          {/* The picture: what happens after you press Send */}
+          <Card tinted padding={18}>
+            <HowItWorks
+              title={t("howTitle")}
+              steps={[
+                { emoji: "✍️", title: t("step_write"), body: t("step_writeBody") },
+                { emoji: "👀", title: t("step_read"), body: t("step_readBody") },
+                { emoji: "🔧", title: t("step_fix"), body: t("step_fixBody") },
+                { emoji: "📧", title: t("step_reply"), body: t("step_replyBody") },
+              ]}
+            />
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ftp-text-2)", margin: "14px 0 0" }}>{t("footnote")}</p>
+          </Card>
+          </div>
+      </ModulePage>
     </main>
   );
 }

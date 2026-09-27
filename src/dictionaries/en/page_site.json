@@ -3,6 +3,8 @@
   "seeAlso": "See also",
   "lastUpdated": "Last updated: {date}",
   "legalEnglishNote": "The official version of the legal text on this page is in English.",
+  "tocTitle": "On this page",
+  "tocJump": "Jump to a part",
   "tier": {
     "founder": "Royal Contributor",
     "patron": "India Patron",
@@ -20,5 +22,31 @@
     "letters": "Name can only contain letters, spaces, hyphens, apostrophes and full stops.",
     "business": "Please enter a personal name (first and last), not a business name.",
     "spam": "Please enter your name only: no phone numbers, business names or promotional text."
+  },
+  "badges": {
+    "title": "How badges and tiers work",
+    "simple": "The longer you keep supporting, the higher your badge. Badges show next to your name on the supporter pages.",
+    "ladderTitle": "Badges you earn by supporting every month",
+    "level_bronze": "Bronze",
+    "level_silver": "Silver",
+    "level_gold": "Gold",
+    "level_platinum": "Platinum",
+    "months": "{n}+ months",
+    "showTiers": "Show the tiers and prices",
+    "hideTiers": "Hide the tiers and prices",
+    "perMonth": "{amount} a month",
+    "oneTimeFrom": "One time, from {amount}"
+  },
+  "growth": {
+    "title": "Supporters over time",
+    "units": "Total supporters at the end of each month",
+    "simple": "<b>{n}</b> new this month, <b>{total}</b> in all.",
+    "oneMonth": "{month}: <b>{n, plural, one {# new supporter} other {# new supporters}}</b>. We started counting in April 2026.",
+    "oneMonthNote": "The chart appears once there is a second month of data.",
+    "tableValue": "{total} in all (+{n} new)",
+    "tooltipTotal": "{n} in all",
+    "tooltipName": "Supporters",
+    "tooltipNew": "{month}: +{n} new",
+    "source": "ForThePeople.in supporter records"
   }
 }
