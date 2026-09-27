@@ -429,7 +429,7 @@ function CompareContent({ locale }: { locale: string }) {
         .ftp-compare-body { padding: 0 24px; }
         @media (max-width: 640px) {
           .ftp-compare-pickers { grid-template-columns: 1fr; gap: 8px; }
-          .ftp-compare-pickers > div { align-items: flex-start !important; }
+          .ftp-compare-pickers > div:not(.ftp-compare-vs) { align-items: flex-start !important; }
           .ftp-compare-label { min-width: 0; padding: 0 4px; }
           .ftp-compare-body { padding: 0 16px; }
         }
@@ -455,8 +455,8 @@ function CompareContent({ locale }: { locale: string }) {
               </div>
               <div
                 aria-hidden="true"
-                className="ftp-display"
-                style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", justifySelf: "center", background: "var(--hue)", color: "#fff", fontSize: 14, fontWeight: 700 }}
+                className="ftp-display ftp-compare-vs"
+                style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", justifySelf: "center", background: "var(--hue)", color: "#fff", fontSize: 14, lineHeight: 1, fontWeight: 700 }}
               >
                 vs
               </div>
