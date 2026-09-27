@@ -15,6 +15,7 @@
 // button. Behaviour is unchanged: "Try again" clears the error state so
 // React renders the children again.
 // ═══════════════════════════════════════════════════════════
+import { useTranslations } from "next-intl";
 import React from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ToolbarButton } from "@/components/district/ui";
@@ -46,40 +47,48 @@ export default class ModuleErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (!this.state.hasError) return this.props.children;
-
     return (
-      <div
-        role="alert"
-        aria-live="assertive"
-        style={{
-          margin: 24,
-          padding: 16,
-          background: "var(--ftp-surface)",
-          border: "1px solid var(--ftp-border)",
-          borderRadius: "var(--ftp-radius-card)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <AlertCircle size={18} style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
-          <div>
-            <p className="ftp-title">
-              Couldn&apos;t show {this.props.moduleName ?? "this section"}
-            </p>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>
-              Something went wrong while drawing this part of the page. The rest of the site still works.
-              Try again, or reload the page if it keeps happening.
-            </p>
-          </div>
-        </div>
-        <div>
-          <ToolbarButton icon={RefreshCw} onClick={() => this.setState({ hasError: false, errorMessage: "" })}>
-            Try again
-          </ToolbarButton>
-        </div>
-      </div>
+      <ModuleErrorFallback
+        moduleName={this.props.moduleName}
+        onRetry={() => this.setState({ hasError: false, errorMessage: "" })}
+      />
     );
   }
+}
+
+/** The fallback card, as a function component so it can use translations. */
+function ModuleErrorFallback({ moduleName, onRetry }: { moduleName?: string; onRetry: () => void }) {
+  const t = useTranslations("errors");
+  const tk = useTranslations("kit");
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      style={{
+        margin: 24,
+        padding: 16,
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        borderRadius: "var(--ftp-radius-card)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <AlertCircle size={18} style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+        <div>
+          <p className="ftp-title">{moduleName ? t("sectionFailed", { name: moduleName }) : t("sectionFailedGeneric")}</p>
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>
+            {t("sectionFailedBody")}
+          </p>
+        </div>
+      </div>
+      <div>
+        <ToolbarButton icon={RefreshCw} onClick={onRetry}>
+          {tk("tryAgain")}
+        </ToolbarButton>
+      </div>
+    </div>
+  );
 }

@@ -35,6 +35,17 @@ export function useFormat() {
       new Date(d).toLocaleDateString(intl, { timeZone: "Asia/Kolkata", ...opts }),
     time: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) =>
       new Date(d).toLocaleTimeString(intl, { timeZone: "Asia/Kolkata", ...opts }),
+    /** "5 hours ago" / "5 ಗಂಟೆಗಳ ಹಿಂದೆ" (Intl.RelativeTimeFormat); older than a week → "12 Sep". */
+    ago: (d: Date | string | number) => {
+      const diffMin = Math.round((new Date(d).getTime() - Date.now()) / 60000);
+      const rtf = new Intl.RelativeTimeFormat(intl, { numeric: "auto" });
+      if (Math.abs(diffMin) < 60) return rtf.format(diffMin, "minute");
+      const diffH = Math.round(diffMin / 60);
+      if (Math.abs(diffH) < 24) return rtf.format(diffH, "hour");
+      const diffD = Math.round(diffH / 24);
+      if (Math.abs(diffD) < 7) return rtf.format(diffD, "day");
+      return new Date(d).toLocaleDateString(intl, { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+    },
   };
 }
 

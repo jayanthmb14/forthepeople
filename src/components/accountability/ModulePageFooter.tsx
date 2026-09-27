@@ -23,6 +23,7 @@
 //  colours or sizes of its own.
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Share2, GitCompare, Check } from "lucide-react";
 import { SourcesFooter, Toolbar, ToolbarButton, type SourceEntry } from "@/components/district/ui";
@@ -59,6 +60,7 @@ export default function ModulePageFooter({
   /** Hide the Compare button on pages where comparing makes no sense. */
   showCompare?: boolean;
 }) {
+  const t = useTranslations("pageFooter");
   // Registry sources (names only) + how often each one refreshes.
   const info = getModuleSources(moduleSlug, state);
   const sources: SourceEntry[] = [
@@ -97,8 +99,8 @@ export default function ModulePageFooter({
       {children}
       <Toolbar>
         {actions}
-        <ToolbarButton icon={copied ? Check : Share2} onClick={share} ariaLabel="Share this page">
-          {copied ? "Link copied" : "Share"}
+        <ToolbarButton icon={copied ? Check : Share2} onClick={share} ariaLabel={t("shareAria")}>
+          {copied ? t("copied") : t("share")}
         </ToolbarButton>
         {showCompare && (
           <ToolbarButton icon={GitCompare} href={compareHref}>

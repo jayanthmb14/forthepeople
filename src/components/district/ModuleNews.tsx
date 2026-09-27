@@ -20,11 +20,12 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Section, Card } from "@/components/district/ui";
-import { timeAgoLabel, asOfLabel } from "@/lib/utils/timeAgo";
 
 interface NewsItem {
   id: string;
@@ -41,11 +42,6 @@ interface NewsItem {
  * How old an article is, in words. Under a week we say "5h ago" / "3d ago";
  * older articles get their date ("12 Sep") because "41d ago" is hard to read.
  */
-function publishedLabel(iso: string): string {
-  const { label } = timeAgoLabel(iso);
-  const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
-  return days < 7 ? label : asOfLabel(iso, { prefix: "" });
-}
 
 /** News feeds sometimes leave HTML entities in headlines — tidy them up. */
 function cleanHtml(text: string): string {
@@ -69,6 +65,8 @@ interface ModuleNewsProps {
 }
 
 export default function ModuleNews({ district, state, locale, module, limit = 5 }: ModuleNewsProps) {
+  const t = useTranslations("moduleNews");
+  const f = useFormat();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -93,13 +91,13 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
 
   return (
     <Section
-      title="Related news"
+      title={t("relatedNews")}
       action={
         <Link
           href={`${base}/news`}
           style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-brand)", textDecoration: "none", fontWeight: 500 }}
         >
-          View all news →
+          {t("viewAllNews")}
         </Link>
       }
     >
@@ -113,7 +111,7 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
                   <span>{n.source}</span>
                   <span aria-hidden> · </span>
                   <time dateTime={n.publishedAt} className="ftp-num" style={{ fontWeight: 400 }}>
-                    {publishedLabel(n.publishedAt)}
+                    {f.ago(n.publishedAt)}
                   </time>
                 </p>
                 <p className="ftp-title" style={{ fontSize: 13, lineHeight: "20px", marginTop: 2 }}>
@@ -147,7 +145,7 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
                   }}
                 >
                   {body}
-                  <span className="sr-only"> (opens the original article in a new tab)</span>
+                  <span className="sr-only"> {t("opensOriginal")}</span>
                 </a>
               ) : (
                 <Card padding={12} style={{ padding: "12px 16px" }}>

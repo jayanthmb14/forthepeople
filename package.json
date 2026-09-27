@@ -1,7 +1,7 @@
 {
   "name": "forthepeople-in",
   "version": "1.0.0",
-  "description": "India's Citizen Transparency Platform — free district-level government data dashboards, updated daily or when sources publish",
+  "description": "India's Citizen Transparency Platform \u2014 free district-level government data dashboards, updated daily or when sources publish",
   "author": {
     "name": "Jayanth M B",
     "url": "https://forthepeople.in"
@@ -30,8 +30,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
+    "dev": "node scripts/gen-i18n-namespaces.mjs && next dev",
+    "build": "node scripts/gen-i18n-namespaces.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:tenders": "bash scripts/lint-tender-copy.sh",
@@ -41,7 +41,8 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && npx tsx prisma/seed.ts",
     "scraper": "npx tsx src/scraper/scheduler.ts",
-    "scraper:dev": "npx tsx --watch src/scraper/scheduler.ts"
+    "scraper:dev": "npx tsx --watch src/scraper/scheduler.ts",
+    "i18n:index": "node scripts/gen-i18n-namespaces.mjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

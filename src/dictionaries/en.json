@@ -466,7 +466,10 @@
     "vote": "Vote for a district",
     "errorTitle": "Something went wrong on this page",
     "errorBody": "The error has been logged. Try again, or go back to the home page.",
-    "errorId": "Error ID: {id}"
+    "errorId": "Error ID: {id}",
+    "sectionFailed": "Couldn't show {name}",
+    "sectionFailedGeneric": "Couldn't show this section",
+    "sectionFailedBody": "Something went wrong while drawing this part of the page. The rest of the site still works. Try again, or reload the page if it keeps happening."
   },
   "locate": {
     "privacy": "Your coordinates never leave your browser. The state map is downloaded to your device and matched there. Only the district name is remembered, and only if you switch that on.",
@@ -729,5 +732,145 @@
     "Mandal": "Mandal",
     "Block": "Block",
     "Sub-district": "Sub-district"
+  },
+  "noData": {
+    "fallbackDiscom": "the local electricity provider",
+    "fallbackWaterPortal": "the state water resources department",
+    "fallbackTransport": "the state transport corporation",
+    "footer": "Data is sourced from official government portals under India's Open Data Policy (NDSAP).",
+    "generic": {
+      "title": "Data being collected",
+      "body": "Data for this module is being collected from official government portals for {district}. It will appear here once available."
+    },
+    "water": {
+      "title": "Dam & reservoir data being prepared",
+      "body": "Water supply data for {district} is being collected from {portal} and India-WRIS. Dam levels, inflow/outflow, and canal release data will appear here once integration is complete."
+    },
+    "crops": {
+      "title": "Crop price data being collected",
+      "body": "Daily mandi prices from AGMARKNET for {district} are being integrated. Prices for major crops will appear here once data collection begins."
+    },
+    "cropsUrban": {
+      "title": "No agricultural markets in this district",
+      "body": "{district} is a fully urban district with no registered APMC (Agricultural Produce Market Committee) mandis. Crop price data is not applicable here."
+    },
+    "power": {
+      "title": "Power outage tracking being integrated",
+      "body": "Scheduled power outage data from {discom} is being integrated. For current outage information, visit the official portal. {url}"
+    },
+    "farm": {
+      "title": "Farm advisory data being collected",
+      "body": "Soil health records and crop advisories from the local KVK (Krishi Vigyan Kendra) and ICAR network are being collected for {district}."
+    },
+    "farmUrban": {
+      "title": "Not applicable for urban districts",
+      "body": "{district} is a fully urban district. Soil health cards, crop advisories, and KVK agricultural data are relevant for rural and semi-rural districts."
+    },
+    "gram-panchayat": {
+      "title": "Panchayat data being collected",
+      "body": "Village-level MGNREGA works and fund utilisation data from eGramSwaraj is being collected for {district}."
+    },
+    "gram-panchayatUrban": {
+      "title": "Not applicable for urban districts",
+      "body": "{district} is a fully urban district governed by a Municipal Corporation. Gram Panchayat and MGNREGA data applies only to rural areas."
+    },
+    "jjm": {
+      "title": "JJM coverage data being collected",
+      "body": "Tap water connection data from the Jal Jeevan Mission national dashboard (eJalShakti) is being collected for {district}."
+    },
+    "jjmUrban": {
+      "title": "Not applicable for urban districts",
+      "body": "Jal Jeevan Mission provides tap water connections to rural households. {district} is urban; its water supply is managed by the municipal water board."
+    },
+    "police": {
+      "title": "Crime statistics being collected",
+      "body": "Crime data from NCRB (National Crime Records Bureau) and traffic revenue data for {district} are being collected. NCRB publishes district-level data annually."
+    },
+    "transport": {
+      "title": "Transport data being collected",
+      "body": "Bus routes from {transport} and train schedules from IRCTC for {district} are being integrated."
+    },
+    "finance": {
+      "title": "Budget expenditure data being collected",
+      "body": "Detailed budget allocation and expenditure data from PFMS and the state treasury for {district} is being collected."
+    },
+    "housing": {
+      "title": "Housing scheme data being collected",
+      "body": "PMAY (Pradhan Mantri Awas Yojana) housing data from AwaasSoft for {district} is being collected."
+    },
+    "schools": {
+      "title": "School data being collected",
+      "body": "School directory and board exam pass rate data from UDISE+ for {district} is being collected."
+    },
+    "courts": {
+      "title": "Court statistics being collected",
+      "body": "Case pendency and disposal data from the National Judicial Data Grid (NJDG) for {district} is being collected."
+    },
+    "rti": {
+      "title": "RTI filing data being collected",
+      "body": "RTI filing statistics and department-wise response data for {district} are being collected from official RTI portals."
+    },
+    "elections": {
+      "title": "Election data being collected",
+      "body": "Election results and voter data from the Election Commission of India for {district} constituencies are being collected."
+    },
+    "health": {
+      "title": "Health facility data being collected",
+      "body": "Hospital directory, bed counts, and doctor-patient ratios from the National Health Mission for {district} are being collected."
+    },
+    "industries": {
+      "title": "Industry data being collected",
+      "body": "Major employers, industrial clusters, and economic data for {district} are being collected from the District Industries Centre."
+    },
+    "infrastructure": {
+      "title": "Infrastructure project data being collected",
+      "body": "Ongoing government infrastructure projects (roads, bridges, buildings) from PMGSY and state PWD for {district} are being collected."
+    },
+    "news": {
+      "title": "Local news being collected",
+      "body": "News articles from regional media for {district} will appear here once the news feed starts covering this district."
+    },
+    "schemes": {
+      "title": "Government scheme data being collected",
+      "body": "Central and state government scheme data from MyScheme.gov.in and state portals for {district} is being collected."
+    },
+    "famous-personalities": {
+      "title": "Notable personalities being added",
+      "body": "Information about notable people from {district} is being compiled from verified sources including Wikipedia (CC-BY-SA licensed)."
+    },
+    "offices": {
+      "title": "Government office directory being compiled",
+      "body": "Contact details and addresses for government offices in {district} are being compiled from official state portals."
+    },
+    "citizen-corner": {
+      "title": "Citizen tips being prepared",
+      "body": "Civic tips and citizen advisories for {district} will appear here once enough district data has been collected."
+    },
+    "alerts": {
+      "title": "No active alerts",
+      "body": "There are currently no weather warnings, civic alerts, or emergency advisories for {district}. Alerts are collected from IMD, NDMA, and district administration sources."
+    },
+    "exams": {
+      "title": "Government exam notifications being collected",
+      "body": "Exam notifications from UPSC, SSC, state PSC, and recruitment boards relevant to {district} are being collected."
+    },
+    "weather": {
+      "title": "Weather data being collected",
+      "body": "Weather readings from the India Meteorological Department (IMD) and OpenWeatherMap for {district} are being integrated."
+    },
+    "population": {
+      "title": "Population data being compiled",
+      "body": "Census 2011 population data and 2026 estimates for {district} are being compiled. Census 2027 is under way; its figures will be added after the official release."
+    }
+  },
+  "moduleNews": {
+    "relatedNews": "Related news",
+    "viewAllNews": "View all news",
+    "opensOriginal": "(opens the original article in a new tab)"
+  },
+  "pageFooter": {
+    "shareAria": "Share this page",
+    "copied": "Link copied",
+    "share": "Share"
   }
 }
