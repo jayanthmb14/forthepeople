@@ -1,0 +1,24 @@
+{
+ "data": [
+  {
+   "census_district_id": 555,
+   "census_district_name": "Belgaum"
+  },
+  {
+   "census_district_id": 572,
+   "census_district_name": "Bangalore"
+  },
+  {
+   "census_district_id": 573,
+   "census_district_name": "Mandya"
+  },
+  {
+   "census_district_id": 577,
+   "census_district_name": "Mysore"
+  },
+  {
+   "census_district_id": 583,
+   "census_district_name": "Bangalore Rural"
+  }
+ ]
+}

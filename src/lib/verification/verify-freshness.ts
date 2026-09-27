@@ -19,8 +19,8 @@
 // ═══════════════════════════════════════════════════════════
 import { collectDatasetDates } from "@/lib/dataset-dates";
 import { judgeDataset, ruleFor } from "@/lib/freshness";
-import type { ReasonCode, RowStatus, VerifiedDataset, VerifierOutput, VerifyContext } from "./types";
-import { fmtDay } from "./compare";
+import type { VerifiedDataset, VerifierOutput, VerifyContext } from "./types";
+import { fmtDay, freshnessVerdict } from "./compare";
 
 /** dataset (freshness key) → key in collectDatasetDates(). */
 export const FRESHNESS_TARGETS: ReadonlyArray<{ dataset: VerifiedDataset; datesKey: string }> = [
@@ -33,21 +33,6 @@ export const FRESHNESS_TARGETS: ReadonlyArray<{ dataset: VerifiedDataset; datesK
   { dataset: "projects", datesKey: "infrastructure" },
   { dataset: "exams", datesKey: "exams" },
 ];
-
-/** A freshness judgement → row status + reason (pure). */
-export function freshnessVerdict(status: ReturnType<typeof judgeDataset>["status"]): { status: RowStatus; reason: ReasonCode } {
-  switch (status) {
-    case "current":
-    case "reference":
-      return { status: "fresh", reason: "on-time" };
-    case "late":
-      return { status: "stale", reason: "late" };
-    case "unknown":
-      return { status: "unchecked", reason: "no-date" };
-    case "not_collected":
-      return { status: "unchecked", reason: "not-collected" };
-  }
-}
 
 export async function verifyFreshness(ctx: VerifyContext): Promise<VerifierOutput> {
   const out: VerifierOutput = { records: [], reviews: [], errors: [] };

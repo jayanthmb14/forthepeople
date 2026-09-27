@@ -1,0 +1,20 @@
+{
+ "data": [
+  {
+   "census_state_id": 7,
+   "census_state_name": "NCT of Delhi"
+  },
+  {
+   "census_state_id": 27,
+   "census_state_name": "Maharashtra"
+  },
+  {
+   "census_state_id": 29,
+   "census_state_name": "Karnataka"
+  },
+  {
+   "census_state_id": 33,
+   "census_state_name": "Tamil Nadu"
+  }
+ ]
+}

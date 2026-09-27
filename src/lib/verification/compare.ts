@@ -19,6 +19,7 @@
 // independent sources that agree — the one we show counts when it is an
 // outside feed (OpenWeather, AGMARKNET), not when it was typed in by hand.
 // ═══════════════════════════════════════════════════════════
+import type { DatasetStatus } from "@/lib/freshness";
 import type { ReasonCode, RowStatus, SourceCheck } from "./types";
 
 // ── Numbers ─────────────────────────────────────────────────
@@ -156,6 +157,25 @@ export function decideStatus(
   return { status: "single-source", agreed: true, reason: noAnswerReason };
 }
 
+/**
+ * A freshness judgement (src/lib/freshness.ts judgeDataset) → row status:
+ * current/reference → fresh, late → stale, unknown date / nothing
+ * collected → unchecked.
+ */
+export function freshnessVerdict(status: DatasetStatus): { status: RowStatus; reason: ReasonCode } {
+  switch (status) {
+    case "current":
+    case "reference":
+      return { status: "fresh", reason: "on-time" };
+    case "late":
+      return { status: "stale", reason: "late" };
+    case "unknown":
+      return { status: "unchecked", reason: "no-date" };
+    case "not_collected":
+      return { status: "unchecked", reason: "not-collected" };
+  }
+}
+
 // ── Names ───────────────────────────────────────────────────
 
 const TITLES = new Set([
@@ -215,9 +235,18 @@ export function namesMatch(a: string, b: string): boolean {
   if (sa === sb) return true;
   if (Math.min(sa.length, sb.length) >= 8 && 1 - levenshtein(sa, sb) / Math.max(sa.length, sb.length) >= 0.85) return true;
 
-  const [short, long] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
-  const full = short.filter((t) => t.length > 1);
-  if (full.length === 0) return false;
+  return subsetMatch(ta, tb) || subsetMatch(tb, ta);
+}
+
+/**
+ * Every word of `short` matches a different word of `long` (an initial
+ * matches a word with that first letter; words of 5+ letters may differ
+ * by one letter). Needs at least one full word, and a lone word must be
+ * 6+ letters, so a bare surname never matches a full name.
+ */
+function subsetMatch(short: string[], long: string[]): boolean {
+  if (short.length > long.length) return false;
+  if (!short.some((t) => t.length > 1)) return false;
   if (short.length === 1 && short[0].length < 6) return false;
   const used = new Set<number>();
   // Full words first, so an initial cannot take the word a full token needs.
@@ -275,7 +304,7 @@ export function fmtNumber(n: number, digits = 1): string {
   return Number.isFinite(n) ? String(Math.round(n * 10 ** digits) / 10 ** digits) : "—";
 }
 
-/** "3 Jun 2026" (UTC day). */
+/** "3 Jun 2026" (the Indian calendar day). */
 export function fmtDay(d: Date | null | undefined): string {
   if (!d || Number.isNaN(d.getTime())) return "unknown date";
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });

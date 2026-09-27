@@ -1,0 +1,80 @@
+{
+ "head": {
+  "vars": [
+   "label",
+   "pos",
+   "p",
+   "pLabel",
+   "start"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "label": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Deputy Chief Minister of Maharashtra"
+    },
+    "pos": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q5261005"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q4850100"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Balasaheb Thorat"
+    }
+   },
+   {
+    "label": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Governor of Maharashtra"
+    },
+    "pos": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q18727576"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q7289378"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "जिष्णू देव वर्मा"
+    },
+    "start": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "2023-02-18T00:00:00Z"
+    }
+   },
+   {
+    "label": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Deputy Chief Minister of Maharashtra"
+    },
+    "pos": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q5261005"
+    },
+    "p": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q126924435"
+    },
+    "pLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Sunetra Pawar"
+    }
+   }
+  ]
+ }
+}

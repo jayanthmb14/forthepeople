@@ -1,0 +1,94 @@
+{
+ "data": [
+  {
+   "category_id": 1,
+   "commodity_id": 2,
+   "commodity_disp_name": "Paddy(Dhan)(Common)"
+  },
+  {
+   "category_id": 1,
+   "commodity_id": 3,
+   "commodity_disp_name": "Rice"
+  },
+  {
+   "category_id": 5,
+   "commodity_id": 19,
+   "commodity_disp_name": "Banana"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 23,
+   "commodity_disp_name": "Onion"
+  },
+  {
+   "category_id": 7,
+   "commodity_id": 74,
+   "commodity_disp_name": "Gur (Jaggery)"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 78,
+   "commodity_disp_name": "Tomato"
+  },
+  {
+   "category_id": 5,
+   "commodity_id": 90,
+   "commodity_disp_name": "Banana - Green"
+  },
+  {
+   "category_id": 5,
+   "commodity_id": 112,
+   "commodity_disp_name": "Coconut Seed"
+  },
+  {
+   "category_id": 5,
+   "commodity_id": 138,
+   "commodity_disp_name": "Coconut"
+  },
+  {
+   "category_id": 7,
+   "commodity_id": 151,
+   "commodity_disp_name": "Jaggery"
+  },
+  {
+   "category_id": 5,
+   "commodity_id": 200,
+   "commodity_disp_name": "Tender Coconut"
+  },
+  {
+   "category_id": 6,
+   "commodity_id": 266,
+   "commodity_disp_name": "Coconut Oil"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 279,
+   "commodity_disp_name": "Gurellu"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 358,
+   "commodity_disp_name": "Onion Green"
+  },
+  {
+   "category_id": 1,
+   "commodity_id": 414,
+   "commodity_disp_name": "Paddy (Dhan)(Basmati)"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 483,
+   "commodity_disp_name": "Banana flower"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 484,
+   "commodity_disp_name": "Banana stem"
+  },
+  {
+   "category_id": 4,
+   "commodity_id": 485,
+   "commodity_disp_name": "Banana Leaf"
+  }
+ ]
+}

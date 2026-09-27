@@ -40,7 +40,7 @@ import {
   wikipediaUrl,
   type WikidataOfficeAnswer,
 } from "./leaders-check";
-import { classifyStateOffice, coreOffices, officeTitle, type StateOffice } from "./offices";
+import { classifyStateOffice, coreOffices, officeTitle, roleIsForState, type StateOffice } from "./offices";
 import type { DistrictRef, VerificationRecord, VerifierOutput, VerifyContext } from "./types";
 import {
   currentHolders,
@@ -82,16 +82,6 @@ interface StateAnswer {
   wiki: Partial<Record<StateOffice, WikiPerson[]>> | null;
   qid: string | null;
   wd: Partial<Record<StateOffice, WikidataOfficeAnswer>>;
-}
-
-/** False when a role names a different state ("Governor of Kerala" on a Karnataka page). */
-export function roleIsForState(role: string, stateName: string): boolean {
-  const m = /\bof\s+([a-z .&-]+)$/i.exec(role.replace(/\([^)]*\)?/g, "").trim());
-  if (!m) return true;
-  const place = m[1].toLowerCase().trim();
-  const st = stateName.toLowerCase();
-  if (st.includes("delhi") && /delhi|nct|gnctd/.test(place)) return true;
-  return place.includes(st) || st.includes(place);
 }
 
 export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput> {
