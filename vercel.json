@@ -99,6 +99,10 @@
     {
       "path": "/api/cron/scrape-tenders",
       "schedule": "15 */2 * * *"
+    },
+    {
+      "path": "/api/cron/dedupe-data",
+      "schedule": "15 7 * * *"
     }
   ]
 }
