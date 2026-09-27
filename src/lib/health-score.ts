@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME } from "@/lib/data-filters";
 
 const WEIGHTS = {
   governance: 15,
@@ -246,7 +246,7 @@ async function calcWaterSanitation(districtId: string): Promise<CategoryResult> 
   }
 
   // JJM coverage
-  const jjm = await prisma.jJMStatus.findMany({ where: { districtId } });
+  const jjm = await prisma.jJMStatus.findMany({ where: { districtId, ...JJM_DISTRICT_TOTAL } });
   if (jjm.length > 0) {
     const avgCoverage = jjm.reduce((s, j) => s + j.coveragePct, 0) / jjm.length;
     sub.jjmCoverage = { value: Math.round(avgCoverage), max: 100, score: Math.round(avgCoverage), label: "JJM Tap Water Coverage (%)" };
@@ -310,7 +310,7 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
   const district = await prisma.district.findFirst({ where: { id: districtId } });
   const pop = district?.population ?? 1000000;
   const crimes = await prisma.crimeStat.findMany({
-    where: { districtId, ...NOT_FROM_NEWS, year: new Date().getFullYear() - 1 },
+    where: { districtId, ...SHOWN_CRIME, year: new Date().getFullYear() - 1 },
   });
   if (crimes.length > 0) {
     const totalCrimes = crimes.reduce((s, c) => s + c.count, 0);

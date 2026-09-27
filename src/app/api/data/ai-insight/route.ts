@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
-import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 import {
   INSIGHT_TEMPLATES,
   damInsightLevel,
@@ -186,7 +186,7 @@ async function generateTemplateInsight(
 
       case "jjm": {
         const jjm = await prisma.jJMStatus.findFirst({
-          where: { districtId },
+          where: { districtId, ...JJM_DISTRICT_TOTAL },
           orderBy: { updatedAt: "desc" },
           select: { coveragePct: true },
         });

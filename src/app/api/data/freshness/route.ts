@@ -38,8 +38,14 @@ import {
   type DatasetFreshness,
   type PeriodKind,
 } from "@/lib/freshness";
+import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapshot";
+import { readCourtsSnapshot } from "@/lib/courts/store";
+import { JJM_SOURCE } from "@/scraper/lib/jjm";
 
 export const runtime = "nodejs";
+
+/** LIKE pattern for CourtStat rows the NJDG collector wrote (NJDG_COURTSTAT). */
+const NJDG_COURTSTAT_LIKE = `${COURTSTAT_SOURCE_PREFIX}%`;
 
 const CACHE_SECONDS = 300;
 
@@ -81,7 +87,7 @@ interface Row {
   leaders_date: Date | null; leaders_rows: number;
   elections_year: number | null; elections_rows: number;
   gp_date: Date | null; gp_rows: number;
-  courts_year: number | null; courts_rows: number;
+  courts_source: string | null; courts_rows: number;
   crime_year: number | null; crime_rows: number;
   traffic_date: Date | null; traffic_checked: Date | null; traffic_rows: number;
   stations_rows: number;
@@ -113,7 +119,8 @@ interface Row {
 async function queryRow(districtId: string): Promise<Row | null> {
   // Filters match what the pages show (src/lib/data-filters.ts):
   // NOT_FROM_NEWS (source not a URL), LOCAL_INFRA (DISTRICT/CITY scope),
-  // news without duplicates, active leaders / industries / people.
+  // NJDG_COURTSTAT, JJM_DISTRICT_TOTAL, SHOWN_CRIME / SHOWN_TRAFFIC (no
+  // estimates), news without duplicates, active leaders / industries / people.
   const rows = await prisma.$queryRaw<Row[]>`
     SELECT
       d."tendersActive" AS tenders_active,
@@ -136,13 +143,13 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT count(*) FROM "ElectionResult" x WHERE x."districtId" = d.id)::int AS elections_rows,
       (SELECT max(x."updatedAt") FROM "GramPanchayat" x WHERE x."districtId" = d.id) AS gp_date,
       (SELECT count(*) FROM "GramPanchayat" x WHERE x."districtId" = d.id)::int AS gp_rows,
-      (SELECT max(x.year) FROM "CourtStat" x WHERE x."districtId" = d.id) AS courts_year,
-      (SELECT count(*) FROM "CourtStat" x WHERE x."districtId" = d.id)::int AS courts_rows,
-      (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%') AS crime_year,
-      (SELECT count(*) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%')::int AS crime_rows,
-      (SELECT max(x."date") FROM "TrafficCollection" x WHERE x."districtId" = d.id) AS traffic_date,
-      (SELECT max(x."fetchedAt") FROM "TrafficCollection" x WHERE x."districtId" = d.id) AS traffic_checked,
-      (SELECT count(*) FROM "TrafficCollection" x WHERE x."districtId" = d.id)::int AS traffic_rows,
+      (SELECT max(x.source) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE}) AS courts_source,
+      (SELECT count(*) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE})::int AS courts_rows,
+      (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%') AS crime_year,
+      (SELECT count(*) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%')::int AS crime_rows,
+      (SELECT max(x."date") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%') AS traffic_date,
+      (SELECT max(x."fetchedAt") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%') AS traffic_checked,
+      (SELECT count(*) FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%')::int AS traffic_rows,
       (SELECT count(*) FROM "PoliceStation" x WHERE x."districtId" = d.id)::int AS stations_rows,
       (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id) AS budget_fy,
       (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id) AS budget_checked,
@@ -177,8 +184,8 @@ async function queryRow(districtId: string): Promise<Row | null> {
         WHERE x.level = 'national' OR (x.level = 'state' AND x."stateId" = d."stateId") OR x."districtId" = d.id) AS exams_date,
       (SELECT count(*) FROM "GovernmentExam" x
         WHERE x.level = 'national' OR (x.level = 'state' AND x."stateId" = d."stateId") OR x."districtId" = d.id)::int AS exams_rows,
-      (SELECT max(x."updatedAt") FROM "JJMStatus" x WHERE x."districtId" = d.id) AS jjm_date,
-      (SELECT count(*) FROM "JJMStatus" x WHERE x."districtId" = d.id)::int AS jjm_rows,
+      (SELECT max(x."updatedAt") FROM "JJMStatus" x WHERE x."districtId" = d.id AND x.source = ${JJM_SOURCE}) AS jjm_date,
+      (SELECT count(*) FROM "JJMStatus" x WHERE x."districtId" = d.id AND x.source = ${JJM_SOURCE})::int AS jjm_rows,
       (SELECT max(x."recordedAt") FROM "DamReading" x WHERE x."districtId" = d.id) AS dams_date,
       (SELECT max(x."fetchedAt") FROM "DamReading" x WHERE x."districtId" = d.id) AS dams_checked,
       (SELECT count(*) FROM "DamReading" x WHERE x."districtId" = d.id)::int AS dams_rows,
@@ -236,8 +243,18 @@ interface Raw {
   notCollected?: boolean;
 }
 
+/**
+ * When the NJDG collector last read a district's courts: the Redis
+ * snapshot's time, else the newest CourtStat row's read day (IST, end of day).
+ */
+function courtsReadAt(snapshotFetchedAt: string | null, newestSource: string | null): Date | null {
+  if (snapshotFetchedAt) return new Date(snapshotFetchedAt);
+  const day = courtStatReadDate(newestSource);
+  return day ? new Date(`${day}T23:59:59+05:30`) : null;
+}
+
 /** SQL row → the raw facts per dataset key (DATASETS in src/lib/freshness.ts). */
-function rawFacts(r: Row): Record<string, Raw> {
+function rawFacts(r: Row, courtsDate: Date | null): Record<string, Raw> {
   const year = (y: number | null): Raw["date"] => yearEndDate(y);
   return {
     news: { rows: r.news_rows, date: r.news_date, checked: r.news_checked },
@@ -249,7 +266,7 @@ function rawFacts(r: Row): Record<string, Raw> {
     leaders: { rows: r.leaders_rows, date: r.leaders_date, checked: r.leaders_date },
     elections: { rows: r.elections_rows, date: year(r.elections_year), period: r.elections_year ? String(r.elections_year) : null, periodKind: "year" },
     panchayats: { rows: r.gp_rows, date: r.gp_date, checked: r.gp_date },
-    courts: { rows: r.courts_rows, date: year(r.courts_year), period: r.courts_year ? String(r.courts_year) : null, periodKind: "year" },
+    courts: { rows: r.courts_rows, date: courtsDate, checked: courtsDate },
     crime: { rows: r.crime_rows, date: year(r.crime_year), period: r.crime_year ? String(r.crime_year) : null, periodKind: "year" },
     traffic: { rows: r.traffic_rows, date: r.traffic_date, checked: r.traffic_checked },
     stations: { rows: r.stations_rows },
@@ -302,8 +319,8 @@ function rawFacts(r: Row): Record<string, Raw> {
 
 const iso = (d: Date | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 
-function buildDatasets(r: Row, now: Date): DatasetFreshness[] {
-  const facts = rawFacts(r);
+function buildDatasets(r: Row, now: Date, courtsDate: Date | null): DatasetFreshness[] {
+  const facts = rawFacts(r, courtsDate);
   return DATASETS.map(({ key, module }) => {
     const f = facts[key] ?? { rows: 0 };
     const rule = ruleFor(key);
@@ -333,7 +350,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "district required" }, { status: 400 });
   }
 
-  const key = cacheKey(districtSlug, "freshness:v5");
+  const key = cacheKey(districtSlug, "freshness:v6");
   const cached = await cacheGet<Record<string, unknown>>(key);
   if (cached) {
     return NextResponse.json(cached, {
@@ -355,7 +372,11 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const datasets = buildDatasets(row, now);
+  const courtsSnapshot = await readCourtsSnapshot(districtSlug);
+  const courtsDate = courtsReadAt(courtsSnapshot?.fetchedAt ?? null, row.courts_source);
+  // A snapshot without CourtStat rows (the row write failed) still counts.
+  if (courtsSnapshot && row.courts_rows === 0) row.courts_rows = courtsSnapshot.units.length;
+  const datasets = buildDatasets(row, now, courtsDate);
 
   const ageMin = (date: Date | null | undefined): number | null =>
     date ? (now.getTime() - new Date(date).getTime()) / 60000 : null;

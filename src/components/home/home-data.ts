@@ -26,6 +26,8 @@
 //
 import { prisma } from "@/lib/db";
 import { LOCAL_INFRA } from "@/lib/data-filters";
+import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
+import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { buildMapStat, pickCropTicks } from "./home-picks";
 import type { CropTick, IndiaFigure, MapDistrictStat, PlatformStats } from "./home-types";
@@ -172,10 +174,14 @@ async function loadNewestPerDistrict(ids: string[]): Promise<Map<string, string>
  * The district datasets counted as "data points": one row = one reading,
  * price, project, office, leader, story… held for a LIVE district. The
  * same filters as the pages apply, so nothing is counted that a page would
- * hide (news-written leader / crime / power rows; state-wide projects).
+ * hide (news-written leader / crime / power rows; estimated crime rows;
+ * hand-seeded court and tap-water rows; state-wide projects).
  * Seeded demo tables (rainfall history, traffic fines, sugar factories) are
  * not counted at all.
  */
+/** A constant as an SQL string literal (constants only, never user input). */
+const sqlText = (v: string) => `'${v.replace(/'/g, "''")}'`;
+
 const COUNTED_TABLES: Array<{ table: string; extra?: string }> = [
   { table: "CropPrice" },
   { table: "WeatherReading" },
@@ -186,16 +192,18 @@ const COUNTED_TABLES: Array<{ table: string; extra?: string }> = [
   { table: "Leader", extra: `(x."source" IS NULL OR x."source" NOT LIKE 'http%')` },
   { table: "ElectionResult" },
   { table: "GramPanchayat" },
-  { table: "CourtStat" },
+  // Only rows the NJDG collector wrote (NJDG_COURTSTAT); hand seeds are hidden.
+  { table: "CourtStat", extra: `x."source" LIKE ${sqlText(`${COURTSTAT_SOURCE_PREFIX}%`)}` },
   { table: "PoliceStation" },
-  { table: "CrimeStat", extra: `x."source" NOT LIKE 'http%'` },
+  { table: "CrimeStat", extra: `x."source" NOT LIKE 'http%' AND x."source" NOT ILIKE '%estimat%'` },
   { table: "InfraProject", extra: `(x."scope" IS NULL OR x."scope" IN ('DISTRICT', 'CITY'))` },
   { table: "BudgetEntry" },
   { table: "Scheme" },
   { table: "HousingScheme" },
   { table: "ServiceGuide" },
   { table: "GovOffice" },
-  { table: "JJMStatus" },
+  // Only the JJM dashboard's district total (JJM_DISTRICT_TOTAL); seeded area rows are hidden.
+  { table: "JJMStatus", extra: `x."source" = ${sqlText(JJM_SOURCE)}` },
   { table: "PowerOutage", extra: `x."source" NOT LIKE 'http%'` },
   { table: "BusRoute" },
   { table: "TrainSchedule" },

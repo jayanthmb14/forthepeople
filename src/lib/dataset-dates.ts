@@ -7,11 +7,20 @@
 // Server-only: for every dataset in src/lib/constants/dataset-collection.ts,
 // how many rows we hold for a district and the date (or period) of the
 // newest one. Counted the way the pages show them: news-derived Leader /
-// CrimeStat / PowerOutage rows, hand-seeded CourtStat rows and non-local
-// infrastructure are left out, as in /api/data/[module]. One read-only
+// CrimeStat / PowerOutage rows, estimated CrimeStat rows, hand-seeded
+// CourtStat and JJMStatus rows and non-local infrastructure are left out,
+// as in /api/data/[module]. One read-only
 // aggregate per table (plus the courts snapshot from Redis).
 import { prisma } from "@/lib/db";
-import { LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
+import {
+  JJM_DISTRICT_TOTAL,
+  LOCAL_INFRA,
+  NJDG_COURTSTAT,
+  NOT_FROM_NEWS,
+  NOT_FROM_NEWS_OPTIONAL,
+  NOT_SEEDED_RAINFALL,
+  SHOWN_CRIME,
+} from "@/lib/data-filters";
 import type { DatasetDate } from "@/lib/constants/dataset-collection";
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { courtStatReadDate } from "@/lib/courts/snapshot";
@@ -57,7 +66,7 @@ export async function collectDatasetDates(
     prisma.gramPanchayat.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     // Only the rows the NJDG collector wrote; "· read YYYY-MM-DD" sorts by date.
     prisma.courtStat.aggregate({ where: { ...d, ...NJDG_COURTSTAT }, _count: { _all: true }, _max: { source: true } }),
-    prisma.crimeStat.aggregate({ where: { ...d, ...NOT_FROM_NEWS }, _count: { _all: true }, _max: { year: true } }),
+    prisma.crimeStat.aggregate({ where: { ...d, ...SHOWN_CRIME }, _count: { _all: true }, _max: { year: true } }),
     prisma.policeStation.count({ where: d }),
     prisma.budgetEntry.aggregate({ where: d, _count: { _all: true }, _max: { fetchedAt: true, fiscalYear: true } }),
     prisma.budgetAllocation.aggregate({ where: d, _count: { _all: true }, _max: { fetchedAt: true } }),
@@ -74,7 +83,7 @@ export async function collectDatasetDates(
       _count: { _all: true },
       _max: { lastVerifiedAt: true },
     }),
-    prisma.jJMStatus.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
+    prisma.jJMStatus.aggregate({ where: { ...d, ...JJM_DISTRICT_TOTAL }, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.damReading.aggregate({ where: d, _count: { _all: true }, _max: { recordedAt: true } }),
     prisma.powerOutage.aggregate({ where: { ...d, ...NOT_FROM_NEWS }, _count: { _all: true }, _max: { createdAt: true } }),
     prisma.busRoute.count({ where: d }),

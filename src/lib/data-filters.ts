@@ -7,6 +7,7 @@
 // Use them everywhere public numbers are built (data API, report card,
 // insights) so every screen agrees.
 import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
+import { JJM_SOURCE } from "@/scraper/lib/jjm";
 
 /**
  * Rows written straight from a news article carry the article URL as
@@ -51,3 +52,36 @@ export const NOT_SEEDED_RAINFALL = {
  * the owner's call; this keeps them out until then.)
  */
 export const NJDG_COURTSTAT = { source: { startsWith: COURTSTAT_SOURCE_PREFIX } };
+
+/**
+ * JJMStatus: only the district total the JJM collector writes from the
+ * Jal Jeevan Mission dashboard (src/scraper/jobs/jjm-dashboard.ts). The
+ * other rows ("Mandya Taluk (aggregate)", village rows with water tests)
+ * were seeded with round numbers; adding them to the real total would
+ * count homes twice, so they are never shown. No collector row yet →
+ * the tap-water page shows nothing rather than seeded numbers.
+ */
+export const JJM_DISTRICT_TOTAL = { source: JJM_SOURCE };
+
+/**
+ * CrimeStat rows whose source says they are estimates ("NCRB Crime in
+ * India Report (estimated)" — Hyderabad), not published NCRB counts.
+ * Never shown or counted as figures.
+ */
+export const NOT_ESTIMATED_CRIME = { NOT: { source: { contains: "estimat", mode: "insensitive" as const } } };
+
+/**
+ * CrimeStat rows a page may show: not written from a news article and not
+ * an estimate. Combined with AND because both filters use the NOT key.
+ */
+export const SHOWN_CRIME = { AND: [NOT_FROM_NEWS, NOT_ESTIMATED_CRIME] };
+
+/**
+ * TrafficCollection rows a page may show: the source is named and is not an
+ * estimate ("Estimated from Telangana Traffic Police reports" — Hyderabad).
+ * A row with no source cannot be checked, so it is left out too.
+ */
+export const SHOWN_TRAFFIC = {
+  source: { not: null },
+  NOT: { source: { startsWith: "estimat", mode: "insensitive" as const } },
+};

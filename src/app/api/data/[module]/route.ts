@@ -15,7 +15,16 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
-import { LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
+import {
+  JJM_DISTRICT_TOTAL,
+  LOCAL_INFRA,
+  NJDG_COURTSTAT,
+  NOT_FROM_NEWS,
+  NOT_FROM_NEWS_OPTIONAL,
+  NOT_SEEDED_RAINFALL,
+  SHOWN_CRIME,
+  SHOWN_TRAFFIC,
+} from "@/lib/data-filters";
 import { dedupeStories } from "@/lib/news-dedupe";
 
 // Modules whose payload carries live text with stored translations
@@ -338,12 +347,14 @@ async function fetchModule(
           where: { districtId: did },
           orderBy: { name: "asc" },
         }),
+        // Estimates ("… (estimated)", "Estimated from …") are never sent, so
+        // the page, compare and AI insights only ever see published figures.
         prisma.crimeStat.findMany({
-          where: { districtId: did, ...NOT_FROM_NEWS },
+          where: { districtId: did, ...SHOWN_CRIME },
           orderBy: [{ year: "desc" }, { category: "asc" }],
         }),
         prisma.trafficCollection.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...SHOWN_TRAFFIC },
           orderBy: { date: "desc" },
           take: 24,
         }),
@@ -441,10 +452,16 @@ async function fetchModule(
     // 19. JJM (Jal Jeevan Mission)
     // ══════════════════════════════════════════════════
     case "jjm": {
-      const data = await prisma.jJMStatus.findMany({
-        where: { districtId: did },
-        orderBy: { coveragePct: "desc" },
+      // Only the JJM dashboard's district total (JJM_DISTRICT_TOTAL); the
+      // seeded area rows are never sent or added to it. `level` tells the
+      // page this row is the whole district, not one area — it has no water
+      // test of its own, so it stays out of the water-test figures.
+      const rows = await prisma.jJMStatus.findMany({
+        where: { districtId: did, ...JJM_DISTRICT_TOTAL },
+        orderBy: { updatedAt: "desc" },
+        take: 1,
       });
+      const data = rows.map((r) => ({ ...r, level: "district" as const }));
       return { data, meta };
     }
 
