@@ -236,10 +236,21 @@ export async function loadDataPointCount(): Promise<number | null> {
 }
 
 /**
- * The stats line: registry counts, the data-point count, and "updated" =
- * the newest collection time among the live districts (from loadMapStats).
+ * The stats row ("Your district data — tracked and checked"):
+ *   districts live, states  the live District rows the page loaded from the
+ *                           database (the same rows as the "Live districts"
+ *                           list, so the two numbers always agree)
+ *   dashboards each         the district sidebar (getPlatformFacts →
+ *                           DASHBOARDS_PER_DISTRICT = SIDEBAR_MODULES.length)
+ *   data points             loadDataPointCount() (null → left out)
+ *   updated                 the newest collection time among the live
+ *                           districts (from loadMapStats)
  */
-export function platformStats(mapStats: Record<string, MapDistrictStat>, dataPoints: number | null): PlatformStats {
+export function platformStats(
+  mapStats: Record<string, MapDistrictStat>,
+  dataPoints: number | null,
+  live: ReadonlyArray<{ stateSlug: string }>,
+): PlatformStats {
   const facts = getPlatformFacts();
   const lastUpdate =
     Object.values(mapStats)
@@ -248,8 +259,8 @@ export function platformStats(mapStats: Record<string, MapDistrictStat>, dataPoi
       .sort()
       .at(-1) ?? null;
   return {
-    activeDistricts: facts.activeDistricts,
-    activeStates: facts.activeStates,
+    activeDistricts: live.length,
+    activeStates: new Set(live.map((d) => d.stateSlug)).size,
     modulesPerDistrict: facts.modulesPerDistrict,
     dataPoints,
     lastUpdate,

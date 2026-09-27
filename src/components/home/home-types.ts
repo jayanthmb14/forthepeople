@@ -64,7 +64,7 @@ export interface MapDistrictStat {
   newest: string | null;
 }
 
-/** "10 districts live · 7 states · 5,874 data points · 36 dashboards · updated …" */
+/** "Your district data": 10 districts live · 7 states · 36 dashboards each · 5,874 data points · updated … */
 export interface PlatformStats {
   activeDistricts: number;
   activeStates: number;

@@ -496,30 +496,69 @@
   outline-offset: 2px;
 }
 
-/* Stats row (HeroStats): pastel chips, one hue each */
-.stats {
+/* Stats (HeroStats): "Your district data — tracked and checked", then one
+   pastel tile per figure (two per row on phones, four from 640 px). */
+.statsBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.statsHead {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 14px;
+}
+.statsLine {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.statsLine strong {
+  font-weight: 800;
+  color: var(--ftp-text);
+}
+.statsUpdated {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin: 2px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 .stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 4px 12px 4px 6px;
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, transparent);
-  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
+  border-radius: 14px;
   background: var(--hue-tint);
-  font-size: 13px;
-  line-height: 18px;
+}
+.statTop {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 .statIcon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -528,28 +567,27 @@
   color: var(--hue);
 }
 .statNum {
-  font-size: 15px;
+  font-size: 24px;
+  line-height: 30px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--hue-deep);
 }
 .statLabel {
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 600;
   color: var(--ftp-text-2);
-}
-.statUpdated {
-  padding-left: 12px;
-  border-color: var(--ftp-border);
-  background: var(--ftp-surface);
 }
 .statDot {
   width: 8px;
   height: 8px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--ftp-live);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-live) 22%, transparent);
 }
-.statUpdated[data-fresh="false"] .statDot {
+.statsUpdated[data-fresh="false"] .statDot {
   background: var(--ftp-warn);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-warn) 22%, transparent);
 }
@@ -1563,6 +1601,9 @@
 /* ───────────── Wider screens ───────────── */
 
 @media (min-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
   .chips {
     grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   }
@@ -1583,6 +1624,10 @@
   .hero {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 32px;
+  }
+  /* Beside the map the text column is narrow until 1200 px: two tiles a row. */
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .heroMap {
     min-height: 420px;
@@ -1639,23 +1684,25 @@
     flex: 1 1 150px;
     padding: 0 14px;
   }
-  /* Stats: no icons, smaller chips, so they fit in two or three rows. */
-  .stats {
-    gap: 6px;
-  }
+  /* Stats: two tiles per row, a little smaller. */
   .stat {
-    min-height: 30px;
-    padding: 3px 10px;
-    font-size: 12.5px;
+    padding: 8px 10px;
   }
   .statIcon {
-    display: none;
+    width: 22px;
+    height: 22px;
+  }
+  .statIcon svg {
+    width: 14px;
+    height: 14px;
   }
   .statNum {
-    font-size: 14px;
+    font-size: 21px;
+    line-height: 26px;
   }
-  .statUpdated {
-    padding-left: 10px;
+  .statsLine {
+    font-size: 15px;
+    line-height: 22px;
   }
   /* Live districts: two tight columns, no picture; the badge sits in the corner. */
   .chip {
@@ -1750,5 +1797,10 @@
   .btnPrimary:hover,
   .chip:hover {
     transform: none;
+  }
+}
+@media (min-width: 1200px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

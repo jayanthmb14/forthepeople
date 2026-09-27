@@ -114,7 +114,7 @@ export default async function HomePage({
   ]);
   const liveRows = activeRows.map((d) => ({ id: d.id, slug: d.slug, stateSlug: d.state.slug, population: d.population }));
   const [crops, mapStats, dataPoints] = await Promise.all([loadCropTicks(liveRows), loadMapStats(liveRows), loadDataPointCount()]);
-  const stats = platformStats(mapStats, dataPoints);
+  const stats = platformStats(mapStats, dataPoints, liveRows);
 
   const activeDistricts = activeRows.map((d) => ({
     slug: d.slug,
