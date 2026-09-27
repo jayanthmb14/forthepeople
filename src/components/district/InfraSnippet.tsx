@@ -127,13 +127,13 @@ export default function InfraSnippet({
     .pop() ?? null;
 
   return (
-    <Card as="section" aria-label="Infrastructure at a glance">
+    <Card as="section" aria-label="Infrastructure at a glance" className="ftp-hue-orange" tinted>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <HardHat size={16} aria-hidden style={{ color: "var(--accent-amber-700)" }} />
-          <h3 className="ftp-title">Infrastructure</h3>
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>🏗️</span>
+          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>Infrastructure</h3>
         </span>
-        <Link href={`${base}/infrastructure`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+        <Link href={`${base}/infrastructure`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
           View all
         </Link>
       </div>

@@ -13,7 +13,6 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3 } from "lucide-react";
 import type { PopulationProfileResponse } from "@/hooks/useRealtimeData";
 import { Card } from "@/components/district/ui";
 
@@ -76,13 +75,13 @@ export default function PopulationSnippet({ district, state, base }: Props) {
   const religions = top3Alphabetical(profile.religion);
 
   return (
-    <Card as="section" aria-label="Population and demographics">
+    <Card as="section" aria-label="Population and demographics" className="ftp-hue-teal" tinted>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <BarChart3 size={16} aria-hidden style={{ color: "var(--accent-pink-700)" }} />
-          <h3 className="ftp-title">Population &amp; demographics</h3>
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>📈</span>
+          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>Population &amp; demographics</h3>
         </span>
-        <Link href={`${base}/population`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+        <Link href={`${base}/population`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
           View all
         </Link>
       </div>

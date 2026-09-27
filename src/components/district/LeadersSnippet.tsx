@@ -18,7 +18,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Landmark, Shield, Users, Vote } from "lucide-react";
+import { BadgeCheck, Landmark, Shield, Vote } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
@@ -92,13 +92,13 @@ export default function LeadersSnippet({
   };
 
   return (
-    <Card as="section" aria-label="District leadership">
+    <Card as="section" aria-label="District leadership" className="ftp-hue-indigo" tinted>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Users size={16} aria-hidden style={{ color: "var(--accent-purple-700)" }} />
-          <h3 className="ftp-title">District leadership</h3>
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>👥</span>
+          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>District leadership</h3>
         </span>
-        <Link href={`${base}/leadership`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+        <Link href={`${base}/leadership`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
           View all
         </Link>
       </div>
