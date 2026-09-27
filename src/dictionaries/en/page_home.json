@@ -1,5 +1,32 @@
 {
   "footerNav": "Site links",
   "onInstagram": "ForThePeople on Instagram",
-  "onGithub": "ForThePeople on GitHub"
+  "onGithub": "ForThePeople on GitHub",
+  "ticker": {
+    "region": "Prices today",
+    "timeIst": "{time} IST",
+    "pause": "Stop the moving prices",
+    "play": "Move the prices again",
+    "gold24": "Gold 24K",
+    "gold22": "Gold 22K",
+    "silver": "Silver",
+    "sensex": "Sensex",
+    "nifty": "Nifty 50",
+    "usdInr": "US dollar",
+    "crude": "Crude oil",
+    "perGram": "/gram",
+    "perKg": "/kg",
+    "perBarrel": "/barrel",
+    "up": "up {pct}",
+    "down": "down {pct}",
+    "oldDate": "{date} · {days} days old"
+  },
+  "crops": {
+    "tomato": "Tomato",
+    "onion": "Onion",
+    "potato": "Potato",
+    "rice": "Rice",
+    "paddy": "Paddy",
+    "wheat": "Wheat"
+  }
 }

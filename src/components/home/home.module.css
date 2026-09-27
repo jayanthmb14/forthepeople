@@ -19,6 +19,202 @@
   padding-bottom: 8px;
 }
 
+/* ───────────── Running prices ticker (PriceTicker) ───────────── */
+
+.ticker {
+  display: flex;
+  align-items: stretch;
+  min-height: 44px;
+  border-bottom: 1px solid var(--ftp-border);
+  background: var(--ftp-surface);
+}
+.tickerToday {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 92px;
+  margin: 0;
+  padding: 4px 12px;
+  border-right: 1px solid color-mix(in srgb, var(--ftp-brand) 18%, var(--ftp-border));
+  background: var(--ftp-brand-tint);
+  font-size: 12px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+.tickerTodayDate {
+  font-weight: 700;
+  color: var(--ftp-brand-deep);
+}
+.tickerTodayTime {
+  font-weight: 500;
+  color: var(--ftp-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tickerViewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+}
+.tickerTrack {
+  display: flex;
+  width: max-content;
+  animation: tickerScroll var(--ticker-duration, 60s) linear infinite;
+}
+.tickerViewport:hover .tickerTrack,
+.tickerViewport:focus-within .tickerTrack,
+.tickerViewport[data-paused] .tickerTrack {
+  animation-play-state: paused;
+}
+@keyframes tickerScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.tickList {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 6px;
+  list-style: none;
+}
+.tickItemWrap {
+  display: flex;
+  align-items: center;
+}
+.tickItemWrap::after {
+  content: "";
+  width: 4px;
+  height: 4px;
+  margin: 0 4px;
+  border-radius: 50%;
+  background: var(--ftp-border-strong);
+}
+.tickItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: var(--ftp-text);
+  font-size: 13.5px;
+  line-height: 18px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+.tickItem:hover {
+  background: var(--ftp-surface-2);
+}
+.tickItem:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+.tickLabel {
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.tickMarket {
+  font-weight: 500;
+}
+.tickMarket::before {
+  content: " · ";
+}
+.tickValue {
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.tickUnit {
+  margin-left: 1px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.tickChange {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.tickChange[data-dir="up"] {
+  color: var(--ftp-live-text);
+  background: var(--ftp-live-tint);
+}
+.tickChange[data-dir="down"] {
+  color: var(--ftp-danger);
+  background: var(--ftp-danger-tint);
+}
+.tickDate {
+  font-size: 12px;
+  color: var(--ftp-text-2);
+}
+.tickDate[data-old] {
+  padding: 0 7px;
+  border: 1px solid var(--ftp-warn-border);
+  border-radius: 999px;
+  background: var(--ftp-warn-tint);
+  color: var(--ftp-warn-text);
+  font-weight: 600;
+}
+.tickerPause {
+  flex-shrink: 0;
+  width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid var(--ftp-border);
+  background: var(--ftp-surface);
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.tickerPause:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-brand-deep);
+}
+.tickerPause:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+@media (max-width: 639px) {
+  .tickerToday {
+    min-width: 78px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    line-height: 14px;
+  }
+  .tickItem {
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tickerTrack {
+    animation: none;
+  }
+  .tickerViewport {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .tickList[data-copy] {
+    display: none;
+  }
+  .tickerPause {
+    display: none;
+  }
+}
+
 /* ───────────── Hero ───────────── */
 
 .heroBand {

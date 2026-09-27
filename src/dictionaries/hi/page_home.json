@@ -1,5 +1,32 @@
 {
   "footerNav": "साइट के लिंक",
   "onInstagram": "Instagram पर ForThePeople",
-  "onGithub": "GitHub पर ForThePeople"
+  "onGithub": "GitHub पर ForThePeople",
+  "ticker": {
+    "region": "आज के भाव",
+    "timeIst": "{time} IST",
+    "pause": "चलते भाव रोकें",
+    "play": "भाव फिर चलाएँ",
+    "gold24": "सोना 24 कैरेट",
+    "gold22": "सोना 22 कैरेट",
+    "silver": "चाँदी",
+    "sensex": "सेंसेक्स",
+    "nifty": "निफ्टी 50",
+    "usdInr": "अमेरिकी डॉलर",
+    "crude": "कच्चा तेल",
+    "perGram": "/ग्राम",
+    "perKg": "/किलो",
+    "perBarrel": "/बैरल",
+    "up": "{pct} ऊपर",
+    "down": "{pct} नीचे",
+    "oldDate": "{date} · {days} दिन पुराना"
+  },
+  "crops": {
+    "tomato": "टमाटर",
+    "onion": "प्याज",
+    "potato": "आलू",
+    "rice": "चावल",
+    "paddy": "धान",
+    "wheat": "गेहूँ"
+  }
 }

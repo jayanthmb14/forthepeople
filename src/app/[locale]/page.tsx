@@ -31,6 +31,8 @@ import { languageAlternates } from "@/i18n/seo";
 import { routing } from "@/i18n/routing";
 import { getPlatformFacts } from "@/lib/platform-facts";
 
+import PriceTicker from "@/components/home/PriceTicker";
+import { loadCropTicks, loadMarketFigures } from "@/components/home/home-data";
 import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance, { type GlanceFigure } from "@/components/home/IndiaGlance";
@@ -151,10 +153,12 @@ export default async function HomePage({
   // Static rendering with translations: the page names its locale.
   setRequestLocale(locale);
 
-  const [activeRows, glance] = await Promise.all([
+  const [activeRows, glance, markets] = await Promise.all([
     prisma.district.findMany({
       where: { active: true },
       select: {
+        id: true,
+        population: true,
         slug: true,
         name: true,
         nameLocal: true,
@@ -165,7 +169,10 @@ export default async function HomePage({
       orderBy: { name: "asc" },
     }),
     loadGlanceFigures(),
+    loadMarketFigures(),
   ]);
+  const liveRows = activeRows.map((d) => ({ id: d.id, slug: d.slug, stateSlug: d.state.slug, population: d.population }));
+  const crops = await loadCropTicks(liveRows);
 
   const activeDistricts = activeRows.map((d) => ({
     slug: d.slug,
@@ -182,6 +189,7 @@ export default async function HomePage({
 
   return (
     <main role="main" className={styles.home}>
+      <PriceTicker locale={locale} markets={markets} crops={crops} />
       <div className={styles.heroBand}>
         <div className="ftp-container">
           <HomeHero
