@@ -7,21 +7,30 @@
 "use client";
 
 // ═══════════════════════════════════════════════════════════════════════
-//  BadgeExplainer — "How badges & tiers work" (collapsible)
+//  BadgeExplainer — "How badges and tiers work"
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Used on /contributors and on each district's contributors page.
 //
-//  Design v3: a plain Card with a real <button> toggle, Lucide icons,
-//  badge levels as Pills (no emoji). Tier names and prices are read from
+//  Design v4.1: the badge ladder is a picture that is always visible
+//  (🥉 3 months → 🥈 6 → 🥇 12 → 💎 24, the kit's HowItWorks steps), so a
+//  child can see how a badge is earned without opening anything. The five
+//  contribution tiers (emoji, name, price, one line) sit behind one
+//  "Show the tiers and prices" button. Tier names and prices are read from
 //  TIER_CONFIG (the same config the checkout uses) so this list can never
-//  disagree with what a supporter is actually charged.
+//  disagree with what a supporter is actually charged; the tier names and
+//  one-liners are the translated ones from "page_support".
+//  Text: "page_site.badges" messages. Colour: the surrounding page hue.
 //
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { Card, Pill } from "@/components/district/ui";
+import { useTranslations } from "next-intl";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Card } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
+import { HowItWorks } from "@/components/district/visuals";
 import { TIER_CONFIG, TIER_ORDER } from "@/lib/constants/razorpay-plans";
+import { getPlatformFacts } from "@/lib/platform-facts";
+import { useFormat } from "@/i18n/client";
 
 /**
  * Badge level → Pill tone. Shared with the contributor lists so a badge
@@ -35,81 +44,112 @@ export const BADGE_TONE: Record<string, Tone> = {
   platinum: "features",
 };
 
-/** Badge levels and the continuous-support months that earn them. */
-const BADGE_LEVELS = [
-  { key: "bronze", label: "Bronze", rule: "3+ months of continuous support" },
-  { key: "silver", label: "Silver", rule: "6+ months" },
-  { key: "gold", label: "Gold", rule: "12+ months" },
-  { key: "platinum", label: "Platinum", rule: "24+ months" },
+/** Badge levels, the months of continuous support that earn them, and their emoji. */
+const BADGE_LEVELS: { key: string; months: number; emoji: string }[] = [
+  { key: "bronze", months: 3, emoji: "🥉" },
+  { key: "silver", months: 6, emoji: "🥈" },
+  { key: "gold", months: 12, emoji: "🥇" },
+  { key: "platinum", months: 24, emoji: "💎" },
 ];
 
+const { totalIndiaDistricts, modulesPerDistrict } = getPlatformFacts();
+
 export default function BadgeExplainer() {
+  const t = useTranslations("page_site");
+  const ts = useTranslations("page_support");
+  const { number } = useFormat();
   const [open, setOpen] = useState(false);
+  const inr = (n: number) => `₹${number(n)}`;
+  // Values for the patron tier's sentence (the support page passes the same).
+  const tierValues = { districts: number(totalIndiaDistricts), dashboards: number(totalIndiaDistricts * modulesPerDistrict) };
+  const tierText = (key: string, part: "name" | "desc", fallback: string) =>
+    ts.has(`tier_${key}_${part}`) ? ts(`tier_${key}_${part}`, tierValues) : fallback;
 
   return (
-    <Card padding={0} style={{ marginBottom: 24, overflow: "hidden" }}>
+    <Card padding={18} style={{ marginBottom: 24 }}>
+      <h2 className="ftp-display" style={{ margin: "0 0 4px", display: "flex", alignItems: "center", gap: 10, fontSize: 18, lineHeight: 1.35, fontWeight: 650, color: "var(--ftp-text)" }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
+          🏅
+        </span>
+        {t("badges.title")}
+      </h2>
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, margin: "0 0 14px" }}>{t("badges.simple")}</p>
+
+      {/* The ladder: always visible. */}
+      <HowItWorks
+        title={t("badges.ladderTitle")}
+        steps={BADGE_LEVELS.map((b) => ({
+          emoji: b.emoji,
+          title: t(`badges.level_${b.key}`),
+          body: t("badges.months", { n: b.months }),
+        }))}
+      />
+
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-controls="badge-explainer-body"
+        aria-controls="badge-explainer-tiers"
+        className="ftp-btn ftp-btn-secondary"
         style={{
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
           gap: 8,
-          width: "100%",
           minHeight: 44,
-          padding: "0 16px",
-          background: "none",
-          border: "none",
+          marginTop: 14,
+          padding: "0 14px",
+          background: "var(--ftp-surface)",
+          border: "1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+          borderRadius: "var(--ftp-radius-tile)",
           cursor: "pointer",
-          fontSize: 13,
-          fontWeight: 500,
-          color: "var(--ftp-text)",
-          textAlign: "left",
+          fontFamily: "inherit",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--hue-deep)",
         }}
       >
-        <Info size={16} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0 }} />
-        <span style={{ flex: 1 }}>How badges &amp; tiers work</span>
+        <span className="ftp-emoji" aria-hidden>💳</span>
+        {open ? t("badges.hideTiers") : t("badges.showTiers")}
         {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
       </button>
 
       {open && (
-        <div id="badge-explainer-body" style={{ padding: "0 16px 16px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-          <p className="ftp-label" style={{ marginBottom: 6 }}>Contribution tiers</p>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
-            {TIER_ORDER.map((key) => {
-              const t = TIER_CONFIG[key];
-              return (
-                <li key={key}>
-                  <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{t.name}</span> —{" "}
-                  {t.isRecurring ? "" : "One-time from "}
-                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
-                    ₹{(t.isRecurring ? t.amount : t.minAmount).toLocaleString("en-IN")}
+        <ul
+          id="badge-explainer-tiers"
+          className="ftp-grid"
+          style={{ listStyle: "none", margin: "12px 0 0", padding: 0, gap: 10, ["--ftp-grid-min" as string]: "220px" } as React.CSSProperties}
+        >
+          {TIER_ORDER.map((key) => {
+            const tier = TIER_CONFIG[key];
+            return (
+              <li
+                key={key}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "flex-start",
+                  padding: 12,
+                  borderRadius: 14,
+                  background: "var(--hue-tint)",
+                  border: "1px solid color-mix(in srgb, var(--hue) 20%, transparent)",
+                }}
+              >
+                <span className="ftp-emoji" aria-hidden style={{ fontSize: 22, lineHeight: 1 }}>{tier.emoji}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 14, lineHeight: 1.4, fontWeight: 650, color: "var(--hue-deep)" }}>
+                    {tierText(key, "name", tier.name)}
                   </span>
-                  {t.isRecurring ? "/month" : ""}
-                  <span style={{ display: "block", fontSize: 11, lineHeight: "16px" }}>{t.description}</span>
-                </li>
-              );
-            })}
-          </ul>
-
-          <p className="ftp-label" style={{ marginTop: 16, marginBottom: 6 }}>
-            Badge levels (earned automatically by continuous support)
-          </p>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
-            {BADGE_LEVELS.map((b) => (
-              <li key={b.key} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <Pill tone={BADGE_TONE[b.key]}>{b.label}</Pill>
-                <span>{b.rule}</span>
+                  <span className="ftp-num" style={{ display: "block", fontSize: 13, lineHeight: 1.45, color: "var(--ftp-text)" }}>
+                    {tier.isRecurring ? t("badges.perMonth", { amount: inr(tier.amount) }) : t("badges.oneTimeFrom", { amount: inr(tier.minAmount) })}
+                  </span>
+                  <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", marginTop: 2 }}>
+                    {tierText(key, "desc", tier.description)}
+                  </span>
+                </span>
               </li>
-            ))}
-          </ul>
-
-          <p style={{ marginTop: 12, fontSize: 11, lineHeight: "16px" }}>
-            The longer you support, the higher your badge. Badges are shown next to your name on the leaderboard and contributor pages.
-          </p>
-        </div>
+            );
+          })}
+        </ul>
       )}
     </Card>
   );

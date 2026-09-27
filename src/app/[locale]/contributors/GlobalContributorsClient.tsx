@@ -10,38 +10,59 @@
 //  /contributors — "The people behind the platform"
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Design v4 "Rang" (pink, the contributors hue):
-//    • SiteHeader band, then emoji StatTiles. While a count is still
-//      loading its tile shows "—", never a fake 0.
-//    • Picture 1: one symbol per live district, lit when that district
-//      has at least one monthly district champion (from the same
-//      district-rankings request as the list below).
-//    • Picture 2: "Most supported districts" as bars — each district's
-//      monthly support in ₹, sized against the best-supported one, with
-//      its contributor count. Same district-rankings request.
-//    • Filter Chips, Sections with emoji, contributor Cards with a rank
-//      circle in the hue; New / Longest are Pills inside the card.
-//    • "Modules per district" and district counts come from
-//      getPlatformFacts() instead of a typed 29; the ₹ amount of a district
-//      champion comes from TIER_CONFIG.
+//  The question it answers: "Who keeps this site free, and which districts
+//  do they back?"
+//
+//  Design v4.1 (pink, the contributors hue), docs/LAYOUT.md recipe inside
+//  <ModulePage> (full width on phones and tablets, 1320 px on laptop / PC):
+//    1. SiteHeader band with the "join" link
+//    2. The answer in one sentence (Explainer), from the district rankings
+//    3. Emoji StatTiles. While a count is still loading its tile shows
+//       "—", never a fake 0.
+//    4. The pictures, side by side from tablet up: one symbol per live
+//       district (lit when it has a monthly district champion) and the
+//       best-supported districts as bars (₹ a month). Same
+//       district-rankings request as the list below.
+//    5. Filter Chips, then the supporters as tap cards on .ftp-grid (2–4
+//       across). Tapping a supporter opens a DetailSheet with everything
+//       they chose to make public: badge, tier, place, months, amount (one-
+//       time gifts only, as before), the date they joined, their message
+//       and their profile link.
+//    6. The district ranking list (links to each district's supporters)
+//    7. "Why it matters" beside the badge explainer on laptop / PC
+//    8. Growth chart, closing call to action, sources footer.
 //  All queries, filters and pagination behave exactly as before.
 //  Text: "page_site-contributors" messages; supporter badges from
 //  "page_site.tier". Names of people, districts and states stay as stored.
 //
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Github, Heart, Instagram, Linkedin, Lock, Twitter } from "lucide-react";
+import { ExternalLink, Heart, Lock } from "lucide-react";
 import { normalizeSocialLink } from "@/lib/social-link";
 import BadgeExplainer, { BADGE_TONE } from "@/components/common/BadgeExplainer";
 import ContributorGrowthChart from "@/components/common/ContributorGrowthChart";
 import { getTotalActiveDistrictCount } from "@/lib/constants/districts";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
-import { Card, Chips, EmptyState, LoadingShell, Pill, Section, StatStrip, StatTile } from "@/components/district/ui";
+import {
+  Card,
+  Chips,
+  EmptyState,
+  LoadingShell,
+  ModulePage,
+  Pill,
+  Section,
+  SourcesFooter,
+  StatStrip,
+  StatTile,
+  ToolbarButton,
+} from "@/components/district/ui";
 import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import SiteHeader from "@/components/site/SiteHeader";
+import TapCard from "@/components/site/TapCard";
 import { BarList } from "@/components/site/SiteVisuals";
 import { tierLabel } from "@/components/site/tier-label";
 import { useFormat } from "@/i18n/client";
@@ -80,13 +101,12 @@ interface DistrictRanking {
   monthlyTotal: number;
 }
 
-const SOCIAL_ICONS: Record<string, typeof Instagram> = {
-  instagram: Instagram,
-  linkedin: Linkedin,
-  github: Github,
-  twitter: Twitter,
-  website: ExternalLink,
-};
+/** What the open sheet shows: the supporter, and how the list showed them. */
+interface OpenEntry {
+  c: Contributor;
+  rank?: number;
+  showAmount?: boolean;
+}
 
 const FILTERS = ["all", "patron", "state", "district", "founder", "one-time"] as const;
 
@@ -115,94 +135,95 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
+/** Round initials avatar in the hue. */
+function Initials({ name, size = 38 }: { name: string; size?: number }) {
+  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <span
+      aria-hidden
+      className="ftp-display"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: "var(--hue-tint)",
+        color: "var(--hue-deep)",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: Math.round(size * 0.37),
+        fontWeight: 650,
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/** One supporter as a tap card: rank, initials, name, badge line. Opens the detail sheet. */
 function ContributorCard({
   c,
   rank,
   showAmount,
   extra,
+  onOpen,
 }: {
   c: Contributor;
   rank?: number;
   showAmount?: boolean;
   /** Extra Pills shown after the name (e.g. New, Longest). */
   extra?: React.ReactNode;
+  onOpen: () => void;
 }) {
   const t = useTranslations("page_site-contributors");
   const ts = useTranslations("page_site");
   const { number } = useFormat();
-  const SocialIcon = c.socialPlatform ? SOCIAL_ICONS[c.socialPlatform] : null;
-  const safeLink = normalizeSocialLink(c.socialLink);
-  const initials = c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const badgeKey = c.badgeLevel ? `badge_${c.badgeLevel}` : null;
 
   return (
-    <Card as="li" padding={14} style={{ display: "flex", alignItems: "center", gap: 10, listStyle: "none" }}>
-      {rank !== undefined && <RankBadge rank={rank} />}
-      <span
-        aria-hidden
-        className="ftp-display"
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: "50%",
-          background: "var(--hue-tint)",
-          color: "var(--hue-deep)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 14,
-          fontWeight: 650,
-          flexShrink: 0,
-        }}
-      >
-        {initials}
-      </span>
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span className="ftp-title" style={{ fontSize: 14, lineHeight: 1.45, fontWeight: 600, overflowWrap: "anywhere" }}>{c.name}</span>
-          {SocialIcon && safeLink && (
-            <a
-              href={safeLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t("profile", { name: c.name })}
-              style={{ color: "var(--hue)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28 }}
-            >
-              <SocialIcon size={14} aria-hidden />
-            </a>
-          )}
-          {extra}
-        </div>
-        <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-          <span>{tierLabel(ts, c.tier, c.districtName, c.stateName)}</span>
-          {showAmount && c.amount && (
-            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{number(c.amount)}</span>
-          )}
-          {c.monthsActive > 0 && <span className="ftp-num">{t("months", { n: c.monthsActive })}</span>}
-          {c.badgeLevel && (
-            <Pill tone={BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 20 }}>
-              {badgeKey && t.has(badgeKey) ? t(badgeKey) : c.badgeLevel}
-            </Pill>
-          )}
-        </div>
-      </div>
-    </Card>
+    <li style={{ listStyle: "none", minWidth: 0 }}>
+      <TapCard onClick={onOpen} label={t("openDetails", { name: c.name })} padding={12}>
+        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {rank !== undefined && <RankBadge rank={rank} />}
+          <Initials name={c.name} />
+          <span style={{ minWidth: 0, flex: 1, display: "block" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span className="ftp-title" style={{ fontSize: 14, lineHeight: 1.45, fontWeight: 600, overflowWrap: "anywhere" }}>{c.name}</span>
+              {extra}
+            </span>
+            <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+              <span>{tierLabel(ts, c.tier, c.districtName, c.stateName)}</span>
+              {showAmount && c.amount && (
+                <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{number(c.amount)}</span>
+              )}
+              {c.monthsActive > 0 && <span className="ftp-num">{t("months", { n: c.monthsActive })}</span>}
+              {c.badgeLevel && (
+                <Pill tone={BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 20 }}>
+                  {badgeKey && t.has(badgeKey) ? t(badgeKey) : c.badgeLevel}
+                </Pill>
+              )}
+            </span>
+          </span>
+        </span>
+      </TapCard>
+    </li>
   );
 }
 
-/** Grid of contributor cards (one column on phones). */
+/** Grid of contributor cards: one column on phones, 2–4 on wider screens. */
 const LIST_GRID: React.CSSProperties = {
   listStyle: "none",
   margin: 0,
   padding: 0,
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
   gap: 10,
-};
+  ["--ftp-grid-min" as string]: "290px",
+} as React.CSSProperties;
 
 export default function GlobalContributorsClient({ locale }: { locale: string }) {
   const t = useTranslations("page_site-contributors");
-  const { number } = useFormat();
+  const ts = useTranslations("page_site");
+  const { number, date } = useFormat();
   const inr = (n: number) => `₹${number(n)}`;
   const championAmount = inr(TIER_CONFIG.district.amount);
   const initialFilter = typeof window !== "undefined"
@@ -210,16 +231,17 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
     : "all";
   const validFilter = (FILTERS as readonly string[]).includes(initialFilter) ? initialFilter : "all";
   const [filter, setFilter] = useState(validFilter);
+  const [openEntry, setOpenEntry] = useState<OpenEntry | null>(null);
 
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
-
-  // Reset pagination when filter changes
-  const prevFilter = useRef(filter);
-  if (prevFilter.current !== filter) {
-    prevFilter.current = filter;
-    if (page !== 1) setPage(1);
-  }
+  // A new filter starts again from the first page.
+  const changeFilter = (next: string) => {
+    setFilter(next);
+    setPage(1);
+  };
+  // "New" pills compare against the time the page opened (one clock read).
+  const [openedAt] = useState(() => Date.now());
 
   const { data: leaderboard, isLoading: loadingLb } = useQuery<{ contributors: Contributor[] }>({
     queryKey: ["contributors-leaderboard"],
@@ -245,9 +267,9 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
     staleTime: 120_000,
   });
 
-  const leaders = leaderboard?.contributors ?? [];
-  const subscribers = allData?.subscribers ?? [];
-  const oneTimers = allData?.oneTime ?? [];
+  const leaders = useMemo(() => leaderboard?.contributors ?? [], [leaderboard]);
+  const subscribers = useMemo(() => allData?.subscribers ?? [], [allData]);
+  const oneTimers = useMemo(() => allData?.oneTime ?? [], [allData]);
   const subscribersTotal = allData?.subscribersTotal ?? subscribers.length;
   const oneTimeTotal = allData?.oneTimeTotal ?? oneTimers.length;
   const rankings = rankingsData?.rankings ?? [];
@@ -267,13 +289,14 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
   // Picture 2: monthly support per district, best-supported first.
   const supportBars = [...rankings].filter((r) => r.monthlyTotal > 0).sort((a, b) => b.monthlyTotal - a.monthlyTotal).slice(0, TOP_DISTRICTS);
   const topSupported = supportBars[0];
+  const showBars = supportBars.length >= 2 && !!topSupported;
 
   // Longest-tenure contributor (for the Longest pill) — computed from the leaderboard top.
   const longestId = leaders[0]?.id ?? null;
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   const isRecentlyJoined = (createdAt: string) => {
     const ms = Date.parse(createdAt);
-    return !Number.isNaN(ms) && Date.now() - ms < SEVEN_DAYS;
+    return !Number.isNaN(ms) && openedAt - ms < SEVEN_DAYS;
   };
 
   // Apply filter
@@ -325,38 +348,54 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
     borderRadius: "var(--ftp-radius-tile)",
   };
 
+  // The open sheet's supporter.
+  const oc = openEntry?.c ?? null;
+  const ocLink = oc ? normalizeSocialLink(oc.socialLink) : null;
+  const ocBadgeKey = oc?.badgeLevel ? `badge_${oc.badgeLevel}` : null;
+  const ocPlace = oc
+    ? oc.districtName && oc.stateName
+      ? t("districtPlace", { district: oc.districtName, state: oc.stateName })
+      : oc.stateName ?? oc.districtName ?? null
+    : null;
+  const ocJoined = oc && !Number.isNaN(Date.parse(oc.createdAt)) ? date(oc.createdAt, { day: "numeric", month: "long", year: "numeric" }) : null;
+
   return (
-    <main className="ftp-hue-pink" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 80 }}>
-      <div className="ftp-container" style={{ paddingTop: 24 }}>
-        <div style={{ maxWidth: 860 }}>
-          {/* ── Header ─────────────────────────────────────────────── */}
-          <SiteHeader
-            emoji="💖"
-            icon={Heart}
-            title={t("title")}
-            description={t("description", { total: TOTAL_INDIA_DISTRICTS })}
-            backHref={`/${locale}`}
-          >
-            <Link href={`/${locale}/support`} className="ftp-btn" style={{ ...TEXT_LINK, padding: "0 18px", background: "#fff", color: "var(--hue-deep)", borderRadius: "var(--ftp-radius-tile)" }}>
-              <span className="ftp-emoji" aria-hidden>🤝</span>
-              {t("join", { amount: championAmount })}
-            </Link>
-          </SiteHeader>
+    <main className="ftp-hue-pink" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
+      <ModulePage>
+        {/* ── 1. Header ─────────────────────────────────────────────── */}
+        <SiteHeader
+          emoji="💖"
+          icon={Heart}
+          title={t("title")}
+          description={t("description", { total: TOTAL_INDIA_DISTRICTS })}
+          backHref={`/${locale}`}
+        >
+          <Link href={`/${locale}/support`} className="ftp-btn" style={{ ...TEXT_LINK, padding: "0 18px", background: "#fff", color: "var(--hue-deep)", borderRadius: "var(--ftp-radius-tile)" }}>
+            <span className="ftp-emoji" aria-hidden>🤝</span>
+            {t("join", { amount: championAmount })}
+          </Link>
+        </SiteHeader>
 
-          <StatStrip cols={3}>
-            <StatTile emoji="🙌" label={t("tileTotal")} value={loadingAll ? "—" : number(totalContributors)} />
-            <StatTile emoji="🔁" label={t("tileMonthly")} value={loadingAll ? "—" : number(activeSubscribers)} />
-            <StatTile emoji="🏙️" label={t("tileDistricts")} value={rankingsData ? number(districtsSponsored) : "—"} />
-          </StatStrip>
+        {/* ── 2. The answer in one sentence ─────────────────────────── */}
+        {rankingsData && activeDistrictCount > 0 && (
+          <Explainer emoji="🤝">
+            {championed === 0
+              ? t.rich("simpleNone", { live: activeDistrictCount, b })
+              : t.rich("simpleSome", { n: championed, live: activeDistrictCount, b })}
+          </Explainer>
+        )}
 
-          {/* ── Picture 1 — from the district-rankings request ────────── */}
-          {rankingsData && activeDistrictCount > 0 && (
-            <Card tinted padding={18} style={{ marginTop: 16 }}>
-              <Explainer emoji="🤝">
-                {championed === 0
-                  ? t.rich("simpleNone", { live: activeDistrictCount, b })
-                  : t.rich("simpleSome", { n: championed, live: activeDistrictCount, b })}
-              </Explainer>
+        {/* ── 3. Numbers ────────────────────────────────────────────── */}
+        <StatStrip cols={3}>
+          <StatTile emoji="🙌" label={t("tileTotal")} value={loadingAll ? "—" : number(totalContributors)} />
+          <StatTile emoji="🔁" label={t("tileMonthly")} value={loadingAll ? "—" : number(activeSubscribers)} />
+          <StatTile emoji="🏙️" label={t("tileDistricts")} value={rankingsData ? number(districtsSponsored) : "—"} />
+        </StatStrip>
+
+        {/* ── 4. The pictures — from the district-rankings request ──── */}
+        {rankingsData && activeDistrictCount > 0 && (
+          <div className={showBars ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
+            <ChartCard title={t("pictoTitle")} emoji="🏙️" units={t("pictoUnits")}>
               <Pictogram
                 filled={pictoFilled}
                 total={oneEach ? activeDistrictCount : 10}
@@ -367,253 +406,314 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
                     : t("pictoOutOf10", { n: Math.round(pictoFilled) })
                 }
               />
-            </Card>
-          )}
-
-          {/* ── Why it matters ─────────────────────────────────────── */}
-          <Section title={t("whyTitle")} emoji="💡">
-            <Card tinted padding={20}>
-              <p className="ftp-body" style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)" }}>
-                {t.rich("whyBody", {
-                  points: number(activeDistrictCount * MODULES_PER_DISTRICT),
-                  live: activeDistrictCount,
-                  modules: MODULES_PER_DISTRICT,
-                  more: MODULES_PER_DISTRICT - 5,
-                  amount: championAmount,
-                  hl,
-                  strong,
+            </ChartCard>
+            {showBars && (
+              <ChartCard
+                title={t("districtsChart")}
+                emoji="💰"
+                units={t("districtsUnits")}
+                simple={t.rich("districtsSimple", {
+                  name: topSupported.districtName,
+                  amount: inr(topSupported.monthlyTotal),
+                  n: topSupported.count,
+                  b,
                 })}
-              </p>
-            </Card>
-          </Section>
-
-          <div style={{ marginTop: 24 }}>
-            <BadgeExplainer />
+                table={supportBars.map((r) => ({
+                  label: t("districtPlace", { district: r.districtName, state: r.stateName }),
+                  value: t("perMonth", { amount: inr(r.monthlyTotal) }),
+                }))}
+              >
+                <BarList
+                  height={12}
+                  rows={supportBars.map((r, i) => ({
+                    key: r.districtSlug,
+                    label: (
+                      <>
+                        <span style={{ fontWeight: 600 }}>{r.districtName}</span>
+                        <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+                          {t("contributors", { n: r.count })}
+                        </span>
+                      </>
+                    ),
+                    value: r.monthlyTotal,
+                    display: t("perMonth", { amount: inr(r.monthlyTotal) }),
+                    emoji: i === 0 ? "🏆" : r.active ? "🏙️" : "🔒",
+                  }))}
+                />
+              </ChartCard>
+            )}
           </div>
+        )}
 
-          {/* ── Filters ────────────────────────────────────────────── */}
-          <div style={{ margin: "8px 0" }}>
-            <Chips
-              label={t("filterLabel")}
-              items={FILTERS.map((key) => ({ value: key, label: t(`filter_${key}`) }))}
-              value={filter}
-              onChange={setFilter}
-            />
-          </div>
+        {/* ── 5. Filters + the supporter lists ──────────────────────── */}
+        <div style={{ margin: "24px 0 4px" }}>
+          <Chips
+            label={t("filterLabel")}
+            items={FILTERS.map((key) => ({ value: key, label: t(`filter_${key}`) }))}
+            value={filter}
+            onChange={changeFilter}
+          />
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, marginTop: 10 }}>{t("tapHint")}</p>
+        </div>
 
-          {/* ── Leaderboard ────────────────────────────────────────── */}
-          {showLeaderboard && (
-            <Section title={t("leaderTitle")} emoji="🏆">
-              {loadingLb ? (
-                <LoadingShell rows={3} />
-              ) : filteredLeaders.length === 0 ? (
-                <EmptyState emoji="🌱" title={t("leaderEmpty")} />
-              ) : (
-                <ul style={{ ...LIST_GRID, gridTemplateColumns: "1fr" }}>
-                  {filteredLeaders.map((c, i) => {
-                    const isLongest = c.id === longestId;
-                    const isNew = isRecentlyJoined(c.createdAt);
-                    return (
-                      <ContributorCard
-                        key={c.id}
-                        c={c}
-                        rank={i + 1}
-                        extra={
-                          <>
-                            {isNew && <Pill tone="brand">{t("pillNew")}</Pill>}
-                            {isLongest && <Pill tone="warn">{t("pillLongest")}</Pill>}
-                          </>
-                        }
-                      />
-                    );
-                  })}
-                </ul>
-              )}
-            </Section>
-          )}
-
-          {/* ── Most supported districts (Picture 2 + the full list) ──── */}
-          {filter === "all" && (rankings.length > 0 || awaitingLaunch.length > 0) && (
-            <Section title={t("districtsTitle")} emoji="🏙️">
-              {supportBars.length >= 2 && topSupported && (
-                <div style={{ marginBottom: 12 }}>
-                  <ChartCard
-                    title={t("districtsChart")}
-                    emoji="💰"
-                    units={t("districtsUnits")}
-                    simple={t.rich("districtsSimple", {
-                      name: topSupported.districtName,
-                      amount: inr(topSupported.monthlyTotal),
-                      n: topSupported.count,
-                      b,
-                    })}
-                    table={supportBars.map((r) => ({
-                      label: t("districtPlace", { district: r.districtName, state: r.stateName }),
-                      value: t("perMonth", { amount: inr(r.monthlyTotal) }),
-                    }))}
-                  >
-                    <BarList
-                      height={12}
-                      rows={supportBars.map((r, i) => ({
-                        key: r.districtSlug,
-                        label: (
-                          <>
-                            <span style={{ fontWeight: 600 }}>{r.districtName}</span>
-                            <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
-                              {t("contributors", { n: r.count })}
-                            </span>
-                          </>
-                        ),
-                        value: r.monthlyTotal,
-                        display: t("perMonth", { amount: inr(r.monthlyTotal) }),
-                        emoji: i === 0 ? "🏆" : r.active ? "🏙️" : "🔒",
-                      }))}
+        {showLeaderboard && (
+          <Section title={t("leaderTitle")} emoji="🏆">
+            {loadingLb ? (
+              <LoadingShell rows={3} />
+            ) : filteredLeaders.length === 0 ? (
+              <EmptyState emoji="🌱" title={t("leaderEmpty")} />
+            ) : (
+              <ul className="ftp-grid" style={LIST_GRID}>
+                {filteredLeaders.map((c, i) => {
+                  const isLongest = c.id === longestId;
+                  const isNew = isRecentlyJoined(c.createdAt);
+                  return (
+                    <ContributorCard
+                      key={c.id}
+                      c={c}
+                      rank={i + 1}
+                      onOpen={() => setOpenEntry({ c, rank: i + 1 })}
+                      extra={
+                        <>
+                          {isNew && <Pill tone="brand">{t("pillNew")}</Pill>}
+                          {isLongest && <Pill tone="warn">{t("pillLongest")}</Pill>}
+                        </>
+                      }
                     />
-                  </ChartCard>
+                  );
+                })}
+              </ul>
+            )}
+          </Section>
+        )}
+
+        {/* ── Active subscribers ─────────────────────────────────── */}
+        {showSubscribers && (
+          <Section
+            title={t("subsTitle")}
+            emoji="🔁"
+            action={
+              <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                {t("total", { n: number(filter === "all" ? subscribersTotal : filteredSubscribers.length) })}
+              </span>
+            }
+          >
+            <ul className="ftp-grid" style={LIST_GRID}>
+              {filteredSubscribers.map((c) => (
+                <ContributorCard key={c.id} c={c} onOpen={() => setOpenEntry({ c })} />
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {/* ── One-time contributors ──────────────────────────────── */}
+        {showOneTime && (
+          <Section
+            title={t("oneTimeTitle")}
+            emoji="🎁"
+            action={
+              // No "0 total" while the list is still loading.
+              loadingAll ? undefined : (
+                <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                  {t("total", { n: number(oneTimeTotal) })}
+                </span>
+              )
+            }
+          >
+            {loadingAll ? (
+              <LoadingShell rows={3} />
+            ) : filteredOneTimers.length === 0 ? (
+              <EmptyState emoji="🎁" title={t("oneTimeEmpty")} />
+            ) : (
+              <ul className="ftp-grid" style={LIST_GRID}>
+                {filteredOneTimers.map((c) => (
+                  <ContributorCard key={c.id} c={c} showAmount onOpen={() => setOpenEntry({ c, showAmount: true })} />
+                ))}
+              </ul>
+            )}
+          </Section>
+        )}
+
+        {/* ── Load more ──────────────────────────────────────────── */}
+        {canLoadMore && !loadingAll && (
+          <div style={{ textAlign: "center", margin: "24px 0 32px" }}>
+            <button
+              type="button"
+              onClick={() => setPage((p) => p + 1)}
+              className="ftp-btn ftp-btn-secondary"
+              style={{
+                ...TEXT_LINK,
+                padding: "0 20px",
+                background: "var(--ftp-surface)",
+                border: "1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+                color: "var(--hue-deep)",
+                borderRadius: "var(--ftp-radius-tile)",
+                cursor: "pointer",
+              }}
+            >
+              {t("loadMore", { n: PAGE_SIZE })}
+            </button>
+            <p className="ftp-num" style={{ marginTop: 6, fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+              {t("showing", { shown: number(subscribers.length + oneTimers.length), total: number(subscribersTotal + oneTimeTotal) })}
+            </p>
+          </div>
+        )}
+
+        {/* ── 6. Most supported districts (the full list) ────────────── */}
+        {filter === "all" && (rankings.length > 0 || awaitingLaunch.length > 0) && (
+          <Section title={t("districtsTitle")} emoji="🏙️">
+            <Card padding={16}>
+              <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {rankings.map((r, i) => (
+                  <li
+                    key={r.districtSlug}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      padding: "6px 0",
+                      borderBottom: i < rankings.length - 1 ? "1px solid var(--ftp-border)" : undefined,
+                    }}
+                  >
+                    <RankBadge rank={i + 1} />
+                    <Link
+                      href={`/${locale}/${r.stateSlug}/${r.districtSlug}/contributors`}
+                      style={{ flex: "1 1 160px", minWidth: 0, minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 14, fontWeight: 600, color: "var(--ftp-text)", textDecoration: "none" }}
+                    >
+                      {t("districtPlace", { district: r.districtName, state: r.stateName })}
+                    </Link>
+                    <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)", whiteSpace: "nowrap" }}>
+                      {t("contributors", { n: r.count })}
+                    </span>
+                    <span className="ftp-num" style={{ fontSize: 14, color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
+                      {t("perMonth", { amount: inr(r.monthlyTotal) })}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+
+              {awaitingLaunch.length > 0 && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--ftp-border)" }}>
+                  <p className="ftp-label" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Lock size={12} aria-hidden /> {t("awaiting")}
+                  </p>
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {awaitingLaunch.map((r) => (
+                      <li key={r.districtSlug} className="ftp-body" style={{ color: "var(--ftp-text-2)", padding: "4px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                        <Lock size={12} aria-hidden style={{ flexShrink: 0 }} />
+                        <span>
+                          {t("awaitingRow", { place: t("districtPlace", { district: r.districtName, state: r.stateName }), n: r.count })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
-              <Card padding={16}>
-                <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                  {rankings.map((r, i) => (
-                    <li
-                      key={r.districtSlug}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        padding: "6px 0",
-                        borderBottom: i < rankings.length - 1 ? "1px solid var(--ftp-border)" : undefined,
-                      }}
-                    >
-                      <RankBadge rank={i + 1} />
-                      <Link
-                        href={`/${locale}/${r.stateSlug}/${r.districtSlug}/contributors`}
-                        style={{ flex: "1 1 160px", minWidth: 0, minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 14, fontWeight: 600, color: "var(--ftp-text)", textDecoration: "none" }}
-                      >
-                        {t("districtPlace", { district: r.districtName, state: r.stateName })}
-                      </Link>
-                      <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)", whiteSpace: "nowrap" }}>
-                        {t("contributors", { n: r.count })}
-                      </span>
-                      <span className="ftp-num" style={{ fontSize: 14, color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
-                        {t("perMonth", { amount: inr(r.monthlyTotal) })}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
+            </Card>
+          </Section>
+        )}
 
-                {awaitingLaunch.length > 0 && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--ftp-border)" }}>
-                    <p className="ftp-label" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
-                      <Lock size={12} aria-hidden /> {t("awaiting")}
-                    </p>
-                    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                      {awaitingLaunch.map((r) => (
-                        <li key={r.districtSlug} className="ftp-body" style={{ color: "var(--ftp-text-2)", padding: "4px 0", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Lock size={12} aria-hidden style={{ flexShrink: 0 }} />
-                          <span>
-                            {t("awaitingRow", { place: t("districtPlace", { district: r.districtName, state: r.stateName }), n: r.count })}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </Card>
-            </Section>
-          )}
+        {/* ── 7. Why it matters + how badges work (side by side on laptop / PC) ── */}
+        <div className="ftp-grid" style={{ marginTop: 32, alignItems: "start", ["--ftp-grid-min" as string]: "420px" } as React.CSSProperties}>
+          <Card tinted padding={20}>
+            <h2 className="ftp-display" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", gap: 10, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
+                💡
+              </span>
+              {t("whyTitle")}
+            </h2>
+            <p className="ftp-body" style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)" }}>
+              {t.rich("whyBody", {
+                points: number(activeDistrictCount * MODULES_PER_DISTRICT),
+                live: activeDistrictCount,
+                modules: MODULES_PER_DISTRICT,
+                more: MODULES_PER_DISTRICT - 5,
+                amount: championAmount,
+                hl,
+                strong,
+              })}
+            </p>
+          </Card>
+          <BadgeExplainer />
+        </div>
 
-          {/* ── Active subscribers ─────────────────────────────────── */}
-          {showSubscribers && (
-            <Section
-              title={t("subsTitle")}
-              emoji="🔁"
-              action={
-                <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  {t("total", { n: number(filter === "all" ? subscribersTotal : filteredSubscribers.length) })}
-                </span>
-              }
-            >
-              <ul style={LIST_GRID}>
-                {filteredSubscribers.map((c) => <ContributorCard key={c.id} c={c} />)}
-              </ul>
-            </Section>
-          )}
+        {/* ── 8. Growth trend (a sentence or a chart) ─────────────────── */}
+        <ContributorGrowthChart />
 
-          {/* ── One-time contributors ──────────────────────────────── */}
-          {showOneTime && (
-            <Section
-              title={t("oneTimeTitle")}
-              emoji="🎁"
-              action={
-                // No "0 total" while the list is still loading.
-                loadingAll ? undefined : (
-                  <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                    {t("total", { n: number(oneTimeTotal) })}
-                  </span>
-                )
-              }
-            >
-              {loadingAll ? (
-                <LoadingShell rows={3} />
-              ) : filteredOneTimers.length === 0 ? (
-                <EmptyState emoji="🎁" title={t("oneTimeEmpty")} />
-              ) : (
-                <ul style={LIST_GRID}>
-                  {filteredOneTimers.map((c) => <ContributorCard key={c.id} c={c} showAmount />)}
-                </ul>
-              )}
-            </Section>
-          )}
+        {/* ── Closing call to action ─────────────────────────────── */}
+        <Card tinted padding={24} style={{ textAlign: "center", marginTop: 8 }}>
+          <span className="ftp-emoji" aria-hidden style={{ fontSize: 36, display: "block", marginBottom: 6 }}>🏅</span>
+          <h2 className="ftp-h2">{t("ctaTitle")}</h2>
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "8px 0 16px" }}>{t("ctaBody", { amount: championAmount })}</p>
+          <Link href={`/${locale}/support`} className="ftp-btn ftp-btn-primary" style={PRIMARY_LINK}>
+            {t("ctaButton")}
+          </Link>
+        </Card>
 
-          {/* ── Load more ──────────────────────────────────────────── */}
-          {canLoadMore && !loadingAll && (
-            <div style={{ textAlign: "center", margin: "24px 0 32px" }}>
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                className="ftp-btn ftp-btn-secondary"
+        <SourcesFooter sources={[{ name: t("srcRecords") }]} />
+      </ModulePage>
+
+      {/* ── The supporter detail sheet ───────────────────────────── */}
+      <DetailSheet
+        open={!!oc}
+        onClose={() => setOpenEntry(null)}
+        hueClassName="ftp-hue-pink"
+        media={oc ? <Initials name={oc.name} size={48} /> : undefined}
+        title={oc?.name ?? ""}
+        subtitle={oc ? tierLabel(ts, oc.tier, oc.districtName, oc.stateName) : undefined}
+        footer={
+          ocLink ? (
+            <ToolbarButton href={ocLink} external icon={ExternalLink}>
+              {t("openProfile")}
+            </ToolbarButton>
+          ) : undefined
+        }
+      >
+        {oc && (
+          <>
+            <DetailList
+              rows={[
+                { emoji: "🏆", label: t("rowRank"), value: openEntry?.rank ? t("rank", { n: openEntry.rank }) : null },
+                {
+                  emoji: "🏅",
+                  label: t("rowBadge"),
+                  value: oc.badgeLevel ? (ocBadgeKey && t.has(ocBadgeKey) ? t(ocBadgeKey) : oc.badgeLevel) : null,
+                },
+                { emoji: "📍", label: t("rowPlace"), value: ocPlace },
+                { emoji: "📅", label: t("rowMonths"), value: oc.monthsActive > 0 ? t("months", { n: oc.monthsActive }) : null },
+                {
+                  emoji: "💰",
+                  label: t("rowAmount"),
+                  value: openEntry?.showAmount && oc.amount ? <span className="ftp-num">{inr(oc.amount)}</span> : null,
+                },
+                { emoji: "🗓️", label: t("rowJoined"), value: ocJoined },
+              ]}
+            />
+            {oc.message && (
+              <blockquote
                 style={{
-                  ...TEXT_LINK,
-                  padding: "0 20px",
-                  background: "var(--ftp-surface)",
-                  border: "1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
-                  color: "var(--hue-deep)",
-                  borderRadius: "var(--ftp-radius-tile)",
-                  cursor: "pointer",
+                  margin: 0,
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  background: "var(--hue-tint)",
+                  borderInlineStart: "4px solid var(--hue)",
+                  fontSize: 15,
+                  lineHeight: 1.6,
+                  color: "var(--ftp-text)",
                 }}
               >
-                {t("loadMore", { n: PAGE_SIZE })}
-              </button>
-              <p className="ftp-num" style={{ marginTop: 6, fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
-                {t("showing", { shown: number(subscribers.length + oneTimers.length), total: number(subscribersTotal + oneTimeTotal) })}
-              </p>
-            </div>
-          )}
-
-          <div style={{ marginTop: 24 }}>
-            {/* Growth trend (stat line or chart) */}
-            <ContributorGrowthChart />
-          </div>
-
-          {/* ── Closing call to action ─────────────────────────────── */}
-          <Card tinted padding={24} style={{ textAlign: "center", marginTop: 8 }}>
-            <span className="ftp-emoji" aria-hidden style={{ fontSize: 36, display: "block", marginBottom: 6 }}>🏅</span>
-            <h2 className="ftp-h2">{t("ctaTitle")}</h2>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "8px 0 16px" }}>{t("ctaBody", { amount: championAmount })}</p>
-            <Link href={`/${locale}/support`} className="ftp-btn ftp-btn-primary" style={PRIMARY_LINK}>
-              {t("ctaButton")}
-            </Link>
-          </Card>
-
-          <div style={{ textAlign: "center", marginTop: 24 }}>
-            <Link href={`/${locale}`} style={{ ...TEXT_LINK, color: "var(--ftp-text-2)", fontWeight: 400 }}>
-              <ArrowLeft size={14} aria-hidden /> {t("back")}
-            </Link>
-          </div>
-        </div>
-      </div>
+                <span className="ftp-label" style={{ display: "block", marginBottom: 4, color: "var(--hue-deep)" }}>
+                  <span className="ftp-emoji" aria-hidden>💬 </span>
+                  {t("rowMessage")}
+                </span>
+                {oc.message}
+              </blockquote>
+            )}
+            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("sheetPrivacy")}</p>
+          </>
+        )}
+      </DetailSheet>
     </main>
   );
 }
