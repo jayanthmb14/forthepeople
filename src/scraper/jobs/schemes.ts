@@ -75,8 +75,11 @@ export async function scrapeSchemes(ctx: JobContext): Promise<ScraperResult> {
             ? `https://myscheme.gov.in/schemes/${scheme.slug}`
             : null;
 
+        // Only the all-India row this collector keeps (districtId null): a
+        // district row with the same name was reviewed by hand and may be
+        // retired on purpose (active=false) — never re-activate or relabel it.
         const existing = await prisma.scheme.findFirst({
-          where: { name },
+          where: { name, districtId: null },
         });
 
         if (!existing) {

@@ -78,7 +78,7 @@ export async function collectDatasetDates(
     prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _max: { fiscalYear: true } }),
     prisma.infraProject.aggregate({ where: { ...d, ...LOCAL_INFRA }, _count: { _all: true }, _max: { lastVerifiedAt: true, updatedAt: true } }),
     prisma.localIndustry.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { updatedAt: true } }),
-    prisma.scheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
+    prisma.scheme.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.housingScheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.housingScheme.aggregate({ where: d, _max: { fiscalYear: true } }),
     prisma.serviceGuide.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),

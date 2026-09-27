@@ -326,8 +326,11 @@ async function fetchModule(
     // 11. SCHEMES
     // ══════════════════════════════════════════════════
     case "schemes": {
+      // active=false = no longer running or replaced (e.g. KCR Kit, Lakshmir
+      // Bhandar); the page never showed the flag, so retired schemes looked
+      // current (Sept 2026 audit).
       const data = await prisma.scheme.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         orderBy: [{ category: "asc" }, { name: "asc" }],
       });
       return { data, meta };

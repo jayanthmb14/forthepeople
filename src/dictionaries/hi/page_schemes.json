@@ -75,6 +75,14 @@
     "transport": "यात्रा",
     "other": "अन्य मदद"
   },
+  "amount": {
+    "perMonth": "{amount} हर महीने",
+    "perYear": "{amount} हर साल",
+    "oneTime": "{amount} एक बार",
+    "coverYear": "हर साल {amount} तक का बीमा कवर",
+    "loanUpTo": "{amount} तक का ऋण",
+    "pensionMonth": "हर महीने {amount} तक पेंशन"
+  },
   "get": {
     "health": "{amount} का स्वास्थ्य बीमा कवर",
     "housing": "घर बनाने या खरीदने के लिए {amount}",

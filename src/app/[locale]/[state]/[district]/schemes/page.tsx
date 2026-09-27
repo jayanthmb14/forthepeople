@@ -54,6 +54,7 @@ import { useMoney } from "@/components/money/useMoney";
 import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import { CardHead, HueTag, SheetHighlight, SheetLink, SheetSection, TagRow, TapCard, hostOf, safeUrl, sourceParts } from "@/components/money/TapCard";
 import knDict from "@/dictionaries/kn.json";
+import { amountBasis, biggestBenefit, type AmountBasis } from "@/lib/schemes/amount-basis";
 import {
   KIND_ICON,
   audiences,
@@ -145,7 +146,9 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
   const kindCount = new Map<SchemeKind, number>();
   for (const v of views) kindCount.set(v.kind, (kindCount.get(v.kind) ?? 0) + 1);
   const kinds = [...kindCount.entries()].sort((a, b2) => b2[1] - a[1]);
-  const biggestAmount = Math.max(0, ...schemes.map((s) => s.amount ?? 0));
+  // Largest benefit with a known unit, loans left out (a Mudra loan ceiling
+  // is not a benefit; Sept 2026 audit).
+  const biggest = biggestBenefit(schemes);
 
   const filtered = views.filter(
     (v) => (kindFilter === "all" || v.kind === kindFilter) && (levelFilter === "all" || v.level === levelFilter),
@@ -218,7 +221,13 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
             ) : (
               <>
                 <StatTile icon={Layers} label={t("tiles.categories")} value={m.num(kinds.length)} />
-                <StatTile icon={Wallet} label={t("tiles.biggest")} value={biggestAmount > 0 ? m.short(biggestAmount, 1) : "—"} countUp={false} />
+                <StatTile
+                  icon={Wallet}
+                  label={t("tiles.biggest")}
+                  value={biggest ? m.short(biggest.scheme.amount ?? 0, 1) : "—"}
+                  sub={biggest ? t(`amount.${biggest.basis}`, { amount: m.rupees(biggest.scheme.amount ?? 0) }) : undefined}
+                  countUp={false}
+                />
               </>
             )}
           </StatStrip>
@@ -384,12 +393,37 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
   );
 }
 
-/** "₹6,000 for farmers" — the translated one-liner; the published words when there is no amount. */
+/**
+ * An amount with its unit ("₹1,500 a month", "Loan of up to ₹20,00,000"),
+ * or null when the amount's unit is not known — then no amount is shown
+ * (src/lib/schemes/amount-basis.ts).
+ */
+function useAmountText() {
+  const t = useTranslations("page_schemes");
+  const m = useMoney();
+  return (s: { name: string; amount?: number | null }): { basis: AmountBasis; text: string } | null => {
+    const basis = amountBasis(s.name);
+    if (!basis || !s.amount || s.amount <= 0) return null;
+    return { basis, text: t(`amount.${basis}`, { amount: m.rupees(s.amount) }) };
+  };
+}
+
+/** "₹6,000 a year for farmers" — the translated one-liner; the published words when there is no amount with a known unit. */
 function useWhatYouGet() {
   const t = useTranslations("page_schemes");
   const m = useMoney();
+  const amountText = useAmountText();
   return (v: SchemeView): { text: string; lang?: string } => {
-    if (v.s.amount && v.s.amount > 0) return { text: t(`get.${v.kind}`, { amount: m.rupees(v.s.amount) }) };
+    const a = amountText(v.s);
+    if (a) {
+      // Loans and pensions read on their own; health cover uses the health
+      // line with "a year"; the rest keep their kind's line with the unit.
+      if (a.basis === "loanUpTo" || a.basis === "pensionMonth") return { text: a.text };
+      if (a.basis === "coverYear") {
+        return v.kind === "health" ? { text: t("get.health", { amount: t("amount.perYear", { amount: m.rupees(v.s.amount ?? 0) }) }) } : { text: a.text };
+      }
+      return { text: t(`get.${v.kind}`, { amount: a.text }) };
+    }
     if (v.what) return { text: v.what, lang: "en" };
     return { text: t(`getText.${v.kind}`) };
   };
@@ -450,6 +484,7 @@ function SchemeSheet({
   const place = usePlaceText();
   const get = useWhatYouGet()(v);
   const s = v.s;
+  const benefit = useAmountText()(s);
   const src = sourceParts(s.source);
   const site = hostOf(v.apply);
   // The category word as published, translated when the language has it.
@@ -540,7 +575,7 @@ function SchemeSheet({
       <SheetSection title={t("sheet.facts")}>
         <DetailList
           rows={[
-            { label: t("sheet.benefit"), value: s.amount && s.amount > 0 ? m.rupees(s.amount) : null },
+            { label: t("sheet.benefit"), value: benefit?.text ?? null },
             { label: t("sheet.people"), value: s.beneficiaryCount ? m.num(s.beneficiaryCount) : null },
             { label: t("sheet.category"), value: category },
             { label: t("sheet.runBy"), value: v.level ? t(`runBy.${v.level}`) : s.level || null },
