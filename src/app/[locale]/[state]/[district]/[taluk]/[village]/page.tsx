@@ -99,7 +99,7 @@ export default function VillagePage({
   const village = data?.data;
   const districtBase = `/${locale}/${state}/${district}`;
   const talukBase = `${districtBase}/${talukSlug}`;
-  const subUnitEn = getStateConfig(state)?.subDistrictUnit ?? "Taluk";
+  const subUnitEn = getStateConfig(state, district)?.subDistrictUnit ?? "Taluk";
   const subUnit = tOne.has(subUnitEn) ? tOne(subUnitEn) : subUnitEn;
 
   // People per home — only when both counts are on record.

@@ -251,7 +251,7 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
   const tMany = useTranslations("subUnits");
   const f = useFormat();
   const base = `/${locale}/${state}/${district}`;
-  const stateConfig = getStateConfig(state);
+  const stateConfig = getStateConfig(state, district);
   const subUnit = stateConfig?.subDistrictUnit ?? "Taluk";
   const subUnitPlural = stateConfig?.subDistrictUnitPlural ?? "Taluks";
   const hideVillages = stateConfig?.showVillages === false;

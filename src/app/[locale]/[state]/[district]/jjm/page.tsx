@@ -166,7 +166,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
   const open = areas.find((v) => v.id === openId) ?? null;
 
   // Urban districts where JJM does not apply: point to the water board.
-  const sc = getStateConfig(state);
+  const sc = getStateConfig(state, district);
   const urbanWaterBoard = sc && !sc.jjmApplicable && sc.waterBoard ? sc.waterBoard : null;
 
   return (

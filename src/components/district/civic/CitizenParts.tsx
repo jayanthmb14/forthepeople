@@ -75,8 +75,8 @@ export interface Right {
 }
 
 /** The rights shown, with the local-government one picked for the state. */
-export function getRights(stateSlug: string): Right[] {
-  const sc = getStateConfig(stateSlug);
+export function getRights(stateSlug: string, districtSlug?: string): Right[] {
+  const sc = getStateConfig(stateSlug, districtSlug);
   const isUrban = sc ? !sc.gramPanchayatApplicable : false;
   const local: Right = isUrban
     ? { id: sc?.municipalBody ? "wardBody" : "ward", icon: Building2, body: sc?.municipalBody ?? undefined }

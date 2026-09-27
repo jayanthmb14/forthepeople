@@ -221,7 +221,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
   const closeRight = useCallback(() => setRight(null), []);
 
   const tipsLoading = loadedFor !== district;
-  const rights = getRights(state);
+  const rights = getRights(state, district);
   const emergencyCount = HELPLINES.filter((h) => h.kind === "emergency").length;
 
   useEffect(() => {

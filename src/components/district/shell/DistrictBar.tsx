@@ -85,7 +85,7 @@ export default function DistrictBar({ locale, stateSlug, districtSlug }: Props) 
   if (!stateData || !districtData) return null;
 
   const districtLabel = placeName(districtData, lang);
-  const config = getStateConfig(stateSlug);
+  const config = getStateConfig(stateSlug, districtSlug);
   const unitsEn = config?.subDistrictUnitPlural ?? "Taluks";
   // Lower-casing is a no-op for Indic scripts and gives "All taluks" in English.
   const units = (tu.has(unitsEn) ? tu(unitsEn) : unitsEn).toLocaleLowerCase(lang);

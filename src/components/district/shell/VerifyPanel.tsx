@@ -88,7 +88,7 @@ export default function VerifyPanel({
   const datasets = moduleSlug && !isOverview ? fresh.datasetsFor(moduleSlug) : [];
   // Known from the registry, so the intro does not flicker while loading.
   const hasDatasets = isOverview || DATASETS.some((d) => d.module === moduleSlug);
-  const portal = moduleSlug && !isOverview ? modulePortal(moduleSlug, stateSlug) : null;
+  const portal = moduleSlug && !isOverview ? modulePortal(moduleSlug, stateSlug, districtSlug) : null;
   const sources = moduleSlug && !isOverview ? moduleSourceNames(moduleSlug, stateSlug).map(src.name).join(", ") : "";
 
   const methodText = (d: DatasetFreshness) =>

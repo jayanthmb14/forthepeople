@@ -246,7 +246,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
   ];
 
   // The care staircase: village → district, with the state's own names.
-  const config = getStateConfig(state);
+  const config = getStateConfig(state, district);
   const subLabelEn = config?.healthSubLabel ?? "Taluk Hospitals";
   const subKey = SUB_HOSPITAL_KEY[subLabelEn];
   const unitEn = config?.subDistrictUnit ?? "Taluk";

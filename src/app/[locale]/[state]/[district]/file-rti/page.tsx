@@ -189,7 +189,7 @@ export default function FileRTIPage({ params }: { params: Promise<{ locale: stri
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
-  const stateConfig = getStateConfig(state);
+  const stateConfig = getStateConfig(state, district);
   const commission = stateConfig?.stateInformationCommission ?? t("stateCommission");
   const { data, isLoading, error } = useRTI(district, state);
   const [step, setStep] = useState<Step>(1);

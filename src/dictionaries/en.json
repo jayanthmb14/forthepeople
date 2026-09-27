@@ -87,7 +87,7 @@
   },
   "india": {
     "title": "India in one page.",
-    "subtitle": "Every key fact about your country, sourced from official government portals.",
+    "subtitle": "Every key fact about your country, from government portals and other reputed sources, each with its date.",
     "hero": {
       "tag": "India at a glance",
       "tiles": {
@@ -764,10 +764,10 @@
     "fallbackDiscom": "the local electricity provider",
     "fallbackWaterPortal": "the state water resources department",
     "fallbackTransport": "the state transport corporation",
-    "footer": "Data is sourced from official government portals under India's Open Data Policy (NDSAP).",
+    "footer": "Our data comes from government portals (NDSAP), research institutions and other reputed sources.",
     "generic": {
       "title": "Data being collected",
-      "body": "Data for this module is being collected from official government portals for {district}. It will appear here once available."
+      "body": "We do not have this data for {district} yet. When a reliable source publishes it, it will appear here with its date."
     },
     "water": {
       "title": "Dam & reservoir data being prepared",
@@ -835,7 +835,7 @@
     },
     "rti": {
       "title": "RTI filing data being collected",
-      "body": "RTI filing statistics and department-wise response data for {district} are being collected from official RTI portals."
+      "body": "We do not have RTI filing figures for {district} yet. The state information commission's annual report is the usual source."
     },
     "elections": {
       "title": "Election data being collected",

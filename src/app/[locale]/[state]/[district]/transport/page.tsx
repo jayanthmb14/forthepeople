@@ -318,7 +318,7 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
   const shownCount = Math.min(limit, listed.length);
 
   // The state transport corporation's site, only for its own routes.
-  const sc = getStateConfig(state);
+  const sc = getStateConfig(state, district);
   const corpNames = (sc?.stateTransportName ?? "").split("/").map((s) => s.trim().toLowerCase()).filter(Boolean);
   const corpSite = (op: string) =>
     sc?.stateTransportUrl && corpNames.some((n) => op.toLowerCase().includes(n)) ? sc.stateTransportUrl : null;

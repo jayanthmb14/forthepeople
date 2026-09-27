@@ -86,7 +86,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   const mt = useModuleText();
   const base = `/${locale}/${state}/${district}`;
   const districtName = useDistrictName(state, district);
-  const sc = getStateConfig(state);
+  const sc = getStateConfig(state, district);
   const portalName = sc?.waterPortalName ?? t("fallbackPortal");
   const portal = sc?.waterPortalUrl ? { name: sc.waterPortalName, href: sc.waterPortalUrl } : null;
   const { data, isLoading, error } = useWater(district, state);

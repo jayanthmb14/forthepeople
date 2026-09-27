@@ -22,8 +22,8 @@ export function moduleSourceNames(module: string, stateSlug: string): string[] {
 }
 
 /** An official portal to check a module's figures, state-specific where one exists. */
-export function modulePortal(module: string, stateSlug: string): string | null {
-  const config = getStateConfig(stateSlug);
+export function modulePortal(module: string, stateSlug: string, districtSlug?: string): string | null {
+  const config = getStateConfig(stateSlug, districtSlug);
   const byState: Record<string, string | null | undefined> = {
     water: config?.waterPortalUrl,
     power: config?.discomPortalUrl,

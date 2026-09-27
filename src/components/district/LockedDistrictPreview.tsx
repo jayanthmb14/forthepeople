@@ -131,7 +131,7 @@ export default function LockedDistrictPreview({
   const stateLabel = place.state(stateSlug, stateName);
   const monthly = `₹${f.number(TIER_CONFIG.district.amount)}`;
   const { modulesPerDistrict } = getPlatformFacts();
-  const subUnitLabel = getStateConfig(stateSlug)?.subDistrictUnitPlural ?? "Taluks";
+  const subUnitLabel = getStateConfig(stateSlug, districtSlug)?.subDistrictUnitPlural ?? "Taluks";
   const groups = getTieredModules();
 
   return (

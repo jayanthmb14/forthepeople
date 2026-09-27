@@ -14,7 +14,6 @@ import {
   getPlatformFacts,
 } from "@/lib/platform-facts";
 import "./globals.css";
-import "./mobile.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 

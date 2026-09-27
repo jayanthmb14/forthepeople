@@ -144,7 +144,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const f = useFormat();
   const money = useMoney();
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
-  const stateConfig = getStateConfig(stateSlug);
+  const stateConfig = getStateConfig(stateSlug, districtSlug);
   const subUnitEn = stateConfig?.subDistrictUnitPlural ?? "Taluks";
   const subUnitPlural = tu.has(subUnitEn) ? tu(subUnitEn) : subUnitEn;
   const reg = getDistrict(stateSlug, districtSlug);

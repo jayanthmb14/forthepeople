@@ -212,7 +212,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
     .sort((a, c) => c.value - a.value)
     .slice(0, BARS_SHOWN);
 
-  const sc = getStateConfig(state);
+  const sc = getStateConfig(state, district);
   const discomUrl = sc?.discomPortalUrl ?? null;
   const discomName = sc?.discomName ?? t("sheet.discomFallback");
 

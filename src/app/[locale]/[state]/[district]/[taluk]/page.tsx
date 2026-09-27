@@ -108,7 +108,7 @@ export default function TalukPage({
   const [openId, setOpenId] = useState<string | null>(null);
 
   const districtBase = `/${locale}/${state}/${district}`;
-  const stateConfig = getStateConfig(state);
+  const stateConfig = getStateConfig(state, district);
   const subUnitEn = stateConfig?.subDistrictUnit ?? "Taluk";
   const subUnit = tOne.has(subUnitEn) ? tOne(subUnitEn) : subUnitEn;
   // Mid-sentence form: "this taluk" in English, the word as is elsewhere.

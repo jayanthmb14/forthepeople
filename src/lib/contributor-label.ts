@@ -10,7 +10,7 @@
  *   getContributorLabel("district", "Mandya") → "Mandya Champion"
  *   getContributorLabel("state", undefined, "Karnataka") → "Karnataka Champion"
  *   getContributorLabel("patron") → "India Patron"
- *   getContributorLabel("founder") → "Royal Contributor"
+ *   getContributorLabel("founder") → "Founding Builder"
  *   getContributorLabel("chai") → "Chai Supporter"
  *   getContributorLabel("custom") → "Supporter"
  */
@@ -21,7 +21,7 @@ export function getContributorLabel(
 ): string {
   switch (tier) {
     case "founder":
-      return "Royal Contributor";
+      return "Founding Builder";
     case "patron":
       return "India Patron";
     case "state":

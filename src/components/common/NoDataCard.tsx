@@ -16,6 +16,7 @@
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/district/ui";
 import { getStateConfig } from "@/lib/constants/state-config";
+import { useDistrictName } from "@/i18n/client";
 
 interface NoDataCardProps {
   module: string;
@@ -30,8 +31,9 @@ const URBAN_VARIANT = new Set(["crops", "farm", "gram-panchayat", "jjm"]);
 
 export default function NoDataCard({ module, district, state, isUrban = false, customMessage }: NoDataCardProps) {
   const t = useTranslations("noData");
-  const stateConfig = getStateConfig(state);
-  const districtName = district.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const stateConfig = getStateConfig(state, district);
+  // In the page language (ಮಂಡ್ಯ / मंड्या), not a title-cased slug.
+  const districtName = useDistrictName(state, district);
   const values = {
     district: districtName,
     discom: stateConfig?.discomFullName ?? t("fallbackDiscom"),
