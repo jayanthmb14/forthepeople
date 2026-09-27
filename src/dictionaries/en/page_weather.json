@@ -1,0 +1,98 @@
+{
+  "description": "Latest weather readings and monthly rainfall history",
+  "summary": "This page shows weather readings and monthly rainfall history for {district}, from the India Meteorological Department (IMD) and OpenWeatherMap. Temperature is in degrees Celsius and rainfall in millimetres. Each reading shows the time it was recorded.",
+  "mm": "{v} mm",
+  "kmh": "km/h",
+  "mmUnit": "mm",
+  "current": "Current conditions",
+  "lastRecorded": "Last recorded conditions",
+  "tiles": {
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "rain": "Rainfall (day)",
+    "feelsLike": "feels like {feels}",
+    "condFeels": "{cond}, feels like {feels}"
+  },
+  "glyphAria": "Weather picture",
+  "cond": {
+    "storm": "thunderstorm",
+    "drizzle": "drizzle",
+    "rain": "rain",
+    "snow": "snow",
+    "fog": "mist or fog",
+    "haze": "haze",
+    "overcast": "overcast clouds",
+    "partlyCloudy": "some clouds",
+    "cloudy": "clouds",
+    "clear": "clear sky"
+  },
+  "explain": {
+    "nowTempCond": "Right now it is <b>{temp}</b> with {cond}.",
+    "nowTemp": "Right now it is <b>{temp}</b>.",
+    "nowCond": "Right now the weather shows {cond}.",
+    "thenTempCond": "When last recorded, on {when} IST, it was <b>{temp}</b> with {cond}.",
+    "thenTemp": "When last recorded, on {when} IST, it was <b>{temp}</b>.",
+    "thenCond": "When last recorded, on {when} IST, the weather showed {cond}.",
+    "feelsNow": "It feels like <b>{feels}</b>.",
+    "feelsThen": "It felt like <b>{feels}</b>."
+  },
+  "humidityLabel": "Humidity",
+  "humidityCaption": "How damp the air is (humidity)",
+  "trend": {
+    "title": "How the temperature changed",
+    "units": "Degrees Celsius at each reading",
+    "simple": "Coolest reading: <b>{min}</b> on {minAt}. Warmest: <b>{max}</b> on {maxAt}.",
+    "series": "Temperature"
+  },
+  "readings": {
+    "title": "Recent readings",
+    "caption": "Recent weather readings for {district}",
+    "recorded": "Recorded",
+    "temp": "Temp °C",
+    "conditions": "Conditions",
+    "humidity": "Humidity %",
+    "rain": "Rain mm"
+  },
+  "rain": {
+    "title": "Rainfall",
+    "periodRange": "{from}–{to} {year}",
+    "yearExplain": "In {period}, <b>{actual}</b> of rain fell in {district}. The normal for these months is {normal}, so this is <b>{pct}</b> of normal.",
+    "months": "Coloured drops are months that got at least their normal rain.",
+    "monthsAria": "{n, plural, one {# month} other {# months}} of {total} got at least normal rain.",
+    "ringAria": "{pct} of normal rain in {period}",
+    "ringCaption": "of normal rain, {period}"
+  },
+  "monthly": {
+    "title": "Monthly rainfall, actual and normal",
+    "units": "Millimetres of rain each month. Grey is the normal for that month, colour is what fell.",
+    "simple": "Rain was below normal in <b>{below}</b> of the last {total} months.",
+    "simpleLatest": "In {month}, <b>{actual}</b> fell against a normal of {normal}.",
+    "actual": "Actual",
+    "normal": "Normal",
+    "tableRow": "{actual} (normal {normal})"
+  },
+  "departure": {
+    "title": "Departure from normal",
+    "units": "Millimetres above or below the normal for each month",
+    "simple": "The wettest month compared with normal was <b>{wet}</b> ({wetBy}). The driest was <b>{dry}</b> ({dryBy}).",
+    "more": "More rain than normal",
+    "less": "Less rain than normal",
+    "series": "Departure"
+  },
+  "history": {
+    "title": "Rainfall history table",
+    "caption": "Monthly rainfall for {district}",
+    "month": "Month",
+    "year": "Year",
+    "actual": "Actual (mm)",
+    "normal": "Normal (mm)",
+    "departure": "Departure (mm)"
+  },
+  "csv": {
+    "label": "Download rainfall data as CSV"
+  },
+  "share": "{district} weather: {temp}, {cond}, humidity {humidity}",
+  "shareTemp": "{district} weather: {temp}",
+  "shareEmpty": "Weather data for {district}"
+}

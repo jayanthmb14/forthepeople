@@ -1,0 +1,46 @@
+{
+  "description": "Step-by-step guides for government services: documents needed, fees and how long each one takes",
+  "summary": "Step-by-step guides for common government services in {district}: which office handles each one, which documents to carry, the fee, how long it usually takes, and where you can apply online.",
+  "tiles": {
+    "guides": "Service guides",
+    "guidesSub": "Step-by-step how-tos",
+    "categories": "Kinds of service",
+    "categoriesSub": "Categories covered",
+    "online": "Apply online",
+    "onlineSub": "Guides with an official link"
+  },
+  "explainer": "We have {total, plural, one {<b>#</b> guide} other {<b>#</b> guides}} for {district}. <b>{online}</b> of them link to an official page where you can apply online. For the rest, visit the office named in the guide.",
+  "explainerNone": "We have {total, plural, one {<b>#</b> guide} other {<b>#</b> guides}} for {district}. None of them has an online application link yet, so each one names the office to visit.",
+  "pictogram": "{n, plural, =0 {Fewer than 1 in every 10 guides can be started online.} other {About # of every 10 guides can be started online.}}",
+  "pictogramNone": "None of the guides can be started online yet.",
+  "cats": {
+    "title": "Kinds of service",
+    "units": "Number of guides in each category",
+    "simple": "Most guides are about <b>{category}</b>: {n} of {total}.",
+    "other": "Other kinds",
+    "aria": "{total, plural, one {# guide} other {# guides}}, split by the kind of service."
+  },
+  "docs": {
+    "title": "Documents asked for most",
+    "units": "How many guides ask for each document",
+    "simple": "<b>{doc}</b> is asked for in {n} of the {total} guides. Keep a copy ready.",
+    "count": "{n} of {total}"
+  },
+  "list": {
+    "title": "Service guides",
+    "chipsLabel": "Service category",
+    "all": "All",
+    "steps": "{n, plural, one {# step} other {# steps}}",
+    "docs": "{n, plural, one {# document} other {# documents}}",
+    "online": "Apply online"
+  },
+  "detail": {
+    "fee": "Fee",
+    "timeline": "How long it takes",
+    "documents": "Documents needed",
+    "steps": "Steps",
+    "tip": "Tip",
+    "apply": "Apply online"
+  },
+  "share": "How to get government services in {district}: {n, plural, one {# step-by-step guide} other {# step-by-step guides}}"
+}

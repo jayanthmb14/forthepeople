@@ -14,12 +14,20 @@
 //
 //  Order: PageHeader → summary → emoji StatTiles → picture (10 laptops,
 //  lit for the share of guides that have an online application link) →
-//  category chips + guides → sources → news → toolbar. Colours come from
-//  the page hue (teal for services), set by HueScope in the layout.
+//  two charts (kinds of service as a ring; the documents asked for most as
+//  bars) → category chips + guides → sources → news → toolbar. Colours
+//  come from the page hue (teal for services), set by HueScope.
+//
+//  Text: every word comes from the "page_services" messages. Guide names,
+//  categories, offices, documents and steps are data and stay as published.
 "use client";
 import { use, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Briefcase, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useServices } from "@/hooks/useRealtimeData";
+import type { ServiceGuide } from "@/hooks/useRealtimeData";
+import { useFormat, useModuleText } from "@/i18n/client";
+import { scriptLang } from "@/lib/utils/script-lang";
 import {
   PageHeader,
   Section,
@@ -32,15 +40,24 @@ import {
   LoadingShell,
   ErrorBlock,
 } from "@/components/district/ui";
-import { Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
 import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { BarList, HueDonut, MUTED_SHADE, type DonutSegment } from "@/components/district/daily-services/HueCharts";
+import { useDistrictName } from "@/components/district/daily-services/useDistrictName";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 /** Pill colours taken from the page hue instead of the neutral grey. */
 const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
+
+/** How many categories the ring shows by name before "Other kinds". */
+const TOP_CATEGORIES = 5;
+/** How many documents the bar list shows. */
+const TOP_DOCUMENTS = 5;
+
+const bold = (c: React.ReactNode) => <strong>{c}</strong>;
 
 /**
  * One emoji per guide, picked from its category name. Categories are free
@@ -63,6 +80,33 @@ function categoryEmoji(category: string): string {
   return "📄";
 }
 
+/**
+ * The documents most guides ask for. Each guide counts a document once;
+ * names are matched ignoring case and extra spaces, and shown the way
+ * they were first written. Only documents asked for by 2+ guides count as
+ * "asked for most" (a list of one-offs says nothing).
+ */
+function topDocuments(guides: ServiceGuide[]): Array<{ key: string; label: string; count: number }> {
+  const map = new Map<string, { label: string; count: number }>();
+  for (const g of guides) {
+    const seen = new Set<string>();
+    for (const raw of g.documentsNeeded) {
+      const label = raw.replace(/\s+/g, " ").trim();
+      const key = label.toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      const cur = map.get(key);
+      if (cur) cur.count += 1;
+      else map.set(key, { label, count: 1 });
+    }
+  }
+  return [...map.entries()]
+    .map(([key, v]) => ({ key, ...v }))
+    .filter((d) => d.count >= 2)
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, TOP_DOCUMENTS);
+}
+
 /** A labelled block inside an open guide, with one emoji before the label. */
 function DetailBlock({ label, emoji, children }: { label: string; emoji: string; children: React.ReactNode }) {
   return (
@@ -76,34 +120,68 @@ function DetailBlock({ label, emoji, children }: { label: string; emoji: string;
   );
 }
 
+/** A tiny "👣 4 steps" marker under a guide's name. */
+function MetaBit({ emoji, children }: { emoji: string; children: React.ReactNode }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+      <span className="ftp-emoji" aria-hidden style={{ fontSize: 12 }}>{emoji}</span>
+      {children}
+    </span>
+  );
+}
+
 function ServicesPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const base = `/${locale}/${state}/${district}`;
+  const t = useTranslations("page_services");
+  const f = useFormat();
+  const mt = useModuleText();
+  const districtName = useDistrictName(state, district);
   const { data, isLoading, error } = useServices(district, state);
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const n = (v: number) => f.number(v);
+  const pct = (share: number) => f.number(share, { style: "percent", maximumFractionDigits: 0 });
+
   const services = data?.data ?? [];
   const active = services.filter((s) => s.active);
-  const categories = Array.from(new Set(active.map((s) => s.category)));
   const filtered = filter === "all" ? active : active.filter((s) => s.category === filter);
   // How many guides link to an official online application.
   const onlineCount = active.filter((s) => Boolean(s.onlineUrl)).length;
+  const onlineTenths = active.length > 0 ? (onlineCount / active.length) * 10 : 0;
+
+  // Guides per category, biggest first (also the chip order).
+  const categoryCounts = Object.entries(
+    active.reduce<Record<string, number>>((acc, s) => {
+      acc[s.category] = (acc[s.category] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const categories = categoryCounts.map(([c]) => c);
+
+  // The ring: the top categories by name, the rest folded into "Other kinds".
+  const topCats = categoryCounts.slice(0, TOP_CATEGORIES);
+  const otherCount = categoryCounts.slice(TOP_CATEGORIES).reduce((s, [, c]) => s + c, 0);
+  const catSegments: DonutSegment[] = [
+    ...topCats.map(([c, count]) => ({ key: c, label: c, value: count, display: n(count), emoji: categoryEmoji(c) })),
+    ...(otherCount > 0 ? [{ key: "__other", label: t("cats.other"), value: otherCount, display: n(otherCount), emoji: "🗂️", color: MUTED_SHADE }] : []),
+  ];
+  const topCat = categoryCounts[0];
+
+  const docs = topDocuments(active);
 
   return (
     <ModulePage>
       <PageHeader
         icon={Briefcase}
-        title="Citizen Services"
-        description="Step-by-step guides for government services, documents needed, fees, and timelines"
+        title={mt.label("services")}
+        description={t("description")}
         backHref={base}
         accent={getModuleAccent("services")}
       />
 
-      <ModuleSummary>
-        Step-by-step guides for common government services in this district: which office handles each one, which
-        documents to carry, the fee, how long it usually takes, and where you can apply online.
-      </ModuleSummary>
+      <ModuleSummary>{t("summary", { district: districtName })}</ModuleSummary>
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
@@ -112,49 +190,82 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
       {!isLoading && active.length > 0 && (
         <>
           <StatStrip cols={3}>
-            <StatTile emoji="📋" label="Service guides" value={active.length.toLocaleString("en-IN")} sub="Step-by-step how-tos" />
-            <StatTile emoji="🗂️" label="Categories" value={categories.length.toLocaleString("en-IN")} sub="Kinds of service covered" />
-            <StatTile emoji="💻" label="Apply online" value={onlineCount.toLocaleString("en-IN")} sub="Guides with an official link" />
+            <StatTile emoji="📋" label={t("tiles.guides")} value={n(active.length)} sub={t("tiles.guidesSub")} />
+            <StatTile emoji="🗂️" label={t("tiles.categories")} value={n(categories.length)} sub={t("tiles.categoriesSub")} />
+            <StatTile emoji="💻" label={t("tiles.online")} value={n(onlineCount)} sub={t("tiles.onlineSub")} />
           </StatStrip>
 
           {/* The picture: 10 laptops, lit for the share of guides that can be
               started online. Same counts as the tiles above. */}
           <Card tinted padding={18} style={{ marginTop: 16 }}>
-            <Explainer title="In simple words" emoji="🧭">
-              {onlineCount > 0 ? (
-                <>
-                  We have <strong>{active.length}</strong> guides for this district. <strong>{onlineCount}</strong> of them
-                  have a link where you can apply online; for the rest you visit the office named in the guide.
-                </>
-              ) : (
-                <>
-                  We have <strong>{active.length}</strong> guides for this district. None of them has an online application
-                  link yet, so each one names the office to visit.
-                </>
-              )}
+            <Explainer emoji="🧭">
+              {t.rich(onlineCount > 0 ? "explainer" : "explainerNone", {
+                total: active.length,
+                online: n(onlineCount),
+                district: districtName,
+                b: bold,
+              })}
             </Explainer>
             <Pictogram
-              filled={(onlineCount / active.length) * 10}
+              filled={onlineTenths}
               emoji="💻"
-              label={
-                onlineCount === 0
-                  ? "None of the guides can be started online yet."
-                  : Math.round((onlineCount / active.length) * 10) === 0
-                    ? "Fewer than 1 in every 10 guides can be started online."
-                    : `About ${Math.round((onlineCount / active.length) * 10)} of every 10 guides can be started online.`
-              }
+              label={onlineCount === 0 ? t("pictogramNone") : t("pictogram", { n: Math.round(onlineTenths) })}
             />
           </Card>
 
-          <Section title="Service guides" emoji="📋">
+          {/* Two charts: which kinds of service, and which papers to carry.
+              Each hides itself when there is not enough to compare. */}
+          {(catSegments.length > 1 || docs.length > 0) && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 16, marginTop: 24 }}>
+              {catSegments.length > 1 && topCat && (
+                <ChartCard
+                  title={t("cats.title")}
+                  emoji="🗂️"
+                  units={t("cats.units")}
+                  simple={t.rich("cats.simple", { category: topCat[0], n: n(topCat[1]), total: n(active.length), b: bold })}
+                  table={catSegments.map((s) => ({ label: s.label, value: s.display }))}
+                >
+                  <HueDonut
+                    segments={catSegments}
+                    center={n(active.length)}
+                    centerSub={t("tiles.guides")}
+                    ariaLabel={t("cats.aria", { total: active.length })}
+                    percentOf={pct}
+                  />
+                </ChartCard>
+              )}
+              {docs.length > 0 && (
+                <ChartCard
+                  title={t("docs.title")}
+                  emoji="📄"
+                  units={t("docs.units")}
+                  simple={t.rich("docs.simple", { doc: docs[0].label, n: n(docs[0].count), total: n(active.length), b: bold })}
+                  table={docs.map((d) => ({ label: d.label, value: t("docs.count", { n: n(d.count), total: n(active.length) }) }))}
+                >
+                  <BarList
+                    items={docs.map((d) => ({
+                      key: d.key,
+                      label: d.label,
+                      lang: scriptLang(d.label),
+                      value: d.count,
+                      display: t("docs.count", { n: n(d.count), total: n(active.length) }),
+                      emoji: "📄",
+                    }))}
+                  />
+                </ChartCard>
+              )}
+            </div>
+          )}
+
+          <Section title={t("list.title")} emoji="📋">
             <div style={{ marginBottom: 12 }}>
               <Chips
-                label="Service category"
+                label={t("list.chipsLabel")}
                 value={filter}
                 onChange={setFilter}
                 items={[
-                  { value: "all", label: "All", count: active.length },
-                  ...categories.map((c) => ({ value: c, label: c, count: active.filter((s) => s.category === c).length })),
+                  { value: "all", label: t("list.all"), count: active.length },
+                  ...categoryCounts.map(([c, count]) => ({ value: c, label: c, count })),
                 ]}
               />
             </div>
@@ -181,7 +292,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         background: "none",
                         border: "none",
                         cursor: "pointer",
-                        textAlign: "left",
+                        textAlign: "start",
                         fontFamily: "var(--ftp-font-sans)",
                         color: "var(--ftp-text)",
                       }}
@@ -193,12 +304,21 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         <span style={{ minWidth: 0 }}>
                           <span className="ftp-title" style={{ display: "block" }}>{s.serviceName}</span>
                           {s.serviceNameLocal && (
-                            <span lang="und" style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{s.serviceNameLocal}</span>
+                            <span lang={scriptLang(s.serviceNameLocal)} style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>
+                              {s.serviceNameLocal}
+                            </span>
+                          )}
+                          {(s.steps.length > 0 || s.documentsNeeded.length > 0 || s.onlineUrl) && (
+                            <span style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
+                              {s.steps.length > 0 && <MetaBit emoji="👣">{t("list.steps", { n: s.steps.length })}</MetaBit>}
+                              {s.documentsNeeded.length > 0 && <MetaBit emoji="📄">{t("list.docs", { n: s.documentsNeeded.length })}</MetaBit>}
+                              {s.onlineUrl && <MetaBit emoji="💻">{t("list.online")}</MetaBit>}
+                            </span>
                           )}
                         </span>
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0, maxWidth: "45%", justifyContent: "flex-end" }}>
-                        <Pill style={{ ...HUE_PILL, whiteSpace: "normal", height: "auto", minHeight: 24, padding: "3px 10px", textAlign: "right" }}>{s.office}</Pill>
+                        <Pill style={{ ...HUE_PILL, whiteSpace: "normal", height: "auto", minHeight: 24, padding: "3px 10px", textAlign: "end" }}>{s.office}</Pill>
                         {isOpen ? (
                           <ChevronUp size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0 }} />
                         ) : (
@@ -212,12 +332,12 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         {(s.fees || s.timeline) && (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
                             {s.fees && (
-                              <DetailBlock label="Fee" emoji="💰">
+                              <DetailBlock label={t("detail.fee")} emoji="💰">
                                 <div style={{ fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>{s.fees}</div>
                               </DetailBlock>
                             )}
                             {s.timeline && (
-                              <DetailBlock label="Timeline" emoji="⏱️">
+                              <DetailBlock label={t("detail.timeline")} emoji="⏱️">
                                 <div style={{ fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>{s.timeline}</div>
                               </DetailBlock>
                             )}
@@ -225,7 +345,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         )}
 
                         {s.documentsNeeded.length > 0 && (
-                          <DetailBlock label="Documents needed" emoji="📄">
+                          <DetailBlock label={t("detail.documents")} emoji="📄">
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                               {s.documentsNeeded.map((doc, i) => (
                                 <Pill key={i} style={{ ...HUE_PILL, whiteSpace: "normal", height: "auto", minHeight: 24, padding: "3px 10px" }}>
@@ -237,7 +357,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         )}
 
                         {s.steps.length > 0 && (
-                          <DetailBlock label="Steps" emoji="👣">
+                          <DetailBlock label={t("detail.steps")} emoji="👣">
                             {/* A real sequence, so numbered markers: hue circles. */}
                             <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                               {s.steps.map((step, i) => (
@@ -258,7 +378,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                                       color: "#fff",
                                     }}
                                   >
-                                    {i + 1}
+                                    {n(i + 1)}
                                   </span>
                                   <span className="ftp-body" style={{ fontSize: 14, lineHeight: "21px", paddingTop: 1 }}>{step}</span>
                                 </li>
@@ -268,7 +388,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         )}
 
                         {s.tips && (
-                          <DetailBlock label="Tip" emoji="💡">
+                          <DetailBlock label={t("detail.tip")} emoji="💡">
                             <p className="ftp-body" style={{ margin: 0, fontSize: 14, lineHeight: "21px" }}>{s.tips}</p>
                           </DetailBlock>
                         )}
@@ -276,7 +396,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
                         {s.onlineUrl && (
                           <div style={{ marginTop: 16 }}>
                             <PrimaryButton icon={ExternalLink} href={s.onlineUrl} external>
-                              Apply online
+                              {t("detail.apply")}
                             </PrimaryButton>
                           </div>
                         )}
@@ -296,16 +416,17 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
         locale={locale}
         district={district}
         moduleSlug="services"
-        moduleLabel="Citizen Services"
-        shareText={`How to get government services in ${district}: ${active.length} step-by-step guides`}
+        moduleLabel={mt.label("services")}
+        shareText={t("share", { district: districtName, n: active.length })}
       />
     </ModulePage>
   );
 }
 
 export default function ServicesPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
+  const mt = useModuleText();
   return (
-    <ModuleErrorBoundary moduleName="Citizen Services">
+    <ModuleErrorBoundary moduleName={mt.label("services")}>
       <ServicesPageInner params={params} />
     </ModuleErrorBoundary>
   );

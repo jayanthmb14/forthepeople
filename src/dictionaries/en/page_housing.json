@@ -1,0 +1,56 @@
+{
+  "description": "PMAY and other housing schemes: houses planned, sanctioned, finished and still being built",
+  "summary": "This page tracks government housing schemes such as PMAY in {district}: how many houses were planned, sanctioned, finished and are still being built, and how much money was set aside, released and spent. Figures come from AwaasSoft and are grouped by financial year.",
+  "fy": "FY {year}",
+  "fyRange": "FY {from} to {to}",
+  "crore": "₹{n} Cr",
+  "tiles": {
+    "target": "Houses planned",
+    "sanctioned": "Sanctioned",
+    "completed": "Finished",
+    "inProgress": "Being built"
+  },
+  "explainer": "<b>{done}</b> of the <b>{target}</b> houses planned are finished, and <b>{building}</b> more are being built.",
+  "explainerFy": "<b>{done}</b> of the <b>{target}</b> houses planned in {fy} are finished, and <b>{building}</b> more are being built.",
+  "pictogram": "{n, plural, =0 {Fewer than 1 in every 10 planned houses is finished.} other {About # of every 10 planned houses are finished.}}",
+  "pictogramNone": "None of the planned houses is finished yet.",
+  "gaugeLabel": "Houses finished against the plan",
+  "gaugeCaption": "Houses finished",
+  "gaugeCaptionFy": "Houses finished, {fy}",
+  "chart": {
+    "title": "Progress by scheme",
+    "units": "Number of houses in each scheme",
+    "simple": "<b>{scheme}</b> has the most finished houses: {done} of {target} planned.",
+    "completed": "Finished",
+    "inProgress": "Being built",
+    "notSanctioned": "Not yet sanctioned",
+    "schemeYear": "{scheme} ({fy})",
+    "tableRow": "{done} finished, {building} being built, of {target}"
+  },
+  "funds": {
+    "title": "Money for housing",
+    "units": "Money set aside for the schemes that report it",
+    "spent": "Spent",
+    "releasedUnspent": "Released, not yet spent",
+    "notReleased": "Not yet released",
+    "notSpent": "Not yet spent",
+    "centerSub": "spent",
+    "simpleReleased": "Of <b>{alloc}</b> set aside, <b>{released}</b> has been released and <b>{spent}</b> spent.",
+    "simpleSpent": "Of <b>{alloc}</b> set aside, <b>{spent}</b> has been spent.",
+    "aria": "Housing money: {spent} spent out of {alloc} set aside."
+  },
+  "details": {
+    "title": "Scheme details",
+    "target": "Planned",
+    "sanctioned": "Sanctioned",
+    "completed": "Finished",
+    "inProgress": "Being built",
+    "allocated": "Set aside",
+    "released": "Released",
+    "spent": "Spent",
+    "fundsUsed": "Money spent out of what was set aside",
+    "ringAria": "{pct} of planned houses finished"
+  },
+  "share": "Housing in {district}: {done} of {target} planned houses finished ({pct})",
+  "shareEmpty": "Housing scheme data for {district}"
+}
