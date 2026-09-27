@@ -5,20 +5,19 @@
  * /[locale]/india/updates — Public Update Log.
  *
  * Transparency page showing every IndiaIndicator update with source +
- * as-of date + relative time. Builds trust. Linked from the main india
- * page footer. Phase U scaffold (file 31 + Sessions B+D extension).
+ * as-of date + when we recorded it. Builds trust. Linked from the India
+ * page and the module pages. Text from "page_india-updates".
  */
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 import IndiaUpdateLog from "@/components/india/IndiaUpdateLog";
-import { INDIA_DESIGN } from "@/lib/india/india-design";
 import { hueClass } from "@/lib/design/hues";
+import { languageAlternates } from "@/i18n/seo";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
-
-export const revalidate = 300; // 5 min — update-log is more dynamic than the main page
+export const revalidate = 300; // 5 min — the update log is more dynamic than the main page
 
 export async function generateMetadata({
   params,
@@ -26,20 +25,13 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const url = `${BASE_URL}/${locale}/india/updates`;
+  const t = await getTranslations({ locale, namespace: "page_india-updates" });
+  const alternates = languageAlternates("/india/updates", locale);
   return {
-    title: "Update Log · India · ForThePeople.in",
-    description:
-      "Every value update on /[locale]/india with its source citation and " +
-      "reporting date. Independent transparency log.",
-    alternates: {
-      canonical: url,
-      languages: {
-        en: `${BASE_URL}/en/india/updates`,
-        kn: `${BASE_URL}/kn/india/updates`,
-      },
-    },
-    openGraph: { url, title: "India Update Log · ForThePeople.in" },
+    title: t("meta.title"),
+    description: t("meta.description"),
+    alternates,
+    openGraph: { url: alternates.canonical, title: t("meta.title"), description: t("meta.description") },
     robots: { index: true, follow: true },
   };
 }
@@ -50,25 +42,14 @@ export default async function IndiaUpdatesPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "page_india-updates" });
 
   return (
-    <main
-      role="main"
-      // Design v4: the update log's module hue (slate), same as the
-      // district update-log page, so the kit chip and filter colours match.
-      className={hueClass("update-log")}
-      style={{
-        background: INDIA_DESIGN.bgPage,
-        minHeight: "100vh",
-      }}
-    >
-      <header
-        style={{
-          padding: "24px 16px 16px",
-          maxWidth: 880,
-          margin: "0 auto",
-        }}
-      >
+    // Design v4: the update log's module hue (slate), same as the district
+    // update-log page, so the chips and the ring match.
+    <main role="main" className={hueClass("update-log")} style={{ minHeight: "100vh" }}>
+      <header style={{ padding: "24px 16px 12px", maxWidth: 880, margin: "0 auto" }}>
         <Link
           href={`/${locale}/india`}
           style={{
@@ -76,70 +57,63 @@ export default async function IndiaUpdatesPage({
             alignItems: "center",
             gap: 6,
             fontSize: 13,
-            color: INDIA_DESIGN.textMuted,
+            color: "var(--ftp-text-2)",
             textDecoration: "none",
-            marginLeft: -8,
+            marginInlineStart: -8,
             padding: "6px 8px",
             minHeight: 44,
             borderRadius: 6,
           }}
         >
-          <ArrowLeft size={14} aria-hidden="true" />
-          Back to India dashboard
+          <ArrowLeft size={14} aria-hidden="true" className="india-back-arrow" />
+          {t("back")}
         </Link>
-        {/* Design v4: the page's group chip (emoji + sentence case), as in
-            the kit PageHeader, instead of a tracked-out uppercase eyebrow. */}
         <div
           style={{
-            marginTop: 16,
-            display: "flex",
-            width: "fit-content",
-            alignItems: "center",
-            gap: 6,
-            padding: "3px 10px 3px 6px",
-            borderRadius: 999,
-            background: "var(--hue-tint)",
-            color: "var(--hue-deep)",
-            fontSize: 12,
-            lineHeight: "18px",
-            fontWeight: 600,
+            position: "relative",
+            overflow: "hidden",
+            marginTop: 8,
+            padding: "clamp(18px, 3vw, 26px)",
+            borderRadius: "var(--ftp-radius-card)",
+            border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+            background:
+              "radial-gradient(110% 90% at 100% 0%, color-mix(in srgb, var(--hue-pop) 30%, transparent) 0%, transparent 55%), linear-gradient(135deg, var(--hue-tint) 0%, #fff 72%)",
+            boxShadow: "var(--ftp-shadow-1)",
           }}
         >
-          <span className="ftp-emoji" aria-hidden="true" style={{ fontSize: 14 }}>
+          <span aria-hidden className="ftp-emoji" style={{ position: "absolute", right: -10, bottom: -30, fontSize: 140, opacity: 0.08, pointerEvents: "none" }}>
             🕒
           </span>
-          Update log
+          <div
+            style={{
+              display: "flex",
+              width: "fit-content",
+              alignItems: "center",
+              gap: 6,
+              padding: "3px 10px 3px 6px",
+              borderRadius: 999,
+              background: "#fff",
+              border: "1px solid color-mix(in srgb, var(--hue) 28%, var(--ftp-border))",
+              color: "var(--hue-deep)",
+              fontSize: 12,
+              lineHeight: "18px",
+              fontWeight: 600,
+            }}
+          >
+            <span className="ftp-emoji" aria-hidden="true" style={{ fontSize: 14 }}>
+              🕒
+            </span>
+            {t("chip")}
+          </div>
+          <h1 className="ftp-display" style={{ position: "relative", fontSize: "clamp(26px, 4vw, 34px)", lineHeight: 1.15, fontWeight: 650, color: "var(--ftp-text)", margin: "10px 0 6px" }}>
+            {t("title")}
+          </h1>
+          <p style={{ position: "relative", fontSize: 15, color: "var(--ftp-text-2)", margin: 0, lineHeight: 1.6, maxWidth: 620 }}>{t("lead")}</p>
         </div>
-        <h1
-          style={{
-            fontSize: 32,
-            lineHeight: "38px",
-            fontWeight: 700,
-            color: INDIA_DESIGN.textPrimary,
-            letterSpacing: "-0.02em",
-            margin: "10px 0 6px",
-            fontFamily: INDIA_DESIGN.fontDisplay,
-          }}
-        >
-          Every change, with its source.
-        </h1>
-        <p
-          style={{
-            fontSize: 14,
-            color: INDIA_DESIGN.textMuted,
-            margin: 0,
-            lineHeight: 1.55,
-            maxWidth: 620,
-          }}
-        >
-          The most recent {/* TODO_RESEARCH: word "100" inline once feed is live */}
-          updates to any indicator on the India dashboard. Each row shows what
-          changed, where the value came from, and when. Filter by category
-          to focus on a single area.
-        </p>
       </header>
 
       <IndiaUpdateLog />
+      <style>{`[dir="rtl"] .india-back-arrow { transform: scaleX(-1); }`}</style>
     </main>
   );
 }

@@ -56,6 +56,8 @@ interface Props {
 
 const MIX_ORDER = ["coal", "renewables", "hydro", "nuclear"];
 const MIX_EMOJI: Record<string, string> = { coal: "🪨", renewables: "☀️", hydro: "💧", nuclear: "⚛️" };
+/** Colours people already link with each source: coal grey, sun amber, water blue, atom violet. */
+const MIX_COLOR: Record<string, string> = { coal: "#475569", renewables: "#D97706", hydro: "#0369A1", nuclear: "#7C3AED" };
 const MAX_TILES = 8;
 
 function tileEmoji(row: IndicatorRow, fallback: string): string {
@@ -157,12 +159,13 @@ export default async function ModulePage({ locale, module }: Props) {
     const parts: MixPart[] = ordered.map((m) => ({
       label: t.has(`parts.${m.part}`) ? t(`parts.${m.part}`) : label(m.row),
       emoji: MIX_EMOJI[m.part],
+      color: MIX_COLOR[m.part],
       pct: m.row.value ?? 0,
       display: `${fmtDecimal(locale, m.row.value ?? 0, 1)}%`,
     }));
     const sum = parts.reduce((s, p) => s + p.pct, 0);
     if (sum < 99.5) {
-      parts.push({ label: t("vis.mixOther"), emoji: "🔋", pct: 100 - sum, display: `${fmtDecimal(locale, 100 - sum, 1)}%` });
+      parts.push({ label: t("vis.mixOther"), emoji: "🔋", color: "#CBD5E1", pct: 100 - sum, display: `${fmtDecimal(locale, 100 - sum, 1)}%` });
     }
     const top = [...parts].sort((a, b) => b.pct - a.pct)[0];
     pictures.push(

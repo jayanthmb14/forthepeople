@@ -27,6 +27,8 @@ export interface BarItem {
 interface CardBase {
   title: string;
   emoji: string;
+  /** Small line under the title (what is measured). */
+  units?: string;
   simple: React.ReactNode;
   source?: { label: string; href?: string };
   asOf?: string;
@@ -99,6 +101,8 @@ export interface MixPart {
   pct: number;
   /** Formatted share, e.g. "47%". */
   display: string;
+  /** Own colour for this part (defaults to a shade of the page hue). */
+  color?: string;
 }
 
 /**
@@ -122,7 +126,7 @@ export function MixDonut({
   return (
     <ChartCard
       {...card}
-      legend={parts.map((p, i) => ({ label: `${p.emoji ? `${p.emoji} ` : ""}${p.label} ${p.display}`, swatch: SHADES[i % SHADES.length] }))}
+      legend={parts.map((p, i) => ({ label: `${p.emoji ? `${p.emoji} ` : ""}${p.label} ${p.display}`, swatch: p.color ?? SHADES[i % SHADES.length] }))}
       table={parts.map((p) => ({ label: p.label, value: p.display }))}
     >
       <div style={{ display: "flex", justifyContent: "center" }}>
@@ -136,7 +140,7 @@ export function MixDonut({
                 cy={size / 2}
                 r={r}
                 fill="none"
-                stroke={SHADES[i % SHADES.length]}
+                stroke={p.color ?? SHADES[i % SHADES.length]}
                 strokeWidth={stroke}
                 strokeDasharray={`${lengths[i]} ${c - lengths[i]}`}
                 strokeDashoffset={-starts[i]}

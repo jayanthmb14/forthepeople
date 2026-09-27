@@ -147,7 +147,12 @@
       "life_expectancy_target_2030": "ಜೀವಿತಾವಧಿ ಗುರಿ",
       "life_expectancy_change_1990": "1990ರಿಂದ ಹೆಚ್ಚಾದ ವರ್ಷಗಳು",
       "infant_mortality_rate": "ಶಿಶು ಮರಣ",
-      "doctors_per_1000": "ವೈದ್ಯರು"
+      "doctors_per_1000": "ವೈದ್ಯರು",
+      "state_leader_kerala_imr": "ಕೇರಳ: ಶಿಶು ಮರಣ",
+      "state_leader_kerala_life_exp": "ಕೇರಳ: ಜೀವಿತಾವಧಿ",
+      "state_leader_delhi_doctors": "ದೆಹಲಿ: ವೈದ್ಯರು",
+      "state_leader_manipur_imm_cov": "ಮಣಿಪುರ: ಲಸಿಕೆ ವ್ಯಾಪ್ತಿ",
+      "state_leader_tn_hosp_per_1000": "ತಮಿಳುನಾಡು: ಆಸ್ಪತ್ರೆಗಳು"
     },
     "health-pmjay": {
       "cards_issued_crore": "ವಿತರಿಸಿದ ಆಯುಷ್ಮಾನ್ ಕಾರ್ಡ್‌ಗಳು",
@@ -173,7 +178,14 @@
       "tree_cover_pct": "ಅರಣ್ಯದ ಹೊರಗಿನ ಮರಗಳ ವ್ಯಾಪ್ತಿ",
       "top_state_pct": "ಭಾರತದ ಅರಣ್ಯದಲ್ಲಿ ಮಧ್ಯ ಪ್ರದೇಶದ ಪಾಲು",
       "elephants_count": "ಆನೆಗಳು",
-      "rhinos_count": "ಒಂಟಿ ಕೊಂಬಿನ ಘೇಂಡಾಮೃಗಗಳು"
+      "rhinos_count": "ಒಂಟಿ ಕೊಂಬಿನ ಘೇಂಡಾಮೃಗಗಳು",
+      "isfr_edition": "ಅರಣ್ಯ ವರದಿಯ ಆವೃತ್ತಿ",
+      "isfr_year": "ಅರಣ್ಯ ವರದಿಯ ವರ್ಷ",
+      "top_state_mizoram_pct": "ಮಿಜೋರಾಂ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_arunachal_pct": "ಅರುಣಾಚಲ ಪ್ರದೇಶ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_meghalaya_pct": "ಮೇಘಾಲಯ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_manipur_pct": "ಮಣಿಪುರ: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ",
+      "top_state_nagaland_pct": "ನಾಗಾಲ್ಯಾಂಡ್: ಅರಣ್ಯ ವ್ಯಾಪ್ತಿ"
     },
     "wildlife-protected-areas": {
       "parks_count_total": "ಉದ್ಯಾನಗಳು ಮತ್ತು ಅಭಯಾರಣ್ಯಗಳು"
@@ -183,7 +195,13 @@
       "rice_production_million_tonnes": "ಅಕ್ಕಿ",
       "wheat_production_million_tonnes": "ಗೋಧಿ",
       "foodgrain_change_yoy_mt": "ಒಂದು ವರ್ಷದ ಬದಲಾವಣೆ",
-      "top_producer_state_pct": "ಮೊದಲ ರಾಜ್ಯದ ಪಾಲು"
+      "top_producer_state_pct": "ಮೊದಲ ರಾಜ್ಯದ ಪಾಲು",
+      "estimate_year": "ಅಂದಾಜಿನ ವರ್ಷ",
+      "top_state_up_wheat_mt": "ಉತ್ತರ ಪ್ರದೇಶ: ಗೋಧಿ",
+      "top_state_pb_wheat_mt": "ಪಂಜಾಬ್: ಗೋಧಿ",
+      "top_state_wb_rice_mt": "ಪಶ್ಚಿಮ ಬಂಗಾಳ: ಅಕ್ಕಿ",
+      "top_state_mp_wheat_mt": "ಮಧ್ಯ ಪ್ರದೇಶ: ಗೋಧಿ",
+      "top_state_ap_rice_mt": "ಆಂಧ್ರ ಪ್ರದೇಶ: ಅಕ್ಕಿ"
     },
     "agriculture-pmkisan": {
       "farmers_count_crore": "ಪಿಎಂ-ಕಿಸಾನ್ ರೈತರು",
@@ -207,7 +225,16 @@
       "coal_capacity_gw": "ಕಲ್ಲಿದ್ದಲು",
       "renewables_capacity_gw": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನ",
       "hydro_capacity_gw": "ಜಲವಿದ್ಯುತ್",
-      "nuclear_capacity_gw": "ಅಣುಶಕ್ತಿ"
+      "nuclear_capacity_gw": "ಅಣುಶಕ್ತಿ",
+      "mix_pct_coal": "ಕಲ್ಲಿದ್ದಲಿನ ಪಾಲು",
+      "mix_pct_renewables": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನದ ಪಾಲು",
+      "mix_pct_hydro": "ಜಲವಿದ್ಯುತ್‌ನ ಪಾಲು",
+      "mix_pct_nuclear": "ಅಣುಶಕ್ತಿಯ ಪಾಲು",
+      "top_state_mh_capacity_gw": "ಮಹಾರಾಷ್ಟ್ರ: ಸಾಮರ್ಥ್ಯ",
+      "top_state_gj_capacity_gw": "ಗುಜರಾತ್: ಸಾಮರ್ಥ್ಯ",
+      "top_state_tn_capacity_gw": "ತಮಿಳುನಾಡು: ಸಾಮರ್ಥ್ಯ",
+      "top_state_rj_capacity_gw": "ರಾಜಸ್ಥಾನ: ಸಾಮರ್ಥ್ಯ",
+      "top_state_kn_capacity_gw": "ಕರ್ನಾಟಕ: ಸಾಮರ್ಥ್ಯ"
     },
     "energy-renewables": {
       "renewable_installed_gw": "ನವೀಕರಿಸಬಹುದಾದ ಇಂಧನ ಸಾಮರ್ಥ್ಯ"
@@ -226,7 +253,13 @@
       "bharatmala_nh_km": "ಭಾರತಮಾಲಾ ಅಡಿ ನಿರ್ಮಾಣ",
       "sagarmala_ports_count": "ಸಾಗರಮಾಲಾ ಪ್ರಮುಖ ಬಂದರುಗಳು",
       "udan_airports_count": "ಉಡಾನ್ ವಿಮಾನ ನಿಲ್ದಾಣಗಳು",
-      "gatishakti_projects_count": "ಗತಿಶಕ್ತಿ ಯೋಜನೆಗಳು"
+      "gatishakti_projects_count": "ಗತಿಶಕ್ತಿ ಯೋಜನೆಗಳು",
+      "data_year": "ಡೇಟಾದ ವರ್ಷ",
+      "top_state_mh_nh_km": "ಮಹಾರಾಷ್ಟ್ರ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_up_nh_km": "ಉತ್ತರ ಪ್ರದೇಶ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_rj_nh_km": "ರಾಜಸ್ಥಾನ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_mp_nh_km": "ಮಧ್ಯ ಪ್ರದೇಶ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು",
+      "top_state_ka_nh_km": "ಕರ್ನಾಟಕ: ರಾಷ್ಟ್ರೀಯ ಹೆದ್ದಾರಿಗಳು"
     },
     "infra-railways": {
       "route_km": "ರೈಲು ಮಾರ್ಗದ ಉದ್ದ"
@@ -280,7 +313,13 @@
     "science-startups": {
       "dpiit_recognised_lakh": "ಮಾನ್ಯತೆ ಪಡೆದ ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
       "unicorns_count": "ಯೂನಿಕಾರ್ನ್‌ಗಳು",
-      "change_yoy_lakh": "ಒಂದು ವರ್ಷದಲ್ಲಿ ಸೇರ್ಪಡೆ"
+      "change_yoy_lakh": "ಒಂದು ವರ್ಷದಲ್ಲಿ ಸೇರ್ಪಡೆ",
+      "data_year": "ಡೇಟಾದ ವರ್ಷ",
+      "top_state_ka_startups_thousand": "ಕರ್ನಾಟಕ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_mh_startups_thousand": "ಮಹಾರಾಷ್ಟ್ರ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_dl_startups_thousand": "ದೆಹಲಿ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_tn_startups_thousand": "ತಮಿಳುನಾಡು: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು",
+      "top_state_tg_startups_thousand": "ತೆಲಂಗಾಣ: ಸ್ಟಾರ್ಟ್‌ಅಪ್‌ಗಳು"
     },
     "science-digital": {
       "upi_txn_per_month_billion": "ತಿಂಗಳಿಗೆ ಯುಪಿಐ ಪಾವತಿಗಳು",
@@ -309,7 +348,13 @@
       "global_rank_unesco": "ವಿಶ್ವ ಸ್ಥಾನ: ಯುನೆಸ್ಕೋ ತಾಣಗಳು",
       "bollywood_films_per_year": "ವರ್ಷಕ್ಕೆ ಪ್ರಮಾಣೀಕರಿಸಿದ ಚಲನಚಿತ್ರಗಳು",
       "scheduled_languages_count": "ಅನುಸೂಚಿತ ಭಾಷೆಗಳು",
-      "museums_count": "ವಸ್ತುಸಂಗ್ರಹಾಲಯಗಳು"
+      "museums_count": "ವಸ್ತುಸಂಗ್ರಹಾಲಯಗಳು",
+      "data_year": "ಡೇಟಾದ ವರ್ಷ",
+      "unesco_taj_mahal_year": "ತಾಜ್ ಮಹಲ್: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_ajanta_year": "ಅಜಂತಾ ಗುಹೆಗಳು: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_khajuraho_year": "ಖಜುರಾಹೊ: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_hampi_year": "ಹಂಪಿ: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ",
+      "unesco_sundarbans_year": "ಸುಂದರಬನ: ವಿಶ್ವ ಪರಂಪರೆ ಪಟ್ಟಿಗೆ ಸೇರಿದ ವರ್ಷ"
     },
     "tourism-gi-tags": {
       "gi_tags_count": "ಜಿಐ ಟ್ಯಾಗ್‌ಗಳು"
