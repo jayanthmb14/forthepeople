@@ -73,27 +73,124 @@
   white-space: nowrap;
 }
 
-.ftp-dbar-fresh {
-  display: none;
-  flex: 0 0 auto;
+/* Right side on laptops and PCs (v5.1): clock + live-feed summary. */
+.ftp-dbar-status { display: none; flex: 0 0 auto; align-items: center; gap: 6px; }
+.ftp-dbar-clock {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 36px;
   padding: 0 10px;
-  border-radius: var(--ftp-radius-pill);
-  color: var(--ftp-text-2);
   font-size: 13px;
-  text-decoration: none;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.ftp-dbar-fresh:hover { background: var(--ftp-surface-2); color: var(--ftp-text); }
-.ftp-dbar-fresh[data-late="true"] svg { color: var(--ftp-warn); }
+.ftp-dbar-clock:empty { min-width: 1px; padding: 0; }
+.ftp-dbar-clock svg { color: var(--ftp-brand); flex-shrink: 0; }
+.ftp-dbar-time { color: var(--ftp-text); font-weight: 600; }
+.ftp-dbar-dot-sep { color: var(--ftp-border-strong); }
+
+.ftp-dbar-freshwrap { position: relative; display: inline-flex; min-width: 0; }
+.ftp-dbar-fresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  min-width: 0;
+  padding: 0 12px;
+  border-radius: var(--ftp-radius-pill);
+  border: 1px solid var(--ftp-border);
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ftp-dbar-fresh-text { overflow: hidden; text-overflow: ellipsis; }
+.ftp-dbar-fresh:hover { border-color: var(--ftp-border-strong); background: var(--ftp-brand-tint); }
+.ftp-dbar-fresh[data-state="all"] { background: var(--ftp-live-tint); border-color: color-mix(in srgb, var(--ftp-live) 25%, var(--ftp-border)); color: var(--ftp-live-text); }
+.ftp-dbar-fresh[data-state="some"] { background: var(--ftp-warn-tint); border-color: var(--ftp-warn-border); color: var(--ftp-warn-text); }
+
+/* The traffic-light dot (fresh summary and each feed row). */
+.ftp-dbar-light {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ftp-border-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-border-strong) 25%, transparent);
+}
+[data-state="all"] > .ftp-dbar-light, .ftp-dbar-feed[data-status="current"] > .ftp-dbar-light {
+  background: var(--ftp-live);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-live) 22%, transparent);
+}
+[data-state="some"] > .ftp-dbar-light, .ftp-dbar-feed[data-status="late"] > .ftp-dbar-light {
+  background: var(--ftp-warn);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-warn) 22%, transparent);
+}
+
+/* Hover / keyboard focus: each live feed with its age. */
+.ftp-dbar-feeds {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 45;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 280px;
+  padding: 10px 12px;
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  box-shadow: var(--ftp-shadow-2);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text);
+  white-space: nowrap;
+}
+.ftp-dbar-freshwrap:hover .ftp-dbar-feeds,
+.ftp-dbar-freshwrap:focus-within .ftp-dbar-feeds { display: flex; }
+.ftp-dbar-feeds-title { font-size: 12px; font-weight: 600; color: var(--ftp-text-2); margin-bottom: 4px; }
+.ftp-dbar-feed { display: flex; align-items: center; gap: 8px; min-height: 26px; }
+.ftp-dbar-feed-name { flex: 1; }
+.ftp-dbar-feed-age { color: var(--ftp-text-2); font-variant-numeric: tabular-nums; }
+.ftp-dbar-feed[data-status="late"] .ftp-dbar-feed-age { color: var(--ftp-warn-text); font-weight: 600; }
+.ftp-dbar-feeds-more { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--ftp-border); font-size: 12px; color: var(--ftp-brand); }
+
+/* Phones and tablets: the same details in one thin line under the bar. */
+.ftp-dbar-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  min-height: 34px;
+  padding: 3px 12px 3px 14px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--ftp-brand-tint) 55%, var(--ftp-surface));
+  border-bottom: 1px solid var(--ftp-border);
+}
+.ftp-dbar-sub .ftp-dbar-clock { min-height: 28px; padding: 0; font-size: 12px; }
+.ftp-dbar-sub .ftp-dbar-fresh { min-height: 28px; padding: 0 10px; font-size: 12px; }
+@media (max-width: 359px) {
+  .ftp-dbar-sub { justify-content: flex-start; }
+}
 
 @media (min-width: 1024px) {
   .ftp-dbar-inner { padding: 0 16px 0 18px; }
   /* The dropdown menus must not be clipped by a scroll box on PCs. */
   .ftp-dbar-crumbs { overflow: visible; }
   .ftp-dbar-topics { display: none; }
-  .ftp-dbar-fresh { display: inline-flex; }
+  .ftp-dbar-status { display: inline-flex; }
+  .ftp-dbar-sub { display: none; }
+}
+/* Small laptops: no calendar icon, to leave room for the crumbs. */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .ftp-dbar-clock svg { display: none; }
 }
 
 /* ---------- Module pages: the bar and the sidebar replace the

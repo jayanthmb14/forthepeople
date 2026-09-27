@@ -1,0 +1,11 @@
+{
+  "bar": {
+    "time": "{time} IST",
+    "clockAria": "In India now: {date}, {time}",
+    "checking": "Checking how fresh the data is…",
+    "feedsTitle": "Live feeds for {district}",
+    "feedCurrent": "Up to date",
+    "feedNoDate": "Date not published",
+    "feedsMore": "How we check every topic"
+  }
+}
