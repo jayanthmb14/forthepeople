@@ -64,7 +64,5 @@
   "replyBy": "The reply is due by {date}",
   "appealBy": "No reply by then? You can file the first appeal until <b>{date}</b>.",
   "actSource": "RTI Act, 2005",
-  "stateCommission": "State Information Commission",
-  "trackerPrompt": "See how quickly offices in {district} answer RTI letters.",
-  "trackerLink": "RTI replies tracker"
+  "stateCommission": "State Information Commission"
 }
