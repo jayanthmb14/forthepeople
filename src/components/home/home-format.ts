@@ -7,6 +7,7 @@
 // Home page — small pure formatters (and two lookup tables) shared by the
 // ticker, the price cards and the map card. Numbers always use Indian grouping (docs/I18N.md §2.5).
 import { NUMBER_LOCALE, intlLocale } from "@/i18n/languages";
+import { formatDate } from "@/i18n/format-date";
 
 /** page_home message key for a price unit ("/10 g", "/kg"). */
 export const UNIT_KEY = { "10g": "ticker.per10g", kg: "ticker.perKg" } as const;
@@ -32,7 +33,7 @@ export function dayDate(day: string): Date {
 
 /** "26 Sep" in the page language. */
 export function shortDay(day: string, locale: string): string {
-  return dayDate(day).toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+  return formatDate(dayDate(day), intlLocale(locale), { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 }
 
 /** "today" / "yesterday" (Intl, in the page language) for 0 or 1 day old, else "26 Sep". */
