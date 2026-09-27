@@ -26,6 +26,11 @@
       "short": "City and departments",
       "hint": "The Mayor, the city commissioner and the heads of local departments."
     },
+    "6": {
+      "label": "Courts",
+      "short": "Courts",
+      "hint": "Judges of the High Court and the district courts. Courts are independent of the government, so they are listed apart from the levels above."
+    },
     "other": {
       "label": "Level {n}",
       "short": "Level {n}"
