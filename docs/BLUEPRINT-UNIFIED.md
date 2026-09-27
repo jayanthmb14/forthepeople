@@ -224,7 +224,7 @@ state: `docs/RUNBOOKS/crons.md`.
 
 | Cron | Schedule | Job |
 |---|---|---|
-| `scrape-news` | daily 06:00 | news per district, dedupe, expire old alerts |
+| `scrape-news` | every 4 h (:10) | news per district (equal AI share each), dedupe, expire old alerts |
 | `translate-content` | every 3 h (:20) | translate new live text once (section 9) |
 | `scrape-crops` | daily 03:30 | mandi prices (AGMARKNET via data.gov.in) |
 | `scrape-weather` | every 30 min | OpenWeatherMap reading per district |

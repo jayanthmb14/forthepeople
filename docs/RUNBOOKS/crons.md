@@ -14,7 +14,7 @@ All times UTC (IST = UTC + 5:30).
 
 | Route | Schedule | Interval | maxDuration | What it does |
 |---|---|---|---|---|
-| `/api/cron/scrape-news` | `0 6 * * *` | daily 06:00 | 300 s | RSS/news ingestion per district, dedupe, expire alerts > 14 d |
+| `/api/cron/scrape-news` | `10 */4 * * *` | every 4 h at :10 | 300 s | RSS/news ingestion per district (each district gets an equal share of AI time; max 20 AI calls each), dedupe, expire alerts > 14 d |
 | `/api/cron/scrape-crops` | `30 3 * * *` | daily 03:30 | 300 s | AGMARKNET prices via data.gov.in; 250 s budget guard, `partial: true` if it ran out |
 | `/api/cron/scrape-weather` | `*/30 * * * *` | every 30 min | 60 s | OpenWeatherMap reading per district (5 in parallel) |
 | `/api/cron/scrape-dams` | `0 */6 * * *` | every 6 h | 120 s | Karnataka reservoir levels (other states skipped by the job) |

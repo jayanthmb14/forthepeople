@@ -205,14 +205,25 @@ async function fetchRSSItems(query: string): Promise<Array<{
   })).filter((item) => isArticleFresh(item.publishedAt));
 }
 
+/** At most this many AI classifications per district per run, so one busy
+ *  district cannot use the whole run and the free model's daily cap lasts. */
+const MAX_AI_PER_DISTRICT = 20;
+
 export async function scrapeNews(
   ctx: JobContext,
-  opts: { deadlineAt?: number } = {},
+  /** deadlineAt: nothing new starts after it. aiDeadlineAt: this district's
+   *  share of the run — after it, articles get the keyword pass only. */
+  opts: { deadlineAt?: number; aiDeadlineAt?: number } = {},
 ): Promise<ScraperResult> {
   const pastDeadline = () => opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt;
+  const aiDeadline = opts.aiDeadlineAt ?? opts.deadlineAt;
+  let aiCalls = 0;
+  const aiUnavailable = () =>
+    aiCalls >= MAX_AI_PER_DISTRICT || (aiDeadline !== undefined && Date.now() >= aiDeadline);
   try {
     const queries = buildNewsQueries(ctx.districtName, ctx.stateName);
     let aiSkippedForTime = 0;
+    let placeCheckDeferred = 0;
     let offTopicSkipped = 0;
     const seenUrls = new Set<string>();
     const seenTitleKeys = new Set<string>();
@@ -248,16 +259,25 @@ export async function scrapeNews(
         // about another place (no district name, or another state named).
         const text = `${item.headline} ${item.summary ?? ""}`;
         const keywordModule = classifyModule(item.headline);
+        const needsPlaceCheck =
+          !mentionsDistrict(text, ctx.districtName) || mentionsOtherState(text, ctx.stateName);
         const needsAI =
+          needsPlaceCheck ||
           keywordModule === "news" ||
-          ACTIONABLE_MODULES.includes(keywordModule) ||
-          !mentionsDistrict(text, ctx.districtName) ||
-          mentionsOtherState(text, ctx.stateName);
+          ACTIONABLE_MODULES.includes(keywordModule);
 
         let aiClassification: Awaited<ReturnType<typeof classifyArticleWithAI>> = null;
-        if (needsAI && pastDeadline()) {
+        if (needsAI && aiUnavailable()) {
+          // Might be about another place and nobody checked: leave it for the
+          // next run (its URL is not marked seen) rather than show it unchecked.
+          if (needsPlaceCheck) {
+            seenUrls.delete(item.url);
+            placeCheckDeferred++;
+            continue;
+          }
           aiSkippedForTime++;
         } else if (needsAI) {
+          aiCalls++;
           aiClassification = await classifyArticleWithAI(
             item.headline,
             item.source,
@@ -373,7 +393,8 @@ export async function scrapeNews(
     const summary =
       `News: ${newCount} new items across ${queries.length} queries` +
       (offTopicSkipped ? `, ${offTopicSkipped} about other places skipped` : "") +
-      (aiSkippedForTime ? `, ${aiSkippedForTime} classified by keyword only (time budget)` : "");
+      (aiSkippedForTime ? `, ${aiSkippedForTime} classified by keyword only (time budget)` : "") +
+      (placeCheckDeferred ? `, ${placeCheckDeferred} left for the next run (place not checked yet)` : "");
     ctx.log(summary);
 
     if (newCount > 0) {

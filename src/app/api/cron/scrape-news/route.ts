@@ -5,7 +5,7 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Vercel Cron: Daily news collector (06:00 UTC, vercel.json)
+// Vercel Cron: News collector (every 4 hours, vercel.json)
 // Also: auto-expires stale alerts (>14 days) + deduplicates news
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-news"
@@ -13,7 +13,8 @@
 // Time budget (v5): no district starts after 240 s and no AI classification
 // starts after it either, so the run always records its result before
 // Vercel's 300 s kill. Districts whose news was fetched longest ago go
-// first, so a cut-short run never starves the same districts twice.
+// first, and each district gets an equal share of the AI time (after that,
+// keyword sorting only), so every district is reached on every run.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
@@ -74,12 +75,16 @@ export async function GET(request: Request) {
   );
   const notReached: string[] = [];
 
-  for (const row of activeDistrictRows) {
+  for (const [i, row] of activeDistrictRows.entries()) {
     const slug = row.slug;
     if (Date.now() >= deadlineAt) {
       notReached.push(slug);
       continue;
     }
+    // Fair share: this district may spend AI time only up to an equal slice
+    // of what is left, so every district gets fresh news every run.
+    const districtsLeft = activeDistrictRows.length - i;
+    const aiDeadlineAt = Math.min(deadlineAt, Date.now() + (deadlineAt - Date.now()) / districtsLeft);
     const stateSlug = (row as { state?: { slug: string } }).state?.slug ?? "karnataka";
     const stateName = (row as { state?: { name: string } }).state?.name ?? "Karnataka";
     const districtId = row.id;
@@ -97,7 +102,7 @@ export async function GET(request: Request) {
     // ── 1. Scrape news ──
     let result: { success: boolean; recordsNew: number; error?: string };
     try {
-      result = await scrapeNews(ctx, { deadlineAt });
+      result = await scrapeNews(ctx, { deadlineAt, aiDeadlineAt });
     } catch (scrapeErr) {
       Sentry.captureException(scrapeErr);
       const errMsg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
