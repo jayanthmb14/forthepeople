@@ -10,6 +10,33 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — news and the overview's tiles and cards (branch `v54/fix-news`, 2026-09-28)
+Verified audit findings (news area). Code first, then one dry-run data script. Nothing is deployed or
+applied to the database yet.
+- **Warnings**: news never writes `LocalAlert` (every health/election story had become a warning);
+  "Warnings now", the serious-warning banner, dataset dates and freshness count official warnings only
+  (`OFFICIAL_ALERT`); the warnings feed is fresh when the collector last read it.
+- **News list** (`src/lib/news-quality.ts`, applied at ingest and in `/api/data/news`): no
+  advertorials / price pages / listicles; keyword-only rows that may be about another place are not
+  shown; headlines lose outlet suffixes, kickers and zero-width characters, and feed-cut headlines end
+  with "…"; "another state named" counts even when the own state is named; New Delhi takes Delhi-wide
+  stories but not other Delhi districts; tighter topic words (police above transport; no "auto",
+  "crore", "candidate", "house", "market"); duplicates at 3 shared words / 40 %; the job defers a
+  place-uncertain story when the AI gives no answer and cuts only the trailing " - Publisher".
+- **Overview cards**: one "being built" rule (projectStage) for tile and card, stage-based status
+  lines; leaders card knows every Collector title, labels Commissioners of Police as such, says "N
+  listed" for MLAs; stale tender card shows no count; "Next exam" only from checked rows with a
+  source; election tile says "Next Lok Sabha or Assembly election".
+- **Districts**: taluk counts and lists only where checked against the district portal
+  (`SUB_UNIT_CHECKS`): none for Chennai, Mumbai, Kolkata, New Delhi; Mysuru 9, Lucknow 5, Pune 16.
+  Mysuru's undated "India's Cleanest City" badge removed. Seeded district budgets never shown
+  (`NOT_SEEDED_BUDGET`). Freshness: election results "late" when a newer election has results;
+  the verify summary counts reference guides apart.
+- **Data** `scripts/fix-audit-2026-09-news.ts` (dry run by default; `--confirm` = one transaction).
+  Dry run 2026-09-28: 192 changes — 13 LocalAlerts hidden, 30 NewsItems deleted, 57 NewsItems
+  updated (41 duplicate copies, 16 re-tagged), 80 BudgetEntry rows deleted, 3 exam dates/posts
+  cleared, 1 InfraProject deleted, 7 District talukCounts set (4 to null), 1 Taluk renamed.
+
 ### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
 Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed
 or applied to the database yet.
