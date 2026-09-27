@@ -157,6 +157,15 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
               {data.previousScore !== null ? ` ${to("v5.report.prev", { prev: f.number(Math.round(data.previousScore * 10) / 10) })}` : ""}
             </span>
           </span>
+          {/* v5.1: the ten areas as a tiny row of bars in their own colours —
+              a picture of the card before it is opened. */}
+          <span className="ftp-rc-mini" aria-hidden>
+            {rows.map(({ cat, score: s }) => (
+              <span key={cat.key} className={`ftp-hue-${cat.hue}`}>
+                <span className="ftp-grow-y" style={{ height: `${Math.max(8, Math.min(100, s))}%` }} />
+              </span>
+            ))}
+          </span>
           <span className="ftp-rc-open">{to("v5.report.open")}</span>
         </summary>
 

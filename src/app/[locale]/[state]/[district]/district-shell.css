@@ -976,10 +976,15 @@
 .ftp-report-card-v5 {
   scroll-margin-top: calc(var(--ftp-header-h, 56px) + 64px);
   padding: 14px 16px;
-  border-radius: var(--ftp-radius-card);
-  background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
+  border-radius: 18px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ftp-brand-tint) 80%, var(--ftp-surface)) 0%, var(--ftp-surface) 60%);
+  border: 1px solid color-mix(in srgb, var(--ftp-brand) 16%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
 }
+.ftp-rc-mini { display: inline-flex; align-items: flex-end; gap: 3px; height: 34px; padding: 0 4px; }
+.ftp-rc-mini > span { display: flex; align-items: flex-end; width: 7px; height: 100%; border-radius: 3px; background: var(--hue-tint); overflow: hidden; }
+.ftp-rc-mini > span > span { display: block; width: 100%; border-radius: 3px; background: var(--hue); }
+@media (max-width: 479px) { .ftp-rc-mini { display: none; } }
 .ftp-rc-summary {
   display: flex;
   align-items: center;
