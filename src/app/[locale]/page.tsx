@@ -29,10 +29,10 @@ import { prisma } from "@/lib/db";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { languageAlternates } from "@/i18n/seo";
 import { routing } from "@/i18n/routing";
-import { getPlatformFacts } from "@/lib/platform-facts";
 
 import PriceTicker from "@/components/home/PriceTicker";
-import { loadCropTicks, loadMarketFigures } from "@/components/home/home-data";
+import HomeIntro, { INTRO_SCRIPT } from "@/components/home/HomeIntro";
+import { loadCropTicks, loadMapStats, loadMarketFigures, loadPlatformStats } from "@/components/home/home-data";
 import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance, { type GlanceFigure } from "@/components/home/IndiaGlance";
@@ -172,7 +172,11 @@ export default async function HomePage({
     loadMarketFigures(),
   ]);
   const liveRows = activeRows.map((d) => ({ id: d.id, slug: d.slug, stateSlug: d.state.slug, population: d.population }));
-  const crops = await loadCropTicks(liveRows);
+  const [crops, mapStats, stats] = await Promise.all([
+    loadCropTicks(liveRows),
+    loadMapStats(liveRows),
+    loadPlatformStats(liveRows.map((d) => d.id)),
+  ]);
 
   const activeDistricts = activeRows.map((d) => ({
     slug: d.slug,
@@ -184,20 +188,15 @@ export default async function HomePage({
     goLiveDate: d.goLiveDate ? d.goLiveDate.toISOString() : null,
   }));
 
-  // Counts from the registry (the same flags the rest of the site uses).
-  const facts = getPlatformFacts();
-
   return (
     <main role="main" className={styles.home}>
+      {/* Decides, before the first paint, whether the 1.2 s intro plays. */}
+      <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+      <HomeIntro />
       <PriceTicker locale={locale} markets={markets} crops={crops} />
       <div className={styles.heroBand}>
         <div className="ftp-container">
-          <HomeHero
-            locale={locale}
-            activeDistricts={facts.activeDistricts}
-            activeStates={facts.activeStates}
-            modulesPerDistrict={facts.modulesPerDistrict}
-          />
+          <HomeHero locale={locale} stats={stats} districts={activeDistricts} mapStats={mapStats} />
         </div>
       </div>
 

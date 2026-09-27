@@ -28,5 +28,22 @@
     "rice": "Rice",
     "paddy": "Paddy",
     "wheat": "Wheat"
+  },
+  "hero": {
+    "title": "See what is happening in <hl>your district</hl>",
+    "find": "Find your district",
+    "quickPicks": "Live districts — pick one, or type any district"
+  },
+  "stats": {
+    "aria": "ForThePeople.in in numbers",
+    "districts": "{n, plural, one {district live} other {districts live}}",
+    "states": "{n, plural, one {state} other {states}}",
+    "dataPoints": "data points tracked",
+    "dashboards": "dashboards in each district",
+    "updatedAgo": "Updated {ago}",
+    "updatedAt": "Updated {date}, {time} IST"
+  },
+  "intro": {
+    "skip": "Tap anywhere to skip"
   }
 }

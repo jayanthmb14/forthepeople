@@ -28,6 +28,7 @@ import { INDIA_STATES } from "@/lib/constants/districts";
 import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 import { usePlaceText } from "@/i18n/client";
 import { placeName } from "@/i18n/place-name";
+import type { HomeDistrict, MapDistrictStat } from "./home-types";
 import styles from "./home.module.css";
 
 /** Live districts with a known headquarters position (registry order). */
@@ -44,7 +45,7 @@ const LAND = {
   pressed: { fill: "var(--ftp-map-land, #E3EAF4)", stroke: "var(--ftp-surface)", strokeWidth: 0.9, outline: "none" },
 };
 
-export default function HomeMap({ locale }: { locale: string }) {
+export default function HomeMap({ locale }: { locale: string; districts?: HomeDistrict[]; stats?: Record<string, MapDistrictStat> }) {
   const t = useTranslations("home");
   const place = usePlaceText();
   const router = useRouter();

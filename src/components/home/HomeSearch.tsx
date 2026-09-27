@@ -8,14 +8,17 @@
 //  HomeSearch — the full-width "find your district" box in the home hero
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Type → a list opens under the box: live districts first (open the
-//  district), then districts that are not live yet (open the vote page).
+//  Focus → the live districts are listed under the box (quick picks).
+//  Type → the list narrows: live districts first (open the district), then
+//  districts that are not live yet (open the vote page).
 //  Old and everyday names work ("Mysore", "Bangalore", "Gurgaon"); the
 //  matching lives in district-search.ts. Enter opens the first result,
 //  ↓ moves into the list, Escape closes it.
 //
 //  The input has id="ftp-home-search" so "Choose your district from the
-//  list" (after location is refused) can focus it.
+//  list" (after location is refused) can focus it. The hero's "Find your
+//  district" button submits this form (form="ftp-home-search-form"): with
+//  text it opens the first match, empty it opens the quick picks.
 //
 "use client";
 
@@ -29,10 +32,12 @@ import { DistrictResultList, districtHref, onListKeyDown } from "./DistrictFinde
 import styles from "./home.module.css";
 
 export const HOME_SEARCH_ID = "ftp-home-search";
+export const HOME_SEARCH_FORM_ID = "ftp-home-search-form";
 
 export default function HomeSearch() {
   const t = useTranslations("home");
   const th = useTranslations("header");
+  const tp = useTranslations("page_home");
   const locale = useLocale();
   const place = usePlaceText();
   const router = useRouter();
@@ -42,9 +47,13 @@ export default function HomeSearch() {
   const input = useRef<HTMLInputElement>(null);
 
   const index = buildDistrictIndex((slug, name) => place.state(slug, name));
-  const results = searchDistricts(index, query, { live: 6, notLive: 6 });
+  const typed = query.trim().length > 0;
+  // Nothing typed yet: every live district, as quick picks.
+  const results = typed
+    ? searchDistricts(index, query, { live: 6, notLive: 6 })
+    : { live: index.filter((d) => d.active).map((district) => ({ district, score: 1 })), notLive: [] };
   const count = results.live.length + results.notLive.length;
-  const showList = open && query.trim().length > 0;
+  const showList = open;
 
   // Close the list on a click or focus outside it, and on Escape.
   useEffect(() => {
@@ -70,15 +79,19 @@ export default function HomeSearch() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const first = results.live[0] ?? results.notLive[0];
-    if (!first) return;
+    const first = typed ? (results.live[0] ?? results.notLive[0]) : null;
+    if (!first) {
+      setOpen(true);
+      input.current?.focus();
+      return;
+    }
     setOpen(false);
     router.push(districtHref(locale, first.district));
   }
 
   return (
     <div ref={wrap} className={styles.search}>
-      <form role="search" onSubmit={submit}>
+      <form id={HOME_SEARCH_FORM_ID} role="search" onSubmit={submit}>
         <label htmlFor={HOME_SEARCH_ID} className="sr-only">
           {t("searchLabel")}
         </label>
@@ -113,6 +126,7 @@ export default function HomeSearch() {
       </p>
       {showList && (
         <div id="ftp-home-results" data-results className={styles.searchResults} onKeyDown={(e) => onListKeyDown(e, input.current)}>
+          {!typed && <p className={styles.searchHint}>{tp("hero.quickPicks")}</p>}
           {count === 0 ? (
             <p className={styles.searchEmpty}>{t("searchNoMatch")}</p>
           ) : (

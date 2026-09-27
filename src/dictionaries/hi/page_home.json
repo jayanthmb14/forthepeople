@@ -28,5 +28,22 @@
     "rice": "चावल",
     "paddy": "धान",
     "wheat": "गेहूँ"
+  },
+  "hero": {
+    "title": "देखिए <hl>आपके ज़िले</hl> में क्या हो रहा है",
+    "find": "अपना ज़िला खोजें",
+    "quickPicks": "लाइव ज़िले — एक चुनें, या कोई भी ज़िला टाइप करें"
+  },
+  "stats": {
+    "aria": "आँकड़ों में ForThePeople.in",
+    "districts": "{n, plural, one {ज़िला लाइव} other {ज़िले लाइव}}",
+    "states": "{n, plural, one {राज्य} other {राज्य}}",
+    "dataPoints": "डेटा बिंदु दर्ज",
+    "dashboards": "हर ज़िले में डैशबोर्ड",
+    "updatedAgo": "{ago} अपडेट हुआ",
+    "updatedAt": "{date}, {time} IST को अपडेट हुआ"
+  },
+  "intro": {
+    "skip": "छोड़ने के लिए कहीं भी टैप करें"
   }
 }

@@ -32,29 +32,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Pause, Play } from "lucide-react";
 import { intlLocale } from "@/i18n/languages";
 import { Glyph, glyphFor } from "./HomeGlyphs";
 import { dayWords, money, pct, perKg, shortDay } from "./home-format";
+import { useMinute } from "./home-clock";
 import type { CropTick, MarketFigure } from "./home-types";
 import styles from "./home.module.css";
 
 // ── The clock (client only; the server renders an empty chip) ──────────
 
-function subscribeMinute(cb: () => void) {
-  const id = window.setInterval(cb, 20_000);
-  return () => window.clearInterval(id);
-}
-/** Changes once a minute, so the chip re-renders only when the text changes. */
-const minuteNow = () => Math.floor(Date.now() / 60_000);
-
 function TodayChip({ locale }: { locale: string }) {
   const t = useTranslations("page_home");
-  const minute = useSyncExternalStore(subscribeMinute, minuteNow, () => null);
+  const minute = useMinute();
   const intl = intlLocale(locale);
-  const when = minute === null ? null : new Date(minute * 60_000);
+  const when = minute === null ? null : new Date(minute);
   return (
     <p className={styles.tickerToday}>
       <span className={styles.tickerTodayDate}>
