@@ -1,0 +1,63 @@
+{
+  "title": "Jal Jeevan Mission",
+  "description": "Tap water connections in the villages of this district",
+  "urban": {
+    "title": "Municipal water supply",
+    "body": "Jal Jeevan Mission gives tap water connections to rural homes. {district} is an urban district, so its water supply is run by {board}.",
+    "contact": "For water supply complaints and information, contact {board} or visit the {body} portal.",
+    "fallbackBody": "municipal corporation"
+  },
+  "tiles": {
+    "villages": "Villages tracked",
+    "coverage": "Homes with a tap",
+    "taps": "Tap connections",
+    "households": "Total homes",
+    "full": "Fully covered",
+    "fullSub": "villages with a tap in every home",
+    "tested": "Water tested",
+    "testedSub": "of villages"
+  },
+  "picture": {
+    "title": "Tap water across the district",
+    "simple": "In the {villages} {count, plural, one {village} other {villages}} we track, <b>{taps}</b> of <b>{homes}</b> homes have a tap connection at home.",
+    "homes": "About {n} of every 10 homes have a tap connection.",
+    "tank": "Homes with a tap connection"
+  },
+  "quality": {
+    "title": "Is the water safe?",
+    "units": "Villages by the result of their latest water test",
+    "safe": "Safe to drink",
+    "issue": "Quality problem",
+    "other": "Tested, result not given",
+    "untested": "Not tested yet",
+    "center": "{count, plural, one {village} other {villages}}",
+    "aria": "Water test results: {safe} safe, {issue} with a quality problem, {other} without a result, {untested} not tested.",
+    "simpleIssue": "<b>{issue} of the {tested}</b> villages tested had a water quality problem in the latest test.",
+    "simpleAllSafe": "Every village that was tested, <b>{tested}</b> in all, had water that is safe to drink.",
+    "simpleSome": "<b>{safe} of the {tested}</b> villages tested had water that is safe to drink."
+  },
+  "chart": {
+    "titleTop": "The {n} best-covered villages",
+    "titleAll": "Tap coverage in each village",
+    "units": "Share of homes with a tap in each village. The dashed line is 100%, a tap in every home.",
+    "simpleAll": "{n, plural, one {<b>This village</b> has a tap in every home.} other {<b>All {shown}</b> villages here have a tap in every home.}}",
+    "simpleSome": "<b>{full} of these {shown}</b> {full, plural, one {village has} other {villages have}} a tap in every home.",
+    "simpleBest": "The best-covered village, <b>{name}</b>, has a tap in {pct} of homes.",
+    "legendTap": "Homes with a tap",
+    "legendFull": "Every home (100%)",
+    "tooltip": "Homes with a tap"
+  },
+  "table": {
+    "title": "Status of each village",
+    "caption": "Jal Jeevan Mission status of each village in {district}",
+    "village": "Village",
+    "taps": "Taps / homes",
+    "coverage": "Homes with a tap",
+    "quality": "Water quality",
+    "unknownVillage": "Unknown village"
+  },
+  "share": {
+    "withData": "Jal Jeevan Mission in {district}: {pct} of homes have a tap connection",
+    "noData": "Water supply information for {district}"
+  }
+}
