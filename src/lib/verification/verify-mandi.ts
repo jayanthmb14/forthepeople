@@ -13,7 +13,8 @@
 // within ±15 % of CEDA's modal, or inside CEDA's min–max (±5 %).
 // CEDA mirrors AGMARKNET, so a match gives "single-source" with reason
 // "same-publisher" (our copy is right); a day CEDA does not have gives
-// "second-source-no-data". At most 12 price requests per run, 2 s apart.
+// "second-source-no-data". At most 12 price requests per run, 2 s apart,
+// and none after three districts in a row came back empty.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { agmarknetDistrictNames } from "@/scraper/lib/district-aliases";
@@ -46,6 +47,9 @@ export async function verifyMandi(ctx: VerifyContext): Promise<VerifierOutput> {
   const districtsByState = new Map<number, CedaPlace[]>();
   let cedaDown: string | null = null;
   let priceRequests = 0;
+  // CEDA's daily series lags (it stopped on 30 Oct 2025): after three
+  // districts in a row with nothing that recent, stop asking this run.
+  let emptyDistrictsInARow = 0;
 
   const ceda = async <T>(path: string, parse: (j: unknown) => T, body?: unknown): Promise<T> => {
     const json = await fetchJson<unknown>(`${CEDA_BASE}${path}`, {
@@ -82,7 +86,7 @@ export async function verifyMandi(ctx: VerifyContext): Promise<VerifierOutput> {
     // CEDA lookups for this district (lazy, shared across districts).
     let place: { state: CedaPlace; district: CedaPlace } | null = null;
     let lookupNote: string | null = null;
-    if (!cedaDown) {
+    if (!cedaDown && emptyDistrictsInARow < 3) {
       try {
         states ??= await ceda("/api/states", parseCedaStates);
         commodities ??= await ceda("/api/commodities", parseCedaCommodities);
@@ -126,9 +130,18 @@ export async function verifyMandi(ctx: VerifyContext): Promise<VerifierOutput> {
         asOf: value ? newest.date.toISOString() : null,
       });
 
-      if (cedaDown || !place || districtHasNoData) {
-        const reason = cedaDown ? "second-source-failed" : !place ? "not-in-second-source" : "second-source-no-data";
-        out.records.push({ ...rec, sources: [cedaCheck(null, null)], agreed: null, status: "single-source", reason, notes: cedaDown ? `CEDA: ${cedaDown}` : lookupNote ?? `CEDA has no prices for ${d.name} on ${day}.` });
+      if (cedaDown || !place || districtHasNoData || emptyDistrictsInARow >= 3) {
+        const reason = cedaDown
+          ? "second-source-failed"
+          : emptyDistrictsInARow >= 3 || districtHasNoData
+            ? "second-source-no-data"
+            : "not-in-second-source";
+        const note = cedaDown
+          ? `CEDA: ${cedaDown}`
+          : reason === "second-source-no-data"
+            ? `CEDA has no prices for ${d.name} on ${day}${emptyDistrictsInARow >= 3 ? " (it has nothing this recent for other districts either)" : ""}.`
+            : lookupNote ?? `CEDA has no district matching ${d.name}.`;
+        out.records.push({ ...rec, sources: [cedaCheck(null, null)], agreed: null, status: "single-source", reason, notes: note });
         continue;
       }
       const com = matchCommodity(commodities ?? [], commodity);
@@ -154,10 +167,14 @@ export async function verifyMandi(ctx: VerifyContext): Promise<VerifierOutput> {
         const ref = prices.find((p) => istDayKey(p.day) === day);
         if (!ref) {
           // An empty reply means CEDA has nothing that recent for this district: skip its other commodities.
-          if (prices.length === 0) districtHasNoData = true;
+          if (prices.length === 0) {
+            districtHasNoData = true;
+            emptyDistrictsInARow++;
+          }
           out.records.push({ ...rec, sources: [cedaCheck(null, null)], agreed: null, status: "single-source", reason: "second-source-no-data", notes: `CEDA has no ${com.name} price for ${d.name} on ${day}.` });
           continue;
         }
+        emptyDistrictsInARow = 0;
         const cmp = compareModalPrice(modals, ref);
         const check = cedaCheck(`${rupees(ref.modal)} modal (${rupees(ref.min)}–${rupees(ref.max)})`, cmp ? cmp.agreed : null);
         const verdict = decideStatus([check], { primaryCounts: true });

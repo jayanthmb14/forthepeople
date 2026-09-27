@@ -59,6 +59,7 @@ const WP_API = "https://en.wikipedia.org/w/api.php";
 const WD_API = "https://www.wikidata.org/w/api.php";
 const WDQS = "https://query.wikidata.org/sparql";
 export const REVIEW_DATA_TYPE = "verify-leaders";
+const HEAD_OFFICER_RE = /collector|deputy commissioner(?! of police)|district magistrate|superintendent of police|commissioner of police/i;
 
 /** Wikipedia article of a state/UT when it is not simply its name. */
 const WIKIPEDIA_STATE_TITLES: Record<string, string> = {
@@ -268,6 +269,8 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
       if (lacking.length === 0) continue;
       const checks = officeChecks(holderName, { people: wikiPeople, url: st.wikiUrl }, wd);
       const agree = sourcesAgreeWithEachOther(checks, wikiPeople, wd);
+      // Nothing of ours to compare: keep what each source says, without a verdict.
+      const said = checks.map((c) => ({ ...c, agreed: null }));
       const keys: string[] = [];
       for (const d of lacking) {
         const key = `leaders:${d.slug}:${office}:missing`;
@@ -283,7 +286,7 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
           dataDate: null,
           primarySource: "our records",
           primaryValue: null,
-          sources: checks,
+          sources: said,
           agreed: null,
           tolerance: null,
           status: "missing",
@@ -342,6 +345,8 @@ export async function verifyLeaders(ctx: VerifyContext): Promise<VerifierOutput>
   }
 
   for (const g of placeholderGroups.values()) {
+    // The district's head officers first (Collector / Deputy Commissioner / DM / SP / Police Commissioner).
+    g.rows.sort((a, b) => Number(HEAD_OFFICER_RE.test(b.role)) - Number(HEAD_OFFICER_RE.test(a.role)));
     out.reviews.push({
       districtId: g.d.id,
       dataType: REVIEW_DATA_TYPE,

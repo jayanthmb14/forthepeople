@@ -6,7 +6,8 @@
 
 // ═══════════════════════════════════════════════════════════
 // Vercel Cron: daily data verification (double-check)
-// GET /api/cron/verify-data      schedule "15 2 * * *" (vercel.json; 07:45 IST)
+// GET /api/cron/verify-data      schedule "45 6 * * *" (vercel.json; 12:15 IST — after the
+//                                 06:00 UTC dam reading and the 03:30 UTC crop run)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:verify-data" + one ScraperLog row ("verify-data")
 // Lock: Redis "ftp:lock:verify-data" so two runs never overlap.
