@@ -130,6 +130,32 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 - 2026-09-27: The India map shows live districts as landmark badges in each district's colour, and
   nearby pins fan out with leader lines. The district overview has a "Where is {district}?" locator map.
 
+### Changed — every page in English + Kannada, new real-data pictures (branch `redesign-v4`)
+- 2026-09-27: Nine agents converted every district module page, the site pages and the India dashboard
+  to message files (en + kn, `src/dictionaries/<locale>/page_<name>.json`). Each page gained at least
+  one picture drawn from real data, for example:
+  - crop price bars and biggest price changes
+  - "Is the water safe?" (JJM)
+  - "How each ₹100 is shared" (finance)
+  - "Who runs these schemes"
+  - an elected-representatives ring
+  - exam hiring ring
+  - "Who reported it" (news)
+
+  Also fixed:
+  - India deep-dive pages showed mock values as real data, and the India band showed 0 in the
+    server HTML.
+  - Exams showed some exams twice and a raw key.
+  - Kannada numbers used western grouping, and Marathi, Bengali and Urdu would have used native digits.
+  - Taluk and tender headings now use the local-script name.
+  - Four copies of a place-name hook were merged into one.
+- 2026-09-27: **Election results are withheld** until they are checked against ECI. The seeded rows
+  had wrong winners (Mandya 2024), a Mysuru seat filed under Mandya, round vote counts and
+  placeholder runners-up, all labelled ECI.
+- 2026-09-27: The kit gained `DetailSheet` (tap any item to see everything about it), `HowItWorks`,
+  `CountdownBar` and a `ModulePage` frame. On laptops and PCs, module pages now use up to 1320 px
+  instead of a 960 px column. See `docs/LAYOUT.md` and `docs/MODULE-MAP.md`.
+
 ### Fixed — district data and maps (Sept 2026 backend audit, branch `redesign-v4`)
 - 2026-09-27: **Infrastructure shows only the district's own projects.** STATE and NATIONAL rows were
   copied onto many districts; one Delhi project appeared on all ten district pages. District pages,
