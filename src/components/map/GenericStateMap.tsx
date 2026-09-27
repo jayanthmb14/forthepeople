@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 
@@ -67,6 +68,8 @@ export function computeScale(geojson: { features: Array<{ geometry: { coordinate
 
 export default function GenericStateMap({ locale, stateSlug, activeDistricts }: GenericStateMapProps) {
   const router = useRouter();
+  const tm = useTranslations("map");
+  const ts = useTranslations("page_state");
   const [tooltip, setTooltip] = useState<{ name: string; active: boolean; x: number; y: number } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [geoData, setGeoData] = useState<any>(null);
@@ -134,10 +137,10 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
       </ComposableMap>
 
       {tooltip && (
-        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} lockedHint="Preview" />
+        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} lockedHint={ts("mapPreview")} />
       )}
 
-      <MapLegend liveLabel="Active" lockedLabel="Coming soon" />
+      <MapLegend liveLabel={tm("activeState")} lockedLabel={tm("comingSoon")} />
     </div>
   );
 }
