@@ -204,7 +204,7 @@ function HelplineKinds({ onPick }: { onPick: (kind: HelplineKind) => void }) {
           margin: 0,
           padding: 0,
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(min(150px, 100%), 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(170px, 100%), 1fr))",
           gap: 10,
         }}
       >
@@ -220,6 +220,7 @@ function HelplineKinds({ onPick }: { onPick: (kind: HelplineKind) => void }) {
                 className="ftp-card-link"
                 style={{
                   width: "100%",
+                  height: "100%",
                   minHeight: 44,
                   display: "flex",
                   alignItems: "center",
