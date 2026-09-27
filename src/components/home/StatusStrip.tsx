@@ -164,7 +164,7 @@ export default function StatusStrip() {
   const refreshedAt = onDistrict && now !== null ? liveDataRefreshedAt(fresh.datasets, now) : null;
 
   return (
-    <div className={styles.strip} aria-label={t("region")}>
+    <div className={styles.strip} role="group" aria-label={t("region")}>
       <div className={styles.stripRow}>
         {now === null ? (
           // Same height before the browser knows the time: no layout jump.

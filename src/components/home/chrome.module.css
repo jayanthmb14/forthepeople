@@ -177,8 +177,9 @@
   color: var(--ftp-brand);
 }
 .switcherBtn {
-  width: 28px;
-  height: 40px;
+  position: relative;
+  width: 32px;
+  height: 44px;
   margin-left: 2px;
   display: inline-flex;
   align-items: center;
@@ -197,6 +198,12 @@
 .switcherBtn:focus-visible {
   outline: 2px solid var(--ftp-brand);
   outline-offset: 1px;
+}
+/* A 44 px wide touch area around the narrow button (tablets). */
+.switcherBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0 -6px;
 }
 .caretOpen {
   transform: rotate(180deg);
