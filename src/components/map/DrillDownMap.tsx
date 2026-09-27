@@ -9,7 +9,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
-import { Lock } from "lucide-react";
+import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 import { INDIA_STATES } from "@/lib/constants/districts";
 
 // Maps GeoJSON `name` property → our state slugs
@@ -63,7 +63,7 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
   const [tooltip, setTooltip] = useState<{ name: string; active: boolean; x: number; y: number } | null>(null);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", minHeight: 420, background: "#DDEEFF", borderRadius: 8 }}>
+    <div style={{ position: "relative", width: "100%", height: "100%", minHeight: 420, background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-tile)" }}>
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{ center: [82.5, 23.0], scale: 900 }}
@@ -90,7 +90,9 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    className={isActive ? "ftp-geo-active" : "ftp-geo-locked"}
+                    // v3: no glow pulse on active states (the old
+                    // .ftp-geo-active class animated a drop-shadow), so no
+                    // class here — colour alone marks an active state.
                     data-active={isActive ? "true" : "false"}
                     onClick={() => {
                       if (isActive && state) {
@@ -110,27 +112,9 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
                       }
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    style={{
-                      default: {
-                        fill: isActive ? "#4A90D9" : "#B8C4CE",
-                        stroke: "#FFFFFF",
-                        strokeWidth: isActive ? 1.5 : 0.8,
-                        outline: "none",
-                        cursor: isActive ? "pointer" : "default",
-                        transition: "fill 200ms",
-                      },
-                      hover: {
-                        fill: isActive ? "#2563EB" : "#9AA5AF",
-                        stroke: "#FFFFFF",
-                        strokeWidth: isActive ? 2 : 0.8,
-                        outline: "none",
-                        cursor: isActive ? "pointer" : "not-allowed",
-                      },
-                      pressed: {
-                        fill: isActive ? "#1D4ED8" : "#9AA5AF",
-                        outline: "none",
-                      },
-                    }}
+                    // Solid fills on the India map (states are small at this
+                    // scale). Colours come from the shared map theme.
+                    style={geoStyle(isActive, true)}
                   />
                 );
               })
@@ -141,51 +125,11 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
 
       {/* Tooltip */}
       {tooltip && (
-        <div
-          style={{
-            position: "absolute",
-            left: Math.min(tooltip.x + 10, 240),
-            top: Math.max(tooltip.y - 36, 4),
-            background: "#1A1A1A",
-            color: "#FFFFFF",
-            padding: "4px 10px",
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 500,
-            pointerEvents: "none",
-            whiteSpace: "nowrap",
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-          }}
-        >
-          {!tooltip.active && <Lock size={10} style={{ opacity: 0.7 }} />}
-          {tooltip.name}
-          {tooltip.active && <span style={{ color: "#93C5FD", marginLeft: 4 }}>→ Explore</span>}
-          {!tooltip.active && <span style={{ color: "#9B9B9B", marginLeft: 4 }}>Coming soon</span>}
-        </div>
+        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={240} />
       )}
 
       {/* Legend */}
-      <div
-        style={{
-          position: "absolute", bottom: 8, right: 8,
-          display: "flex", flexDirection: "column", gap: 4,
-          background: "rgba(255,255,255,0.92)", border: "1px solid #E8E8E4",
-          borderRadius: 8, padding: "5px 9px", fontSize: 10, color: "#6B6B6B",
-          pointerEvents: "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 12, height: 8, background: "#4A90D9", border: "1px solid #FFFFFF", borderRadius: 2 }} />
-          Active
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 12, height: 8, background: "#B8C4CE", border: "1px solid #FFFFFF", borderRadius: 2 }} />
-          Coming Soon
-        </div>
-      </div>
+      <MapLegend solid liveLabel="Active" lockedLabel="Coming soon" />
     </div>
   );
 }

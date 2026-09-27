@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
+import { MapTooltip, tint } from "@/components/map/mapTheme";
 
 // Projection centers per district
 const DISTRICT_PROJECTION: Record<string, { center: [number, number]; scale: number }> = {
@@ -24,53 +25,36 @@ const DISTRICT_PROJECTION: Record<string, { center: [number, number]; scale: num
 };
 const DEFAULT_PROJECTION = { center: [76.77, 12.55] as [number, number], scale: 16000 };
 
-// Taluk colors
-const TALUK_COLORS: Record<string, { fill: string; stroke: string }> = {
-  "mandya":           { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "maddur":           { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "malavalli":        { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "srirangapatna":    { fill: "rgba(239,68,68,0.22)",   stroke: "#DC2626" },
-  "nagamangala":      { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
-  "kr-pete":          { fill: "rgba(236,72,153,0.22)",  stroke: "#DB2777" },
-  "pandavapura":      { fill: "rgba(20,184,166,0.22)",  stroke: "#0D9488" },
-  "bengaluru-north":  { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "bengaluru-south":  { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "bengaluru-east":   { fill: "rgba(124,58,237,0.22)",  stroke: "#7C3AED" },
-  "anekal":           { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "mysuru-taluk":     { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "nanjangud":        { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "t-narasipur":      { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "hunsur":           { fill: "rgba(239,68,68,0.22)",   stroke: "#DC2626" },
-  "hd-kote":          { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
-  "periyapatna":      { fill: "rgba(236,72,153,0.22)",  stroke: "#DB2777" },
-  "kr-nagar":         { fill: "rgba(20,184,166,0.22)",  stroke: "#0D9488" },
+// Taluk colours — each neighbouring taluk gets a different hue so the
+// boundaries are easy to tell apart. The hues are the accent ramps already
+// declared on :root (`--accent-<name>-700`), so there is no hex here and
+// they follow dark mode. Fill = the hue at 22 % over transparent.
+type TalukHue = "blue" | "forest-green" | "amber" | "coral" | "purple" | "pink" | "teal";
+const TALUK_HUE: Record<string, TalukHue> = {
+  "mandya": "blue", "maddur": "forest-green", "malavalli": "amber", "srirangapatna": "coral",
+  "nagamangala": "purple", "kr-pete": "pink", "pandavapura": "teal",
+  "bengaluru-north": "blue", "bengaluru-south": "forest-green", "bengaluru-east": "purple", "anekal": "amber",
+  "mysuru-taluk": "blue", "nanjangud": "forest-green", "t-narasipur": "amber", "hunsur": "coral",
+  "hd-kote": "purple", "periyapatna": "pink", "kr-nagar": "teal",
   // New Delhi
-  "connaught-place":  { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "chanakyapuri":     { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "lodhi-road":       { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
+  "connaught-place": "blue", "chanakyapuri": "forest-green", "lodhi-road": "amber",
   // Mumbai
-  "south-mumbai":     { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "western-suburbs":  { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "eastern-suburbs":  { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "navi-mumbai-zone": { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
-  "north-mumbai":     { fill: "rgba(236,72,153,0.22)",  stroke: "#DB2777" },
+  "south-mumbai": "blue", "western-suburbs": "forest-green", "eastern-suburbs": "amber",
+  "navi-mumbai-zone": "purple", "north-mumbai": "pink",
   // Chennai
-  "chennai-north":    { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "chennai-south":    { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "chennai-central":  { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "chennai-west":     { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
+  "chennai-north": "blue", "chennai-south": "forest-green", "chennai-central": "amber", "chennai-west": "purple",
   // Kolkata
-  "kolkata-north":    { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "kolkata-south":    { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "kolkata-central":  { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "kolkata-east":     { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
+  "kolkata-north": "blue", "kolkata-south": "forest-green", "kolkata-central": "amber", "kolkata-east": "purple",
   // Lucknow
-  "lucknow-city":     { fill: "rgba(37,99,235,0.22)",   stroke: "#2563EB" },
-  "mohanlalganj":     { fill: "rgba(16,185,129,0.22)",  stroke: "#059669" },
-  "malihabad":        { fill: "rgba(245,158,11,0.22)",  stroke: "#D97706" },
-  "bakshi-ka-talab":  { fill: "rgba(139,92,246,0.22)",  stroke: "#7C3AED" },
+  "lucknow-city": "blue", "mohanlalganj": "forest-green", "malihabad": "amber", "bakshi-ka-talab": "purple",
 };
-const DEFAULT_COLOR = { fill: "rgba(37,99,235,0.18)", stroke: "#2563EB" };
+
+/** Fill + stroke for a taluk (unknown taluks fall back to the map's live blue). */
+function talukColors(slug: string): { fill: string; hover: string; pressed: string; stroke: string } {
+  const hue = TALUK_HUE[slug];
+  const stroke = hue ? `var(--accent-${hue}-700)` : "var(--ftp-map-live)";
+  return { fill: tint(stroke, hue ? 22 : 18), hover: tint(stroke, 35), pressed: tint(stroke, 50), stroke };
+}
 
 // GeoJSON name → taluk slug
 const NAME_TO_SLUG: Record<string, string> = {
@@ -134,7 +118,7 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
                 NAME_TO_SLUG[geoName] ??
                 (geo.properties?.slug as string) ??
                 geoName.toLowerCase().replace(/\s+/g, "-");
-              const colors = TALUK_COLORS[slug] ?? DEFAULT_COLOR;
+              const colors = talukColors(slug);
               const dbTaluk = taluks.find((t) => t.slug === slug);
               const displayName = dbTaluk?.name ?? geoName;
 
@@ -167,8 +151,8 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
                     onMouseLeave={() => setTooltip(null)}
                     style={{
                       default: { fill: colors.fill, stroke: colors.stroke, strokeWidth: 1.5, outline: "none", cursor: "pointer" },
-                      hover:   { fill: colors.stroke, fillOpacity: 0.35, stroke: colors.stroke, strokeWidth: 2.5, outline: "none", cursor: "pointer" },
-                      pressed: { fill: colors.stroke, fillOpacity: 0.5, outline: "none" },
+                      hover:   { fill: colors.hover, stroke: colors.stroke, strokeWidth: 2.5, outline: "none", cursor: "pointer" },
+                      pressed: { fill: colors.pressed, outline: "none" },
                     }}
                   />
                   {labelAt && (
@@ -177,8 +161,8 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
                         textAnchor="middle"
                         style={{
                           fontSize: 9,
-                          fill: "#1A1A1A",
-                          fontFamily: "var(--font-sans, sans-serif)",
+                          fill: "var(--ftp-text)",
+                          fontFamily: "var(--ftp-font-sans)",
                           pointerEvents: "none",
                           userSelect: "none",
                         }}
@@ -196,28 +180,16 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
 
       {/* Tooltip */}
       {tooltip && (
-        <div
-          style={{
-            position: "absolute",
-            left: Math.min(tooltip.x + 10, 240),
-            top: Math.max(tooltip.y - 36, 4),
-            background: "#1A1A1A", color: "#FFFFFF",
-            padding: "4px 10px", borderRadius: 6,
-            fontSize: 12, fontWeight: 500,
-            pointerEvents: "none", whiteSpace: "nowrap", zIndex: 10,
-          }}
-        >
-          {tooltip.name}
-          <span style={{ color: "#93C5FD", marginLeft: 6 }}>→ Explore</span>
-        </div>
+        <MapTooltip name={tooltip.name} active x={tooltip.x} y={tooltip.y} maxLeft={240} />
       )}
 
       {/* Hint */}
       <div
         style={{
           position: "absolute", bottom: 6, right: 8,
-          background: "rgba(255,255,255,0.9)", border: "1px solid #E8E8E4",
-          borderRadius: 6, padding: "3px 8px", fontSize: 10, color: "#6B6B6B",
+          background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)",
+          borderRadius: "var(--ftp-radius-tile)", padding: "3px 8px", fontSize: 11, lineHeight: "16px",
+          color: "var(--ftp-text-2)",
           pointerEvents: "none",
         }}
       >

@@ -4,6 +4,9 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// State page map card: a label row, the state's district map (Karnataka
+// has a hand-tuned map; every other state uses the generic one) and the
+// DataMeet attribution. Design v3 chrome: plain Card look, tokens only.
 "use client";
 
 import dynamic from "next/dynamic";
@@ -18,19 +21,20 @@ const GenericStateMap = dynamic(() => import("@/components/map/GenericStateMap")
   loading: () => <MapSkeleton />,
 });
 
+/** Flat placeholder while the map code loads (no shimmer). */
 function MapSkeleton() {
   return (
     <div
+      className="ftp-skeleton"
       style={{
         height: 320,
-        background: "#F5F7FF",
-        borderRadius: 12,
+        borderRadius: "var(--ftp-radius-tile)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <span style={{ color: "#9B9B9B", fontSize: 13 }}>Loading map…</span>
+      <span style={{ color: "var(--ftp-text-2)", fontSize: 13 }}>Loading map…</span>
     </div>
   );
 }
@@ -43,11 +47,18 @@ interface StateMapSectionProps {
 
 export default function StateMapSection({ locale, stateSlug, activeDistrictSlugs }: StateMapSectionProps) {
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 14, overflow: "hidden", height: "100%", maxHeight: 400 }}>
+    <div
+      style={{
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        borderRadius: "var(--ftp-radius-card)",
+        overflow: "hidden",
+        height: "100%",
+        maxHeight: 400,
+      }}
+    >
       <div style={{ padding: "10px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>
-          Click a district to explore
-        </span>
+        <span className="ftp-label">Click a district to explore</span>
       </div>
       <div style={{ height: "calc(100% - 32px)", overflow: "hidden" }}>
         {stateSlug === "karnataka" ? (
@@ -56,7 +67,7 @@ export default function StateMapSection({ locale, stateSlug, activeDistrictSlugs
           <GenericStateMap locale={locale} stateSlug={stateSlug} activeDistricts={new Set(activeDistrictSlugs)} />
         )}
       </div>
-      <div style={{ padding: "0 16px 6px", fontSize: 10, color: "#B0B0AA" }}>
+      <div style={{ padding: "0 16px 6px", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         Map data © DataMeet Contributors · CC-BY 4.0
       </div>
     </div>

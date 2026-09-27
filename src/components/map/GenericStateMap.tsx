@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
-import { Lock } from "lucide-react";
+import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 
 interface GenericStateMapProps {
   locale: string;
@@ -120,24 +120,9 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
                       if (rect) setTooltip((t) => t ? { ...t, x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    style={{
-                      default: {
-                        fill: isActive ? "rgba(37,99,235,0.18)" : "#E5E7EB",
-                        stroke: isActive ? "#2563EB" : "#FFFFFF",
-                        strokeWidth: isActive ? 1.5 : 0.5,
-                        outline: "none",
-                        cursor: "pointer",
-                        transition: "fill 150ms",
-                      },
-                      hover: {
-                        fill: isActive ? "#EFF6FF" : "#D4D4D0",
-                        stroke: isActive ? "#1D4ED8" : "#9CA3AF",
-                        strokeWidth: isActive ? 2 : 1,
-                        outline: "none",
-                        cursor: "pointer",
-                      },
-                      pressed: { fill: isActive ? "rgba(37,99,235,0.45)" : "#D4D4D0", outline: "none" },
-                    }}
+                    // Colours from the shared map theme; locked districts still
+                    // open a preview page, so they keep a pointer cursor.
+                    style={geoStyle(isActive, false, true)}
                   />
                 );
               })
@@ -147,31 +132,10 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
       </ComposableMap>
 
       {tooltip && (
-        <div
-          style={{
-            position: "absolute", left: Math.min(tooltip.x + 10, 260), top: Math.max(tooltip.y - 36, 4),
-            background: "#1A1A1A", color: "#FFFFFF", padding: "4px 10px", borderRadius: 6,
-            fontSize: 12, fontWeight: 500, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 10,
-            display: "flex", alignItems: "center", gap: 5,
-          }}
-        >
-          {!tooltip.active && <Lock size={10} style={{ opacity: 0.7 }} />}
-          {tooltip.name}
-          {tooltip.active && <span style={{ color: "#93C5FD", marginLeft: 4 }}>→ Explore</span>}
-          {!tooltip.active && <span style={{ color: "#9B9B9B", marginLeft: 4 }}>Preview</span>}
-        </div>
+        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} lockedHint="Preview" />
       )}
 
-      <div style={{ position: "absolute", bottom: 6, right: 6, display: "flex", flexDirection: "column", gap: 3, background: "rgba(255,255,255,0.92)", border: "1px solid #E8E8E4", borderRadius: 6, padding: "4px 8px", fontSize: 9, color: "#9B9B9B", pointerEvents: "none" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 10, height: 6, background: "rgba(37,99,235,0.18)", border: "1px solid #2563EB", borderRadius: 1 }} />
-          Active
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 10, height: 6, background: "#E5E7EB", border: "1px solid #CCC", borderRadius: 1 }} />
-          Coming Soon
-        </div>
-      </div>
+      <MapLegend liveLabel="Active" lockedLabel="Coming soon" />
     </div>
   );
 }
