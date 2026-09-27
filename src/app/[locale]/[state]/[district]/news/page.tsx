@@ -19,8 +19,11 @@
 //  DetailSheet: the summary, publisher, date and time, topic, the data page
 //  it is about, and "Open the story" → AI summary → charts (2 per row on
 //  laptop/PC): who reported it, and when the stories came out → Share /
-//  Compare. No emoji (topics are words); sources and "report a mistake"
-//  are in the layout's verification panel.
+//  Compare. No emoji: each topic has its own crafted glyph and pastel
+//  colour (src/components/graphics), on its tile, its group heading and
+//  every story card, so crime, weather and farming look different at a
+//  glance. Sources and "report a mistake" are in the layout's
+//  verification panel.
 //
 //  Every story says WHERE it came from and WHEN. Headlines and summaries are
 //  live data (translated once in the backend when a translation exists; the
@@ -38,7 +41,6 @@ import { useNews, type NewsItem } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
 import {
   ModulePage, PageHeader, LoadingShell, ErrorBlock, StatStrip, StatTile, Section,
-  EmptyState,
 } from "@/components/district/ui";
 import { ChartCard, ChartGradients, CHART_AXIS, Explainer, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
@@ -48,6 +50,15 @@ import { cleanText, useNow } from "@/components/community/pageTools";
 import { PageActions } from "@/components/district/page-kit";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { hueClass } from "@/lib/design/hues";
+import {
+  CategoryGlyph,
+  GlyphEmptyState,
+  GlyphStack,
+  glyphPick,
+  newsStoryGlyph,
+  newsTopicGlyph,
+  type GlyphPick,
+} from "@/components/graphics";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
 /** A story as the API returns it; `lang` is set when a stored translation was swapped in. */
@@ -89,6 +100,14 @@ const MODULE_TAGS: Record<string, { hue: string }> = {
   "population":           { hue: "population" },
   "news":                 { hue: "news" },
 };
+
+/**
+ * A module tag that points at a real data page. "news" is the pipeline's
+ * "no particular page" tag, so it is neither a link nor a pill.
+ */
+function linksToPage(slug: string | null | undefined): slug is string {
+  return Boolean(slug && slug !== "news" && MODULE_TAGS[slug]);
+}
 
 /** Module tags that are not a page of their own link to the page that holds them. */
 const TAG_ROUTE: Record<string, string> = {
@@ -150,19 +169,29 @@ function ModulePill({ slug }: { slug: string }) {
   );
 }
 
-/** One topic tile in the picture. It is also the filter button for that topic. */
+/**
+ * One topic tile in the picture, in the topic's own pastel colour with its
+ * glyph (or, for "All stories", the busiest topics' glyphs stacked). It is
+ * also the filter button for that topic.
+ */
 function TopicTile({
   label,
   count,
   total,
   active,
   onClick,
+  pick,
+  stack,
 }: {
   label: string;
   count: number;
   total: number;
   active: boolean;
   onClick: () => void;
+  /** The topic's glyph; its hue colours the whole tile. */
+  pick?: GlyphPick;
+  /** For "All stories": the glyphs of the busiest topics. */
+  stack?: GlyphPick[];
 }) {
   const f = useFormat();
   const share = total > 0 ? count / total : 0;
@@ -171,7 +200,7 @@ function TopicTile({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="ftp-card-link"
+      className={`ftp-card-link${pick ? ` ${hueClass(pick.hue)}` : ""}`}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -181,7 +210,9 @@ function TopicTile({
         padding: "12px 12px 10px",
         borderRadius: 14,
         border: `2px solid ${active ? "var(--hue)" : "color-mix(in srgb, var(--hue) 18%, var(--ftp-border))"}`,
-        background: active ? "var(--hue-tint)" : "#fff",
+        background: active
+          ? "var(--hue-tint)"
+          : "linear-gradient(160deg, var(--ftp-surface) 45%, color-mix(in srgb, var(--hue-tint) 85%, var(--ftp-surface)))",
         cursor: "pointer",
         textAlign: "start",
         font: "inherit",
@@ -189,10 +220,13 @@ function TopicTile({
         minWidth: 0,
       }}
     >
-      <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <span style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "anywhere" }}>{label}</span>
-        <span className="ftp-bignum" style={{ fontSize: 20, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
+      {/* Picture and count on top, the name on its own line (it wraps at word breaks, never mid-word). */}
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}>
+        {pick && <CategoryGlyph pick={pick} size={36} chip />}
+        {!pick && stack && <GlyphStack picks={stack} size={32} />}
+        <span className="ftp-bignum" style={{ fontSize: 22, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
       </span>
+      <span style={{ minWidth: 0, fontSize: 14, lineHeight: "19px", fontWeight: 650, overflowWrap: "break-word" }}>{label}</span>
       <span aria-hidden style={{ height: 6, borderRadius: 99, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
         <span className="ftp-grow-x" style={{ display: "block", height: "100%", width: `${Math.max(4, Math.round(share * 100))}%`, borderRadius: 99, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
       </span>
@@ -210,6 +244,7 @@ function StoryCard({ n, onOpen }: { n: Story; onOpen: (n: Story) => void }) {
   return (
     <TapCard
       onOpen={() => onOpen(n)}
+      leading={<CategoryGlyph pick={newsStoryGlyph(n)} size={40} chip />}
       title={headline}
       titleLang={n.lang}
       subtitle={
@@ -236,7 +271,7 @@ function StoryCard({ n, onOpen }: { n: Story; onOpen: (n: Story) => void }) {
           {summary}
         </p>
       )}
-      {n.targetModule && MODULE_TAGS[n.targetModule] && (
+      {linksToPage(n.targetModule) && (
         <div>
           <ModulePill slug={n.targetModule} />
         </div>
@@ -266,8 +301,8 @@ function StorySheet({ n, base, onClose }: { n: Story; base: string; onClose: () 
   const f = useFormat();
   const headline = cleanText(n.headline);
   const summary = n.summary ? cleanText(n.summary) : "";
-  const tag = n.targetModule ? MODULE_TAGS[n.targetModule] : undefined;
-  const route = n.targetModule ? TAG_ROUTE[n.targetModule] ?? n.targetModule : null;
+  const tag = linksToPage(n.targetModule) ? MODULE_TAGS[n.targetModule] : undefined;
+  const route = tag && n.targetModule ? TAG_ROUTE[n.targetModule] ?? n.targetModule : null;
   const topic = topicOf(n);
   const english = f.locale !== "en" && (!n.lang || n.lang === "en");
 
@@ -278,17 +313,18 @@ function StorySheet({ n, base, onClose }: { n: Story; base: string; onClose: () 
       title={headline}
       titleLang={n.lang}
       subtitle={publisherOf(n) || undefined}
+      media={<CategoryGlyph pick={newsStoryGlyph(n)} size={44} chip />}
       hueClassName={hueClass("news")}
       footer={
         <>
           {n.url && (
-            <a href={n.url} target="_blank" rel="noopener noreferrer" style={{ ...sheetButton, background: "var(--hue)", color: "#fff", border: "1px solid var(--hue)" }}>
+            <a href={n.url} target="_blank" rel="noopener noreferrer" style={{ ...sheetButton, background: "var(--hue)", color: "var(--ftp-surface)", border: "1px solid var(--hue)" }}>
               {t("openStory")}
               <ExternalLink size={14} aria-hidden />
             </a>
           )}
-          {tag && route && route !== "news" && (
-            <Link href={`${base}/${route}`} className={hueClass(tag.hue)} style={{ ...sheetButton, background: "#fff", color: "var(--hue-deep)", border: "1px solid var(--ftp-border)" }}>
+          {tag && route && (
+            <Link href={`${base}/${route}`} className={hueClass(tag.hue)} style={{ ...sheetButton, background: "var(--ftp-surface)", color: "var(--hue-deep)", border: "1px solid var(--ftp-border)" }}>
               {t("seePage", { page: mt.label(route) })}
             </Link>
           )}
@@ -360,7 +396,8 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
     .map((c) => ({ ...c, stories: news.filter((n) => topicOf(n) === c.category) }));
 
   const latest = news.reduce<string | null>((max, n) => (!max || n.publishedAt > max ? n.publishedAt : max), null);
-  const linkedCount = news.filter((n) => n.targetModule && MODULE_TAGS[n.targetModule]).length;
+  // Stories tagged with a real data page ("news" = no particular page).
+  const linkedCount = news.filter((n) => linksToPage(n.targetModule)).length;
 
   // Publishers (the name shown on each card).
   const byPublisher = new Map<string, number>();
@@ -411,7 +448,12 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
       {error && <ErrorBlock />}
 
       {!isLoading && !error && news.length === 0 && (
-        <EmptyState title={tNo("news.title")} body={tNo("news.body", { district: districtName })} />
+        <GlyphEmptyState
+          pick={glyphPick("general")}
+          companions={[glyphPick("weather"), glyphPick("farming")]}
+          title={tNo("news.title")}
+          body={tNo("news.body", { district: districtName })}
+        />
       )}
 
       {!isLoading && news.length > 0 && (
@@ -443,8 +485,15 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
           {/* The one picture: what the news is about. Each tile is also the topic filter. */}
           <Section title={t("aboutTitle")}>
             <p className="ftp-prose" style={{ margin: "-4px 0 12px", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("aboutIntro")}</p>
-            <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "160px", gap: 10 }}>
-              <TopicTile label={t("all")} count={news.length} total={news.length} active={activeTopic === "all"} onClick={() => setTopic("all")} />
+            <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "148px", gap: 10 }}>
+              <TopicTile
+                label={t("all")}
+                count={news.length}
+                total={news.length}
+                active={activeTopic === "all"}
+                onClick={() => setTopic("all")}
+                stack={topicCounts.slice(0, 3).map((c) => newsTopicGlyph(c.category))}
+              />
               {topicCounts.map((c) => (
                 <TopicTile
                   key={c.category}
@@ -453,6 +502,7 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
                   total={news.length}
                   active={activeTopic === c.category}
                   onClick={() => setTopic(c.category)}
+                  pick={newsTopicGlyph(c.category)}
                 />
               ))}
             </div>
@@ -463,10 +513,13 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
             <Section
               key={g.category}
               title={
-                <>
-                  {topicLabel(t, g.category)}{" "}
-                  <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(g.count) })}</span>
-                </>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <CategoryGlyph pick={newsTopicGlyph(g.category)} size={32} chip />
+                  <span>
+                    {topicLabel(t, g.category)}{" "}
+                    <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(g.count) })}</span>
+                  </span>
+                </span>
               }
             >
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "300px" }}>

@@ -73,11 +73,10 @@
   "yearsPeriod": "{prev} ಮತ್ತು {latest}",
   "trendTableValue": "{prev}: {then}, {latest}: {now}",
   "trafficTitle": "ಪ್ರತಿ ತಿಂಗಳು ಸಂಗ್ರಹಿಸಿದ ಸಂಚಾರ ದಂಡ",
-  "trafficUnits": "ಪ್ರತಿ ತಿಂಗಳು ಸಂಚಾರ ಚಲನ್‌ಗಳಿಂದ ಸಂಗ್ರಹಿಸಿದ ಮೊತ್ತ, ಸಾವಿರ ರೂಪಾಯಿಗಳಲ್ಲಿ.",
-  "trafficSimple": "ದಾಖಲೆಯಲ್ಲಿರುವ ಅತಿ ಹೆಚ್ಚು ಸಂಗ್ರಹದ ತಿಂಗಳು <b>{month}</b>: ₹{amount} ಸಾವಿರ.",
+  "trafficUnits": "ಪ್ರತಿ ತಿಂಗಳು ಸಂಚಾರ ಚಲನ್‌ಗಳಿಂದ ಸಂಗ್ರಹಿಸಿದ ಮೊತ್ತ, ಲಕ್ಷ ರೂಪಾಯಿಗಳಲ್ಲಿ.",
+  "trafficSimple": "ದಾಖಲೆಯಲ್ಲಿರುವ ಅತಿ ಹೆಚ್ಚು ಸಂಗ್ರಹದ ತಿಂಗಳು <b>{month}</b>: ₹{amount} ಲಕ್ಷ.",
   "trafficSimpleTarget": "{month}ರಲ್ಲಿ ₹{target} ಲಕ್ಷ ಗುರಿಗೆ ಎದುರಾಗಿ <b>₹{amount} ಲಕ್ಷ</b> ಸಂಗ್ರಹವಾಗಿದೆ.",
   "legendCollected": "ಸಂಗ್ರಹ",
-  "thousandRupees": "₹{amount} ಸಾವಿರ",
   "staffTitle": "ಪೊಲೀಸ್ ಹುದ್ದೆಗಳು: ಭರ್ತಿಯೇ ಖಾಲಿಯೇ?",
   "staffExplain": "ಮಂಜೂರಾದ <b>{sanctioned}</b> ಪೊಲೀಸ್ ಹುದ್ದೆಗಳಲ್ಲಿ <b>{working}</b> ಭರ್ತಿಯಾಗಿವೆ. <b>{vacant}</b> ಖಾಲಿ ಇವೆ.",
   "staffPicto": "ಪ್ರತಿ 10 ಹುದ್ದೆಗಳಲ್ಲಿ ಸುಮಾರು {n} ಭರ್ತಿಯಾಗಿವೆ.",
@@ -85,5 +84,23 @@
   "staffSource": "ಸಿಬ್ಬಂದಿ ಮಾಹಿತಿಯ ಮೂಲ",
   "allFiguresTitle": "ನಮ್ಮ ಬಳಿ ಇರುವ ಎಲ್ಲಾ ಅಪರಾಧ ಅಂಕಿಅಂಶಗಳು",
   "allFiguresSummary": "{n, plural, one {# ಅಂಕಿಯನ್ನು} other {ಎಲ್ಲಾ # ಅಂಕಿಗಳನ್ನು}} ಅವುಗಳ ಮೂಲದೊಂದಿಗೆ ತೋರಿಸಿ",
-  "sourceLabel": "ಮೂಲ: {source}"
+  "sourceLabel": "ಮೂಲ: {source}",
+  "crimeTypes": {
+    "total": "ಎಲ್ಲ ಅಪರಾಧಗಳು (ಐಪಿಸಿ)",
+    "women": "ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧಗಳು",
+    "cyber": "ಸೈಬರ್ ಅಪರಾಧ",
+    "property": "ಆಸ್ತಿ ಸಂಬಂಧಿತ ಅಪರಾಧಗಳು",
+    "theft": "ಕಳ್ಳತನ",
+    "theftBurglary": "ಕಳ್ಳತನ ಮತ್ತು ಮನೆಗಳ್ಳತನ",
+    "burglary": "ಮನೆಗಳ್ಳತನ",
+    "cheating": "ಮೋಸ ಮತ್ತು ವಂಚನೆ",
+    "robbery": "ದರೋಡೆ",
+    "murder": "ಕೊಲೆ",
+    "kidnapping": "ಅಪಹರಣ",
+    "traffic": "ಸಂಚಾರ ನಿಯಮ ಉಲ್ಲಂಘನೆ"
+  },
+  "crimeTypesAria": "{year}ರಲ್ಲಿ ಪ್ರತಿಯೊಂದು ಬಗೆಯ ಅಪರಾಧದ ಪ್ರಕರಣಗಳು, ಹೆಚ್ಚಿನದು ಮೊದಲು",
+  "lakhRupees": "₹{amount} ಲಕ್ಷ",
+  "estimatesHidden": "ನಮ್ಮ ಬಳಿ ಇರುವ {n, plural, one {# ಅಂಕಿ ಅಂದಾಜು} other {# ಅಂಕಿಗಳು ಅಂದಾಜು}}, NCRB ಅಥವಾ ಪೊಲೀಸರು ಪ್ರಕಟಿಸಿದ ಸಂಖ್ಯೆಯಲ್ಲ. ಅಂದಾಜುಗಳನ್ನು ಈ ಪುಟದ ಸಂಖ್ಯೆಗಳು ಮತ್ತು ಚಾರ್ಟ್‌ಗಳಲ್ಲಿ ಸೇರಿಸಿಲ್ಲ.",
+  "estimateTag": "ಅಂದಾಜು"
 }

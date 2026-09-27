@@ -19,6 +19,9 @@
  *   card opens the project's DetailSheet → cancelled projects → charts
  *   (biggest by money, by kind) → AI insight → legal notice (collapsed) →
  *   Share / CSV / Compare → related news.
+ * v5.1: every kind of project has its own crafted glyph and pastel colour
+ * (src/components/graphics, projectKindGlyph) on the kind chips, the
+ * cards, the sheet and both charts.
  * Stage and kind come from src/lib/civic/project-facts (closed lists), and
  * rows that are clearly not building projects (a renaming, a railway
  * maintenance block) are left out and counted in one quiet line. Sources,
@@ -29,7 +32,6 @@
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { use, useCallback, useMemo, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, Clock, HardHat, Wallet } from "lucide-react";
 import { useInfrastructure, useOverview } from "@/hooks/useRealtimeData";
 import type { InfraProject } from "@/hooks/useRealtimeData";
@@ -45,11 +47,12 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
+import { GlyphBarList, GlyphChips, GlyphEmptyState, projectKindGlyph } from "@/components/graphics";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import { ChartCard, ChartGradients, Explainer, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
 import ModuleNews from "@/components/district/ModuleNews";
 import { useDistrictName, useModuleText } from "@/i18n/client";
-import { StageBar, TopBarList } from "@/components/money/visuals";
+import { StageBar } from "@/components/money/visuals";
 import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import { CalmNote } from "@/components/district/calm-parts";
 import knDict from "@/dictionaries/kn.json";
@@ -64,7 +67,7 @@ import {
   type ProjectPoint,
   type ProjectStage,
 } from "@/lib/civic/project-facts";
-import { KIND_ICON, STAGE_FILL, isCancelled, isCompleted, kindOf, stageOf } from "./components/infra-utils";
+import { STAGE_FILL, isCancelled, isCompleted, kindOf, stageOf } from "./components/infra-utils";
 import { useInfraText } from "./components/infra-i18n";
 import ProjectCard, { budgetOf } from "./components/ProjectCard";
 import ProjectSheet from "./components/ProjectSheet";
@@ -134,6 +137,10 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
 
   const activeList = useMemo(() => projects.filter((p) => !isCancelled(p)), [projects]);
   const cancelledList = projects.filter((p) => isCancelled(p));
+  // The kind chips filter the active list, so they count only active projects
+  // (the "by kind" chart below counts every project, like the page total).
+  const activeKindCounts = new Map<ProjectKind, number>();
+  for (const p of activeList) activeKindCounts.set(kindOf(p), (activeKindCounts.get(kindOf(p)) ?? 0) + 1);
 
   const stageCounts = new Map<ProjectStage, number>();
   for (const p of projects) stageCounts.set(stageOf(p), (stageCounts.get(stageOf(p)) ?? 0) + 1);
@@ -156,7 +163,7 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
   };
 
   // Chart rows: projects of each kind (largest first).
-  const kindChart = kindOrder.map((k) => ({ kind: kind(k), count: kindCounts.get(k) ?? 0 }));
+  const kindChart = kindOrder.map((k) => ({ key: k, kind: kind(k), count: kindCounts.get(k) ?? 0 }));
   // Biggest projects by money (latest reported budget), cancelled ones left out.
   const biggest = activeList.filter((p) => (budgetOf(p) ?? 0) > 0).sort((a, c) => (budgetOf(c) ?? 0) - (budgetOf(a) ?? 0));
 
@@ -222,7 +229,14 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
-      {!isLoading && !error && projects.length === 0 && <EmptyState title={t("empty.title")} body={t("empty.body")} />}
+      {!isLoading && !error && projects.length === 0 && (
+        <GlyphEmptyState
+          pick={projectKindGlyph("other")}
+          companions={[projectKindGlyph("road"), projectKindGlyph("bridge")]}
+          title={t("empty.title")}
+          body={t("empty.body")}
+        />
+      )}
 
       {!isLoading && projects.length > 0 && (
         <>
@@ -269,13 +283,15 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
               {kindOrder.length >= 2 && (
                 <div>
                   <div className="ftp-label" style={{ marginBottom: 6 }}>{t("list.category")}</div>
-                  <Chips
+                  <GlyphChips
                     label={t("list.categoryAria")}
                     value={kindFilter}
                     onChange={setKindFilter}
                     items={[
                       { value: "all", label: t("list.all"), count: activeList.length },
-                      ...kindOrder.map((k) => ({ value: k, label: kind(k), count: kindCounts.get(k) ?? 0 })),
+                      ...kindOrder
+                        .filter((k) => (activeKindCounts.get(k) ?? 0) > 0)
+                        .map((k) => ({ value: k, label: kind(k), count: activeKindCounts.get(k) ?? 0, pick: projectKindGlyph(k) })),
                     ]}
                   />
                 </div>
@@ -361,12 +377,15 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
                   asOf={asOf}
                   table={biggest.slice(0, 5).map((p) => ({ label: p.name, value: inr(budgetOf(p)) }))}
                 >
-                  <TopBarList
+                  {/* Bars in the page colour (a money ranking); each chip shows the kind. */}
+                  <GlyphBarList
+                    colour="page"
+                    max={5}
                     rows={biggest.map((p) => ({
                       key: p.id,
                       label: p.name,
                       sub: t("biggest.sub", { category: kind(kindOf(p)), status: stage(stageOf(p)) }),
-                      icon: KIND_ICON[kindOf(p)],
+                      pick: projectKindGlyph(kindOf(p)),
                       value: budgetOf(p) ?? 0,
                       display: inr(budgetOf(p)),
                     }))}
@@ -382,16 +401,11 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
                   asOf={asOf}
                   table={kindChart.map((r) => ({ label: r.kind, value: m.num(r.count) }))}
                 >
-                  <ResponsiveContainer width="100%" height={Math.max(160, kindChart.length * 36 + 40)}>
-                    <BarChart data={kindChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
-                      <ChartGradients />
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                      <XAxis type="number" tick={CHART_AXIS} allowDecimals={false} tickFormatter={(v) => m.num(Number(v))} />
-                      <YAxis type="category" dataKey="kind" tick={CHART_AXIS} width={130} interval={0} />
-                      <Tooltip formatter={(v) => [m.num(Number(v)), t("byCategory.legend")]} contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} />
-                      <Bar dataKey="count" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name={t("byCategory.legend")} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {/* One row per kind, each in its own colour, matching the chips and cards. */}
+                  <GlyphBarList
+                    dense
+                    rows={kindChart.map((r) => ({ key: r.key, label: r.kind, value: r.count, display: m.num(r.count), pick: projectKindGlyph(r.key) }))}
+                  />
                 </ChartCard>
               )}
             </div>

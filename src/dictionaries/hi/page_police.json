@@ -73,11 +73,10 @@
   "yearsPeriod": "{prev} और {latest}",
   "trendTableValue": "{prev}: {then}, {latest}: {now}",
   "trafficTitle": "हर महीने वसूला गया ट्रैफिक जुर्माना",
-  "trafficUnits": "हर महीने ट्रैफिक चालानों से वसूली गई रकम, हज़ार रुपये में।",
-  "trafficSimple": "रिकॉर्ड में सबसे ज़्यादा वसूली <b>{month}</b> में हुई: ₹{amount} हज़ार।",
+  "trafficUnits": "हर महीने ट्रैफिक चालानों से वसूली गई रकम, लाख रुपये में।",
+  "trafficSimple": "रिकॉर्ड में सबसे ज़्यादा वसूली <b>{month}</b> में हुई: ₹{amount} लाख।",
   "trafficSimpleTarget": "{month} में ₹{target} लाख के लक्ष्य के मुकाबले <b>₹{amount} लाख</b> वसूले गए।",
   "legendCollected": "वसूली",
-  "thousandRupees": "₹{amount} हज़ार",
   "staffTitle": "पुलिस के पद: भरे या खाली?",
   "staffExplain": "पुलिस के <b>{sanctioned}</b> स्वीकृत पदों में से <b>{working}</b> भरे हुए हैं। <b>{vacant}</b> खाली हैं।",
   "staffPicto": "हर 10 पदों में से लगभग {n} भरे हुए हैं।",
@@ -85,5 +84,23 @@
   "staffSource": "स्टाफ़ आँकड़ों का स्रोत",
   "allFiguresTitle": "हमारे पास मौजूद सभी अपराध आँकड़े",
   "allFiguresSummary": "{n, plural, one {# आँकड़ा} other {सभी # आँकड़े}} उनके स्रोत के साथ दिखाएँ",
-  "sourceLabel": "स्रोत: {source}"
+  "sourceLabel": "स्रोत: {source}",
+  "crimeTypes": {
+    "total": "सभी अपराध (आईपीसी)",
+    "women": "महिलाओं के विरुद्ध अपराध",
+    "cyber": "साइबर अपराध",
+    "property": "संपत्ति से जुड़े अपराध",
+    "theft": "चोरी",
+    "theftBurglary": "चोरी और सेंधमारी",
+    "burglary": "सेंधमारी (घर में घुसकर चोरी)",
+    "cheating": "ठगी और धोखाधड़ी",
+    "robbery": "लूट",
+    "murder": "हत्या",
+    "kidnapping": "अपहरण",
+    "traffic": "यातायात नियमों का उल्लंघन"
+  },
+  "crimeTypesAria": "{year} में हर तरह के अपराध के मामले, सबसे ज़्यादा पहले",
+  "lakhRupees": "₹{amount} लाख",
+  "estimatesHidden": "हमारे पास {n, plural, one {# आंकड़ा अनुमान है} other {# आंकड़े अनुमान हैं}}, NCRB या पुलिस का प्रकाशित आंकड़ा नहीं। अनुमान इस पेज की संख्याओं और चार्ट में शामिल नहीं किए गए हैं।",
+  "estimateTag": "अनुमान"
 }

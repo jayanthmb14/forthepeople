@@ -73,11 +73,10 @@
   "yearsPeriod": "{prev} and {latest}",
   "trendTableValue": "{prev}: {then}, {latest}: {now}",
   "trafficTitle": "Traffic fines collected each month",
-  "trafficUnits": "Thousand rupees collected from traffic challans each month.",
-  "trafficSimple": "The highest month on file is <b>{month}</b>, with ₹{amount} thousand collected.",
+  "trafficUnits": "Lakh rupees collected from traffic challans each month.",
+  "trafficSimple": "The highest month on file is <b>{month}</b>, with ₹{amount} lakh collected.",
   "trafficSimpleTarget": "In {month}, <b>₹{amount} lakh</b> was collected against a target of ₹{target} lakh.",
   "legendCollected": "Collected",
-  "thousandRupees": "₹{amount} thousand",
   "staffTitle": "Police posts: filled or empty?",
   "staffExplain": "<b>{working}</b> of <b>{sanctioned}</b> sanctioned police posts are filled. <b>{vacant}</b> are empty.",
   "staffPicto": "About {n} of every 10 posts are filled.",
@@ -85,5 +84,23 @@
   "staffSource": "Staffing data source",
   "allFiguresTitle": "Every crime figure we hold",
   "allFiguresSummary": "Show all {n, plural, one {# figure} other {# figures}} with their sources",
-  "sourceLabel": "Source: {source}"
+  "sourceLabel": "Source: {source}",
+  "crimeTypes": {
+    "total": "All crimes (IPC)",
+    "women": "Crimes against women",
+    "cyber": "Cyber crime",
+    "property": "Property crime",
+    "theft": "Theft",
+    "theftBurglary": "Theft and burglary",
+    "burglary": "Burglary (house break-in)",
+    "cheating": "Cheating and fraud",
+    "robbery": "Robbery",
+    "murder": "Murder",
+    "kidnapping": "Kidnapping and abduction",
+    "traffic": "Traffic violations"
+  },
+  "crimeTypesAria": "Cases of each type of crime in {year}, biggest first",
+  "lakhRupees": "₹{amount} lakh",
+  "estimatesHidden": "{n, plural, one {# figure on file is an estimate} other {# figures on file are estimates}}, not a number published by NCRB or the police. Estimates are left out of the numbers and charts on this page.",
+  "estimateTag": "Estimate"
 }

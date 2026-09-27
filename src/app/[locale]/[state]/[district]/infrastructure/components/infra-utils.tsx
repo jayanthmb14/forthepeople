@@ -3,30 +3,22 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — shared helpers: stage and kind (from
- * src/lib/civic/project-facts), their tones, fills and icons, and the
- * predicates the page counts with. No hex colours, no emoji (v5).
+ * src/lib/civic/project-facts), their tones and fills, and the
+ * predicates the page counts with. No hex colours, no emoji (v5). Each
+ * kind's picture is a shared category glyph (src/components/graphics,
+ * projectKindGlyph).
  */
 
-import { createElement } from "react";
-import type { ComponentType } from "react";
-import type { LucideIcon } from "lucide-react";
 import type { Tone } from "@/components/district/ui";
-import {
-  HardHat,
-  Route, Train, TramFront, Landmark, Droplets, Waves, Building, Building2, Zap, Heart,
-  GraduationCap, Plane, Anchor, TreePine, Factory,
-} from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { projectKind, projectStage, type ProjectKind, type ProjectStage } from "@/lib/civic/project-facts";
 
 // ═══════════════════════════════════════════════════════════
 // Stage + kind (v5): the ~45 status spellings and ~90 category spellings
 // in the database fold into two closed lists (src/lib/civic/project-facts).
-// Each stage maps to a kit Pill tone (colours live in the --ftp-* tokens)
-// and each kind to a small lucide icon drawn in the module hue.
+// Each stage maps to a kit Pill tone (colours live in the --ftp-* tokens);
+// each kind has a glyph and pastel hue (projectKindGlyph).
 // ═══════════════════════════════════════════════════════════
-
-export type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
 
 export const STAGE_TONE: Record<ProjectStage, Tone> = {
   announced: "neutral",
@@ -42,7 +34,7 @@ export const STAGE_FILL: Record<ProjectStage, string> = {
   building: "var(--hue-deep)",
   stalled: "var(--ftp-warn)",
   approved: "var(--hue)",
-  announced: "color-mix(in srgb, var(--hue) 45%, #fff)",
+  announced: "color-mix(in srgb, var(--hue) 45%, var(--ftp-surface))",
   completed: "var(--ftp-live)",
   cancelled: "var(--ftp-border-strong)",
 };
@@ -68,44 +60,12 @@ export function updateTone(updateType: string): Tone {
   return "brand";
 }
 
-export const KIND_ICON: Record<ProjectKind, LucideIcon> = {
-  road: Route,
-  bridge: Landmark,
-  metro: Train,
-  rail: TramFront,
-  airport: Plane,
-  port: Anchor,
-  water: Droplets,
-  sewage: Waves,
-  power: Zap,
-  housing: Building2,
-  health: Heart,
-  education: GraduationCap,
-  parks: TreePine,
-  industry: Factory,
-  city: Building,
-  other: HardHat,
-};
-
 /** The project's stage and kind in one call. */
 export function stageOf(p: InfraProject): ProjectStage {
   return projectStage(p.status);
 }
 export function kindOf(p: InfraProject): ProjectKind {
   return projectKind(p.category, p.name);
-}
-
-/**
- * The lucide icon for a project's kind, as a real component so callers
- * don't create components during render (a React Compiler rule). Drawn in
- * the module hue, inside an .ftp-icon-chip.
- */
-export function KindIcon({ kind, size = 16 }: { kind: ProjectKind; size?: number }) {
-  return createElement(KIND_ICON[kind] ?? HardHat, {
-    size,
-    "aria-hidden": true,
-    style: { color: "var(--hue-deep)", flexShrink: 0 },
-  } as { size: number; style: React.CSSProperties });
 }
 
 /** Timeline update types that have a translated label (page_infrastructure.update.<TYPE>). */
