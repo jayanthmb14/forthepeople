@@ -141,8 +141,8 @@
   .strip { border-top: 1px solid var(--ftp-border); }
   .stripRow { gap: 10px; }
   .stripStatus { min-width: 0; flex-basis: 100%; }
-  /* The kit's quiet button is 32 px; phones need 44 px touch targets. */
-  .strip :global(.ftp-btn-secondary) { height: 44px !important; }
+  /* Kit buttons (ToolbarButton) grow to 44 px on phones by themselves via
+     `.ftp-btn` in globals.css — no override needed here any more. */
   .stripRemember { min-height: 44px; }
 }
 
