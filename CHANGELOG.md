@@ -65,6 +65,21 @@ until the owner reviews and pushes.
   `backend-backup-*` and `session-*` branches; remove the stray `.vercel/` link in the parent
   folder.
 
+#### After the v5 merge (2026-09-27)
+- Seeded random numbers are never shown. The rainfall rows for Mandya, Bengaluru Urban and New Delhi
+  (2020–24), the traffic-fine amounts and the sugar arrears had been generated with `Math.random()`
+  and labelled KSNDMC/IMD, Traffic Police and Sugar Directorate (`src/lib/data-filters.ts`, API).
+- The overview's projects card was 10× off: "lakh crore" and "crore" used the wrong powers of ten
+  (Pune showed ₹8.45 lakh crore, but the total is ₹84,474 crore). The card and the leaders card are
+  now translated, and the leaders card lists every MP.
+- State settings are looked up per district everywhere, so Pune no longer shows Mumbai's power
+  company, city corporation or tap-water note.
+- Empty-data cards, the India subtitle, the About pledge and the disclaimer no longer claim "official
+  government portals" only. The founder tier is "Founding Builder" everywhere.
+- Exams: "applications open" only with a published closing date. The admin AI-settings and costs
+  screens read the model list from `src/lib/ai-models.ts`. `/prices` is in the sitemap. Unused intro,
+  feedback-button, growth-chart and shim files were removed.
+
 ### Fixed — data, crons and AI
 - Cron endpoints now accept the `Authorization: Bearer <CRON_SECRET>` header the way Vercel actually
   sends it (two crons had never run from the scheduler because of the wrong header / HTTP method).
