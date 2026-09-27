@@ -43,6 +43,14 @@ Still yours:
 - **OpenRouter:** watch Activity once a month. Jev Router is free while it
   routes to a preview model; if it starts routing to paid models, the $10
   key limit caps the spend.
+- **Railway is still running the old collector container** (project
+  "ForthePeople", Pro plan: $20/month). Its logs on 27 Sep show it calling
+  data.gov.in and others every few seconds, getting 502/504 errors and saving
+  nothing. Everything it did moved to Vercel crons in April. It also
+  redeploys whenever `main` changes, and this branch removes its Dockerfiles.
+  **Stop or remove that service before merging this branch into `main`**, then
+  decide whether to keep the Railway plan (the `postgres-volume` there may be
+  the pre-April database; download a copy first if you want to keep it).
 - **Cloudflare Project Galileo:** moving DNS from Hostinger to Cloudflare is
   your step (registrar login). Plan and day-1 settings are in vault note 33.
   Keep SSL on "Full (strict)" and never cache `/api/cron`, `/api/admin`,
