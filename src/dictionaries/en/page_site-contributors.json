@@ -50,5 +50,6 @@
   "oneTimeEmpty": "No contributions yet. Be the first!",
   "loadMore": "Load {n} more",
   "showing": "Showing {shown} of {total}",
-  "ctaButton": "See the plans and how to subscribe"
+  "ctaButton": "See the plans and how to subscribe",
+  "filterEmpty": "No supporters in this group yet."
 }

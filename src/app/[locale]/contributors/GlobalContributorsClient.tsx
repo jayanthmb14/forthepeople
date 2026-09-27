@@ -59,6 +59,7 @@ import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import PlainPageHeader from "@/components/site/PlainPageHeader";
 import TapCard from "@/components/site/TapCard";
 import NationalSupporters from "@/components/support/NationalSupporters";
+import { isFoundingBuilder, placementLevel } from "@/components/support/placement";
 import { tierLabel } from "@/components/site/tier-label";
 import { useFormat } from "@/i18n/client";
 
@@ -96,6 +97,19 @@ interface OpenEntry {
 }
 
 const FILTERS = ["all", "patron", "state", "district", "founder", "one-time"] as const;
+
+type Tr = (key: string, values?: Record<string, string | number>) => string;
+
+/**
+ * The badge line under a name. Founder- and patron-level gifts are labelled
+ * by what they gave (a one-time ₹50,000 gift is the Founding Builder), in
+ * the same words as the support page; everything else uses page_site.tier.
+ */
+function supporterLabel(ts: Tr, tsup: Tr, c: Contributor): string {
+  if (isFoundingBuilder(c)) return tsup("banner_founder");
+  if (placementLevel(c) === "india") return tsup("banner_patron");
+  return tierLabel(ts, c.tier, c.districtName, c.stateName);
+}
 
 /** 26 px circle with the rank number; the top three are filled with the hue. */
 function RankBadge({ rank }: { rank: number }) {
@@ -165,6 +179,7 @@ function ContributorCard({
 }) {
   const t = useTranslations("page_site-contributors");
   const ts = useTranslations("page_site");
+  const tsup = useTranslations("page_support");
   const { number } = useFormat();
   const badgeKey = c.badgeLevel ? `badge_${c.badgeLevel}` : null;
 
@@ -180,7 +195,7 @@ function ContributorCard({
               {extra}
             </span>
             <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-              <span>{tierLabel(ts, c.tier, c.districtName, c.stateName)}</span>
+              <span>{supporterLabel(ts, tsup, c)}</span>
               {showAmount && c.amount && (
                 <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{number(c.amount)}</span>
               )}
@@ -213,6 +228,7 @@ const LIST_GRID: React.CSSProperties = {
 export default function GlobalContributorsClient({ locale }: { locale: string }) {
   const t = useTranslations("page_site-contributors");
   const ts = useTranslations("page_site");
+  const tsup = useTranslations("page_support");
   const { number, date } = useFormat();
   const inr = (n: number) => `₹${number(n)}`;
   const championAmount = inr(TIER_CONFIG.district.amount);
@@ -295,6 +311,10 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
 
   const filteredOneTimers = useMemo(() => {
     if (filter === "one-time" || filter === "all") return oneTimers;
+    // Founder and patron gifts are often one-time (the founding gift is), so
+    // those two filters include them.
+    if (filter === "founder") return oneTimers.filter((c) => isFoundingBuilder(c));
+    if (filter === "patron") return oneTimers.filter((c) => placementLevel(c) === "india" && !isFoundingBuilder(c));
     return [];
   }, [oneTimers, filter]);
 
@@ -307,7 +327,8 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
 
   const showLeaderboard = filter === "all" || (filter !== "one-time" && filteredLeaders.length > 0);
   const showSubscribers = filter !== "one-time" && filteredSubscribers.length > 0;
-  const showOneTime = filter === "all" || filter === "one-time";
+  const showOneTime = filter === "all" || filter === "one-time" || filteredOneTimers.length > 0;
+  const nothingInFilter = !loadingAll && !loadingLb && !showLeaderboard && !showSubscribers && !showOneTime;
 
   const b = (c: React.ReactNode) => <strong style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{c}</strong>;
 
@@ -379,6 +400,8 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
           />
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, marginTop: 10 }}>{t("tapHint")}</p>
         </div>
+
+        {nothingInFilter && <p style={{ ...EMPTY, margin: "16px 0" }}>{t("filterEmpty")}</p>}
 
         {showLeaderboard && (
           <Section title={t("leaderTitle")}>
@@ -557,7 +580,7 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
         hueClassName="ftp-hue-blue"
         media={oc ? <Initials name={oc.name} size={48} /> : undefined}
         title={oc?.name ?? ""}
-        subtitle={oc ? tierLabel(ts, oc.tier, oc.districtName, oc.stateName) : undefined}
+        subtitle={oc ? supporterLabel(ts, tsup, oc) : undefined}
         footer={
           ocLink ? (
             <ToolbarButton href={ocLink} external icon={ExternalLink}>
