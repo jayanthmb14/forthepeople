@@ -188,7 +188,8 @@ function TodayTile({
 /** A Today slot with no recent data: one honest sentence + a link to the module. */
 function TodayEmpty({ label, emoji, hue, sentence, href }: { label: string; emoji: string; hue: string; sentence: string; href: string }) {
   return (
-    <div className={`ftp-hue-${hue}`} style={{ height: "100%" }}>
+    // order: 1 → empty slots sit after the tiles that have data.
+    <div className={`ftp-hue-${hue}`} style={{ height: "100%", order: 1 }}>
       <Card href={href} padding={14} style={{ height: "100%", borderStyle: "dashed", boxShadow: "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10, filter: "grayscale(0.6)" }}>
@@ -315,7 +316,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(150px, 100%), 1fr))",
             gap: 12,
           }}
         >
