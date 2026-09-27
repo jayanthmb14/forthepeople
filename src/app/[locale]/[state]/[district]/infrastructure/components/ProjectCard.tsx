@@ -5,7 +5,9 @@
  * Infrastructure Tracker — one project as a tappable card (v5).
  * The card answers, in order:
  *   what is it     the name + one plain sentence from the description
- *   what kind      a closed list (Roads, Water, Metro …) with a line icon
+ *   what kind      a closed list (Roads, Water, Metro …); the kind's glyph
+ *                  sits on a pastel tile beside the name (v5.1), so a road
+ *                  and a metro line look different before you read
  *   where          the taluk, when the row has one
  *   how far        the stage (Announced → Completed) and progress, if known
  *   money / time   the latest budget in rupees and the finish date
@@ -32,7 +34,8 @@ import {
   sourceCount,
   type ProjectPoint,
 } from "@/lib/civic/project-facts";
-import { STAGE_TONE, KindIcon, hasCourtMention, kindOf, stageOf } from "./infra-utils";
+import { CategoryGlyph, projectKindGlyph } from "@/components/graphics";
+import { STAGE_TONE, hasCourtMention, kindOf, stageOf } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
 
 /** Latest reported budget in rupees: revised, else original, else the plain budget field. */
@@ -136,21 +139,20 @@ export default function ProjectCard({
 
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("card.cardAria", { name: p.name })} more={t("card.more")} dimmed={cancelled}>
-      {/* Name and stage. */}
-      <span style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="ftp-title" style={{ display: "block", fontWeight: 650, overflowWrap: "anywhere" }}>
-            {p.name}
-          </span>
-          {p.nameLocal && (
-            <span style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{p.nameLocal}</span>
-          )}
+      {/* Kind picture and stage on top; the name gets the full width below. */}
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}>
+        <CategoryGlyph pick={projectKindGlyph(k)} size={40} chip />
+        <Pill tone={STAGE_TONE[st]} dot>
+          {stage(st)}
+        </Pill>
+      </span>
+      <span style={{ display: "block", minWidth: 0 }}>
+        <span className="ftp-title" style={{ display: "block", fontWeight: 650, overflowWrap: "break-word" }}>
+          {p.name}
         </span>
-        <span style={{ flexShrink: 0 }}>
-          <Pill tone={STAGE_TONE[st]} dot>
-            {stage(st)}
-          </Pill>
-        </span>
+        {p.nameLocal && (
+          <span style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{p.nameLocal}</span>
+        )}
       </span>
 
       {/* What it is, in one plain sentence. */}
@@ -160,8 +162,7 @@ export default function ProjectCard({
 
       {/* Kind · where · scope · court. */}
       <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <KindIcon kind={k} size={14} />
+        <span className={`ftp-hue-${projectKindGlyph(k).hue}`} style={{ fontWeight: 600, color: "var(--hue-deep)" }}>
           {kind(k)}
         </span>
         {place && <span>{t("v5.card.where", { place })}</span>}

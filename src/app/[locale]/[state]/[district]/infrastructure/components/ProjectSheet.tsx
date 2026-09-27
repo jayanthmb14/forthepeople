@@ -23,6 +23,7 @@ import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { hueClass } from "@/lib/design/hues";
 import { SheetHighlight, SheetLink, SheetSection, hostOf, safeUrl } from "@/components/money/TapCard";
 import { ownSourceLinks, type ProjectPoint } from "@/lib/civic/project-facts";
+import { CategoryGlyph, projectKindGlyph } from "@/components/graphics";
 import { hasCourtMention, kindOf, stageOf } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
 import { PointList } from "./ProjectCard";
@@ -75,6 +76,7 @@ export default function ProjectSheet({
       onClose={onClose}
       title={p.name}
       subtitle={[kind(kindOf(p)), place, p.executingAgency].filter(Boolean).join(" · ")}
+      media={<CategoryGlyph pick={projectKindGlyph(kindOf(p))} size={44} chip />}
       hueClassName={hueClass("infrastructure")}
       footer={
         latestNews ? (
