@@ -10,6 +10,7 @@
   "amongShown": "Among the latest {shown}",
   "pictureTitle": "Who makes the changes?",
   "pictoLabel": "About {n} of every 10 recent changes came in automatically.",
+  "bySplit": "The latest {shown} changes, by who made them",
   "byAuto": "Automatic update",
   "byScheduled": "Scheduled update",
   "byAdmin": "Admin edit",

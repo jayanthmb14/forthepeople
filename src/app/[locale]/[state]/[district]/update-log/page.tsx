@@ -41,6 +41,7 @@ import {
   LoadingShell,
   ErrorBlock,
   EmptyState,
+  ProgressBar,
   ToolbarButton,
   formatIST,
 } from "@/components/district/ui";
@@ -154,6 +155,11 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
         ? t("yesterday")
         : f.date(sample, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
+  // The changes on screen, counted by who made them (most first).
+  const bySource = new Map<string, number>();
+  for (const r of rows) bySource.set(r.source, (bySource.get(r.source) ?? 0) + 1);
+  const bySplit = [...bySource.entries()].map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count);
+
   // Which data changed most among the rows on screen.
   const moduleCounts = new Map<string, number>();
   for (const r of rows) if (r.moduleName) moduleCounts.set(r.moduleName, (moduleCounts.get(r.moduleName) ?? 0) + 1);
@@ -212,26 +218,42 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
 
       {/* ONE picture: how much of the recent change came in on its own. */}
       {!isLoading && !error && filter === "all" && rows.length > 0 && (
-        <Card tinted padding={18} style={{ marginTop: 16 }}>
-          <h2 className="ftp-display" style={{ margin: "0 0 12px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
-            {t("pictureTitle")}
-          </h2>
-          <Pictogram
-            filled={(autoCount / rows.length) * 10}
-            emoji="🤖"
-            label={t("pictoLabel", { n: num(Math.round((autoCount / rows.length) * 10)) })}
-          />
-          <p style={{ margin: "14px 0 0", display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
-            {Object.entries(BY).map(([src, b]) => (
-              <span key={src}>
-                <span className="ftp-emoji" aria-hidden>
-                  {b.emoji}{" "}
-                </span>
-                {t(b.key)}
-              </span>
-            ))}
-          </p>
-        </Card>
+        <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+          <Card tinted padding={18}>
+            <h2 className="ftp-display" style={{ margin: "0 0 12px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+              {t("pictureTitle")}
+            </h2>
+            <Pictogram
+              filled={(autoCount / rows.length) * 10}
+              emoji="🤖"
+              label={t("pictoLabel", { n: num(Math.round((autoCount / rows.length) * 10)) })}
+            />
+          </Card>
+          {/* The same changes, counted by who made them. */}
+          <Card padding={18}>
+            <p className="ftp-label" style={{ marginBottom: 10 }}>
+              {t("bySplit", { shown: rows.length })}
+            </p>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+              {bySplit.map(({ source, count }) => (
+                <li key={source}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, lineHeight: "20px", marginBottom: 4 }}>
+                    <span>
+                      <span className="ftp-emoji" aria-hidden>
+                        {BY[source]?.emoji ?? "🙋"}{" "}
+                      </span>
+                      {byLabel(source)}
+                    </span>
+                    <strong className="ftp-num" style={{ color: "var(--hue-deep)" }}>
+                      {num(count)}
+                    </strong>
+                  </div>
+                  <ProgressBar pct={(count / rows.length) * 100} height={8} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
       )}
 
       <Section title={t("changesTitle")} emoji="🗒️">

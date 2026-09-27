@@ -311,28 +311,41 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
               NCRB years, the "how to report a crime" steps stand in. */}
           <div style={{ marginTop: 16 }}>
             {hasChange && latestYear !== null && prevYear !== null && totalNow !== null && totalPrev !== null ? (
-              <Card tinted padding={18}>
-                <h2 className="ftp-display" style={{ margin: "0 0 14px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
-                  {t("pictureTitle", { prev: String(prevYear), year: String(latestYear) })}
-                </h2>
-                <ThenNowPicture
-                  emoji="📁"
-                  thenLabel={String(prevYear)}
-                  nowLabel={String(latestYear)}
-                  thenValue={totalPrev}
-                  nowValue={totalNow}
-                  thenText={num(totalPrev)}
-                  nowText={num(totalNow)}
-                  changeText={changeText}
-                  ariaLabel={t("pictureAria", { prevCount: num(totalPrev), prev: String(prevYear), count: num(totalNow), year: String(latestYear) })}
-                />
-                <p className="ftp-prose" style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>
-                  {t("pictureNote")}
-                </p>
-                <div style={{ marginTop: 10 }}>
-                  <SourcePill label={NCRB.label} href={NCRB.href} />
-                </div>
-              </Card>
+              <div className="ftp-picture-row">
+                <Card tinted padding={18}>
+                  <h2 className="ftp-display" style={{ margin: "0 0 14px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+                    {t("pictureTitle", { prev: String(prevYear), year: String(latestYear) })}
+                  </h2>
+                  <ThenNowPicture
+                    emoji="📁"
+                    thenLabel={String(prevYear)}
+                    nowLabel={String(latestYear)}
+                    thenValue={totalPrev}
+                    nowValue={totalNow}
+                    thenText={num(totalPrev)}
+                    nowText={num(totalNow)}
+                    changeText={changeText}
+                    ariaLabel={t("pictureAria", { prevCount: num(totalPrev), prev: String(prevYear), count: num(totalNow), year: String(latestYear) })}
+                  />
+                </Card>
+                <Card padding={18} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+                  <p className="ftp-label">{t("tileChangeSub", { prev: String(prevYear), year: String(latestYear) })}</p>
+                  <div
+                    className="ftp-bignum"
+                    style={{
+                      fontSize: 40,
+                      lineHeight: 1.05,
+                      color: change > 0 ? "var(--ftp-danger)" : change < 0 ? "var(--ftp-live-text)" : "var(--hue-deep)",
+                    }}
+                  >
+                    {f.number(change, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" })}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>{t("pictureNote")}</p>
+                  <div>
+                    <SourcePill label={NCRB.label} href={NCRB.href} />
+                  </div>
+                </Card>
+              </div>
             ) : (
               howToReport
             )}

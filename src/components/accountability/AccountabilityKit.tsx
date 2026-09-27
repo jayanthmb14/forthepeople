@@ -288,10 +288,22 @@ export function SheetHeading({ children, emoji }: { children: React.ReactNode; e
 //  Layout helpers
 // ─────────────────────────────────────────────────────────────────────
 
-/** Charts: one per row on phones and tablets, two per row from ~960 px. */
+/**
+ * Charts: one per row on phones and tablets, two per row from ~960 px. A
+ * lone chart takes the whole row (auto-fit), so a laptop never shows half
+ * an empty row beside it.
+ */
 export function ChartRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "440px", marginTop: 24, alignItems: "start" } as React.CSSProperties}>
+    <div
+      style={{
+        display: "grid",
+        gap: 16,
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(440px, 100%), 1fr))",
+        marginTop: 24,
+        alignItems: "start",
+      }}
+    >
       {children}
     </div>
   );
