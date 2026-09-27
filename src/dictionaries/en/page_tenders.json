@@ -189,12 +189,12 @@
   "header": {
     "title": "Government Tenders",
     "titleIn": "Government Tenders in {district}",
-    "description": "Live tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide.",
+    "description": "Open tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide.",
     "newest": "Newest tender published"
   },
   "tiles": {
-    "live": "Live tenders",
-    "value": "Total live value",
+    "live": "Open tenders",
+    "value": "Value of open tenders",
     "closing48": "Closing in 48h",
     "flagged": "Flagged",
     "flaggedSub": "Factual indicators, not allegations"
@@ -236,10 +236,10 @@
     "error": "Couldn't load tenders. Please try again in a moment.",
     "empty": "No tenders match your filters.",
     "emptyLive": "Try switching tabs or loosening filters. Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
-    "emptyOther": "Try the Live tab for current opportunities."
+    "emptyOther": "Try the Open now tab for current opportunities."
   },
   "tabs": {
-    "LIVE": "Live",
+    "LIVE": "Open now",
     "CLOSING_SOON": "Closing in 48h",
     "AWARDED": "Recently awarded",
     "ARCHIVE": "Archive"
@@ -328,7 +328,7 @@
     "filterTitle": "Quick filter: tell us about yourself",
     "startup": "DPIIT Startup recognition",
     "matches": "{n, plural, one {<num>#</num> tender matches} other {<num>#</num> tenders match}}",
-    "empty": "No live tenders match your filters right now. Try toggling filters, or check back later.",
+    "empty": "No open tenders match your filters right now. Try toggling filters, or check back later.",
     "dsc": {
       "title": "Get your DSC",
       "l1": "Class-3 required for KPPP/CPPP/IREPS",
@@ -356,7 +356,7 @@
   },
   "transparency": {
     "title": "Factual indicators",
-    "descriptionIn": "Data-derived observations on live and recent tenders in {district}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
+    "descriptionIn": "Data-derived observations on open and recent tenders in {district}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
     "loadError": "Couldn't load flag data.",
     "emptyTitle": "No flagged tenders in {district} right now.",
     "emptyBody": "Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
