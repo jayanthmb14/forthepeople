@@ -52,8 +52,11 @@ export async function scrapeFinance(ctx: JobContext): Promise<ScraperResult> {
       const released = firstAmount(rec, ["released", "disbursed"]);
       const spent = firstAmount(rec, ["spent", "utilized"]);
 
+      // Only a row this collector wrote is updated: patching a seeded row
+      // would relabel its typed-in allocation as collected data (the API
+      // shows only collector-labelled rows, data-filters.ts).
       const existing = await prisma.budgetEntry.findFirst({
-        where: { districtId: ctx.districtId, fiscalYear, sector },
+        where: { districtId: ctx.districtId, fiscalYear, sector, source: "Karnataka Finance Dept / data.gov.in" },
       });
 
       if (!existing) {

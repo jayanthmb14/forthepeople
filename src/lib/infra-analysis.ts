@@ -15,6 +15,7 @@ import type { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
 import { callAIJSON } from "./ai-provider";
 import redis from "./redis";
+import { budgetChange, politicalParty } from "./civic/project-facts";
 
 export const INFRA_ANALYSIS_TTL_S = 24 * 60 * 60;
 export const INFRA_ANALYSIS_KEY_PREFIX = "ftp:infra-analysis:";
@@ -80,6 +81,16 @@ export async function generateInfraAnalysis(projectId: string): Promise<InfraAna
     },
   });
   if (!project) return null;
+  // Same rules as the page (project-facts.ts): the budget change comes from
+  // the two budgets, not the stored costOverrun, and only a political
+  // party counts as a party (Sept 2026 audit).
+  const change = budgetChange(project);
+  const facts = {
+    ...project,
+    party: politicalParty(project.party),
+    costOverrun: change?.amount ?? null,
+    costOverrunPct: change ? Math.round(change.pct * 10) / 10 : null,
+  };
 
   const updates = await prisma.infraUpdate.findMany({
     where: { projectId },
@@ -96,7 +107,7 @@ export async function generateInfraAnalysis(projectId: string): Promise<InfraAna
     const { data: parsed } = await callAIJSON<Partial<InfraAnalysis>>({
       systemPrompt: SYSTEM_PROMPT,
       userPrompt: buildPrompt(
-        project as unknown as Record<string, unknown>,
+        facts as unknown as Record<string, unknown>,
         updates as unknown as Array<Record<string, unknown>>
       ),
       purpose: "insight", // Tier 2 (low-cost flash-lite), see src/lib/ai-models.ts

@@ -75,6 +75,14 @@
     "transport": "Travel",
     "other": "Other help"
   },
+  "amount": {
+    "perMonth": "{amount} a month",
+    "perYear": "{amount} a year",
+    "oneTime": "{amount} one time",
+    "coverYear": "{amount} cover a year",
+    "loanUpTo": "Loan of up to {amount}",
+    "pensionMonth": "Pension of up to {amount} a month"
+  },
   "get": {
     "health": "Health cover of {amount}",
     "housing": "{amount} to help build or buy a home",

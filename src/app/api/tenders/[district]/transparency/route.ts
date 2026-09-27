@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDistrictName, serializeForJson } from "@/lib/tenders/tender-helpers";
+import { NOT_STUB_TENDER } from "@/lib/data-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
   const tenders = await prisma.tender.findMany({
     where: {
       locationDistrict: districtName,
+      ...NOT_STUB_TENDER,
       publishedAt: { gte: sixtyDaysAgo },
       redFlags: { some: {} },
     },

@@ -22,7 +22,7 @@ import { Pill, ProgressBar } from "@/components/district/ui";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { hueClass } from "@/lib/design/hues";
 import { SheetHighlight, SheetLink, SheetSection, hostOf, safeUrl } from "@/components/money/TapCard";
-import { ownSourceLinks, type ProjectPoint } from "@/lib/civic/project-facts";
+import { budgetChange, ownSourceLinks, shownProgress, type ProjectPoint } from "@/lib/civic/project-facts";
 import { CategoryGlyph, projectKindGlyph } from "@/components/graphics";
 import { hasCourtMention, kindOf, stageOf } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
@@ -52,7 +52,9 @@ export default function ProjectSheet({
   const st = stageOf(p);
   const finished = st === "completed";
   const cancelled = st === "cancelled";
-  const progress = p.progressPct ?? 0;
+  // A finished project is 100% (a stored 70/85 came from old news); plan
+  // end dates are not shown once it is finished (Sept 2026 audit).
+  const progress = finished ? 0 : shownProgress(p) ?? 0;
   const updates = p.updates ?? [];
   const verified = p.verificationCount ?? 0;
   const latestNews = updates.find((u) => !NOT_NEWS.has(u.newsUrl) && safeUrl(u.newsUrl));
@@ -69,6 +71,8 @@ export default function ProjectSheet({
   }
   const first = p.originalBudget ?? p.budget ?? null;
   const now = budgetOf(p);
+  // Worked out from the first and latest budgets, not the stored costOverrun.
+  const change = budgetChange(p);
 
   return (
     <DetailSheet
@@ -99,7 +103,7 @@ export default function ProjectSheet({
       </SheetHighlight>
       {!cancelled && (
         <div>
-          <ProgressBar pct={progress > 0 ? progress : finished ? 100 : 0} label={t("card.progress")} height={10} />
+          <ProgressBar pct={finished ? 100 : progress} label={t("card.progress")} height={10} />
           {progress > 0 && (
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>
               {p.lastNewsAt
@@ -148,11 +152,11 @@ export default function ProjectSheet({
             {
               label: t("sheet.change"),
               value:
-                p.costOverrun != null && p.costOverrun !== 0 ? (
-                  <span className="ftp-num" style={{ color: p.costOverrun > 0 ? "var(--ftp-warn)" : "var(--ftp-live-text)" }}>
-                    {p.costOverrun > 0 ? "+" : "−"}
-                    {inr(Math.abs(p.costOverrun))}
-                    {p.costOverrunPct != null ? ` (${p.costOverrun > 0 ? "+" : ""}${m.num(p.costOverrunPct)}%)` : ""}
+                change && change.amount !== 0 ? (
+                  <span className="ftp-num" style={{ color: change.amount > 0 ? "var(--ftp-warn)" : "var(--ftp-live-text)" }}>
+                    {change.amount > 0 ? "+" : "−"}
+                    {inr(Math.abs(change.amount))}
+                    {` (${change.amount > 0 ? "+" : "−"}${m.num(Math.abs(Math.round(change.pct * 10) / 10))}%)`}
                   </span>
                 ) : null,
             },
@@ -169,10 +173,10 @@ export default function ProjectSheet({
             { label: t("sheet.approved"), value: p.approvedDate ? monthYear(p.approvedDate) : null },
             { label: t("sheet.tender"), value: p.tenderDate ? monthYear(p.tenderDate) : null },
             { label: t("sheet.started"), value: p.actualStartDate ?? p.startDate ? monthYear(p.actualStartDate ?? p.startDate) : null },
-            { label: t("sheet.expectedEnd"), value: p.originalEndDate ?? p.expectedEnd ? monthYear(p.originalEndDate ?? p.expectedEnd) : null },
+            { label: t("sheet.expectedEnd"), value: !finished && (p.originalEndDate ?? p.expectedEnd) ? monthYear(p.originalEndDate ?? p.expectedEnd) : null },
             {
               label: t("sheet.revisedEnd"),
-              value: p.revisedEndDate ? (
+              value: !finished && p.revisedEndDate ? (
                 <span style={{ color: "var(--ftp-warn)" }}>
                   {monthYear(p.revisedEndDate)}
                   {p.delayMonths ? ` · ${t("card.late", { months: p.delayMonths })}` : ""}

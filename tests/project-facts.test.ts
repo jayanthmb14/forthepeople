@@ -4,7 +4,11 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  budgetChange,
   budgetChangePct,
+  plausibleBudgetRevision,
+  politicalParty,
+  shownProgress,
   isLate,
   isNonProject,
   lastUpdateAt,
@@ -113,10 +117,14 @@ describe("projectPoints", () => {
     expect(pts).toContainEqual({ kind: "progressUnknown" });
     expect(pts).toContainEqual({ kind: "sameDescription", name: "Outer Ring Road Improvements" });
   });
-  it("reads the budget change from costOverrunPct first", () => {
-    expect(budgetChangePct({ name: "x", costOverrunPct: 12.5, originalBudget: 1, revisedBudget: 5 })).toBe(12.5);
-    expect(budgetChangePct({ name: "x", originalBudget: 100, revisedBudget: 100 })).toBe(0);
+  it("works the budget change out from the two budgets, never the stored costOverrunPct", () => {
+    // Namma Metro Phase 2A/2B (Sept 2026 audit): same budget on every field, stale +297.85%.
+    expect(budgetChangePct({ name: "x", costOverrunPct: 297.85, originalBudget: 147881010000, revisedBudget: 147881010000 })).toBe(0);
+    expect(budgetChangePct({ name: "x", originalBudget: 100, revisedBudget: 150 })).toBe(50);
+    expect(budgetChangePct({ name: "x", costOverrunPct: 12.5 })).toBeNull();
     expect(budgetChangePct({ name: "x" })).toBeNull();
+    expect(budgetChange({ name: "x", originalBudget: 350, revisedBudget: 385.95 })?.amount).toBeCloseTo(35.95);
+    expect(projectPoints({ name: "x", costOverrunPct: 297.85, originalBudget: 10, revisedBudget: 10 }, [], NOW).some((q) => q.kind === "budgetUp")).toBe(false);
   });
   it("takes the newest of news, our check and tracked updates as the last update", () => {
     const t = lastUpdateAt({ name: "x", lastNewsAt: "2026-01-01", lastVerifiedAt: "2026-04-01", updates: [{ date: "2026-02-01" }] });
@@ -132,5 +140,37 @@ describe("ownSourceLinks", () => {
     expect(ownSourceLinks({ sourceUrls: obj }).map((l) => l.name)).toEqual(["Paper B", "Paper C"]);
     expect(sourceCount({ name: "x", sourceUrls: obj, updates: [{ newsUrl: "https://b.in/x" }] })).toBe(2);
     expect(ownSourceLinks({ sourceUrls: null })).toEqual([]);
+  });
+});
+
+describe("shownProgress", () => {
+  it("shows a finished project as 100% whatever the row says", () => {
+    expect(shownProgress({ status: "COMPLETED", progressPct: 70 })).toBe(100);
+    expect(shownProgress({ status: "Commissioned", progressPct: 0 })).toBe(100);
+    expect(shownProgress({ status: "CANCELLED", progressPct: 40 })).toBeNull();
+    expect(shownProgress({ status: "UNDER_CONSTRUCTION", progressPct: 22 })).toBe(22);
+    expect(shownProgress({ status: "UNDER_CONSTRUCTION", progressPct: null })).toBeNull();
+  });
+});
+
+describe("politicalParty", () => {
+  it("keeps real parties and drops agencies, lenders and companies", () => {
+    expect(politicalParty("BJP")).toBe("BJP");
+    expect(politicalParty("Indian National Congress")).toBe("Indian National Congress");
+    expect(politicalParty("tmc")).toBe("tmc");
+    expect(politicalParty("Independent")).toBe("Independent");
+    for (const bad of ["JICA", "Japan International Cooperation Agency", "Jindal Steel", "Telangana government", "JSW Infra", "N/A", "", null, undefined]) {
+      expect(politicalParty(bad)).toBeNull();
+    }
+  });
+});
+
+describe("plausibleBudgetRevision", () => {
+  it("accepts real revisions and refuses 10x slips", () => {
+    expect(plausibleBudgetRevision(141320000000, 205000000000)).toBe(true); // Hyderabad Metro 14,132 → 20,500 cr
+    expect(plausibleBudgetRevision(147881010000, 1255000000000)).toBe(false); // 10x slip
+    expect(plausibleBudgetRevision(3680000000, 36800000000)).toBe(false);
+    expect(plausibleBudgetRevision(100, 40)).toBe(false);
+    expect(plausibleBudgetRevision(null, 100)).toBe(false);
   });
 });

@@ -75,6 +75,14 @@
     "transport": "ಪ್ರಯಾಣ",
     "other": "ಇತರ ಸಹಾಯ"
   },
+  "amount": {
+    "perMonth": "ತಿಂಗಳಿಗೆ {amount}",
+    "perYear": "ವರ್ಷಕ್ಕೆ {amount}",
+    "oneTime": "ಒಂದು ಬಾರಿ {amount}",
+    "coverYear": "ವರ್ಷಕ್ಕೆ {amount} ವರೆಗೆ ವಿಮಾ ರಕ್ಷೆ",
+    "loanUpTo": "{amount} ವರೆಗೆ ಸಾಲ",
+    "pensionMonth": "ತಿಂಗಳಿಗೆ {amount} ವರೆಗೆ ಪಿಂಚಣಿ"
+  },
   "get": {
     "health": "{amount} ಆರೋಗ್ಯ ರಕ್ಷೆ",
     "housing": "ಮನೆ ಕಟ್ಟಲು ಅಥವಾ ಕೊಳ್ಳಲು {amount}",

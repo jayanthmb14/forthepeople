@@ -116,3 +116,51 @@ export const ELECTION_RESULTS_WITHHELD = true;
  * on only after the rows carry a checked source.
  */
 export const SHOW_CITIZEN_TIP_ROWS = false;
+
+// ── Money: budgets, sugar seasons, tenders (Sept 2026 audit, v5.4) ─────
+
+/**
+ * BudgetEntry.source labels written by a collector from a published
+ * dataset (src/scraper/jobs/finance.ts, src/scraper/jobs/budget.ts). Every
+ * other BudgetEntry row was typed into a seed or a one-off script: whole-
+ * state or whole-city totals filed under one district (Hyderabad, Lucknow,
+ * New Delhi), invented round sector figures (Mumbai, Kolkata, Chennai,
+ * Mandya) and "spent" made up as a fixed share of the allocation
+ * (Bengaluru 44% / 70%, Mysuru, Hyderabad "estimated from state avg
+ * utilisation"). No district publishes sector-wise spending, so those rows
+ * are never shown or counted. Add a collector's exact label here once one
+ * writes checked rows.
+ */
+export const COLLECTED_BUDGET_SOURCES: string[] = ["Karnataka Finance Dept / data.gov.in"];
+export const SHOWN_BUDGET_ENTRY = {
+  OR: [{ source: { in: COLLECTED_BUDGET_SOURCES } }, { source: { startsWith: "data.gov.in (" } }],
+};
+
+/**
+ * BudgetAllocation rows a page may show: the row links to the page that
+ * published its figures. The rows without a link were typed into seeds
+ * with round numbers ("BBMP Budget", "BMRCL Annual Report", "Karnataka
+ * Expenditure Monitoring System", "Delhi Budget") and could not be traced
+ * to any published document.
+ */
+export const SHOWN_BUDGET_ALLOCATION = { sourceUrl: { not: null } };
+
+/**
+ * SugarFactorySeason.source labels written by a collector that read the
+ * figures from the Sugar Directorate. None yet: the only season rows were
+ * written by prisma/seed.ts ("Karnataka Sugar Directorate", the same
+ * season, dates, FRP/SAP and round farmer counts for every Mandya mill),
+ * so no season row is shown. Add a collector's exact label here once one
+ * writes checked rows.
+ */
+export const VERIFIED_SUGAR_SEASON_SOURCES: string[] = [];
+export const VERIFIED_SUGAR_SEASON = { source: { in: VERIFIED_SUGAR_SEASON_SOURCES } };
+
+/**
+ * Tender rows prisma/seed-tenders-karnataka.ts wrote as placeholders
+ * ("STUB_PENDING_SCRAPER_VERIFICATION": invented titles, values and
+ * awards) are never listed or counted. A null snapshot is a real row, so
+ * it is kept explicitly (NOT alone would drop NULLs).
+ */
+export const TENDER_STUB_MARKER = "STUB_PENDING_SCRAPER_VERIFICATION";
+export const NOT_STUB_TENDER = { OR: [{ rawHtmlSnapshot: null }, { NOT: { rawHtmlSnapshot: TENDER_STUB_MARKER } }] };

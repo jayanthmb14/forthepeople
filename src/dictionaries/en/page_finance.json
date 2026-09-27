@@ -1,6 +1,7 @@
 {
   "description": "District budget allocation, utilisation, lapsed funds and revenue collections",
   "fy": "FY {year}",
+  "sourceMixed": "Several sources (tap a department)",
   "empty": {
     "title": "No budget data yet for this district.",
     "body": "We add allocations and spending as PFMS and the state treasury publish them."

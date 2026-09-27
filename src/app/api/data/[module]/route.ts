@@ -28,6 +28,8 @@ import {
   ELECTION_RESULTS_WITHHELD,
   SHOW_CITIZEN_TIP_ROWS,
 } from "@/lib/data-filters";
+import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY, VERIFIED_SUGAR_SEASON } from "@/lib/data-filters";
+import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
@@ -189,16 +191,20 @@ async function fetchModule(
     // 3. BUDGET
     // ══════════════════════════════════════════════════
     case "budget": {
-      const [entries, allocations] = await Promise.all([
+      // Only rows that trace to a published source; spend figures a row
+      // calls an estimate are blanked (Sept 2026 audit, data-filters.ts).
+      const [entryRows, allocationRows] = await Promise.all([
         prisma.budgetEntry.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...SHOWN_BUDGET_ENTRY },
           orderBy: [{ fiscalYear: "desc" }, { sector: "asc" }],
         }),
         prisma.budgetAllocation.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...SHOWN_BUDGET_ALLOCATION },
           orderBy: [{ fiscalYear: "desc" }, { department: "asc" }],
         }),
       ]);
+      const entries = entryRows.map(withPublishedSpend);
+      const allocations = allocationRows.map(withPublishedSpend);
       return { data: { entries, allocations }, meta };
     }
 
@@ -327,8 +333,11 @@ async function fetchModule(
     // 11. SCHEMES
     // ══════════════════════════════════════════════════
     case "schemes": {
+      // active=false = no longer running or replaced (e.g. KCR Kit, Lakshmir
+      // Bhandar); the page never showed the flag, so retired schemes looked
+      // current (Sept 2026 audit).
       const data = await prisma.scheme.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         orderBy: [{ category: "asc" }, { name: "asc" }],
       });
       return { data, meta };
@@ -542,10 +551,13 @@ async function fetchModule(
     // 23. FACTORIES (Sugar)
     // ══════════════════════════════════════════════════
     case "factories": {
+      // active=false = retired (not a sugar mill, or not in this district).
+      // Season figures only from a collector that read them (none yet; the
+      // seeded seasons were one invented season for every mill).
       const rows = await prisma.sugarFactory.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         include: {
-          seasonData: { orderBy: { season: "desc" }, take: 3 },
+          seasonData: { where: VERIFIED_SUGAR_SEASON, orderBy: { season: "desc" }, take: 3 },
         },
         orderBy: { name: "asc" },
       });

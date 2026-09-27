@@ -493,9 +493,14 @@ export async function seedTendersKarnataka(prisma?: PrismaClient) {
     }
     console.log(`  ✓ ${EDUCATION.length} education sections`);
 
-    // 5. Tenders
+    // 5. Tenders — placeholder rows only on request. They reached the live
+    // site as real tenders (invented titles, values and "AWARDED" contracts;
+    // Sept 2026 audit), so a normal run writes none. The API hides any row
+    // with the stub marker (NOT_STUB_TENDER in src/lib/data-filters.ts).
     let seeded = 0;
-    for (const t of TENDERS) {
+    const withDemoTenders = process.argv.includes("--demo-tenders-local-only");
+    if (!withDemoTenders) console.log("  - tender rows skipped (pass --demo-tenders-local-only on a local database to add placeholders)");
+    for (const t of withDemoTenders ? TENDERS : []) {
       const authId = authIdByCode.get(t.authorityShortCode);
       if (!authId) { console.warn(`    ⚠️ skipping tender ${t.sourceTenderId}: authority ${t.authorityShortCode} not found`); continue; }
       const catId = catIdBySlug.get(t.categorySlug);

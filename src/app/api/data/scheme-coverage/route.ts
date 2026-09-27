@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     const district = await prisma.district.findFirst({ where: { slug: districtSlug }, select: { id: true } });
     if (!district) return NextResponse.json({ data: null, meta: { ...meta, error: "District not found" } });
 
-    const own = await prisma.scheme.findMany({ where: { districtId: district.id }, select: { name: true } });
+    const own = await prisma.scheme.findMany({ where: { districtId: district.id, active: true }, select: { name: true } });
     const wanted = new Set(own.map((s) => schemeKey(s.name)).filter(Boolean));
 
     const data: Record<string, { districts: Place[] }> = {};
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       // (a few hundred rows), so matching the names here is cheaper than
       // one query per scheme.
       const rows = await prisma.scheme.findMany({
-        where: { districtId: { not: district.id }, district: { active: true } },
+        where: { districtId: { not: district.id }, active: true, district: { active: true } },
         select: {
           name: true,
           district: { select: { slug: true, name: true, state: { select: { slug: true, name: true } } } },

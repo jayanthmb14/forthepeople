@@ -54,13 +54,12 @@ import { useMoney } from "@/components/money/useMoney";
 import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import { CardHead, SheetHighlight, SheetLink, TapCard, safeUrl } from "@/components/money/TapCard";
 import knDict from "@/dictionaries/kn.json";
+import { rowsSource, type RowsSource } from "@/lib/money/budget-shown";
 
 /** 1 crore = 10 million rupees. Amounts in the database are in rupees. */
 const CRORE = 10_000_000;
 const LAKH = 100_000;
 
-/** The main source, shown in the page header and on the charts. */
-const PFMS = { label: "PFMS", href: "https://pfms.nic.in" };
 
 /** An allocation row as the API sends it (the hook type plus the fields it leaves out). */
 type AllocationRow = BudgetAllocation & {
@@ -109,6 +108,12 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const totalAllocated = totalsFrom.reduce((s, e) => s + e.allocated, 0);
   const totalSpent = totalsFrom.reduce((s, e) => s + e.spent, 0);
   const totalLapsed = latestAllocations.reduce((s, a) => s + a.lapsed, 0);
+
+  // The rows' own source for the header and the sector charts. (It used to
+  // say "PFMS" for every district, but no budget row comes from PFMS.)
+  const sourcePill = (s: RowsSource) => (s === "mixed" ? { label: t("sourceMixed") } : s ?? undefined);
+  const pageSource = sourcePill(rowsSource([...entries, ...allocations]));
+  const sectorSource = sourcePill(rowsSource(latestEntries));
 
   // When did we last fetch these rows? Shown as "As of …" beside the totals.
   const asOf = latestFetchedAt([...(entries as Array<{ fetchedAt?: string | null }>), ...allocations]);
@@ -183,7 +188,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
         titleLocal={titleLocal}
         description={t("description")}
         freshness={asOf ? { asOf } : undefined}
-        source={PFMS}
+        source={pageSource}
       />
 
       {bLoading && <LoadingShell rows={4} />}
@@ -299,7 +304,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
               title={t("share.title", { year: latestYear ?? "" })}
               units={t("share.units")}
               simple={t.rich("share.simple", { sector: bySize[0].sector, n: topShare, b })}
-              source={PFMS}
+              source={sectorSource}
               asOf={asOf}
               table={shareSlices.map((s) => ({ label: s.label, value: `${s.display} (${m.pct(s.value / totalAllocated)})` }))}
             >
@@ -329,7 +334,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
                 { label: t("sectors.legendGiven"), swatch: OTHER_SHADE },
                 { label: t("sectors.legendSpent"), swatch: "var(--hue)" },
               ]}
-              source={PFMS}
+              source={sectorSource}
               asOf={asOf}
               table={budgetChart.map((r) => ({ label: r.sectorFull, value: t("sectors.row", { spent: m.crore(r.spent), given: m.crore(r.allocated) }) }))}
             >

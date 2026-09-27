@@ -96,10 +96,12 @@ export async function scrapeBudget(ctx: JobContext): Promise<ScraperResult> {
           const released = r * scale;
           const spent = sp * scale;
 
+          // Only a row this collector wrote is updated (see finance.ts).
           const existing = await prisma.budgetEntry.findFirst({
             where: {
               districtId: ctx.districtId,
               sector: { contains: sector.slice(0, 30), mode: "insensitive" },
+              source: { startsWith: "data.gov.in (" },
             },
           });
 
