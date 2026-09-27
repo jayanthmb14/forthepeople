@@ -14,6 +14,9 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
+import { usePlaceText } from "@/i18n/client";
+import { scriptLang } from "@/lib/utils/script-lang";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Lock } from "lucide-react";
@@ -66,7 +69,15 @@ export default function DistrictBreadcrumb({
   subdivisionLabel,
   compact = false,
 }: DistrictBreadcrumbProps) {
-  const subLabel = subdivisionLabel ?? "Sub-district";
+  const tb = useTranslations("breadcrumb");
+  const tsu = useTranslations("subUnitOne");
+  const place = usePlaceText();
+  const subEn = subdivisionLabel ?? "Sub-district";
+  const subLabel = tsu.has(subEn) ? tsu(subEn) : subEn;
+  // Names follow the language: a local-script name leads when it matches the UI.
+  const localName = (name: string, nameLocal?: string | null) =>
+    nameLocal && nameLocal !== name && scriptLang(nameLocal) === locale ? nameLocal : name;
+  const stateLabel = place.state(stateSlug, stateName);
   const isMobile = useIsMobile();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -77,7 +88,7 @@ export default function DistrictBreadcrumb({
     if (!openMenu) return null;
     if (openMenu === "state") {
       return {
-        title: `Switch state · currently ${stateName}`,
+        title: tb("switchState", { name: stateLabel }),
         items: peerLiveStates.map((s) => ({
           slug: s.slug,
           href: `/${locale}/${s.slug}`,
@@ -90,7 +101,7 @@ export default function DistrictBreadcrumb({
     }
     if (openMenu === "district") {
       return {
-        title: `Switch district · currently ${districtName}`,
+        title: tb("switchDistrict", { name: districtName }),
         items: peerLiveDistricts.map((d) => ({
           slug: d.slug,
           href: `/${locale}/${stateSlug}/${d.slug}`,
@@ -103,7 +114,7 @@ export default function DistrictBreadcrumb({
     }
     if (openMenu === "taluk") {
       return {
-        title: `Choose a ${subLabel.toLowerCase()} in ${districtName}`,
+        title: tb("chooseSub", { unit: subLabel, name: districtName }),
         items: taluks.map((t) => ({
           slug: t.slug,
           href: `/${locale}/${stateSlug}/${districtSlug}/${t.slug}`,
@@ -149,7 +160,7 @@ export default function DistrictBreadcrumb({
       ref={navRef}
       className="ftp-district-breadcrumb"
       data-compact={compact ? "true" : "false"}
-      aria-label="District navigation"
+      aria-label={tb("nav")}
     >
       <style>{`
         .ftp-district-breadcrumb {
@@ -397,7 +408,7 @@ export default function DistrictBreadcrumb({
           on the State crumb below. Matches production parity (S19.7). */}
       <span className="ftp-breadcrumb-crumb ftp-breadcrumb-crumb-static">
         <Link href={`/${locale}`} className="ftp-breadcrumb-link">
-          <span>India</span>
+          <span>{tb("india")}</span>
         </Link>
       </span>
 
@@ -408,7 +419,7 @@ export default function DistrictBreadcrumb({
           duplicating the District crumb's caret). */}
       <BreadcrumbCrumb
         dot
-        label={stateName}
+        label={stateLabel}
         href={`/${locale}/${stateSlug}`}
         isCurrent={false}
         menuOpen={openMenu === "state"}
@@ -416,7 +427,7 @@ export default function DistrictBreadcrumb({
         ariaCaretLabel={`Switch state (currently ${stateName})`}
       >
         {peerLiveStates.length === 0 ? (
-          <div className="ftp-breadcrumb-menu-empty">No states listed</div>
+          <div className="ftp-breadcrumb-menu-empty">{tb("noStates")}</div>
         ) : (
           peerLiveStates.map((s) => (
             <PeerMenuItem
@@ -427,7 +438,7 @@ export default function DistrictBreadcrumb({
               nameLocal={s.nameLocal ?? undefined}
               onClick={close}
             >
-              {s.name}
+              {place.state(s.slug, s.name)}
             </PeerMenuItem>
           ))
         )}
@@ -462,7 +473,7 @@ export default function DistrictBreadcrumb({
               nameLocal={d.nameLocal ?? undefined}
               onClick={close}
             >
-              {d.name}
+              {localName(d.name, d.nameLocal)}
             </PeerMenuItem>
           ))
         )}
@@ -475,7 +486,7 @@ export default function DistrictBreadcrumb({
           label (Taluk / Tehsil / Mandal / Block / Taluka). */}
       <BreadcrumbCrumb
         dot={!!currentTalukSlug}
-        label={currentTalukName ?? `Select ${subLabel}`}
+        label={currentTalukName ?? tb("selectSub", { unit: subLabel })}
         href={
           currentTalukSlug
             ? `/${locale}/${stateSlug}/${districtSlug}/${currentTalukSlug}`
@@ -485,11 +496,11 @@ export default function DistrictBreadcrumb({
         isCurrent={!!currentTalukSlug}
         menuOpen={openMenu === "taluk"}
         onCaretClick={() => setOpenMenu(openMenu === "taluk" ? null : "taluk")}
-        ariaCaretLabel={`Choose a ${subLabel.toLowerCase()} in ${districtName}`}
+        ariaCaretLabel={tb("chooseSub", { unit: subLabel, name: districtName })}
       >
         {taluks.length === 0 ? (
           <div className="ftp-breadcrumb-menu-empty">
-            No {subLabel.toLowerCase()}s listed
+            {tb("noSubs", { unit: subLabel })}
           </div>
         ) : (
           taluks.map((t) => (
@@ -501,7 +512,7 @@ export default function DistrictBreadcrumb({
               nameLocal={t.nameLocal ?? undefined}
               onClick={close}
             >
-              {t.name}
+              {localName(t.name, t.nameLocal)}
             </PeerMenuItem>
           ))
         )}
@@ -546,6 +557,7 @@ function PeerMenuItem({
 }: PeerMenuItemProps) {
   // Suppress nameLocal when it's just an English-fallback duplicate of the
   // primary name (e.g. some districts set nameLocal: "Nagpur" when no
+  const tb = useTranslations("breadcrumb");
   // native-script entry exists yet).
   const showLocal =
     typeof nameLocal === "string" &&
@@ -564,14 +576,14 @@ function PeerMenuItem({
       {isLive ? (
         <span className="ftp-breadcrumb-dot" aria-hidden="true" />
       ) : (
-        <Lock size={11} className="ftp-breadcrumb-lock" aria-label="Coming soon" />
+        <Lock size={11} className="ftp-breadcrumb-lock" aria-label={tb("comingSoon")} />
       )}
       <span className="ftp-breadcrumb-menu-item-label">{children}</span>
       {showLocal && (
         <span className="ftp-breadcrumb-menu-item-local">{nameLocal}</span>
       )}
       {isCurrent && (
-        <span className="ftp-breadcrumb-menu-item-current">Current</span>
+        <span className="ftp-breadcrumb-menu-item-current">{tb("current")}</span>
       )}
     </Link>
   );

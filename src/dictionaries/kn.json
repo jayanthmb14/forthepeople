@@ -713,5 +713,25 @@
     "Tehsils": "ತಹಸೀಲ್‌ಗಳು",
     "Mandals": "ಮಂಡಲಗಳು",
     "Blocks": "ಬ್ಲಾಕ್‌ಗಳು"
+  },
+  "breadcrumb": {
+    "nav": "ಜಿಲ್ಲಾ ಸಂಚರಣೆ",
+    "india": "ಭಾರತ",
+    "noStates": "ಯಾವುದೇ ರಾಜ್ಯ ಪಟ್ಟಿಯಲ್ಲಿಲ್ಲ",
+    "switchState": "ರಾಜ್ಯ ಬದಲಿಸಿ, ಪ್ರಸ್ತುತ {name}",
+    "switchDistrict": "ಜಿಲ್ಲೆ ಬದಲಿಸಿ, ಪ್ರಸ್ತುತ {name}",
+    "chooseSub": "{name}ನಲ್ಲಿ {unit} ಆಯ್ಕೆಮಾಡಿ",
+    "selectSub": "{unit} ಆಯ್ಕೆಮಾಡಿ",
+    "noSubs": "ಯಾವುದೇ {unit} ಪಟ್ಟಿಯಲ್ಲಿಲ್ಲ",
+    "comingSoon": "ಶೀಘ್ರದಲ್ಲೇ",
+    "current": "ಪ್ರಸ್ತುತ"
+  },
+  "subUnitOne": {
+    "Taluk": "ತಾಲೂಕು",
+    "Taluka": "ತಾಲೂಕು",
+    "Tehsil": "ತಹಸೀಲ್",
+    "Mandal": "ಮಂಡಲ",
+    "Block": "ಬ್ಲಾಕ್",
+    "Sub-district": "ಉಪ-ಜಿಲ್ಲೆ"
   }
 }

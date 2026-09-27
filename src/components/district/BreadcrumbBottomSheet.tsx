@@ -13,6 +13,7 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
+  const tb = useTranslations("breadcrumb");
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   // Lock body scroll while the sheet is open; move focus into the sheet.
@@ -116,13 +118,13 @@ export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
                 {item.isLive ? (
                   <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)", flexShrink: 0 }} />
                 ) : (
-                  <Lock size={12} aria-label="Coming soon" style={{ flexShrink: 0 }} />
+                  <Lock size={12} aria-label={tb("comingSoon")} style={{ flexShrink: 0 }} />
                 )}
                 <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
                 {item.nameLocal && item.nameLocal.trim() !== item.name.trim() && (
                   <span lang="und" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{item.nameLocal}</span>
                 )}
-                {item.isCurrent && <Pill tone="brand">Current</Pill>}
+                {item.isCurrent && <Pill tone="brand">{tb("current")}</Pill>}
               </Link>
             </li>
           ))}

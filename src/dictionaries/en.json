@@ -709,5 +709,25 @@
     "Tehsils": "Tehsils",
     "Mandals": "Mandals",
     "Blocks": "Blocks"
+  },
+  "breadcrumb": {
+    "nav": "District navigation",
+    "india": "India",
+    "noStates": "No states listed",
+    "switchState": "Switch state, currently {name}",
+    "switchDistrict": "Switch district, currently {name}",
+    "chooseSub": "Choose a {unit} in {name}",
+    "selectSub": "Select {unit}",
+    "noSubs": "No {unit} listed",
+    "comingSoon": "Coming soon",
+    "current": "Current"
+  },
+  "subUnitOne": {
+    "Taluk": "Taluk",
+    "Taluka": "Taluka",
+    "Tehsil": "Tehsil",
+    "Mandal": "Mandal",
+    "Block": "Block",
+    "Sub-district": "Sub-district"
   }
 }
