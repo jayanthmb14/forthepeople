@@ -68,10 +68,11 @@ export interface Helpline {
  *     shown only there.
  *   - consumer: the National Consumer Helpline now lists 1915 (8 am–8 pm).
  *   - ambulance: Delhi's government ambulance (CATS) is 102, not 108.
+ *   - police 100 removed: 112 (ERSS) is the police emergency number now and
+ *     100 could not be confirmed on an official page (verified or hidden).
  */
 const ALL_HELPLINES: Helpline[] = [
   { key: "national", number: "112", kind: "emergency" },
-  { key: "police", number: "100", kind: "emergency" },
   { key: "ambulance", number: "108", kind: "emergency", numberByState: { delhi: "102" } },
   { key: "fire", number: "101", kind: "emergency" },
   { key: "road", number: "1033", kind: "emergency" },

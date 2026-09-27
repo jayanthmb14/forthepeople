@@ -124,7 +124,8 @@ const HELPLINES = [
   { id: "icall", number: "9152987821" },
   { id: "poison", number: "1800-116-117" },
   { id: "ayushman", number: "14555" },
-  { id: "nhh", number: "1800-180-1104" },
+  // "nhh" 1800-180-1104 (the old National Health Portal helpline) removed 27 Sep 2026:
+  // not confirmed on any official page — verified or hidden (docs/DATA-FIXES-2026-09.md).
 ];
 
 /** A scheme card: `name` is the official name (not translated), `id` keys its description. */

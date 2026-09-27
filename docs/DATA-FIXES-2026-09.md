@@ -975,14 +975,18 @@ state-only or differ by state.
 Strings changed in en + hi + kn (`page_citizen-corner.json`:
 `helplines.road`, `helplines.corruption.name`, `helplines.consumer.when`).
 
-**Not re-verified (left as they are):**
-- 112 (112.gov.in refused the connection), 100, 101 — standard national numbers.
-- 14567 Elderline (the MoSJE site did not resolve), 1098 Childline, 155261
-  PM-KISAN (portal is script-rendered; number not visible to the checker).
-- Health page: 14555 (PM-JAY; pmjay.gov.in refused the connection),
-  1800-180-1104, 1800-116-117 (poison centre), 9152987821 (iCall, TISS — not
-  a government line). Tele-MANAS **14416** (national mental-health line) is
-  missing and could be added.
+| Police "100" (Citizen Corner) | 100 | **Removed — hidden: unverifiable.** 112 (ERSS) is the police emergency number now (in Karnataka "Namma 112"); 100 could not be confirmed on an official page. The 112 card covers police. | [KSP directory](https://ksp.karnataka.gov.in/ksp_contact/en): "ERSS – Emergency Response Support System – 112" |
+| Health page "National Health Helpline" | 1800-180-1104 | **Removed — hidden: unverifiable** (the old National Health Portal line; not found on any official page read) | — |
+| 112, 101, 108 | — | confirmed | KSP directory lists "ERSS … 112", "Fire & Emergency Services … 101", "108 Control Room (Ambulance)" |
+| iCall (health page) | 9152987821 | confirmed (TISS service, not government) | [icallhelpline.org](https://icallhelpline.org/) |
+
+**Not re-verified, kept (standard national numbers that do not look wrong):**
+1098 Childline, 14567 Elderline (the MoSJE site did not resolve), 155261
+PM-KISAN (portal is script-rendered), 14555 PM-JAY (pmjay.gov.in refused the
+connection), 1800-116-117 (AIIMS poison centre). Tele-MANAS **14416**
+(national mental-health line) is missing and could be added once confirmed.
+The unused strings `helplines.police` (page_citizen-corner) and `nhh`
+(page_health) can be deleted later.
 - West Bengal: wbhealth.gov.in runs the free "102" ambulance; whether 108
   also works statewide was not confirmed, so 108 still shows there.
 - Responsibility text: UP "Anti-Corruption Organisation: 0522-2217440",
