@@ -1,0 +1,177 @@
+{
+  "sourceLabel": "District Industries Centre",
+  "rowSource": "Source: {source}",
+  "season": "Season {season}",
+  "units": {
+    "crore": "₹ Crore",
+    "tonnes": "{n} MT"
+  },
+  "meta": {
+    "tech": {
+      "title": "IT Parks & Startup Ecosystem",
+      "description": "Bengaluru's tech parks, IT clusters, and startup statistics"
+    },
+    "heritage": {
+      "title": "Heritage, Tourism & Manufacturing",
+      "description": "Mysuru's heritage sites, tourism footfall, and major industries"
+    },
+    "hyderabad": {
+      "title": "IT, Pharma & GCCs",
+      "description": "Hyderabad's tech parks, biotech clusters, GCCs, and major markets"
+    },
+    "sugar": {
+      "title": "Local Industries",
+      "description": "Sugar factories, crushing season data, and farmer arrears tracker"
+    },
+    "general": {
+      "title": "Local Industries",
+      "description": "Major industries, business hubs, and economic activity in this district"
+    }
+  },
+  "facts": {
+    "area": "Area",
+    "acres": "{n} acres",
+    "companies": "Companies",
+    "employees": "Employees",
+    "jobsEstimate": "Jobs (estimate)",
+    "thousandPlus": "{n}K+",
+    "builtUp": "Built-up",
+    "msf": "{n} MSF",
+    "keyTenants": "Key tenants:",
+    "visitors": "Visitors a year",
+    "revenue": "Revenue a year",
+    "established": "Est. <num>{year}</num>",
+    "employeesLine": "Employees: <num>{n}</num>"
+  },
+  "sugar": {
+    "empty": {
+      "title": "No sugar factory data yet for this district.",
+      "body": "We add factories and crushing seasons as the District Industries Centre publishes them."
+    },
+    "tiles": {
+      "factories": "Sugar factories",
+      "arrears": "Total pending arrears",
+      "arrearsSub": "Payments due to sugarcane farmers",
+      "arrearsSubSeason": "Payments due to sugarcane farmers, season {season}",
+      "farmers": "Farmers"
+    },
+    "explainer": "Sugar factories here still owe sugarcane farmers about <num>{amount}</num> from their latest crushing season. <num>{owing}</num> of the <num>{total}</num> factories with a recorded figure have not paid in full.",
+    "explainerNone": "None of the <num>{total}</num> factories with a recorded figure shows unpaid money to farmers for its latest crushing season.",
+    "pictogramCount": "{owing} of {total} factories still owe farmers money for their latest season.",
+    "pictogramShare": "About {n} of every 10 factories still owe farmers money for their latest season.",
+    "arrearsChart": {
+      "title": "Money still owed to farmers, by factory",
+      "units": "Pending arrears for each factory's latest crushing season, in crore rupees",
+      "simple": "<b>{name}</b> owes the most: {amount}.",
+      "legend": "Pending arrears"
+    },
+    "crushed": {
+      "title": "Sugarcane crushed, by factory",
+      "units": "Tonnes of cane crushed in each factory's latest season (top 5)",
+      "simple": "<b>{name}</b> crushed the most cane: {amount}."
+    },
+    "listTitle": "Sugar factories ({n})",
+    "capacity": "Capacity: <num>{n}</num> TCD",
+    "arrearsAmount": "{amount} arrears",
+    "table": {
+      "title": "Season data",
+      "caption": "Crushing seasons for {name}",
+      "season": "Season",
+      "cane": "Cane crushed (MT)",
+      "recovery": "Recovery %",
+      "frp": "FRP rate",
+      "sap": "SAP rate",
+      "arrears": "Arrears",
+      "farmers": "Farmers"
+    }
+  },
+  "tech": {
+    "startupTitle": "Bengaluru startup ecosystem",
+    "startups": "Active startups",
+    "unicorns": "Unicorns",
+    "funding": "Total funding",
+    "workforce": "Tech workforce",
+    "startupSource": "NASSCOM / Inc42 2025",
+    "explainer": "The <num>{parks}</num> IT parks below that report their workforce have about <num>{people}</num> people working in them. The biggest is <b>{name}</b>.",
+    "workforceChart": {
+      "title": "People working in each IT park",
+      "units": "Employees reported for each park",
+      "simple": "<b>{name}</b> has about {n} people at work.",
+      "legend": "Employees"
+    },
+    "companies": {
+      "title": "Companies in each IT park",
+      "units": "Number of companies reported for each park (top 5)",
+      "simple": "<b>{name}</b> hosts the most companies: {n}+.",
+      "value": "{n}+ companies"
+    },
+    "listTitle": "IT parks and tech clusters ({n})",
+    "empty": "No IT park data yet for this district."
+  },
+  "heritage": {
+    "dasaraTitle": "Mysuru Dasara, a world-famous cultural festival",
+    "footfall": "Dasara footfall",
+    "budget": "Festival budget",
+    "palaceVisitors": "Mysore Palace visitors a year",
+    "cleanest": "Cleanest city awards",
+    "figuresNote": "Figures as widely reported. We are adding the source and year for each one.",
+    "explainer": "This page lists <num>{sites}</num> heritage and tourism {sites, plural, one {site} other {sites}} and <num>{factories}</num> major {factories, plural, one {factory or industry} other {factories and industries}} in this district.",
+    "countsAria": "What this page lists",
+    "countHeritage": "heritage sites",
+    "countTourism": "tourism sites",
+    "countFactories": "factories and industries",
+    "sitesTitle": "Heritage and tourism sites ({n})",
+    "empty": "No heritage or tourism sites listed yet.",
+    "factoriesTitle": "Major manufacturing and industries"
+  },
+  "general": {
+    "empty": "No industry data available for this district yet.",
+    "explainer": "This page lists <num>{total}</num> major industries and business hubs. The most common kind is <b>{name}</b>, with <num>{n}</num> of them.",
+    "chart": {
+      "title": "Industries by kind",
+      "units": "Number of listed industries and business hubs in each category",
+      "simple": "{n} of {total} are <b>{name}</b>.",
+      "legend": "Listed industries"
+    },
+    "jobs": {
+      "title": "Biggest employers",
+      "units": "People employed at each place, as reported (top 5)",
+      "simple": "<b>{name}</b> gives work to the most people: about {n}."
+    },
+    "listTitle": "Major industries and business hubs ({n})"
+  },
+  "cat": {
+    "itpark": "IT Park",
+    "it": "IT",
+    "pharma": "Pharma",
+    "commercial": "Commercial",
+    "finance": "Finance",
+    "market": "Market",
+    "heritage": "Heritage",
+    "tourism": "Tourism",
+    "industrial": "Industrial",
+    "manufacturing": "Manufacturing",
+    "handicraft": "Handicraft",
+    "industrialestate": "Industrial estate",
+    "biotechcluster": "Biotech cluster",
+    "commercialhub": "Commercial hub",
+    "financialexchange": "Financial exchange",
+    "itmarket": "IT market",
+    "startupecosystem": "Startup ecosystem",
+    "other": "Other"
+  },
+  "factoryType": {
+    "cooperative": "Cooperative",
+    "private": "Private",
+    "government": "Government",
+    "publicsector": "Public sector"
+  },
+  "seasonStatus": {
+    "completed": "Completed",
+    "crushing": "Crushing",
+    "ongoing": "Ongoing",
+    "inprogress": "In progress",
+    "closed": "Closed",
+    "pending": "Pending"
+  }
+}
