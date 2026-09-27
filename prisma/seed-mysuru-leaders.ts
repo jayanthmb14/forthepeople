@@ -49,8 +49,9 @@ export async function seedMysuruLeaders(prisma?: PrismaClient) {
           districtId: did, tier: 2,
           name: "Siddaramaiah",
           nameLocal: "ಸಿದ್ದರಾಮಯ್ಯ",
-          role: "MLA, Varuna; Chief Minister of Karnataka",
-          roleLocal: "ಶಾಸಕ, ವರುಣಾ; ಕರ್ನಾಟಕ ಮುಖ್ಯಮಂತ್ರಿ",
+          // Chief Minister until 28 May 2026 (D. K. Shivakumar since 3 June 2026).
+          role: "MLA, Varuna",
+          roleLocal: "ಶಾಸಕ, ವರುಣಾ",
           party: "INC", constituency: "Varuna", since: "2023",
           source: "KLA 2023",
         },

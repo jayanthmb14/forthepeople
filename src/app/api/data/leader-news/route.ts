@@ -24,6 +24,7 @@ import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import { NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
+import { shownRoleLocal } from "@/lib/local-text";
 
 const WINDOW_DAYS = 180;
 const LIMIT = 5;
@@ -95,7 +96,7 @@ export async function GET(req: NextRequest) {
 
     const leader = await prisma.leader.findFirst({
       where: { id, districtId: district.id, active: true, ...NOT_FROM_NEWS_OPTIONAL },
-      select: { id: true, name: true, nameLocal: true, roleLocal: true, phone: true, email: true },
+      select: { id: true, name: true, nameLocal: true, role: true, roleLocal: true, phone: true, email: true },
     });
     if (!leader) return NextResponse.json({ data: null, meta: { ...meta, error: "Person not found" } });
 
@@ -132,7 +133,7 @@ export async function GET(req: NextRequest) {
       leaderId: leader.id,
       contact: { phone: leader.phone?.trim() || null, email: leader.email?.trim() || null },
       nameLocal: leader.nameLocal,
-      roleLocal: leader.roleLocal,
+      roleLocal: shownRoleLocal(leader.role, leader.roleLocal),
       windowDays: WINDOW_DAYS,
       news,
     };

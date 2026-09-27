@@ -28,6 +28,7 @@ import {
 } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
+import { shownRoleLocal } from "@/lib/local-text";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 import { dedupeStories } from "@/lib/news-dedupe";
 
@@ -174,6 +175,9 @@ async function fetchModule(
       const data = raw.map(r => ({
         ...r,
         lastVerifiedAt: r.lastVerifiedAt ? r.lastVerifiedAt.toISOString() : null,
+        // A hand-written Hindi/Kannada role is served only while it names the
+        // same offices as the checked English role (src/lib/local-text.ts).
+        roleLocal: shownRoleLocal(r.role, r.roleLocal),
       }));
       return { data, meta };
     }

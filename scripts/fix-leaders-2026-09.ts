@@ -21,6 +21,11 @@
  *                  since, tier). Verified rows also get source + lastVerifiedAt.
  *                  A changed role clears roleLocal (the stored Hindi/Kannada
  *                  role would no longer match) and resets roleDescription.
+ *                  A verified row also loses a roleLocal that names other
+ *                  offices than its English role (src/lib/local-text.ts:
+ *                  "ವಿಧಾನಸಭಾ ಸದಸ್ಯ (ಮುಖ್ಯಮಂತ್ರಿ)" on an "MLA, Varuna" row), and
+ *                  a changed name clears nameLocal (it was written for the
+ *                  old spelling: "ಎನ್. ಚೌವರಾಯಸ್ವಾಮಿ" for "N. Chauvarayaswamy").
  *   - add        : a verified office-holder who is missing. If a curated row
  *                  (source not a news URL) for the same person already exists
  *                  in the district, it is reactivated and corrected instead.
@@ -33,6 +38,7 @@
  */
 
 import { getRoleDescription } from "../src/lib/constants/role-descriptions";
+import { localRoleMatches } from "../src/lib/local-text";
 
 // ── Sources (every URL was read during the 27 Sep 2026 check) ─────────────
 export const SOURCES = {
@@ -778,6 +784,8 @@ export function validatePlan(plan: Op[]): string[] {
 
 export type LeaderRow = {
   id: string; districtId: string; name: string; role: string; roleLocal: string | null; tier: number;
+  /** Local-script name; optional so older callers/tests need not pass it. */
+  nameLocal?: string | null;
   party: string | null; constituency: string | null; since: string | null; source: string | null;
   active: boolean; lastVerifiedAt: Date | null; roleDescription: string | null;
 };
@@ -841,7 +849,11 @@ export function computeWrites(plan: Op[], districts: DistrictRef[], rows: Leader
       if (op.set.role !== undefined && op.set.role !== row.role) {
         data.roleLocal = null;
         data.roleDescription = getRoleDescription(op.set.role);
+      } else if (op.verify && row.roleLocal && !localRoleMatches(row.role, row.roleLocal)) {
+        // Verified English role, stale local copy (Sept 2026 language audit).
+        data.roleLocal = null;
       }
+      if (op.set.name !== undefined && op.set.name !== row.name && row.nameLocal) data.nameLocal = null;
       const changed = diff(row, data);
       if (Object.keys(changed).length === 0) { unchanged++; continue; }
       writes.push({ op, action: "update", districtId: d.id, id: row.id, before: pick(row, Object.keys(changed)), data: changed });
@@ -893,7 +905,7 @@ export function formatWrites(writes: Write[], districts: DistrictRef[], rows: Le
         continue;
       }
       const parts = Object.keys(w.data)
-        .filter((k) => FIELDS.includes(k as keyof RowFields) || k === "active")
+        .filter((k) => FIELDS.includes(k as keyof RowFields) || k === "active" || k === "roleLocal" || k === "nameLocal")
         .map((k) => `${k}: ${show(w.before[k])} → ${show(w.data[k])}`);
       lines.push(`  ~ UPDATE     T${row.tier} ${row.name} | ${parts.length ? parts.join("; ") : "re-verified (source, lastVerifiedAt)"}`);
     }
@@ -931,7 +943,7 @@ async function main() {
     const rows = (await prisma.leader.findMany({
       where: { districtId: { in: districts.map((d) => d.id) } },
       select: {
-        id: true, districtId: true, name: true, role: true, roleLocal: true, tier: true, party: true,
+        id: true, districtId: true, name: true, nameLocal: true, role: true, roleLocal: true, tier: true, party: true,
         constituency: true, since: true, source: true, active: true, lastVerifiedAt: true, roleDescription: true,
       },
     })) as LeaderRow[];

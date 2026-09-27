@@ -294,8 +294,8 @@ async function main() {
       {
         districtId: mandya.id,
         tier: 2,
-        name: "N. Chauvarayaswamy",
-        nameLocal: "ಎನ್. ಚೌವರಾಯಸ್ವಾಮಿ",
+        name: "N. Chaluvarayaswamy",
+        nameLocal: "ಎನ್. ಚಲುವರಾಯಸ್ವಾಮಿ", // spelling checked Sept 2026 (kn.wikipedia.org)
         role: "Member of Legislative Assembly",
         party: "INC",
         constituency: "Nagamangala — 191",
