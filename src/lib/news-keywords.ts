@@ -36,30 +36,36 @@ export function compileKeywords(keywords: readonly string[]): RegExp {
   return new RegExp(keywords.map(keywordPattern).join("|"), "i");
 }
 
-// NOTE: precedence matters — first match wins. "transport" sits ABOVE crops,
-// police and generic categories so that specific train/metro keywords like
-// "vande bharat" or "mumbai local" win over incidental "agri"/"crime" mentions.
+// NOTE: precedence matters — first match wins. "transport" sits ABOVE crops
+// and generic categories so that specific train/metro keywords like
+// "vande bharat" or "mumbai local" win over incidental "agri" mentions.
+// Sept 2026 audit (v5.4): "police" moved above infrastructure/transport so a
+// crime story wins over where it happened ("Man sleeping in auto-rickshaw
+// murdered" was filed under Transport). Words that mostly name something
+// else were dropped: "auto" (auto-rickshaw is not a bus route), "crore" and
+// "lakh" (a fraud victim's loss is not a budget), "candidate" (job
+// candidates), "house" (a death "at a relative's house" is not housing).
 export const MODULE_KEYWORDS: ReadonlyArray<readonly [string, readonly string[]]> = [
   ["leaders",        ["mla", "mp", "minister", "collector", "superintendent of police", "deputy commissioner", "dc", "elected", "appointed", "appointment", "sworn in", "cabinet", "official"]],
+  ["police",         ["police", "police station", "arrest*", "fir", "crime", "murder*", "theft", "robbery", "accused", "case registered", "custody", "ips officer", "fraud", "scam*", "cheat*", "fake"]],
   ["infrastructure", ["road", "bridge", "highway", "nh", "overbridge", "underpass", "construction", "inaugurat*", "flyover", "project"]],
   ["transport",      [
-    "bus", "transport", "ksrtc", "bmtc", "railway", "metro", "taxi", "auto", "autorickshaw", "road accident", "traffic",
+    "bus", "transport", "ksrtc", "bmtc", "railway", "metro", "taxi", "autorickshaw", "road accident", "traffic",
     "vande bharat", "shatabdi", "rajdhani", "duronto", "tejas", "jan shatabdi",
     "local train", "mumbai local", "suburban", "suburban rail", "wr local", "cr local",
     "best bus", "best undertaking", "monorail", "metro line",
     "commuter", "overcrowding", "overcrowded", "stampede at station",
     "train", "railway station", "metro station", "bus station", "bus stand", "irctc",
   ]],
-  ["budget",         ["budget", "fund", "funding", "crore", "lakh", "allocation", "grant", "expenditure", "revenue", "deficit", "treasury"]],
+  ["budget",         ["budget", "fund", "funding", "allocation", "grant", "expenditure", "revenue", "deficit", "treasury"]],
   ["water",          ["dam", "reservoir", "water level", "krishnaraja sagar", "krs", "kabini", "irrigation", "cauvery", "drinking water supply"]],
   ["crops",          ["crop", "farmer", "paddy", "sugarcane", "mandi price", "apmc", "harvest*", "agri*", "ragi", "tomato price", "onion price"]],
   ["weather",        ["rain", "rainfall", "flood*", "drought", "cyclone", "storm", "temperature", "imd", "monsoon", "heatwave"]],
-  ["police",         ["police", "police station", "arrest*", "fir", "crime", "murder", "theft", "robbery", "accused", "case registered", "custody", "ips officer"]],
-  ["elections",      ["election", "vote", "voting", "voter", "polling", "candidate", "bjp", "congress", "jds", "bypoll", "constituency", "electoral"]],
+  ["elections",      ["election", "vote", "voting", "voter", "polling", "bjp", "congress", "jds", "bypoll", "constituency", "electoral"]],
   ["education",      ["school", "college", "university", "exam", "examination", "result", "student", "teacher", "sslc", "puc result"]],
   ["health",         ["hospital", "health", "doctor", "disease", "dengue", "malaria", "covid", "vaccination", "primary health centre", "phc"]],
   ["schemes",        ["scheme", "yojana", "pmay", "mgnrega", "welfare", "beneficiary", "beneficiaries", "pension", "ration card", "anna bhagya"]],
-  ["housing",        ["housing", "house", "flat", "apartment", "slum", "eviction", "shelter"]],
+  ["housing",        ["housing", "flat", "apartment", "slum", "eviction", "shelter"]],
   ["power",          ["power cut", "electricity", "outage", "load shedding", "substation", "bescom", "mescom", "voltage", "power supply"]],
   ["courts",         ["court", "hc order", "high court", "supreme court", "verdict", "judgment", "bail", "hearing", "legal"]],
   ["jjm",            ["jal jeevan", "jjm", "tap water", "household water connection", "piped water"]],
@@ -69,11 +75,14 @@ export const MODULE_KEYWORDS: ReadonlyArray<readonly [string, readonly string[]]
   ["rti",            ["rti", "right to information", "public information officer"]],
 ];
 
+// v5.4: "crime" sits above "development" ("loses Rs 3.73 crore in fake
+// investment scheme" is a crime, not development) and "market" left
+// agriculture ("biggest housing market" is not farming).
 export const CATEGORY_KEYWORDS: ReadonlyArray<readonly [string, readonly string[]]> = [
   ["politics",       ["election", "mla", "mp", "bjp", "congress", "party", "minister", "vote", "rally"]],
+  ["crime",          ["arrest*", "murder*", "theft", "robbery", "fraud", "police", "fir", "accused", "scam*", "cheat*", "fake"]],
   ["development",    ["project", "scheme", "fund", "tender", "launch*", "inaugurat*", "development"]],
-  ["agriculture",    ["crop", "farmer", "agri*", "harvest", "sugar", "paddy", "mandi", "market"]],
-  ["crime",          ["arrest*", "murder", "theft", "robbery", "fraud", "police", "fir", "accused"]],
+  ["agriculture",    ["crop", "farmer", "agri*", "harvest", "sugar", "paddy", "mandi"]],
   ["health",         ["hospital", "health", "doctor", "disease", "covid", "dengue", "treatment"]],
   ["education",      ["school", "college", "exam", "result", "student", "education", "teacher"]],
   ["infrastructure", ["road", "bridge", "water", "power", "electricity", "construction", "nh"]],
@@ -83,14 +92,23 @@ export const CATEGORY_KEYWORDS: ReadonlyArray<readonly [string, readonly string[
 const MODULE_MATCHERS = MODULE_KEYWORDS.map(([m, kws]) => [m, compileKeywords(kws)] as const);
 const CATEGORY_MATCHERS = CATEGORY_KEYWORDS.map(([c, kws]) => [c, compileKeywords(kws)] as const);
 
+/**
+ * Sport and festival events: no data page fits them, and their words
+ * ("Road World Championships", "Kambala track work") sent them to
+ * Infrastructure or Leaders. They stay in the news list as "general".
+ */
+const EVENT_RE = compileKeywords(["championship", "tournament", "world cup", "kambala", "marathon", "sports meet"]);
+
 /** First module whose keywords appear as whole words in the headline; "news" when none. */
 export function classifyModule(headline: string): string {
+  if (EVENT_RE.test(headline)) return "news";
   for (const [module, re] of MODULE_MATCHERS) if (re.test(headline)) return module;
   return "news";
 }
 
 /** Broad category for the news list; "general" when none. */
 export function categorize(headline: string): string {
+  if (EVENT_RE.test(headline)) return "general";
   for (const [cat, re] of CATEGORY_MATCHERS) if (re.test(headline)) return cat;
   return "general";
 }
@@ -103,7 +121,6 @@ const DISTRICT_ALIASES: Record<string, string[]> = {
   "mumbai": ["bombay"],
   "kolkata": ["calcutta"],
   "chennai": ["madras"],
-  "new delhi": ["delhi"],
   "mangaluru": ["mangalore"],
   "belagavi": ["belgaum"],
   "kalaburagi": ["gulbarga"],
@@ -131,10 +148,39 @@ export function districtAliases(districtName: string): string[] {
   return [...new Set([full, base, ...(DISTRICT_ALIASES[base] ?? [])])].filter(Boolean);
 }
 
+/**
+ * Names of OTHER districts that contain one of our names: "Bengaluru
+ * Rural" and "Bengaluru South district" (Ramanagara, renamed 2025) are not
+ * Bengaluru Urban. They are removed before matching (Sept 2026 audit).
+ */
+const OTHER_DISTRICT_NAMES: Record<string, RegExp> = {
+  bengaluru: /\b(bengaluru|bangalore)\s+rural\b|\bbengaluru\s+south\s+district\b/gi,
+};
+
+/**
+ * A wider place that contains the district: "Delhi" (the whole National
+ * Capital Territory) for New Delhi. It counts only when the text names no
+ * other part of it — "schools in NE, east Delhi" and "arrests in central
+ * district" are other Delhi districts (Sept 2026 audit: the old alias
+ * "delhi" let any Delhi story into New Delhi's feed).
+ */
+const WIDER_PLACE: Record<string, { name: string; otherParts: RegExp }> = {
+  "new delhi": {
+    name: "delhi",
+    otherParts:
+      /\b(north|south|east|west|central|outer|north[\s-]?east|north[\s-]?west|south[\s-]?east|south[\s-]?west)\s+delhi\b|\b(central|north|south|east|west|shahdara)\s+district\b|\bshahdara\b/i,
+  },
+};
+
 /** True when the text names the district (any alias) as whole words. */
 export function mentionsDistrict(text: string, districtName: string): boolean {
+  const base = searchName(districtName).toLowerCase();
+  const other = OTHER_DISTRICT_NAMES[base];
+  const t = other ? text.replace(other, " ") : text;
   const re = new RegExp(districtAliases(districtName).map((a) => `\\b${escapeRe(a).replace(/\s+/g, "\\s+")}\\b`).join("|"), "i");
-  return re.test(text);
+  if (re.test(t)) return true;
+  const wider = WIDER_PLACE[base];
+  return Boolean(wider && new RegExp(`\\b${escapeRe(wider.name)}\\b`, "i").test(t) && !wider.otherParts.test(t));
 }
 
 export const INDIAN_STATES_AND_UTS = [
@@ -146,14 +192,16 @@ export const INDIAN_STATES_AND_UTS = [
 ] as const;
 
 /**
- * True when the text names ANOTHER state or UT but not the district's own
- * state — e.g. "High Court of Karnataka …" arriving in the Hyderabad feed.
- * Such items always go to the AI, which decides isAboutDistrict.
+ * True when the text names ANOTHER state or UT — e.g. "High Court of
+ * Karnataka …" arriving in the Hyderabad feed. Such items always go to the
+ * AI, which decides isAboutDistrict.
+ * v5.4 (Sept 2026 audit): also when the own state is named too. "Delhi
+ * Confidential: Centre's lawyer defends Karnataka Congress government"
+ * reached New Delhi's feed because naming Delhi switched the check off.
  */
 export function mentionsOtherState(text: string, ownStateName: string): boolean {
   const own = ownStateName.trim().toLowerCase();
   const has = (name: string) => new RegExp(`\\b${escapeRe(name).replace(/\s+/g, "\\s+")}\\b`, "i").test(text);
-  if (own && has(own)) return false;
   return INDIAN_STATES_AND_UTS.some((s) => s.toLowerCase() !== own && has(s));
 }
 

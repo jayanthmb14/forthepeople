@@ -12,12 +12,16 @@
 const STOP = new Set([
   "a", "an", "the", "in", "of", "to", "for", "on", "at", "as", "after", "from", "over", "and", "by", "with",
   "is", "are", "be", "into", "its", "his", "her", "their", "news", "india", "district", "s",
+  // v5.4: small words that two different stories share by chance.
+  "what", "why", "how", "who", "it", "this", "that", "will", "has", "have", "was", "not", "no", "says", "said",
+  "amid", "against", "about", "up", "out", "new", "all",
 ]);
 const NUMBER_WORDS: Record<string, string> = { "1": "one", "2": "two", "3": "three", "4": "four", "5": "five" };
 
 /** Content words of a headline, lower-cased, lightly stemmed, without the district's own name. */
 export function headlineTokens(title: string, drop: string[] = []): Set<string> {
-  const dropSet = new Set(drop.map((d) => d.toLowerCase()));
+  // Place names may be several words ("Bengaluru Urban", "Tamil Nadu"): drop each word.
+  const dropSet = new Set(drop.flatMap((d) => d.toLowerCase().split(/[^a-z0-9-]+/)).filter(Boolean));
   const words = title
     .toLowerCase()
     .replace(/^india news\s*\|\s*/, "")
@@ -26,17 +30,28 @@ export function headlineTokens(title: string, drop: string[] = []): Set<string> 
     .map((w) => w.replace(/^-+|-+$/g, ""))
     .filter(Boolean)
     .map((w) => NUMBER_WORDS[w] ?? w)
+    .filter((w) => !STOP.has(w)) // before stemming too: "this" must not become "thi"
     .map((w) => (w.length > 4 && w.endsWith("es") ? w.slice(0, -2) : w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w))
     .filter((w) => !STOP.has(w) && !dropSet.has(w));
   return new Set(words);
 }
 
-/** True when two headlines are the same story: most words shared (overlap coefficient). */
+/**
+ * True when two headlines are the same story: most words shared (overlap
+ * coefficient). v5.4 (Sept 2026 audit): 3 shared content words and 40 %
+ * of the shorter headline — reworded copies from other outlets share only
+ * 3–4 ("Cauvery row: Farmers claim injustice; stage protest in Mandya" and
+ * "Mandya farmers protest Cauvery water release recommendation"; "Gavimath
+ * pontiff to inaugurate Mysuru Dasara this year" and "K'taka govt picks
+ * Gavimath seer to inaugurate Mysuru Dasara"), so the old 4-word / 60 %
+ * rule let them through. Checked on every district's September rows.
+ * Only stories within 48 h (list) or 24 h (ingest) of each other are compared.
+ */
 export function sameStory(a: Set<string>, b: Set<string>): boolean {
   let shared = 0;
   for (const w of a) if (b.has(w)) shared++;
   const smaller = Math.min(a.size, b.size);
-  return smaller > 0 && shared >= 4 && shared / smaller >= 0.6;
+  return smaller > 0 && shared >= 3 && shared / smaller >= 0.4;
 }
 
 const WINDOW_MS = 48 * 60 * 60 * 1000;

@@ -30,6 +30,8 @@ import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 import { dedupeStories } from "@/lib/news-dedupe";
+import { displayHeadline, newsForDisplay } from "@/lib/news-quality";
+import { districtAliases } from "@/lib/news-keywords";
 
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
@@ -333,16 +335,27 @@ async function fetchModule(
     case "news": {
       // Filter out near-duplicates (duplicateOf != null) so the public list
       // shows one article per story. Admin retains full visibility.
-      const rows = await prisma.newsItem.findMany({
-        where: { districtId: did, duplicateOf: null },
-        orderBy: { publishedAt: "desc" },
-        take: 60,
-      });
+      const [rows, place] = await Promise.all([
+        prisma.newsItem.findMany({
+          where: { districtId: did, duplicateOf: null },
+          orderBy: { publishedAt: "desc" },
+          take: 60,
+        }),
+        prisma.district.findUnique({ where: { id: did }, select: { state: { select: { name: true } } } }),
+      ]);
+      const stateName = place?.state.name ?? "";
+      // Sept 2026 audit (src/lib/news-quality.ts): no promotions, no
+      // keyword-only rows that may be about another place, clean headlines,
+      // today's topic rules — for rows saved by older code too.
+      const shown = newsForDisplay(rows, { districtName: district.name, stateName });
       // The same story from several outlets, reworded, slips past the
       // ingest-time prefix check; collapse it here (src/lib/news-dedupe.ts).
-      const data = dedupeStories(rows, [districtSlug, district.name])
+      const data = dedupeStories(shown, [districtSlug, stateName, ...districtAliases(district.name)])
         .slice(0, 30)
-        .map((r) => ({ ...r, headline: r.title }));
+        .map((r) => {
+          const title = displayHeadline(r.title);
+          return { ...r, title, headline: title };
+        });
       return { data, meta };
     }
 

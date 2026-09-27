@@ -21,7 +21,7 @@ describe("dedupeStories (real Mandya headlines, Sept 2026)", () => {
     expect(out[0].title.startsWith("India News")).toBe(false);
   });
 
-  it("keeps a follow-up that is a different angle", () => {
+  it("collapses a reworded report of the same crash (Sept 2026 audit: shown twice)", () => {
     const out = dedupeStories(
       [
         n("Mandya road accident: Woman techie dies after car falls from flyover", "2026-09-19T03:26Z"),
@@ -31,7 +31,39 @@ describe("dedupeStories (real Mandya headlines, Sept 2026)", () => {
       ],
       ["mandya"],
     );
-    expect(out.map((r) => r.publishedAt)).toEqual(["2026-09-19T03:26Z", "2026-09-18T11:35Z"]);
+    expect(out.map((r) => r.publishedAt)).toEqual(["2026-09-19T03:26Z"]);
+  });
+
+  it("collapses stories that share only three content words (Mandya overview, Sept 2026)", () => {
+    const out = dedupeStories(
+      [
+        n("Cauvery row: Farmers claim injustice; stage protest in Mandya", "2026-09-26T08:00Z"),
+        n("Mandya farmers protest Cauvery water release recommendation", "2026-09-26T05:00Z"),
+      ],
+      ["mandya", "Karnataka"],
+    );
+    expect(out).toHaveLength(1);
+    const seer = dedupeStories(
+      [
+        n("Gavimath pontiff to inaugurate Mysuru Dasara this year: CM Shivakumar", "2026-09-20T08:00Z"),
+        n("K’taka govt picks Gavimath seer to inaugurate Mysuru Dasara", "2026-09-20T05:00Z"),
+      ],
+      ["Mysuru", "mysore", "Karnataka"],
+    );
+    expect(seer).toHaveLength(1);
+  });
+
+  it("does not merge two stories that share only small words", () => {
+    const out = dedupeStories(
+      [
+        n("Bengaluru sees 90% of Karnataka's 4,212 influenza cases in 2026: What's behind it?", "2026-09-26T08:00Z"),
+        n("Karnataka Parkland Amendment: What It Means for Bengaluru", "2026-09-26T05:00Z"),
+        n("Make Mysuru Dasara illumination more attractive this year: George", "2026-09-26T04:00Z"),
+        n("Gavimutt seer to inaugurate Dasara this year", "2026-09-26T03:00Z"),
+      ],
+      ["Bengaluru Urban", "Karnataka", "mysuru"],
+    );
+    expect(out).toHaveLength(4);
   });
 
   it("does not merge different stories that share a few words", () => {
