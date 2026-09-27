@@ -13,6 +13,11 @@
   transform: translateY(-2px);
   box-shadow: var(--ftp-shadow-2);
 }
+/* Room for the chevron so a long label never runs under it. */
+.tap > div:first-child {
+  padding-inline-end: 40px !important;
+  height: 100%;
+}
 .tapCover {
   position: absolute;
   inset: 0;
