@@ -209,8 +209,6 @@
       "religion": "Religion-wise figures are reproduced from Census of India 2011 tables C-01. Categories reflect self-declaration by respondents and the official classification used by the Census. Ordering is alphabetical. No inference about the merit, desirability, character or conduct of any religious community is intended or should be drawn. Publication is a lawful exercise of the right under Article 19(1)(a) of the Constitution to disseminate public-interest information."
     }
   },
-  "frequency": "Census figures come once every ten years; survey figures (NFHS, SRS, PLFS) are refreshed monthly to quarterly.",
-  "compare": "Compare with another district",
   "townsSimpleFew": "Fewer than <b>1 in every 10</b> people in {name} live in towns and cities; most live in villages.",
   "townsSimpleAll": "Almost everyone in {name} (<b>{pct}</b>) lives in towns and cities.",
   "answerPop": "{name} had <b>{pop}</b> people at Census {year}.",
