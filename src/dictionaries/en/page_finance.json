@@ -1,0 +1,68 @@
+{
+  "description": "District budget allocation, utilisation, lapsed funds and revenue collections",
+  "summary": "This page shows the annual budget allocation and expenditure data for this district's government departments, sourced from {sources}. Figures are in Indian Rupees in Crores (1 Crore = ₹10 million). Unspent budget that lapses at fiscal year end is highlighted as “lapsed funds.”",
+  "summarySourcesState": "the {state} Finance Department, PFMS and eGramSwaraj",
+  "summarySources": "the State Finance Department, PFMS and eGramSwaraj",
+  "fy": "FY {year}",
+  "empty": {
+    "title": "No budget data yet for this district.",
+    "body": "We add allocations and spending as PFMS and the state treasury publish them."
+  },
+  "tiles": {
+    "total": "Total budget",
+    "spent": "Spent",
+    "utilisation": "Utilisation",
+    "lapsed": "Lapsed funds",
+    "lapsedSub": "Funds not utilised",
+    "unitCr": "₹ Cr",
+    "dataPending": "Data pending",
+    "pending": "Pending"
+  },
+  "allocationOnly": "Allocation data is available. Expenditure tracking from PFMS/state treasury will be updated as data becomes available.",
+  "explainer": "Out of every <b>₹100</b> given to this district in FY {year}, about <b>₹{pct}</b> was spent. The rest is still unspent or has lapsed.",
+  "pictogram": "About {n} of every 10 coins given were spent.",
+  "gauge": {
+    "label": "Budget used",
+    "caption": "Budget used in FY {year}"
+  },
+  "share": {
+    "title": "How each ₹100 is shared, FY {year}",
+    "units": "Share of the total budget given to each sector",
+    "simple": "<b>{sector}</b> gets the biggest share: about ₹{n} of every ₹100.",
+    "center": "total budget",
+    "other": "{n, plural, one {# other sector} other {# other sectors}}",
+    "aria": "Budget shares in FY {year}: {list}"
+  },
+  "sectors": {
+    "title": "Where the money went, FY {year}",
+    "units": "Crore rupees per sector. Grey is what was given, colour is what was spent.",
+    "simple": "The biggest share went to <b>{sector}</b>: {given} given, {spent} spent.",
+    "legendGiven": "Given (allocated)",
+    "legendSpent": "Spent",
+    "given": "Given",
+    "spent": "Spent",
+    "row": "{spent} of {given}"
+  },
+  "lapsed": {
+    "title": "Money that was never spent",
+    "amount": "{amount} lapsed",
+    "bar": "{year}: {amount} allocated"
+  },
+  "table": {
+    "title": "Department allocations",
+    "caption": "Department budget allocations by fiscal year, in crore rupees",
+    "empty": "No department allocations published for this district yet.",
+    "fy": "FY",
+    "department": "Department",
+    "allocated": "Allocated (Cr)",
+    "spent": "Spent (Cr)",
+    "lapsed": "Lapsed (Cr)"
+  },
+  "revenue": {
+    "title": "Revenue collected each month",
+    "units": "Lakh rupees. Colour is what was collected, grey is the target.",
+    "collected": "Collected",
+    "target": "Target",
+    "rowWithTarget": "{amount} of {target}"
+  }
+}

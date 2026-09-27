@@ -3,6 +3,12 @@
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_citizen-corner",
   "page_elections",
+  "page_finance",
+  "page_industries",
+  "page_infrastructure",
   "page_leadership",
-  "page_responsibility"
+  "page_money",
+  "page_responsibility",
+  "page_schemes",
+  "page_tenders"
 ];

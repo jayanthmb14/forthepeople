@@ -3,8 +3,9 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — full-screen dialog with a project's timeline and analysis.
- * Design v3: flat surface with a 1 px border (no shadow), token scrim,
- * a 44 px close button, and the heading as the dialog's h2.
+ * Flat surface with a 1 px border (no shadow), token scrim, a 44 px close
+ * button, and the heading as the dialog's h2. Every word is translated
+ * (page_infrastructure); project names and news text stay as published.
  */
 
 "use client";
@@ -12,11 +13,13 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
-import { AWAIT_STYLE, CategoryIcon, normalizeCategory } from "./infra-utils";
+import { AWAIT_STYLE, CategoryIcon } from "./infra-utils";
+import { useInfraText } from "./infra-i18n";
 import TimelineEntry from "./TimelineEntry";
 import PrecomputedAnalysis from "./PrecomputedAnalysis";
 
 export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose: () => void }) {
+  const { t, category } = useInfraText();
   const updates = p.updates ?? [];
 
   // ESC closes the modal; lock body scroll while open
@@ -35,7 +38,7 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Timeline for ${p.name}`}
+      aria-label={t("timeline.dialogAria", { name: p.name })}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: "fixed", inset: 0,
@@ -73,15 +76,15 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
             <div style={{ minWidth: 0 }}>
               <h2 className="ftp-title">{p.name}</h2>
               <div style={{ display: "flex", flexWrap: "wrap", columnGap: 10, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{normalizeCategory(p.category)}</span>
-                {p.executingAgency && <span>Executing: {p.executingAgency}</span>}
+                <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{category(p.category)}</span>
+                {p.executingAgency && <span>{t("timeline.executing", { agency: p.executingAgency })}</span>}
               </div>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close timeline"
+            aria-label={t("timeline.close")}
             style={{
               width: 44, height: 44, flexShrink: 0,
               background: "none", border: "none", color: "var(--ftp-text-2)",
@@ -98,7 +101,7 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
           {p.description && (
             <section style={{ marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--ftp-border)" }}>
               <div className="ftp-label" style={{ marginBottom: 6 }}>
-                About this project
+                {t("timeline.about")}
               </div>
               <p className="ftp-body" style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
                 {p.description}
@@ -112,7 +115,7 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
             </div>
           ) : (
             <p className="ftp-body" style={{ ...AWAIT_STYLE }}>
-              No timeline entries yet. Updates appear here as news covers this project.
+              {t("timeline.empty")}
             </p>
           )}
 
@@ -121,8 +124,9 @@ export default function TimelineModal({ p, onClose }: { p: InfraProject; onClose
           </div>
 
           <div style={{ marginTop: 12, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-            Data sourced from news articles. Not independently verified. Contact{" "}
-            {p.executingAgency ?? "the executing agency"} for official status.
+            {p.executingAgency
+              ? t("timeline.footer", { agency: p.executingAgency })
+              : t("timeline.footerNoAgency")}
           </div>
         </div>
       </div>

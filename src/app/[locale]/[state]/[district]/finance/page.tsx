@@ -5,22 +5,26 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Finance & Budget — module page (Design v3 "Civic Ledger", CONCEPT-v3 §5)
+//  Finance & Budget — module page (Design v4 "Rang", the reference page)
 // ═══════════════════════════════════════════════════════════════════════
 //  Order on the page (same for every module page):
-//    PageHeader → one-paragraph summary → StatStrip → Sections (charts,
-//    lapsed funds, allocations table) → SourcesFooter → ModuleNews → Toolbar
+//    PageHeader → one-paragraph summary → AI insight → StatStrip → the
+//    picture (coins + dial) → "how each ₹100 is shared" ring → sector
+//    chart → lapsed funds → allocations table → revenue chart →
+//    SourcesFooter → ModuleNews → Toolbar
 //
 //  Data comes from the same hooks as before (useBudget, useRevenue,
-//  useAIInsight). Only the presentation changed: colours are CSS tokens
-//  (var(--ftp-…)), numbers are mono, and every total carries the fiscal
-//  year plus an "As of" date taken from when we fetched the rows.
+//  useAIInsight). Every word is in the "page_finance" messages; numbers
+//  and dates go through useFormat / useMoney, so the page reads the same
+//  in every language. Every total carries the fiscal year plus an "As of"
+//  date taken from when we fetched the rows.
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ArrowLeftRight, Download, PiggyBank, Share2 } from "lucide-react";
+import { PiggyBank } from "lucide-react";
 import { useBudget, useRevenue, useAIInsight } from "@/hooks/useRealtimeData";
 import {
   PageHeader,
@@ -34,20 +38,21 @@ import {
   EmptyState,
   AIInsightBanner,
   SourcesFooter,
-  Toolbar,
-  ToolbarButton,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
-import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
+import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleNews from "@/components/district/ModuleNews";
+import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
+import { ShareDonut, type DonutSlice } from "@/components/money/visuals";
+import { useMoney, useSourceText } from "@/components/money/useMoney";
+import MoneyToolbar, { NotOfficialNote, downloadCsv } from "@/components/money/MoneyToolbar";
 import knDict from "@/dictionaries/kn.json";
 
 /** 1 crore = 10 million rupees. Amounts in the database are in rupees. */
 const CRORE = 10_000_000;
 const LAKH = 100_000;
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** Official websites for the sources named by getModuleSources("budget"). */
 const SOURCE_URLS: Record<string, string> = {
@@ -64,27 +69,20 @@ function latestFetchedAt(rows: Array<{ fetchedAt?: string | null }>): string | n
   return best;
 }
 
-/** Turn rows into a CSV file and start a download in the browser. */
-function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = [headers.map(esc).join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+const b = (c: React.ReactNode) => <strong>{c}</strong>;
 
 function FinancePageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
+  const t = useTranslations("page_finance");
+  const mt = useModuleText();
+  const place = usePlaceText();
+  const f = useFormat();
+  const m = useMoney();
+  const st = useSourceText();
   const base = `/${locale}/${state}/${district}`;
   const { data: budgetData, isLoading: bLoading } = useBudget(district, state);
   const { data: revenueData, isLoading: rLoading } = useRevenue(district, state);
   const { data: aiInsight } = useAIInsight(district, "finance");
-  const [shareNote, setShareNote] = useState<string | null>(null);
 
   const entries = budgetData?.data?.entries ?? [];
   const allocations = budgetData?.data?.allocations ?? [];
@@ -113,10 +111,26 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
     utilPct: e.allocated > 0 ? Math.round((e.spent / e.allocated) * 100) : 0,
   }));
 
+  // "How each ₹100 is shared": the five biggest sectors, the rest as "Other".
+  const bySize = [...latestEntries].sort((a, b) => b.allocated - a.allocated);
+  const shareSlices: DonutSlice[] = bySize.slice(0, 5).map((e) => ({
+    key: e.sector,
+    label: e.sector,
+    value: e.allocated,
+    display: m.short(e.allocated, 0),
+  }));
+  const restAllocated = bySize.slice(5).reduce((s, e) => s + e.allocated, 0);
+  if (restAllocated > 0) {
+    shareSlices.push({ key: "__other", label: t("share.other", { n: bySize.length - 5 }), value: restAllocated, display: m.short(restAllocated, 0), other: true });
+  }
+  const topShare = bySize[0] && totalAllocated > 0 ? Math.round((bySize[0].allocated / totalAllocated) * 100) : 0;
+
+  // Month names come from Intl in the reader's language ("Sep", "ಸೆಪ್ಟೆಂ").
+  const monthName = (month: number) => f.date(new Date(Date.UTC(2024, month - 1, 15)), { month: "short" });
   const revChart = collections
     .slice(0, 12)
     .map((c) => ({
-      label: `${MONTHS[c.month - 1]}`,
+      label: monthName(c.month),
       amount: Math.round(c.amount / LAKH),
       target: c.target ? Math.round(c.target / LAKH) : 0,
     }))
@@ -126,26 +140,15 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
 
   // Sources: the same list the old DataSourceBanner showed, now as a footer.
   const src = getModuleSources("budget", state);
-  const sc = getStateConfig(state);
-  const stateFinSource = sc ? `${sc.name} Finance Department, PFMS, eGramSwaraj` : "State Finance Department, PFMS, eGramSwaraj";
-  // Local-script title comes from the dictionary (Kannada only for now).
-  const titleLocal = state === "karnataka" ? knDict.modules.budget : undefined;
-  const fyLabel = latestYear ? `FY ${latestYear}` : undefined;
-
-  const onShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "Finance & Budget", url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareNote("Link copied");
-        setTimeout(() => setShareNote(null), 2000);
-      }
-    } catch {
-      /* The visitor closed the share sheet — nothing to do. */
-    }
-  };
+  const stateName = place.state(state, "");
+  const stateFinSource = stateName ? t("summarySourcesState", { state: stateName }) : t("summarySources");
+  // Local-script title: the module name in the state's language (Kannada only
+  // for now). PageHeader hides it when it is already the title.
+  const title = mt.label("finance");
+  const titleLocal = state === "karnataka" ? knDict.moduleNames.finance : undefined;
+  const fyLabel = latestYear ? t("fy", { year: latestYear }) : undefined;
+  const pctSpent = totalAllocated > 0 ? Math.round((totalSpent / totalAllocated) * 100) : 0;
+  const cr2 = (rupees: number) => m.num(rupees / CRORE, 2);
 
   const onCsv = () =>
     downloadCsv(
@@ -164,9 +167,9 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
       <PageHeader
         icon={PiggyBank}
         accent={getModuleAccent("finance")}
-        title="Finance & Budget"
+        title={title}
         titleLocal={titleLocal}
-        description="District budget allocation, utilisation, lapsed funds and revenue collections"
+        description={t("description")}
         backHref={base}
         freshness={asOf ? { asOf } : undefined}
         source={{ label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] }}
@@ -174,7 +177,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
 
       {/* AI-crawler readable summary — plain body text. */}
       <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
-        This page shows the annual budget allocation and expenditure data for this district&apos;s government departments, sourced from {stateFinSource}. Figures are in Indian Rupees in Crores (1 Crore = ₹10 million). Unspent budget that lapses at fiscal year end is highlighted as &ldquo;lapsed funds.&rdquo;
+        {t("summary", { sources: stateFinSource })}
       </p>
 
       {aiInsight && (
@@ -194,39 +197,36 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
       {bLoading && <LoadingShell rows={4} />}
 
       {!bLoading && entries.length === 0 && allocations.length === 0 && (
-        <EmptyState
-          title="No budget data yet for this district."
-          body="We add allocations and spending as PFMS and the state treasury publish them."
-        />
+        <EmptyState emoji="💰" title={t("empty.title")} body={t("empty.body")} />
       )}
 
       {!bLoading && (entries.length > 0 || allocations.length > 0) && (
         <>
           <div style={{ marginBottom: 8 }}>
             <StatStrip cols={4}>
-              <StatTile emoji="💰" label="Total budget" value={Math.round(totalAllocated / CRORE).toLocaleString("en-IN")} unit="₹ Cr" sub={fyLabel} asOf={asOf} />
+              <StatTile emoji="💰" label={t("tiles.total")} value={m.num(Math.round(totalAllocated / CRORE))} unit={t("tiles.unitCr")} sub={fyLabel} asOf={asOf} />
               <StatTile
                 emoji="🧾"
-                label="Spent"
-                value={totalSpent === 0 && totalAllocated > 0 ? "Data pending" : Math.round(totalSpent / CRORE).toLocaleString("en-IN")}
-                unit={totalSpent === 0 && totalAllocated > 0 ? undefined : "₹ Cr"}
+                label={t("tiles.spent")}
+                value={totalSpent === 0 && totalAllocated > 0 ? t("tiles.dataPending") : m.num(Math.round(totalSpent / CRORE))}
+                unit={totalSpent === 0 && totalAllocated > 0 ? undefined : t("tiles.unitCr")}
                 sub={fyLabel}
                 asOf={asOf}
               />
               <StatTile
                 emoji="📈"
-                label="Utilisation"
-                value={totalAllocated > 0 ? (totalSpent === 0 ? "Pending" : `${Math.round((totalSpent / totalAllocated) * 100)}`) : "—"}
+                label={t("tiles.utilisation")}
+                value={totalAllocated > 0 ? (totalSpent === 0 ? t("tiles.pending") : m.num(pctSpent)) : "—"}
                 unit={totalAllocated > 0 && totalSpent > 0 ? "%" : undefined}
                 sub={fyLabel}
                 asOf={asOf}
               />
               <StatTile
                 emoji="⏳"
-                label="Lapsed funds"
-                value={totalSpent === 0 && totalLapsed === 0 ? "—" : (totalLapsed / CRORE).toLocaleString("en-IN", { maximumFractionDigits: 1 })}
-                unit={totalSpent === 0 && totalLapsed === 0 ? undefined : "₹ Cr"}
-                sub="Funds not utilised"
+                label={t("tiles.lapsed")}
+                value={totalSpent === 0 && totalLapsed === 0 ? "—" : m.num(totalLapsed / CRORE, 1)}
+                unit={totalSpent === 0 && totalLapsed === 0 ? undefined : t("tiles.unitCr")}
+                sub={t("tiles.lapsedSub")}
                 asOf={asOf}
               />
             </StatStrip>
@@ -234,7 +234,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
 
           {totalSpent === 0 && totalAllocated > 0 && (
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "8px 0 0" }}>
-              Allocation data is available. Expenditure tracking from PFMS/state treasury will be updated as data becomes available.
+              {t("allocationOnly")}
             </p>
           )}
 
@@ -243,20 +243,45 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
           {totalAllocated > 0 && totalSpent > 0 && (
             <div className="ftp-picture-row" style={{ marginTop: 16 }}>
               <Card tinted padding={18}>
-                <Explainer title="In simple words" emoji="🪙">
-                  Out of every <strong>₹100</strong> given to this district in FY {latestYear}, about{" "}
-                  <strong>₹{Math.round((totalSpent / totalAllocated) * 100)}</strong> was spent. The rest is still unspent
-                  or has lapsed.
+                <Explainer emoji="🪙">
+                  {t.rich("explainer", { year: latestYear ?? "", pct: pctSpent, b })}
                 </Explainer>
                 <Pictogram
                   filled={(totalSpent / totalAllocated) * 10}
                   emoji="💰"
-                  label={`About ${Math.round((totalSpent / totalAllocated) * 10)} of every 10 coins given were spent.`}
+                  label={t("pictogram", { n: Math.round((totalSpent / totalAllocated) * 10) })}
                 />
               </Card>
               <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Gauge value={(totalSpent / totalAllocated) * 100} label="Budget used" caption={`Budget used in FY ${latestYear}`} />
+                <Gauge value={(totalSpent / totalAllocated) * 100} label={t("gauge.label")} caption={t("gauge.caption", { year: latestYear ?? "" })} />
               </Card>
+            </div>
+          )}
+
+          {/* How each ₹100 is shared between sectors — a different question
+              from "how much was spent". Needs at least two sectors. */}
+          {shareSlices.length >= 2 && totalAllocated > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <ChartCard
+                title={t("share.title", { year: latestYear ?? "" })}
+                emoji="🍰"
+                units={t("share.units")}
+                simple={t.rich("share.simple", { sector: bySize[0].sector, n: topShare, b })}
+                source={{ label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] }}
+                asOf={asOf}
+                table={shareSlices.map((s) => ({ label: s.label, value: `${s.display} (${m.pct(s.value / totalAllocated)})` }))}
+              >
+                <ShareDonut
+                  slices={shareSlices}
+                  centerValue={m.short(totalAllocated, 0)}
+                  centerLabel={t("share.center")}
+                  ariaLabel={t("share.aria", {
+                    year: latestYear ?? "",
+                    list: shareSlices.map((s) => `${s.label} ${m.pct(s.value / totalAllocated)}`).join(", "),
+                  })}
+                  formatPct={(p) => m.pct(p)}
+                />
+              </ChartCard>
             </div>
           )}
 
@@ -264,20 +289,22 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
           {budgetChart.length > 0 && (
             <div style={{ marginTop: 24 }}>
               <ChartCard
-                title={`Where the money went, FY ${latestYear}`}
+                title={t("sectors.title", { year: latestYear ?? "" })}
                 emoji="🏗️"
-                units="Crore rupees per sector. Grey is what was given, colour is what was spent."
+                units={t("sectors.units")}
                 simple={(() => {
                   const top = [...budgetChart].sort((a, b) => b.allocated - a.allocated)[0];
-                  return top ? <>The biggest share went to <strong>{top.sectorFull}</strong>: ₹{top.allocated.toLocaleString("en-IN")} Cr given, ₹{top.spent.toLocaleString("en-IN")} Cr spent.</> : null;
+                  return top
+                    ? t.rich("sectors.simple", { sector: top.sectorFull, given: m.crore(top.allocated), spent: m.crore(top.spent), b })
+                    : null;
                 })()}
                 legend={[
-                  { label: "Given (allocated)", swatch: "#D8D5CB" },
-                  { label: "Spent", swatch: "var(--hue)" },
+                  { label: t("sectors.legendGiven"), swatch: "#D8D5CB" },
+                  { label: t("sectors.legendSpent"), swatch: "var(--hue)" },
                 ]}
                 source={{ label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] }}
                 asOf={asOf}
-                table={budgetChart.map((r) => ({ label: r.sectorFull, value: `₹${r.spent.toLocaleString("en-IN")} of ₹${r.allocated.toLocaleString("en-IN")} Cr` }))}
+                table={budgetChart.map((r) => ({ label: r.sectorFull, value: t("sectors.row", { spent: m.crore(r.spent), given: m.crore(r.allocated) }) }))}
               >
                 {/* Height follows the number of sectors (44 px each) so every
                     sector gets a readable label instead of every other one. */}
@@ -285,16 +312,16 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
                   <BarChart data={budgetChart} margin={{ top: 5, right: 16, bottom: 8, left: 0 }} layout="vertical" barGap={3}>
                     <ChartGradients />
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                    <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`} />
+                    <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => m.crore(Number(v))} />
                     <YAxis type="category" dataKey="sector" tick={CHART_AXIS} width={150} interval={0} />
                     <Tooltip
-                      formatter={(v, name) => [`₹${Number(v).toLocaleString("en-IN")} Cr`, name]}
+                      formatter={(v, name) => [m.crore(Number(v)), name]}
                       labelFormatter={(_, payload) => payload?.[0]?.payload?.sectorFull ?? ""}
                       contentStyle={chartTooltipStyle}
                       cursor={{ fill: "var(--hue-tint)" }}
                     />
-                    <Bar dataKey="allocated" fill="url(#ftpMutedFill)" radius={[0, 6, 6, 0]} name="Given" />
-                    <Bar dataKey="spent" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name="Spent" />
+                    <Bar dataKey="allocated" fill="url(#ftpMutedFill)" radius={[0, 6, 6, 0]} name={t("sectors.given")} />
+                    <Bar dataKey="spent" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name={t("sectors.spent")} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
@@ -304,24 +331,27 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
           {/* Lapsed funds — money that was allocated but NOT spent */}
           {lapsedRows.length > 0 && (
             <div style={{ marginTop: 24 }}>
-              <Section
-                title={
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                    <span className="ftp-emoji" aria-hidden>⏳</span>
-                    Money that was never spent
-                  </span>
-                }
-              >
+              <Section emoji="⏳" title={t("lapsed.title")}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {lapsedRows.map((a) => (
                     <Card key={a.id} padding={14}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                        <div className="ftp-title">{a.department}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 15, borderRadius: 10 }}>
+                            🏢
+                          </span>
+                          <div className="ftp-title">{a.department}</div>
+                        </div>
                         <div className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-danger)" }}>
-                          ₹{(a.lapsed / CRORE).toFixed(2)}&nbsp;Cr lapsed
+                          {t("lapsed.amount", { amount: m.crore(a.lapsed / CRORE, 2) })}
                         </div>
                       </div>
-                      <ProgressBar value={a.spent} max={a.allocated} label={`${a.fiscalYear}: ₹${(a.allocated / CRORE).toFixed(1)}\u00A0Cr allocated`} tone="danger" />
+                      <ProgressBar
+                        value={a.spent}
+                        max={a.allocated}
+                        label={t("lapsed.bar", { year: a.fiscalYear, amount: m.crore(a.allocated / CRORE, 1) })}
+                        tone="danger"
+                      />
                     </Card>
                   ))}
                 </div>
@@ -331,26 +361,26 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
 
           {/* Allocations table */}
           <div style={{ marginTop: 24 }}>
-            <Section title="Department Allocations">
+            <Section emoji="📒" title={t("table.title")}>
               <DataTable
-                caption="Department budget allocations by fiscal year, in crore rupees"
-                emptyText="No department allocations published for this district yet."
+                caption={t("table.caption")}
+                emptyText={t("table.empty")}
                 columns={[
-                  { key: "fy", label: "FY" },
-                  { key: "dept", label: "Department" },
-                  { key: "alloc", label: "Allocated (Cr)", numeric: true },
-                  { key: "spent", label: "Spent (Cr)", numeric: true },
-                  { key: "lapsed", label: "Lapsed (Cr)", numeric: true },
+                  { key: "fy", label: t("table.fy") },
+                  { key: "dept", label: t("table.department") },
+                  { key: "alloc", label: t("table.allocated"), numeric: true },
+                  { key: "spent", label: t("table.spent"), numeric: true },
+                  { key: "lapsed", label: t("table.lapsed"), numeric: true },
                 ]}
                 rows={allocations.map((a) => ({
                   fy: a.fiscalYear,
                   dept: a.department,
-                  alloc: (a.allocated / CRORE).toFixed(2),
-                  spent: (a.spent / CRORE).toFixed(2),
+                  alloc: cr2(a.allocated),
+                  spent: cr2(a.spent),
                   // Lapsed money is the one number we colour: danger text, no fill.
                   lapsed: (
                     <span style={{ color: a.lapsed > 0 ? "var(--ftp-danger)" : "var(--ftp-text)" }}>
-                      {(a.lapsed / CRORE).toFixed(2)}
+                      {cr2(a.lapsed)}
                     </span>
                   ),
                 }))}
@@ -364,25 +394,30 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
       {!rLoading && revChart.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <ChartCard
-            title="Revenue collected each month"
+            title={t("revenue.title")}
             emoji="🧾"
-            units="Lakh rupees. Colour is what was collected, grey is the target."
+            units={t("revenue.units")}
             legend={[
-              { label: "Collected", swatch: "var(--hue)" },
-              { label: "Target", swatch: "#D8D5CB" },
+              { label: t("revenue.collected"), swatch: "var(--hue)" },
+              { label: t("revenue.target"), swatch: "#D8D5CB" },
             ]}
             asOf={revenueAsOf}
-            table={revChart.map((r) => ({ label: r.label, value: `₹${r.amount.toLocaleString("en-IN")}\u00A0L${r.target ? ` of ₹${r.target.toLocaleString("en-IN")}\u00A0L` : ""}` }))}
+            table={revChart.map((r) => ({
+              label: r.label,
+              value: r.target
+                ? t("revenue.rowWithTarget", { amount: m.lakh(r.amount), target: m.lakh(r.target) })
+                : m.lakh(r.amount),
+            }))}
           >
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={revChart} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
                 <ChartGradients />
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
                 <XAxis dataKey="label" tick={CHART_AXIS} />
-                <YAxis tick={CHART_AXIS} />
-                <Tooltip formatter={(v, name) => [`₹${Number(v).toLocaleString("en-IN")}\u00A0L`, name]} contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} />
-                <Bar dataKey="amount" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name="Collected" />
-                <Bar dataKey="target" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} name="Target" />
+                <YAxis tick={CHART_AXIS} tickFormatter={(v) => m.num(Number(v))} />
+                <Tooltip formatter={(v, name) => [m.lakh(Number(v)), name]} contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} />
+                <Bar dataKey="amount" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name={t("revenue.collected")} />
+                <Bar dataKey="target" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} name={t("revenue.target")} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -390,32 +425,26 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
       )}
 
       <SourcesFooter
-        sources={src.sources.map((name) => ({ name, url: SOURCE_URLS[name], frequency: src.frequency }))}
+        sources={src.sources.map((name) => ({ name: st.name(name), url: SOURCE_URLS[name], frequency: st.freq(src.frequency) }))}
       />
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
-        ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India&apos;s Open Data Policy (NDSAP).
-      </p>
+      <NotOfficialNote />
 
       <ModuleNews district={district} state={state} locale={locale} module="budget" />
 
-      <Toolbar>
-        <ToolbarButton icon={Download} onClick={onCsv} disabled={allocations.length === 0}>
-          Download CSV
-        </ToolbarButton>
-        <ToolbarButton icon={Share2} onClick={onShare}>
-          {shareNote ?? "Share"}
-        </ToolbarButton>
-        <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=finance&a=${district}`}>
-          Compare with another district
-        </ToolbarButton>
-      </Toolbar>
+      <MoneyToolbar
+        shareTitle={title}
+        onCsv={onCsv}
+        csvDisabled={allocations.length === 0}
+        compareHref={`/${locale}/compare?module=finance&a=${district}`}
+      />
     </div>
   );
 }
 
 export default function FinancePage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
+  const mt = useModuleText();
   return (
-    <ModuleErrorBoundary moduleName="Finance & Budget">
+    <ModuleErrorBoundary moduleName={mt.label("finance")}>
       <FinancePageInner params={params} />
     </ModuleErrorBoundary>
   );

@@ -1,13 +1,15 @@
 "use client";
 
 // HowTenderWorks — the accordion of plain-English sections on the
-// /tenders/how-it-works page, with an English / Kannada switch.
-// Design v3: kit Card + Chips, tokens only, 44 px tap targets, Lucide
-// chevrons instead of +/- glyphs. Content and the markdown renderer are
-// unchanged.
+// /tenders/how-it-works page, with an English / Kannada switch for the
+// section bodies (the content comes from the database in both languages).
+// The switch starts on the reader's site language. Kit Card + Chips,
+// tokens only, 44 px tap targets, Lucide chevrons. The markdown renderer
+// is unchanged; words around the content come from "page_tenders".
 
 import type React from "react";
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { Card, Chips } from "@/components/district/ui";
 
@@ -70,15 +72,17 @@ function inline(text: string): React.ReactNode {
 
 
 export default function HowTenderWorks({ sections }: { sections: Section[] }) {
+  const t = useTranslations("page_tenders");
+  const locale = useLocale();
   const [openSlug, setOpenSlug] = useState<string | null>(sections[0]?.slug ?? null);
-  const [lang, setLang] = useState<"en" | "kn">("en");
+  const [lang, setLang] = useState<"en" | "kn">(locale === "kn" ? "kn" : "en");
 
   return (
     <div>
       {/* Language switch (32 px chips, 44 px on phones). */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
         <Chips
-          label="Language"
+          label={t("how.language")}
           items={[
             { value: "en", label: "English" },
             { value: "kn", label: "ಕನ್ನಡ (Kannada)" },
@@ -113,10 +117,10 @@ export default function HowTenderWorks({ sections }: { sections: Section[] }) {
                 />
               </button>
               {isOpen && (
-                <div id={panelId} style={{ padding: "0 16px 16px", fontSize: 13, lineHeight: "22px", color: "var(--ftp-text)", borderTop: "1px solid var(--ftp-border)" }}>
+                <div id={panelId} lang={fallbackToEng ? "en" : lang} style={{ padding: "0 16px 16px", fontSize: 13, lineHeight: "22px", color: "var(--ftp-text)", borderTop: "1px solid var(--ftp-border)" }}>
                   {fallbackToEng && (
                     <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-warn)", margin: "10px 0" }}>
-                      ಕನ್ನಡ ಅನುವಾದ ಬಾಕಿಯಿದೆ · Kannada translation pending — showing English below.
+                      {t("how.knPending")}
                     </p>
                   )}
                   {renderMarkdown(body)}

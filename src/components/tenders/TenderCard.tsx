@@ -14,14 +14,16 @@
 // v4: the authority code, MSE and startup tags are chips in the module hue
 // (--hue-tint / --hue-deep); status and deadline keep their semantic
 // tones. No coloured stripe, no pulsing. The card lifts 2 px on hover
-// because it is a link (.ftp-card-link).
+// because it is a link (.ftp-card-link). Words come from "page_tenders";
+// the tender title, authority and category stay as the portal published them.
 "use client";
 
 import Link from "next/link";
 import type React from "react";
+import { useTranslations } from "next-intl";
 import { Flag, MapPin } from "lucide-react";
 import { Pill, type Tone } from "@/components/district/ui";
-import { formatInr } from "@/lib/tenders/format";
+import { useMoney } from "@/components/money/useMoney";
 import { ageInDays } from "@/lib/utils/timeAgo";
 import CountdownTimer from "./CountdownTimer";
 
@@ -42,18 +44,27 @@ export type TenderCardData = {
   _count: { corrigenda: number; documents: number };
 };
 
-/** Tender status → citizen label + pill tone. Exported for the detail page. */
-export const STATUS_STYLE: Record<string, { tone: Tone; label: string }> = {
-  OPEN_FOR_BIDS:       { tone: "live",     label: "Open" },
-  PUBLISHED:           { tone: "brand",    label: "Published" },
-  BID_CLOSED:          { tone: "neutral",  label: "Closed" },
-  UNDER_EVALUATION:    { tone: "warn",     label: "Under evaluation" },
-  AWARDED:             { tone: "live",     label: "Awarded" },
-  CANCELLED:           { tone: "danger",   label: "Cancelled" },
-  RETENDERED:          { tone: "features", label: "Re-tendered" },
-  COMPLETED:           { tone: "live",     label: "Completed" },
-  NO_BID:              { tone: "neutral",  label: "No bid received" },
+/** Tender status → pill tone + message key (page_tenders.status.<key>). Exported for the detail page. */
+export const STATUS_STYLE: Record<string, { tone: Tone; key: string }> = {
+  OPEN_FOR_BIDS:       { tone: "live",     key: "OPEN_FOR_BIDS" },
+  PUBLISHED:           { tone: "brand",    key: "PUBLISHED" },
+  BID_CLOSED:          { tone: "neutral",  key: "BID_CLOSED" },
+  UNDER_EVALUATION:    { tone: "warn",     key: "UNDER_EVALUATION" },
+  AWARDED:             { tone: "live",     key: "AWARDED" },
+  CANCELLED:           { tone: "danger",   key: "CANCELLED" },
+  RETENDERED:          { tone: "features", key: "RETENDERED" },
+  COMPLETED:           { tone: "live",     key: "COMPLETED" },
+  NO_BID:              { tone: "neutral",  key: "NO_BID" },
 };
+
+/** Status label in the reader's language; an unknown status is shown as sent. */
+export function useTenderStatus() {
+  const t = useTranslations("page_tenders");
+  return (status: string): { tone: Tone; label: string } => {
+    const s = STATUS_STYLE[status];
+    return s ? { tone: s.tone, label: t(`status.${s.key}`) } : { tone: "neutral", label: status };
+  };
+}
 
 /**
  * Deadline urgency — computed client-side from bidSubmissionEnd.
@@ -63,23 +74,13 @@ export const STATUS_STYLE: Record<string, { tone: Tone; label: string }> = {
  *   past : grey, dimmed (closed)
  * Rendered as the dot colour of the deadline Pill, plus an aria label.
  */
-function deadlineUrgency(deadlineIso: string): {
-  tone: Tone;
-  dimmed: boolean;
-  ariaLabel: string;
-} {
+function deadlineUrgency(deadlineIso: string): { tone: Tone; dimmed: boolean; kind: "passed" | "urgent" | "soon" | "ample"; n: number } {
   const msLeft = new Date(deadlineIso).getTime() - Date.now();
   const daysLeft = msLeft / 86400_000;
-  if (msLeft <= 0) {
-    return { tone: "neutral", dimmed: true, ariaLabel: "Deadline has passed" };
-  }
-  if (daysLeft < 2) {
-    return { tone: "danger", dimmed: false, ariaLabel: `Deadline in ${Math.max(1, Math.round(daysLeft * 24))} hours (urgent)` };
-  }
-  if (daysLeft < 7) {
-    return { tone: "warn", dimmed: false, ariaLabel: `Deadline in ${Math.ceil(daysLeft)} days (approaching)` };
-  }
-  return { tone: "live", dimmed: false, ariaLabel: `Deadline in ${Math.ceil(daysLeft)} days (ample time)` };
+  if (msLeft <= 0) return { tone: "neutral", dimmed: true, kind: "passed", n: 0 };
+  if (daysLeft < 2) return { tone: "danger", dimmed: false, kind: "urgent", n: Math.max(1, Math.round(daysLeft * 24)) };
+  if (daysLeft < 7) return { tone: "warn", dimmed: false, kind: "soon", n: Math.ceil(daysLeft) };
+  return { tone: "live", dimmed: false, kind: "ample", n: Math.ceil(daysLeft) };
 }
 
 /** A small tag in the module hue (authority code, MSE, startup). */
@@ -89,8 +90,8 @@ function HueTag({ children, outline }: { children: React.ReactNode; outline?: bo
       style={{
         display: "inline-flex",
         alignItems: "center",
-        height: 24,
-        padding: "0 8px",
+        minHeight: 24,
+        padding: "2px 8px",
         borderRadius: "var(--ftp-radius-pill)",
         background: outline ? "var(--ftp-surface)" : "var(--hue-tint)",
         border: `1px solid ${outline ? "color-mix(in srgb, var(--hue) 35%, var(--ftp-border))" : "transparent"}`,
@@ -98,7 +99,6 @@ function HueTag({ children, outline }: { children: React.ReactNode; outline?: bo
         fontSize: 11,
         lineHeight: "16px",
         fontWeight: 600,
-        whiteSpace: "nowrap",
       }}
     >
       {children}
@@ -106,8 +106,13 @@ function HueTag({ children, outline }: { children: React.ReactNode; outline?: bo
   );
 }
 
+const num = (c: React.ReactNode) => <span className="ftp-num">{c}</span>;
+
 export default function TenderCard({ tender, districtSlug, stateSlug, locale }: { tender: TenderCardData; districtSlug: string; stateSlug: string; locale: string }) {
-  const status = STATUS_STYLE[tender.status] ?? { tone: "neutral" as Tone, label: tender.status };
+  const t = useTranslations("page_tenders");
+  const m = useMoney();
+  const statusOf = useTenderStatus();
+  const status = statusOf(tender.status);
   const flagCount = tender.redFlags.length;
   // Whole days since the tender was published (shared helper, IST-safe).
   const publishedDaysAgo = Math.floor(ageInDays(tender.publishedAt) ?? 0);
@@ -117,7 +122,7 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
   return (
     <Link
       href={href}
-      aria-label={`${tender.title}. ${urgency.ariaLabel}`}
+      aria-label={t("card.aria", { title: tender.title, deadline: t(`card.deadline.${urgency.kind}`, { n: urgency.n }) })}
       className="ftp-card-link"
       style={{
         display: "block",
@@ -158,28 +163,24 @@ export default function TenderCard({ tender, districtSlug, stateSlug, locale }: 
 
       {/* Line 3: value + MSE/Startup chips + status */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-        <span className="ftp-num ftp-display" style={{ fontSize: 17, color: "var(--hue-deep)" }}>{formatInr(tender.estimatedValueInr)}</span>
-        {tender.mseReserved && <HueTag>MSE-reserved</HueTag>}
-        {tender.startupExempt && <HueTag outline>Startup-eligible</HueTag>}
+        <span className="ftp-num ftp-display" style={{ fontSize: 17, color: "var(--hue-deep)" }}>{m.short(tender.estimatedValueInr)}</span>
+        {tender.mseReserved && <HueTag>{t("tag.mse")}</HueTag>}
+        {tender.startupExempt && <HueTag outline>{t("tag.startup")}</HueTag>}
         <Pill tone={status.tone}>{status.label}</Pill>
       </div>
 
       {/* Line 4: deadline + timing + corrigendum + flag counts */}
       <div style={{ display: "flex", columnGap: 12, rowGap: 6, alignItems: "center", flexWrap: "wrap", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         <Pill tone={urgency.tone} dot>
-          Closes in <CountdownTimer deadline={tender.bidSubmissionEnd} compact />
+          {urgency.kind === "passed" ? t("countdown.closed") : <>{t("card.closesIn")} <CountdownTimer deadline={tender.bidSubmissionEnd} compact /></>}
         </Pill>
-        <span suppressHydrationWarning>
-          Published <span className="ftp-num">{publishedDaysAgo}d</span> ago
-        </span>
+        <span suppressHydrationWarning>{t.rich("card.published", { n: publishedDaysAgo, num })}</span>
         {tender._count.corrigenda > 0 && (
-          <span style={{ color: "var(--ftp-warn)" }}>
-            <span className="ftp-num">{tender._count.corrigenda}</span> corrigendum{tender._count.corrigenda > 1 ? "a" : ""}
-          </span>
+          <span style={{ color: "var(--ftp-warn)" }}>{t.rich("card.corrigenda", { n: tender._count.corrigenda, num })}</span>
         )}
         {flagCount > 0 && (
           <span style={{ color: "var(--ftp-danger)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <Flag size={12} aria-hidden /> <span className="ftp-num">{flagCount}</span> flag{flagCount > 1 ? "s" : ""}
+            <Flag size={12} aria-hidden /> {t.rich("card.flags", { n: flagCount, num })}
           </span>
         )}
       </div>

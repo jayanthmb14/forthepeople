@@ -6,24 +6,25 @@
  * Every data point links to a news article. The platform presents
  * facts aggregated from the press, never judgment.
  *
- * Design v4 "Rang" (docs/DESIGN-SYSTEM.md): PageHeader → notices →
+ * Design v4 "Rang" (docs/DESIGN-SYSTEM.md): PageHeader → one notice →
  * freshness line → StatStrip of emoji tiles → the picture (explainer +
- * pictogram of finished projects + a "running late" gauge) → projects by
- * category chart → filter Chips + sort → project cards → cancelled
- * projects → SourcesFooter → ModuleNews → legal notice → Toolbar. The
- * card, timeline, analysis and notice pieces live in ./components/ (one
- * file each, see the comment at the top of each). Every number in the
- * picture and the chart comes from the same project list as the tiles.
+ * pictogram of finished projects + a "running late" gauge) → "biggest
+ * projects by money" list → projects by category chart → filter Chips +
+ * sort → project cards → cancelled projects → SourcesFooter → ModuleNews
+ * → legal notice → Toolbar. The card, timeline, analysis and notice
+ * pieces live in ./components/ (one file each, see the comment at the top
+ * of each). Every number in the pictures and the chart comes from the
+ * same project list as the tiles. Words live in "page_infrastructure";
+ * project names, agencies and news text stay as published.
  */
 
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { use, useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { HardHat, ArrowLeftRight, Download, Share2 } from "lucide-react";
+import { HardHat } from "lucide-react";
 import { useInfrastructure } from "@/hooks/useRealtimeData";
 import type { InfraProject } from "@/hooks/useRealtimeData";
-import ModuleDisclaimer from "@/components/common/ModuleDisclaimer";
 import {
   PageHeader,
   StatStrip,
@@ -35,18 +36,21 @@ import {
   ErrorBlock,
   EmptyState,
   SourcesFooter,
-  Toolbar,
-  ToolbarButton,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleNews from "@/components/district/ModuleNews";
+import { useModuleText } from "@/i18n/client";
+import { TopBarList } from "@/components/money/visuals";
+import { useSourceText } from "@/components/money/useMoney";
+import MoneyToolbar, { NotOfficialNote, downloadCsv } from "@/components/money/MoneyToolbar";
 import knDict from "@/dictionaries/kn.json";
 import {
-  normalizeCategory, normalizeStatus, isCancelled, isActive, isCompleted, isDelayed, formatINR,
+  normalizeCategory, normalizeStatus, isCancelled, isActive, isCompleted, isDelayed, categoryEmoji,
 } from "./components/infra-utils";
+import { useInfraText } from "./components/infra-i18n";
 import DisclaimerBanner from "./components/DisclaimerBanner";
 import ProjectCard from "./components/ProjectCard";
 import LegalFooter from "./components/LegalFooter";
@@ -65,22 +69,13 @@ const CARD_GRID: React.CSSProperties = {
   display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))", gap: 12,
 };
 
-/** Turn rows into a CSV file and start a download in the browser. */
-function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = [headers.map(esc).join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+const num = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
+const b = (c: React.ReactNode) => <strong>{c}</strong>;
 
 function InfrastructurePageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
+  const { t, m, category, status, inr } = useInfraText();
+  const st = useSourceText();
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useInfrastructure(district, state);
   const projects = useMemo<InfraProject[]>(() => data?.data ?? [], [data]);
@@ -88,7 +83,6 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
   const [catFilter, setCatFilter] = useState<CategoryFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("latest");
-  const [shareNote, setShareNote] = useState<string | null>(null);
 
   // Merge category variants before building the filter list
   const { categoryOrder, categoryCounts } = useMemo(() => {
@@ -120,7 +114,11 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
   const latePct = counts.total > 0 ? (counts.delayed / counts.total) * 100 : 0;
 
   // Chart rows: how many projects fall in each category (largest first).
-  const categoryChart = categoryOrder.map((c) => ({ category: c, count: categoryCounts.get(c) ?? 0 }));
+  const categoryChart = categoryOrder.map((c) => ({ category: category(c), count: categoryCounts.get(c) ?? 0 }));
+
+  // Biggest projects by money (latest reported budget), cancelled ones left out.
+  const budgetOf = (p: InfraProject) => p.revisedBudget ?? p.originalBudget ?? p.budget ?? 0;
+  const biggest = activeList.filter((p) => budgetOf(p) > 0).sort((a, b) => budgetOf(b) - budgetOf(a));
 
   const filtered = useMemo(() => {
     const list = activeList.filter((p) => {
@@ -145,23 +143,10 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
   // Header freshness = newest project `updatedAt` (sent by the API as meta.lastUpdated).
   const asOf = data?.meta?.lastUpdated ?? null;
   const src = getModuleSources("infrastructure", state);
-  // Local-script title comes from the dictionary (Kannada only for now).
-  const titleLocal = state === "karnataka" ? knDict.modules.infrastructure : undefined;
-
-  const onShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "Infrastructure Tracker", url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareNote("Link copied");
-        setTimeout(() => setShareNote(null), 2000);
-      }
-    } catch {
-      /* The visitor closed the share sheet — nothing to do. */
-    }
-  };
+  const title = t("title");
+  // Local-script title: the module name in the state's language (Kannada
+  // only for now). PageHeader hides it when it is already the title.
+  const titleLocal = state === "karnataka" ? knDict.moduleNames.infrastructure : undefined;
 
   const onCsv = () =>
     downloadCsv(
@@ -184,30 +169,22 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
       <PageHeader
         icon={HardHat}
         accent={getModuleAccent("infrastructure")}
-        title="Infrastructure Tracker"
+        title={title}
         titleLocal={titleLocal}
-        description="Government projects tracked through news — every fact linked to its source"
+        description={t("description")}
         backHref={base}
         freshness={asOf ? { asOf } : undefined}
-        source={{ label: "News reports" }}
+        source={{ label: t("sourceLabel") }}
       />
 
       <DisclaimerBanner />
-
-      <ModuleDisclaimer
-        text="Project timelines and delay information are aggregated from official government announcements and publicly reported news sources. This is not an official government statement. For authoritative information, please consult the concerned government department."
-      />
 
       <AIInsightCard module="infrastructure" district={district} />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && projects.length === 0 && (
-        <EmptyState
-          emoji="🏗️"
-          title="No infrastructure projects tracked yet."
-          body="News-driven updates will populate this page automatically."
-        />
+        <EmptyState emoji="🏗️" title={t("empty.title")} body={t("empty.body")} />
       )}
 
       {!isLoading && projects.length > 0 && (
@@ -217,14 +194,14 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
           {/* Stats — StatStrip wraps to a second row after four tiles */}
           <div style={{ marginBottom: 20 }}>
             <StatStrip cols={4}>
-              <StatTile emoji="🏗️" label="Total projects" value={counts.total} asOf={asOf} />
-              <StatTile emoji="🚧" label="Active" value={counts.active} sub="Planned or being built" />
-              <StatTile emoji="✅" label="Completed" value={counts.completed} />
-              <StatTile emoji="⏰" label="Delayed" value={counts.delayed} sub="Delayed or stalled" />
-              <StatTile emoji="🚫" label="Cancelled" value={counts.cancelled} />
-              <StatTile emoji="💰" label="Total budget" value={formatINR(totalBudget)} sub="As reported in news media" asOf={asOf} />
+              <StatTile emoji="🏗️" label={t("tiles.total")} value={m.num(counts.total)} asOf={asOf} />
+              <StatTile emoji="🚧" label={t("tiles.active")} value={m.num(counts.active)} sub={t("tiles.activeSub")} />
+              <StatTile emoji="✅" label={t("tiles.completed")} value={m.num(counts.completed)} />
+              <StatTile emoji="⏰" label={t("tiles.delayed")} value={m.num(counts.delayed)} sub={t("tiles.delayedSub")} />
+              <StatTile emoji="🚫" label={t("tiles.cancelled")} value={m.num(counts.cancelled)} />
+              <StatTile emoji="💰" label={t("tiles.budget")} value={inr(totalBudget)} sub={t("tiles.asReported")} asOf={asOf} />
               {totalSpent > 0 && (
-                <StatTile emoji="🧾" label="Funds released" value={formatINR(totalSpent)} sub="As reported in news media" asOf={asOf} />
+                <StatTile emoji="🧾" label={t("tiles.released")} value={inr(totalSpent)} sub={t("tiles.asReported")} asOf={asOf} />
               )}
             </StatStrip>
           </div>
@@ -235,99 +212,110 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
             <div className="ftp-picture-row" style={{ marginBottom: 24 }}>
               <Card tinted padding={18}>
                 <Explainer>
-                  This page follows <strong className="ftp-num">{counts.total}</strong> government projects reported in the
-                  news. <strong className="ftp-num">{counts.completed}</strong> are finished and{" "}
-                  <strong className="ftp-num">{counts.active}</strong> are planned or still being built
-                  {counts.cancelled > 0 ? (
-                    <>
-                      ; <strong className="ftp-num">{counts.cancelled}</strong> were cancelled
-                    </>
-                  ) : null}
-                  .
+                  {counts.cancelled > 0
+                    ? t.rich("explainerCancelled", { total: counts.total, done: counts.completed, active: counts.active, cancelled: counts.cancelled, num })
+                    : t.rich("explainer", { total: counts.total, done: counts.completed, active: counts.active, num })}
                 </Explainer>
                 <Pictogram
                   filled={doneOf10}
                   emoji="🏗️"
-                  label={
-                    counts.completed === 0
-                      ? "None of the projects tracked here is reported as finished yet."
-                      : `About ${Math.round(doneOf10)} of every 10 projects tracked here are finished.`
-                  }
+                  label={counts.completed === 0 ? t("pictogramNone") : t("pictogram", { n: Math.round(doneOf10) })}
                 />
               </Card>
               <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Gauge value={latePct} label="Projects running late" caption="Share of tracked projects reported as delayed or stalled" />
+                <Gauge value={latePct} label={t("gauge.label")} caption={t("gauge.caption")} />
               </Card>
+            </div>
+          )}
+
+          {/* Biggest projects by money — the budget side of the story.
+              Needs at least two projects with a reported budget. */}
+          {biggest.length >= 2 && (
+            <div style={{ marginBottom: 24 }}>
+              <ChartCard
+                title={t("biggest.title")}
+                emoji="💰"
+                units={t("biggest.units")}
+                simple={t.rich("biggest.simple", { name: biggest[0].name, amount: inr(budgetOf(biggest[0])), b })}
+                source={{ label: t("sourceLabel") }}
+                asOf={asOf}
+                table={biggest.slice(0, 5).map((p) => ({ label: p.name, value: inr(budgetOf(p)) }))}
+              >
+                <TopBarList
+                  rows={biggest.map((p) => ({
+                    key: p.id,
+                    label: p.name,
+                    sub: t("biggest.sub", { category: category(p.category), status: status(p.status) }),
+                    emoji: categoryEmoji(p.category),
+                    value: budgetOf(p),
+                    display: inr(budgetOf(p)),
+                  }))}
+                />
+              </ChartCard>
             </div>
           )}
 
           {/* Projects by category — only when there is more than one category. */}
           {categoryChart.length >= 2 && (
             <ChartCard
-              title="Projects by category"
+              title={t("byCategory.title")}
               emoji="📊"
-              units="Number of tracked projects in each category, cancelled ones included"
-              simple={
-                <>
-                  Most projects here are <strong>{categoryChart[0].category}</strong>:{" "}
-                  <span className="ftp-num">{categoryChart[0].count}</span> of{" "}
-                  <span className="ftp-num">{counts.total}</span>.
-                </>
-              }
-              legend={[{ label: "Projects", swatch: "var(--hue)" }]}
-              source={{ label: "News reports" }}
+              units={t("byCategory.units")}
+              simple={t.rich("byCategory.simple", { name: categoryChart[0].category, n: categoryChart[0].count, total: counts.total, b })}
+              legend={[{ label: t("byCategory.legend"), swatch: "var(--hue)" }]}
+              source={{ label: t("sourceLabel") }}
               asOf={asOf}
-              table={categoryChart.map((r) => ({ label: r.category, value: r.count.toLocaleString("en-IN") }))}
+              table={categoryChart.map((r) => ({ label: r.category, value: m.num(r.count) }))}
             >
               <ResponsiveContainer width="100%" height={Math.max(160, categoryChart.length * 36 + 40)}>
                 <BarChart data={categoryChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
                   <ChartGradients />
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                  <XAxis type="number" tick={CHART_AXIS} allowDecimals={false} />
+                  <XAxis type="number" tick={CHART_AXIS} allowDecimals={false} tickFormatter={(v) => m.num(Number(v))} />
                   <YAxis type="category" dataKey="category" tick={CHART_AXIS} width={130} interval={0} />
                   <Tooltip
-                    formatter={(v) => [Number(v).toLocaleString("en-IN"), "Projects"]}
+                    formatter={(v) => [m.num(Number(v)), t("byCategory.legend")]}
                     contentStyle={chartTooltipStyle}
                     cursor={{ fill: "var(--hue-tint)" }}
                   />
-                  <Bar dataKey="count" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name="Projects" />
+                  <Bar dataKey="count" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name={t("byCategory.legend")} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
           )}
 
-          <Section title="Projects" emoji="🚧">
+          <Section title={t("list.title")} emoji="🚧">
             {/* Filters */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
               <div>
-                <div className="ftp-label" style={{ marginBottom: 6 }}>Category</div>
+                <div className="ftp-label" style={{ marginBottom: 6 }}>{t("list.category")}</div>
                 <Chips
-                  label="Filter projects by category"
+                  label={t("list.categoryAria")}
                   value={catFilter}
                   onChange={(v) => setCatFilter(v as CategoryFilter)}
                   items={[
-                    { value: "all", label: "All", count: projects.length },
-                    ...categoryOrder.map((c) => ({ value: c, label: c, count: categoryCounts.get(c) ?? 0 })),
+                    { value: "all", label: t("list.all"), count: projects.length },
+                    ...categoryOrder.map((c) => ({ value: c, label: category(c), count: categoryCounts.get(c) ?? 0 })),
                   ]}
                 />
               </div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
                 <div>
-                  <div className="ftp-label" style={{ marginBottom: 6 }}>Status</div>
+                  <div className="ftp-label" style={{ marginBottom: 6 }}>{t("list.status")}</div>
                   <Chips
-                    label="Filter projects by status"
+                    label={t("list.statusAria")}
                     value={statusFilter}
                     onChange={(v) => setStatusFilter(v as StatusFilter)}
                     items={[
-                      { value: "all", label: "All", count: projects.length },
-                      { value: "active", label: "Active", count: counts.active },
-                      { value: "delayed", label: "Delayed", count: counts.delayed },
-                      { value: "completed", label: "Completed", count: counts.completed },
+                      { value: "all", label: t("list.all"), count: projects.length },
+                      { value: "active", label: t("tiles.active"), count: counts.active },
+                      { value: "delayed", label: t("tiles.delayed"), count: counts.delayed },
+                      { value: "completed", label: t("tiles.completed"), count: counts.completed },
                     ]}
                   />
                 </div>
                 <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="ftp-label">Sort</span>
+                  <span className="ftp-label">{t("list.sort")}</span>
                   {/* ftp-chip = 32 px tall on desktop, 44 px tap target on phones. */}
                   <select
                     className="ftp-chip"
@@ -340,10 +328,10 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
                       fontSize: 13, background: "var(--ftp-surface)", color: "var(--ftp-text)", fontFamily: "var(--ftp-font-sans)",
                     }}
                   >
-                    <option value="latest">Latest update</option>
-                    <option value="budget">Budget (highest)</option>
-                    <option value="progress">Most complete</option>
-                    <option value="delay">Most delayed</option>
+                    <option value="latest">{t("list.sortLatest")}</option>
+                    <option value="budget">{t("list.sortBudget")}</option>
+                    <option value="progress">{t("list.sortProgress")}</option>
+                    <option value="delay">{t("list.sortDelay")}</option>
                   </select>
                 </label>
               </div>
@@ -356,21 +344,14 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
               </div>
             ) : (
               <div style={{ marginBottom: 28 }}>
-                <EmptyState emoji="🔍" title="No projects match these filters." body="Pick another category or status to see more projects." />
+                <EmptyState emoji="🔍" title={t("list.noMatch")} body={t("list.noMatchBody")} />
               </div>
             )}
           </Section>
 
           {/* Cancelled section */}
           {cancelledList.length > 0 && (
-            <Section
-              emoji="🚫"
-              title={
-                <>
-                  Cancelled or shelved projects (<span className="ftp-num">{cancelledList.length}</span>)
-                </>
-              }
-            >
+            <Section emoji="🚫" title={t("cancelledTitle", { n: cancelledList.length })}>
               <div style={{ ...CARD_GRID, marginBottom: 28 }}>
                 {cancelledList.map((p) => <ProjectCard key={p.id} p={p} />)}
               </div>
@@ -379,33 +360,27 @@ function InfrastructurePageInner({ params }: { params: Promise<{ locale: string;
         </>
       )}
 
-      <SourcesFooter sources={src.sources.map((name) => ({ name, frequency: src.frequency }))} />
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
-        ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India&apos;s Open Data Policy (NDSAP).
-      </p>
+      <SourcesFooter sources={src.sources.map((name) => ({ name: st.name(name), frequency: st.freq(src.frequency) }))} />
+      <NotOfficialNote />
 
       <ModuleNews district={district} state={state} locale={locale} module="infrastructure" />
 
       <LegalFooter />
 
-      <Toolbar>
-        <ToolbarButton icon={Download} onClick={onCsv} disabled={projects.length === 0}>
-          Download CSV
-        </ToolbarButton>
-        <ToolbarButton icon={Share2} onClick={onShare}>
-          {shareNote ?? "Share"}
-        </ToolbarButton>
-        <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=infrastructure&a=${district}`}>
-          Compare with another district
-        </ToolbarButton>
-      </Toolbar>
+      <MoneyToolbar
+        shareTitle={title}
+        onCsv={onCsv}
+        csvDisabled={projects.length === 0}
+        compareHref={`/${locale}/compare?module=infrastructure&a=${district}`}
+      />
     </div>
   );
 }
 
 export default function InfrastructurePage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
+  const mt = useModuleText();
   return (
-    <ModuleErrorBoundary moduleName="Infrastructure">
+    <ModuleErrorBoundary moduleName={mt.label("infrastructure")}>
       <InfrastructurePageInner params={params} />
     </ModuleErrorBoundary>
   );

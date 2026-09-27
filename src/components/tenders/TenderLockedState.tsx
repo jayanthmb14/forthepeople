@@ -10,15 +10,19 @@
  * Design v4: the kit PageHeader band (the page's one <h1>, module hue and
  * emoji from the registry), a tinted sponsor Card with a hue button,
  * a Section of districts that are tracked today. 44 px tap targets.
+ * Words come from "page_tenders"; state names are translated, district
+ * names are shown as the database has them.
  */
 
 "use client";
 
 import type React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Lock, ArrowRight, Heart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, PageHeader, Section } from "@/components/district/ui";
+import { usePlaceText } from "@/i18n/client";
 
 interface Props {
   locale: string;
@@ -58,6 +62,8 @@ export default function TenderLockedState({
   districtSlug,
   districtName,
 }: Props) {
+  const t = useTranslations("page_tenders");
+  const place = usePlaceText();
   // Fetch other districts that DO have tenders active — this page is the
   // best discovery surface for "what's covered today".
   const { data: liveList } = useQuery<{ districts: LiveDistrict[] }>({
@@ -69,14 +75,15 @@ export default function TenderLockedState({
   const liveElsewhere = (liveList?.districts ?? []).filter(
     (d) => d.districtSlug !== districtSlug,
   );
+  const stateLabel = place.state(stateSlug, stateName);
 
   return (
     <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
       {/* Header band: module hue + emoji, the lock as the watermark icon. */}
       <PageHeader
         icon={Lock}
-        title={`Tender tracking for ${districtName} is coming soon`}
-        description={`We’re aggregating procurement data from ${stateName}’s government eProc portals. Support the project to prioritise your district — each supporter shortens the wait for a new district to come online.`}
+        title={t("locked.title", { district: districtName })}
+        description={t("locked.description", { state: stateLabel })}
         backHref={`/${locale}/${stateSlug}/${districtSlug}`}
       />
 
@@ -86,20 +93,19 @@ export default function TenderLockedState({
           <span className="ftp-icon-chip" aria-hidden style={{ width: 34, height: 34, borderRadius: 11 }}>
             <Heart size={18} style={{ color: "var(--ftp-support)" }} />
           </span>
-          <h2 className="ftp-title">Help bring tenders to {districtName}</h2>
+          <h2 className="ftp-title">{t("locked.helpTitle", { district: districtName })}</h2>
         </div>
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>
-          Covering a new district costs time (legal review, data-collection
-          setup, state-specific disclaimer). Supporters decide where we go next.
+          {t("locked.helpBody")}
         </p>
-        <Link href="/support" style={PRIMARY_LINK}>
-          Support this district
+        <Link href={`/${locale}/support`} style={PRIMARY_LINK}>
+          {t("locked.support")}
         </Link>
       </Card>
 
       {/* What's covered elsewhere */}
       {liveElsewhere.length > 0 && (
-        <Section title="Currently tracked" emoji="📍">
+        <Section title={t("locked.tracked")} emoji="📍">
           <Card>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               {liveElsewhere.map((d) => (
@@ -121,7 +127,7 @@ export default function TenderLockedState({
                   >
                     <span>
                       <span style={{ fontWeight: 600 }}>{d.districtName}</span>
-                      <span style={{ color: "var(--ftp-text-2)", fontSize: 11, marginLeft: 8 }}>{d.stateName}</span>
+                      <span style={{ color: "var(--ftp-text-2)", fontSize: 11, marginLeft: 8 }}>{place.state(d.stateSlug, d.stateName)}</span>
                     </span>
                     <ArrowRight size={14} aria-hidden style={{ color: "var(--hue)" }} />
                   </Link>

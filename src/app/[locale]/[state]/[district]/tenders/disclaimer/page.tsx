@@ -7,17 +7,22 @@
  * Data source: TenderEducationContent rows where docType='disclaimer',
  * filtered by stateSlug = null (universal) or the current state.
  *
- * Design v3: PageHeader (the one <h1>), clauses in plain Cards, tokens only.
- * Every legal sentence is unchanged.
+ * PageHeader (the one <h1>), clauses in plain Cards, tokens only. Every
+ * legal sentence is unchanged. This is a legal page: headings, navigation
+ * and the grievance line are translated ("page_tenders"); the clauses stay
+ * in English (they come from the database), and other languages get a
+ * note that the English text is the official version.
  */
 
 "use client";
 
 import type React from "react";
 import { use } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck, Mail } from "lucide-react";
 import { PageHeader, Section, Card, LoadingShell, EmptyState } from "@/components/district/ui";
+import { useModuleText, usePlaceText } from "@/i18n/client";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
@@ -67,13 +72,16 @@ function inline(text: string): React.ReactNode {
 function Clause({ clause }: { clause: DisclaimerClause }) {
   return (
     <Card as="article" style={{ marginBottom: 12 }}>
-      <h3 className="ftp-title" style={{ marginBottom: 4 }}>{clause.title}</h3>
-      {renderParagraphs(clause.bodyMd)}
+      <div lang="en">
+        <h3 className="ftp-title" style={{ marginBottom: 4 }}>{clause.title}</h3>
+        {renderParagraphs(clause.bodyMd)}
+      </div>
     </Card>
   );
 }
 
-const LINK: React.CSSProperties = { color: "var(--ftp-brand)", textDecoration: "underline" };
+const LINK: React.CSSProperties = { color: "var(--hue-deep)", textDecoration: "underline" };
+const SUPPORT = "support@forthepeople.in";
 
 export default function TenderDisclaimerPage({
   params,
@@ -81,6 +89,10 @@ export default function TenderDisclaimerPage({
   params: Promise<{ locale: string; state: string; district: string }>;
 }) {
   const { locale, state: stateSlug, district: districtSlug } = use(params);
+  const t = useTranslations("page_tenders");
+  const uiLocale = useLocale();
+  const mt = useModuleText();
+  const place = usePlaceText();
 
   const { data, isLoading, error } = useQuery<DisclaimerResponse>({
     queryKey: ["tenders-disclaimer", stateSlug],
@@ -90,64 +102,71 @@ export default function TenderDisclaimerPage({
 
   const hasContent =
     data && (data.universal.length > 0 || data.stateSpecific.length > 0);
+  const stateLabel = place.state(stateSlug, stateSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
 
   return (
-    <ModuleErrorBoundary moduleName="TendersDisclaimer">
+    <ModuleErrorBoundary moduleName={mt.label("tenders")}>
       <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
         <PageHeader
           icon={ShieldCheck}
-          title="Tenders — Legal & Usage Disclaimer"
+          emoji="⚖️"
+          title={t("legalPage.title")}
           backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
-          backLabel="Back to tenders"
+          backLabel={t("backToTenders")}
           accent={getModuleAccent("tenders")}
         />
+
+        {uiLocale !== "en" && (
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>{t("disclaimer.englishOnly")}</p>
+        )}
 
         {isLoading && <LoadingShell rows={4} />}
         {error && !isLoading && (
           <p className="ftp-body" style={{ color: "var(--ftp-danger)" }}>
-            Couldn&rsquo;t load the disclaimer. Please reach out to{" "}
-            <a
-              href="mailto:support@forthepeople.in?subject=Tenders%20disclaimer%20load%20failure"
-              style={LINK}
-            >
-              support@forthepeople.in
-            </a>
-            .
+            {t.rich("legalPage.loadError", {
+              mail: (c) => (
+                <a href={`mailto:${SUPPORT}?subject=Tenders%20disclaimer%20load%20failure`} style={LINK}>
+                  {c}
+                </a>
+              ),
+              email: SUPPORT,
+            })}
           </p>
         )}
         {!isLoading && !error && data && !hasContent && (
-          <EmptyState title="Disclaimer content not seeded yet. Please check back shortly." />
+          <EmptyState emoji="⚖️" title={t("legalPage.empty")} />
         )}
 
         {data && hasContent && (
           <>
             {data.universal.length > 0 && (
-              <Section title="General / Nationwide">
+              <Section title={t("legalPage.general")} emoji="📜">
                 {data.universal.map((c) => <Clause key={c.slug} clause={c} />)}
               </Section>
             )}
 
             {data.stateSpecific.length > 0 && (
-              <Section title={<span style={{ textTransform: "capitalize" }}>State-specific ({stateSlug.replace(/-/g, " ")})</span>}>
+              <Section title={t("legalPage.stateSpecific", { state: stateLabel })} emoji="🏛️">
                 {data.stateSpecific.map((c) => <Clause key={c.slug} clause={c} />)}
               </Section>
             )}
           </>
         )}
 
-        {/* Grievance line — icon in the brand colour, no tinted box. */}
+        {/* Grievance line — icon in the page hue, no tinted box. */}
         <Card style={{ marginTop: 32 }}>
           <p className="ftp-body" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <Mail size={16} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0, marginTop: 2 }} />
+            <Mail size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 2 }} />
             <span>
-              <strong style={{ fontWeight: 500 }}>Takedown or grievance?</strong> Email{" "}
-              <a
-                href="mailto:support@forthepeople.in?subject=Takedown%20Request%3A%20Tenders%20disclaimer"
-                style={LINK}
-              >
-                support@forthepeople.in
-              </a>
-              . SLA: 7 working days per IT Rules 2021.
+              {t.rich("legalPage.grievance", {
+                s: (c) => <strong style={{ fontWeight: 500 }}>{c}</strong>,
+                mail: (c) => (
+                  <a href={`mailto:${SUPPORT}?subject=Takedown%20Request%3A%20Tenders%20disclaimer`} style={LINK}>
+                    {c}
+                  </a>
+                ),
+                email: SUPPORT,
+              })}
             </span>
           </p>
         </Card>
