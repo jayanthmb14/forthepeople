@@ -10,14 +10,19 @@
 //  /[locale]/[state]/[district]/contributors — district supporters page
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Design v3 "Civic Ledger" (2026-09-27):
-//    • PageHeader + StatStrip (four honest counts, dated by the fetch time).
-//    • Each tier is a kit Section; contributors are Cards in a grid. The
-//      old auto-scrolling marquee is gone (v3 allows no decorative motion),
-//      so each section shows the first PREVIEW_COUNT people and a
-//      "View all" button opens the full, sorted list in a dialog.
+//  Design v4 "Rang" (docs/DESIGN-SYSTEM.md):
+//    • PageHeader + StatStrip of emoji tiles (four honest counts, dated by
+//      the fetch time).
+//    • The picture: an "In simple words" line and a pictogram of how many
+//      of every 10 supporters give every month, counted from the same list
+//      that is shown below. Hidden when there are too few people to mean
+//      anything.
+//    • Each tier is a kit Section with an emoji chip; contributors are Cards
+//      in a grid with initials in the page hue. Each section shows the first
+//      PREVIEW_COUNT people and a "View all" button opens the full, sorted
+//      list in a dialog.
 //    • Badge levels are Pills (tones from BADGE_TONE, shared with
-//      /contributors); amounts are mono; no emoji, no gradients, no shadows.
+//      /contributors) with a medal emoji; amounts use tabular figures.
 //    • Prices in the "be the first" prompts come from TIER_CONFIG, the same
 //      config the checkout uses, and the module count from getPlatformFacts().
 //
@@ -29,7 +34,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowRight,
   CheckCircle2,
   ExternalLink,
   Github,
@@ -57,6 +61,7 @@ import {
   StatTile,
   ToolbarButton,
 } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
 
 /** How many modules each district page carries (from the module registry). */
 const { modulesPerDistrict: MODULES_PER_DISTRICT } = getPlatformFacts();
@@ -100,8 +105,19 @@ const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   website: ExternalLink,
 };
 
+/** A medal for each badge level (same keys as BADGE_TONE). */
+const BADGE_EMOJI: Record<string, string> = {
+  bronze: "🥉",
+  silver: "🥈",
+  gold: "🥇",
+  platinum: "💎",
+};
+
 /** Cards shown per section before "View all" (the old row also switched to "View all" above 6). */
 const PREVIEW_COUNT = 6;
+
+/** Fewer supporters than this and a "N of every 10" picture would mislead. */
+const MIN_FOR_PICTURE = 3;
 
 /** "₹99" style price for a tier, read from the checkout config. */
 function tierPrice(key: string): string {
@@ -121,22 +137,25 @@ function ContributorCard({ c }: { c: Contributor }) {
       ? `${Math.floor(c.monthsActive / 12)}y ${c.monthsActive % 12}mo`
       : `${c.monthsActive}mo`
     : null;
+  const medal = c.badgeLevel ? BADGE_EMOJI[c.badgeLevel.toLowerCase()] : undefined;
 
   return (
-    <Card as="li" padding={14} style={{ display: "flex", alignItems: "flex-start", gap: 10, listStyle: "none" }}>
+    <Card as="li" padding={14} style={{ display: "flex", alignItems: "flex-start", gap: 12, listStyle: "none" }}>
       <span
         aria-hidden
+        className="ftp-display"
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          background: "var(--ftp-surface-2)",
-          color: "var(--ftp-text-2)",
+          width: 40,
+          height: 40,
+          borderRadius: 14,
+          background: "linear-gradient(135deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-pop) 45%, #fff) 100%)",
+          border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
+          color: "var(--hue-deep)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 13,
-          fontWeight: 500,
+          fontSize: 15,
+          fontWeight: 700,
           flexShrink: 0,
         }}
       >
@@ -144,29 +163,30 @@ function ContributorCard({ c }: { c: Contributor }) {
       </span>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-          <span className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", overflowWrap: "anywhere" }}>{c.name}</span>
+          <span className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, overflowWrap: "anywhere" }}>{c.name}</span>
           {safeLink && (
             <a
               href={safeLink}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${c.name}'s profile`}
-              style={{ color: "var(--ftp-text-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28 }}
+              style={{ color: "var(--hue)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28 }}
             >
               {SocialIcon ? <SocialIcon size={14} aria-hidden /> : <ExternalLink size={14} aria-hidden />}
             </a>
           )}
         </div>
-        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{label}</div>
-        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+        <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{label}</div>
+        <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
           {c.badgeLevel && (
-            <Pill tone={BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 20, textTransform: "capitalize" }}>
+            <Pill tone={BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 22, textTransform: "capitalize" }}>
+              {medal && <span className="ftp-emoji" aria-hidden>{medal}</span>}
               {c.badgeLevel}
             </Pill>
           )}
           {tenure && <span className="ftp-num">{tenure}</span>}
           {!c.isRecurring && c.amount ? (
-            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>₹{c.amount.toLocaleString("en-IN")}</span>
+            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{c.amount.toLocaleString("en-IN")}</span>
           ) : null}
         </div>
         {c.message && (
@@ -176,7 +196,10 @@ function ContributorCard({ c }: { c: Contributor }) {
               fontSize: 13,
               lineHeight: "20px",
               color: "var(--ftp-text-2)",
-              margin: "6px 0 0",
+              margin: "8px 0 0",
+              padding: "6px 10px",
+              borderRadius: 10,
+              background: "color-mix(in srgb, var(--hue-tint) 60%, #fff)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               display: "-webkit-box",
@@ -206,17 +229,19 @@ const LIST_GRID: React.CSSProperties = {
 };
 
 /**
- * One tier section: H2 + count Pill + optional "View all" button, then a grid
- * of the first PREVIEW_COUNT people (or an honest empty prompt).
+ * One tier section: emoji + H2 + count + optional "View all" button, then a
+ * grid of the first PREVIEW_COUNT people (or an honest empty prompt).
  */
 function TierSection({
   title,
+  emoji,
   list,
   loading,
   onViewAll,
   empty,
 }: {
   title: string;
+  emoji: string;
   list: Contributor[];
   loading?: boolean;
   onViewAll?: () => void;
@@ -224,13 +249,27 @@ function TierSection({
 }) {
   return (
     <Section
+      emoji={emoji}
       title={
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {title}
           {list.length > 0 && (
-            <Pill tone="neutral">
-              <span className="ftp-num">{list.length.toLocaleString("en-IN")}</span>
-            </Pill>
+            <span
+              className="ftp-num"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: 24,
+                padding: "0 10px",
+                borderRadius: "var(--ftp-radius-pill)",
+                background: "var(--hue-tint)",
+                color: "var(--hue-deep)",
+                fontSize: 13,
+                lineHeight: "16px",
+              }}
+            >
+              {list.length.toLocaleString("en-IN")}
+            </span>
           )}
         </span>
       }
@@ -301,13 +340,15 @@ function ViewAllModal({
         aria-labelledby="viewall-title"
         style={{
           background: "var(--ftp-surface)",
-          border: "1px solid var(--ftp-border)",
+          border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
           borderRadius: "var(--ftp-radius-card)",
+          boxShadow: "var(--ftp-shadow-2)",
           width: "100%",
           maxWidth: 900,
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         <div
@@ -317,11 +358,12 @@ function ViewAllModal({
             justifyContent: "space-between",
             gap: 12,
             padding: "12px 16px",
-            borderBottom: "1px solid var(--ftp-border)",
+            borderBottom: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))",
+            background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 80%)",
           }}
         >
           <div>
-            <h2 id="viewall-title" className="ftp-title">{title}</h2>
+            <h2 id="viewall-title" className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650, color: "var(--hue-deep)" }}>{title}</h2>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>Sorted by amount (highest first)</p>
           </div>
           <button
@@ -355,17 +397,17 @@ function ViewAllModal({
 }
 
 /** Honest empty prompt for a tier with nobody in it yet, with its support link. */
-function EmptyTier({ title, cta, href }: { title: string; cta: string; href: string }) {
+function EmptyTier({ title, emoji, cta, href }: { title: string; emoji: string; cta: string; href: string }) {
   return (
     <EmptyState
+      emoji={emoji}
       title={title}
       action={
         <Link
           href={href}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-brand)", textDecoration: "none" }}
+          style={{ display: "inline-flex", alignItems: "center", minHeight: 44, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "underline", textUnderlineOffset: 3 }}
         >
           {cta}
-          <ArrowRight size={14} aria-hidden />
         </Link>
       }
     />
@@ -412,14 +454,15 @@ export default function ContributorsClient({
   const stateChampions = all.filter((c) => c.tier === "state");
   const indiaPatrons = all.filter((c) => c.tier === "patron" || c.tier === "founder");
   const oneTimers = all.filter((c) => !c.isRecurring);
+  const monthly = all.length - oneTimers.length;
 
   const [modalKey, setModalKey] = useState<null | "district" | "state" | "india" | "onetime">(null);
   const modalData = useMemo(() => {
     switch (modalKey) {
-      case "district": return { title: `All ${districtChampions.length.toLocaleString("en-IN")} ${districtName} Champions`, list: districtChampions };
-      case "state": return { title: `All ${stateChampions.length.toLocaleString("en-IN")} ${stateName} Champions`, list: stateChampions };
-      case "india": return { title: `All ${indiaPatrons.length.toLocaleString("en-IN")} India Patrons & Royal Contributors`, list: indiaPatrons };
-      case "onetime": return { title: `All ${oneTimers.length.toLocaleString("en-IN")} One-Time Supporters`, list: oneTimers };
+      case "district": return { title: `All ${districtChampions.length.toLocaleString("en-IN")} ${districtName} champions`, list: districtChampions };
+      case "state": return { title: `All ${stateChampions.length.toLocaleString("en-IN")} ${stateName} champions`, list: stateChampions };
+      case "india": return { title: `All ${indiaPatrons.length.toLocaleString("en-IN")} India patrons and royal contributors`, list: indiaPatrons };
+      case "onetime": return { title: `All ${oneTimers.length.toLocaleString("en-IN")} one-time supporters`, list: oneTimers };
       default: return null;
     }
   }, [modalKey, districtChampions, stateChampions, indiaPatrons, oneTimers, districtName, stateName]);
@@ -437,6 +480,8 @@ export default function ContributorsClient({
         : `${population.toLocaleString("en-IN")} citizens`
       : "every citizen";
 
+  const monthlyOfTen = all.length > 0 ? (monthly / all.length) * 10 : 0;
+
   return (
     <div className="px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: "calc(var(--ftp-reading-max) + 48px)" }}>
       <PageHeader
@@ -445,7 +490,7 @@ export default function ContributorsClient({
         title={`${districtName} Contributors`}
         description={`People who keep ${districtName}'s data free and accessible to every citizen.`}
         backHref={`/${locale}/${stateSlug}/${districtSlug}`}
-        backLabel={`${stateName} · ${districtName}`}
+        backLabel={`Back to ${districtName}`}
         freshness={fetchedAt ? { asOf: fetchedAt } : undefined}
       />
 
@@ -462,14 +507,33 @@ export default function ContributorsClient({
       )}
 
       {!loadingDist && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 16 }}>
           <StatStrip cols={4}>
-            <StatTile label="District Champions" value={districtChampions.length.toLocaleString("en-IN")} asOf={fetchedAt} />
-            <StatTile label="State Champions" value={stateChampions.length.toLocaleString("en-IN")} asOf={fetchedAt} />
-            <StatTile label="India Patrons" value={indiaPatrons.length.toLocaleString("en-IN")} asOf={fetchedAt} />
-            <StatTile label="One-time" value={oneTimers.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile emoji="🏅" label="District champions" value={districtChampions.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile emoji="🏆" label="State champions" value={stateChampions.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile emoji="👑" label="India patrons" value={indiaPatrons.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile emoji="🎁" label="One-time" value={oneTimers.length.toLocaleString("en-IN")} asOf={fetchedAt} />
           </StatStrip>
         </div>
+      )}
+
+      {/* The picture: who keeps this page going, counted from the list below. */}
+      {!loadingDist && all.length > 0 && (
+        <Card tinted padding={18} style={{ marginBottom: 24 }}>
+          <Explainer title="In simple words" emoji="🤝">
+            <strong className="ftp-num">{all.length.toLocaleString("en-IN")}</strong>{" "}
+            {all.length === 1 ? "person helps" : "people help"} keep {districtName}&apos;s data free, and{" "}
+            <strong className="ftp-num">{monthly.toLocaleString("en-IN")}</strong> of them{" "}
+            {monthly === 1 ? "gives" : "give"} every month.
+          </Explainer>
+          {all.length >= MIN_FOR_PICTURE && (
+            <Pictogram
+              filled={monthlyOfTen}
+              emoji="🙋"
+              label={`About ${Math.round(monthlyOfTen)} of every 10 supporters give every month.`}
+            />
+          )}
+        </Card>
       )}
 
       {/* Corporate sponsor slot (component unchanged) */}
@@ -478,13 +542,15 @@ export default function ContributorsClient({
       <BadgeExplainer />
 
       <TierSection
-        title={`${districtName} Champions`}
+        title={`${districtName} champions`}
+        emoji="🏅"
         list={districtChampions}
         loading={loadingDist}
         onViewAll={districtChampions.length > PREVIEW_COUNT ? () => setModalKey("district") : undefined}
         empty={
           <EmptyTier
-            title={`No ${districtName} Champions yet.`}
+            emoji="🏅"
+            title={`No ${districtName} champions yet.`}
             cta={`Be the first, from ${tierPrice("district")}/month`}
             href={supportHref}
           />
@@ -492,13 +558,15 @@ export default function ContributorsClient({
       />
 
       <TierSection
-        title={`${stateName} Champions`}
+        title={`${stateName} champions`}
+        emoji="🏆"
         list={stateChampions}
         loading={loadingDist}
         onViewAll={stateChampions.length > PREVIEW_COUNT ? () => setModalKey("state") : undefined}
         empty={
           <EmptyTier
-            title={`No ${stateName} Champions yet.`}
+            emoji="🏆"
+            title={`No ${stateName} champions yet.`}
             cta={`Sponsor all of ${stateName}, from ${tierPrice("state")}/month`}
             href={stateHref}
           />
@@ -506,14 +574,16 @@ export default function ContributorsClient({
       />
 
       <TierSection
-        title="India Patrons & Royal Contributors"
+        title="India patrons and royal contributors"
+        emoji="👑"
         list={indiaPatrons}
         loading={loadingDist}
         onViewAll={indiaPatrons.length > PREVIEW_COUNT ? () => setModalKey("india") : undefined}
         empty={
           <EmptyTier
-            title="No India Patrons yet."
-            cta={`Become an India Patron, from ${tierPrice("patron")}/month`}
+            emoji="👑"
+            title="No India patrons yet."
+            cta={`Become an India patron, from ${tierPrice("patron")}/month`}
             href={patronHref}
           />
         }
@@ -521,39 +591,45 @@ export default function ContributorsClient({
 
       {oneTimers.length > 0 && (
         <TierSection
-          title="One-Time Supporters"
+          title="One-time supporters"
+          emoji="🎁"
           list={oneTimers}
           onViewAll={oneTimers.length > PREVIEW_COUNT ? () => setModalKey("onetime") : undefined}
           empty={null}
         />
       )}
 
-      {/* Closing call to action: a plain card with one primary button. */}
-      <Card style={{ marginTop: 32, textAlign: "center" }} padding={24}>
+      {/* Closing call to action: a tinted card with one primary button. */}
+      <Card tinted style={{ marginTop: 32, textAlign: "center" }} padding={24}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 52, height: 52, fontSize: 26, borderRadius: 16, marginBottom: 12 }}>
+          🤝
+        </span>
         <h2 className="ftp-h2" style={{ marginBottom: 8 }}>
           Support {districtName}&apos;s data, from <span className="ftp-num">{tierPrice("district")}</span>/month
         </h2>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16, fontSize: 14, lineHeight: "21px" }}>
           Every rupee keeps {districtName}&apos;s <span className="ftp-num">{MODULES_PER_DISTRICT}</span> dashboards free for {citizens}.
         </p>
+        {/* Filled in the page hue by .ftp-btn-primary (globals.css). */}
         <Link
           href={supportHref}
+          className="ftp-btn ftp-btn-primary"
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 6,
+            justifyContent: "center",
             minHeight: 44,
-            padding: "0 20px",
-            background: "var(--ftp-brand)",
-            color: "var(--ftp-surface)",
+            padding: "0 22px",
             borderRadius: "var(--ftp-radius-tile)",
-            fontSize: 13,
-            fontWeight: 500,
+            borderWidth: 1,
+            borderStyle: "solid",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
             textDecoration: "none",
           }}
         >
-          Become a Champion
-          <ArrowRight size={14} aria-hidden />
+          Become a champion
         </Link>
       </Card>
 
