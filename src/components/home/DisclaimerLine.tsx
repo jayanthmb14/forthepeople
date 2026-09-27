@@ -82,7 +82,7 @@ export default function DisclaimerLine({ locale }: { locale: string }) {
 
   return (
     <div role="region" aria-label={t("region")} className={styles.disclaimer}>
-      <div className={`ftp-container ${styles.disclaimerRow}`}>
+      <div className={styles.disclaimerRow}>
         <Info size={14} aria-hidden className={styles.disclaimerIcon} />
         <p className={styles.disclaimerText}>
           {t("short")} <span className={styles.disclaimerSources}>{t("sources")}</span>

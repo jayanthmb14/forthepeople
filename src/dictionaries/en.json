@@ -365,7 +365,30 @@
     "resultsCount": "{n, plural, =0 {No results} one {# result} other {# results}}",
     "dashboardsIn": "Dashboards in {name}",
     "indiaDashboard": "India dashboard",
-    "indiaHint": "National figures: people, economy, budget, Parliament"
+    "indiaHint": "National figures: people, economy, budget, Parliament",
+    "voteFeatures": "Vote on features",
+    "github": "GitHub",
+    "stars": "{n, plural, one {# star on GitHub} other {# stars on GitHub}}",
+    "menuAria": "Menu: vote on features, GitHub, support",
+    "products": {
+      "switcherAria": "Open the list of ForThePeople apps",
+      "title": "ForThePeople apps",
+      "dataHint": "District data",
+      "connectHint": "Report local problems",
+      "jobsHint": "Government jobs and exams",
+      "soon": "Coming soon"
+    },
+    "strip": {
+      "region": "Today's date and time",
+      "time": "{time} IST",
+      "marketOpen": "Share market open",
+      "marketClosed": "Share market closed",
+      "marketOpenShort": "Market open",
+      "marketClosedShort": "Market closed",
+      "marketTitle": "NSE and BSE trade Monday to Friday, 9:15 AM to 3:30 PM IST, except on trading holidays. Tap for today's prices.",
+      "refreshed": "Live data refreshed {ago}",
+      "refreshedTitle": "Every live feed we collect for this district was checked within this time."
+    }
   },
   "status": {
     "dataBehind": "Data behind",

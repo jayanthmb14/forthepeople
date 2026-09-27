@@ -360,7 +360,30 @@
     "resultsCount": "{n, plural, =0 {कोई नतीजा नहीं} one {# नतीजा} other {# नतीजे}}",
     "dashboardsIn": "{name} के डैशबोर्ड",
     "indiaDashboard": "भारत डैशबोर्ड",
-    "indiaHint": "राष्ट्रीय आंकड़े: लोग, अर्थव्यवस्था, बजट, संसद"
+    "indiaHint": "राष्ट्रीय आंकड़े: लोग, अर्थव्यवस्था, बजट, संसद",
+    "voteFeatures": "सुविधाओं पर वोट करें",
+    "github": "GitHub",
+    "stars": "{n, plural, one {GitHub पर # स्टार} other {GitHub पर # स्टार}}",
+    "menuAria": "मेनू: सुविधाओं पर वोट, GitHub, सहयोग",
+    "products": {
+      "switcherAria": "ForThePeople के ऐप की सूची खोलें",
+      "title": "ForThePeople के ऐप",
+      "dataHint": "जिले का डेटा",
+      "connectHint": "स्थानीय समस्याओं की शिकायत करें",
+      "jobsHint": "सरकारी नौकरियां और परीक्षाएं",
+      "soon": "जल्द आ रहा है"
+    },
+    "strip": {
+      "region": "आज की तारीख और समय",
+      "time": "{time} IST",
+      "marketOpen": "शेयर बाज़ार खुला है",
+      "marketClosed": "शेयर बाज़ार बंद है",
+      "marketOpenShort": "बाज़ार खुला",
+      "marketClosedShort": "बाज़ार बंद",
+      "marketTitle": "NSE और BSE सोमवार से शुक्रवार, सुबह 9:15 से दोपहर 3:30 बजे (IST) तक खुले रहते हैं, छुट्टियों को छोड़कर। आज के भाव देखने के लिए टैप करें।",
+      "refreshed": "लाइव डेटा {ago} अपडेट हुआ",
+      "refreshedTitle": "इस जिले के लिए हम जो भी लाइव जानकारी जुटाते हैं, वह सब इसी समय के भीतर जांची गई।"
+    }
   },
   "status": {
     "dataBehind": "डेटा पुराना है",
