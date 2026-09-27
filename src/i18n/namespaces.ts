@@ -39,6 +39,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_offices",
   "page_offline",
   "page_overview",
+  "page_pagekit",
   "page_police",
   "page_population",
   "page_power",

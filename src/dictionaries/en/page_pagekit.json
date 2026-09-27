@@ -1,0 +1,18 @@
+{
+  "actions": "Page actions",
+  "csv": "Download data (CSV)",
+  "share": "Share",
+  "shareAria": "Share this page",
+  "copied": "Link copied",
+  "compare": "Compare with another district",
+  "age": {
+    "recorded": "Recorded {date}",
+    "readingStale": "Last reading: {date}",
+    "pricesStale": "Latest prices: {date}",
+    "dataStale": "Latest data: {date}",
+    "daysOld": "{n, plural, one {# day old} other {# days old}}",
+    "hoursOld": "less than a day old",
+    "noNewer": "We could not find newer data.",
+    "noDate": "Date not published by the source"
+  }
+}
