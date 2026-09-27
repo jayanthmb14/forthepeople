@@ -259,6 +259,7 @@
   font-weight: 500;
   animation: ftp-fade-up 0.4s 0.5s both;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .headlineRow {
@@ -414,6 +415,7 @@
   text-decoration: none;
   transition: transform 200ms, color 200ms;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .openModuleLink:hover {
   color: #4D1C0C;
@@ -428,7 +430,10 @@
 }
 .rightCard {
   background: transparent;
-  padding: 11px 13px;
+  /* Tighter than the other bands: this band's two right cards hold five
+     rows each, which pushed the 320 px band past its height and clipped
+     the "Open module" row and the Digital stack link. */
+  padding: 8px 13px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -461,8 +466,8 @@
 .rightCardList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 7px;
+  gap: 2px;
+  margin-top: 5px;
 }
 .rightCardListEntry {
   display: flex;

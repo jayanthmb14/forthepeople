@@ -364,7 +364,13 @@ function WorldRankCard({ data }: { data: MacroSnapshotData }) {
   );
 }
 
-function LatestUpdatesCard({ updates }: { updates: LatestUpdate[] }) {
+function LatestUpdatesCard({
+  updates,
+  locale,
+}: {
+  updates: LatestUpdate[];
+  locale: string;
+}) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
@@ -384,9 +390,12 @@ function LatestUpdatesCard({ updates }: { updates: LatestUpdate[] }) {
           </div>
         ))}
       </div>
-      <a href="#" className={styles.rightCardLink}>
-        Live data feed
-      </a>
+      {/* Was a dead "#" link labelled "Live data feed": the rows are
+          dated releases, not a live feed, and the full dated log already
+          exists at /india/updates. */}
+      <Link href={`/${locale}/india/updates`} className={styles.rightCardLink}>
+        All updates
+      </Link>
     </div>
   );
 }
@@ -583,7 +592,7 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
           {/* RIGHT — World Rank + Latest Updates */}
           <div className={styles.rightColumn} data-ftp-right-rail="1">
             <WorldRankCard data={data} />
-            <LatestUpdatesCard updates={data.latestUpdates} />
+            <LatestUpdatesCard updates={data.latestUpdates} locale={locale} />
           </div>
           <SectionRightRailDots count={2} accent="#0C447C" />
         </div>

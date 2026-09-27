@@ -227,6 +227,7 @@
   font-weight: 500;
   animation: ftp-fade-up 0.4s 0.5s both;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .headlineRow {
@@ -382,6 +383,7 @@
   text-decoration: none;
   transition: transform 200ms, color 200ms;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .openModuleLink:hover {
   color: #173404;
