@@ -14,6 +14,11 @@ npx tsx scripts/fix-records-2026-09.ts --confirm    # apply all of it in one tra
 npx tsx scripts/fix-records-2026-09.ts --only=PopulationHistory   # one table at a time
 ```
 
+Before the branch is merged, run it from the main checkout (the worktree
+has no `.env`):
+`cd "/Users/jayanth/Documents/For The People/forthepeople" && npx tsx ".claude/worktrees/v51-records/scripts/fix-records-2026-09.ts"`
+(the dry run takes about 80 seconds: it reads every targeted row).
+
 **Rule: verified or hidden** (owner, 27 Sep 2026). A value is either
 confirmed on an official or reputed page and written, or — when it looks
 wrong, invented or stale and cannot be confirmed — removed from view: the
