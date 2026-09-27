@@ -3,10 +3,9 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — words, rupees and dates in the reader's language.
- * One hook for every component in this folder: category / status / update
- * labels come from the "page_infrastructure" messages (unknown values from
- * the database are shown as published), rupees from useMoney(), dates from
- * useFormat() (IST).
+ * One hook for every component in this folder: kind / stage / update
+ * labels come from the "page_infrastructure" messages, rupees from
+ * useMoney(), dates from useFormat() (IST).
  */
 
 "use client";
@@ -14,7 +13,7 @@
 import { useTranslations } from "next-intl";
 import { useFormat } from "@/i18n/client";
 import { useMoney } from "@/components/money/useMoney";
-import { CATEGORY_KEY, normalizeCategory, statusStyle } from "./infra-utils";
+import type { ProjectKind, ProjectStage } from "@/lib/civic/project-facts";
 
 const valid = (iso: string | null | undefined): iso is string => !!iso && !Number.isNaN(new Date(iso).getTime());
 
@@ -26,14 +25,13 @@ export function useInfraText() {
     t,
     f,
     m,
-    /** "Roads" → "ರಸ್ತೆಗಳು"; a category we do not know stays as published. */
-    category(raw: string | null | undefined): string {
-      const c = normalizeCategory(raw);
-      const k = CATEGORY_KEY[c];
-      return k ? t(`cat.${k}`) : c;
+    /** Closed list of kinds ("road" → "Roads" / "ರಸ್ತೆಗಳು"). */
+    kind(k: ProjectKind): string {
+      return t(`v5.kind.${k}`);
     },
-    status(raw: string | null | undefined): string {
-      return t(`status.${statusStyle(raw).key}`);
+    /** Closed list of stages ("building" → "Under construction"). */
+    stage(s: ProjectStage): string {
+      return t(`v5.stage.${s}`);
     },
     updateType(type: string): string {
       return t.has(`update.${type}`) ? t(`update.${type}`) : type;

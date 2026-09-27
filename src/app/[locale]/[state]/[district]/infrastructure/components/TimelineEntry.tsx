@@ -13,6 +13,7 @@
 import { BarChart3, CheckCircle2, CornerDownRight, ExternalLink, IndianRupee, User } from "lucide-react";
 import type { InfraUpdate } from "@/hooks/useRealtimeData";
 import { Pill } from "@/components/district/ui";
+import { projectStage } from "@/lib/civic/project-facts";
 import { TONE_SOLID, updateTone } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
 
@@ -27,7 +28,7 @@ function FactItem({ icon: Icon, children }: { icon: typeof User; children: React
 }
 
 export default function TimelineEntry({ u }: { u: InfraUpdate }) {
-  const { t, fullDate, inr, updateType, status } = useInfraText();
+  const { t, fullDate, inr, updateType, stage } = useInfraText();
   const tone = updateTone(u.updateType);
 
   return (
@@ -71,7 +72,7 @@ export default function TimelineEntry({ u }: { u: InfraUpdate }) {
             <span className="ftp-num">{inr(u.budgetChange)}</span>
           </FactItem>
         )}
-        {u.statusChange && <FactItem icon={CornerDownRight}>{status(u.statusChange)}</FactItem>}
+        {u.statusChange && <FactItem icon={CornerDownRight}>{stage(projectStage(u.statusChange))}</FactItem>}
       </div>
       {u.newsUrl && u.newsUrl !== "admin-panel" && (
         <a

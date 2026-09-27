@@ -2,104 +2,199 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Infrastructure Tracker — one project as a tappable card (v4.1).
- * The card answers "what is it, how far along, how much money, is it
- * late?" at a glance: category emoji + name, status pill, the latest
- * budget, a progress bar, the expected finish (or how late it is) and how
- * many news updates back it. Tapping it opens the project's DetailSheet
- * (ProjectSheet.tsx) with the full money, dates, people, every news
- * update and the source links. Words come from page_infrastructure;
- * project names stay as published.
+ * Infrastructure Tracker — one project as a tappable card (v5).
+ * The card answers, in order:
+ *   what is it     the name + one plain sentence from the description
+ *   what kind      a closed list (Roads, Water, Metro …) with a line icon
+ *   where          the taluk, when the row has one
+ *   how far        the stage (Announced → Completed) and progress, if known
+ *   money / time   the latest budget in rupees and the finish date
+ *   our notes      up to three points worked out from the row (deadline
+ *                  passed, budget revised, no news for N days …)
+ *   how fresh      "Last update N days ago · 2 sources"
+ * Tapping it opens the project's DetailSheet (ProjectSheet.tsx). Words
+ * come from page_infrastructure; names and descriptions stay as published.
  */
 
 "use client";
 
-import { AlertTriangle, Scale } from "lucide-react";
+import { AlertTriangle, Clock, Link2, Scale, TrendingDown, TrendingUp, Copy, Gauge } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { Pill, ProgressBar } from "@/components/district/ui";
-import { CardHead, HueTag, TagRow, TapCard } from "@/components/money/TapCard";
-import { statusStyle, categoryEmoji, normalizeStatus, isDelayed, isCancelled, hasCourtMention } from "./infra-utils";
+import { TapCard } from "@/components/money/TapCard";
+import {
+  budgetNow,
+  daysAgo,
+  finishDate,
+  lastUpdateAt,
+  oneLine,
+  sourceCount,
+  type ProjectPoint,
+} from "@/lib/civic/project-facts";
+import { STAGE_TONE, KindIcon, hasCourtMention, kindOf, stageOf } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
 
-/** Latest reported budget: revised, else original, else the plain budget field. */
+/** Latest reported budget in rupees: revised, else original, else the plain budget field. */
 export function budgetOf(p: InfraProject): number | null {
-  return p.revisedBudget ?? p.originalBudget ?? p.budget ?? null;
+  return budgetNow(p);
 }
 
-export default function ProjectCard({ p, onOpen }: { p: InfraProject; onOpen: () => void }) {
-  const { t, m, category, status, scope, inr, monthYear, ago } = useInfraText();
-  const ss = statusStyle(p.status);
-  const s = normalizeStatus(p.status);
-  const finished = s === "COMPLETED";
-  const cancelled = isCancelled(p);
-  const progress = p.progressPct ?? 0;
+/** Icon and tone for each of our points. Amber only for the ones that matter most. */
+const POINT_LOOK: Record<ProjectPoint["kind"], { icon: LucideIcon; warn: boolean }> = {
+  deadlinePassed: { icon: AlertTriangle, warn: true },
+  budgetUp: { icon: TrendingUp, warn: true },
+  budgetDown: { icon: TrendingDown, warn: false },
+  noNews: { icon: Clock, warn: true },
+  noNewsEver: { icon: Clock, warn: false },
+  noNewsNoSource: { icon: Clock, warn: false },
+  progressUnknown: { icon: Gauge, warn: false },
+  noSource: { icon: Link2, warn: false },
+  oneSource: { icon: Link2, warn: false },
+  maybeSame: { icon: Copy, warn: false },
+  sameDescription: { icon: Copy, warn: false },
+};
+
+/** One of our points as a translated sentence. */
+export function usePointText() {
+  const { t, m } = useInfraText();
+  return (pt: ProjectPoint): string => {
+    switch (pt.kind) {
+      case "deadlinePassed":
+        return t("v5.point.deadlinePassed", { months: pt.months });
+      case "budgetUp":
+      case "budgetDown":
+        return t(`v5.point.${pt.kind}`, { pct: m.num(pt.pct) });
+      case "noNews":
+        return t("v5.point.noNews", { days: m.num(pt.days) });
+      case "maybeSame":
+      case "sameDescription":
+        return t(`v5.point.${pt.kind}`, { name: pt.name });
+      default:
+        return t(`v5.point.${pt.kind}`);
+    }
+  };
+}
+
+/** A short list of our points: small icon + one line each. */
+export function PointList({ points, max }: { points: ProjectPoint[]; max?: number }) {
+  const text = usePointText();
+  const shown = max ? points.slice(0, max) : points;
+  if (shown.length === 0) return null;
+  return (
+    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      {shown.map((pt) => {
+        const look = POINT_LOOK[pt.kind];
+        const Icon = look.icon;
+        return (
+          <li key={pt.kind} style={{ display: "flex", gap: 6, alignItems: "flex-start", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text)" }}>
+            <Icon size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2, color: look.warn ? "var(--ftp-warn)" : "var(--ftp-text-2)" }} />
+            <span style={{ minWidth: 0 }}>{text(pt)}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export default function ProjectCard({
+  p,
+  points,
+  place,
+  onOpen,
+}: {
+  p: InfraProject;
+  /** Our points for this project (computed once by the page). */
+  points: ProjectPoint[];
+  /** Taluk name when the row has one. */
+  place?: string | null;
+  onOpen: () => void;
+}) {
+  const { t, m, kind, stage, scope, inr, monthYear } = useInfraText();
+  const st = stageOf(p);
+  const k = kindOf(p);
+  const cancelled = st === "cancelled";
+  const finished = st === "completed";
   const budget = budgetOf(p);
-  const updates = p.updates?.length ?? 0;
-  const late = isDelayed(p) && !finished;
-  const expected = p.revisedEndDate ?? p.originalEndDate ?? p.expectedEnd ?? null;
+  const what = oneLine(p.description, 150);
+  const due = finishDate(p);
+  const updated = daysAgo(lastUpdateAt(p));
+  const sources = sourceCount(p);
+  const progress = p.progressPct ?? null;
+
+  const dateLine = cancelled
+    ? p.cancelledDate
+      ? t("v5.card.cancelled", { date: monthYear(p.cancelledDate) })
+      : null
+    : finished
+      ? p.completionDate
+        ? t("v5.card.finished", { date: monthYear(p.completionDate) })
+        : null
+      : due
+        ? t("v5.card.due", { date: monthYear(typeof due === "string" ? due : due.toISOString()) })
+        : t("v5.card.noDue");
 
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("card.cardAria", { name: p.name })} more={t("card.more")} dimmed={cancelled}>
-      <CardHead
-        emoji={categoryEmoji(p.category)}
-        title={p.name}
-        titleLocal={p.nameLocal}
-        side={
-          <Pill tone={ss.tone} dot icon={late ? AlertTriangle : undefined}>
-            {status(p.status)}
+      {/* Name and stage. */}
+      <span style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="ftp-title" style={{ display: "block", fontWeight: 650, overflowWrap: "anywhere" }}>
+            {p.name}
+          </span>
+          {p.nameLocal && (
+            <span style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{p.nameLocal}</span>
+          )}
+        </span>
+        <span style={{ flexShrink: 0 }}>
+          <Pill tone={STAGE_TONE[st]} dot>
+            {stage(st)}
           </Pill>
-        }
-      />
-      <TagRow>
-        <HueTag>{category(p.category)}</HueTag>
-        {p.scope && p.scope !== "DISTRICT" && <HueTag outline>{scope(p.scope)}</HueTag>}
+        </span>
+      </span>
+
+      {/* What it is, in one plain sentence. */}
+      <span className="ftp-body" style={{ display: "block", fontSize: 14, lineHeight: "21px", color: what ? "var(--ftp-text)" : "var(--ftp-text-2)" }}>
+        {what ?? t("v5.card.noDescription")}
+      </span>
+
+      {/* Kind · where · scope · court. */}
+      <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <KindIcon kind={k} size={14} />
+          {kind(k)}
+        </span>
+        {place && <span>{t("v5.card.where", { place })}</span>}
+        {p.scope && p.scope !== "DISTRICT" && p.scope !== "CITY" && <span>{scope(p.scope)}</span>}
         {hasCourtMention(p) && (
           <Pill tone="warn" icon={Scale}>
             {t("card.court")}
           </Pill>
         )}
-      </TagRow>
-
-      {/* Money and time, side by side. */}
-      <span style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <span style={{ minWidth: 0 }}>
-          <span className="ftp-label" style={{ display: "block" }}>{t("card.budget")}</span>
-          <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650, color: budget != null ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>
-            {budget != null ? inr(budget) : "—"}
-          </span>
-        </span>
-        <span style={{ minWidth: 0 }}>
-          <span className="ftp-label" style={{ display: "block" }}>{cancelled ? t("card.cancelledOn") : finished ? t("card.finishedOn") : t("card.expected")}</span>
-          <span className="ftp-num" style={{ fontSize: 15, lineHeight: "24px", fontWeight: 600, color: late ? "var(--ftp-warn)" : "var(--ftp-text)" }}>
-            {cancelled
-              ? monthYear(p.cancelledDate)
-              : finished
-                ? monthYear(p.completionDate ?? p.lastNewsAt)
-                : expected
-                  ? monthYear(expected)
-                  : "—"}
-          </span>
-          {late && p.delayMonths ? (
-            <span style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-warn)" }}>
-              {t("card.late", { months: p.delayMonths })}
-            </span>
-          ) : null}
-        </span>
       </span>
 
-      {!cancelled && (
+      {/* Money and time. */}
+      <span style={{ display: "flex", flexWrap: "wrap", gap: "2px 16px", fontSize: 14, lineHeight: "21px" }}>
+        <span className="ftp-num" style={{ fontWeight: 650, color: budget != null ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>
+          {budget != null ? t("v5.card.budget", { amount: inr(budget) }) : t("v5.card.budgetUnknown")}
+        </span>
+        {dateLine && <span style={{ color: "var(--ftp-text-2)" }}>{dateLine}</span>}
+      </span>
+
+      {!cancelled && (progress !== null || finished) && (
         <span style={{ display: "block" }}>
-          <ProgressBar
-            pct={progress > 0 ? progress : finished ? 100 : 0}
-            label={progress > 0 ? t("card.progress") : finished ? t("card.finished") : t("card.notStarted")}
-          />
+          <ProgressBar pct={progress ?? 100} label={t("card.progress")} />
         </span>
       )}
 
-      <span style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 2, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-        <span>{t("card.updates", { n: updates })}</span>
-        {p.lastNewsAt && <span suppressHydrationWarning>{t("card.lastUpdated", { when: ago(p.lastNewsAt) })}</span>}
-        {(p.verificationCount ?? 0) > 1 && <span>{t("card.sourcesAgree", { n: m.num(p.verificationCount ?? 0) })}</span>}
+      {/* Our notes, worked out from the row. */}
+      <PointList points={points} max={3} />
+
+      <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+        {updated !== null ? t("v5.card.lastUpdate", { n: updated }) : t("v5.card.noUpdateDate")}
+        {" · "}
+        {t("v5.card.sources", { n: sources })}
+        {(p.verificationCount ?? 0) > 1 && <> · {t("card.sourcesAgree", { n: m.num(p.verificationCount ?? 0) })}</>}
       </span>
     </TapCard>
   );

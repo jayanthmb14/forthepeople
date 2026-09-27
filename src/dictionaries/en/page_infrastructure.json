@@ -175,7 +175,7 @@
     "p5": "News headlines are displayed under fair dealing provisions of the <hl>Indian Copyright Act, 1957 §52(1)(a)(ii)</hl> for reporting current events and public interest.",
     "p6": "For verified project information, contact the relevant executing agency directly. ForThePeople.in is an independent citizen transparency initiative and is not affiliated with, endorsed by, or opposed to any government body, political party, or executing agency."
   },
-  "noticeShort": "From news reports. Not an official government tracker.",
+  "noticeShort": "From news reports and government press releases, each linked to its source.",
   "noticeMore": "Read more",
   "explainerIn": "This page follows <num>{total}</num> government {total, plural, one {project} other {projects}} in {district} reported in the news. <num>{done}</num> are finished and <num>{active}</num> are planned or still being built.",
   "explainerCancelledIn": "This page follows <num>{total}</num> government {total, plural, one {project} other {projects}} in {district} reported in the news. <num>{done}</num> are finished and <num>{active}</num> are planned or still being built; <num>{cancelled}</num> {cancelled, plural, one {was} other {were}} cancelled.",
@@ -206,5 +206,87 @@
     "contractor": "Contractor",
     "updates": "{n, plural, =0 {News updates} one {# news update, newest first} other {# news updates, newest first}}",
     "sources": "Source articles"
+  },
+  "v5": {
+    "stage": {
+      "announced": "Announced",
+      "approved": "Approved",
+      "building": "Under construction",
+      "completed": "Completed",
+      "stalled": "Stalled",
+      "cancelled": "Cancelled"
+    },
+    "kind": {
+      "road": "Roads",
+      "bridge": "Bridges & flyovers",
+      "metro": "Metro",
+      "rail": "Railways",
+      "airport": "Airport",
+      "port": "Port",
+      "water": "Water",
+      "sewage": "Drains & waste",
+      "power": "Power & energy",
+      "housing": "Housing",
+      "health": "Health",
+      "education": "Schools & colleges",
+      "parks": "Parks, heritage & sport",
+      "industry": "Industry & business",
+      "city": "City services",
+      "other": "Other"
+    },
+    "point": {
+      "deadlinePassed": "Deadline passed {months, plural, one {# month} other {# months}} ago",
+      "budgetUp": "Budget revised up by {pct}%",
+      "budgetDown": "Budget revised down by {pct}%",
+      "noNews": "No news for {days} days",
+      "noNewsEver": "No news reports tracked yet",
+      "noNewsNoSource": "No news report or source link yet",
+      "progressUnknown": "Progress not reported",
+      "noSource": "No source link yet",
+      "oneSource": "Only one source so far",
+      "maybeSame": "May be the same project as “{name}”",
+      "sameDescription": "Same description as “{name}”, so one of them may be wrong"
+    },
+    "card": {
+      "noDescription": "No description published yet.",
+      "where": "Where: {place}",
+      "lastUpdate": "Last update {n, plural, =0 {today} one {# day ago} other {# days ago}}",
+      "noUpdateDate": "Update date not known",
+      "sources": "{n, plural, =0 {no source link} one {# source} other {# sources}}",
+      "budget": "Budget {amount}",
+      "budgetUnknown": "Budget not published",
+      "due": "Due {date}",
+      "finished": "Finished {date}",
+      "cancelled": "Cancelled {date}",
+      "noDue": "No finish date published"
+    },
+    "tiles": {
+      "total": "Projects we follow",
+      "totalSub": "{n} under construction",
+      "late": "Late or stalled",
+      "lateSub": "Past the finish date, or stopped",
+      "completed": "Completed",
+      "budget": "Money announced",
+      "budgetSub": "{n, plural, one {# project} other {# projects}} with a budget"
+    },
+    "explainer": "We follow <num>{total}</num> {total, plural, one {project} other {projects}} in {district}: <num>{building}</num> under construction, <num>{planned}</num> announced or approved and <num>{done}</num> completed.",
+    "explainerLate": "<num>{late}</num> {late, plural, one {is} other {are}} late or stalled.",
+    "explainerQuiet": "<num>{quiet}</num> {quiet, plural, one {has} other {have}} had no news for three months or more.",
+    "stages": {
+      "title": "Where the projects stand",
+      "aria": "Projects by stage: {list}",
+      "item": "{n} {label}"
+    },
+    "hidden": "Not counted here: {n, plural, one {# news item that is not a building project} other {# news items that are not building projects}} (for example a road renaming).",
+    "sortStage": "Being built first",
+    "pointsTitle": "Our notes",
+    "pointsHint": "Worked out by ForThePeople.in from the dates, budgets and sources above. They are not a judgement.",
+    "what": "What it is",
+    "kindChart": {
+      "title": "Projects by type",
+      "units": "Number of projects of each type, cancelled ones included",
+      "simple": "Most projects here are <b>{name}</b>: {n} of {total}."
+    },
+    "legalSummary": "Legal notice (how this page is compiled)"
   }
 }

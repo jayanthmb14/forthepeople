@@ -3,18 +3,17 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — legal notice at the bottom of the page.
- * A plain Card with body text; the legal copy is unchanged. The heading is
- * translated; the legal paragraphs are English-only on purpose (their keys
- * exist only in the English messages), and other languages get a one-line
- * note that the English text is the official version.
+ * v5: one quiet line that opens (a <details>), so the notice is one tap
+ * away and does not add a long block to every visit. The legal copy is
+ * unchanged. The summary is translated; the legal paragraphs are
+ * English-only on purpose (their keys exist only in the English
+ * messages), and other languages get a one-line note that the English
+ * text is the official version.
  */
 
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { Card } from "@/components/district/ui";
-
-const STRONG: React.CSSProperties = { fontWeight: 500, color: "var(--ftp-text)" };
 const PARA: React.CSSProperties = { color: "var(--ftp-text-2)", marginTop: 12 };
 const hl = (c: React.ReactNode) => <span style={{ color: "var(--ftp-text)" }}>{c}</span>;
 
@@ -22,12 +21,11 @@ export default function LegalFooter() {
   const t = useTranslations("page_infrastructure");
   const locale = useLocale();
   return (
-    <div role="note" style={{ marginTop: 32 }}>
-      <Card>
-        <p className="ftp-body" style={{ ...STRONG, marginBottom: 6 }}>
-          <span className="ftp-emoji" aria-hidden>⚖️ </span>
-          {t("legal.heading")}
-        </p>
+    <details role="note" style={{ marginTop: 24, borderTop: "1px solid var(--ftp-border)", paddingTop: 12 }}>
+      <summary style={{ cursor: "pointer", minHeight: 32, display: "flex", alignItems: "center", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", fontWeight: 600 }}>
+        {t("v5.legalSummary")}
+      </summary>
+      <div style={{ marginTop: 8 }}>
         {locale !== "en" && (
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 10 }}>
             {t("legal.englishOnly")}
@@ -41,7 +39,7 @@ export default function LegalFooter() {
         <p className="ftp-body" style={PARA} lang="en">{t("legal.p4")}</p>
         <p className="ftp-body" style={PARA} lang="en">{t.rich("legal.p5", { hl })}</p>
         <p className="ftp-body" style={PARA} lang="en">{t("legal.p6")}</p>
-      </Card>
-    </div>
+      </div>
+    </details>
   );
 }

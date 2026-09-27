@@ -2,58 +2,49 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Infrastructure Tracker — shared helpers (status + category normalisation, formatting, predicates).
- * Extracted from infrastructure/page.tsx. Design v3: statuses map to kit
- * Pill tones; no hex colours.
+ * Infrastructure Tracker — shared helpers: stage and kind (from
+ * src/lib/civic/project-facts), their tones, fills and icons, and the
+ * predicates the page counts with. No hex colours, no emoji (v5).
  */
 
 import { createElement } from "react";
 import type { ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 import type { Tone } from "@/components/district/ui";
 import {
   HardHat,
-  Route, Train, TramFront, Landmark, Droplets, Waves, Building2, Zap, Heart,
-  GraduationCap, Trophy, Plane, Anchor, TreePine, TrafficCone, Leaf, Factory,
+  Route, Train, TramFront, Landmark, Droplets, Waves, Building, Building2, Zap, Heart,
+  GraduationCap, Plane, Anchor, TreePine, Factory,
 } from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
+import { projectKind, projectStage, type ProjectKind, type ProjectStage } from "@/lib/civic/project-facts";
 
 // ═══════════════════════════════════════════════════════════
-// Status config — case-insensitive via normalizeStatus
+// Stage + kind (v5): the ~45 status spellings and ~90 category spellings
+// in the database fold into two closed lists (src/lib/civic/project-facts).
+// Each stage maps to a kit Pill tone (colours live in the --ftp-* tokens)
+// and each kind to a small lucide icon drawn in the module hue.
 // ═══════════════════════════════════════════════════════════
 
 export type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
 
-export function normalizeStatus(s: string | null | undefined): string {
-  if (!s) return "PROPOSED";
-  const cleaned = s.trim().toUpperCase().replace(/[\s-]+/g, "_");
-  // Map legacy variants to the canonical lifecycle enum
-  const MAP: Record<string, string> = {
-    PLANNED: "PROPOSED", PROPOSED: "PROPOSED", ANNOUNCED: "PROPOSED",
-    APPROVED: "APPROVED", SANCTIONED: "APPROVED",
-    TENDERED: "TENDER_ISSUED", TENDER_ISSUED: "TENDER_ISSUED",
-    ONGOING: "UNDER_CONSTRUCTION", IN_PROGRESS: "UNDER_CONSTRUCTION",
-    UNDER_CONSTRUCTION: "UNDER_CONSTRUCTION", ACTIVE: "UNDER_CONSTRUCTION",
-    ON_TRACK: "ON_TRACK",
-    DELAYED: "DELAYED", STALLED: "STALLED",
-    COMPLETED: "COMPLETED", INAUGURATED: "COMPLETED", COMPLETE: "COMPLETED",
-    CANCELLED: "CANCELLED", CANCELED: "CANCELLED", SCRAPPED: "CANCELLED", SHELVED: "CANCELLED",
-  };
-  return MAP[cleaned] ?? cleaned;
-}
+export const STAGE_TONE: Record<ProjectStage, Tone> = {
+  announced: "neutral",
+  approved: "features",
+  building: "brand",
+  completed: "live",
+  stalled: "warn",
+  cancelled: "neutral",
+};
 
-// Each status maps to a kit Pill tone (colours live in the --ftp-* tokens,
-// never as hex here) and a message key: the label a reader sees is
-// page_infrastructure.status.<key>, in their language.
-export const STATUS_STYLE: Record<string, { tone: Tone; key: string }> = {
-  PROPOSED:           { tone: "neutral",  key: "proposed" },
-  APPROVED:           { tone: "brand",    key: "approved" },
-  TENDER_ISSUED:      { tone: "features", key: "tenderIssued" },
-  UNDER_CONSTRUCTION: { tone: "warn",     key: "underConstruction" },
-  ON_TRACK:           { tone: "live",     key: "onTrack" },
-  DELAYED:            { tone: "danger",   key: "delayed" },
-  STALLED:            { tone: "danger",   key: "stalled" },
-  COMPLETED:          { tone: "live",     key: "completed" },
-  CANCELLED:          { tone: "neutral",  key: "cancelled" },
+/** Segment colours for the stage bar, calm and in stage order. */
+export const STAGE_FILL: Record<ProjectStage, string> = {
+  building: "var(--hue-deep)",
+  stalled: "var(--ftp-warn)",
+  approved: "var(--hue)",
+  announced: "color-mix(in srgb, var(--hue) 45%, #fff)",
+  completed: "var(--ftp-live)",
+  cancelled: "var(--ftp-border-strong)",
 };
 
 /** Solid token colour for a tone — used for 6–8 px timeline dots. */
@@ -77,100 +68,43 @@ export function updateTone(updateType: string): Tone {
   return "brand";
 }
 
-export function statusStyle(raw: string | null | undefined) {
-  const s = normalizeStatus(raw);
-  return STATUS_STYLE[s] ?? STATUS_STYLE.PROPOSED;
-}
-
-// ═══════════════════════════════════════════════════════════
-// Category normalization + icons
-// ═══════════════════════════════════════════════════════════
-
-export function normalizeCategory(raw: string | null | undefined): string {
-  if (!raw) return "Other";
-  const s = raw.trim().toLowerCase();
-  // Merge known variants
-  if (/\b(road|roads|national\s*highway|nh|pmgsy)\b/.test(s)) return "Roads";
-  if (/\bmetro\b/.test(s) && !/rail/.test(s)) return "Metro";
-  if (/\b(rail|railway|railways|train)\b/.test(s)) return "Rail";
-  if (/\b(bridge|overbridge|rob|fob)\b/.test(s)) return "Bridge";
-  if (/\bflyover\b/.test(s)) return "Flyover";
-  if (/\b(sewage|sewer|drainage)\b/.test(s)) return "Sewage";
-  if (/\b(water(\s*supply)?|jjm|tap)\b/.test(s)) return "Water";
-  if (/\b(housing|pmay|flat|apartment|homes)\b/.test(s)) return "Housing";
-  if (/\b(power|electricity|grid|substation)\b/.test(s)) return "Power";
-  if (/\b(port|harbour|harbor)\b/.test(s)) return "Port";
-  if (/\b(airport|runway|terminal)\b/.test(s)) return "Airport";
-  if (/\b(hospital|health|medical)\b/.test(s)) return "Hospital";
-  if (/\b(school|college|university|education)\b/.test(s)) return "Education";
-  if (/\b(stadium|sports|sport)\b/.test(s)) return "Sports & Stadium";
-  if (/\b(park|lake|garden|eco[-\s]?park|reservoir)\b/.test(s)) return "Parks & Lakes";
-  if (/\b(traffic|junction|signal)\b/.test(s)) return "Traffic";
-  if (/\b(environment|ghg|emission|pollution)\b/.test(s)) return "Environment";
-  if (/\b(industry|industrial|factory|manufacturing)\b/.test(s)) return "Industry";
-  if (/\b(telecom|fiber|5g|tower|network)\b/.test(s)) return "Telecom";
-  // Title-case fallback
-  return raw.replace(/\s+/g, " ").trim().replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
-}
-
-export const CATEGORY_ICON: Record<string, LucideCmp> = {
-  Roads:             Route,
-  Metro:             Train,
-  Rail:              TramFront,
-  Bridge:            Landmark,
-  Flyover:           Landmark,
-  Water:             Droplets,
-  Sewage:            Waves,
-  Housing:           Building2,
-  Power:             Zap,
-  Hospital:          Heart,
-  Education:         GraduationCap,
-  "Sports & Stadium": Trophy,
-  Airport:           Plane,
-  Port:              Anchor,
-  "Parks & Lakes":   TreePine,
-  Traffic:           TrafficCone,
-  Environment:       Leaf,
-  Industry:          Factory,
-  Telecom:           Factory,
-  Other:             HardHat,
+export const KIND_ICON: Record<ProjectKind, LucideIcon> = {
+  road: Route,
+  bridge: Landmark,
+  metro: Train,
+  rail: TramFront,
+  airport: Plane,
+  port: Anchor,
+  water: Droplets,
+  sewage: Waves,
+  power: Zap,
+  housing: Building2,
+  health: Heart,
+  education: GraduationCap,
+  parks: TreePine,
+  industry: Factory,
+  city: Building,
+  other: HardHat,
 };
 
-/** Canonical category (normalizeCategory) → message key page_infrastructure.cat.<key>. */
-export const CATEGORY_KEY: Record<string, string> = {
-  Roads: "roads", Metro: "metro", Rail: "rail", Bridge: "bridge", Flyover: "flyover",
-  Water: "water", Sewage: "sewage", Housing: "housing", Power: "power", Hospital: "hospital",
-  Education: "education", "Sports & Stadium": "sports", Airport: "airport", Port: "port",
-  "Parks & Lakes": "parks", Traffic: "traffic", Environment: "environment", Industry: "industry",
-  Telecom: "telecom", Other: "other",
-};
-
-/** One emoji per canonical category, for the v4 pictures and chips. */
-export const CATEGORY_EMOJI: Record<string, string> = {
-  Roads: "🛣️", Metro: "🚇", Rail: "🚆", Bridge: "🌉", Flyover: "🌉", Water: "💧", Sewage: "🚰",
-  Housing: "🏘️", Power: "⚡", Hospital: "🏥", Education: "🎓", "Sports & Stadium": "🏟️",
-  Airport: "✈️", Port: "⚓", "Parks & Lakes": "🌳", Traffic: "🚦", Environment: "🌿",
-  Industry: "🏭", Telecom: "📡", Other: "🏗️",
-};
-
-export function categoryEmoji(raw: string | null | undefined): string {
-  return CATEGORY_EMOJI[normalizeCategory(raw)] ?? "🏗️";
+/** The project's stage and kind in one call. */
+export function stageOf(p: InfraProject): ProjectStage {
+  return projectStage(p.status);
 }
-
-export function categoryIcon(raw: string | null | undefined): LucideCmp {
-  return CATEGORY_ICON[normalizeCategory(raw)] ?? HardHat;
+export function kindOf(p: InfraProject): ProjectKind {
+  return projectKind(p.category, p.name);
 }
 
 /**
- * The Lucide icon for a project category, as a real component so callers
- * don't create components during render (a React Compiler rule).
- * v4: drawn in the module hue (--hue), usually inside an .ftp-icon-chip.
+ * The lucide icon for a project's kind, as a real component so callers
+ * don't create components during render (a React Compiler rule). Drawn in
+ * the module hue, inside an .ftp-icon-chip.
  */
-export function CategoryIcon({ category, size = 18 }: { category: string | null | undefined; size?: number }) {
-  return createElement(categoryIcon(category), {
+export function KindIcon({ kind, size = 16 }: { kind: ProjectKind; size?: number }) {
+  return createElement(KIND_ICON[kind] ?? HardHat, {
     size,
     "aria-hidden": true,
-    style: { color: "var(--hue)", flexShrink: 0 },
+    style: { color: "var(--hue-deep)", flexShrink: 0 },
   } as { size: number; style: React.CSSProperties });
 }
 
@@ -187,14 +121,9 @@ export const UPDATE_TYPES = [
 /** Quiet text style for "not yet known" placeholders. */
 export const AWAIT_STYLE: React.CSSProperties = { color: "var(--ftp-text-2)" };
 
-// Normalized status predicates
-export function isCancelled(p: InfraProject): boolean { return normalizeStatus(p.status) === "CANCELLED"; }
-export function isCompleted(p: InfraProject): boolean { return normalizeStatus(p.status) === "COMPLETED"; }
-export function isDelayed(p: InfraProject): boolean {
-  const s = normalizeStatus(p.status);
-  return s === "DELAYED" || s === "STALLED" || (p.delayMonths ?? 0) > 0;
-}
-export function isActive(p: InfraProject): boolean { return !isCancelled(p) && !isCompleted(p); }
+// Stage predicates
+export function isCancelled(p: InfraProject): boolean { return stageOf(p) === "cancelled"; }
+export function isCompleted(p: InfraProject): boolean { return stageOf(p) === "completed"; }
 
 // ═══════════════════════════════════════════════════════════
 // Project card

@@ -169,7 +169,7 @@
     "heading": "कानूनी सूचना",
     "englishOnly": "इस कानूनी पाठ का आधिकारिक रूप अंग्रेज़ी में है।"
   },
-  "noticeShort": "समाचार रिपोर्टों से। यह आधिकारिक सरकारी ट्रैकर नहीं है।",
+  "noticeShort": "समाचार रिपोर्टों और सरकारी प्रेस विज्ञप्तियों से, हर जानकारी के साथ उसके स्रोत का लिंक।",
   "noticeMore": "और पढ़ें",
   "explainerIn": "यह पेज समाचारों में आई {district} की <num>{total}</num> सरकारी {total, plural, one {परियोजना} other {परियोजनाओं}} पर नज़र रखता है। <num>{done}</num> पूरी हो चुकी हैं और <num>{active}</num> योजना में हैं या बन रही हैं।",
   "explainerCancelledIn": "यह पेज समाचारों में आई {district} की <num>{total}</num> सरकारी {total, plural, one {परियोजना} other {परियोजनाओं}} पर नज़र रखता है। <num>{done}</num> पूरी हो चुकी हैं और <num>{active}</num> योजना में हैं या बन रही हैं; <num>{cancelled}</num> रद्द {cancelled, plural, one {हुई} other {हुईं}}।",
@@ -200,5 +200,87 @@
     "contractor": "ठेकेदार",
     "updates": "{n, plural, =0 {ख़बरें} one {# ख़बर, नई पहले} other {# ख़बरें, नई पहले}}",
     "sources": "स्रोत लेख"
+  },
+  "v5": {
+    "stage": {
+      "announced": "घोषित",
+      "approved": "मंज़ूर",
+      "building": "निर्माणाधीन",
+      "completed": "पूरी हुई",
+      "stalled": "रुकी हुई",
+      "cancelled": "रद्द"
+    },
+    "kind": {
+      "road": "सड़कें",
+      "bridge": "पुल और फ़्लाईओवर",
+      "metro": "मेट्रो",
+      "rail": "रेल",
+      "airport": "हवाई अड्डा",
+      "port": "बंदरगाह",
+      "water": "पानी",
+      "sewage": "नाली और कचरा",
+      "power": "बिजली और ऊर्जा",
+      "housing": "आवास",
+      "health": "स्वास्थ्य",
+      "education": "स्कूल और कॉलेज",
+      "parks": "पार्क, धरोहर और खेल",
+      "industry": "उद्योग और व्यापार",
+      "city": "शहरी सेवाएँ",
+      "other": "अन्य"
+    },
+    "point": {
+      "deadlinePassed": "तय तारीख़ {months, plural, one {# महीना} other {# महीने}} पहले निकल चुकी है",
+      "budgetUp": "बजट {pct}% बढ़ाया गया",
+      "budgetDown": "बजट {pct}% घटाया गया",
+      "noNews": "{days} दिनों से कोई ख़बर नहीं",
+      "noNewsEver": "अभी तक कोई ख़बर दर्ज नहीं",
+      "noNewsNoSource": "अभी तक न कोई ख़बर, न स्रोत का लिंक",
+      "progressUnknown": "प्रगति नहीं बताई गई",
+      "noSource": "अभी स्रोत का लिंक नहीं",
+      "oneSource": "अभी तक केवल एक स्रोत",
+      "maybeSame": "शायद “{name}” वाली ही परियोजना है",
+      "sameDescription": "विवरण “{name}” जैसा ही है, इसलिए इनमें से एक ग़लत हो सकता है"
+    },
+    "card": {
+      "noDescription": "अभी कोई विवरण प्रकाशित नहीं हुआ।",
+      "where": "कहाँ: {place}",
+      "lastUpdate": "आख़िरी अपडेट {n, plural, =0 {आज} one {# दिन पहले} other {# दिन पहले}}",
+      "noUpdateDate": "अपडेट की तारीख़ पता नहीं",
+      "sources": "{n, plural, =0 {स्रोत का लिंक नहीं} one {# स्रोत} other {# स्रोत}}",
+      "budget": "बजट {amount}",
+      "budgetUnknown": "बजट प्रकाशित नहीं",
+      "due": "पूरा होना है: {date}",
+      "finished": "पूरी हुई: {date}",
+      "cancelled": "रद्द हुई: {date}",
+      "noDue": "पूरा होने की तारीख़ प्रकाशित नहीं"
+    },
+    "tiles": {
+      "total": "हम जिन परियोजनाओं पर नज़र रखते हैं",
+      "totalSub": "{n} निर्माणाधीन",
+      "late": "देरी में या रुकी हुई",
+      "lateSub": "तय तारीख़ निकल गई, या काम रुका",
+      "completed": "पूरी हुईं",
+      "budget": "घोषित राशि",
+      "budgetSub": "बजट वाली {n, plural, one {# परियोजना} other {# परियोजनाएँ}}"
+    },
+    "explainer": "हम {district} की <num>{total}</num> {total, plural, one {परियोजना} other {परियोजनाओं}} पर नज़र रखते हैं: <num>{building}</num> निर्माणाधीन, <num>{planned}</num> घोषित या मंज़ूर और <num>{done}</num> पूरी हो चुकी हैं।",
+    "explainerLate": "<num>{late}</num> देरी में हैं या रुकी हुई हैं।",
+    "explainerQuiet": "<num>{quiet}</num> के बारे में तीन महीने या उससे ज़्यादा समय से कोई ख़बर नहीं है।",
+    "stages": {
+      "title": "परियोजनाएँ किस हाल में हैं",
+      "aria": "चरण के अनुसार परियोजनाएँ: {list}",
+      "item": "{n} {label}"
+    },
+    "hidden": "यहाँ नहीं गिना गया: {n, plural, one {# ख़बर जो निर्माण परियोजना नहीं है} other {# ख़बरें जो निर्माण परियोजनाएँ नहीं हैं}} (जैसे किसी सड़क का नाम बदलना)।",
+    "sortStage": "पहले निर्माणाधीन",
+    "pointsTitle": "हमारी टिप्पणियाँ",
+    "pointsHint": "ये ForThePeople.in ने ऊपर दी गई तारीख़ों, बजट और स्रोतों से निकाली हैं। ये कोई फ़ैसला नहीं हैं।",
+    "what": "यह क्या है",
+    "kindChart": {
+      "title": "प्रकार के अनुसार परियोजनाएँ",
+      "units": "हर प्रकार की परियोजनाओं की संख्या, रद्द परियोजनाएँ भी शामिल",
+      "simple": "यहाँ ज़्यादातर परियोजनाएँ <b>{name}</b> की हैं: {total} में से {n}।"
+    },
+    "legalSummary": "क़ानूनी सूचना (यह पेज कैसे बना है)"
   }
 }

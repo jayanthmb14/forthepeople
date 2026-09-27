@@ -11,8 +11,9 @@
 //               item's DetailSheet (docs/LAYOUT.md, recipe step 5). It
 //               lifts 2 px on hover like a link card, has a visible focus
 //               ring, and is never shorter than 44 px.
-//  CardHead     the emoji chip + title (+ local-script name) row at the
-//               top of a TapCard.
+//  CardHead     the title (+ local-script name) row at the top of a
+//               TapCard, with an optional small line icon in the hue (v5:
+//               no emoji on rows).
 //  HueTag       a small pill in the module hue ("All India", "MSE").
 //  SheetHighlight  the big "what you get" box at the top of a sheet.
 //  SheetSection    a small heading + content block inside a sheet.
@@ -23,7 +24,7 @@
 "use client";
 
 import React from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
 import { scriptLang } from "@/lib/utils/script-lang";
 
 export function TapCard({
@@ -95,14 +96,16 @@ export function TapCard({
   );
 }
 
-/** Emoji chip + title row for the top of a TapCard. */
+/** Title row for the top of a TapCard (optional small line icon in the hue). */
 export function CardHead({
-  emoji,
+  icon: Icon,
   title,
   titleLocal,
   side,
 }: {
-  emoji: string;
+  icon?: LucideIcon;
+  /** @deprecated v5: emoji are not shown on rows; kept so old call sites compile. */
+  emoji?: string;
   title: React.ReactNode;
   titleLocal?: string | null;
   /** Something small on the right (a status pill). */
@@ -110,9 +113,11 @@ export function CardHead({
 }) {
   return (
     <span style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 21, borderRadius: 12 }}>
-        {emoji}
-      </span>
+      {Icon && (
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10 }}>
+          <Icon size={16} />
+        </span>
+      )}
       <span style={{ flex: 1, minWidth: 0 }}>
         <span className="ftp-title" style={{ display: "block", fontWeight: 600, overflowWrap: "anywhere" }}>
           {title}
@@ -129,7 +134,17 @@ export function CardHead({
 }
 
 /** A small pill in the module hue. `outline` = white with a hue border. */
-export function HueTag({ children, outline, emoji }: { children: React.ReactNode; outline?: boolean; emoji?: string }) {
+export function HueTag({
+  children,
+  outline,
+  icon: Icon,
+}: {
+  children: React.ReactNode;
+  outline?: boolean;
+  icon?: LucideIcon;
+  /** @deprecated v5: not shown. */
+  emoji?: string;
+}) {
   return (
     <span
       style={{
@@ -148,11 +163,7 @@ export function HueTag({ children, outline, emoji }: { children: React.ReactNode
         maxWidth: "100%",
       }}
     >
-      {emoji && (
-        <span className="ftp-emoji" aria-hidden>
-          {emoji}
-        </span>
-      )}
+      {Icon && <Icon size={12} aria-hidden style={{ flexShrink: 0 }} />}
       <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{children}</span>
     </span>
   );
@@ -164,7 +175,17 @@ export function TagRow({ children }: { children: React.ReactNode }) {
 }
 
 /** The big answer at the top of a DetailSheet ("You get ₹6,000"). */
-export function SheetHighlight({ emoji, label, children, lang }: { emoji: string; label: string; children: React.ReactNode; lang?: string }) {
+export function SheetHighlight({
+  label,
+  children,
+  lang,
+}: {
+  label: string;
+  children: React.ReactNode;
+  lang?: string;
+  /** @deprecated v5: not shown. */
+  emoji?: string;
+}) {
   return (
     <div
       style={{
@@ -177,9 +198,6 @@ export function SheetHighlight({ emoji, label, children, lang }: { emoji: string
         border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
       }}
     >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 28, lineHeight: 1 }}>
-        {emoji}
-      </span>
       <div style={{ minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>{label}</p>
         <p lang={lang} className="ftp-display" style={{ margin: "4px 0 0", fontSize: 18, lineHeight: 1.35, fontWeight: 650, color: "var(--ftp-text)" }}>
@@ -191,15 +209,18 @@ export function SheetHighlight({ emoji, label, children, lang }: { emoji: string
 }
 
 /** A titled block inside a DetailSheet. */
-export function SheetSection({ emoji, title, children }: { emoji?: string; title: string; children: React.ReactNode }) {
+export function SheetSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** @deprecated v5: not shown. */
+  emoji?: string;
+}) {
   return (
     <section style={{ minWidth: 0 }}>
       <h3 style={{ margin: "0 0 8px", display: "flex", alignItems: "center", gap: 8, fontSize: 14, lineHeight: "20px", fontWeight: 700, color: "var(--ftp-text)" }}>
-        {emoji && (
-          <span className="ftp-emoji" aria-hidden>
-            {emoji}
-          </span>
-        )}
         {title}
       </h3>
       {children}

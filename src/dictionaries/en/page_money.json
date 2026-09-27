@@ -1,8 +1,8 @@
 {
   "unit": {
-    "crore": "₹{n} Cr",
-    "lakh": "₹{n} L",
-    "lakhCrore": "₹{n} lakh Cr",
+    "crore": "₹{n} crore",
+    "lakh": "₹{n} lakh",
+    "lakhCrore": "₹{n} lakh crore",
     "rupees": "₹{n}"
   },
   "actions": {
