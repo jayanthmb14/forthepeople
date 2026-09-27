@@ -21,10 +21,13 @@
  *   - State select (filters by state)
  *   - Sort select (votes desc · alphabetical)
  *   - Paginated list, 20 per page
- *   - Preselected district (from ?d=<slug>) gets a brand-tint row
+ *   - Preselected district (from ?d=<slug>) gets a hue-tint row
  *
- * Design v3 (2026-09-27): PageHeader from the kit, token-only styles,
- * 44 px targets, Lucide icons, mono vote counts. Vote logic unchanged.
+ * Design v4 "Rang" (amber — the vote colour, deep enough for white text):
+ * SiteHeader band; the picture (one plain sentence and the five
+ * most-requested districts as bars, from the same vote counts as the
+ * list, shown once they have loaded); hue-coloured vote buttons; 44 px
+ * targets; tabular vote counts. Vote logic unchanged.
  */
 
 "use client";
@@ -33,7 +36,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronUp, Lock, Search, Vote } from "lucide-react";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { getPlatformFacts } from "@/lib/platform-facts";
-import { EmptyState, PageHeader } from "@/components/district/ui";
+import { Card, EmptyState } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
+import SiteHeader from "@/components/site/SiteHeader";
 
 type LockedDistrict = {
   slug: string;
@@ -51,6 +56,9 @@ interface DistrictRequestRow {
 }
 
 const PAGE_SIZE = 20;
+
+/** How many leaders the picture shows. */
+const TOP_N = 5;
 
 function flattenLocked(): LockedDistrict[] {
   const out: LockedDistrict[] = [];
@@ -83,6 +91,8 @@ export default function VoteDistrictPage({
 
   // ── Augment with live vote counts (all districts, not just top 5) ──
   const [voteMap, setVoteMap] = useState<Record<string, number>>({});
+  // True once the counts arrived; the picture waits for it (never a fake 0).
+  const [votesLoaded, setVotesLoaded] = useState(false);
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -96,6 +106,7 @@ export default function VoteDistrictPage({
           next[`${r.stateName}::${r.districtName}`.toLowerCase()] = r.requestCount;
         }
         setVoteMap(next);
+        setVotesLoaded(true);
       } catch {
         /* ignore */
       }
@@ -146,6 +157,24 @@ export default function VoteDistrictPage({
     }
     return list;
   }, [allLocked, voteMap, bumps, search, stateFilter, sortBy]);
+
+  // The picture: every locked district's count (ignoring search and filters),
+  // the same numbers the list shows.
+  const voteSummary = useMemo(() => {
+    const counted = allLocked
+      .map((d) => ({
+        name: d.name,
+        stateName: d.stateName,
+        votes: (voteMap[`${d.stateName}::${d.name}`.toLowerCase()] ?? d.voteCount) + (bumps[d.slug] ?? 0),
+      }))
+      .filter((d) => d.votes > 0)
+      .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name));
+    return {
+      voted: counted.length,
+      total: counted.reduce((s, d) => s + d.votes, 0),
+      top: counted.slice(0, TOP_N),
+    };
+  }, [allLocked, voteMap, bumps]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -220,10 +249,11 @@ export default function VoteDistrictPage({
 
   // How many districts are still waiting — from the registry, never typed.
   const { comingDistricts } = getPlatformFacts();
+  const leader = voteSummary.top[0];
 
   return (
-    <main className="ftp-vote-page" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
-      {/* Page-scoped styles. Colours are --ftp-* tokens only (Design v3). */}
+    <main className="ftp-vote-page ftp-hue-amber" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+      {/* Page-scoped styles. Colours are tokens and hue variables only. */}
       <style>{`
         .ftp-vote-inner { max-width: var(--ftp-reading-max); padding-top: 24px; padding-bottom: 56px; }
         .ftp-vote-toolbar {
@@ -243,7 +273,7 @@ export default function VoteDistrictPage({
         .ftp-vote-field svg {
           position: absolute;
           left: 12px;
-          color: var(--ftp-text-2);
+          color: var(--hue);
           pointer-events: none;
         }
         .ftp-vote-input,
@@ -251,7 +281,7 @@ export default function VoteDistrictPage({
           width: 100%;
           min-height: 44px;
           padding: 10px 12px;
-          font-size: 13px;
+          font-size: 14px;
           line-height: 20px;
           border: 1px solid var(--ftp-border);
           border-radius: var(--ftp-radius-tile);
@@ -259,10 +289,11 @@ export default function VoteDistrictPage({
           color: var(--ftp-text);
           outline: none;
           box-sizing: border-box;
+          font-family: inherit;
         }
         .ftp-vote-input { padding-left: 34px; }
         .ftp-vote-input:focus,
-        .ftp-vote-select:focus { border-color: var(--ftp-brand); }
+        .ftp-vote-select:focus { border-color: var(--hue); }
         .ftp-vote-list {
           list-style: none;
           margin: 0;
@@ -270,6 +301,7 @@ export default function VoteDistrictPage({
           background: var(--ftp-surface);
           border: 1px solid var(--ftp-border);
           border-radius: var(--ftp-radius-card);
+          box-shadow: var(--ftp-shadow-1);
           overflow: hidden;
         }
         .ftp-vote-row {
@@ -282,7 +314,7 @@ export default function VoteDistrictPage({
           border-bottom: 1px solid var(--ftp-border);
         }
         .ftp-vote-row:last-child { border-bottom: none; }
-        .ftp-vote-row-pre { background: var(--ftp-brand-tint); }
+        .ftp-vote-row-pre { background: var(--hue-tint); box-shadow: inset 3px 0 0 var(--hue); }
         .ftp-vote-row-info {
           flex: 1 1 180px;
           display: flex;
@@ -290,7 +322,7 @@ export default function VoteDistrictPage({
           gap: 10px;
           min-width: 0;
         }
-        .ftp-vote-name { font-size: 15px; line-height: 22px; font-weight: 500; color: var(--ftp-text); }
+        .ftp-vote-name { font-size: 15px; line-height: 22px; font-weight: 600; color: var(--ftp-text); }
         .ftp-vote-state { font-size: 13px; line-height: 20px; font-weight: 400; color: var(--ftp-text-2); }
         .ftp-vote-btn {
           display: inline-flex;
@@ -298,20 +330,21 @@ export default function VoteDistrictPage({
           gap: 6px;
           min-height: 44px;
           padding: 0 14px;
-          background: var(--ftp-surface);
-          border: 1px solid var(--ftp-brand);
-          color: var(--ftp-brand);
+          background: var(--hue-tint);
+          border: 1px solid color-mix(in srgb, var(--hue) 45%, transparent);
+          color: var(--hue-deep);
           border-radius: var(--ftp-radius-pill);
-          font-size: 13px;
-          font-weight: 500;
+          font-size: 14px;
+          font-weight: 600;
+          font-family: inherit;
           cursor: pointer;
           flex-shrink: 0;
-          transition: background-color 150ms ease;
+          transition: background-color 150ms ease, color 150ms ease;
         }
-        .ftp-vote-btn:hover { background: var(--ftp-brand-tint); }
+        .ftp-vote-btn:hover { background: var(--hue); color: #fff; }
         .ftp-vote-error {
           flex-basis: 100%;
-          font-size: 11px;
+          font-size: 12px;
           line-height: 16px;
           color: var(--ftp-danger);
           text-align: right;
@@ -336,6 +369,7 @@ export default function VoteDistrictPage({
           border: 1px solid var(--ftp-border);
           border-radius: var(--ftp-radius-tile);
           font-size: 13px;
+          font-family: inherit;
           color: var(--ftp-text);
           cursor: pointer;
         }
@@ -347,13 +381,54 @@ export default function VoteDistrictPage({
 
       <div className="ftp-container">
         <div className="ftp-vote-inner">
-          <PageHeader
+          <SiteHeader
+            emoji="🗳️"
             icon={Vote}
             title="Vote for the next district"
             description={`${comingDistricts.toLocaleString("en-IN")} districts waiting. Your vote prioritises which goes live next.`}
             backHref={`/${locale}`}
             backLabel="Back to home"
           />
+
+          {/* The picture — once the counts have loaded, and only if someone has voted */}
+          {votesLoaded && leader && (
+            <Card tinted padding={18} style={{ marginBottom: 20 }}>
+              <Explainer title="In simple words">
+                People have cast <strong>{voteSummary.total.toLocaleString("en-IN")}</strong>{" "}
+                {voteSummary.total === 1 ? "vote" : "votes"} for <strong>{voteSummary.voted}</strong>{" "}
+                {voteSummary.voted === 1 ? "district" : "districts"} so far. <strong>{leader.name}</strong> is ahead with{" "}
+                <strong>{leader.votes.toLocaleString("en-IN")}</strong> {leader.votes === 1 ? "vote" : "votes"}.
+              </Explainer>
+              <p className="ftp-label" style={{ marginBottom: 10 }}>Most-requested districts</p>
+              <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                {voteSummary.top.map((d, i) => (
+                  <li key={`${d.stateName}-${d.name}`}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, lineHeight: "20px" }}>
+                      <span style={{ fontWeight: 600, color: "var(--ftp-text)", minWidth: 0 }}>
+                        {d.name}
+                        <span style={{ fontWeight: 400, color: "var(--ftp-text-2)" }}>, {d.stateName}</span>
+                      </span>
+                      <span className="ftp-num" style={{ color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
+                        {d.votes.toLocaleString("en-IN")} {d.votes === 1 ? "vote" : "votes"}
+                      </span>
+                    </div>
+                    <div aria-hidden style={{ marginTop: 4, height: 10, borderRadius: "var(--ftp-radius-pill)", background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
+                      <div
+                        className="ftp-grow-x"
+                        style={{
+                          width: `${Math.max(2, Math.round((d.votes / leader.votes) * 100))}%`,
+                          height: "100%",
+                          borderRadius: "var(--ftp-radius-pill)",
+                          background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
+                          ["--i" as string]: i,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          )}
 
           <div className="ftp-vote-toolbar">
             <label className="ftp-vote-field">
@@ -401,7 +476,7 @@ export default function VoteDistrictPage({
           </div>
 
           {pageItems.length === 0 ? (
-            <EmptyState title="No matching districts." body="Try a different search or state filter." />
+            <EmptyState emoji="🔍" title="No matching districts." body="Try a different search or state filter." />
           ) : (
             <ul className="ftp-vote-list">
               {pageItems.map((d) => {
@@ -434,8 +509,8 @@ export default function VoteDistrictPage({
                     {hadError && (
                       <span className="ftp-vote-error" role="alert">
                         {errorKind === "rate"
-                          ? "slow down — try again in a minute"
-                          : "could not save vote, try again"}
+                          ? "Slow down, and try again in a minute."
+                          : "Could not save your vote. Try again."}
                       </span>
                     )}
                   </li>
@@ -454,7 +529,7 @@ export default function VoteDistrictPage({
               <ArrowLeft size={14} aria-hidden="true" /> Previous
             </button>
             <span style={{ textAlign: "center" }}>
-              Page <span className="ftp-num">{safePage + 1}</span> of <span className="ftp-num">{totalPages}</span> ·{" "}
+              Page <span className="ftp-num">{safePage + 1}</span> of <span className="ftp-num">{totalPages}</span>, with{" "}
               <span className="ftp-num">{filteredSorted.length.toLocaleString("en-IN")}</span> districts
             </span>
             <button
