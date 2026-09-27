@@ -51,15 +51,15 @@ export default function EmploymentStackedBar({ employment }: Props) {
             <YAxis type="category" dataKey="name" width={110} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
             <Legend wrapperStyle={LEGEND_STYLE} />
-            <Bar dataKey="mainWorkers" name="Main workers" stackId="w" fill={OKABE_ITO.bluishGreen} />
+            <Bar dataKey="mainWorkers" name="Main workers" stackId="w" fill={OKABE_ITO.bluishGreen} radius={[6, 0, 0, 6]} />
             <Bar dataKey="marginalWorkers" name="Marginal workers" stackId="w" fill={OKABE_ITO.yellow} />
-            <Bar dataKey="nonWorkers" name="Non-workers" stackId="w" fill={NEUTRAL_SERIES.mid} />
+            <Bar dataKey="nonWorkers" name="Non-workers" stackId="w" fill={NEUTRAL_SERIES.mid} radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       {typeof employment.workerParticipationRate === "number" && (
         <ChartNote>
-          Worker Participation Rate (WPR):{" "}
+          Worker participation rate (WPR):{" "}
           <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
             {employment.workerParticipationRate.toFixed(2)}%
           </span>

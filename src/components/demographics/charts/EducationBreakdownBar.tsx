@@ -16,13 +16,14 @@ interface Props {
   education: EducationData | null | undefined;
 }
 
-const LEVELS: { key: keyof EducationData; label: string; color: string }[] = [
+/** Education levels in order, lowest first (also used by the page's table view). */
+export const LEVELS: { key: keyof EducationData; label: string; color: string }[] = [
   { key: "illiterate", label: "Illiterate", color: VIRIDIS[0] },
-  { key: "belowPrimary", label: "Below Primary", color: VIRIDIS[1] },
+  { key: "belowPrimary", label: "Below primary", color: VIRIDIS[1] },
   { key: "primary", label: "Primary", color: VIRIDIS[2] },
   { key: "middle", label: "Middle", color: VIRIDIS[3] },
   { key: "secondary", label: "Secondary", color: VIRIDIS[4] },
-  { key: "higherSec", label: "Higher Secondary", color: VIRIDIS[5] },
+  { key: "higherSec", label: "Higher secondary", color: VIRIDIS[5] },
   { key: "graduate", label: "Graduate", color: VIRIDIS[6] },
   { key: "postgrad", label: "Postgraduate", color: VIRIDIS[8] },
 ];
@@ -60,9 +61,16 @@ export default function EducationBreakdownBar({ education }: Props) {
           <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
           <YAxis type="category" dataKey="name" hide />
           <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
-          <Legend wrapperStyle={{ ...LEGEND_STYLE, fontSize: 10 }} />
-          {LEVELS.map((l) => (
-            <Bar key={l.key} dataKey={l.key} name={l.label} stackId="edu" fill={l.color} />
+          <Legend wrapperStyle={{ ...LEGEND_STYLE, fontSize: 11 }} />
+          {LEVELS.map((l, i) => (
+            <Bar
+              key={l.key}
+              dataKey={l.key}
+              name={l.label}
+              stackId="edu"
+              fill={l.color}
+              radius={i === 0 ? [6, 0, 0, 6] : i === LEVELS.length - 1 ? [0, 6, 6, 0] : undefined}
+            />
           ))}
         </BarChart>
       </ResponsiveContainer>

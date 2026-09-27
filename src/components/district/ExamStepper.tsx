@@ -7,10 +7,11 @@
 // ═══════════════════════════════════════════════════════════
 // ExamStepper — date-driven milestone strip (no padlocks)
 //   done     — milestone date is in the past   → green check (live tone)
-//   upcoming — shows date + "in N days"        → blue dot (brand tone)
+//   upcoming — shows the date, "in N days" below → dot in the page hue
 //   tba      — date not announced ("TBA")      → grey dot (neutral)
 // The exam's status picks the colour of the connector line after the
-// next upcoming step. Design v3: tokens only, Lucide icons, mono dates.
+// next upcoming step. Design v4: the page hue for "coming up", semantic
+// tones for done / warning, tabular dates.
 // ═══════════════════════════════════════════════════════════
 "use client";
 import { Check, Circle, ExternalLink } from "lucide-react";
@@ -32,7 +33,7 @@ type MilestoneState = "done" | "upcoming" | "tba";
 const STEPS: Array<{ key: string; label: string }> = [
   { key: "notification", label: "Notification" },
   { key: "apply",        label: "Applications" },
-  { key: "admitCard",    label: "Admit Card" },
+  { key: "admitCard",    label: "Admit card" },
   { key: "exam",         label: "Exam" },
   { key: "result",       label: "Result" },
 ];
@@ -67,14 +68,14 @@ function stateFor(date: string | null | undefined): MilestoneState {
 // Marker colours per milestone state (all design tokens).
 const COLORS: Record<MilestoneState, { bg: string; border: string; icon: string; text: string; line: string }> = {
   done:     { bg: "var(--ftp-live-tint)",  border: "var(--ftp-live)",          icon: "var(--ftp-live-text)", text: "var(--ftp-live-text)", line: "var(--ftp-live)" },
-  upcoming: { bg: "var(--ftp-brand-tint)", border: "var(--ftp-brand)",         icon: "var(--ftp-brand)",     text: "var(--ftp-brand-deep)", line: "var(--ftp-brand)" },
+  upcoming: { bg: "var(--hue-tint)",       border: "var(--hue)",               icon: "var(--hue)",           text: "var(--hue-deep)",      line: "var(--hue)" },
   tba:      { bg: "var(--ftp-surface-2)",  border: "var(--ftp-border)",        icon: "var(--ftp-border-strong)", text: "var(--ftp-text-2)", line: "var(--ftp-border)" },
 };
 
 // Exam status → connector colour for the upcoming leg.
 const STATUS_ACCENT: Record<string, string> = {
-  upcoming:             "var(--ftp-brand)",
-  NOTIFICATION_OUT:     "var(--ftp-brand)",
+  upcoming:             "var(--hue)",
+  NOTIFICATION_OUT:     "var(--hue)",
   open:                 "var(--ftp-live)",
   APPLICATIONS_OPEN:    "var(--ftp-live)",
   closed:               "var(--ftp-border-strong)",
@@ -89,7 +90,7 @@ const STATUS_ACCENT: Record<string, string> = {
 
 export default function ExamStepper(props: ExamStepperProps) {
   const { status, applyUrl } = props;
-  const accent = STATUS_ACCENT[status] ?? "var(--ftp-brand)";
+  const accent = STATUS_ACCENT[status] ?? "var(--hue)";
 
   const milestoneDates: Record<string, string | null | undefined> = {
     notification: props.notificationDate ?? props.announcedDate ?? null,
@@ -125,14 +126,14 @@ export default function ExamStepper(props: ExamStepperProps) {
         const s = stateFor(date);
         const c = COLORS[s];
 
-        // Subtitle: the date, "date · in N days", or "TBA"
+        // Subtitle: the date (or "TBA"); upcoming steps add "in N days" below.
         let subtitle = "";
+        let countdown = "";
         if (s === "done") subtitle = fmtDate(date);
         else if (s === "upcoming") {
           const days = date ? daysBetween(date) : null;
-          subtitle = days != null && days >= 0
-            ? `${fmtDate(date)} · in ${days} day${days !== 1 ? "s" : ""}`
-            : fmtDate(date);
+          subtitle = fmtDate(date);
+          if (days != null && days >= 0) countdown = `in ${days} day${days !== 1 ? "s" : ""}`;
         } else {
           subtitle = "TBA";
         }
@@ -185,6 +186,11 @@ export default function ExamStepper(props: ExamStepperProps) {
               >
                 {subtitle}
               </div>
+              {countdown && (
+                <div className="ftp-num" style={{ fontSize: 10, lineHeight: "14px", fontWeight: 600, color: c.text, textAlign: "center" }}>
+                  {countdown}
+                </div>
+              )}
               {/* Apply button sits under the Applications step when still open */}
               {step.key === "apply" && isApplicationsOpen && applyUrl && (
                 <a
@@ -198,8 +204,8 @@ export default function ExamStepper(props: ExamStepperProps) {
                     marginTop: 8,
                     minHeight: 32,
                     padding: "0 12px",
-                    background: "var(--ftp-brand)",
-                    color: "var(--ftp-surface)",
+                    background: "var(--hue)",
+                    color: "#fff",
                     borderRadius: "var(--ftp-radius-tile)",
                     fontSize: 12,
                     fontWeight: 500,

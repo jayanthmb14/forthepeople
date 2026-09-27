@@ -1,12 +1,13 @@
 "use client";
 
 // Source line at the bottom of every Population chart card:
-//   Source name ↗ · Ref year 2011 · [age pill] · licence · Retrieved 2026-04-23 · Boundary …
-// Design v3: no nested tinted box — a hairline border separates it from
-// the chart above. The source name is a mono link like the kit's
-// SourcePill, composed inline because SourcePill never wraps and long
-// Census source names must wrap at 375 px instead of scrolling sideways.
-import { Database, ExternalLink } from "lucide-react";
+//   [Source name ↗] [Reference year 2011] [age pill] [licence] [Retrieved 2026-04-23] [Boundary …]
+// Design v4: separate small items with space between them (no middle-dot
+// string). A hairline border separates it from the chart above. The source
+// name is a pill-style link like the kit's SourcePill, composed here because
+// SourcePill never wraps and long Census source names must wrap at 375 px
+// instead of scrolling sideways.
+import { ExternalLink } from "lucide-react";
 import DataAgeChip from "./DataAgeChip";
 
 interface DataSourceCardProps {
@@ -22,10 +23,20 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Middle-dot separator between items. */
-function Dot() {
-  return <span aria-hidden style={{ color: "var(--ftp-border-strong)" }}>·</span>;
-}
+/** The source name as a bordered pill that may wrap onto two lines. */
+const SOURCE_PILL: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: "3px 10px",
+  borderRadius: 12,
+  border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  fontWeight: 600,
+  textDecoration: "none",
+  overflowWrap: "anywhere",
+};
 
 export default function DataSourceCard({
   source,
@@ -47,46 +58,27 @@ export default function DataSourceCard({
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
-        gap: 6,
+        gap: "6px 12px",
       }}
     >
-      <Database size={14} aria-hidden style={{ flexShrink: 0 }} />
       <span className="sr-only">Source:</span>
       {sourceUrl ? (
-        <a
-          href={sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ftp-num"
-          style={{ color: "var(--ftp-text)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, overflowWrap: "anywhere" }}
-        >
+        <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={SOURCE_PILL}>
           {source}
-          <ExternalLink size={11} aria-hidden style={{ flexShrink: 0 }} />
+          <ExternalLink size={11} aria-hidden style={{ flexShrink: 0, color: "var(--hue)" }} />
         </a>
       ) : (
-        <span className="ftp-num" style={{ color: "var(--ftp-text)", overflowWrap: "anywhere" }}>{source}</span>
+        <span style={SOURCE_PILL}>{source}</span>
       )}
-      <Dot />
       <span>
-        Ref year <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{referenceYear}</span>
+        Reference year <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{referenceYear}</span>
       </span>
       <DataAgeChip referenceYear={referenceYear} />
-      {license && (
-        <>
-          <Dot />
-          <span title={`Licence: ${license}`}>{license}</span>
-        </>
-      )}
-      <Dot />
+      {license && <span title={`Licence: ${license}`}>{license}</span>}
       <span>
         Retrieved <span className="ftp-num" suppressHydrationWarning>{formatDate(retrievedAt)}</span>
       </span>
-      {boundaryVintage && (
-        <>
-          <Dot />
-          <span>Boundary: {boundaryVintage}</span>
-        </>
-      )}
+      {boundaryVintage && <span>Boundary: {boundaryVintage}</span>}
     </div>
   );
 }

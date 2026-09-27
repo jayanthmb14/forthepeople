@@ -1,8 +1,9 @@
 "use client";
 
 // Religion shares as a donut, categories in alphabetical order. Slice
-// colours come from the colour-blind-safe Okabe-Ito palette (../types);
-// tooltip and legend use design tokens (../chartKit).
+// colours come from the colour-blind-safe Okabe-Ito palette (../types) —
+// deliberately not the page hue, so no community reads as "highlighted";
+// tooltip and legend use the v4 chart chrome (../chartKit).
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
   ALPHABETICAL_RELIGIONS,
@@ -28,7 +29,7 @@ export default function ReligionDonut({ religion }: Props) {
 
   const data = ALPHABETICAL_RELIGIONS.filter((k) => typeof religion[k] === "number").map((k) => ({
     key: k,
-    name: k === "NotStated" ? "Not Stated" : k,
+    name: k === "NotStated" ? "Not stated" : k,
     value: religion[k]!,
   }));
 
@@ -47,6 +48,7 @@ export default function ReligionDonut({ religion }: Props) {
             innerRadius={60}
             outerRadius={110}
             paddingAngle={1}
+            cornerRadius={4}
             stroke="var(--ftp-surface)"
           >
             {data.map((d) => (

@@ -1,11 +1,11 @@
 "use client";
 
 // Household amenities (electricity, tap water, toilet, clean cooking fuel)
-// as 10 × 10 "waffles": each square is 1 % of households. Filled squares use
-// the colour-blind-safe Okabe-Ito palette (../types); empty squares and text
-// use design tokens. The grid wraps on phones so nothing scrolls sideways.
+// as 10 × 10 "waffles": each square is 1 % of households. Every waffle has
+// its own label and emoji, so colour is not needed to tell them apart —
+// filled squares use the page hue (Design v4), empty squares a soft tint.
+// The grid wraps on phones so nothing scrolls sideways.
 import {
-  OKABE_ITO,
   isNonEmptyObject,
   type HouseholdAmenitiesData,
   type ProfileLike,
@@ -16,15 +16,16 @@ interface Props {
   amenities: HouseholdAmenitiesData | null | undefined;
 }
 
-const AMENITIES: {
+/** The four amenities we draw, in order (also used by the page's table view). */
+export const AMENITIES: {
   key: keyof HouseholdAmenitiesData;
   label: string;
-  color: string;
+  emoji: string;
 }[] = [
-  { key: "electricityPct", label: "Electricity", color: OKABE_ITO.yellow },
-  { key: "tapWaterPct", label: "Tap Water", color: OKABE_ITO.skyBlue },
-  { key: "toiletPct", label: "Toilet", color: OKABE_ITO.bluishGreen },
-  { key: "lpgCleanFuelPct", label: "Clean Cooking Fuel", color: OKABE_ITO.orange },
+  { key: "electricityPct", label: "Electricity", emoji: "💡" },
+  { key: "tapWaterPct", label: "Tap water", emoji: "🚰" },
+  { key: "toiletPct", label: "Toilet", emoji: "🚽" },
+  { key: "lpgCleanFuelPct", label: "Clean cooking fuel", emoji: "🔥" },
 ];
 
 export function canRenderHouseholdAmenitiesWaffle(
@@ -33,10 +34,11 @@ export function canRenderHouseholdAmenitiesWaffle(
   return isNonEmptyObject(profile?.householdAmenities);
 }
 
-function Waffle({ pct, color, label }: { pct: number; color: string; label: string }) {
+function Waffle({ pct, emoji, label }: { pct: number; emoji: string; label: string }) {
   const filled = Math.round(Math.max(0, Math.min(100, pct)));
   return (
     <div style={{ textAlign: "center" }}>
+      <div className="ftp-emoji" aria-hidden style={{ fontSize: 24, marginBottom: 8 }}>{emoji}</div>
       <div
         role="img"
         style={{
@@ -53,16 +55,16 @@ function Waffle({ pct, color, label }: { pct: number; color: string; label: stri
             key={i}
             style={{
               aspectRatio: "1",
-              background: i < filled ? color : "var(--ftp-surface-2)",
+              background: i < filled ? "var(--hue)" : "var(--hue-tint)",
               borderRadius: 2,
             }}
           />
         ))}
       </div>
-      <div className="ftp-num" style={{ marginTop: 8, fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
+      <div className="ftp-bignum" style={{ marginTop: 8, fontSize: 20, lineHeight: "26px", color: "var(--hue-deep)" }}>
         {pct.toFixed(1)}%
       </div>
-      <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{label}</div>
+      <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{label}</div>
     </div>
   );
 }
@@ -88,7 +90,7 @@ export default function HouseholdAmenitiesWaffle({ amenities }: Props) {
         <Waffle
           key={a.key as string}
           pct={amenities[a.key] as number}
-          color={a.color}
+          emoji={a.emoji}
           label={a.label}
         />
       ))}

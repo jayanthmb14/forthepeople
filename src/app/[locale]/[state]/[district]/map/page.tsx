@@ -5,16 +5,18 @@
 */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  District Map — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+//  District Map — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  PageHeader (data accent: blue) → StatStrip (taluks, villages, area,
-//  population) → the interactive taluk map when our boundary file covers
-//  every taluk, otherwise an honest note + a card grid → the list of
-//  taluks with village counts → SourcesFooter → Toolbar.
+//  PageHeader → StatStrip of emoji tiles (taluks, villages, area,
+//  population) → an "In simple words" line with the same counts → the
+//  interactive taluk map (each taluk in its own hue) when our boundary
+//  file covers every taluk, otherwise an honest note + a card grid → the
+//  list of taluks with village counts, each with a bar for its share of
+//  the district's villages → SourcesFooter → Toolbar.
 //
 //  Map behaviour (click a taluk to open it) is unchanged; only the chrome
-//  around it uses the v3 tokens and kit.
+//  around it uses the v4 kit and the page hue.
 //
 "use client";
 import { use, useState, useEffect } from "react";
@@ -24,6 +26,7 @@ import {
   PageHeader, StatStrip, StatTile, Section, Card, LoadingShell,
   SourcesFooter, Toolbar, ToolbarButton,
 } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
 import TalukMap from "@/components/map/TalukMap";
 import { getStateConfig } from "@/lib/constants/state-config";
 
@@ -105,7 +108,7 @@ function DistrictMapArea({
       villageCount: t.villageCount,
     }));
     return (
-      <Card>
+      <Card tinted padding={12}>
         <TalukMap locale={locale} state={state} district={district} taluks={mapTaluks} />
       </Card>
     );
@@ -119,8 +122,14 @@ function DistrictMapArea({
 
   return (
     <>
-      <p style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "0 0 12px" }}>
-        <Map size={16} aria-hidden style={{ flexShrink: 0 }} />
+      <p
+        style={{
+          display: "flex", alignItems: "center", gap: 10, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)",
+          margin: "0 0 12px", padding: "10px 14px", borderRadius: "var(--ftp-radius-card)",
+          background: "var(--hue-tint)", border: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+        }}
+      >
+        <span className="ftp-emoji" aria-hidden style={{ fontSize: 18 }}>🧭</span>
         <span>{headline}</span>
       </p>
       <div
@@ -134,20 +143,20 @@ function DistrictMapArea({
           <Card key={t.slug} href={`/${locale}/${state}/${district}/${t.slug}`} padding={14}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>{t.name}</div>
+                <div className="ftp-display" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 650, color: "var(--hue-deep)" }}>{t.name}</div>
                 {t.nameLocal && (
                   <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", marginTop: 2 }}>
                     {t.nameLocal}
                   </div>
                 )}
                 {(t.population != null || t.area != null) && (
-                  <div className="ftp-num" style={{ fontSize: 11, lineHeight: "16px", fontWeight: 400, color: "var(--ftp-text-2)", marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {t.population != null && <span>{t.population.toLocaleString("en-IN")} pop</span>}
-                    {t.area != null && <span>· {t.area} km²</span>}
+                  <div className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", fontWeight: 400, color: "var(--ftp-text-2)", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {t.population != null && <span>{t.population.toLocaleString("en-IN")} people</span>}
+                    {t.area != null && <span>{t.area} km²</span>}
                   </div>
                 )}
               </div>
-              <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
+              <ChevronRight size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 2 }} />
             </div>
           </Card>
         ))}
@@ -203,6 +212,11 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
   // StatStrip wants 2–4 tiles; count the ones we will render.
   const tileCount = 1 + (hideVillages ? 0 : 1) + (overview?.area ? 1 : 0) + (overview?.population ? 1 : 0);
 
+  // The plain-words line: the same counts as the tiles, nothing else.
+  const totalVillages = taluks.reduce((s, t) => s + t._count.villages, 0);
+  const placeName = overview?.name ?? district.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const unitWord = (hideVillages ? (taluks.length === 1 ? "zone" : "zones") : (taluks.length === 1 ? subUnit : subUnitPlural)).toLowerCase();
+
   return (
     <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
       <PageHeader
@@ -222,20 +236,39 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
       {!isLoading && (
         <>
           <StatStrip cols={Math.min(4, Math.max(2, tileCount)) as 2 | 3 | 4}>
-            <StatTile label={hideVillages ? "Zones" : subUnitPlural} value={taluks.length} icon={Map} />
+            <StatTile emoji="🗺️" label={hideVillages ? "Zones" : subUnitPlural} value={taluks.length} />
             {!hideVillages && (
-              <StatTile label="Villages" value={taluks.reduce((s, t) => s + t._count.villages, 0).toLocaleString("en-IN")} />
+              <StatTile emoji="🏡" label="Villages" value={totalVillages.toLocaleString("en-IN")} />
             )}
             {overview?.area && (
-              <StatTile label="Area" value={overview.area.toLocaleString("en-IN")} unit="km²" asOf={overviewAsOf} />
+              <StatTile emoji="📐" label="Area" value={overview.area.toLocaleString("en-IN")} unit="km²" asOf={overviewAsOf} />
             )}
             {overview?.population && (
-              <StatTile label="Population" value={(overview.population / 1000000).toFixed(2)} unit="M" asOf={overviewAsOf} />
+              <StatTile emoji="👥" label="Population" value={(overview.population / 1000000).toFixed(2)} unit="M" asOf={overviewAsOf} />
             )}
           </StatStrip>
 
+          {taluks.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <Explainer title="In simple words" emoji="🗺️">
+                {placeName} is split into <strong className="ftp-num">{taluks.length}</strong> {unitWord}
+                {!hideVillages && totalVillages > 0 ? (
+                  <>
+                    {" "}with <strong className="ftp-num">{totalVillages.toLocaleString("en-IN")}</strong> villages between them
+                  </>
+                ) : null}
+                {overview?.area ? (
+                  <>
+                    , covering <strong className="ftp-num">{overview.area.toLocaleString("en-IN")}</strong> km²
+                  </>
+                ) : null}
+                . Pick one to see its own page.
+              </Explainer>
+            </div>
+          )}
+
           {/* Map or card-grid fallback */}
-          <Section title={mapSectionLabel}>
+          <Section title={mapSectionLabel} emoji="🧭">
             <DistrictMapArea
               locale={locale}
               state={state}
@@ -247,24 +280,44 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
 
           {/* List with village counts for rural districts */}
           {!hideVillages && (
-            <Section title={listSectionLabel}>
+            <Section title={listSectionLabel} emoji="🏘️">
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                 {taluks.map((t) => (
                   <li key={t.id}>
                     <Card href={`/${locale}/${state}/${district}/${t.slug}`} padding={0}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 16px", minHeight: 56 }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>{t.name}</div>
-                          {t.nameLocal && (
-                            <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t.nameLocal}</div>
-                          )}
+                      <div style={{ padding: "12px 16px", minHeight: 56 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div className="ftp-display" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 650, color: "var(--ftp-text)" }}>{t.name}</div>
+                            {t.nameLocal && (
+                              <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{t.nameLocal}</div>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                            <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+                              <span className="ftp-num" style={{ color: "var(--hue-deep)", fontSize: 15 }}>{t._count.villages}</span> villages
+                            </span>
+                            <ChevronRight size={16} aria-hidden style={{ color: "var(--hue)" }} />
+                          </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                          <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{t._count.villages}</span> villages
-                          </span>
-                          <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-                        </div>
+                        {/* This taluk's share of the district's villages (same counts as above). */}
+                        {totalVillages > 0 && (
+                          <div
+                            aria-hidden
+                            title={`${t._count.villages} of ${totalVillages.toLocaleString("en-IN")} villages in the district`}
+                            style={{ marginTop: 8, height: 6, borderRadius: 999, overflow: "hidden", background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))" }}
+                          >
+                            <div
+                              className="ftp-grow-x"
+                              style={{
+                                height: "100%",
+                                width: `${Math.max(2, Math.round((t._count.villages / totalVillages) * 100))}%`,
+                                borderRadius: 999,
+                                background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </Card>
                   </li>

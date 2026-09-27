@@ -1,8 +1,8 @@
 "use client";
 
 // NITI Aayog Multidimensional Poverty Index for the district, as a row of
-// kit StatTiles (headcount, intensity, MPI value, rank). Tiles carry no
-// colour — the numbers speak for themselves (Design v3).
+// kit StatTiles (headcount, intensity, MPI value, rank), each with an
+// emoji chip; the tiles take the page hue (Design v4).
 import { StatStrip, StatTile } from "@/components/district/ui";
 import { isNonEmptyObject, type EconomicClassData, type ProfileLike } from "../types";
 import { ChartEmpty, ChartNote } from "../chartKit";
@@ -31,20 +31,20 @@ export default function MPIIndicatorCard({ economicClass }: Props) {
   const tiles: React.ReactNode[] = [];
   if (typeof economicClass.mpiHeadcount === "number") {
     tiles.push(
-      <StatTile key="headcount" label="MPI headcount" value={economicClass.mpiHeadcount.toFixed(2)} unit="%" sub="of population is poor" />,
+      <StatTile key="headcount" emoji="👥" label="MPI headcount" value={economicClass.mpiHeadcount.toFixed(2)} unit="%" sub="of population is poor" />,
     );
   }
   if (typeof economicClass.mpiIntensity === "number") {
     tiles.push(
-      <StatTile key="intensity" label="Intensity" value={economicClass.mpiIntensity.toFixed(2)} unit="%" sub="average deprivation" />,
+      <StatTile key="intensity" emoji="📉" label="Intensity" value={economicClass.mpiIntensity.toFixed(2)} unit="%" sub="average deprivation" />,
     );
   }
   if (typeof economicClass.mpi === "number") {
-    tiles.push(<StatTile key="mpi" label="MPI value" value={economicClass.mpi.toFixed(4)} sub="composite" />);
+    tiles.push(<StatTile key="mpi" emoji="🧮" label="MPI value" value={economicClass.mpi.toFixed(4)} sub="composite" />);
   }
   if (typeof economicClass.districtRankInState === "number") {
     tiles.push(
-      <StatTile key="rank" label="District rank" value={`#${economicClass.districtRankInState}`} sub="within state" />,
+      <StatTile key="rank" emoji="🏅" label="District rank" value={`#${economicClass.districtRankInState}`} sub="within state" />,
     );
   }
 

@@ -5,74 +5,72 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  News & Updates — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+//  News & Updates — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Order on the page:
-//    PageHeader (icon, H1, freshness, source)
+//    PageHeader (module emoji band, freshness, source)
 //    → AI summary cards (unchanged data hooks)
-//    → StatStrip (how many articles, categories, linked to a module)
-//    → category Chips → featured article → the rest as quiet cards
+//    → StatStrip of emoji tiles (articles, topics, linked to a page)
+//    → the picture: an "In simple words" line + a pictogram of how many
+//      stories point to a data page, and one bar per topic. Every number
+//      is counted from the same feed that is listed below.
+//    → topic Chips → featured article (tinted) → the rest as quiet cards
 //    → SourcesFooter → Toolbar (Share, Compare)
 //
 //  Every article card shows WHERE it came from (publisher / source) and
-//  WHEN (relative time under a week, the date after that). Module tags use
-//  Lucide icons — no emoji — and link to the module the article is about.
+//  WHEN (relative time under a week, the date after that). Module tags
+//  carry that module's emoji and hue, and link to the module.
 //
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import Link from "next/link";
 import { use, useState } from "react";
-import {
-  Newspaper, ExternalLink, Share2, GitCompare,
-  Users, HardHat, PiggyBank, Waves, Wheat, Cloud, Shield, Vote, GraduationCap,
-  Heart, Bus, ScrollText, Home, Zap, Scale, Factory, Droplets, Building, AlertTriangle,
-  Star, Handshake, Building2, ClipboardList, Sprout, BarChart3,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Newspaper, ExternalLink, Share2, GitCompare } from "lucide-react";
 import { useNews, useAIInsight } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
 import {
   PageHeader, LoadingShell, ErrorBlock, AIInsightBanner, StatStrip, StatTile,
-  Section, Card, Pill, Chips, SourcesFooter, Toolbar, ToolbarButton,
+  Section, Card, Chips, EmptyState, ProgressBar, SourcesFooter, Toolbar, ToolbarButton,
 } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import NoDataCard from "@/components/common/NoDataCard";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { hueClass } from "@/lib/design/hues";
 import { timeAgoLabel, asOfLabel } from "@/lib/utils/timeAgo";
 
 // Module tags: the AI news pipeline tags each article with the module it
-// is about (targetModule). The key is that slug; the value is the label
-// and Lucide icon shown on the small link under the headline.
-const MODULE_TAGS: Record<string, { icon: LucideIcon; label: string }> = {
-  "leaders":              { icon: Users,         label: "Leadership" },
-  "infrastructure":       { icon: HardHat,       label: "Infrastructure" },
-  "budget":               { icon: PiggyBank,     label: "Budget" },
-  "water":                { icon: Waves,         label: "Water & Dams" },
-  "crops":                { icon: Wheat,         label: "Crop Prices" },
-  "weather":              { icon: Cloud,         label: "Weather" },
-  "police":               { icon: Shield,        label: "Police" },
-  "elections":            { icon: Vote,          label: "Elections" },
-  "education":            { icon: GraduationCap, label: "Schools" },
-  "health":               { icon: Heart,         label: "Health" },
-  "transport":            { icon: Bus,           label: "Transport" },
-  "schemes":              { icon: ScrollText,    label: "Schemes" },
-  "housing":              { icon: Home,          label: "Housing" },
-  "power":                { icon: Zap,           label: "Power" },
-  "courts":               { icon: Scale,         label: "Courts" },
-  "industries":           { icon: Factory,       label: "Industries" },
-  "jjm":                  { icon: Droplets,      label: "JJM Water" },
-  "gram-panchayat":       { icon: Building,      label: "Gram Panchayat" },
-  "alerts":               { icon: AlertTriangle, label: "Alerts" },
-  "famous-personalities": { icon: Star,          label: "Personalities" },
-  "citizen-corner":       { icon: Handshake,     label: "Citizens" },
-  "offices":              { icon: Building2,     label: "Offices" },
-  "rti":                  { icon: ClipboardList, label: "RTI" },
-  "sugar-factory":        { icon: Factory,       label: "Sugar Factory" },
-  "soil":                 { icon: Sprout,        label: "Soil Health" },
-  "population":           { icon: BarChart3,     label: "Population" },
-  "news":                 { icon: Newspaper,     label: "General" },
+// is about (targetModule). The key is that slug (the link target, unchanged);
+// `hue` is the sidebar module whose colour the tag borrows, `emoji` its chip.
+const MODULE_TAGS: Record<string, { emoji: string; label: string; hue: string }> = {
+  "leaders":              { emoji: "👥", label: "Leadership",     hue: "leadership" },
+  "infrastructure":       { emoji: "🏗️", label: "Infrastructure", hue: "infrastructure" },
+  "budget":               { emoji: "💰", label: "Budget",         hue: "finance" },
+  "water":                { emoji: "🚰", label: "Water & Dams",   hue: "water" },
+  "crops":                { emoji: "🌾", label: "Crop Prices",    hue: "crops" },
+  "weather":              { emoji: "🌦️", label: "Weather",        hue: "weather" },
+  "police":               { emoji: "👮", label: "Police",         hue: "police" },
+  "elections":            { emoji: "🗳️", label: "Elections",      hue: "elections" },
+  "education":            { emoji: "🎓", label: "Schools",        hue: "schools" },
+  "health":               { emoji: "🏥", label: "Health",         hue: "health" },
+  "transport":            { emoji: "🚌", label: "Transport",      hue: "transport" },
+  "schemes":              { emoji: "📋", label: "Schemes",        hue: "schemes" },
+  "housing":              { emoji: "🏠", label: "Housing",        hue: "housing" },
+  "power":                { emoji: "⚡", label: "Power",          hue: "power" },
+  "courts":               { emoji: "⚖️", label: "Courts",         hue: "courts" },
+  "industries":           { emoji: "🏭", label: "Industries",     hue: "industries" },
+  "jjm":                  { emoji: "💧", label: "JJM Water",      hue: "jjm" },
+  "gram-panchayat":       { emoji: "🏘️", label: "Gram Panchayat", hue: "gram-panchayat" },
+  "alerts":               { emoji: "⚠️", label: "Alerts",         hue: "alerts" },
+  "famous-personalities": { emoji: "🌟", label: "Personalities",  hue: "famous-personalities" },
+  "citizen-corner":       { emoji: "🤝", label: "Citizens",       hue: "citizen-corner" },
+  "offices":              { emoji: "🏢", label: "Offices",        hue: "offices" },
+  "rti":                  { emoji: "🏛️", label: "RTI",            hue: "rti" },
+  "sugar-factory":        { emoji: "🏭", label: "Sugar Factory",  hue: "industries" },
+  "soil":                 { emoji: "🌱", label: "Soil Health",    hue: "farm" },
+  "population":           { emoji: "📈", label: "Population",     hue: "population" },
+  "news":                 { emoji: "📰", label: "General",        hue: "news" },
 };
 
 /** News feeds sometimes leave HTML entities in text — tidy them up. */
@@ -88,10 +86,42 @@ function cleanHtml(text: string): string {
     .trim();
 }
 
+/** Category slugs arrive lower-case ("development"); show them in sentence case. */
+function topicLabel(category: string): string {
+  const t = category.replace(/[-_]/g, " ").trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : category;
+}
+
 /** "5h ago" / "3d ago" under a week; the date ("12 Sep") after that. */
 function publishedLabel(iso: string): string {
   const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
   return days < 7 ? timeAgoLabel(iso).label : asOfLabel(iso, { prefix: "" });
+}
+
+/** A small pill in the current hue (tint background, deep text). */
+function HuePill({ children, emoji }: { children: React.ReactNode; emoji?: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        height: 24,
+        padding: "0 10px",
+        borderRadius: "var(--ftp-radius-pill)",
+        background: "var(--hue-tint)",
+        border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
+        color: "var(--hue-deep)",
+        fontSize: 12,
+        lineHeight: "16px",
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {emoji && <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>{emoji}</span>}
+      {children}
+    </span>
+  );
 }
 
 /** Small link under a headline pointing at the module the article is about. */
@@ -99,27 +129,26 @@ function ModuleTag({ targetModule, moduleAction, base }: { targetModule: string;
   const tag = MODULE_TAGS[targetModule];
   if (!tag) return null;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-      <Link href={`${base}/${targetModule}`} style={{ textDecoration: "none" }}>
-        <Pill tone="brand" icon={tag.icon}>{tag.label}</Pill>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+      <Link href={`${base}/${targetModule}`} className={hueClass(tag.hue)} style={{ textDecoration: "none" }}>
+        <HuePill emoji={tag.emoji}>{tag.label}</HuePill>
       </Link>
       {moduleAction && (
-        <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>→ {moduleAction}</span>
+        <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{moduleAction}</span>
       )}
     </div>
   );
 }
 
-/** "Publisher · 5h ago" line + category pill, shown above every headline. */
+/** Topic pill, publisher and time — shown above every headline. */
 function ArticleMeta({ source, publishedAt, category }: { source: string; publishedAt: string; category: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-      <Pill>{category}</Pill>
-      <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-        {source}
-        <span aria-hidden> · </span>
-        <time dateTime={publishedAt} className="ftp-num" style={{ fontWeight: 400 }}>{publishedLabel(publishedAt)}</time>
-      </span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+      <HuePill>{topicLabel(category)}</HuePill>
+      <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: "var(--ftp-text-2)" }}>{source}</span>
+      <time dateTime={publishedAt} className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", fontWeight: 400, color: "var(--ftp-text-2)" }}>
+        {publishedLabel(publishedAt)}
+      </time>
     </div>
   );
 }
@@ -127,22 +156,24 @@ function ArticleMeta({ source, publishedAt, category }: { source: string; publis
 /** Headline — an external link when we have the article URL, plain text otherwise. */
 function Headline({ text, url, featured }: { text: string; url?: string | null; featured?: boolean }) {
   const style: React.CSSProperties = {
-    fontSize: featured ? 15 : 13,
-    lineHeight: featured ? "22px" : "20px",
-    fontWeight: 500,
+    fontSize: featured ? 18 : 14,
+    lineHeight: featured ? "25px" : "21px",
+    fontWeight: featured ? 650 : 600,
     color: "var(--ftp-text)",
     margin: 0,
   };
-  if (!url) return <p style={style}>{text}</p>;
+  const className = featured ? "ftp-display" : undefined;
+  if (!url) return <p className={className} style={style}>{text}</p>;
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
+      className={className}
       style={{ ...style, display: "flex", alignItems: "flex-start", gap: 8, textDecoration: "none", minHeight: 44 }}
     >
       <span style={{ flex: 1 }}>{text}</span>
-      <ExternalLink size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
+      <ExternalLink size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
       <span className="sr-only"> (opens the original article in a new tab)</span>
     </a>
   );
@@ -174,10 +205,21 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
   const categories = ["all", ...Array.from(new Set(news.map((n) => n.category)))];
   const filtered = filter === "all" ? news : news.filter((n) => n.category === filter);
   const sources = getModuleSources("news", state);
+  const districtName = district.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   // Headline numbers — all derived from the same list shown below.
   const latest = news.reduce<string | null>((max, n) => (!max || n.publishedAt > max ? n.publishedAt : max), null);
   const linkedCount = news.filter((n) => n.targetModule && MODULE_TAGS[n.targetModule]).length;
+
+  // The picture: stories per topic, biggest first (counted from `news`).
+  const topicCounts = categories
+    .filter((c) => c !== "all")
+    .map((c) => ({ category: c, count: news.filter((n) => n.category === c).length }))
+    .sort((a, b) => b.count - a.count);
+  const topTopic = topicCounts[0];
+  const linkedOfTen = news.length > 0 ? (linkedCount / news.length) * 10 : 0;
+  // A picture needs a few stories to mean anything; one article is not a pattern.
+  const showPicture = news.length >= 3;
 
   return (
     <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
@@ -206,18 +248,68 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
       {error && <ErrorBlock />}
 
       {!isLoading && !error && news.length === 0 && (
-        <NoDataCard module="news" district={district} state={state} />
+        <div style={{ marginBottom: 20 }}>
+          <EmptyState
+            emoji="📰"
+            title="Local news being collected"
+            body={`News articles from regional media sources for ${districtName} are collected via Google News RSS. Articles will appear here once the news pipeline starts covering this district.`}
+            action={
+              <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>
+                Data is sourced from official government portals under India&apos;s Open Data Policy (NDSAP).
+              </p>
+            }
+          />
+        </div>
       )}
 
       {!isLoading && news.length > 0 && (
         <>
           <StatStrip cols={3}>
-            <StatTile label="Articles" value={news.length} sub="In the current feed" asOf={latest} />
-            <StatTile label="Categories" value={categories.length - 1} />
-            <StatTile label="Linked to a module" value={linkedCount} sub="Tagged by topic" />
+            <StatTile emoji="📰" label="Articles" value={news.length} sub="In the current feed" asOf={latest} />
+            <StatTile emoji="🏷️" label="Topics" value={categories.length - 1} sub="Kinds of story" />
+            <StatTile emoji="🔗" label="Linked to a data page" value={linkedCount} sub="Tagged by topic" />
           </StatStrip>
 
-          <Section title="Latest articles">
+          {showPicture && topTopic && (
+            <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+              <Card tinted padding={18}>
+                <Explainer title="In simple words" emoji="🗞️">
+                  The feed has <strong>{news.length}</strong> news stories about {districtName} right now; the most common topic is{" "}
+                  <strong>{topicLabel(topTopic.category).toLowerCase()}</strong> ({topTopic.count}{" "}
+                  {topTopic.count === 1 ? "story" : "stories"}), and <strong>{linkedCount}</strong>{" "}
+                  {linkedCount === 1 ? "story links" : "stories link"} to a page here with the numbers behind it.
+                </Explainer>
+                <Pictogram
+                  filled={linkedOfTen}
+                  emoji="📰"
+                  label={`About ${Math.round(linkedOfTen)} of every 10 stories link to a data page on this site.`}
+                />
+              </Card>
+              <Card tinted padding={18}>
+                <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
+                  What the news is about
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {topicCounts.slice(0, 5).map((t) => (
+                    <ProgressBar
+                      key={t.category}
+                      value={t.count}
+                      max={news.length}
+                      label={`${topicLabel(t.category)} (${t.count})`}
+                      height={8}
+                    />
+                  ))}
+                </div>
+                {topicCounts.length > 5 && (
+                  <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                    {topicCounts.length - 5} more {topicCounts.length - 5 === 1 ? "topic" : "topics"} in the filter below.
+                  </p>
+                )}
+              </Card>
+            </div>
+          )}
+
+          <Section title="Latest articles" emoji="🗞️">
             {/* Category filter */}
             <div style={{ marginBottom: 16 }}>
               <Chips
@@ -226,7 +318,7 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
                 onChange={setFilter}
                 items={categories.map((c) => ({
                   value: c,
-                  label: c === "all" ? "All" : c,
+                  label: c === "all" ? "All" : topicLabel(c),
                   count: c === "all" ? news.length : news.filter((n) => n.category === c).length,
                 }))}
               />
@@ -236,11 +328,11 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
             {filtered.length > 0 && (() => {
               const n = filtered[0];
               return (
-                <Card as="article" padding={20} style={{ marginBottom: 12 }}>
+                <Card as="article" tinted padding={20} style={{ marginBottom: 12 }}>
                   <ArticleMeta source={n.publisher ?? n.source} publishedAt={n.publishedAt} category={n.category} />
                   <Headline text={cleanHtml(n.headline)} url={n.url} featured />
                   {n.summary && n.summary !== n.headline && (
-                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{cleanHtml(n.summary)}</p>
+                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4, fontSize: 14, lineHeight: "21px" }}>{cleanHtml(n.summary)}</p>
                   )}
                   {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
                 </Card>

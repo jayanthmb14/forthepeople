@@ -1,11 +1,11 @@
 "use client";
 
-// Top-10 mother tongues as horizontal bars, largest first. Bar colours step
-// through the colour-blind-safe Viridis ramp (../types); chrome comes from
-// ../chartKit.
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+// Top-10 mother tongues as horizontal bars, largest first. One series, so
+// it is drawn in the page hue (Design v4 recharts theme: gradient fill,
+// rounded bar ends); chrome comes from ../chartKit.
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { ChartGradients } from "@/components/district/visuals";
 import {
-  VIRIDIS,
   isNonEmptyObject,
   type LanguageData,
   type ProfileLike,
@@ -31,9 +31,11 @@ export default function LanguageBarChart({ language }: Props) {
   const max = data[0]?.pct ?? 0;
 
   return (
-    <div style={{ width: "100%", height: Math.max(260, data.length * 32) }}>
+    <div style={{ width: "100%", height: Math.max(260, data.length * 34) }}>
       <ResponsiveContainer>
         <BarChart data={data} layout="vertical" margin={{ left: 20, right: 30 }}>
+          <ChartGradients />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
           <XAxis
             type="number"
             domain={[0, Math.max(5, Math.ceil(max / 5) * 5)]}
@@ -42,13 +44,9 @@ export default function LanguageBarChart({ language }: Props) {
             tickLine={AXIS_LINE}
             tickFormatter={(v) => `${v}%`}
           />
-          <YAxis type="category" dataKey="name" width={90} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
+          <YAxis type="category" dataKey="name" width={90} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} interval={0} />
           <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(1)}%` : "—")} />
-          <Bar dataKey="pct" name="Share of speakers">
-            {data.map((d, i) => (
-              <Cell key={d.name} fill={VIRIDIS[Math.min(i, VIRIDIS.length - 1)]} />
-            ))}
-          </Bar>
+          <Bar dataKey="pct" name="Share of speakers" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

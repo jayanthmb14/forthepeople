@@ -2,7 +2,8 @@
 
 // Share of Scheduled Caste / Scheduled Tribe / Other as one stacked bar.
 // Colours are neutral greys built from design tokens (../types) — no
-// category gets a saturated colour. Chrome comes from ../chartKit.
+// category gets a saturated colour, and deliberately not the page hue
+// either. Chrome (v4 tooltip, axis) comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { CASTE_COLORS, isNonEmptyObject, type CasteMap, type ProfileLike } from "../types";
 import { AXIS_LINE, AXIS_TICK, ChartEmpty, ChartNote, LEGEND_STYLE, TOOLTIP_PROPS } from "../chartKit";
@@ -44,9 +45,9 @@ export default function CasteStackedBar({ caste }: Props) {
             <YAxis type="category" dataKey="name" hide />
             <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
             <Legend wrapperStyle={LEGEND_STYLE} />
-            <Bar dataKey="SC" name="Scheduled Caste" stackId="c" fill={CASTE_COLORS.SC} />
+            <Bar dataKey="SC" name="Scheduled Caste" stackId="c" fill={CASTE_COLORS.SC} radius={[6, 0, 0, 6]} />
             <Bar dataKey="ST" name="Scheduled Tribe" stackId="c" fill={CASTE_COLORS.ST} />
-            <Bar dataKey="Other" name="Other" stackId="c" fill={CASTE_COLORS.Other} />
+            <Bar dataKey="Other" name="Other" stackId="c" fill={CASTE_COLORS.Other} radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

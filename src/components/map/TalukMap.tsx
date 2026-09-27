@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
 import { MapTooltip, tint } from "@/components/map/mapTheme";
+import type { Hue } from "@/lib/design/hues";
 
 // Projection centers per district
 const DISTRICT_PROJECTION: Record<string, { center: [number, number]; scale: number }> = {
@@ -25,36 +26,38 @@ const DISTRICT_PROJECTION: Record<string, { center: [number, number]; scale: num
 };
 const DEFAULT_PROJECTION = { center: [76.77, 12.55] as [number, number], scale: 16000 };
 
-// Taluk colours — each neighbouring taluk gets a different hue so the
-// boundaries are easy to tell apart. The hues are the accent ramps already
-// declared on :root (`--accent-<name>-700`), so there is no hex here and
-// they follow dark mode. Fill = the hue at 22 % over transparent.
-type TalukHue = "blue" | "forest-green" | "amber" | "coral" | "purple" | "pink" | "teal";
-const TALUK_HUE: Record<string, TalukHue> = {
-  "mandya": "blue", "maddur": "forest-green", "malavalli": "amber", "srirangapatna": "coral",
-  "nagamangala": "purple", "kr-pete": "pink", "pandavapura": "teal",
-  "bengaluru-north": "blue", "bengaluru-south": "forest-green", "bengaluru-east": "purple", "anekal": "amber",
-  "mysuru-taluk": "blue", "nanjangud": "forest-green", "t-narasipur": "amber", "hunsur": "coral",
-  "hd-kote": "purple", "periyapatna": "pink", "kr-nagar": "teal",
+// Taluk colours — each neighbouring taluk gets a different v4 hue so the
+// boundaries are easy to tell apart. Each shape sits in a <g> with the
+// `.ftp-hue-<name>` class (globals.css), and its fill / stroke read
+// var(--hue), so there is no hex here. Fill = the hue at 22 % over
+// transparent. Taluks without an entry take the page hue.
+const TALUK_HUE: Record<string, Hue> = {
+  "mandya": "blue", "maddur": "green", "malavalli": "amber", "srirangapatna": "orange",
+  "nagamangala": "violet", "kr-pete": "pink", "pandavapura": "teal",
+  "bengaluru-north": "blue", "bengaluru-south": "green", "bengaluru-east": "violet", "anekal": "amber",
+  "mysuru-taluk": "blue", "nanjangud": "green", "t-narasipur": "amber", "hunsur": "orange",
+  "hd-kote": "violet", "periyapatna": "pink", "kr-nagar": "teal",
   // New Delhi
-  "connaught-place": "blue", "chanakyapuri": "forest-green", "lodhi-road": "amber",
+  "connaught-place": "blue", "chanakyapuri": "green", "lodhi-road": "amber",
   // Mumbai
-  "south-mumbai": "blue", "western-suburbs": "forest-green", "eastern-suburbs": "amber",
-  "navi-mumbai-zone": "purple", "north-mumbai": "pink",
+  "south-mumbai": "blue", "western-suburbs": "green", "eastern-suburbs": "amber",
+  "navi-mumbai-zone": "violet", "north-mumbai": "pink",
   // Chennai
-  "chennai-north": "blue", "chennai-south": "forest-green", "chennai-central": "amber", "chennai-west": "purple",
+  "chennai-north": "blue", "chennai-south": "green", "chennai-central": "amber", "chennai-west": "violet",
   // Kolkata
-  "kolkata-north": "blue", "kolkata-south": "forest-green", "kolkata-central": "amber", "kolkata-east": "purple",
+  "kolkata-north": "blue", "kolkata-south": "green", "kolkata-central": "amber", "kolkata-east": "violet",
   // Lucknow
-  "lucknow-city": "blue", "mohanlalganj": "forest-green", "malihabad": "amber", "bakshi-ka-talab": "purple",
+  "lucknow-city": "blue", "mohanlalganj": "green", "malihabad": "amber", "bakshi-ka-talab": "violet",
 };
 
-/** Fill + stroke for a taluk (unknown taluks fall back to the map's live blue). */
-function talukColors(slug: string): { fill: string; hover: string; pressed: string; stroke: string } {
-  const hue = TALUK_HUE[slug];
-  const stroke = hue ? `var(--accent-${hue}-700)` : "var(--ftp-map-live)";
-  return { fill: tint(stroke, hue ? 22 : 18), hover: tint(stroke, 35), pressed: tint(stroke, 50), stroke };
-}
+/** Fill + stroke for a taluk, read from the hue of the <g> around it. */
+const TALUK_COLORS = {
+  fill: tint("var(--hue)", 22),
+  hover: tint("var(--hue)", 38),
+  pressed: tint("var(--hue)", 52),
+  stroke: "var(--hue)",
+  strokeHover: "var(--hue-deep)",
+};
 
 // GeoJSON name → taluk slug
 const NAME_TO_SLUG: Record<string, string> = {
@@ -118,7 +121,8 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
                 NAME_TO_SLUG[geoName] ??
                 (geo.properties?.slug as string) ??
                 geoName.toLowerCase().replace(/\s+/g, "-");
-              const colors = talukColors(slug);
+              const hue = TALUK_HUE[slug];
+              const colors = TALUK_COLORS;
               const dbTaluk = taluks.find((t) => t.slug === slug);
               const displayName = dbTaluk?.name ?? geoName;
 
@@ -133,6 +137,7 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
 
               return (
                 <React.Fragment key={geo.rsmKey}>
+                  <g className={hue ? `ftp-hue-${hue}` : undefined}>
                   <Geography
                     geography={geo}
                     onClick={() => router.push(`/${locale}/${state}/${district}/${slug}`)}
@@ -150,17 +155,19 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
                     }}
                     onMouseLeave={() => setTooltip(null)}
                     style={{
-                      default: { fill: colors.fill, stroke: colors.stroke, strokeWidth: 1.5, outline: "none", cursor: "pointer" },
-                      hover:   { fill: colors.hover, stroke: colors.stroke, strokeWidth: 2.5, outline: "none", cursor: "pointer" },
+                      default: { fill: colors.fill, stroke: colors.stroke, strokeWidth: 1.5, outline: "none", cursor: "pointer", transition: "fill 150ms" },
+                      hover:   { fill: colors.hover, stroke: colors.strokeHover, strokeWidth: 2.5, outline: "none", cursor: "pointer" },
                       pressed: { fill: colors.pressed, outline: "none" },
                     }}
                   />
+                  </g>
                   {labelAt && (
                     <Annotation subject={labelAt} dx={0} dy={0} connectorProps={{ stroke: "none" }}>
                       <text
                         textAnchor="middle"
                         style={{
                           fontSize: 9,
+                          fontWeight: 600,
                           fill: "var(--ftp-text)",
                           fontFamily: "var(--ftp-font-sans)",
                           pointerEvents: "none",
@@ -187,13 +194,15 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
       <div
         style={{
           position: "absolute", bottom: 6, right: 8,
-          background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)",
-          borderRadius: "var(--ftp-radius-tile)", padding: "3px 8px", fontSize: 11, lineHeight: "16px",
-          color: "var(--ftp-text-2)",
+          display: "inline-flex", alignItems: "center", gap: 6,
+          background: "var(--hue-tint)", border: "1px solid color-mix(in srgb, var(--hue) 25%, transparent)",
+          borderRadius: 999, padding: "4px 10px", fontSize: 12, lineHeight: "16px", fontWeight: 600,
+          color: "var(--hue-deep)",
           pointerEvents: "none",
         }}
       >
-        Click taluk to explore
+        <span className="ftp-emoji" aria-hidden>👆</span>
+        Click a taluk to explore
       </div>
     </div>
   );

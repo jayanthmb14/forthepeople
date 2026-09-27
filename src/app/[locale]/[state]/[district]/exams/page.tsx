@@ -5,18 +5,20 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Exams & Jobs — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+//  Exams & Jobs — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  PageHeader → AI summary → StatStrip (totals, with the data date) →
-//  category Chips → department staffing (sanctioned vs filled) → exam
-//  cards grouped Open / Upcoming / Closed → SourcesFooter → related news
-//  → Toolbar (Share, Compare).
+//  PageHeader → AI summary → StatStrip of emoji tiles (totals, with the
+//  data date) → the picture (an "In simple words" line; when departments
+//  report staffing, a pictogram of filled posts and a dial) → category
+//  Chips → department staffing (sanctioned vs filled) → exam cards grouped
+//  Open / Upcoming / Closed → SourcesFooter → related news → Toolbar.
 //
-//  Each exam card: title + body, a status Pill, the date-driven
+//  Each exam card: title + body, a status pill, the date-driven
 //  ExamStepper, the facts a student needs (vacancies, age, fees, pay…),
-//  the official links, and a provenance line ("Last updated from news …",
-//  Source ↗). Status colour only ever appears as a Pill — never a stripe.
+//  the official links, and a provenance line (last updated from news,
+//  source link). "Coming up" states use the page hue; open / warning /
+//  closed keep their semantic colours.
 //
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
@@ -27,11 +29,13 @@ import ExamStepper from "@/components/district/ExamStepper";
 import {
   PageHeader, Section, Card, Pill, Chips, StatStrip, StatTile, ProgressBar,
   LoadingShell, ErrorBlock, EmptyState, SourcesFooter, Toolbar, ToolbarButton,
+  AsOfText, SourcePill,
 } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
+import { Explainer, Gauge, Pictogram } from "@/components/district/visuals";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import { use, useState } from "react";
-import { BookOpen, GraduationCap, ExternalLink, Users, Landmark, AlertTriangle, Share2, GitCompare, ClipboardList } from "lucide-react";
+import { GraduationCap, ExternalLink, AlertTriangle, Share2, GitCompare } from "lucide-react";
 import ModuleNews from "@/components/district/ModuleNews";
 
 // ── Types ─────────────────────────────────────────────────
@@ -92,21 +96,22 @@ interface ExamsResponse {
   };
 }
 
-// ── Status → Pill tone + label. Covers legacy lowercase + news-sourced uppercase ──
+// ── Status → pill tone + label. Covers legacy lowercase + news-sourced uppercase ──
+// "brand" here means "coming up" and is drawn in the page hue (see StatusPill).
 const STATUS_CONFIG: Record<string, { tone: Tone; label: string }> = {
   // legacy
   upcoming:            { tone: "brand",   label: "Upcoming" },
-  open:                { tone: "live",    label: "Applications Open" },
+  open:                { tone: "live",    label: "Applications open" },
   closed:              { tone: "neutral", label: "Closed" },
-  results:             { tone: "warn",    label: "Results Out" },
+  results:             { tone: "warn",    label: "Results out" },
   // news-driven
-  NOTIFICATION_OUT:    { tone: "brand",   label: "Notification Out" },
-  APPLICATIONS_OPEN:   { tone: "live",    label: "Applications Open" },
-  APPLICATIONS_CLOSED: { tone: "neutral", label: "Applications Closed" },
-  ADMIT_CARD_OUT:      { tone: "warn",    label: "Admit Card Out" },
-  EXAM_SCHEDULED:      { tone: "danger",  label: "Exam Scheduled" },
-  RESULT_PENDING:      { tone: "warn",    label: "Result Pending" },
-  RESULT_OUT:          { tone: "warn",    label: "Result Out" },
+  NOTIFICATION_OUT:    { tone: "brand",   label: "Notification out" },
+  APPLICATIONS_OPEN:   { tone: "live",    label: "Applications open" },
+  APPLICATIONS_CLOSED: { tone: "neutral", label: "Applications closed" },
+  ADMIT_CARD_OUT:      { tone: "warn",    label: "Admit card out" },
+  EXAM_SCHEDULED:      { tone: "danger",  label: "Exam scheduled" },
+  RESULT_PENDING:      { tone: "warn",    label: "Result pending" },
+  RESULT_OUT:          { tone: "warn",    label: "Result out" },
   COMPLETED:           { tone: "neutral", label: "Completed" },
 };
 
@@ -145,19 +150,50 @@ function fillTone(filledPct: number): Tone {
   return "warn";
 }
 
+/** The newest date in a list (ISO strings compare in time order). */
+function newest(dates: Array<string | null | undefined>): string | null {
+  let best: string | null = null;
+  for (const d of dates) if (d && (!best || d > best)) best = d;
+  return best;
+}
+
+/** A pill in the page hue — used for "coming up" statuses and module names. */
+function HuePill({ children, dot }: { children: React.ReactNode; dot?: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        height: 24,
+        padding: "0 10px",
+        borderRadius: "var(--ftp-radius-pill)",
+        background: "var(--hue-tint)",
+        color: "var(--hue-deep)",
+        fontSize: 12,
+        lineHeight: "16px",
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {dot && <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--hue)", flexShrink: 0 }} />}
+      {children}
+    </span>
+  );
+}
+
+/** Status pill: "coming up" in the page hue, everything else in its semantic tone. */
+function StatusPill({ tone, label }: { tone: Tone; label: string }) {
+  if (tone === "brand") return <HuePill dot>{label}</HuePill>;
+  return <Pill tone={tone} dot>{label}</Pill>;
+}
+
 // ── Staffing (all departments that report sanctioned vs filled posts) ──
 function StaffingSection({ staffing }: { staffing: DepartmentStaffing[] }) {
   if (!staffing.length) return null;
 
   return (
-    <Section
-      title={
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <Landmark size={18} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-          Sanctioned vs. filled (department staffing)
-        </span>
-      }
-    >
+    <Section title="Posts sanctioned and filled, by department" emoji="🏛️">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(220px, 100%), 1fr))", gap: 12 }}>
         {staffing.map((s) => {
           const filledPct = s.sanctionedPosts > 0
@@ -171,23 +207,30 @@ function StaffingSection({ staffing }: { staffing: DepartmentStaffing[] }) {
             <Card key={s.id} padding={14}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text)" }}>{s.roleName}</div>
-                  <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{s.department}</div>
+                  <div style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{s.roleName}</div>
+                  <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{s.department}</div>
                 </div>
-                <Pill tone={dangerLevel ? "danger" : "neutral"}>{s.module}</Pill>
+                {dangerLevel ? <Pill tone="danger">{s.module}</Pill> : <HuePill>{s.module}</HuePill>}
               </div>
 
-              <ProgressBar pct={filledPct} tone={tone} />
+              <ProgressBar pct={filledPct} tone={tone} height={8} />
 
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
                 <span>
-                  Filled: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{s.workingStrength}</span>
-                  /<span className="ftp-num">{s.sanctionedPosts}</span>
+                  Filled <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{s.workingStrength}</span>
+                  {" of "}<span className="ftp-num">{s.sanctionedPosts}</span>
                 </span>
                 <span style={{ color: dangerLevel ? "var(--ftp-danger)" : "var(--ftp-text-2)" }}>
-                  Vacant: <span className="ftp-num">{s.vacantPosts}</span> (<span className="ftp-num">{vacantPct}%</span>)
+                  Vacant <span className="ftp-num">{s.vacantPosts}</span> (<span className="ftp-num">{vacantPct}%</span>)
                 </span>
               </div>
+
+              {(s.asOfDate || s.sourceUrl) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  {s.asOfDate && <AsOfText asOf={s.asOfDate} />}
+                  {s.sourceUrl && <SourcePill label="Source" href={withScheme(s.sourceUrl)} />}
+                </div>
+              )}
             </Card>
           );
         })}
@@ -202,20 +245,23 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
   const cfg = STATUS_CONFIG[exam.status] ?? STATUS_CONFIG.upcoming;
   const firstSource = Array.isArray(exam.sourceUrls) && exam.sourceUrls.length > 0 ? exam.sourceUrls[0] : null;
 
-  // Link buttons under the facts. "Apply" is the one primary (filled) button.
-  const linkStyle: React.CSSProperties = {
+  // Link buttons under the facts. "Apply" is the one filled button (page hue).
+  const linkBase: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
     minHeight: 44,
     padding: "0 14px",
     borderRadius: "var(--ftp-radius-tile)",
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: "none",
+  };
+  const linkStyle: React.CSSProperties = {
+    ...linkBase,
     border: "1px solid var(--ftp-border)",
     background: "var(--ftp-surface)",
     color: "var(--ftp-text)",
-    fontSize: 13,
-    fontWeight: 500,
-    textDecoration: "none",
   };
 
   return (
@@ -223,11 +269,11 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <h3 className="ftp-title" style={{ marginBottom: 2 }}>{exam.title}</h3>
+          <h3 className="ftp-display" style={{ margin: "0 0 2px", fontSize: 17, lineHeight: "23px", fontWeight: 650, color: "var(--ftp-text)" }}>{exam.title}</h3>
           <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{exam.organizingBody ?? exam.department}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-          <Pill tone={cfg.tone} dot>{cfg.label}</Pill>
+          <StatusPill tone={cfg.tone} label={cfg.label} />
           {exam.needsVerification && (
             <Pill
               tone="warn"
@@ -240,8 +286,8 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
         </div>
       </div>
 
-      {/* Stepper — separated by hairlines, not a tinted box */}
-      <div style={{ margin: "0 0 14px", padding: "12px 0", borderTop: "1px solid var(--ftp-border)", borderBottom: "1px solid var(--ftp-border)" }}>
+      {/* Stepper — on a soft hue wash */}
+      <div style={{ margin: "0 0 14px", padding: "12px 10px", borderRadius: "var(--ftp-radius-tile)", background: "color-mix(in srgb, var(--hue-tint) 60%, #fff)" }}>
         <ExamStepper
           status={exam.status}
           announcedDate={exam.announcedDate}
@@ -259,15 +305,18 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
       <dl style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px 16px", margin: "0 0 14px" }}>
         {[
           { label: "Vacancies", value: exam.vacancies?.toLocaleString("en-IN") ?? "TBA", mono: true },
-          { label: "Age Limit", value: exam.ageLimit ?? "—", mono: false },
+          { label: "Age limit", value: exam.ageLimit ?? "—", mono: false },
           { label: "Qualification", value: exam.qualification ?? "—", mono: false },
-          { label: "Application Fee", value: exam.applicationFee ?? "—", mono: false },
-          { label: "Pay Scale", value: exam.payScale ?? "—", mono: false },
+          { label: "Application fee", value: exam.applicationFee ?? "—", mono: false },
+          { label: "Pay scale", value: exam.payScale ?? "—", mono: false },
           { label: "Selection", value: exam.selectionProcess ?? "—", mono: false },
         ].map((item) => (
           <div key={item.label} style={{ minWidth: 0 }}>
             <dt className="ftp-label" style={{ marginBottom: 2 }}>{item.label}</dt>
-            <dd className={item.mono ? "ftp-num" : undefined} style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", overflowWrap: "anywhere" }}>
+            <dd
+              className={item.mono ? "ftp-num" : undefined}
+              style={{ margin: 0, fontSize: item.mono ? 15 : 13, lineHeight: "20px", color: item.mono ? "var(--hue-deep)" : "var(--ftp-text)", overflowWrap: "anywhere" }}
+            >
               {item.value}
             </dd>
           </div>
@@ -281,7 +330,8 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
             href={withScheme(exam.applyUrl)}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ ...linkStyle, background: "var(--ftp-brand)", borderColor: "var(--ftp-brand)", color: "var(--ftp-surface)" }}
+            className="ftp-btn-primary"
+            style={{ ...linkBase, borderWidth: 1, borderStyle: "solid", color: "#fff" }}
           >
             Apply now <ExternalLink size={14} aria-hidden />
           </a>
@@ -323,7 +373,7 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
               href={withScheme(firstSource)}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+              style={{ color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
             >
               Source <ExternalLink size={11} aria-hidden />
             </a>
@@ -335,10 +385,11 @@ function ExamCard({ exam, isStateLevel }: { exam: GovernmentExam; isStateLevel: 
 }
 
 /** Grid of exam cards under one heading ("Applications open (3)"). */
-function ExamGroup({ title, exams }: { title: string; exams: GovernmentExam[] }) {
+function ExamGroup({ title, emoji, exams }: { title: string; emoji: string; exams: GovernmentExam[] }) {
   if (exams.length === 0) return null;
   return (
     <Section
+      emoji={emoji}
       title={
         <>
           {title} <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>({exams.length})</span>
@@ -404,6 +455,25 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
     { id: "banking", label: "Banking (IBPS, SBI)" },
   ] as const;
 
+  // The picture: posts filled across every department that reports its
+  // staffing (the same rows as the cards below). Nothing is estimated.
+  const staffing = examsData?.staffing ?? [];
+  const sanctioned = staffing.reduce((s, r) => s + r.sanctionedPosts, 0);
+  const working = staffing.reduce((s, r) => s + r.workingStrength, 0);
+  const vacant = staffing.reduce((s, r) => s + r.vacantPosts, 0);
+  const filledShare = sanctioned > 0 ? working / sanctioned : 0;
+  const staffingAsOf = newest(staffing.map((r) => r.asOfDate));
+  const openNow = examsData?.summary.openExams ?? 0;
+  const comingUp = examsData?.summary.upcomingExams ?? 0;
+  const totalExams = examsData ? examsData.summary.totalStateExams + examsData.summary.totalDistrictExams : 0;
+
+  const examsSentence = (
+    <>
+      <strong>{openNow}</strong> government {openNow === 1 ? "exam is" : "exams are"} open for applications right now, and{" "}
+      <strong>{comingUp}</strong> more {comingUp === 1 ? "is" : "are"} coming up.
+    </>
+  );
+
   return (
     <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
       <PageHeader
@@ -413,25 +483,52 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
         backHref={base}
         accent={getModuleAccent("exams")}
         freshness={meta?.lastUpdated ? { asOf: meta.lastUpdated } : undefined}
-        source={{ label: "UPSC · SSC · State PSC" }}
+        source={{ label: "UPSC, SSC, state PSC" }}
       />
       <AIInsightCard module="exams" district={district} />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && !examsData && (
-        <EmptyState title="No exam data available yet." body="Notifications appear here once the recruitment boards publish them." />
+        <EmptyState emoji="📝" title="No exam data available yet." body="Notifications appear here once the recruitment boards publish them." />
       )}
 
       {!isLoading && examsData && (
         <>
           {/* Summary stats */}
           <StatStrip cols={4}>
-            <StatTile icon={BookOpen} label="Total exams" value={examsData.summary.totalStateExams + examsData.summary.totalDistrictExams} asOf={meta?.lastUpdated} />
-            <StatTile icon={GraduationCap} label="Open now" value={examsData.summary.openExams} />
-            <StatTile icon={ClipboardList} label="Upcoming" value={examsData.summary.upcomingExams} />
-            <StatTile icon={Users} label="Staffing records" value={examsData.summary.totalStaffingRecords} />
+            <StatTile emoji="📝" label="Total exams" value={totalExams} asOf={meta?.lastUpdated} />
+            <StatTile emoji="✅" label="Open now" value={examsData.summary.openExams} />
+            <StatTile emoji="📅" label="Upcoming" value={examsData.summary.upcomingExams} />
+            <StatTile emoji="🏛️" label="Staffing records" value={examsData.summary.totalStaffingRecords} />
           </StatStrip>
+
+          {/* The picture. With staffing: explainer + pictogram of filled
+              posts, and a dial. Without: the exam sentence on its own. */}
+          {sanctioned > 0 ? (
+            <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+              <Card tinted padding={18}>
+                <Explainer title="In simple words" emoji="🪑">
+                  Of the <strong className="ftp-num">{sanctioned.toLocaleString("en-IN")}</strong> government posts listed here,{" "}
+                  <strong className="ftp-num">{working.toLocaleString("en-IN")}</strong> have someone working in them and{" "}
+                  <strong className="ftp-num">{vacant.toLocaleString("en-IN")}</strong> are empty. {examsSentence}
+                </Explainer>
+                <Pictogram
+                  filled={filledShare * 10}
+                  emoji="🧑‍💼"
+                  label={`About ${Math.round(filledShare * 10)} of every 10 approved posts have someone in them.`}
+                />
+              </Card>
+              <Card tinted padding={18} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Gauge value={filledShare * 100} label="Posts filled" caption={`Posts filled across ${staffing.length} staffing ${staffing.length === 1 ? "record" : "records"}`} />
+                {staffingAsOf && <AsOfText asOf={staffingAsOf} />}
+              </Card>
+            </div>
+          ) : totalExams > 0 ? (
+            <div style={{ marginTop: 16 }}>
+              <Explainer title="In simple words" emoji="📝">{examsSentence}</Explainer>
+            </div>
+          ) : null}
 
           {/* Category filter */}
           <div style={{ marginTop: 20 }}>
@@ -448,15 +545,15 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
           </div>
 
           {/* Staffing */}
-          <StaffingSection staffing={examsData.staffing ?? []} />
+          <StaffingSection staffing={staffing} />
 
-          <ExamGroup title="Applications open" exams={openExams} />
-          <ExamGroup title="Upcoming exams" exams={upcomingExams} />
-          <ExamGroup title="Closed / results" exams={closedExams} />
+          <ExamGroup title="Applications open" emoji="✅" exams={openExams} />
+          <ExamGroup title="Upcoming exams" emoji="📅" exams={upcomingExams} />
+          <ExamGroup title="Closed or results out" emoji="🏁" exams={closedExams} />
 
           {!allExams.length && (
             <div style={{ marginTop: 24 }}>
-              <EmptyState title="No exam notifications yet." body="Check back after the next data update." />
+              <EmptyState emoji="📭" title="No exam notifications yet." body="Check back after the next data update." />
             </div>
           )}
         </>
