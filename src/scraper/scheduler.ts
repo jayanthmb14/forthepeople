@@ -26,7 +26,7 @@ import { scrapeDams } from "./jobs/dams";
 import { scrapePower } from "./jobs/power";
 // ── Daily scrapers ────────────────────────────────────────
 import { scrapeRTI } from "./jobs/rti";
-import { scrapeCourts } from "./jobs/courts";
+import { scrapeCourtsNjdg } from "./jobs/courts-njdg";
 import { scrapeMGNREGA } from "./jobs/mgnrega";
 import { scrapePolice } from "./jobs/police";
 import { scrapeInfrastructure } from "./jobs/infrastructure";
@@ -155,8 +155,8 @@ async function scheduleJobs() {
     // ── Daily 2 AM: RTI stats ─────────────────────────────
     cron.schedule("0 2 * * *", () => runJob("rti", scrapeRTI, ctx, ["rti"]));
 
-    // ── Daily 3 AM: Court stats ───────────────────────────
-    cron.schedule("0 3 * * *", () => runJob("courts", scrapeCourts, ctx, ["courts"]));
+    // ── Daily 3 AM: Court stats (NJDG; production runs /api/cron/scrape-courts) ──
+    cron.schedule("0 3 * * *", () => runJob("courts", scrapeCourtsNjdg, ctx, ["courts"]));
 
     // ── Daily 4 AM: MGNREGA / Panchayat ──────────────────
     cron.schedule("0 4 * * *", () => runJob("mgnrega", scrapeMGNREGA, ctx, ["gram-panchayat"]));

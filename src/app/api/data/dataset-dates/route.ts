@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const payload: DatasetDatesPayload = {
       district: districtSlug,
       checkedAt: new Date().toISOString(),
-      datasets: await collectDatasetDates(district.id, district.stateId),
+      datasets: await collectDatasetDates(district.id, district.stateId, districtSlug),
     };
     await cacheSet(key, payload, TTL_SECONDS);
     return NextResponse.json(payload, { headers });

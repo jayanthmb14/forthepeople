@@ -17,14 +17,10 @@ import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
+import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
 
-const CONTRIBUTOR_CACHE_KEYS = [
-  "ftp:contributors:v1",
-  "ftp:contributors:all",
-  "ftp:contributors:leaderboard",
-  "ftp:contributors:district-rankings",
-  "ftp:contributors:top-tier",
-];
+// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
+const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
 
 async function invalidateContributorCaches() {
   await Promise.all(CONTRIBUTOR_CACHE_KEYS.map((k) => cacheSet(k, null, 1)));

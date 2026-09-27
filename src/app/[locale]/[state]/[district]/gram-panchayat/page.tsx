@@ -26,7 +26,10 @@
 //    header).
 //
 //  Data: usePanchayats() (every column of the district's GramPanchayat
-//  rows) and useOverview() for taluk names. Amounts are whole rupees and
+//  rows — none are sent until a checked source writes them; the seeded
+//  rows are hidden by the API — plus `snapshot`, the district's MGNREGA
+//  figures from the NREGA collector, shown by MgnregaSnapshot) and
+//  useOverview() for taluk names. Amounts are whole rupees and
 //  shown in lakh / crore. Every word comes from "page_gram-panchayat";
 //  numbers through useFormat(). Panchayat names are data: the local-script
 //  name leads when it is in the reader's language.
@@ -61,6 +64,9 @@ import type { DonutSlice } from "@/components/land-water/visuals";
 import { fitGrid, Chip, TapCard, TapHint } from "@/components/land-water/cards";
 import { EGRAMSWARAJ, PanchayatSheet, type PanchayatRow } from "@/components/land-water/PanchayatSheet";
 import MoneyToolbar from "@/components/money/MoneyToolbar";
+import MgnregaSnapshot from "@/components/land-water/MgnregaSnapshot";
+import type { DistrictSnapshot } from "@/scraper/lib/district-snapshot";
+import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { scriptLang } from "@/lib/utils/script-lang";
 
@@ -76,6 +82,8 @@ const WATER_BANDS: Array<{ key: "full" | "most" | "half" | "low"; min: number }>
 ];
 /** eGramSwaraj publishes monthly; older records count as late (header colour). */
 const MAX_AGE_DAYS = 90;
+/** The MGNREGA collector runs daily; older than this counts as late. */
+const NREGA_MAX_AGE_HOURS = 72;
 
 /** How many panchayats the "used the least" bars show. */
 const LEAST_MAX = 5;
@@ -120,6 +128,8 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
   const pct = (n: number) => f.number(n / 100, { style: "percent", maximumFractionDigits: 0 });
 
   const gps = (data?.data ?? []) as PanchayatRow[];
+  // The district's MGNREGA figures (NREGA collector), or null.
+  const nrega = (data?.snapshot ?? null) as DistrictSnapshot<NregaSnapshotData> | null;
   const shownName = (g: PanchayatRow) => namePair(g.name, g.nameLocal, locale);
 
   // Taluk names from the district overview (by id), in the reader's script when it matches.
@@ -181,15 +191,24 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
         icon={Building}
         title={mt.label("gram-panchayat")}
         description={t("description")}
-        freshness={lastUpdated ? { asOf: lastUpdated, thresholdHours: 24 * MAX_AGE_DAYS } : undefined}
-        source={{ label: "eGramSwaraj", href: EGRAMSWARAJ }}
+        freshness={
+          lastUpdated
+            ? { asOf: lastUpdated, thresholdHours: 24 * MAX_AGE_DAYS }
+            : nrega
+              ? { asOf: nrega.fetchedAt, thresholdHours: NREGA_MAX_AGE_HOURS }
+              : undefined
+        }
+        source={nrega && gps.length === 0 ? { label: "NREGASoft", href: nrega.sourceUrl } : { label: "eGramSwaraj", href: EGRAMSWARAJ }}
       />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
+      {/* The district's MGNREGA figures, from the NREGA collector. */}
+      {!isLoading && !error && nrega && <MgnregaSnapshot snapshot={nrega} districtName={districtName} money={money} />}
+
       {/* No rows: urban district with a municipal body → who governs instead. */}
-      {!isLoading && !error && gps.length === 0 && isUrbanDistrict && sc?.municipalBody && (
+      {!isLoading && !error && gps.length === 0 && !nrega && isUrbanDistrict && sc?.municipalBody && (
         <>
           <EmptyState title={t("urbanTitle")} body={t("urbanBody", { district: districtName })} />
           <div style={fitGrid(260, { marginTop: 12 })}>
@@ -202,6 +221,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
       {!isLoading &&
         !error &&
         gps.length === 0 &&
+        !nrega &&
         !(isUrbanDistrict && sc?.municipalBody) &&
         (isUrbanDistrict ? (
           <EmptyState title={t("urbanNaTitle")} body={t("urbanBody", { district: districtName })} />

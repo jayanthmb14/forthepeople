@@ -41,7 +41,7 @@ export async function verifyFreshness(ctx: VerifyContext): Promise<VerifierOutpu
       out.errors.push("freshness: time budget used up");
       break;
     }
-    const dates = await collectDatasetDates(d.id, d.stateId);
+    const dates = await collectDatasetDates(d.id, d.stateId, d.slug);
     for (const t of FRESHNESS_TARGETS) {
       const info = dates[t.datesKey];
       if (!info) continue;

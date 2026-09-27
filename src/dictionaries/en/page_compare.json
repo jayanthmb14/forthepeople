@@ -60,7 +60,7 @@
   "help_villages": "How many villages the district has on record.",
   "help_projects": "How many building projects (roads, buildings, water works and more) we track in the district.",
   "help_schemes": "How many government schemes we list for the district.",
-  "help_schools": "How many schools we list in the district.",
+  "help_schools": "How many schools the district has, as counted by UDISE+ (Ministry of Education). Before our UDISE+ collector has read a district, it is how many schools we list there.",
   "help_police": "How many police stations we list in the district.",
   "help_budget": "How much money was set aside for the district in the latest financial year, in crores of rupees (1 crore is 1,00,00,000).",
   "help_spent": "How much of that money was actually spent, in crores of rupees.",

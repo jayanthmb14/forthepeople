@@ -7,6 +7,7 @@
     "fallbackBody": "municipal corporation"
   },
   "answer": {
+    "district": "About <b>{tenths} of every 10</b> village homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> rural homes, as counted on the Jal Jeevan Mission dashboard.",
     "main": "About <b>{tenths} of every 10</b> homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> homes in the {count, plural, one {area} other {{areas} areas}} we track.",
     "noHomes": "We track {count, plural, one {one area} other {{areas} areas}} here, but the number of homes has not been published yet.",
     "allSafe": "Every area that was tested has water that is safe to drink.",

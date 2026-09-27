@@ -44,7 +44,8 @@
     "30min": "every 30 minutes",
     "6h": "every 6 hours",
     "12h": "twice a day",
-    "daily": "once a day"
+    "daily": "once a day",
+    "weekly": "once a week"
   },
   "date": {
     "reading": "Newest data: {date}",

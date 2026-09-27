@@ -32,19 +32,19 @@ the owner reviews and pushes. New strings ship in en + hi + kn (Hindi and Kannad
   a second opinion (`/api/data/forecast`); an honest "right now"; only the last 48 h of readings;
   drawn weather pictures.
 - **Support** (2026-09-27): checkout opens in a popup; each plan has its own colour and drawing;
-  a colourful supporters wall; names that are phone numbers show as "Supporter" on screen (the
-  API still sends them — to fix).
+  a colourful supporters wall; names that are phone numbers show as "Supporter" (the API too
+  since the v5.2 wiring below).
 - **Double-check** (2026-09-27): new `DataVerification` model, five verifiers (freshness, leaders,
   weather, dams, mandi), the daily `verify-data` cron and `/api/data/verification`
-  (`docs/VERIFICATION.md`). Needs `npm run db:push`.
+  (`docs/VERIFICATION.md`). `db:push` done 2026-09-28 (DataVerification + ContentTranslation).
 - **Courts** (2026-09-27): NJDG collector, `scrape-courts` twice a day, `/api/data/court-pendency`
   and a new courts page (cases waiting, how old, filed vs decided per year, time to decide).
 - **Collectors** (2026-09-27): JJM tap water, UDISE+ schools, MGNREGA "At a glance" and state
   e-procurement tenders, each cross-checked before it writes; `src/scraper/lib/collector-registry.ts`.
   Health facilities and power cuts stay blocked at the source (login or captcha).
 - **Leaders** (2026-09-27): `scripts/fix-leaders-2026-09.ts` (dry run by default; on a snapshot it
-  would add 102 rows, deactivate 105 and update 142) and `docs/LEADERS-VERIFIED-2026-09.md`. Not
-  applied yet.
+  would add 102 rows, deactivate 105 and update 142) and `docs/LEADERS-VERIFIED-2026-09.md`.
+  Applied to production 2026-09-28 (349 writes, idempotent re-run: 0).
 - **Crons** (2026-09-28): `vercel.json` now schedules `verify-data`, `scrape-courts`, `scrape-jjm`,
   `scrape-schools`, `scrape-mgnrega` and `scrape-tenders`; `health-score` runs daily because grades
   expire after 7 days (19 crons in all, `docs/RUNBOOKS/crons.md`).
@@ -89,6 +89,36 @@ before. Numbers as in `docs/OWNER-TODO.md` §3.
   Neon one; the rest fail. It redeploys whenever `main` changes. Stop it before merging to `main`
   (steps in `docs/OWNER-TODO.md` §2).
 
+### Fixed — v5.2 wiring: verified or hidden (branch `v52/wiring`, 2026-09-28)
+Backend wiring after the v5.1 merge. Rule: a value that is unverified, invented, seeded or
+estimated is not shown as fact. No database writes; the clean-ups below need the owner.
+- **Courts**: NJDG collector is the only source shown — freshness rule (daily, 3 days),
+  data-sources page ("collected automatically"), dataset dates (snapshot read time), compare /
+  AI insights (`/api/data/courts`) and the report card use only `NJDG district dashboard …` rows
+  (`NJDG_COURTSTAT`). The Railway scheduler uses `scrapeCourtsNjdg`; `jobs/courts.ts` removed.
+- **Seeded rows hidden at the API** (`src/lib/data-filters.ts`): tap water shows only the JJM
+  dashboard's district total (`JJM_DISTRICT_TOTAL`, never added to the 18 seeded rows, out of the
+  water-test figures); estimated crime and traffic rows (`SHOWN_CRIME`, `SHOWN_TRAFFIC`); seeded
+  village councils (`VERIFIED_PANCHAYAT`). Applied in the data API, freshness, dataset dates,
+  report card, AI insight templates and the home data-point count.
+- **Collectors**: schools and village-council pages read the UDISE+ and MGNREGA snapshots (new
+  MGNREGA section; counts printed as 0.00 lakh read "fewer than 1,000"). JJM, schools and
+  village councils are listed as collected automatically, matching `PORTAL_COLLECTORS` (tested).
+- **Verification**: `/api/admin/cleanup-news` keeps `verify-*` items; new read-only admin page
+  **News & Check Queue** (`/admin/news-queue`).
+- **News pipeline**: no headline can create a Leader, CrimeStat or PowerOutage row; generic
+  "news" items and police items that are not crimes (transfers, reshuffles…) are no longer queued
+  (`src/lib/news-action-rules.ts`).
+- **Weather**: OpenWeather is asked by the district HQ's lat/lon (same point as the forecast).
+- **Glance row**: "being built" counts only projects at the building stage (= Projects page).
+- **Privacy**: supporter APIs never send a phone number or e-mail as a name (shared rule
+  `src/lib/supporter-name.ts`, cache keys bumped in `src/lib/supporter-cache.ts`); the Razorpay
+  webhook no longer uses the payer's contact as the name. `/api/payment/contributors` adds
+  `oneTimeCount` / `oneTimeRupees`.
+- **Owner clean-ups (not run)**: 44 hand-seeded `CourtStat` rows; 18 seeded `JJMStatus` rows; 18
+  estimated `CrimeStat` + 12 estimated `TrafficCollection` rows; 8 seeded `GramPanchayat` rows;
+  482 pending generic "news" + 23 non-crime "police" `NewsActionQueue` items; 35 `Supporter` names
+  that are phone numbers (`scripts/anonymize-supporter-names.ts`, dry run first).
 ### Changed — v5 "Calm": quieter design, honest dates, cleanup (branches `v5/*`, 2026-09-27)
 The owner found v4 "cartoonish". Nine parallel work-streams moved the site to a calm, pastel,
 blue-based look, made every date honest and cleared out dead files. Nothing here is deployed

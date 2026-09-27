@@ -15,7 +15,20 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
-import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
+import {
+  JJM_DISTRICT_TOTAL,
+  LOCAL_INFRA,
+  NJDG_COURTSTAT,
+  NOT_FROM_NEWS,
+  NOT_FROM_NEWS_OPTIONAL,
+  NOT_SEEDED_RAINFALL,
+  SHOWN_CRIME,
+  SHOWN_TRAFFIC,
+  VERIFIED_PANCHAYAT,
+} from "@/lib/data-filters";
+import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
+import type { NregaSnapshotData } from "@/scraper/lib/nrega";
+import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 import { dedupeStories } from "@/lib/news-dedupe";
 
 // Modules whose payload carries live text with stored translations
@@ -112,6 +125,7 @@ async function fetchModule(
     // 1. OVERVIEW
     // ══════════════════════════════════════════════════
     case "overview": {
+      const udise = await readDistrictSnapshot<UdiseSnapshotData>("udise", districtSlug);
       const d = await prisma.district.findUnique({
         where: { id: did },
         include: {
@@ -127,7 +141,10 @@ async function fetchModule(
           },
         },
       });
-      return { data: d, meta };
+      // Schools: the district's UDISE+ count (collector) when we have it, not
+      // the schools we list by name (compare reads this).
+      if (d && udise) d._count.schools = udise.data.totals.schools;
+      return { data: d ? { ...d, schoolsFrom: udise ? "udise" : "listed" } : d, meta };
     }
 
     // ══════════════════════════════════════════════════
@@ -338,12 +355,14 @@ async function fetchModule(
           where: { districtId: did },
           orderBy: { name: "asc" },
         }),
+        // Estimates ("… (estimated)", "Estimated from …") are never sent, so
+        // the page, compare and AI insights only ever see published figures.
         prisma.crimeStat.findMany({
-          where: { districtId: did, ...NOT_FROM_NEWS },
+          where: { districtId: did, ...SHOWN_CRIME },
           orderBy: [{ year: "desc" }, { category: "asc" }],
         }),
         prisma.trafficCollection.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...SHOWN_TRAFFIC },
           orderBy: { date: "desc" },
           take: 24,
         }),
@@ -375,8 +394,9 @@ async function fetchModule(
     // 15. COURTS
     // ══════════════════════════════════════════════════
     case "courts": {
+      // Only rows the NJDG collector wrote; hand-seeded rows are never sent.
       const data = await prisma.courtStat.findMany({
-        where: { districtId: did },
+        where: { districtId: did, ...NJDG_COURTSTAT },
         orderBy: [{ year: "desc" }, { courtName: "asc" }],
       });
       return { data, meta };
@@ -416,34 +436,54 @@ async function fetchModule(
     // 17. PANCHAYATS
     // ══════════════════════════════════════════════════
     case "panchayats": {
-      const data = await prisma.gramPanchayat.findMany({
-        where: { districtId: did },
-        orderBy: { name: "asc" },
-      });
-      return { data, meta };
+      // Seeded GramPanchayat rows (round numbers, no real source) are never
+      // sent (VERIFIED_PANCHAYAT). The district's MGNREGA figures come from
+      // the NREGA collector's checked snapshot (/api/cron/scrape-mgnrega),
+      // sent as `snapshot` (null for urban districts / before its first run).
+      const [data, snapshot] = await Promise.all([
+        prisma.gramPanchayat.findMany({
+          where: { districtId: did, ...VERIFIED_PANCHAYAT },
+          orderBy: { name: "asc" },
+        }),
+        readDistrictSnapshot<NregaSnapshotData>("mgnrega", districtSlug),
+      ]);
+      return { data, meta: { ...meta, lastUpdated: snapshot?.fetchedAt ?? null }, snapshot };
     }
 
     // ══════════════════════════════════════════════════
     // 18. SCHOOLS
     // ══════════════════════════════════════════════════
     case "schools": {
-      const data = await prisma.school.findMany({
-        where: { districtId: did },
-        include: { results: { orderBy: { year: "desc" }, take: 3 } },
-        orderBy: { name: "asc" },
-        take: 200,
-      });
-      return { data, meta };
+      // `data`: the schools listed one by one (entered by hand). `snapshot`:
+      // the district's UDISE+ totals from /api/cron/scrape-schools (schools,
+      // teachers, students for the school year) — the page's headline
+      // figures come from it whenever it exists, never from adding up the list.
+      const [data, snapshot] = await Promise.all([
+        prisma.school.findMany({
+          where: { districtId: did },
+          include: { results: { orderBy: { year: "desc" }, take: 3 } },
+          orderBy: { name: "asc" },
+          take: 200,
+        }),
+        readDistrictSnapshot<UdiseSnapshotData>("udise", districtSlug),
+      ]);
+      return { data, meta: { ...meta, lastUpdated: snapshot?.fetchedAt ?? null }, snapshot };
     }
 
     // ══════════════════════════════════════════════════
     // 19. JJM (Jal Jeevan Mission)
     // ══════════════════════════════════════════════════
     case "jjm": {
-      const data = await prisma.jJMStatus.findMany({
-        where: { districtId: did },
-        orderBy: { coveragePct: "desc" },
+      // Only the JJM dashboard's district total (JJM_DISTRICT_TOTAL); the
+      // seeded area rows are never sent or added to it. `level` tells the
+      // page this row is the whole district, not one area — it has no water
+      // test of its own, so it stays out of the water-test figures.
+      const rows = await prisma.jJMStatus.findMany({
+        where: { districtId: did, ...JJM_DISTRICT_TOTAL },
+        orderBy: { updatedAt: "desc" },
+        take: 1,
       });
+      const data = rows.map((r) => ({ ...r, level: "district" as const }));
       return { data, meta };
     }
 

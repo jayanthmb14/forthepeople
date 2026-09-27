@@ -269,12 +269,14 @@ export default function ContributorWall() {
   // too, and its ₹ total adds one month of each subscription to the one-time
   // gifts (checked against the database, 27 Sep 2026). So: when the monthly
   // strip is shown above, this strip keeps only the one-time gifts (no one
-  // twice), and it shows a COUNT, never that mixed ₹ total. The count is
-  // shown only when the API returned every row (it sends at most 50).
+  // twice), and it shows a COUNT, never that mixed ₹ total. The count is the
+  // API's own total for the rows this strip lists (`oneTimeCount` when split
+  // out, else `count`); the list itself holds at most 50 rows.
   const splitOut = subscribers.length > 0;
   const contributors = (splitOut ? allContributors.filter((c) => !c.isRecurring) : allContributors).slice(0, 50);
-  const haveAll = !!data && data.count <= allContributors.length;
-  const moreThanShown = !!data && data.count > allContributors.length;
+  const listTotal = data ? (splitOut ? data.oneTimeCount : data.count) : undefined;
+  const haveAll = typeof listTotal === "number";
+  const moreThanShown = typeof listTotal === "number" && listTotal > contributors.length;
 
   return (
     <div>
@@ -318,7 +320,7 @@ export default function ContributorWall() {
             <>
               {!isLoading && haveAll && contributors.length > 0 && (
                 <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  {t("wallCount", { n: contributors.length, shown: number(contributors.length) })}
+                  {t("wallCount", { n: listTotal, shown: number(listTotal) })}
                 </span>
               )}
               {moreThanShown && (

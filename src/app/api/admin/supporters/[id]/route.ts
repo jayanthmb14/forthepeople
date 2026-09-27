@@ -13,17 +13,10 @@ import type { Prisma } from "@/generated/prisma";
 import { logAuditAuto } from "@/lib/audit-log";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
 import redis from "@/lib/redis";
+import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS, CONTRIBUTOR_KEY_PATTERNS } from "@/lib/supporter-cache";
 
-const CONTRIBUTOR_CACHE_KEYS = [
-  "ftp:contributors:v1",
-  "ftp:contributors:v2",
-  "ftp:contributors:all",
-  "ftp:contributors:leaderboard",
-  "ftp:contributors:district-rankings",
-  "ftp:contributors:top-tier",
-  "ftp:contributors:top-tier:v3",
-  "ftp:contributors:growth-trend",
-];
+// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
+const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
 
 async function bustAllContributorCaches() {
   // Static keys
@@ -31,7 +24,7 @@ async function bustAllContributorCaches() {
   // Dynamic per-district / per-state keys (versioned suffix)
   if (redis) {
     try {
-      const patterns = ["ftp:contributors:district:*", "ftp:contributors:state-page:*"];
+      const patterns = CONTRIBUTOR_KEY_PATTERNS;
       for (const p of patterns) {
         // @upstash/redis returns [cursor: string, keys: string[]] from SCAN.
         let cursor: string | number = "0";

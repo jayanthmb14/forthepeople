@@ -372,6 +372,8 @@ export interface School {
 
 export interface JJMStatus {
   id: string;
+  /** "district" = the JJM dashboard's total for the whole district (no water test of its own). */
+  level?: "district" | "area";
   talukId?: string | null;
   villageName?: string | null;
   totalHouseholds: number;

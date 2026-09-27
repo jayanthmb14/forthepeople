@@ -14,7 +14,7 @@ import { callAIJSON } from "./ai-provider";
 import { extractExamFromNews, syncExamFromNews } from "./exam-sync";
 import { extractVerifyAndSyncInfra } from "./infra-sync";
 import { logUpdate } from "./update-log";
-import { PARTY_COLORS } from "./constants/party-colors";
+import { decideNewsAction } from "./news-action-rules";
 
 // ── Per-cron extraction cap ─────────────────────────────────
 // Each news cron invocation calls resetExtractionCounters() once at start.
@@ -157,33 +157,24 @@ Use "news" module if it doesn't clearly fit another. confidence = how certain yo
   }
 }
 
-// Modules where a news article must NEVER write straight to the page.
-// The Sept 2026 audit found the auto-applied rows were wrong: "Prime
-// Minister of India" stored as a leader's name, any number in a headline
-// stored as an NCRB crime count, "Factories go fully solar" stored as a
-// power outage. These always go to the admin review queue now.
-const REVIEW_ONLY_MODULES = new Set(["police", "leaders", "power"]);
-
 // ── Execute DB mutation based on module ──────────────────────
+// What may happen is decided by decideNewsAction() (src/lib/news-action-rules.ts):
+// skip / drop (generic "news", police items that are not crimes) / queue for
+// admin review (every leaders, police and power item — news never writes
+// Leader, CrimeStat or PowerOutage rows — and anything below 0.85) / execute.
 export async function executeNewsAction(
   classification: NewsClassification
 ): Promise<void> {
   const { districtId, targetModule, extractedData, articleTitle, articleUrl, confidence } = classification;
+  const decision = decideNewsAction(classification);
 
-  // Not about this district (or the classifier did not say): never act on it.
-  if (classification.isAboutDistrict !== true) {
-    console.log(`[NewsAction] Skip (not about this district): ${articleTitle.slice(0, 60)}`);
-    return;
-  }
-
-  // Below threshold: skip
-  if (confidence < 0.60) {
-    console.log(`[NewsAction] Skip (low confidence ${confidence.toFixed(2)}): ${articleTitle.slice(0, 60)}`);
+  if (decision.kind === "skip" || decision.kind === "drop") {
+    console.log(`[NewsAction] ${decision.kind === "skip" ? "Skip" : "Drop"} (${decision.reason}): ${articleTitle.slice(0, 60)}`);
     return;
   }
 
   // Mid confidence, or a review-only module: queue for admin review
-  if (confidence < 0.85 || REVIEW_ONLY_MODULES.has(targetModule)) {
+  if (decision.kind === "queue") {
     await prisma.newsActionQueue.create({
       data: {
         districtId,
@@ -303,34 +294,6 @@ export async function executeNewsAction(
         break;
       }
 
-      case "police": {
-        const data = extractedData as Record<string, unknown>;
-        if (data.crimeCategory && data.count) {
-          const year = new Date().getFullYear();
-          const existing = await prisma.crimeStat.findFirst({
-            where: { districtId, year, category: data.crimeCategory as string },
-          });
-          if (existing) {
-            await prisma.crimeStat.update({
-              where: { id: existing.id },
-              data: { count: data.count as number, source: articleUrl },
-            });
-          } else {
-            await prisma.crimeStat.create({
-              data: {
-                districtId,
-                year,
-                category: data.crimeCategory as string,
-                count: data.count as number,
-                source: articleUrl,
-              },
-            });
-          }
-          console.log(`[NewsAction] ✅ Updated CrimeStat: ${data.crimeCategory}`);
-        }
-        break;
-      }
-
       case "schemes": {
         const data = extractedData as Record<string, unknown>;
         if (data.schemeName) {
@@ -355,140 +318,9 @@ export async function executeNewsAction(
         break;
       }
 
-      case "leaders": {
-        const data = extractedData as Record<string, unknown>;
-        if (data.personName && data.role) {
-          const name = (data.personName as string).trim();
-          const role = (data.role as string).trim();
-          const tier = (data.tier as number) ?? 3;
-          const party = (data.party as string) ?? null;
-          const districtName = (await prisma.district.findUnique({ where: { id: districtId }, select: { name: true } }))?.name ?? "";
-          if (party && !PARTY_COLORS[party] && !Object.keys(PARTY_COLORS).some((k) => k.toUpperCase() === party.toUpperCase())) {
-            console.warn(`[leadership] Unknown party detected: '${party}'. Using default colors. Add to party-colors.ts for branded colors.`);
-          }
-
-          // Skip if the name is clearly just a title/role echoed as a name
-          // (e.g. AI extracts personName="Prime Minister", role="Prime Minister").
-          const nameWords = name.toLowerCase().replace(/[^a-z\s]/g, "").trim();
-          const roleWords = role.toLowerCase().replace(/[^a-z\s]/g, "").trim();
-          if (nameWords === roleWords || nameWords.length < 3) {
-            console.log(`[NewsAction] ⏭️  Skipped: name "${name}" looks like a role echo, not a person name`);
-            break;
-          }
-
-          // Skip duplicates: check if this person already exists for this district.
-          // 1. Exact name+role match (case-insensitive)
-          // 2. Same name at same tier (catches "Prime Minister" vs "Prime Minister of India")
-          // 3. Name contained in existing name or vice versa (catches "Modi" vs "Narendra Modi")
-          const existingByNameRole = await prisma.leader.findFirst({
-            where: {
-              districtId,
-              name: { equals: name, mode: "insensitive" },
-              role: { equals: role, mode: "insensitive" },
-            },
-          });
-          if (existingByNameRole) {
-            await prisma.leader.update({
-              where: { id: existingByNameRole.id },
-              data: { lastVerifiedAt: new Date(), active: true },
-            });
-            console.log(`[NewsAction] ⏭️  Skipped duplicate Leader (exact match, refreshed): ${name} as ${role}`);
-            break;
-          }
-
-          // Fuzzy match: same person name already exists at this tier in this district?
-          // This catches "Narendra Modi / Prime Minister / BJP" vs
-          // "Narendra Modi / Prime Minister of India / Bharatiya Janata Party"
-          const existingByName = await prisma.leader.findFirst({
-            where: {
-              districtId,
-              name: { equals: name, mode: "insensitive" },
-              tier,
-              active: true,
-            },
-          });
-          if (existingByName) {
-            // Same person, different role text — update the existing record's
-            // verification date but don't create a new entry.
-            await prisma.leader.update({
-              where: { id: existingByName.id },
-              data: { lastVerifiedAt: new Date() },
-            });
-            console.log(`[NewsAction] ⏭️  Skipped duplicate Leader (same name+tier, role variant "${role}" vs "${existingByName.role}"): ${name}`);
-            break;
-          }
-
-          // For unique-officeholder roles (CM, Governor, Collector,
-          // Commissioner, Mayor, etc.), mark the previous holder of the
-          // SAME role inactive — never delete, so we preserve history.
-          const UNIQUE_ROLE_RE = /^(chief minister|governor|lieutenant governor|deputy chief minister|chief secretary|district collector|deputy commissioner|district magistrate|mayor|commissioner of police|managing director|chairman|vice chairman|chief justice|principal sessions judge)/i;
-          let supersededName: string | null = null;
-          if (UNIQUE_ROLE_RE.test(role)) {
-            const supersedeWhere = {
-              districtId,
-              role: { equals: role, mode: "insensitive" as const },
-              active: true,
-              NOT: { name: { equals: name, mode: "insensitive" as const } },
-            };
-            const superseded = await prisma.leader.findMany({ where: supersedeWhere, select: { id: true, name: true } });
-            if (superseded.length > 0) {
-              await prisma.leader.updateMany({ where: { id: { in: superseded.map((s) => s.id) } }, data: { active: false } });
-              supersededName = superseded.map((s) => s.name).join(", ");
-              console.log(`[NewsAction] 📜 Marked ${superseded.length} previous "${role}" holder(s) inactive: ${supersededName}`);
-              for (const s of superseded) {
-                await logUpdate({
-                  source: "scraper", actorLabel: "news-action-engine",
-                  tableName: "Leader", recordId: s.id, action: "update",
-                  districtId, districtName, moduleName: "leadership",
-                  description: `Leader marked inactive: ${s.name} (${role}) — replaced by ${name} per news report.`,
-                  recordCount: 1, details: { reason: "superseded", newHolder: name, articleUrl },
-                });
-              }
-            }
-          }
-
-          const created = await prisma.leader.create({
-            data: {
-              districtId, name, role, tier, party,
-              since: new Date().getFullYear().toString(),
-              source: articleUrl,
-              lastVerifiedAt: new Date(),
-              active: true,
-            },
-          });
-          console.log(`[NewsAction] ✅ Added Leader: ${name} as ${role}`);
-          await logUpdate({
-            source: "scraper", actorLabel: "news-action-engine",
-            tableName: "Leader", recordId: created.id, action: "create",
-            districtId, districtName, moduleName: "leadership",
-            description: supersededName
-              ? `New ${role}: ${name}${party ? ` (${party})` : ""} replacing ${supersededName}.`
-              : `New leader appointed: ${name}${party ? ` (${party})` : ""} as ${role}.`,
-            recordCount: 1, details: { tier, articleUrl },
-          });
-        }
-        break;
-      }
-
-      case "power": {
-        const data = extractedData as Record<string, unknown>;
-        if (data.area) {
-          await prisma.powerOutage.create({
-            data: {
-              districtId,
-              area: data.area as string,
-              type: (data.type as string) ?? "Unscheduled",
-              reason: (data.reason as string) ?? articleTitle,
-              startTime: data.startTime ? new Date(data.startTime as string) : new Date(),
-              endTime: data.endTime ? new Date(data.endTime as string) : null,
-              source: articleUrl,
-              active: true,
-            },
-          });
-          console.log(`[NewsAction] ✅ Created PowerOutage: ${data.area}`);
-        }
-        break;
-      }
+      // "leaders", "police" and "power" never reach this switch: they are
+      // review-only (decideNewsAction queues them), so no news article can
+      // write a Leader, CrimeStat or PowerOutage row.
 
       case "exams": {
         // News-driven exam sync — extract structured metadata then upsert.

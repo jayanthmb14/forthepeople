@@ -97,6 +97,23 @@ export function parseOpenWeather(json: unknown): WeatherSample | null {
   };
 }
 
+/**
+ * The OpenWeather "current weather" request. With a point (the district HQ
+ * from src/lib/geo/district-centroids.ts — the same point the forecast and
+ * Open-Meteo use) it asks by lat/lon, so the stored reading is for the same
+ * place as the forecast and the second-source check. A town-name lookup
+ * (`q=Mandya,IN`) can land on a different station; it is only the fallback
+ * for a district with no point on file.
+ */
+export function openWeatherCurrentUrl(where: { lat: number; lng: number } | { city: string }, key: string): string {
+  const base = "https://api.openweathermap.org/data/2.5/weather";
+  const place =
+    "lat" in where
+      ? `lat=${where.lat.toFixed(3)}&lon=${where.lng.toFixed(3)}`
+      : `q=${encodeURIComponent(where.city)},IN`;
+  return `${base}?${place}&units=metric&appid=${encodeURIComponent(key)}`;
+}
+
 /** The Open-Meteo request for one point (see the file header for units). */
 export function openMeteoUrl(lat: number, lng: number): string {
   const current = [

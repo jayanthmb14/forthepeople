@@ -12,10 +12,13 @@
 //  The answer, in one sentence: "About 8 of every 10 homes in Mandya have
 //  a tap at home: 3,50,000 of 4,20,000 homes in the 7 areas we track."
 //
-//  Data: useJJM() → one row per area (a village, or a taluk total in
-//  some districts): homes, tap connections, coverage %, latest water test
-//  and its own updatedAt. The newest updatedAt is the page's "as of".
-//  useTaluks() only names the taluk an area belongs to.
+//  Data: useJJM() → the JJM dashboard's district total (level "district",
+//  rural homes; the API sends only this row) and, when a source publishes
+//  them, one row per area (a village or a taluk): homes, tap connections,
+//  coverage %, latest water test and its own updatedAt. The district total
+//  is the headline figure and is never added to the areas; it has no water
+//  test, so it stays out of the water-test tile and ring. The newest
+//  updatedAt is the page's "as of". useTaluks() only names an area's taluk.
 //
 //  Page, top to bottom:
 //    header → the answer → 4 tiles → one picture (ten houses + a tank)
@@ -111,16 +114,19 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
   const b = (c: React.ReactNode) => <strong>{c}</strong>;
   const bNum = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
 
-  const areas = data?.data ?? [];
-  const totalHH = areas.reduce((s, v) => s + v.totalHouseholds, 0);
-  const totalTaps = areas.reduce((s, v) => s + v.tapConnections, 0);
+  const rows = data?.data ?? [];
+  // The district total (JJM dashboard) is the headline; areas are listed under it.
+  const districtTotal = rows.find((v) => v.level === "district") ?? null;
+  const areas = rows.filter((v) => v.level !== "district");
+  const totalHH = districtTotal ? districtTotal.totalHouseholds : areas.reduce((s, v) => s + v.totalHouseholds, 0);
+  const totalTaps = districtTotal ? districtTotal.tapConnections : areas.reduce((s, v) => s + v.tapConnections, 0);
   const waiting = Math.max(0, totalHH - totalTaps);
   const coverage = totalHH > 0 ? (totalTaps / totalHH) * 100 : 0;
   const tested = areas.filter((v) => v.waterQualityTested).length;
   const testedPct = areas.length > 0 ? (tested / areas.length) * 100 : 0;
   const tenths = Math.round(Math.min(100, coverage) / 10);
-  // Newest update across all areas (ISO strings sort correctly as text).
-  const asOf = areas.reduce<string | null>((m, v) => (!m || v.updatedAt > m ? v.updatedAt : m), null);
+  // Newest update across all rows (ISO strings sort correctly as text).
+  const asOf = rows.reduce<string | null>((m, v) => (!m || v.updatedAt > m ? v.updatedAt : m), null);
 
   // Taluk names, for the card subtitle and the taluk filter.
   const talukName = new Map<string, { text: string; lang?: string }>();
@@ -182,7 +188,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
-      {!isLoading && !error && areas.length === 0 &&
+      {!isLoading && !error && rows.length === 0 &&
         (urbanWaterBoard ? (
           <Card tinted>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -199,11 +205,19 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
           <NoDataCard module="jjm" district={district} state={state} isUrban={true} />
         ))}
 
-      {!isLoading && areas.length > 0 && (
+      {!isLoading && rows.length > 0 && (
         <>
           {/* 1. The answer in one sentence. */}
           <Explainer>
-            {totalHH > 0
+            {districtTotal && totalHH > 0
+              ? t.rich("answer.district", {
+                  tenths: f.number(tenths),
+                  district: districtName,
+                  taps: f.number(totalTaps),
+                  homes: f.number(totalHH),
+                  b: bNum,
+                })
+              : totalHH > 0
               ? t.rich("answer.main", {
                   tenths: f.number(tenths),
                   district: districtName,
@@ -222,8 +236,8 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                   : t("answer.someSafe", { safeN: qValues.safe, testedN: qValues.tested }))}
           </Explainer>
 
-          {/* 2. Four big numbers. */}
-          <StatStrip cols={4}>
+          {/* 2. The big numbers (water tests only when areas were tested). */}
+          <StatStrip cols={tested > 0 ? 4 : 3}>
             <StatTile
               label={t("tiles.coverage")}
               value={f.number(coverage, { maximumFractionDigits: 1 })}
@@ -232,13 +246,15 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
             />
             <StatTile label={t("tiles.taps")} value={f.number(totalTaps)} sub={t("tiles.tapsSub", { homes: f.number(totalHH) })} asOf={asOf} />
             <StatTile label={t("tiles.waiting")} value={f.number(waiting)} sub={t("tiles.waitingSub")} asOf={asOf} />
-            <StatTile
-              label={t("tiles.tested")}
-              value={f.number(testedPct, { maximumFractionDigits: 0 })}
-              unit="%"
-              sub={t("tiles.testedSub", { tested: qValues.tested, areas: f.number(areas.length) })}
-              asOf={asOf}
-            />
+            {tested > 0 && (
+              <StatTile
+                label={t("tiles.tested")}
+                value={f.number(testedPct, { maximumFractionDigits: 0 })}
+                unit="%"
+                sub={t("tiles.testedSub", { tested: qValues.tested, areas: f.number(areas.length) })}
+                asOf={asOf}
+              />
+            )}
           </StatStrip>
 
           {/* 3. One picture: ten houses with the real share lit, and a tank
@@ -258,103 +274,105 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
           )}
 
           {/* 4. Every area as a card; tap one for everything about it. */}
-          <Section title={t("list.title")}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
-              <SearchBox
-                id="jjm-search"
-                label={t("list.searchLabel")}
-                placeholder={t("list.searchPlaceholder")}
-                value={query}
-                onChange={(v) => {
-                  setQuery(v);
-                  setLimit(FIRST_SHOWN);
-                }}
-              />
-              <Chips
-                label={t("list.sortAria")}
-                value={sort}
-                onChange={(v) => setSort(v as SortKey)}
-                items={[
-                  { value: "low", label: t("list.sortLow") },
-                  { value: "high", label: t("list.sortHigh") },
-                  { value: "name", label: t("list.sortName") },
-                ]}
-              />
-            </div>
-            {taluksWithRows.length >= 2 && (
-              <div style={{ marginBottom: 12 }}>
-                <Chips
-                  label={t("list.talukAria")}
-                  value={talukFilter}
+          {areas.length > 0 && (
+            <Section title={t("list.title")}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
+                <SearchBox
+                  id="jjm-search"
+                  label={t("list.searchLabel")}
+                  placeholder={t("list.searchPlaceholder")}
+                  value={query}
                   onChange={(v) => {
-                    setTalukFilter(v);
+                    setQuery(v);
                     setLimit(FIRST_SHOWN);
                   }}
+                />
+                <Chips
+                  label={t("list.sortAria")}
+                  value={sort}
+                  onChange={(v) => setSort(v as SortKey)}
                   items={[
-                    { value: "all", label: t("list.all"), count: areas.length },
-                    ...taluksWithRows.map((id) => ({
-                      value: id,
-                      label: talukName.get(id)?.text ?? id,
-                      count: areas.filter((v) => v.talukId === id).length,
-                    })),
+                    { value: "low", label: t("list.sortLow") },
+                    { value: "high", label: t("list.sortHigh") },
+                    { value: "name", label: t("list.sortName") },
                   ]}
                 />
               </div>
-            )}
-            {listed.length === 0 ? (
-              <EmptyState title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
-            ) : (
-              <>
-                <p aria-live="polite" style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  {t("list.count", { count: listed.length, n: f.number(listed.length) })}
-                </p>
-                <div className="ftp-grid">
-                  {shown.map((v) => {
-                    const q = qualityOf(v);
-                    const tk = v.talukId ? talukName.get(v.talukId) : undefined;
-                    const nm = nameOf(v);
-                    return (
-                      <TapCard
-                        key={v.id}
-                        title={nm}
-                        titleLang={place(nm).lang}
-                        subtitle={tk ? t("list.taluk", { taluk: tk.text }) : undefined}
-                        aside={
-                          <span className="ftp-bignum" style={{ fontSize: 22, lineHeight: 1, color: coverageColor(v.coveragePct) }}>
-                            {pct(v.coveragePct)}
-                          </span>
-                        }
-                        hint={t("list.open")}
-                        onOpen={() => setOpenId(v.id)}
-                      >
-                        <CardBar
-                          pct={v.coveragePct}
-                          label={
-                            <span className="ftp-num">
-                              {t("list.tapsOfHomes", { taps: f.number(v.tapConnections), homes: f.number(v.totalHouseholds) })}
+              {taluksWithRows.length >= 2 && (
+                <div style={{ marginBottom: 12 }}>
+                  <Chips
+                    label={t("list.talukAria")}
+                    value={talukFilter}
+                    onChange={(v) => {
+                      setTalukFilter(v);
+                      setLimit(FIRST_SHOWN);
+                    }}
+                    items={[
+                      { value: "all", label: t("list.all"), count: areas.length },
+                      ...taluksWithRows.map((id) => ({
+                        value: id,
+                        label: talukName.get(id)?.text ?? id,
+                        count: areas.filter((v) => v.talukId === id).length,
+                      })),
+                    ]}
+                  />
+                </div>
+              )}
+              {listed.length === 0 ? (
+                <EmptyState title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
+              ) : (
+                <>
+                  <p aria-live="polite" style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ftp-text-2)" }}>
+                    {t("list.count", { count: listed.length, n: f.number(listed.length) })}
+                  </p>
+                  <div className="ftp-grid">
+                    {shown.map((v) => {
+                      const q = qualityOf(v);
+                      const tk = v.talukId ? talukName.get(v.talukId) : undefined;
+                      const nm = nameOf(v);
+                      return (
+                        <TapCard
+                          key={v.id}
+                          title={nm}
+                          titleLang={place(nm).lang}
+                          subtitle={tk ? t("list.taluk", { taluk: tk.text }) : undefined}
+                          aside={
+                            <span className="ftp-bignum" style={{ fontSize: 22, lineHeight: 1, color: coverageColor(v.coveragePct) }}>
+                              {pct(v.coveragePct)}
                             </span>
                           }
-                        />
-                        <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 13, color: "var(--ftp-text-2)" }}>
-                          {(() => {
-                            const QIcon = QUALITY_ICON[q];
-                            return <QIcon size={14} aria-hidden style={{ color: q === "issue" ? "var(--ftp-warn)" : "var(--hue)" }} />;
-                          })()}
-                          {t(`quality.${q}`)}
-                        </span>
-                      </TapCard>
-                    );
-                  })}
-                </div>
-                <MoreButton
-                  shown={shown.length}
-                  total={listed.length}
-                  label={t("list.showAll", { n: f.number(listed.length) })}
-                  onClick={() => setLimit(listed.length)}
-                />
-              </>
-            )}
-          </Section>
+                          hint={t("list.open")}
+                          onOpen={() => setOpenId(v.id)}
+                        >
+                          <CardBar
+                            pct={v.coveragePct}
+                            label={
+                              <span className="ftp-num">
+                                {t("list.tapsOfHomes", { taps: f.number(v.tapConnections), homes: f.number(v.totalHouseholds) })}
+                              </span>
+                            }
+                          />
+                          <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 13, color: "var(--ftp-text-2)" }}>
+                            {(() => {
+                              const QIcon = QUALITY_ICON[q];
+                              return <QIcon size={14} aria-hidden style={{ color: q === "issue" ? "var(--ftp-warn)" : "var(--hue)" }} />;
+                            })()}
+                            {t(`quality.${q}`)}
+                          </span>
+                        </TapCard>
+                      );
+                    })}
+                  </div>
+                  <MoreButton
+                    shown={shown.length}
+                    total={listed.length}
+                    label={t("list.showAll", { n: f.number(listed.length) })}
+                    onClick={() => setLimit(listed.length)}
+                  />
+                </>
+              )}
+            </Section>
+          )}
 
           {/* 5. Charts, two to a row on wide screens. */}
           {(tested > 0 || stillWaiting.length >= 2) && (

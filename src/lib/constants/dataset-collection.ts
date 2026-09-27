@@ -24,6 +24,8 @@
 //
 //  Update this file whenever vercel.json or a collector's coverage changes.
 
+import { NJDG_DISTRICT_BASE, NJDG_DISTRICT_UNITS } from "@/lib/courts/sources";
+
 /** How the data reaches us. */
 export type Collection =
   /** Our collector fetches it on a schedule (a cron in vercel.json). */
@@ -55,7 +57,7 @@ export interface DatasetInfo {
   /** vercel.json cron path, for `auto`. */
   cron?: string;
   /** How often our collector runs, for `auto` (message key under every.*). */
-  every?: "30min" | "6h" | "12h" | "daily";
+  every?: "30min" | "6h" | "12h" | "daily" | "weekly";
   /**
    * `auto` only for these districts (the collector covers no others);
    * every other district gets `fallback`.
@@ -69,6 +71,18 @@ export interface DatasetInfo {
 }
 
 const DAY = 24;
+
+/**
+ * Districts the rural-scheme collectors cover: the JJM dashboard and the
+ * MGNREGA "At a glance" page list only districts with villages (dry run
+ * 27 Sep 2026; src/scraper/jobs/jjm-dashboard.ts, mgnrega-glance.ts). The
+ * fully urban districts (Chennai, Hyderabad, Kolkata, Mumbai, New Delhi)
+ * are not on them.
+ */
+export const RURAL_SCHEME_DISTRICTS = ["mandya", "mysuru", "bengaluru-urban", "pune", "lucknow"] as const;
+
+/** Districts whose court figures the NJDG collector reads (src/lib/courts/sources.ts). */
+export const NJDG_COVERED_DISTRICTS: readonly string[] = Object.keys(NJDG_DISTRICT_UNITS);
 
 /**
  * Districts whose dam levels the dams collector reads from the Karnataka
@@ -89,8 +103,35 @@ export const DATASETS: readonly DatasetInfo[] = [
   // Who runs it
   { key: "leaders", slug: "leadership", collection: "hand", dateKind: "checked", maxAgeHours: 60 * DAY },
   { key: "elections", slug: "elections", collection: "published", dateKind: "period", url: "https://results.eci.gov.in" },
-  { key: "panchayats", slug: "gram-panchayat", collection: "hand", dateKind: "checked", maxAgeHours: 365 * DAY, url: "https://egramswaraj.gov.in" },
-  { key: "courts", slug: "courts", collection: "hand", dateKind: "period", url: "https://njdg.ecourts.gov.in" },
+  // MGNREGA district figures from the NREGA collector (PORTAL_COLLECTORS "mgnrega").
+  // Hand-seeded GramPanchayat rows are never shown (VERIFIED_PANCHAYAT).
+  {
+    key: "panchayats",
+    slug: "gram-panchayat",
+    collection: "auto",
+    cron: "/api/cron/scrape-mgnrega",
+    every: "daily",
+    autoDistricts: RURAL_SCHEME_DISTRICTS,
+    fallback: "hand",
+    dateKind: "reading",
+    maxAgeHours: 3 * DAY,
+    url: "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx",
+  },
+  // Read from NJDG's public district dashboards (src/scraper/jobs/courts-njdg.ts);
+  // the date is when the collector last read NJDG. Hand-typed CourtStat rows
+  // are never shown (NJDG_COURTSTAT in src/lib/data-filters.ts).
+  {
+    key: "courts",
+    slug: "courts",
+    collection: "auto",
+    cron: "/api/cron/scrape-courts",
+    every: "daily",
+    autoDistricts: NJDG_COVERED_DISTRICTS,
+    fallback: "hand",
+    dateKind: "reading",
+    maxAgeHours: 3 * DAY,
+    url: NJDG_DISTRICT_BASE,
+  },
   { key: "police", slug: "police", collection: "hand", dateKind: "period", url: "https://ncrb.gov.in" },
   // Money & projects
   { key: "budget", slug: "finance", collection: "hand", dateKind: "period" },
@@ -103,7 +144,19 @@ export const DATASETS: readonly DatasetInfo[] = [
   { key: "offices", slug: "offices", collection: "hand", dateKind: "checked", maxAgeHours: 90 * DAY },
   { key: "exams", slug: "exams", collection: "hand", dateKind: "checked", maxAgeHours: 30 * DAY },
   // Daily needs
-  { key: "jjm", slug: "jjm", collection: "hand", dateKind: "checked", maxAgeHours: 180 * DAY, url: "https://ejalshakti.gov.in/jjmreport" },
+  // District total from the JJM collector (PORTAL_COLLECTORS "jjm"); seeded rows are never shown.
+  {
+    key: "jjm",
+    slug: "jjm",
+    collection: "auto",
+    cron: "/api/cron/scrape-jjm",
+    every: "daily",
+    autoDistricts: RURAL_SCHEME_DISTRICTS,
+    fallback: "hand",
+    dateKind: "reading",
+    maxAgeHours: 3 * DAY,
+    url: "https://ejalshakti.gov.in/jjmreport/JJMIndia.aspx",
+  },
   {
     key: "dams",
     slug: "water",
@@ -117,7 +170,18 @@ export const DATASETS: readonly DatasetInfo[] = [
   },
   { key: "power", slug: "power", collection: "hand", dateKind: "checked" },
   { key: "transport", slug: "transport", collection: "hand", dateKind: "none" },
-  { key: "schools", slug: "schools", collection: "hand", dateKind: "checked", maxAgeHours: 400 * DAY, url: "https://udiseplus.gov.in" },
+  // District totals from the UDISE+ collector (PORTAL_COLLECTORS "schools"); the
+  // date is when it last read UDISE+ (the figures are for the school year).
+  {
+    key: "schools",
+    slug: "schools",
+    collection: "auto",
+    cron: "/api/cron/scrape-schools",
+    every: "weekly",
+    dateKind: "reading",
+    maxAgeHours: 15 * DAY,
+    url: "https://dashboard.udiseplus.gov.in/",
+  },
   // Farming
   { key: "crops", slug: "crops", collection: "auto", cron: "/api/cron/scrape-crops", every: "daily", dateKind: "reading", maxAgeHours: 7 * DAY, url: "https://agmarknet.gov.in" },
   { key: "soil", slug: "farm", collection: "hand", dateKind: "checked", url: "https://soilhealth.dac.gov.in" },

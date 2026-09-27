@@ -34,6 +34,7 @@ import {
   Users,
   Lightbulb,
   Flame,
+  Inbox,
 } from "lucide-react";
 import ModuleHelp from "./ModuleHelp";
 import { logoutAction } from "@/app/[locale]/admin/actions";
@@ -44,6 +45,7 @@ type ItemId =
   | "alerts"
   | "ai-settings"
   | "review"
+  | "news-queue"
   | "population-audit"
   | "revenue"
   | "contributors-flagged"
@@ -169,6 +171,15 @@ const GROUPS: Group[] = [
         routeSegment: "review",
         help: "Approve or reject AI-generated insights before they go live",
         badgeKey: "pendingReviews",
+      },
+      {
+        id: "news-queue",
+        label: "News & Check Queue",
+        icon: Inbox,
+        buildHref: (locale) => `/${locale}/admin/news-queue`,
+        inPageTab: false,
+        routeSegment: "news-queue",
+        help: "Items waiting for a decision: data changes found in news, and disagreements raised by the daily data check (verify-*). Read-only list by type.",
       },
       {
         id: "population-audit",
@@ -592,6 +603,7 @@ function resolveActiveItem(
   // Full-route pages first
   if (pathname.startsWith(`${base}/ai-settings`)) return "ai-settings";
   if (pathname.startsWith(`${base}/review`)) return "review";
+  if (pathname.startsWith(`${base}/news-queue`)) return "news-queue";
   if (pathname.startsWith(`${base}/population`)) return "population-audit";
   if (pathname.startsWith(`${base}/supporters`)) return "revenue";
   if (pathname.startsWith(`${base}/security`)) return "security";

@@ -196,7 +196,7 @@ const YEAR = 365 * DAY;
  * Expected maximum age per module (main dataset). Periods are measured from
  * the START of a financial year (budget, housing) and from the END of a
  * calendar year (yearly statistics, the census), so "FY 2026-27" is current
- * until May 2027 and "2024 court statistics" until the end of 2026.
+ * until May 2027 and "2024 crime statistics" until the end of 2026.
  */
 export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   news:                   { maxAgeHours: 24 * HOUR, every: "daily",    method: "auto" },
@@ -209,8 +209,10 @@ export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   rti:                    { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual" },
   leadership:             { maxAgeHours: 90 * DAY,  every: "onChange", method: "manual" },
   elections:              { maxAgeHours: 6 * YEAR,  every: "election", method: "manual",    portal: "https://results.eci.gov.in" },
-  "gram-panchayat":       { maxAgeHours: YEAR,      every: "monthly",  method: "manual",    portal: "https://egramswaraj.gov.in" },
-  courts:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://njdg.ecourts.gov.in" },
+  // District MGNREGA figures, read daily by /api/cron/scrape-mgnrega (PORTAL_COLLECTORS).
+  "gram-panchayat":       { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto",      portal: "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx" },
+  // Read from NJDG twice a day by /api/cron/scrape-courts (each district at least daily).
+  courts:                 { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto",      portal: "https://njdg.ecourts.gov.in/njdg_v3/" },
   police:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://ncrb.gov.in" },
   finance:                { maxAgeHours: 400 * DAY, every: "yearly",   method: "manual" },
   infrastructure:         { maxAgeHours: 90 * DAY,  every: "monthly",  method: "news" },
@@ -221,12 +223,14 @@ export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   services:               { maxAgeHours: YEAR,      every: "onChange", method: "manual" },
   offices:                { maxAgeHours: YEAR,      every: "onChange", method: "manual" },
   exams:                  { maxAgeHours: 14 * DAY,  every: "daily",    method: "auto" },
-  jjm:                    { maxAgeHours: 90 * DAY,  every: "weekly",   method: "manual",    portal: "https://ejalshakti.gov.in/jjmreport/JJMIndia.aspx" },
+  // District total, read daily by /api/cron/scrape-jjm (PORTAL_COLLECTORS).
+  jjm:                    { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto",      portal: "https://ejalshakti.gov.in/jjmreport/JJMIndia.aspx" },
   water:                  { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto" },
   power:                  { maxAgeHours: 7 * DAY,   every: "onChange", method: "auto" },
   transport:              { maxAgeHours: YEAR,      every: "onChange", method: "manual" },
   health:                 { maxAgeHours: YEAR,      every: "monthly",  method: "manual" },
-  schools:                { maxAgeHours: 400 * DAY, every: "yearly",   method: "manual",    portal: "https://udiseplus.gov.in" },
+  // UDISE+ district totals, read weekly by /api/cron/scrape-schools (PORTAL_COLLECTORS).
+  schools:                { maxAgeHours: 15 * DAY,  every: "weekly",   method: "auto",      portal: "https://dashboard.udiseplus.gov.in/" },
   crops:                  { maxAgeHours: 7 * DAY,   every: "daily",    method: "auto",      portal: "https://agmarknet.gov.in" },
   farm:                   { maxAgeHours: 30 * DAY,  every: "weekly",   method: "manual",    portal: "https://soilhealth.dac.gov.in" },
   population:             { maxAgeHours: 20 * YEAR, every: "census",   method: "manual",    portal: "https://censusindia.gov.in" },

@@ -7,8 +7,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
+import { publicDisplayName } from "@/lib/supporter-name";
+import { CONTRIBUTOR_KEYS } from "@/lib/supporter-cache";
 
-const CACHE_KEY = "ftp:contributors:v7"; // bump: phone/email-looking names now masked as "Supporter"
+const CACHE_KEY = CONTRIBUTOR_KEYS.payment; // v8: shared masking rule (src/lib/supporter-name.ts)
 const CACHE_TTL = 60; // 60 seconds
 
 export interface ContributorItem {
@@ -31,29 +33,14 @@ export interface ContributorItem {
 
 export interface ContributorsResponse {
   contributors: ContributorItem[];
+  /** Every active supporter: one-time gifts plus ONE month of each subscription. */
   totalRupees: number;
+  /** Every active supporter row (one-time and monthly). */
   count: number;
-}
-
-// Looks like a phone number: optional "+", then 8+ digits/spaces/dashes.
-// Catches "+91 98765 43210", "9876543210", "98765-43210".
-const PHONE_LIKE = /^\+?\d[\d\s-]{7,}$/;
-// Looks like an email address (loose on purpose — we only need "is this
-// probably an email", not RFC validation).
-const EMAIL_LIKE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/**
- * True when a stored name is really a phone number, an email address, or too
- * short to be a name (< 2 letters). Such values must never be shown publicly.
- * (Not exported — Next.js route files may only export route handlers. The
- * same rule is mirrored in scripts/anonymize-supporter-names.ts.)
- */
-function looksLikeContactInfo(raw: string): boolean {
-  const name = (raw || "").trim();
-  if (PHONE_LIKE.test(name)) return true;
-  if (EMAIL_LIKE.test(name)) return true;
-  const letters = name.match(/\p{L}/gu)?.length ?? 0;
-  return letters < 2;
+  /** One-time gifts only (isRecurring = false), same filter as `count`. */
+  oneTimeCount: number;
+  /** One-time gifts only, whole rupees. */
+  oneTimeRupees: number;
 }
 
 // Session 14 v8.1 Fix #15: when the supporter has opted in to be public,
@@ -66,13 +53,8 @@ function looksLikeContactInfo(raw: string): boolean {
 // the `name` column (early checkout form put the wrong field there). Those
 // are PII and must never reach the public API, so they render as "Supporter".
 // The email/phone columns are never selected by this route at all.
-function anonymizeName(raw: string, isPublic: boolean): string {
-  if (!isPublic) return "Anonymous";
-  const name = (raw || "").trim();
-  if (!name) return "Anonymous";
-  if (looksLikeContactInfo(name)) return "Supporter";
-  return name;
-}
+// The rule is shared with /api/data/contributors: src/lib/supporter-name.ts.
+const anonymizeName = publicDisplayName;
 
 // Aligned with VISIBILITY_THRESHOLD in /api/data/contributors so labels match
 // where a contributor actually appears.
@@ -118,7 +100,7 @@ export async function GET() {
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
     };
 
-    const [rows, totals] = await Promise.all([
+    const [rows, totals, oneTimeTotals] = await Promise.all([
       prisma.supporter.findMany({
         where: supporterFilter,
         orderBy: { createdAt: "desc" },
@@ -144,6 +126,11 @@ export async function GET() {
       }),
       prisma.supporter.aggregate({
         where: supporterFilter,
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.supporter.aggregate({
+        where: { ...supporterFilter, isRecurring: false },
         _sum: { amount: true },
         _count: true,
       }),
@@ -178,12 +165,14 @@ export async function GET() {
       contributors,
       totalRupees,
       count,
+      oneTimeCount: typeof oneTimeTotals?._count === "number" ? oneTimeTotals._count : 0,
+      oneTimeRupees: Math.floor(oneTimeTotals?._sum?.amount ?? 0),
     };
 
     await cacheSet(CACHE_KEY, result, CACHE_TTL);
     return NextResponse.json(result);
   } catch (err) {
     console.error("[contributors]", err);
-    return NextResponse.json({ contributors: [], totalRupees: 0, count: 0 });
+    return NextResponse.json({ contributors: [], totalRupees: 0, count: 0, oneTimeCount: 0, oneTimeRupees: 0 });
   }
 }

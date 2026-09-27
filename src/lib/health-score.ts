@@ -10,7 +10,9 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
+import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 
 const WEIGHTS = {
   governance: 15,
@@ -145,8 +147,11 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
   }
 
   const schools = await prisma.school.findMany({ where: { districtId } });
-  const totalStudents = schools.reduce((s, sc) => s + (sc.students ?? 0), 0);
-  const totalTeachers = schools.reduce((s, sc) => s + (sc.teachers ?? 0), 0);
+  // Students per teacher: the UDISE+ district totals (collector) when we have
+  // them, else the schools listed by name.
+  const udise = district?.slug ? await readDistrictSnapshot<UdiseSnapshotData>("udise", district.slug) : null;
+  const totalStudents = udise ? udise.data.totals.students : schools.reduce((s, sc) => s + (sc.students ?? 0), 0);
+  const totalTeachers = udise ? udise.data.totals.teachers : schools.reduce((s, sc) => s + (sc.teachers ?? 0), 0);
   const ratio = totalTeachers > 0 ? totalStudents / totalTeachers : 35;
   const ratioScore = ratio <= 25 ? 100 : ratio <= 35 ? 70 : ratio <= 45 ? 40 : 20;
   sub.studentTeacherRatio = { value: Math.round(ratio), max: 25, score: ratioScore, label: "Student-Teacher Ratio (lower is better)", ...noDataIf(totalTeachers === 0) };
@@ -206,8 +211,8 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
     sub.avgProgress = { value: 0, max: 100, score: 40, label: "Average Project Progress (%)", noData: true };
   }
 
-  // Road connectivity via gram panchayats
-  const gps = await prisma.gramPanchayat.findMany({ where: { districtId } });
+  // Road connectivity via gram panchayats (checked rows only; none yet)
+  const gps = await prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT } });
   if (gps.length > 0) {
     const connected = gps.filter((g) => g.roadConnected).length;
     const roadPct = (connected / gps.length) * 100;
@@ -246,7 +251,7 @@ async function calcWaterSanitation(districtId: string): Promise<CategoryResult> 
   }
 
   // JJM coverage
-  const jjm = await prisma.jJMStatus.findMany({ where: { districtId } });
+  const jjm = await prisma.jJMStatus.findMany({ where: { districtId, ...JJM_DISTRICT_TOTAL } });
   if (jjm.length > 0) {
     const avgCoverage = jjm.reduce((s, j) => s + j.coveragePct, 0) / jjm.length;
     sub.jjmCoverage = { value: Math.round(avgCoverage), max: 100, score: Math.round(avgCoverage), label: "JJM Tap Water Coverage (%)" };
@@ -310,7 +315,7 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
   const district = await prisma.district.findFirst({ where: { id: districtId } });
   const pop = district?.population ?? 1000000;
   const crimes = await prisma.crimeStat.findMany({
-    where: { districtId, ...NOT_FROM_NEWS, year: new Date().getFullYear() - 1 },
+    where: { districtId, ...SHOWN_CRIME, year: new Date().getFullYear() - 1 },
   });
   if (crimes.length > 0) {
     const totalCrimes = crimes.reduce((s, c) => s + c.count, 0);
@@ -329,7 +334,7 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
   sub.policeCoverage = { value: stations, max: Math.round((pop / 20000)), score: Math.round(stationScore), label: "Police Stations", ...noDataIf(district?.population == null) };
 
   // Court disposal rate
-  const courts = await prisma.courtStat.findMany({ where: { districtId }, orderBy: { year: "desc" }, take: 5 });
+  const courts = await prisma.courtStat.findMany({ where: { districtId, ...NJDG_COURTSTAT }, orderBy: { year: "desc" }, take: 5 });
   if (courts.length > 0) {
     const filed = courts.reduce((s, c) => s + c.filed, 0);
     const disposed = courts.reduce((s, c) => s + c.disposed, 0);
@@ -409,8 +414,8 @@ async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
     sub.housingCompletion = { value: 0, max: 100, score: 40, label: "Housing Scheme Completion (%)", noData: true };
   }
 
-  // MGNREGA utilization via gram panchayats
-  const gps = await prisma.gramPanchayat.findMany({ where: { districtId } });
+  // MGNREGA utilization via gram panchayats (checked rows only; none yet)
+  const gps = await prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT } });
   const withMgnrega = gps.filter((g) => (g.fundsUtilized ?? 0) > 0).length;
   const mgnregaScore = gps.length > 0 ? (withMgnrega / gps.length) * 100 : 40;
   sub.mgnregaUtilization = { value: withMgnrega, max: gps.length, score: Math.round(mgnregaScore), label: "GPs with MGNREGA Funds Utilized", ...noDataIf(gps.length === 0) };
