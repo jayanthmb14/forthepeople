@@ -38,6 +38,11 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 - Homepage "Live data right now" cards read the correct API shape.
 - Service worker no longer precaches a redirecting URL; offline page works.
 
+### Fixed — build
+- Fonts are self-hosted (`src/fonts/*.woff2`, `src/lib/fonts.ts`, `next/font/local`). Vercel's
+  build container could no longer fetch Google Fonts, so every build of `main` failed from
+  2026-09-26. All eight families are SIL OFL 1.1. No visitor IPs are sent to Google any more.
+
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked
   `.v1/.v2/.v3` snapshot files and the permanently redirected `india-detail` page.
@@ -82,8 +87,11 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   `supporter-message`, `contribution-expiry`, `badge-level`, `social-detect`).
 
 ### Manual actions (only the owner can do these)
-- Vercel: unblock the account (billing page as the owning Gmail), then push this branch.
-- Vercel env: add `AI_PAID_FALLBACK` (0/1) if the AI work-stream introduced it; confirm
+- Vercel: the 13 Sep "Account is blocked" status is already cleared (a probe deploy was created on
+  2026-09-26). Push this branch so Vercel builds a preview: that build proves the font fix below.
+  Until this branch is merged, any push to `main` fails on Vercel (`next/font/google` cannot
+  download fonts in Vercel's build container).
+- Vercel env: add `AI_PAID_FALLBACK=0` (set 1 only for the paid backstop); confirm
   `CRON_SECRET`, `ADMIN_SESSION_SECRET`, `VOTE_IP_SALT`, `RAZORPAY_WEBHOOK_SECRET` are all set.
 - GitHub: set the required status checks to `Type-check & Build`, `Lint` and `Unit tests`; drop the
   1-approval rule on this solo repo; label 4–6 issues `good-first-issue` / `help-wanted`.
