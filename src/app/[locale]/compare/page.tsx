@@ -9,10 +9,12 @@
 // ForThePeople.in — District Comparison Page
 // URL: /en/compare?a=mandya&b=mysuru
 //
-// Design v3 (2026-09-27): PageHeader, Card and FreshnessPill from the
-// kit; token colours only; every number in JetBrains Mono. The "better /
-// lower" comparison colours are shown as TEXT colour plus a 6 px dot in
-// the legend (never a filled box). Data hooks and URL handling unchanged.
+// Design v4 "Rang": SiteHeader band in indigo, a tinted picker card, a
+// picture of the two populations (bars + one plain sentence, only when
+// both districts report a population), group headings with an emoji, and
+// hue-coloured links. The "better / lower" comparison colours stay the
+// semantic live / danger TEXT colours plus a 6 px dot in the legend
+// (never a filled box). Data hooks and URL handling unchanged.
 //
 // ?module=<slug> (2026-09-27): every module page's Toolbar links here as
 // /<locale>/compare?module=<slug>&a=<district>. When `module` names a
@@ -26,8 +28,10 @@
 // ═══════════════════════════════════════════════════════════
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, use, useEffect, useRef, useState } from "react";
-import { ArrowRight, GitCompare, Lock, ChevronDown } from "lucide-react";
-import { Card, FreshnessPill, LoadingShell, PageHeader, Pill } from "@/components/district/ui";
+import { GitCompare, Lock, ChevronDown } from "lucide-react";
+import { Card, FreshnessPill, LoadingShell, Pill } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
+import SiteHeader from "@/components/site/SiteHeader";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { SIDEBAR_MODULES } from "@/lib/constants/sidebar-modules";
 import { useOverview, useBudget, useWeather } from "@/hooks/useRealtimeData";
@@ -41,6 +45,12 @@ const GROUP_TITLES: Record<CompareGroup, string> = {
   infrastructure: "Infrastructure",
   finance: "Finance",
   weather: "Latest weather reading",
+};
+const GROUP_EMOJI: Record<CompareGroup, string> = {
+  demographics: "👥",
+  infrastructure: "🏗️",
+  finance: "💰",
+  weather: "🌦️",
 };
 /** Which group answers a module's question. Modules not listed have no group here yet. */
 const MODULE_TO_GROUP: Record<string, CompareGroup> = {
@@ -56,6 +66,9 @@ const MODULE_TO_GROUP: Record<string, CompareGroup> = {
   weather: "weather",
 };
 const groupId = (g: CompareGroup) => `compare-${g}`;
+
+/** Colour of district A and district B wherever the two are drawn side by side. */
+const SIDE_COLOR = { a: "var(--hue)", b: "var(--hue-pop)" } as const;
 
 // ── Active districts list ──────────────────────────────────
 const ACTIVE_DISTRICTS = INDIA_STATES.flatMap((s) =>
@@ -80,7 +93,7 @@ function MetricRow({
   valA: string | number | null | undefined;
   valB: string | number | null | undefined;
   higherIsBetter?: boolean;
-  /** Kept for older call sites — every value is mono in v3 anyway. */
+  /** Kept for older call sites — every value uses tabular figures anyway. */
   mono?: boolean;
 }) {
   const na = valA === null || valA === undefined || valA === "";
@@ -101,11 +114,11 @@ function MetricRow({
 
   return (
     <div className="ftp-compare-row">
-      <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: colorA, textAlign: "right" }}>
+      <div className="ftp-num" style={{ fontSize: 16, lineHeight: "22px", color: colorA, textAlign: "right" }}>
         {na ? notAvailable : String(valA)}
       </div>
       <div className="ftp-compare-label">{label}</div>
-      <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: colorB }}>
+      <div className="ftp-num" style={{ fontSize: 16, lineHeight: "22px", color: colorB }}>
         {nb ? notAvailable : String(valB)}
       </div>
     </div>
@@ -113,23 +126,22 @@ function MetricRow({
 }
 
 /**
- * Small uppercase group heading inside the comparison card.
- * @prop group      Gives the heading its scroll-target id.
+ * Group heading inside the comparison card: an emoji chip and the title.
+ * @prop group      Gives the heading its scroll-target id and emoji.
  * @prop fromLabel  When set (the visitor came from that module), shows a "From …" Pill.
  */
-function GroupLabel({ children, group, fromLabel }: { children: React.ReactNode; group?: CompareGroup; fromLabel?: string | null }) {
+function GroupLabel({ children, group, fromLabel }: { children: React.ReactNode; group: CompareGroup; fromLabel?: string | null }) {
   return (
     <h2
-      id={group ? groupId(group) : undefined}
-      className="ftp-label"
-      style={{ padding: "16px 0 4px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", scrollMarginTop: 96 }}
+      id={groupId(group)}
+      className="ftp-display"
+      style={{ margin: 0, padding: "18px 0 6px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", scrollMarginTop: 96, fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}
     >
+      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 28, height: 28, fontSize: 15, borderRadius: 9 }}>
+        {GROUP_EMOJI[group]}
+      </span>
       {children}
-      {fromLabel && (
-        <Pill tone="brand" style={{ textTransform: "none", letterSpacing: 0 }}>
-          From {fromLabel}
-        </Pill>
-      )}
+      {fromLabel && <Pill tone="brand">From {fromLabel}</Pill>}
     </h2>
   );
 }
@@ -140,12 +152,15 @@ function DistrictSelector({
   onChange,
   label,
   alignRight = false,
+  swatch,
 }: {
   value: string;
   onChange: (slug: string) => void;
   label: string;
   /** Open the menu towards the left (for the right-hand selector). */
   alignRight?: boolean;
+  /** The side's colour, shown as a dot so A and B match the picture below. */
+  swatch: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = ACTIVE_DISTRICTS.find((x) => x.district.slug === value);
@@ -161,22 +176,25 @@ function DistrictSelector({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          minHeight: 44,
+          gap: 10,
+          minHeight: 48,
           maxWidth: "100%",
           padding: "0 14px",
-          background: "var(--ftp-brand-tint)",
-          border: "1px solid var(--ftp-brand)",
-          borderRadius: "var(--ftp-radius-tile)",
+          background: "var(--ftp-surface)",
+          border: "1px solid color-mix(in srgb, var(--hue) 40%, var(--ftp-border))",
+          borderRadius: 12,
           cursor: "pointer",
-          fontWeight: 500,
-          fontSize: 15,
-          color: "var(--ftp-brand-deep)",
+          fontFamily: "var(--ftp-font-display)",
+          fontWeight: 650,
+          fontSize: 17,
+          color: "var(--hue-deep)",
           textAlign: "left",
+          boxShadow: "var(--ftp-shadow-1)",
         }}
       >
-        <span>{selected?.district.name ?? "Select District"}</span>
-        <ChevronDown size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
+        <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, background: swatch, flexShrink: 0 }} />
+        <span>{selected?.district.name ?? "Select district"}</span>
+        <ChevronDown size={16} aria-hidden="true" style={{ flexShrink: 0 }} />
       </button>
 
       {open && (
@@ -196,6 +214,7 @@ function DistrictSelector({
               background: "var(--ftp-surface)",
               border: "1px solid var(--ftp-border-strong)",
               borderRadius: "var(--ftp-radius-card)",
+              boxShadow: "var(--ftp-shadow-2)",
               zIndex: 50,
             }}
           >
@@ -217,16 +236,16 @@ function DistrictSelector({
                     minHeight: 44,
                     padding: "0 14px",
                     border: "none",
-                    background: isSel ? "var(--ftp-brand-tint)" : "transparent",
+                    background: isSel ? "var(--hue-tint)" : "transparent",
                     cursor: "pointer",
                     textAlign: "left",
-                    fontSize: 13,
-                    fontWeight: isSel ? 500 : 400,
-                    color: "var(--ftp-text)",
+                    fontSize: 14,
+                    fontWeight: isSel ? 600 : 400,
+                    color: isSel ? "var(--hue-deep)" : "var(--ftp-text)",
                   }}
                 >
                   <span>{district.name}</span>
-                  <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{state.name}</span>
+                  <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>{state.name}</span>
                 </button>
               );
             })}
@@ -239,6 +258,64 @@ function DistrictSelector({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The picture: both populations as bars on one scale, plus one plain
+ * sentence. Uses exactly the numbers in the Demographics rows below.
+ */
+function PopulationPicture({ a, b }: { a: { name: string; population: number }; b: { name: string; population: number } }) {
+  const max = Math.max(a.population, b.population);
+  const [big, small] = a.population >= b.population ? [a, b] : [b, a];
+  const ratio = small.population > 0 ? big.population / small.population : null;
+  const sameSize = ratio !== null && ratio < 1.05;
+  const rows = [
+    { ...a, color: SIDE_COLOR.a },
+    { ...b, color: SIDE_COLOR.b },
+  ];
+  return (
+    <Card tinted padding={18} style={{ marginBottom: 24 }}>
+      <Explainer title="In simple words" emoji="👥">
+        {sameSize ? (
+          <>
+            {a.name} and {b.name} have about the same number of people: <strong>{a.population.toLocaleString("en-IN")}</strong> and{" "}
+            <strong>{b.population.toLocaleString("en-IN")}</strong>.
+          </>
+        ) : ratio !== null ? (
+          <>
+            {big.name} has about <strong>{ratio.toLocaleString("en-IN", { maximumFractionDigits: 1 })} times</strong> as many people as{" "}
+            {small.name}: <strong>{big.population.toLocaleString("en-IN")}</strong> against <strong>{small.population.toLocaleString("en-IN")}</strong>.
+          </>
+        ) : (
+          <>
+            {big.name} has <strong>{big.population.toLocaleString("en-IN")}</strong> people.
+          </>
+        )}
+      </Explainer>
+      <ul aria-label="Population of the two districts" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        {rows.map((r, i) => (
+          <li key={r.name}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, lineHeight: "20px" }}>
+              <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{r.name}</span>
+              <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{r.population.toLocaleString("en-IN")} people</span>
+            </div>
+            <div aria-hidden style={{ marginTop: 6, height: 14, borderRadius: "var(--ftp-radius-pill)", background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
+              <div
+                className="ftp-grow-x"
+                style={{
+                  width: `${max > 0 ? Math.max(2, Math.round((r.population / max) * 100)) : 0}%`,
+                  height: "100%",
+                  borderRadius: "var(--ftp-radius-pill)",
+                  background: r.color,
+                  ["--i" as string]: i,
+                }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 
@@ -330,8 +407,12 @@ function CompareContent({ locale }: { locale: string }) {
   // Honest period label for the budget rows: one FY if both match, else both.
   const fyLabel = latYrA && latYrB && latYrA !== latYrB ? `FY ${latYrA} vs FY ${latYrB}` : latYrA || latYrB ? `FY ${latYrA ?? latYrB}` : null;
 
+  // The picture needs a population for both districts (same numbers as the table).
+  const popA = typeof dA?.population === "number" && dA.population > 0 ? dA.population : null;
+  const popB = typeof dB?.population === "number" && dB.population > 0 ? dB.population : null;
+
   return (
-    <main id="main-content" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+    <main id="main-content" className="ftp-hue-indigo" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
       {/* Page-scoped layout rules (tokens only). The row grid narrows its
           centre label on phones so two numbers still fit at 375 px. */}
       <style>{`
@@ -344,11 +425,11 @@ function CompareContent({ locale }: { locale: string }) {
           padding: 10px 0;
           border-bottom: 1px solid var(--ftp-border);
         }
-        .ftp-compare-label { font-size: 11px; line-height: 16px; color: var(--ftp-text-2); text-align: center; min-width: 120px; padding: 0 8px; }
+        .ftp-compare-label { font-size: 12px; line-height: 16px; color: var(--ftp-text-2); text-align: center; min-width: 120px; padding: 0 8px; }
         .ftp-compare-body { padding: 0 24px; }
         @media (max-width: 640px) {
           .ftp-compare-pickers { grid-template-columns: 1fr; gap: 8px; }
-          .ftp-compare-pickers > div { align-items: flex-start !important; }
+          .ftp-compare-pickers > div:not(.ftp-compare-vs) { align-items: flex-start !important; }
           .ftp-compare-label { min-width: 0; padding: 0 4px; }
           .ftp-compare-body { padding: 0 16px; }
         }
@@ -356,25 +437,32 @@ function CompareContent({ locale }: { locale: string }) {
 
       <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48 }}>
         <div style={{ maxWidth: 900 }}>
-          <PageHeader
+          <SiteHeader
+            emoji="⚖️"
             icon={GitCompare}
-            title="District Comparison"
+            title="District comparison"
             description="Compare key metrics side-by-side for any two active districts"
             backHref={`/${locale}`}
             backLabel="Back to home"
           />
 
           {/* Selectors */}
-          <Card padding={20} style={{ marginBottom: 24 }}>
+          <Card tinted padding={20} style={{ marginBottom: 24 }}>
             <div className="ftp-compare-pickers">
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start", minWidth: 0 }}>
                 <span className="ftp-label">District A</span>
-                <DistrictSelector value={slugA} onChange={setA} label="District A" />
+                <DistrictSelector value={slugA} onChange={setA} label="District A" swatch={SIDE_COLOR.a} />
               </div>
-              <div style={{ fontSize: 13, color: "var(--ftp-text-2)", textAlign: "center" }}>vs</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", minWidth: 0 }}>
+              <div
+                aria-hidden="true"
+                className="ftp-display ftp-compare-vs"
+                style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", justifySelf: "center", background: "var(--hue)", color: "#fff", fontSize: 14, lineHeight: 1, fontWeight: 700 }}
+              >
+                vs
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", minWidth: 0 }}>
                 <span className="ftp-label">District B</span>
-                <DistrictSelector value={slugB} onChange={setB} label="District B" alignRight />
+                <DistrictSelector value={slugB} onChange={setB} label="District B" alignRight swatch={SIDE_COLOR.b} />
               </div>
             </div>
           </Card>
@@ -392,18 +480,29 @@ function CompareContent({ locale }: { locale: string }) {
 
           {isLoading && <LoadingShell rows={6} />}
 
+          {/* The picture — only when both districts report a population */}
+          {!isLoading && dA && dB && popA !== null && popB !== null && (
+            <PopulationPicture a={{ name: dA.name, population: popA }} b={{ name: dB.name, population: popB }} />
+          )}
+
           {!isLoading && dA && dB && (
             <Card padding={0} style={{ overflow: "hidden" }}>
               {/* Column headers */}
-              <div className="ftp-compare-body" style={{ background: "var(--ftp-surface-2)", borderBottom: "1px solid var(--ftp-border)" }}>
+              <div className="ftp-compare-body" style={{ background: "var(--hue-tint)", borderBottom: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))" }}>
                 <div className="ftp-compare-row" style={{ borderBottom: "none", padding: "14px 0" }}>
                   <div style={{ textAlign: "right", minWidth: 0 }}>
-                    <div className="ftp-title">{dA.name}</div>
+                    <div className="ftp-display" style={{ fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      {dA.name}
+                      <span aria-hidden style={{ width: 10, height: 10, borderRadius: 3, background: SIDE_COLOR.a }} />
+                    </div>
                     {dA.nameLocal && <div style={{ fontSize: 13, color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)" }}>{dA.nameLocal}</div>}
                   </div>
                   <div className="ftp-compare-label" aria-hidden="true" />
                   <div style={{ minWidth: 0 }}>
-                    <div className="ftp-title">{dB.name}</div>
+                    <div className="ftp-display" style={{ fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      <span aria-hidden style={{ width: 10, height: 10, borderRadius: 3, background: SIDE_COLOR.b }} />
+                      {dB.name}
+                    </div>
                     {dB.nameLocal && <div style={{ fontSize: 13, color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)" }}>{dB.nameLocal}</div>}
                   </div>
                 </div>
@@ -415,29 +514,31 @@ function CompareContent({ locale }: { locale: string }) {
                 <MetricRow label="Population" valA={dA.population?.toLocaleString("en-IN")} valB={dB.population?.toLocaleString("en-IN")} />
                 <MetricRow label="Area (sq km)" valA={dA.area?.toLocaleString("en-IN")} valB={dB.area?.toLocaleString("en-IN")} />
                 <MetricRow label="Density (per sq km)" valA={dA.density} valB={dB.density} />
-                <MetricRow label="Literacy Rate (%)" valA={dA.literacy !== null ? `${dA.literacy}%` : null} valB={dB.literacy !== null ? `${dB.literacy}%` : null} />
-                <MetricRow label="Sex Ratio (F per 1000 M)" valA={dA.sexRatio} valB={dB.sexRatio} />
+                <MetricRow label="Literacy rate (%)" valA={dA.literacy !== null ? `${dA.literacy}%` : null} valB={dB.literacy !== null ? `${dB.literacy}%` : null} />
+                <MetricRow label="Sex ratio (F per 1000 M)" valA={dA.sexRatio} valB={dB.sexRatio} />
                 <MetricRow label="Taluks" valA={dA.talukCount ?? dA.taluks?.length} valB={dB.talukCount ?? dB.taluks?.length} />
                 <MetricRow label="Villages" valA={dA.villageCount} valB={dB.villageCount} />
 
                 {/* Infrastructure */}
                 <GroupLabel group="infrastructure" fromLabel={fromFor("infrastructure")}>{GROUP_TITLES.infrastructure}</GroupLabel>
-                <MetricRow label="Active Projects" valA={dA._count?.infraProjects} valB={dB._count?.infraProjects} />
-                <MetricRow label="Government Schemes" valA={dA._count?.schemes} valB={dB._count?.schemes} />
+                <MetricRow label="Active projects" valA={dA._count?.infraProjects} valB={dB._count?.infraProjects} />
+                <MetricRow label="Government schemes" valA={dA._count?.schemes} valB={dB._count?.schemes} />
                 <MetricRow label="Schools" valA={dA._count?.schools} valB={dB._count?.schools} />
-                <MetricRow label="Police Stations" valA={dA._count?.policeStations} valB={dB._count?.policeStations} />
+                <MetricRow label="Police stations" valA={dA._count?.policeStations} valB={dB._count?.policeStations} />
 
                 {/* Finance */}
                 {(totalBudA > 0 || totalBudB > 0) && (
                   <>
                     <GroupLabel group="finance" fromLabel={fromFor("finance")}>
                       {GROUP_TITLES.finance}
-                      {fyLabel && <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>· {fyLabel}</span>}
+                      {fyLabel && (
+                        <span style={{ fontFamily: "var(--ftp-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--ftp-text-2)" }}>({fyLabel})</span>
+                      )}
                     </GroupLabel>
-                    <MetricRow label="Total Budget (₹ Cr)" valA={totalBudA > 0 ? (totalBudA / 1e7).toFixed(0) : null} valB={totalBudB > 0 ? (totalBudB / 1e7).toFixed(0) : null} />
+                    <MetricRow label="Total budget (₹ Cr)" valA={totalBudA > 0 ? (totalBudA / 1e7).toFixed(0) : null} valB={totalBudB > 0 ? (totalBudB / 1e7).toFixed(0) : null} />
                     <MetricRow label="Spent (₹ Cr)" valA={totalSpentA > 0 ? (totalSpentA / 1e7).toFixed(0) : null} valB={totalSpentB > 0 ? (totalSpentB / 1e7).toFixed(0) : null} />
                     <MetricRow
-                      label="Budget Utilisation (%)"
+                      label="Budget utilisation (%)"
                       valA={totalBudA > 0 ? `${Math.round((totalSpentA / totalBudA) * 100)}%` : null}
                       valB={totalBudB > 0 ? `${Math.round((totalSpentB / totalBudB) * 100)}%` : null}
                     />
@@ -466,16 +567,16 @@ function CompareContent({ locale }: { locale: string }) {
 
               {/* Legend */}
               <div className="ftp-compare-body" style={{ paddingTop: 16, paddingBottom: 16, borderTop: "1px solid var(--ftp-border)", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ftp-text-2)" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)" }} aria-hidden="true" />
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ftp-text-2)" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ftp-live)" }} aria-hidden="true" />
                   Better value
                 </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ftp-text-2)" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-danger)" }} aria-hidden="true" />
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ftp-text-2)" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ftp-danger)" }} aria-hidden="true" />
                   Lower value
                 </span>
-                <span style={{ fontSize: 11, color: "var(--ftp-text-2)", marginLeft: "auto" }}>
-                  Data from ForThePeople.in · Updated automatically
+                <span style={{ fontSize: 12, color: "var(--ftp-text-2)", marginLeft: "auto" }}>
+                  Data from ForThePeople.in, updated automatically
                 </span>
               </div>
             </Card>
@@ -495,12 +596,13 @@ function CompareContent({ locale }: { locale: string }) {
                 <Card
                   key={l.href}
                   href={l.href}
+                  tinted
                   padding={12}
-                  style={{ textAlign: "center", minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-brand)" }}
+                  style={{ textAlign: "center", minHeight: 44, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }}
                 >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    {fromModule && fromModule.slug !== "overview" ? `View ${l.name} ${fromModule.label}` : `View ${l.name} dashboard`}{" "}
-                    <ArrowRight size={14} aria-hidden="true" />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <span className="ftp-emoji" aria-hidden>{fromModule && fromModule.slug !== "overview" ? fromModule.emoji : "📊"}</span>
+                    {fromModule && fromModule.slug !== "overview" ? `View ${l.name} ${fromModule.label}` : `View ${l.name} dashboard`}
                   </span>
                 </Card>
               ))}

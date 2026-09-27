@@ -13,7 +13,6 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   ExternalLink,
   Github,
@@ -39,12 +38,13 @@ declare global {
   }
 }
 
-// Design v3 note: this component's LOOK uses --ftp-* tokens only. Two props
-// are kept for compatibility but are no longer drawn:
-//   • `emoji`  — v3 has no emoji in chrome.
+// Design v4 note: this component's LOOK uses --ftp-* tokens and the page hue
+// (--hue / --hue-deep; the /support page is rose). Two props are kept for
+// compatibility but are not drawn here:
+//   • `emoji`  — the /support page shows the tier emoji on the tier card.
 //   • `accent` — still passed to Razorpay as `theme.color` (Razorpay needs a
 //                real colour string, not a CSS variable); on-page buttons use
-//                the brand token instead.
+//                the page hue instead.
 // The payment flow itself (create → Razorpay → verify) is unchanged.
 export interface TierConfig {
   emoji: string;
@@ -404,7 +404,7 @@ export default function SupportCheckout({ tier }: Props) {
         </p>
         <p style={{ ...NOTE, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginBottom: 16 }}>
           Want to update your social link or display name later? Email{" "}
-          <a href="mailto:support@forthepeople.in" style={{ color: "var(--ftp-brand)", textDecoration: "none", fontWeight: 500 }}>
+          <a href="mailto:support@forthepeople.in" style={{ color: "var(--hue-deep)", textDecoration: "none", fontWeight: 600 }}>
             support@forthepeople.in
           </a>
         </p>
@@ -417,8 +417,8 @@ export default function SupportCheckout({ tier }: Props) {
           </a>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href={contributorsUrl} style={{ ...TEXT_LINK, color: "var(--ftp-brand)" }}>
-            View contributors <ArrowRight size={14} aria-hidden />
+          <Link href={contributorsUrl} style={{ ...TEXT_LINK, color: "var(--hue-deep)", fontWeight: 600 }}>
+            View contributors
           </Link>
           <Link href="/en" style={{ ...TEXT_LINK, color: "var(--ftp-text-2)" }}>
             Back to homepage
@@ -602,7 +602,7 @@ export default function SupportCheckout({ tier }: Props) {
           {/* Show message for locked districts */}
           {lockedDistrictPicked && (
             <p style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ftp-text)" }} className="ftp-body">
-              <Lock size={14} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0, marginTop: 3 }} />
+              <Lock size={14} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
               <span>
                 This district isn&apos;t live yet. Your sponsorship will activate the moment we launch it — your name will be
                 the first on the page.
@@ -647,7 +647,6 @@ export default function SupportCheckout({ tier }: Props) {
             {isLoading ? "Opening payment…" : tier.isMonthly
               ? `Subscribe ₹${amount.toLocaleString("en-IN")}/month`
               : `Contribute ₹${amount.toLocaleString("en-IN")}`}
-            {!isLoading && <ArrowRight size={14} aria-hidden />}
           </button>
         </div>
       </div>
@@ -791,8 +790,8 @@ const TEXT_LINK: React.CSSProperties = {
 };
 
 /**
- * Primary (filled) button in the brand colour. Text uses --ftp-surface so it
- * stays readable in dark mode too (brand turns light there).
+ * Primary (filled) button in the page hue with white text (v4: the hue is
+ * always a deep enough shade for white type).
  */
 function primaryBtn(disabled: boolean): React.CSSProperties {
   return {
@@ -802,12 +801,13 @@ function primaryBtn(disabled: boolean): React.CSSProperties {
     gap: 6,
     minHeight: 44,
     padding: "0 14px",
-    background: disabled ? "var(--ftp-border-strong)" : "var(--ftp-brand)",
-    color: disabled ? "var(--ftp-text-2)" : "var(--ftp-surface)",
+    background: disabled ? "var(--ftp-border-strong)" : "var(--hue)",
+    color: disabled ? "var(--ftp-text-2)" : "#fff",
     border: "none",
     borderRadius: "var(--ftp-radius-tile)",
-    fontSize: 13,
-    fontWeight: 500,
+    boxShadow: disabled ? "none" : "0 6px 16px -8px color-mix(in srgb, var(--hue) 70%, transparent)",
+    fontSize: 14,
+    fontWeight: 600,
     cursor: disabled ? "default" : "pointer",
   };
 }

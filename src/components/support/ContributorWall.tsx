@@ -13,15 +13,15 @@
 //  1. Active supporters (monthly subscribers, from /api/data/contributors)
 //  2. One-time contributions (from /api/payment/contributors)
 //
-//  Design v3: the old auto-scrolling marquee is gone (no motion in chrome).
-//  Each strip is now a row of small Cards the visitor can swipe / scroll
-//  sideways. Tier emoji are replaced by a Pill with the tier name.
-//  Data fetching (React Query keys, refetch timings, caps) is unchanged —
-//  SupportCheckout invalidates these same query keys after a payment.
+//  Design v4: each strip is a row of small tinted Cards in the page hue
+//  that the visitor can swipe / scroll sideways (no auto-scrolling
+//  marquee). Section headings carry an emoji chip. Data fetching (React
+//  Query keys, refetch timings, caps) is unchanged — SupportCheckout
+//  invalidates these same query keys after a payment.
 //
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
+import { ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
 import type { ContributorsResponse, ContributorItem } from "@/app/api/payment/contributors/route";
 import { normalizeSocialLink } from "@/lib/social-link";
 import { Card, EmptyState, Pill, SectionHeader } from "@/components/district/ui";
@@ -61,17 +61,17 @@ function Strip({ children, label }: { children: React.ReactNode; label: string }
 
 function ContributorCard({ item }: { item: ContributorItem }) {
   return (
-    <Card as="li" padding={12} style={{ width: 160, minWidth: 160, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
-      <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 13, lineHeight: "20px" }}>{item.displayName}</p>
+    <Card as="li" tinted padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
+      <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: "20px", fontWeight: 600 }}>{item.displayName}</p>
       <div style={{ margin: "4px 0 6px", maxWidth: "100%", overflow: "hidden" }}>
         <Pill tone="support" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{item.tierLabel}</Pill>
       </div>
       {item.message && (
-        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+        <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
           &ldquo;{item.message.slice(0, 30)}{item.message.length > 30 ? "…" : ""}&rdquo;
         </p>
       )}
-      <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{item.timeAgo}</p>
+      <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{item.timeAgo}</p>
     </Card>
   );
 }
@@ -83,9 +83,9 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
   const SocialIcon =
     (item.socialPlatform ? SOCIAL_ICONS[item.socialPlatform] : null) ?? (safeLink ? ExternalLink : null);
   return (
-    <Card as="li" padding={12} style={{ width: 160, minWidth: 160, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
+    <Card as="li" tinted padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 13, lineHeight: "20px", flex: 1 }}>{item.name}</span>
+        <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: "20px", fontWeight: 600, flex: 1 }}>{item.name}</span>
         {SocialIcon && safeLink && (
           <a
             href={safeLink}
@@ -93,7 +93,7 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
             rel="noopener noreferrer"
             title={safeLink}
             aria-label={`${item.name}'s profile`}
-            style={{ color: "var(--ftp-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
+            style={{ color: "var(--hue)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
           >
             <SocialIcon size={12} aria-hidden />
           </a>
@@ -105,8 +105,9 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
         </div>
       )}
       {item.monthsActive > 0 && (
-        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "4px 0 0" }}>
-          <span className="ftp-num">{item.monthsActive}</span>mo active
+        <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "4px 0 0" }}>
+          <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{item.monthsActive}</span>{" "}
+          {item.monthsActive === 1 ? "month" : "months"} active
         </p>
       )}
     </Card>
@@ -119,7 +120,7 @@ function SkeletonCard() {
     <div
       aria-hidden
       className="ftp-skeleton"
-      style={{ width: 160, minWidth: 160, height: 88, borderRadius: "var(--ftp-radius-card)", flexShrink: 0 }}
+      style={{ width: 170, minWidth: 170, height: 88, borderRadius: "var(--ftp-radius-card)", flexShrink: 0 }}
     />
   );
 }
@@ -129,9 +130,9 @@ const TEXT_LINK: React.CSSProperties = {
   alignItems: "center",
   gap: 4,
   minHeight: 44,
-  fontSize: 13,
-  fontWeight: 500,
-  color: "var(--ftp-brand)",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "var(--hue-deep)",
   textDecoration: "none",
 };
 
@@ -163,19 +164,20 @@ export default function ContributorWall() {
       {subscribers.length > 0 && (
         <section>
           <SectionHeader
+            emoji="🔁"
             title={
               <>
                 Active supporters
                 {subscribersTotal > subscribers.length && (
-                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)", fontWeight: 400 }}>
-                    {" "}· <span className="ftp-num">{subscribersTotal.toLocaleString("en-IN")}</span> total
+                  <span style={{ fontSize: 14, color: "var(--ftp-text-2)", fontWeight: 400 }}>
+                    {" "}(<span className="ftp-num">{subscribersTotal.toLocaleString("en-IN")}</span> total)
                   </span>
                 )}
               </>
             }
             action={
               <Link href="/en/contributors" style={TEXT_LINK}>
-                View all <ArrowRight size={14} aria-hidden />
+                View all
               </Link>
             }
           />
@@ -190,20 +192,21 @@ export default function ContributorWall() {
       {/* ── One-time contributions ── */}
       <section>
         <SectionHeader
+          emoji="🎁"
           title={subscribers.length > 0 ? "One-time contributions" : "Contributions"}
           action={
             <>
               {!isLoading && data && data.count > 0 && (
                 <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>₹{data.totalRupees.toLocaleString("en-IN")}</span>
+                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{data.totalRupees.toLocaleString("en-IN")}</span>
                   {" "}from{" "}
-                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{data.count}</span>
+                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{data.count}</span>
                   {" "}supporter{data.count !== 1 ? "s" : ""}
                 </span>
               )}
               {oneTimeTotal > 50 && (
                 <Link href="/en/contributors?filter=one-time" style={TEXT_LINK}>
-                  View all <span className="ftp-num">{oneTimeTotal.toLocaleString("en-IN")}</span> <ArrowRight size={14} aria-hidden />
+                  View all <span className="ftp-num">{oneTimeTotal.toLocaleString("en-IN")}</span>
                 </Link>
               )}
             </>
@@ -215,7 +218,7 @@ export default function ContributorWall() {
             {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : contributors.length === 0 ? (
-          <EmptyState title="Be the first to support ForThePeople.in!" body="Your name will appear here." />
+          <EmptyState emoji="🎁" title="Be the first to support ForThePeople.in!" body="Your name will appear here." />
         ) : (
           <Strip label="One-time contributions">
             {contributors.map((item, i) => (
@@ -227,8 +230,8 @@ export default function ContributorWall() {
         {/* Summary line */}
         {!isLoading && data && data.count > 0 && (
           <p className="ftp-body" style={{ textAlign: "center", marginTop: 12, color: "var(--ftp-text-2)" }}>
-            <span className="ftp-num">₹{data.totalRupees.toLocaleString("en-IN")}</span> contributed by{" "}
-            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{data.count}</span> supporters — thank you!
+            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{data.totalRupees.toLocaleString("en-IN")}</span> contributed by{" "}
+            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{data.count}</span> supporters — thank you!
           </p>
         )}
       </section>

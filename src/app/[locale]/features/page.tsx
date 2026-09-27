@@ -13,10 +13,12 @@
 // — the homepage VoteFeaturesCTA is a compact thin bar + 3-line
 // list that scrolls visitors to /features#share-idea.
 //
-// Design v3 (2026-09-27): PageHeader + Chips + Card + Pill from the
-// kit, token colours only, Lucide icons only. The per-feature `icon`
-// field (an emoji stored in the DB) is no longer drawn. Voting logic,
-// the API calls and the localStorage "already voted" list are unchanged.
+// Design v4 "Rang" (violet): SiteHeader band, then the picture — one
+// plain sentence with the vote totals and 10 bulbs lit for the share of
+// ideas already built or being built (from the same /api/features list) —
+// then Chips, idea cards (the idea's own emoji from the DB in a hue
+// chip), and the share form in a tinted card. Voting logic, the API calls
+// and the localStorage "already voted" list are unchanged.
 // ═══════════════════════════════════════════════════════════
 "use client";
 
@@ -24,8 +26,10 @@ import { useEffect, useState } from "react";
 import { CheckCircle, Clock, Lightbulb, ThumbsUp, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import SuggestionForm from "@/components/features/SuggestionForm";
-import { Card, Chips, EmptyState, LoadingShell, PageHeader, Pill } from "@/components/district/ui";
+import { Card, Chips, EmptyState, LoadingShell, Pill } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
+import SiteHeader from "@/components/site/SiteHeader";
 
 interface Feature {
   id: string;
@@ -41,18 +45,27 @@ interface Feature {
 /** Status → Pill tone + icon. Colour shows only as the pill's text/dot. */
 const STATUS_CONFIG: Record<Feature["status"], { label: string; icon: LucideIcon; tone: Tone }> = {
   proposed: { label: "Proposed", icon: Zap, tone: "neutral" },
-  "in-progress": { label: "In Progress", icon: Clock, tone: "warn" },
+  "in-progress": { label: "In progress", icon: Clock, tone: "warn" },
   completed: { label: "Completed", icon: CheckCircle, tone: "live" },
 };
 
+/**
+ * The idea's own emoji (admin-entered in the DB), or a bulb. Anything
+ * longer than a short emoji sequence is ignored so stray text never shows.
+ */
+function ideaEmoji(icon: string | null | undefined): string {
+  const t = (icon ?? "").trim();
+  return t && t.length <= 8 && !/[A-Za-z0-9]/.test(t) ? t : "💡";
+}
+
 export default function FeaturesPage() {
   return (
-    <main style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+    <main className="ftp-hue-violet" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
       <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48 }}>
         <div style={{ maxWidth: 800 }}>
-          <PageHeader
+          <SiteHeader
+            emoji="💡"
             icon={Lightbulb}
-            accent="purple"
             title="Help shape ForThePeople.in"
             description="Vote for the features you want most, or scroll down to share your own idea. The highest-voted features get built first."
           />
@@ -60,12 +73,14 @@ export default function FeaturesPage() {
           <VoteSection />
 
           <section id="share-idea" style={{ marginTop: 48, scrollMarginTop: 80 }}>
-            <Card padding={20}>
-              <h2 className="ftp-h2" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Lightbulb size={20} aria-hidden style={{ color: "var(--ftp-features)" }} />
+            <Card tinted padding={20}>
+              <h2 className="ftp-h2" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
+                  ✍️
+                </span>
                 Share your idea
               </h2>
-              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 16px" }}>
+              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "6px 0 16px" }}>
                 Have a feature in mind that&apos;s not listed? Suggest it below — we review every submission.
               </p>
               <SuggestionForm />
@@ -119,14 +134,26 @@ function VoteSection() {
   const categories = ["All", ...Array.from(new Set(features.map((f) => f.category)))];
   const filtered = activeCategory === "All" ? features : features.filter((f) => f.category === activeCategory);
   const totalVotes = features.reduce((s, f) => s + f.votes, 0);
+  // The picture: ideas that are built or being built, out of all listed ideas.
+  const doneCount = features.filter((f) => f.status === "completed").length;
+  const buildingCount = features.filter((f) => f.status === "in-progress").length;
+  const shippedShare = features.length > 0 ? ((doneCount + buildingCount) / features.length) * 10 : 0;
 
   return (
     <>
-      {!loading && (
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 12 }}>
-          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{totalVotes.toLocaleString("en-IN")}</span> total votes across{" "}
-          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{features.length}</span> ideas
-        </p>
+      {!loading && features.length > 0 && (
+        <Card tinted padding={18} style={{ marginBottom: 20 }}>
+          <Explainer title="In simple words">
+            People have cast <strong>{totalVotes.toLocaleString("en-IN")}</strong> votes on{" "}
+            <strong>{features.length}</strong> ideas. <strong>{doneCount}</strong> {doneCount === 1 ? "is" : "are"} built and{" "}
+            <strong>{buildingCount}</strong> {buildingCount === 1 ? "is" : "are"} being built right now.
+          </Explainer>
+          <Pictogram
+            filled={shippedShare}
+            emoji="💡"
+            label={`About ${Math.round(shippedShare)} of every 10 ideas are built or being built.`}
+          />
+        </Card>
       )}
 
       <div style={{ marginBottom: 20 }}>
@@ -145,7 +172,7 @@ function VoteSection() {
       {loading ? (
         <LoadingShell rows={4} />
       ) : filtered.length === 0 ? (
-        <EmptyState title="No ideas listed yet." body="Be the first — share yours in the form below." />
+        <EmptyState emoji="💡" title="No ideas listed yet." body="Be the first — share yours in the form below." />
       ) : (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((feature) => {
@@ -158,15 +185,21 @@ function VoteSection() {
                 key={feature.id}
                 as="li"
                 padding={16}
+                tinted={hasVoted}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
-                  gap: 16,
-                  borderColor: hasVoted ? "var(--ftp-brand)" : "var(--ftp-border)",
+                  gap: 14,
+                  borderColor: hasVoted ? "var(--hue)" : "var(--ftp-border)",
                 }}
               >
+                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
+                  {ideaEmoji(feature.icon)}
+                </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 className="ftp-title">{feature.title}</h3>
+                  <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
+                    {feature.title}
+                  </h3>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", margin: "6px 0" }}>
                     <Pill tone="neutral">{feature.category}</Pill>
                     <Pill tone={statusConfig.tone} icon={statusConfig.icon}>{statusConfig.label}</Pill>
@@ -186,18 +219,18 @@ function VoteSection() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 4,
-                    width: 56,
-                    minHeight: 56,
-                    borderRadius: "var(--ftp-radius-tile)",
-                    border: `1px solid ${hasVoted ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
-                    background: hasVoted ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
-                    color: hasVoted ? "var(--ftp-brand)" : "var(--ftp-text-2)",
+                    width: 60,
+                    minHeight: 60,
+                    borderRadius: 14,
+                    border: `1px solid ${hasVoted ? "var(--hue)" : "color-mix(in srgb, var(--hue) 30%, var(--ftp-border))"}`,
+                    background: hasVoted ? "var(--hue)" : "var(--hue-tint)",
+                    color: hasVoted ? "#fff" : "var(--hue-deep)",
                     cursor: cannotVote ? "default" : "pointer",
                     opacity: isVoting ? 0.7 : 1,
                   }}
                 >
                   <ThumbsUp size={16} aria-hidden fill={hasVoted ? "currentColor" : "none"} />
-                  <span className="ftp-num" style={{ fontSize: 13, lineHeight: "16px" }}>{feature.votes}</span>
+                  <span className="ftp-num" style={{ fontSize: 14, lineHeight: "16px" }}>{feature.votes}</span>
                 </button>
               </Card>
             );
