@@ -343,10 +343,10 @@ export async function seedDelhiData(prisma?: PrismaClient) {
     if (existingElec === 0) {
       await client.electionResult.createMany({ data: [
         // Lok Sabha 2024 — New Delhi constituency
-        { districtId: did, year: 2024, electionType: "Lok Sabha", constituency: "New Delhi", winnerName: "Bansuri Swaraj", winnerParty: "BJP", winnerVotes: 467078, runnerUpName: "Somnath Bharti", runnerUpParty: "AAP", runnerUpVotes: 322345, totalVoters: 1450000, votesPolled: 860000, turnoutPct: 59.3, margin: 144733, source: "Election Commission of India" },
+        { districtId: did, year: 2024, electionType: "LOK_SABHA", constituency: "New Delhi", winnerName: "Bansuri Swaraj", winnerParty: "BJP", winnerVotes: 467078, runnerUpName: "Somnath Bharti", runnerUpParty: "AAP", runnerUpVotes: 322345, totalVoters: 1450000, votesPolled: 860000, turnoutPct: 59.3, margin: 144733, source: "Election Commission of India" },
         // Delhi Assembly 2025 — New Delhi constituency
-        { districtId: did, year: 2025, electionType: "Assembly", constituency: "New Delhi", winnerName: "Arvind Kejriwal", winnerParty: "AAP", winnerVotes: 48000, runnerUpName: "Parvesh Verma", runnerUpParty: "BJP", runnerUpVotes: 52000, totalVoters: 160000, votesPolled: 108000, turnoutPct: 67.5, margin: -4000, source: "State Election Commission Delhi" },
-        { districtId: did, year: 2025, electionType: "Assembly", constituency: "Kasturba Nagar", winnerName: "Alka Lamba", winnerParty: "INC", winnerVotes: 42000, runnerUpName: "Challenger", runnerUpParty: "AAP", runnerUpVotes: 35000, totalVoters: 145000, votesPolled: 95000, turnoutPct: 65.5, margin: 7000, source: "State Election Commission Delhi" },
+        { districtId: did, year: 2025, electionType: "ASSEMBLY", constituency: "New Delhi", winnerName: "Arvind Kejriwal", winnerParty: "AAP", winnerVotes: 48000, runnerUpName: "Parvesh Verma", runnerUpParty: "BJP", runnerUpVotes: 52000, totalVoters: 160000, votesPolled: 108000, turnoutPct: 67.5, margin: -4000, source: "State Election Commission Delhi" },
+        { districtId: did, year: 2025, electionType: "ASSEMBLY", constituency: "Kasturba Nagar", winnerName: "Alka Lamba", winnerParty: "INC", winnerVotes: 42000, runnerUpName: "Challenger", runnerUpParty: "AAP", runnerUpVotes: 35000, totalVoters: 145000, votesPolled: 95000, turnoutPct: 65.5, margin: 7000, source: "State Election Commission Delhi" },
       ]});
       console.log("  ✓ Election results (3)");
     }

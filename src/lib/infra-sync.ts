@@ -21,6 +21,7 @@ import { prisma } from "./db";
 import { callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
+import { findSameNamed } from "./dedupe/match";
 import {
   detectDistrictFromName,
   detectDistrictFromAgency,
@@ -456,97 +457,26 @@ function mergeSourceUrls(existing: unknown, next: string): string[] {
   return arr.slice(-20); // keep last 20
 }
 
-// ── Dedup helpers (sync-time fuzzy matcher) ───────────────────
-const STOP = new Set(["the", "of", "in", "a", "an", "for", "to", "and", "at", "on", "by", "with", "from"]);
-function significantTokens(s: string): string[] {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    // Keep anything with a digit (so "2a", "3", "phase-2", "line-6" survive
-    // and distinguish Metro Line 2A from Metro Line 3). Otherwise require len>2.
-    .filter((w) => (w.length > 2 || /\d/.test(w)) && !STOP.has(w));
-}
-function tokenOverlap(a: string, b: string): number {
-  const ta = new Set(significantTokens(a));
-  const tb = new Set(significantTokens(b));
-  if (ta.size === 0 || tb.size === 0) return 0;
-  let hits = 0;
-  for (const t of ta) if (tb.has(t)) hits++;
-  return hits / Math.min(ta.size, tb.size);
-}
-function levenshtein(a: string, b: string): number {
-  if (a === b) return 0;
-  if (a.length === 0) return b.length;
-  if (b.length === 0) return a.length;
-  const v0 = new Array(b.length + 1).fill(0);
-  const v1 = new Array(b.length + 1).fill(0);
-  for (let i = 0; i <= b.length; i++) v0[i] = i;
-  for (let i = 0; i < a.length; i++) {
-    v1[0] = i + 1;
-    for (let j = 0; j < b.length; j++) {
-      const cost = a[i] === b[j] ? 0 : 1;
-      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
-    }
-    for (let j = 0; j <= b.length; j++) v0[j] = v1[j];
-  }
-  return v1[b.length];
-}
-/**
- * Find an existing project in the district that is the "same thing" as
- * the incoming extraction. Handles three passes:
- *   1. exact shortName/title contains match
- *   2. first 4 significant-token overlap
- *   3. Levenshtein distance ≤ 30% of shorter title length
- */
-async function findExistingProject(
-  districtId: string,
-  extraction: InfraExtraction
-): Promise<{ id: string; name: string; [k: string]: unknown } | null> {
-  const namePrefix = extraction.projectName.split(/\s+/).slice(0, 3).join(" ");
-  // Pass 1 — contains / shortName match in DB
-  const dbMatches = await prisma.infraProject.findMany({
-    where: {
-      districtId,
-      OR: [
-        { shortName: { equals: extraction.shortName, mode: "insensitive" } },
-        { name: { contains: extraction.shortName, mode: "insensitive" } },
-        { name: { contains: namePrefix, mode: "insensitive" } },
-      ],
-    },
-  });
-  if (dbMatches.length > 0) return dbMatches[0] as unknown as { id: string; name: string };
-
-  // Pass 2 & 3 — pull recent projects for this district, do fuzzy in-memory
+// ── Is this project already stored? ──────────────────────────
+// Sept 2026: the old matcher took "name contains the first three words"
+// (so "Bengaluru Metro Phase 3" matched Phase 2) and knew no aliases (so
+// "Atal Setu" and "Sewri–Nhava Sheva" became two projects). It now uses
+// the shared canonical keys (src/lib/dedupe/keys.ts, match.ts): same
+// canonical name, same 2+-word short name, or similarity ≥ 0.85 — never
+// across different numbers (Phase 1 / Phase 2, Line 2A / Line 3). A match
+// is updated fill-only; the duplicate guard queues anything closer than
+// that for a person to look at.
+async function findExistingProject(districtId: string, extraction: InfraExtraction) {
   const pool = await prisma.infraProject.findMany({
     where: { districtId },
     orderBy: { updatedAt: "desc" },
-    take: 200,
+    take: 1000,
   });
-  for (const candidate of pool) {
-    // Guard: if both names contain digit tokens AND those sets differ,
-    // these are distinguishable (Metro Line 2A vs 3, Phase 1 vs 2).
-    const digitsA = new Set(significantTokens(candidate.name).filter((t) => /\d/.test(t)));
-    const digitsB = new Set(significantTokens(extraction.projectName).filter((t) => /\d/.test(t)));
-    if (digitsA.size > 0 && digitsB.size > 0) {
-      const shared = [...digitsA].some((d) => digitsB.has(d));
-      if (!shared) continue; // different numbers → different project
-    }
-    const overlap = tokenOverlap(candidate.name, extraction.projectName);
-    if (overlap >= 0.75) {
-      console.log(`[infra-sync] dedup-match via token overlap (${overlap.toFixed(2)}): "${extraction.projectName}" ≈ "${candidate.name}"`);
-      return candidate as unknown as { id: string; name: string };
-    }
-    const short = Math.min(candidate.name.length, extraction.projectName.length);
-    if (short >= 10) {
-      const dist = levenshtein(candidate.name.toLowerCase(), extraction.projectName.toLowerCase());
-      if (dist / short < 0.15) {
-        console.log(`[infra-sync] dedup-match via Levenshtein (d=${dist}, ratio=${(dist / short).toFixed(2)}): "${extraction.projectName}" ≈ "${candidate.name}"`);
-        return candidate as unknown as { id: string; name: string };
-      }
-    }
+  const match = findSameNamed(pool, { name: extraction.projectName, shortName: extraction.shortName });
+  if (match && match.how !== "exact") {
+    console.log(`[infra-sync] dedup-match (${match.how}, ${match.score.toFixed(2)}): "${extraction.projectName}" ≈ "${match.row.name}"`);
   }
-  return null;
+  return match?.row ?? null;
 }
 
 function mergeKeyPeople(existing: unknown, incoming: KeyPerson[]): KeyPerson[] {
@@ -606,11 +536,8 @@ export async function syncInfraFromNews(
   let duplicatesSkipped = 0;
 
   for (const t of targets) {
-    // Use the richer matcher (exact → token-overlap → Levenshtein)
-    const matched = await findExistingProject(t.id, extraction);
-    let project = matched
-      ? await prisma.infraProject.findUnique({ where: { id: matched.id } })
-      : null;
+    // Same project already stored in this district? (canonical name / alias / ≥ 0.85 similar)
+    let project = await findExistingProject(t.id, extraction);
 
     // ── CREATE ────────────────────────────────────────────
     if (!project) {

@@ -6,12 +6,21 @@
 
 // ═══════════════════════════════════════════════════════════
 // Exams & Jobs API — /api/data/exams
-// Returns: state-level exams + district-level exams
+// Returns: national + this state's exams ("stateExams", the old field name)
+// and this district's own exams ("districtExams").
 // Cache: 1 hour (TTL 3600)
+//
+// Sept 2026: a national exam is ONE row (districtId null) and a state exam
+// one row per state — see src/lib/dedupe/exam-rules.ts. Until the duplicate
+// guard has merged the old per-district copies, this route still reads
+// them and shows one row per exam (examsForDisplay: same canonical key →
+// best copy, furthest status). Exams from non-government organisers are
+// never shown.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import redis from "@/lib/redis";
+import { examsForDisplay, storedExamScope } from "@/lib/dedupe/exam-rules";
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -53,21 +62,20 @@ export async function GET(req: NextRequest) {
 
     const stateId = district.state.id;
 
-    // Fetch national, state-level, and district-level exams in parallel
-    const [nationalExams, stateExams, districtExams, staffing] = await Promise.all([
-      // National exams (UPSC, SSC, IBPS, RBI, RRB, SBI, NTA) — show for ALL districts
+    // National rows (and legacy per-district copies of them), this state's
+    // rows (and legacy copies), and this district's own rows.
+    const [rows, staffing] = await Promise.all([
       prisma.governmentExam.findMany({
-        where: { level: "national" },
-        orderBy: [{ status: "asc" }, { announcedDate: "desc" }],
-      }),
-      // State-specific exams — only for THIS state
-      prisma.governmentExam.findMany({
-        where: { stateId, level: "state" },
-        orderBy: [{ status: "asc" }, { announcedDate: "desc" }],
-      }),
-      prisma.governmentExam.findMany({
-        where: { districtId: district.id },
-        orderBy: [{ status: "asc" }, { announcedDate: "desc" }],
+        where: {
+          OR: [
+            { level: "national" },
+            { scope: "NATIONAL", stateId: null, districtId: null },
+            { stateId },
+            { districtId: district.id },
+          ],
+        },
+        orderBy: [{ updatedAt: "desc" }],
+        take: 1000,
       }),
       prisma.departmentStaffing.findMany({
         where: { districtId: district.id },
@@ -75,12 +83,23 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    // Merge national + state exams for the "stateExams" field (backwards-compatible)
-    const allExams = [...nationalExams, ...stateExams];
-    const openStatuses = new Set([
-      "open", "APPLICATIONS_OPEN", "ADMIT_CARD_OUT", "EXAM_SCHEDULED",
-    ]);
-    const upcomingStatuses = new Set(["upcoming", "NOTIFICATION_OUT"]);
+    // Keep only rows that belong on this page: every national exam, this
+    // state's exams, this district's exams (a row filed under another
+    // state's district never leaks in).
+    const relevant = rows.filter((r) => {
+      const scope = storedExamScope(r);
+      if (scope === "NATIONAL") return true;
+      if (scope === "STATE") return r.stateId === stateId;
+      return r.districtId === district.id;
+    });
+    const byDate = (a: { announcedDate: Date | null; title: string }, b: { announcedDate: Date | null; title: string }) =>
+      (b.announcedDate?.getTime() ?? 0) - (a.announcedDate?.getTime() ?? 0) || a.title.localeCompare(b.title);
+    const shown = examsForDisplay(relevant);
+    const allExams = shown.filter((e) => storedExamScope(e) !== "DISTRICT").sort(byDate);
+    const districtExams = shown.filter((e) => storedExamScope(e) === "DISTRICT").sort(byDate);
+
+    const openStatuses = new Set(["APPLICATIONS_OPEN", "ADMIT_CARD_OUT", "EXAM_SCHEDULED"]);
+    const upcomingStatuses = new Set(["NOTIFICATION_OUT"]);
     const combined = [...allExams, ...districtExams];
     const result = {
       stateExams: allExams,

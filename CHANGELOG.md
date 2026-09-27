@@ -10,6 +10,37 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
+Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed
+or applied to the database yet.
+- **One definition of "the same thing"** (`src/lib/dedupe/keys.ts`, `match.ts`): canonical names
+  (roman numerals, ordinals, abbreviations, old city names, aliases such as Atal Setu / Sewri–Nhava
+  Sheva / MTHL), exam keys (NEET 2026 = NEET (UG) 2026 = NEET UG 2026), the exam status set
+  (unknown → `UNVERIFIED`; "upcoming" is not a published notification), the election-type set
+  (`LOK_SABHA`, `ASSEMBLY` …) and a similarity score for review-only candidates.
+- **Exams** (`src/lib/dedupe/exam-rules.ts`): a national exam is one row (no state, no district),
+  a state exam one row per state; exam-sync and the UPSC/SSC collector match by canonical key;
+  only government / statutory organisers are stored; `/api/data/exams` shows one row per exam and
+  never a non-government one. The per-district clone `onboardDistrictExams()` is removed.
+- **Elections**: every writer (seeds, ECI collector, admin editor) stores the canonical
+  `electionType`; the collector matches seats by canonical key.
+- **Infrastructure**: every `InfraProject` writer (infra-sync, PMGSY collector, Pune seeds) looks up
+  the district's projects by canonical name / ≥ 0.85 similarity before creating, never across
+  different numbers (Phase 1 / Phase 2); `scripts/dedup-infra-projects.ts` now wraps the guard.
+- **News**: the ingest-time duplicate checks now match stored titles (they never matched a title
+  with punctuation), URLs are compared without tracking parameters, and the cron clean-up keeps the
+  original story instead of the latest copy.
+- **Duplicate guard** (`src/lib/dedupe/guard.ts`, cron `/api/cron/dedupe-data`, `?dry=1`): exact
+  duplicates in 24 citizen-facing tables are merged automatically (best row kept, gaps filled,
+  child rows moved, others deleted or set inactive); same slot with different facts (an election
+  seat with two winners) and ≥ 0.85-alike names go once to `NewsActionQueue`
+  (`verify-duplicates`). Not in `vercel.json` yet.
+- **One-time clean-up** `scripts/dedupe-2026-09.ts` (dry run by default, `--confirm` = one
+  transaction). Dry run on 2026-09-28: 30 exam copies merged into 4 rows, 11 non-government exams,
+  6 election duplicates, 1 school duplicate, 75 election types and 16 exam statuses rewritten,
+  39 kept exam rows moved to or relabelled with their national / state place; 1 conflict and 2
+  similar pairs listed for review.
+
 ### Changed — v5.1 "Warm Calm", round 3 (branches `v51/*`, built 2026-09-27, merged 2026-09-28)
 Ten parallel work-streams, merged into `redesign-v4` on 2026-09-28. Nothing here is deployed until
 the owner reviews and pushes. New strings ship in en + hi + kn (Hindi and Kannada are drafts).

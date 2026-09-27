@@ -188,14 +188,14 @@ async function main() {
   if (electionCount === 0) {
     console.log("Seeding elections...");
     await prisma.electionResult.createMany({ skipDuplicates: true, data: [
-      { districtId: did, year: 2024, electionType: "Lok Sabha", constituency: "Hyderabad", winnerName: "Asaduddin Owaisi", winnerParty: "AIMIM", winnerVotes: 661981, runnerUpName: "Madhavi Latha Kompella", runnerUpParty: "BJP", runnerUpVotes: 323894, margin: 338087, turnoutPct: 49.28, source: "results.eci.gov.in" },
+      { districtId: did, year: 2024, electionType: "LOK_SABHA", constituency: "Hyderabad", winnerName: "Asaduddin Owaisi", winnerParty: "AIMIM", winnerVotes: 661981, runnerUpName: "Madhavi Latha Kompella", runnerUpParty: "BJP", runnerUpVotes: 323894, margin: 338087, turnoutPct: 49.28, source: "results.eci.gov.in" },
       // 2023 Telangana Assembly — APPROXIMATE vote counts
-      { districtId: did, year: 2023, electionType: "Assembly", constituency: "Charminar", winnerName: "Mumtaz Ahmed Khan", winnerParty: "AIMIM", winnerVotes: 85000, runnerUpParty: "INC", runnerUpVotes: 25000, margin: 60000, turnoutPct: 45.0, source: "results.eci.gov.in" },
-      { districtId: did, year: 2023, electionType: "Assembly", constituency: "Chandrayangutta", winnerName: "Akbaruddin Owaisi", winnerParty: "AIMIM", winnerVotes: 95000, runnerUpParty: "BJP", runnerUpVotes: 20000, margin: 75000, turnoutPct: 46.0, source: "results.eci.gov.in" },
-      { districtId: did, year: 2023, electionType: "Assembly", constituency: "Amberpet", winnerName: "R. Prakash Reddy", winnerParty: "INC", winnerVotes: 72000, runnerUpParty: "BRS", runnerUpVotes: 55000, margin: 17000, turnoutPct: 52.0, source: "results.eci.gov.in" },
-      { districtId: did, year: 2023, electionType: "Assembly", constituency: "Goshamahal", winnerName: "T. Raja Singh Lodh", winnerParty: "BJP", winnerVotes: 82000, runnerUpParty: "INC", runnerUpVotes: 60000, margin: 22000, turnoutPct: 55.0, source: "results.eci.gov.in" },
-      { districtId: did, year: 2023, electionType: "Assembly", constituency: "Secunderabad", winnerName: "T. Padma Rao Goud", winnerParty: "INC", winnerVotes: 78000, runnerUpParty: "BRS", runnerUpVotes: 58000, margin: 20000, turnoutPct: 52.0, source: "results.eci.gov.in" },
-      { districtId: did, year: 2023, electionType: "Assembly", constituency: "Khairatabad", winnerName: "Danam Nagender", winnerParty: "INC", winnerVotes: 75000, runnerUpParty: "BRS", runnerUpVotes: 55000, margin: 20000, turnoutPct: 50.0, source: "results.eci.gov.in" },
+      { districtId: did, year: 2023, electionType: "ASSEMBLY", constituency: "Charminar", winnerName: "Mumtaz Ahmed Khan", winnerParty: "AIMIM", winnerVotes: 85000, runnerUpParty: "INC", runnerUpVotes: 25000, margin: 60000, turnoutPct: 45.0, source: "results.eci.gov.in" },
+      { districtId: did, year: 2023, electionType: "ASSEMBLY", constituency: "Chandrayangutta", winnerName: "Akbaruddin Owaisi", winnerParty: "AIMIM", winnerVotes: 95000, runnerUpParty: "BJP", runnerUpVotes: 20000, margin: 75000, turnoutPct: 46.0, source: "results.eci.gov.in" },
+      { districtId: did, year: 2023, electionType: "ASSEMBLY", constituency: "Amberpet", winnerName: "R. Prakash Reddy", winnerParty: "INC", winnerVotes: 72000, runnerUpParty: "BRS", runnerUpVotes: 55000, margin: 17000, turnoutPct: 52.0, source: "results.eci.gov.in" },
+      { districtId: did, year: 2023, electionType: "ASSEMBLY", constituency: "Goshamahal", winnerName: "T. Raja Singh Lodh", winnerParty: "BJP", winnerVotes: 82000, runnerUpParty: "INC", runnerUpVotes: 60000, margin: 22000, turnoutPct: 55.0, source: "results.eci.gov.in" },
+      { districtId: did, year: 2023, electionType: "ASSEMBLY", constituency: "Secunderabad", winnerName: "T. Padma Rao Goud", winnerParty: "INC", winnerVotes: 78000, runnerUpParty: "BRS", runnerUpVotes: 58000, margin: 20000, turnoutPct: 52.0, source: "results.eci.gov.in" },
+      { districtId: did, year: 2023, electionType: "ASSEMBLY", constituency: "Khairatabad", winnerName: "Danam Nagender", winnerParty: "INC", winnerVotes: 75000, runnerUpParty: "BRS", runnerUpVotes: 55000, margin: 20000, turnoutPct: 50.0, source: "results.eci.gov.in" },
     ] });
     console.log("  ✓ Elections seeded");
   } else { console.log(`  ⏭ Elections already seeded (${electionCount})`); }

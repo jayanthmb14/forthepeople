@@ -6,12 +6,35 @@
 //
 // Run: npx tsx prisma/seed-government-exams.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient, type Prisma } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
+import { canonicalExamStatus, sameExam } from "../src/lib/dedupe/keys";
+import { examBucket, examPlacement, type ExamScope } from "../src/lib/dedupe/exam-rules";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
+
+/**
+ * Sept 2026: rows go to their one place (national: no state, no district;
+ * state: the state, no district — src/lib/dedupe/exam-rules.ts), statuses in
+ * the canonical set ("upcoming" → UNVERIFIED), and an exam already stored in
+ * that place under any spelling is skipped (canonical exam key). The old
+ * createMany wrote national exams as level "state" and re-ran into copies.
+ */
+async function createExams(scope: ExamScope, stateId: string | null, rows: Prisma.GovernmentExamCreateManyInput[]) {
+  const placement = examPlacement(scope, stateId, null);
+  const bucket = examBucket(placement);
+  const stored = (await prisma.governmentExam.findMany({ take: 5000 })).filter((r) => examBucket(r) === bucket);
+  const fresh: Prisma.GovernmentExamCreateManyInput[] = [];
+  for (const r of rows) {
+    const id = { title: r.title, shortName: r.shortName ?? null, organizingBody: r.organizingBody ?? r.department };
+    if (stored.some((s) => sameExam(s, id)) || fresh.some((f) => sameExam({ title: f.title, shortName: f.shortName ?? null, organizingBody: f.organizingBody ?? f.department }, id))) continue;
+    fresh.push({ ...r, ...placement, status: canonicalExamStatus(r.status ?? null, r.title) });
+  }
+  if (fresh.length) await prisma.governmentExam.createMany({ data: fresh });
+  console.log(`    ${fresh.length} added, ${rows.length - fresh.length} already stored`);
+}
 
 async function main() {
   console.log("🌱 Seeding Government Exam data...\n");
@@ -40,16 +63,14 @@ async function main() {
   const skipTN = existingTN > 0;
 
   // ═══════════════════════════════════════════════════════════
-  // CENTRAL / NATIONAL EXAMS (level: "state", no stateId = national)
+  // CENTRAL / NATIONAL EXAMS (stored once: level "national", no state, no district)
   // ═══════════════════════════════════════════════════════════
   if (skipNational) {
     console.log(`📌 National exams: ⏭  already seeded (${existingNational} records)`);
   } else {
     console.log("📌 Seeding national-level exams...");
 
-  await prisma.governmentExam.createMany({
-    skipDuplicates: true,
-    data: [
+  await createExams("NATIONAL", null, [
       // ── UPSC ──
       {
         level: "state", title: "UPSC Civil Services Examination (CSE) 2026",
@@ -293,8 +314,7 @@ async function main() {
         status: "upcoming",
         examDate: new Date("2026-07-01"),
       },
-    ],
-  });
+  ]);
   console.log("  ✅ National exams seeded (20 exams — UPSC, SSC, RRB, Banking)");
   }
 
@@ -306,9 +326,7 @@ async function main() {
   } else {
     console.log("\n📌 Seeding Delhi exams...");
 
-  await prisma.governmentExam.createMany({
-    skipDuplicates: true,
-    data: [
+  await createExams("STATE", delhi.id, [
       {
         level: "state", stateId: delhi.id,
         title: "DSSSB TGT / PGT / PRT Recruitment 2026",
@@ -390,8 +408,7 @@ async function main() {
         status: "upcoming",
         examDate: new Date("2026-08-01"),
       },
-    ],
-  });
+  ]);
   console.log("  ✅ Delhi exams seeded (6 exams — DSSSB, Delhi Police, DJB)");
   }
 
@@ -403,9 +420,7 @@ async function main() {
   } else {
     console.log("\n📌 Seeding Maharashtra exams...");
 
-  await prisma.governmentExam.createMany({
-    skipDuplicates: true,
-    data: [
+  await createExams("STATE", maharashtra.id, [
       {
         level: "state", stateId: maharashtra.id,
         title: "MPSC State Service Examination (Rajyaseva) 2026",
@@ -513,8 +528,7 @@ async function main() {
         status: "upcoming",
         examDate: new Date("2026-12-01"),
       },
-    ],
-  });
+  ]);
   console.log("  ✅ Maharashtra exams seeded (8 exams — MPSC, Police, Talathi, MHADA, BMC)");
   }
 
@@ -526,9 +540,7 @@ async function main() {
   } else {
     console.log("\n📌 Seeding West Bengal exams...");
 
-  await prisma.governmentExam.createMany({
-    skipDuplicates: true,
-    data: [
+  await createExams("STATE", westBengal.id, [
       {
         level: "state", stateId: westBengal.id,
         title: "WBPSC Civil Service (Executive) Examination 2026",
@@ -636,8 +648,7 @@ async function main() {
         status: "upcoming",
         examDate: new Date("2026-12-01"),
       },
-    ],
-  });
+  ]);
   console.log("  ✅ West Bengal exams seeded (8 exams — WBPSC, WB TET, WB Police, KMC)");
   }
 
@@ -649,9 +660,7 @@ async function main() {
   } else {
     console.log("\n📌 Seeding Tamil Nadu exams...");
 
-  await prisma.governmentExam.createMany({
-    skipDuplicates: true,
-    data: [
+  await createExams("STATE", tamilNadu.id, [
       {
         level: "state", stateId: tamilNadu.id,
         title: "TNPSC Group I Services Examination 2026",
@@ -785,8 +794,7 @@ async function main() {
         status: "upcoming",
         examDate: new Date("2026-07-01"),
       },
-    ],
-  });
+  ]);
   console.log("  ✅ Tamil Nadu exams seeded (10 exams — TNPSC, TN TRB, TNUSRB, GCC, TANGEDCO)");
   }
 

@@ -21,6 +21,7 @@ import { cacheKey } from "@/lib/cache";
 import { logUpdate } from "@/lib/update-log";
 import { logAuditAuto } from "@/lib/audit-log";
 import { getModuleConfig } from "../route";
+import { canonicalElectionType } from "@/lib/dedupe/keys";
 
 interface Body {
   module?: string;
@@ -28,6 +29,14 @@ interface Body {
   updates?: Array<{ id: string; changes: Record<string, unknown> }>;
   creates?: Array<{ data: Record<string, unknown> }>;
   deletes?: string[];
+}
+
+/** Columns stored in one canonical spelling, whoever writes them (src/lib/dedupe/keys.ts). */
+function canonicalValue(table: string, field: string, value: unknown): unknown {
+  if (table === "electionResult" && field === "electionType" && typeof value === "string") {
+    return canonicalElectionType(value) ?? value;
+  }
+  return value;
 }
 
 function coerce(value: unknown, prev: unknown): unknown {
@@ -95,7 +104,7 @@ export async function POST(req: NextRequest) {
     const data: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(u.changes)) {
       if (!allowed.has(k)) continue;
-      data[k] = coerce(v, (prev as Record<string, unknown>)[k]);
+      data[k] = canonicalValue(cfg.table, k, coerce(v, (prev as Record<string, unknown>)[k]));
     }
     if (Object.keys(data).length === 0) continue;
     await delegate.update({ where: { id: u.id }, data });
@@ -161,7 +170,7 @@ export async function POST(req: NextRequest) {
   for (const c of creates) {
     const data: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(c.data)) {
-      if (allowed.has(k)) data[k] = v;
+      if (allowed.has(k)) data[k] = canonicalValue(cfg.table, k, v);
     }
     if (cfg.districtField) data[cfg.districtField] = district.id;
     try {

@@ -27,6 +27,7 @@ import { resetExtractionCounters } from "@/lib/news-action-engine";
 import { translationTargets } from "@/lib/translation/content";
 import { translatePendingContent } from "@/lib/translation/job";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { planTitleDuplicates } from "@/lib/news-dedupe";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
@@ -112,29 +113,24 @@ export async function GET(request: Request) {
     }
 
     // ── 2. Deduplicate news by normalized title prefix ──
+    // Same 50-character title prefix (punctuation ignored) in the last 30
+    // days: the ORIGINAL (fetched first) stays — the later copies used to
+    // win, leaving NewsItem.duplicateOf and stored translations pointing at
+    // deleted rows. References move to the original before the copies go.
     let dedupRemoved = 0;
     try {
       const newsItems = await prisma.newsItem.findMany({
-        where: { districtId },
+        where: { districtId, publishedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
         orderBy: { publishedAt: "desc" },
-        select: { id: true, title: true },
+        select: { id: true, title: true, fetchedAt: true },
+        take: 5000,
       });
-
-      const seen = new Map<string, string[]>();
-      for (const item of newsItems) {
-        const key = (item.title ?? "").toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().substring(0, 50);
-        if (!seen.has(key)) seen.set(key, []);
-        seen.get(key)!.push(item.id);
-      }
-
-      const idsToDelete: string[] = [];
-      for (const ids of seen.values()) {
-        if (ids.length > 1) idsToDelete.push(...ids.slice(1));
-      }
-
-      if (idsToDelete.length > 0) {
-        const del = await prisma.newsItem.deleteMany({ where: { id: { in: idsToDelete } } });
-        dedupRemoved = del.count;
+      for (const { keepId, removeIds } of planTitleDuplicates(newsItems)) {
+        await prisma.newsItem.updateMany({ where: { duplicateOf: { in: removeIds } }, data: { duplicateOf: keepId } });
+        await prisma.newsItem.updateMany({ where: { id: keepId, duplicateOf: keepId }, data: { duplicateOf: null } });
+        await prisma.contentTranslation.deleteMany({ where: { entityType: "news", entityId: { in: removeIds } } }).catch(() => {});
+        const del = await prisma.newsItem.deleteMany({ where: { id: { in: removeIds } } });
+        dedupRemoved += del.count;
       }
     } catch { /* non-fatal */ }
 

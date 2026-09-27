@@ -28,6 +28,8 @@ import {
   newsFeedsFor,
 } from "@/lib/news-keywords";
 import { JobContext, ScraperResult } from "../types";
+import { findCanonicalStory, titleKey, type StoredStory } from "@/lib/news-dedupe";
+import { urlKey } from "@/lib/dedupe/keys";
 
 // Keyword-matcher categories that still benefit from AI-driven data extraction
 // (because we act on them downstream — create Infrastructure projects, alerts,
@@ -93,60 +95,18 @@ function extractPublisherAndClean(
   return { publisher, cleanedSummary: finalSummary };
 }
 
-// Near-duplicate check at ingest: returns canonical id if one exists within
-// 24h sharing the same first-40-char normalized title prefix.
-async function findNearDuplicateCanonical(
-  title: string,
-  districtId: string,
-  publishedAt: Date,
-): Promise<string | null> {
-  const prefix = title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 40);
-  if (!prefix || prefix.length < 15) return null;
-
-  const DAY_MS = 24 * 60 * 60 * 1000;
-  const candidate = await prisma.newsItem.findFirst({
-    where: {
-      districtId,
-      duplicateOf: null,
-      publishedAt: {
-        gte: new Date(publishedAt.getTime() - DAY_MS),
-        lte: new Date(publishedAt.getTime() + DAY_MS),
-      },
-      title: { contains: prefix, mode: "insensitive" },
-    },
-    orderBy: { publishedAt: "asc" },
-    select: { id: true },
-  });
-  return candidate?.id ?? null;
-}
-
-// Dedup by first 5 significant words in title — catches same article via different URLs
-async function isTitleDuplicate(
-  title: string,
-  districtId: string,
-  seenTitleKeys: Set<string>
-): Promise<boolean> {
-  const normalized = title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
-  const words = normalized.split(/\s+/).filter((w) => w.length > 3);
-  const key = words.slice(0, 5).join(" ");
+/**
+ * Same headline (first five long words) already stored for this district in
+ * the last 7 days, or seen earlier in this run? Keys are computed the same
+ * way for both (src/lib/news-dedupe.ts titleKey) — the old SQL `contains`
+ * never matched a stored title with punctuation in it.
+ */
+function isTitleDuplicate(title: string, seenTitleKeys: Set<string>, storedKeys: ReadonlySet<string>): boolean {
+  const key = titleKey(title);
   if (!key) return false;
-  if (seenTitleKeys.has(key)) return true;
+  if (seenTitleKeys.has(key) || storedKeys.has(key)) return true;
   seenTitleKeys.add(key);
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const existing = await prisma.newsItem.findFirst({
-    where: {
-      districtId,
-      publishedAt: { gte: sevenDaysAgo },
-      title: { contains: key, mode: "insensitive" },
-    },
-    select: { id: true },
-  });
-  return !!existing;
+  return false;
 }
 
 async function fetchStaticRSSItems(
@@ -234,24 +194,36 @@ export async function scrapeNews(
       where: { districtId: ctx.districtId },
       select: { url: true },
     });
-    existingUrls.forEach((n) => { if (n.url) seenUrls.add(n.url); });
+    // Keyed by urlKey (no www / tracking parameters / trailing slash): the same article, one row.
+    existingUrls.forEach((n) => { if (n.url) seenUrls.add(urlKey(n.url)); });
+
+    // The last 7 days of this district's stories: same-headline check and
+    // the canonical story a new copy points at (duplicateOf).
+    const recentStories: StoredStory[] = await prisma.newsItem.findMany({
+      where: { districtId: ctx.districtId, publishedAt: { gte: new Date(Date.now() - 7 * 86_400_000) } },
+      select: { id: true, title: true, publishedAt: true, duplicateOf: true },
+      orderBy: { publishedAt: "asc" },
+      take: 3000,
+    });
+    const storedTitleKeys = new Set(recentStories.map((r) => titleKey(r.title)).filter(Boolean));
+    const placeWords = [ctx.districtName, ctx.districtSlug];
 
     async function saveItems(items: Array<{ headline: string; url: string; summary: string; source: string; publishedAt: Date }>, limit = 20) {
       for (const item of items.slice(0, limit)) {
         if (!item.headline || item.headline.length < 5) continue;
         if (!item.url) continue;
-        if (seenUrls.has(item.url)) continue;
+        if (seenUrls.has(urlKey(item.url))) continue;
         // Date freshness check (defensive — already filtered at fetch time)
         if (!isArticleFresh(item.publishedAt)) {
           ctx.log(`[News] SKIPPED (old): "${item.headline}" — ${item.publishedAt.toISOString()}`);
           continue;
         }
         // Title-based dedup: same story, different URL
-        if (await isTitleDuplicate(item.headline, ctx.districtId, seenTitleKeys)) {
+        if (isTitleDuplicate(item.headline, seenTitleKeys, storedTitleKeys)) {
           ctx.log(`[News] SKIPPED (dup title): "${item.headline.slice(0, 60)}"`);
           continue;
         }
-        seenUrls.add(item.url);
+        seenUrls.add(urlKey(item.url));
 
         // Keyword-first (April 2026 cost rule): AI only when the keyword
         // matcher gives us nothing useful, when the article falls into an
@@ -271,7 +243,7 @@ export async function scrapeNews(
           // Might be about another place and nobody checked: leave it for the
           // next run (its URL is not marked seen) rather than show it unchecked.
           if (needsPlaceCheck) {
-            seenUrls.delete(item.url);
+            seenUrls.delete(urlKey(item.url));
             placeCheckDeferred++;
             continue;
           }
@@ -306,13 +278,9 @@ export async function scrapeNews(
           item.headline,
         );
 
-        // Check for near-duplicates (same district, same 40-char prefix,
-        // within 24h) already persisted.
-        const canonicalId = await findNearDuplicateCanonical(
-          item.headline,
-          ctx.districtId,
-          item.publishedAt,
-        );
+        // The same story already stored within 24 h (reworded headline from
+        // another outlet)? Then this row points at it (duplicateOf).
+        const canonicalId = findCanonicalStory(item.headline, item.publishedAt, recentStories, placeWords);
 
         const saved = await prisma.newsItem.create({
           data: {
@@ -332,6 +300,7 @@ export async function scrapeNews(
             classifiedAt: new Date(),
           },
         });
+        recentStories.push({ id: saved.id, title: saved.title, publishedAt: saved.publishedAt, duplicateOf: saved.duplicateOf });
 
         // Execute module action only if the AI says it is about this district
         // and is confident (executeNewsAction checks both again).
