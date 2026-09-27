@@ -2,8 +2,8 @@
 
 // Male vs female literacy as a "dumbbell": two dots on a 0–100 % track with
 // a line between them showing the gap. Dot colours are the Okabe-Ito male /
-// female pair from ../types (colour-blind safe); the track, line and text
-// use design tokens.
+// female pair from ../types (colour-blind safe); the track and the gap line
+// use the page hue (Design v4).
 import { SEX_COLORS, type ProfileLike } from "../types";
 import { ChartEmpty, ChartNote } from "../chartKit";
 
@@ -22,7 +22,7 @@ export function canRenderLiteracyDumbbell(profile: ProfileLike | null | undefine
   );
 }
 
-/** Legend entry: 10 px dot + label + mono value. */
+/** Legend entry: 10 px dot + label + tabular value. */
 function Key({ color, label, value }: { color: string; label: string; value: number }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -51,22 +51,24 @@ export default function LiteracyDumbbell({
   const dot = (pct: number, color: string, label: string) => (
     <div
       title={`${label} ${pct.toFixed(1)}%`}
+      className="ftp-pop"
       style={{
         position: "absolute",
-        top: 5,
-        left: `calc(${pct}% - 8px)`,
-        width: 16,
-        height: 16,
+        top: 4,
+        left: `calc(${pct}% - 9px)`,
+        width: 18,
+        height: 18,
         background: color,
         borderRadius: "50%",
-        border: "2px solid var(--ftp-surface)",
+        border: "3px solid var(--ftp-surface)",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
       }}
     />
   );
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", margin: "4px 0 8px", fontSize: 11, color: "var(--ftp-text-2)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", margin: "4px 0 8px", fontSize: 12, color: "var(--ftp-text-2)" }}>
         <Key color={SEX_COLORS.male} label="Male" value={literacyMale} />
         <Key color={SEX_COLORS.female} label="Female" value={literacyFemale} />
       </div>
@@ -82,7 +84,7 @@ export default function LiteracyDumbbell({
         <div
           role="img"
           aria-label={`Literacy: male ${literacyMale.toFixed(1)} percent, female ${literacyFemale.toFixed(1)} percent`}
-          style={{ position: "relative", height: 26, background: "var(--ftp-surface-2)", borderRadius: 4 }}
+          style={{ position: "relative", height: 26, background: "var(--hue-tint)", borderRadius: 999 }}
         >
           <div
             style={{
@@ -91,23 +93,31 @@ export default function LiteracyDumbbell({
               left: `${min}%`,
               width: `${max - min}%`,
               height: 4,
-              background: "var(--ftp-border-strong)",
+              background: "var(--hue)",
               borderRadius: 2,
             }}
           />
           {dot(literacyMale, SEX_COLORS.male, "Male")}
           {dot(literacyFemale, SEX_COLORS.female, "Female")}
         </div>
-        <div className="ftp-num" style={{ fontSize: 11, color: "var(--ftp-text-2)", textAlign: "right", whiteSpace: "nowrap" }}>
+        <div className="ftp-num" style={{ fontSize: 12, color: "var(--hue-deep)", textAlign: "right", whiteSpace: "nowrap" }}>
           Gap {(literacyMale - literacyFemale).toFixed(1)} pp
         </div>
       </div>
       {typeof literacyTotal === "number" && (
         <ChartNote>
-          District total:{" "}
-          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{literacyTotal.toFixed(2)}%</span>
-          {typeof stateRef === "number" && <> · State: <span className="ftp-num">{stateRef.toFixed(2)}%</span></>}
-          {typeof nationalRef === "number" && <> · India: <span className="ftp-num">{nationalRef.toFixed(2)}%</span></>}
+          <span style={{ display: "inline-flex", gap: 12, flexWrap: "wrap" }}>
+            <span>
+              District total:{" "}
+              <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{literacyTotal.toFixed(2)}%</span>
+            </span>
+            {typeof stateRef === "number" && (
+              <span>State: <span className="ftp-num">{stateRef.toFixed(2)}%</span></span>
+            )}
+            {typeof nationalRef === "number" && (
+              <span>India: <span className="ftp-num">{nationalRef.toFixed(2)}%</span></span>
+            )}
+          </span>
         </ChartNote>
       )}
     </div>
