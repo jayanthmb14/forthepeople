@@ -926,9 +926,12 @@ body {
 .ftp-v4-tinted, .ftp-card-tinted { background: color-mix(in srgb, var(--hue-tint) 65%, var(--ftp-surface)); border-color: color-mix(in srgb, var(--hue) 16%, var(--ftp-border)); }
 .ftp-icon-chip { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 10px; background: var(--hue-tint); color: var(--hue-deep); }
 
-/* Buttons pick up the page hue (calm mid tone, AA with white text) */
+/* Buttons. .ftp-btn-primary picks up the page hue (calm mid tone, AA with
+   white text); .ftp-btn-brand (kit PrimaryButton) is always brand blue. */
 .ftp-btn-primary { background: var(--hue); border-color: var(--hue); box-shadow: 0 1px 2px rgba(15, 27, 45, 0.08); }
 .ftp-btn-primary:hover:not(:disabled) { background: var(--hue-deep); border-color: var(--hue-deep); }
+.ftp-btn-brand { background: var(--ftp-brand); border: 1px solid var(--ftp-brand); color: var(--ftp-surface); box-shadow: 0 1px 2px rgba(15, 27, 45, 0.08); transition: background-color 150ms ease, border-color 150ms ease; }
+.ftp-btn-brand:hover:not(:disabled) { background: var(--ftp-brand-deep); border-color: var(--ftp-brand-deep); }
 
 /* Sidebar rail: active item in the module's hue */
 .ftp-rail-item[data-active="true"] { background: var(--hue-tint) !important; color: var(--hue-deep) !important; box-shadow: inset 3px 0 0 var(--hue); }
@@ -1101,31 +1104,35 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-prose { max-width: 72ch; }
 
 /* PageHeader (kit): a calm pastel band — white washing into the module
-   tint, the deep hue for the title, a small module chip. ~120 px on phone. */
+   tint, the deep hue for the title, a small module chip. A grid: chip and
+   title on row 1; description and pills under the title (full width on
+   phones so they wrap less). About 120–150 px tall on a phone. */
 .ftp-page-header { margin-bottom: 20px; }
 .ftp-page-band {
-  position: relative; display: flex; align-items: flex-start; gap: 14px;
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 14px;
   padding: 18px 20px; border-radius: var(--ftp-radius-card);
   background: linear-gradient(120deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-tint) 35%, var(--ftp-surface)) 55%, var(--ftp-surface) 100%);
   border: 1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border));
 }
 .ftp-page-chip {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  grid-column: 1; grid-row: 1;
+  display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: 12px; font-size: 22px;
   background: var(--ftp-surface); border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border)); color: var(--hue-deep);
 }
+.ftp-page-titlerow { grid-column: 2; grid-row: 1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 12px; min-width: 0; }
 .ftp-page-title { margin: 0; font-family: var(--ftp-font-h1); font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; color: var(--hue-deep); text-wrap: balance; }
 .ftp-page-local { font-size: 18px; line-height: 24px; font-weight: 600; color: var(--hue-deep); opacity: 0.8; }
-.ftp-page-desc { margin: 4px 0 0; max-width: 68ch; font-size: 15px; line-height: 22px; color: var(--ftp-text-2); }
-.ftp-page-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.ftp-page-desc { grid-column: 2; margin: 4px 0 0; max-width: 68ch; font-size: 15px; line-height: 22px; color: var(--ftp-text-2); }
+.ftp-page-meta { grid-column: 2; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .ftp-page-stale { margin-top: 10px; }
 @media (max-width: 639px) {
-  .ftp-page-band { gap: 12px; padding: 14px; }
-  .ftp-page-chip { width: 38px; height: 38px; font-size: 19px; border-radius: 11px; }
-  .ftp-page-title { font-size: 23px; line-height: 29px; }
-  .ftp-page-local { font-size: 15px; line-height: 20px; }
-  .ftp-page-desc { font-size: 14px; line-height: 20px; }
-  .ftp-page-meta { margin-top: 10px; }
+  .ftp-page-band { column-gap: 10px; padding: 12px 14px; }
+  .ftp-page-chip { width: 34px; height: 34px; font-size: 18px; border-radius: 10px; }
+  .ftp-page-title { font-size: 22px; line-height: 28px; }
+  .ftp-page-local { font-size: 14px; line-height: 20px; }
+  .ftp-page-desc { grid-column: 1 / -1; margin-top: 6px; font-size: 14px; line-height: 20px; }
+  .ftp-page-meta { grid-column: 1 / -1; gap: 6px; margin-top: 8px; }
 }
 
 /* DetailSheet: bottom sheet on phones/tablets, right panel on laptop/PC */

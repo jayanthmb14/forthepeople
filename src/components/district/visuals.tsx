@@ -4,27 +4,50 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Design v4 visuals — graphics a 5-year-old can read
+//  Design v5 "Calm" visuals — graphics a 5-year-old can read
 // ═══════════════════════════════════════════════════════════════════════
 //  Every piece takes its colour from the page hue (--hue, --hue-deep,
-//  --hue-pop, --hue-tint) and animates in once; reduced-motion shows the
-//  final state straight away (globals.css). Each one carries a text
-//  equivalent (aria-label or visible sentence) so screen readers get the
-//  same meaning as the picture.
+//  --hue-pop, --hue-tint) in its pastel form and animates in once, gently;
+//  reduced-motion shows the final state straight away (globals.css). Each
+//  one carries a text equivalent (aria-label or visible sentence) so screen
+//  readers get the same meaning as the picture.
 //
-//    Explainer   💡 "In simple words" card — one plain sentence
-//    Pictogram   10 icons, N lit: "8 of every 10 rupees were spent"
-//    Gauge       half-circle dial with a needle, 0–100
-//    WaterTank   a tank that fills to the level, with a moving wave
-//    WeatherGlyph big weather emoji picked from the condition text
-//    ChartCard   the frame every chart sits in: title, units, source,
-//                as-of date, and a "Show as table" switch
+//  v5 EMOJI RULE: no emoji here. Pictures that encode data (Pictogram,
+//  WeatherGlyph, HowItWorks steps, CountdownBar) use simple monochrome
+//  Lucide icons in the hue. Old call sites that pass `emoji="🏠"` get the
+//  matching icon from src/lib/design/emoji-icons.ts.
+//
+//    Explainer    "In simple words" card — a lightbulb icon + one plain sentence
+//    Pictogram    10 icons, N lit: "8 of every 10 rupees were spent"
+//    Gauge        half-circle dial with a needle, 0–100
+//    WaterTank    a tank that fills to the level, with a slow wave
+//    WeatherGlyph weather icon picked from the condition text
+//    ChartCard    the frame every chart sits in: title, units, source,
+//                 as-of date, and a "Show as table" switch
 //    ChartGradients / chartTooltipStyle / CHART_AXIS — recharts theme
 "use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";
+import {
+  AlarmClock,
+  Circle,
+  CircleCheck,
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSun,
+  Hourglass,
+  Lightbulb,
+  Moon,
+  Snowflake,
+  Sun,
+  Table2,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { AsOfText, SourcePill } from "@/components/district/ui";
+import { KitIcon, emojiIcon } from "@/lib/design/emoji-icons";
 
 // ─────────────────────────────────────────────────────────────────────
 //  Explainer
@@ -33,41 +56,48 @@ import { AsOfText, SourcePill } from "@/components/district/ui";
 /**
  * Explainer — the plain-language line under a page header.
  * Example: <Explainer>Out of every ₹100 given to Mandya, ₹82 was spent.</Explainer>
+ *
+ * v5: a small lightbulb icon chip (or `icon`, or the icon for a passed
+ * `emoji`) on a flat pastel card. Never an emoji.
  */
 export function Explainer({
   children,
-  emoji = "💡",
+  emoji,
+  icon,
   title,
 }: {
   children: React.ReactNode;
+  /** v4 prop: mapped to its Lucide icon (default lightbulb), never drawn as an emoji. */
   emoji?: string;
+  icon?: LucideIcon;
   /** Defaults to the translated "In simple words". */
   title?: string;
 }) {
   const tk = useTranslations("kit");
   const heading = !title || title === "In simple words" ? tk("inSimpleWords") : title;
+  const chipIcon = icon ?? emojiIcon(emoji) ?? Lightbulb;
   return (
     <div
       role="note"
       style={{
         display: "flex",
-        gap: 14,
+        gap: 12,
         alignItems: "flex-start",
         padding: "14px 16px",
         margin: "0 0 20px",
         borderRadius: "var(--ftp-radius-card)",
-        background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 85%)",
-        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+        background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface))",
+        border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
       }}
     >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 26, marginTop: 2 }}>
-        {emoji}
+      <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, background: "var(--ftp-surface)", marginTop: 1 }}>
+        <KitIcon icon={chipIcon} size={17} />
       </span>
       <div style={{ minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
+        <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", fontWeight: 700, color: "var(--hue-deep)" }}>
           {heading}
         </p>
-        <p style={{ margin: "2px 0 0", fontSize: 15, lineHeight: "23px", color: "var(--ftp-text)" }}>{children}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 16, lineHeight: "24px", color: "var(--ftp-text)" }}>{children}</p>
       </div>
     </div>
   );
@@ -78,26 +108,37 @@ export function Explainer({
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Pictogram — `total` symbols in a row, the first `filled` in full colour.
+ * Pictogram — `total` symbols in a row, the first `filled` lit in the hue.
  * `filled` may be fractional (8.2 → the 9th symbol is 20 % lit).
  *
- * @prop emoji   Symbol to repeat (default 💰).
+ * v5: the symbols are simple monochrome Lucide icons (lit = --hue on a
+ * tint, unlit = pale grey-blue). Pass `icon={Coins}`; the old `emoji`
+ * prop is mapped to its icon (💰 → Coins, 🏠 → House, 🧑 → User …), and
+ * an emoji with no icon falls back to a plain dot.
+ *
+ * @prop icon    Lucide icon to repeat.
+ * @prop emoji   v4 prop, mapped to a Lucide icon (default Coins).
  * @prop label   Sentence read by screen readers and shown under the row.
  */
 export function Pictogram({
   filled,
   total = 10,
-  emoji = "💰",
+  icon,
+  emoji,
   label,
-  size = 28,
+  size = 24,
 }: {
   filled: number;
   total?: number;
+  icon?: LucideIcon;
+  /** v4 prop: mapped to its Lucide icon, never drawn as an emoji. */
   emoji?: string;
   label: string;
   size?: number;
 }) {
   const f = Math.max(0, Math.min(total, filled));
+  const glyph = icon ?? (emoji === undefined ? emojiIcon("💰") : emojiIcon(emoji)) ?? Circle;
+  const box = size + 12;
   return (
     <figure style={{ margin: 0 }}>
       <div aria-hidden style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -111,28 +152,30 @@ export function Pictogram({
               style={{
                 position: "relative",
                 display: "inline-flex",
-                width: size + 10,
-                height: size + 10,
+                width: box,
+                height: box,
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: 12,
+                borderRadius: 10,
                 background: lit > 0 ? "var(--hue-tint)" : "var(--ftp-surface-2)",
+                border: `1px solid ${lit > 0 ? "color-mix(in srgb, var(--hue) 18%, transparent)" : "transparent"}`,
                 ["--i" as string]: i,
               }}
             >
-              <span className="ftp-emoji" style={{ fontSize: size, filter: "grayscale(1)", opacity: 0.28 }}>
-                {emoji}
-              </span>
+              <KitIcon icon={glyph} size={size} strokeWidth={1.75} style={{ color: "var(--ftp-border-strong)" }} />
               {lit > 0 && (
                 <span
-                  className="ftp-emoji"
                   style={{
                     position: "absolute",
-                    fontSize: size,
+                    inset: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--hue)",
                     clipPath: `inset(0 ${Math.round((1 - lit) * 100)}% 0 0)`,
                   }}
                 >
-                  {emoji}
+                  <KitIcon icon={glyph} size={size} strokeWidth={2} />
                 </span>
               )}
             </span>
@@ -240,10 +283,9 @@ export function WaterTank({
           width,
           height,
           borderRadius: "18px 18px 22px 22px",
-          border: "3px solid color-mix(in srgb, var(--hue) 45%, #fff)",
-          background: "linear-gradient(180deg, #fff 0%, var(--hue-tint) 100%)",
+          border: "2px solid color-mix(in srgb, var(--hue) 35%, var(--ftp-border))",
+          background: "var(--ftp-surface)",
           overflow: "hidden",
-          boxShadow: "inset 0 -8px 16px -12px rgba(0,0,0,0.25)",
         }}
       >
         <div
@@ -254,7 +296,7 @@ export function WaterTank({
             right: 0,
             bottom: 0,
             height: `${p}%`,
-            background: "linear-gradient(180deg, var(--hue-pop) 0%, var(--hue) 100%)",
+            background: "color-mix(in srgb, var(--hue-pop) 80%, var(--hue))",
           }}
         >
           {/* Wave: a 200 %-wide SVG strip that slides left forever. */}
@@ -265,7 +307,7 @@ export function WaterTank({
             className="ftp-wave"
             style={{ position: "absolute", top: -9, left: 0, width: "200%", height: 12 }}
           >
-            <path d="M0 10 Q 25 0 50 10 T 100 10 T 150 10 T 200 10 V 20 H 0 Z" fill="var(--hue-pop)" />
+            <path d="M0 10 Q 25 0 50 10 T 100 10 T 150 10 T 200 10 V 20 H 0 Z" fill="color-mix(in srgb, var(--hue-pop) 80%, var(--hue))" />
           </svg>
         </div>
         {/* Tick marks at 25 / 50 / 75 %. */}
@@ -273,7 +315,7 @@ export function WaterTank({
           <span
             key={t}
             aria-hidden
-            style={{ position: "absolute", right: 0, bottom: `${t}%`, width: 10, height: 2, background: "rgba(0,0,0,0.18)" }}
+            style={{ position: "absolute", right: 0, bottom: `${t}%`, width: 10, height: 2, background: "var(--ftp-border-strong)" }}
           />
         ))}
         <span
@@ -287,7 +329,7 @@ export function WaterTank({
             fontSize: 24,
           }}
         >
-          <span style={{ padding: "2px 10px", borderRadius: 999, background: "rgba(255,255,255,0.9)", color: "var(--hue-deep)" }}>
+          <span style={{ padding: "2px 10px", borderRadius: 999, background: "var(--ftp-surface)", color: "var(--hue-deep)", boxShadow: "var(--ftp-shadow-1)" }}>
             {Math.round(p)}%
           </span>
         </span>
@@ -303,24 +345,60 @@ export function WaterTank({
 //  WeatherGlyph
 // ─────────────────────────────────────────────────────────────────────
 
-/** Weather emoji from an OpenWeather-style condition string. */
-export function weatherEmoji(conditions?: string | null, hourIST?: number): string {
+type WeatherKind = "storm" | "rain" | "snow" | "fog" | "overcast" | "partly" | "clear" | "fair";
+
+function weatherKind(conditions?: string | null): WeatherKind {
   const c = (conditions ?? "").toLowerCase();
-  const night = hourIST !== undefined && (hourIST < 6 || hourIST >= 19);
-  if (/thunder|storm/.test(c)) return "⛈️";
-  if (/drizzle|rain|shower/.test(c)) return "🌧️";
-  if (/snow/.test(c)) return "❄️";
-  if (/mist|fog|haze|smoke|dust/.test(c)) return "🌫️";
-  if (/overcast|broken/.test(c)) return "☁️";
-  if (/scattered|few|partly|cloud/.test(c)) return night ? "☁️" : "⛅";
-  if (/clear|sun/.test(c)) return night ? "🌙" : "☀️";
-  return "🌤️";
+  if (/thunder|storm/.test(c)) return "storm";
+  if (/drizzle|rain|shower/.test(c)) return "rain";
+  if (/snow/.test(c)) return "snow";
+  if (/mist|fog|haze|smoke|dust/.test(c)) return "fog";
+  if (/overcast|broken/.test(c)) return "overcast";
+  if (/scattered|few|partly|cloud/.test(c)) return "partly";
+  if (/clear|sun/.test(c)) return "clear";
+  return "fair";
 }
 
-export function WeatherGlyph({ conditions, size = 56 }: { conditions?: string | null; size?: number }) {
+/**
+ * Weather emoji from an OpenWeather-style condition string.
+ * v5: prefer `weatherIcon()` / `<WeatherGlyph>` (monochrome icons). This is
+ * kept for old call sites; passed to a kit `emoji` prop it is mapped to the
+ * same icon anyway.
+ */
+export function weatherEmoji(conditions?: string | null, hourIST?: number): string {
+  const night = hourIST !== undefined && (hourIST < 6 || hourIST >= 19);
+  switch (weatherKind(conditions)) {
+    case "storm": return "⛈️";
+    case "rain": return "🌧️";
+    case "snow": return "❄️";
+    case "fog": return "🌫️";
+    case "overcast": return "☁️";
+    case "partly": return night ? "☁️" : "⛅";
+    case "clear": return night ? "🌙" : "☀️";
+    default: return "🌤️";
+  }
+}
+
+/** Lucide weather icon from an OpenWeather-style condition string (v5). */
+export function weatherIcon(conditions?: string | null, hourIST?: number): LucideIcon {
+  const night = hourIST !== undefined && (hourIST < 6 || hourIST >= 19);
+  switch (weatherKind(conditions)) {
+    case "storm": return CloudLightning;
+    case "rain": return CloudRain;
+    case "snow": return Snowflake;
+    case "fog": return CloudFog;
+    case "overcast": return Cloud;
+    case "partly": return night ? Cloud : CloudSun;
+    case "clear": return night ? Moon : Sun;
+    default: return CloudSun;
+  }
+}
+
+/** A calm weather picture: one monochrome icon in the page hue. */
+export function WeatherGlyph({ conditions, size = 48, hourIST }: { conditions?: string | null; size?: number; hourIST?: number }) {
   return (
-    <span className="ftp-emoji ftp-float" role="img" aria-label={conditions ?? "weather"} style={{ fontSize: size }}>
-      {weatherEmoji(conditions)}
+    <span role="img" aria-label={conditions ?? "weather"} style={{ display: "inline-flex", color: "var(--hue)" }}>
+      <KitIcon icon={weatherIcon(conditions, hourIST)} size={size} strokeWidth={1.6} />
     </span>
   );
 }
@@ -334,8 +412,8 @@ export const CHART_AXIS = { fontSize: 11, fill: "var(--ftp-text-2)", fontFamily:
 
 /** Tooltip box style for every recharts chart. */
 export const chartTooltipStyle: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
+  background: "var(--ftp-surface)",
+  border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
   borderRadius: 12,
   boxShadow: "var(--ftp-shadow-2)",
   fontSize: 12,
@@ -352,21 +430,22 @@ export const chartTooltipStyle: React.CSSProperties = {
 export function ChartGradients() {
   return (
     <defs>
+      {/* v5: near-flat fills — the hue fading only slightly into its pastel. */}
       <linearGradient id="ftpHueFill" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="var(--hue)" />
-        <stop offset="100%" stopColor="var(--hue-pop)" />
+        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.72} />
       </linearGradient>
       <linearGradient id="ftpHueFillH" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="var(--hue-pop)" />
+        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.72} />
         <stop offset="100%" stopColor="var(--hue)" />
       </linearGradient>
       <linearGradient id="ftpHueArea" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.35} />
+        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.22} />
         <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.02} />
       </linearGradient>
       <linearGradient id="ftpMutedFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#D8D5CB" />
-        <stop offset="100%" stopColor="#ECEAE3" />
+        <stop offset="0%" stopColor="var(--ftp-border-strong)" />
+        <stop offset="100%" stopColor="var(--ftp-border)" />
       </linearGradient>
     </defs>
   );
@@ -375,6 +454,10 @@ export function ChartGradients() {
 /**
  * ChartCard — the frame for every chart (vault note 34: title, units,
  * source, as-of, and a data-table view for screen readers and skeptics).
+ *
+ * v5: the title carries no emoji (the `emoji` prop is accepted and ignored),
+ * the one-line takeaway (`simple`) has no pointing-hand, and the table
+ * switch uses a small table icon.
  *
  * @prop table  Optional rows for "Show as table": [{label, value}] or a node.
  */
@@ -391,6 +474,7 @@ export function ChartCard({
   children,
 }: {
   title: string;
+  /** v4 prop, kept for old call sites. v5 chart titles carry no emoji (not drawn). */
   emoji?: string;
   units?: string;
   /** One plain sentence above the chart ("Rain was below normal in 7 of 12 months"). */
@@ -403,6 +487,7 @@ export function ChartCard({
   legend?: Array<{ label: string; swatch: string }>;
   children: React.ReactNode;
 }) {
+  void emoji;
   const tk = useTranslations("kit");
   const [asTable, setAsTable] = React.useState(false);
   const hasTable = Boolean(table);
@@ -420,13 +505,8 @@ export function ChartCard({
     >
       <figcaption style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          {emoji && (
-            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-              {emoji}
-            </span>
-          )}
           <div style={{ minWidth: 0 }}>
-            <span className="ftp-display" style={{ display: "block", fontSize: 17, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
+            <span style={{ display: "block", fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }}>
               {title}
             </span>
             {units && <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{units}</p>}
@@ -439,33 +519,34 @@ export function ChartCard({
             aria-pressed={asTable}
             className="ftp-btn ftp-btn-secondary"
             style={{
-              height: 30,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              height: 32,
               padding: "0 12px",
-              borderRadius: 999,
-              border: "1px solid var(--ftp-border)",
-              background: "var(--ftp-surface)",
+              borderRadius: "var(--ftp-radius-tile)",
+              border: `1px solid ${asTable ? "var(--hue)" : "var(--ftp-border)"}`,
+              background: asTable ? "var(--hue-tint)" : "var(--ftp-surface)",
               fontSize: 12,
-              fontWeight: 500,
-              color: "var(--ftp-text-2)",
+              fontWeight: 600,
+              color: asTable ? "var(--hue-deep)" : "var(--ftp-text-2)",
               cursor: "pointer",
               fontFamily: "var(--ftp-font-sans)",
             }}
           >
-            <span aria-hidden>🔢 </span>{tk("tableView")}
+            <Table2 size={14} aria-hidden />
+            {tk("tableView")}
           </button>
         )}
       </figcaption>
       {simple && (
-        <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>
-          <span aria-hidden>👉 </span>
-          {simple}
-        </p>
+        <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>{simple}</p>
       )}
       {legend && legend.length > 0 && !asTable && (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 10, fontSize: 12, color: "var(--ftp-text-2)" }}>
           {legend.map((l) => (
             <span key={l.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, background: l.swatch }} />
+              <span aria-hidden style={{ width: 12, height: 12, borderRadius: 3, background: l.swatch }} />
               {l.label}
             </span>
           ))}
@@ -505,32 +586,38 @@ export function ChartCard({
   );
 }
 
-// ── HowItWorks — "how this scheme reaches you", in 3–5 picture steps ──
+// ── HowItWorks — "how this scheme reaches you", in 3–5 numbered steps ──
 // Horizontal with arrows on tablet and up, a vertical list on phones.
+// v5: each step shows its number and a small monochrome icon (pass `icon`,
+// or an old `emoji` that is mapped to its icon); never an emoji.
 //   <HowItWorks title={t("howTitle")} steps={[
-//     { emoji: "📝", title: t("step.apply"), body: t("step.applyBody") },
-//     { emoji: "🔎", title: t("step.check") }, { emoji: "✅", title: t("step.approve") },
-//     { emoji: "💰", title: t("step.money") } ]} />
+//     { icon: NotebookPen, title: t("step.apply"), body: t("step.applyBody") },
+//     { icon: Search, title: t("step.check") }, { icon: CircleCheck, title: t("step.approve") },
+//     { icon: Coins, title: t("step.money") } ]} />
 export function HowItWorks({
   title,
   steps,
 }: {
   title?: React.ReactNode;
-  steps: { emoji: string; title: React.ReactNode; body?: React.ReactNode }[];
+  steps: { icon?: LucideIcon; emoji?: string; title: React.ReactNode; body?: React.ReactNode }[];
 }) {
   if (steps.length === 0) return null;
   return (
     <figure className="ftp-how" style={{ margin: 0 }}>
       {title && <figcaption className="ftp-how-title">{title}</figcaption>}
       <ol className="ftp-how-steps">
-        {steps.map((s, i) => (
-          <li key={i} className="ftp-how-step ftp-rise" style={{ ["--i" as string]: i } as React.CSSProperties}>
-            <span className="ftp-how-num" aria-hidden>{i + 1}</span>
-            <span className="ftp-how-emoji ftp-emoji" aria-hidden>{s.emoji}</span>
-            <span className="ftp-how-step-title">{s.title}</span>
-            {s.body && <span className="ftp-how-step-body">{s.body}</span>}
-          </li>
-        ))}
+        {steps.map((s, i) => {
+          return (
+            <li key={i} className="ftp-how-step ftp-rise" style={{ ["--i" as string]: i } as React.CSSProperties}>
+              <span className="ftp-how-head" aria-hidden>
+                <span className="ftp-how-num">{i + 1}</span>
+                <KitIcon icon={s.icon} emoji={s.emoji} size={18} className="ftp-how-icon" />
+              </span>
+              <span className="ftp-how-step-title">{s.title}</span>
+              {s.body && <span className="ftp-how-step-body">{s.body}</span>}
+            </li>
+          );
+        })}
       </ol>
     </figure>
   );
@@ -562,8 +649,8 @@ export function CountdownBar({
   return (
     <div className="ftp-countdown">
       <div className="ftp-countdown-label">
-        <span className="ftp-emoji" aria-hidden>{e < now ? "✅" : soon ? "⏰" : "⏳"} </span>
-        {label}
+        {e < now ? <CircleCheck size={16} aria-hidden /> : soon ? <AlarmClock size={16} aria-hidden /> : <Hourglass size={16} aria-hidden />}
+        <span>{label}</span>
       </div>
       <div
         className="ftp-countdown-track"

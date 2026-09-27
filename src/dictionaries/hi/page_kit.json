@@ -1,0 +1,22 @@
+{
+  "staleTitle": "यह डेटा {days, plural, one {# दिन} other {# दिन}} पुराना है।",
+  "staleBody": "हमारे पास सबसे नया डेटा {date} का है। हमें इससे नया डेटा नहीं मिला।",
+  "staleSource": "स्रोत देखें",
+  "unknownDate": "स्रोत ने तारीख़ प्रकाशित नहीं की है।",
+  "aiSummary": "AI सारांश",
+  "confidence": "{n}% भरोसा",
+  "written": "लिखा गया",
+  "readMore": "और पढ़ें",
+  "showLess": "कम दिखाएँ",
+  "sourceN": "स्रोत {n}",
+  "sentiment": {
+    "positive": "सकारात्मक",
+    "negative": "नकारात्मक",
+    "neutral": "तटस्थ"
+  },
+  "cached": "सहेजा हुआ",
+  "refresh": "डेटा ताज़ा करें",
+  "noDataYet": "इस ज़िले का डेटा अभी नहीं है।",
+  "pageActions": "पेज के विकल्प",
+  "healthScore": "ज़िला स्वास्थ्य स्कोर"
+}

@@ -1,0 +1,22 @@
+{
+  "staleTitle": "ಈ ಡೇಟಾ {days, plural, one {# ದಿನದಷ್ಟು} other {# ದಿನಗಳಷ್ಟು}} ಹಳೆಯದು.",
+  "staleBody": "ನಮ್ಮ ಬಳಿ ಇರುವ ಅತ್ಯಂತ ಹೊಸ ಡೇಟಾ {date} ರದ್ದು. ಇದಕ್ಕಿಂತ ಹೊಸ ಡೇಟಾ ನಮಗೆ ಸಿಗಲಿಲ್ಲ.",
+  "staleSource": "ಮೂಲವನ್ನು ನೋಡಿ",
+  "unknownDate": "ಮೂಲವು ದಿನಾಂಕವನ್ನು ಪ್ರಕಟಿಸಿಲ್ಲ.",
+  "aiSummary": "AI ಸಾರಾಂಶ",
+  "confidence": "{n}% ವಿಶ್ವಾಸ",
+  "written": "ಬರೆದದ್ದು",
+  "readMore": "ಇನ್ನಷ್ಟು ಓದಿ",
+  "showLess": "ಕಡಿಮೆ ತೋರಿಸಿ",
+  "sourceN": "ಮೂಲ {n}",
+  "sentiment": {
+    "positive": "ಸಕಾರಾತ್ಮಕ",
+    "negative": "ನಕಾರಾತ್ಮಕ",
+    "neutral": "ತಟಸ್ಥ"
+  },
+  "cached": "ಉಳಿಸಿದ ಪ್ರತಿ",
+  "refresh": "ಡೇಟಾ ನವೀಕರಿಸಿ",
+  "noDataYet": "ಈ ಜಿಲ್ಲೆಗೆ ಇನ್ನೂ ಡೇಟಾ ಇಲ್ಲ.",
+  "pageActions": "ಪುಟದ ಆಯ್ಕೆಗಳು",
+  "healthScore": "ಜಿಲ್ಲಾ ಆರೋಗ್ಯ ಅಂಕ"
+}
