@@ -148,18 +148,20 @@ export default function PriceCard({ view }: { view: PriceCardView }) {
             </dl>
           )}
 
-          <p style={{ margin: "auto 0 0", paddingTop: 4, fontSize: 12, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
-            {d.source} · {d.asOf} ·{" "}
+          <div style={{ marginTop: "auto", paddingTop: 4 }}>
+            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
+              {d.source} · {d.asOf}
+            </p>
             <a
               href={d.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, minHeight: 24 }}
+              style={{ color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 44, fontSize: 13, fontWeight: 600 }}
             >
               {d.checkLabel}
-              <ExternalLink size={12} aria-hidden />
+              <ExternalLink size={13} aria-hidden />
             </a>
-          </p>
+          </div>
         </>
       )}
     </article>

@@ -85,7 +85,8 @@ export default function SupporterChip({
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 36,
+    // A link gets a full 44 px touch target; a plain name can be smaller.
+    minHeight: href ? 44 : 36,
     maxWidth: "100%",
     padding: "4px 12px 4px 6px",
     borderRadius: "var(--ftp-radius-pill)",

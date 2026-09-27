@@ -98,7 +98,7 @@ function Row({
         })}
         {more > 0 && (
           <li style={{ listStyle: "none" }}>
-            <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 36, display: "inline-flex", alignItems: "center" }}>
+            <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
               {t("banner_more", { n: number(more) })}
             </Link>
           </li>
