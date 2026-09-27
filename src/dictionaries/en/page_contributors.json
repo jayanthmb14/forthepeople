@@ -49,7 +49,6 @@
   "modalIndia": "All {n} India patrons and royal contributors",
   "modalOneTime": "All {n} one-time supporters",
   "sortedBy": "Sorted by amount, highest first",
-  "close": "Close",
   "profileAria": "{name}'s profile",
   "label": {
     "founder": "Royal contributor",
@@ -71,5 +70,30 @@
   "citizensLakh": "{n} lakh citizens",
   "citizensCount": "{n} citizens",
   "everyCitizen": "every citizen",
-  "ctaButton": "Become a champion"
+  "ctaButton": "Become a champion",
+  "simpleNone": "Nobody supports {name}'s page yet. You could be the first.",
+  "details": "See details",
+  "givingFor": "Giving for {time}",
+  "chartsTitle": "The bigger picture",
+  "backToList": "Back to the list",
+  "joinThem": "Support {name} too",
+  "sheet": {
+    "role": "Supports as",
+    "badge": "Badge",
+    "how": "How they give",
+    "monthly": "Every month",
+    "oneTime": "Once",
+    "givingFor": "Giving for",
+    "gift": "Gift",
+    "joined": "Joined on",
+    "onWall": "On this page",
+    "profile": "Profile"
+  },
+  "social": {
+    "instagram": "Instagram",
+    "linkedin": "LinkedIn",
+    "github": "GitHub",
+    "twitter": "X (Twitter)",
+    "website": "Website"
+  }
 }

@@ -49,7 +49,6 @@
   "modalIndia": "ಎಲ್ಲಾ {n} ಭಾರತ ಪೋಷಕರು ಮತ್ತು ರಾಜ ಕೊಡುಗೆದಾರರು",
   "modalOneTime": "ಒಮ್ಮೆ ಕೊಡುಗೆ ನೀಡಿದ ಎಲ್ಲಾ {n} ಜನರು",
   "sortedBy": "ಮೊತ್ತದ ಪ್ರಕಾರ, ಹೆಚ್ಚಿನದು ಮೊದಲು",
-  "close": "ಮುಚ್ಚಿ",
   "profileAria": "{name} ಅವರ ಪ್ರೊಫೈಲ್",
   "label": {
     "founder": "ರಾಜ ಕೊಡುಗೆದಾರ",
@@ -71,5 +70,30 @@
   "citizensLakh": "{n} ಲಕ್ಷ ನಾಗರಿಕರಿಗೆ",
   "citizensCount": "{n} ನಾಗರಿಕರಿಗೆ",
   "everyCitizen": "ಪ್ರತಿಯೊಬ್ಬ ನಾಗರಿಕರಿಗೆ",
-  "ctaButton": "ಚಾಂಪಿಯನ್ ಆಗಿ"
+  "ctaButton": "ಚಾಂಪಿಯನ್ ಆಗಿ",
+  "simpleNone": "{name} ಜಿಲ್ಲೆಯ ಪುಟಕ್ಕೆ ಇನ್ನೂ ಯಾರೂ ಬೆಂಬಲ ನೀಡಿಲ್ಲ. ನೀವೇ ಮೊದಲಿಗರಾಗಬಹುದು.",
+  "details": "ವಿವರ ನೋಡಿ",
+  "givingFor": "ನೀಡುತ್ತಿರುವ ಅವಧಿ: {time}",
+  "chartsTitle": "ಒಟ್ಟಾರೆ ಚಿತ್ರಣ",
+  "backToList": "ಪಟ್ಟಿಗೆ ಹಿಂತಿರುಗಿ",
+  "joinThem": "ನೀವೂ {name} ಜಿಲ್ಲೆಗೆ ಬೆಂಬಲ ನೀಡಿ",
+  "sheet": {
+    "role": "ಬೆಂಬಲದ ಬಗೆ",
+    "badge": "ಬ್ಯಾಡ್ಜ್",
+    "how": "ಹೇಗೆ ನೀಡುತ್ತಾರೆ",
+    "monthly": "ಪ್ರತಿ ತಿಂಗಳು",
+    "oneTime": "ಒಮ್ಮೆ",
+    "givingFor": "ನೀಡುತ್ತಿರುವ ಅವಧಿ",
+    "gift": "ಕೊಡುಗೆ",
+    "joined": "ಸೇರಿದ ದಿನ",
+    "onWall": "ಈ ಪುಟದಲ್ಲಿ",
+    "profile": "ಪ್ರೊಫೈಲ್"
+  },
+  "social": {
+    "instagram": "Instagram",
+    "linkedin": "LinkedIn",
+    "github": "GitHub",
+    "twitter": "X (Twitter)",
+    "website": "ಜಾಲತಾಣ"
+  }
 }

@@ -5,56 +5,57 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  News & Updates — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
+//  Local news — "What are the papers saying about my district today?"
+//  (docs/LAYOUT.md recipe; docs/MODULE-MAP.md: News = what the papers say,
+//  Alerts = official warnings)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Order on the page:
-//    PageHeader (module emoji band, freshness, source)
-//    → AI summary cards (unchanged data hooks)
-//    → StatStrip of emoji tiles (articles, topics, linked to a page)
-//    → the pictures, all counted from the same feed that is listed below:
-//        · an "In simple words" line + a pictogram of how many stories
-//          point to a data page, and one bar per topic (with its emoji);
-//        · "Who reported it": a ring of stories per publisher (top five,
-//          the rest together), with a table view.
-//    → topic Chips → featured article (tinted) → the rest as quiet cards
-//    → SourcesFooter → Toolbar (Share, Compare)
+//  ModulePage → PageHeader (freshness of the feed, source) → AI summary →
+//  Explainer (how many stories, the biggest topic, how fresh the newest is)
+//  → 4 StatTiles → ONE picture: "What the news is about", a tile per topic
+//  (emoji, count, a bar for its share). The tiles are also the filter: tap
+//  one to see only that topic → the stories, grouped by topic, as TapCards
+//  (headline, publisher, time, a line of summary) → tapping a story opens a
+//  DetailSheet: the summary, publisher, date and time, topic, the data page
+//  it is about, and "Open the story" → charts (2 per row on laptop/PC): who
+//  reported it, and when the stories came out → sources → Share / Compare.
 //
-//  Every article card shows WHERE it came from (publisher / source) and
-//  WHEN (relative time under a week, the date after that). Module tags
-//  carry that module's emoji and hue, and link to the module.
+//  Every story says WHERE it came from and WHEN. Headlines and summaries are
+//  live data (translated once in the backend when a translation exists; the
+//  row's `lang` says which language it is in).
 //
-//  i18n: every interface string is in src/dictionaries/<locale>/page_news.json
-//  (namespace "page_news"). Headlines, summaries and publisher names are
-//  live data and are shown as the API returns them.
-//
+//  i18n: page_news (en / kn / hi).
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Newspaper, ExternalLink, Share2, GitCompare } from "lucide-react";
-import { useNews, useAIInsight } from "@/hooks/useRealtimeData";
+import { Newspaper, ExternalLink, GitCompare } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useNews, type NewsItem } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
 import {
-  PageHeader, LoadingShell, ErrorBlock, AIInsightBanner, StatStrip, StatTile,
-  Section, Card, Chips, EmptyState, ProgressBar, SourcesFooter, Toolbar, ToolbarButton,
+  ModulePage, PageHeader, LoadingShell, ErrorBlock, StatStrip, StatTile, Section,
+  EmptyState, SourcesFooter, Toolbar, ToolbarButton,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, CHART_AXIS, Explainer, chartTooltipStyle } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { OTHER_SHADE, ShareDonut, type DonutSlice } from "@/components/community/CommunityVisuals";
-import { useDistrictName } from "@/components/community/usePlaceName";
+import { EmojiChip, TapCard } from "@/components/community/TapCard";
+import { SharePageButton, cleanText, useNow } from "@/components/community/pageTools";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import { hueClass } from "@/lib/design/hues";
-import { useFormat, useModuleText } from "@/i18n/client";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
+
+/** A story as the API returns it; `lang` is set when a stored translation was swapped in. */
+type Story = NewsItem & { lang?: string };
 
 /** The page_news translator, handed to small helpers. */
 type T = ReturnType<typeof useTranslations>;
 
-// Module tags: the AI news pipeline tags each article with the module it
-// is about (targetModule). The key is that slug (the link target, unchanged);
-// `hue` is the sidebar module whose colour the tag borrows, `emoji` its chip.
-// The label is page_news.moduleTags.<slug>.
+// Module tags: the news pipeline tags each story with the module it is about
+// (targetModule). Key = that slug (the link target); `hue` = the module whose
+// colour the tag borrows; label = page_news.moduleTags.<slug>.
 const MODULE_TAGS: Record<string, { emoji: string; hue: string }> = {
   "leaders":              { emoji: "👥", hue: "leadership" },
   "infrastructure":       { emoji: "🏗️", hue: "infrastructure" },
@@ -79,14 +80,23 @@ const MODULE_TAGS: Record<string, { emoji: string; hue: string }> = {
   "citizen-corner":       { emoji: "🤝", hue: "citizen-corner" },
   "offices":              { emoji: "🏢", hue: "offices" },
   "rti":                  { emoji: "🏛️", hue: "rti" },
+  "exams":                { emoji: "📝", hue: "exams" },
   "sugar-factory":        { emoji: "🏭", hue: "industries" },
   "soil":                 { emoji: "🌱", hue: "farm" },
   "population":           { emoji: "📈", hue: "population" },
   "news":                 { emoji: "📰", hue: "news" },
 };
 
-// Topic (the feed's keyword category) → emoji chip. The categories come
-// from the news job's keyword list; anything new falls back to 📰.
+/** Module tags that are not a page of their own link to the page that holds them. */
+const TAG_ROUTE: Record<string, string> = {
+  leaders: "leadership",
+  budget: "finance",
+  education: "schools",
+  "sugar-factory": "industries",
+  soil: "farm",
+};
+
+// Topic (the feed's keyword category) → emoji. Anything new falls back to 📰.
 const TOPIC_EMOJI: Record<string, string> = {
   politics: "🏛️",
   development: "🏗️",
@@ -101,18 +111,11 @@ const TOPIC_EMOJI: Record<string, string> = {
 
 /** How many publishers get their own slice before the rest are grouped. */
 const TOP_PUBLISHERS = 5;
+/** Days shown in "When the stories came out". */
+const TIMELINE_DAYS = 14;
 
-/** News feeds sometimes leave HTML entities in text — tidy them up. */
-function cleanHtml(text: string): string {
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+function topicOf(n: Story): string {
+  return n.category || "general";
 }
 
 /** Translated topic name; an unknown category is shown in sentence case. */
@@ -127,110 +130,231 @@ function topicEmoji(category: string): string {
   return TOPIC_EMOJI[category] ?? "📰";
 }
 
-/** A small pill in the current hue (tint background, deep text). */
-function HuePill({ children, emoji }: { children: React.ReactNode; emoji?: string }) {
+function publisherOf(n: Story): string {
+  return (n.publisher ?? n.source ?? "").trim();
+}
+
+/** A small pill in a module's hue: "🚰 Water and dams". */
+function ModulePill({ slug }: { slug: string }) {
+  const t = useTranslations("page_news");
+  const tag = MODULE_TAGS[slug];
+  if (!tag) return null;
+  const key = `moduleTags.${slug}`;
   return (
     <span
+      className={hueClass(tag.hue)}
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
+        gap: 5,
         height: 24,
-        padding: "0 10px",
+        padding: "0 9px",
         borderRadius: "var(--ftp-radius-pill)",
         background: "var(--hue-tint)",
         border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
         color: "var(--hue-deep)",
-        fontSize: 12,
+        fontSize: 11,
         lineHeight: "16px",
         fontWeight: 600,
         whiteSpace: "nowrap",
       }}
     >
-      {emoji && <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>{emoji}</span>}
-      {children}
+      <span className="ftp-emoji" aria-hidden>{tag.emoji}</span>
+      {t.has(key) ? t(key) : slug}
     </span>
   );
 }
 
-/** Small link under a headline pointing at the module the article is about. */
-function ModuleTag({ targetModule, moduleAction, base }: { targetModule: string; moduleAction?: string | null; base: string }) {
-  const t = useTranslations("page_news");
-  const tag = MODULE_TAGS[targetModule];
-  if (!tag) return null;
-  const key = `moduleTags.${targetModule}`;
+/** One topic tile in the picture. It is also the filter button for that topic. */
+function TopicTile({
+  emoji,
+  label,
+  count,
+  total,
+  active,
+  onClick,
+}: {
+  emoji: string;
+  label: string;
+  count: number;
+  total: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const f = useFormat();
+  const share = total > 0 ? count / total : 0;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-      <Link href={`${base}/${targetModule}`} className={hueClass(tag.hue)} style={{ textDecoration: "none" }}>
-        <HuePill emoji={tag.emoji}>{t.has(key) ? t(key) : targetModule}</HuePill>
-      </Link>
-      {moduleAction && (
-        <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{moduleAction}</span>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="ftp-card-link"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 8,
+        minHeight: 44,
+        padding: "12px 12px 10px",
+        borderRadius: 14,
+        border: `2px solid ${active ? "var(--hue)" : "color-mix(in srgb, var(--hue) 18%, var(--ftp-border))"}`,
+        background: active ? "var(--hue-tint)" : "#fff",
+        cursor: "pointer",
+        textAlign: "start",
+        font: "inherit",
+        color: "var(--ftp-text)",
+        minWidth: 0,
+      }}
+    >
+      <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span className="ftp-emoji" aria-hidden style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "anywhere" }}>{label}</span>
+        <span className="ftp-bignum" style={{ fontSize: 20, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
+      </span>
+      <span aria-hidden style={{ height: 6, borderRadius: 99, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
+        <span className="ftp-grow-x" style={{ display: "block", height: "100%", width: `${Math.max(4, Math.round(share * 100))}%`, borderRadius: 99, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
+      </span>
+    </button>
   );
 }
 
-/** Topic pill, publisher and time — shown above every headline. */
-function ArticleMeta({ source, publishedAt, category }: { source: string; publishedAt: string; category: string }) {
+/** One story as a card; tapping it opens the detail sheet. */
+function StoryCard({ n, onOpen }: { n: Story; onOpen: (n: Story) => void }) {
   const t = useTranslations("page_news");
   const f = useFormat();
+  const headline = cleanText(n.headline);
+  const summary = n.summary ? cleanText(n.summary) : "";
+  const showSummary = summary && summary !== headline && !headline.startsWith(summary);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-      <HuePill emoji={topicEmoji(category)}>{topicLabel(t, category)}</HuePill>
-      <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: "var(--ftp-text-2)" }}>{source}</span>
-      <time
-        dateTime={publishedAt}
-        className="ftp-num"
-        style={{ fontSize: 12, lineHeight: "16px", fontWeight: 400, color: "var(--ftp-text-2)" }}
-        suppressHydrationWarning
-      >
-        {f.ago(publishedAt)}
-      </time>
-    </div>
-  );
-}
-
-/** Headline — an external link when we have the article URL, plain text otherwise. */
-function Headline({ text, url, featured }: { text: string; url?: string | null; featured?: boolean }) {
-  const tn = useTranslations("moduleNews");
-  const style: React.CSSProperties = {
-    fontSize: featured ? 18 : 14,
-    lineHeight: featured ? "25px" : "21px",
-    fontWeight: featured ? 650 : 600,
-    color: "var(--ftp-text)",
-    margin: 0,
-  };
-  const className = featured ? "ftp-display" : undefined;
-  if (!url) return <p className={className} style={style}>{text}</p>;
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={className}
-      style={{ ...style, display: "flex", alignItems: "flex-start", gap: 8, textDecoration: "none", minHeight: 44 }}
+    <TapCard
+      onOpen={() => onOpen(n)}
+      leading={<EmojiChip emoji={topicEmoji(topicOf(n))} size={36} />}
+      title={headline}
+      titleLang={n.lang}
+      subtitle={
+        <span suppressHydrationWarning>
+          {t("byLine", { publisher: publisherOf(n) || t("unknownPublisher"), when: f.ago(n.publishedAt) })}
+        </span>
+      }
+      hint={t("readMore")}
     >
-      <span style={{ flex: 1 }}>{text}</span>
-      <ExternalLink size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
-      <span className="sr-only"> {tn("opensOriginal")}</span>
-    </a>
+      {showSummary && (
+        <p
+          lang={n.lang}
+          style={{
+            margin: 0,
+            fontSize: 13,
+            lineHeight: "20px",
+            color: "var(--ftp-text-2)",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {summary}
+        </p>
+      )}
+      {n.targetModule && MODULE_TAGS[n.targetModule] && (
+        <div>
+          <ModulePill slug={n.targetModule} />
+        </div>
+      )}
+    </TapCard>
   );
 }
 
-/** Share button: the phone's share sheet when available, else copy the link. */
-function SharePageButton() {
-  const tf = useTranslations("pageFooter");
-  const [copied, setCopied] = useState(false);
-  function share() {
-    const url = window.location.href;
-    if (navigator.share) {
-      navigator.share({ title: document.title, url }).catch(() => {});
-    } else {
-      navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
-    }
-  }
-  return <ToolbarButton icon={Share2} onClick={share}>{copied ? tf("copied") : tf("share")}</ToolbarButton>;
+const sheetButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  minHeight: 44,
+  padding: "0 16px",
+  borderRadius: "var(--ftp-radius-tile)",
+  fontSize: 14,
+  fontWeight: 650,
+  textDecoration: "none",
+  flex: "1 1 auto",
+};
+
+/** Everything about one story. */
+function StorySheet({ n, base, onClose }: { n: Story; base: string; onClose: () => void }) {
+  const t = useTranslations("page_news");
+  const mt = useModuleText();
+  const f = useFormat();
+  const headline = cleanText(n.headline);
+  const summary = n.summary ? cleanText(n.summary) : "";
+  const tag = n.targetModule ? MODULE_TAGS[n.targetModule] : undefined;
+  const route = n.targetModule ? TAG_ROUTE[n.targetModule] ?? n.targetModule : null;
+  const topic = topicOf(n);
+  const english = f.locale !== "en" && (!n.lang || n.lang === "en");
+
+  return (
+    <DetailSheet
+      open
+      onClose={onClose}
+      title={headline}
+      titleLang={n.lang}
+      subtitle={publisherOf(n) || undefined}
+      emoji={topicEmoji(topic)}
+      hueClassName={hueClass("news")}
+      footer={
+        <>
+          {n.url && (
+            <a href={n.url} target="_blank" rel="noopener noreferrer" style={{ ...sheetButton, background: "var(--hue)", color: "#fff", border: "1px solid var(--hue)" }}>
+              <span className="ftp-emoji" aria-hidden>📰</span>
+              {t("openStory")}
+              <ExternalLink size={14} aria-hidden />
+            </a>
+          )}
+          {tag && route && route !== "news" && (
+            <Link href={`${base}/${route}`} className={hueClass(tag.hue)} style={{ ...sheetButton, background: "#fff", color: "var(--hue-deep)", border: "1px solid var(--ftp-border)" }}>
+              <span className="ftp-emoji" aria-hidden>{tag.emoji}</span>
+              {t("seePage", { page: mt.label(route) })}
+            </Link>
+          )}
+        </>
+      }
+    >
+      {summary && summary !== headline && (
+        <p lang={n.lang} className="ftp-prose" style={{ margin: 0, fontSize: 15, lineHeight: "24px", color: "var(--ftp-text)" }}>
+          {summary}
+        </p>
+      )}
+      <DetailList
+        rows={[
+          { emoji: "🗞️", label: t("sheet.publisher"), value: publisherOf(n) || t("unknownPublisher") },
+          {
+            emoji: "📅",
+            label: t("sheet.published"),
+            value: (
+              <span suppressHydrationWarning>
+                {t("sheet.publishedValue", {
+                  date: f.date(n.publishedAt, { day: "numeric", month: "long", year: "numeric" }),
+                  time: f.time(n.publishedAt, { hour: "numeric", minute: "2-digit" }),
+                  ago: f.ago(n.publishedAt),
+                })}
+              </span>
+            ),
+          },
+          { emoji: topicEmoji(topic), label: t("sheet.topic"), value: topicLabel(t, topic) },
+          { emoji: "🔗", label: t("sheet.about"), value: n.targetModule && tag ? <ModulePill slug={n.targetModule} /> : null },
+          { emoji: "📌", label: t("sheet.change"), value: n.moduleAction ?? null },
+        ]}
+      />
+      {english && (
+        <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+          <span className="ftp-emoji" aria-hidden>🌐 </span>
+          {t("sheet.inEnglish")}
+        </p>
+      )}
+      <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+        <span className="ftp-emoji" aria-hidden>☝️ </span>
+        {t("sheet.note")}
+      </p>
+    </DetailSheet>
+  );
 }
 
 function NewsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -238,35 +362,35 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
   const t = useTranslations("page_news");
   const tNo = useTranslations("noData");
   const f = useFormat();
+  const now = useNow();
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useNews(district, state);
-  const { data: aiInsight } = useAIInsight(district, "news");
   const freshness = useFreshness(state, district).forModule("news");
-  const [filter, setFilter] = useState("all");
   const districtName = useDistrictName(state, district);
+  const [topic, setTopic] = useState("all");
+  const [selected, setSelected] = useState<Story | null>(null);
+  const close = useCallback(() => setSelected(null), []);
 
-  const news = data?.data ?? [];
-  const categories = ["all", ...Array.from(new Set(news.map((n) => n.category)))];
-  const filtered = filter === "all" ? news : news.filter((n) => n.category === filter);
+  const news = (data?.data ?? []) as Story[];
 
-  // Headline numbers — all derived from the same list shown below.
+  // Topics, biggest first (counted from the same list shown below).
+  const topicCounts = Array.from(
+    news.reduce((m, n) => m.set(topicOf(n), (m.get(topicOf(n)) ?? 0) + 1), new Map<string, number>()),
+    ([category, count]) => ({ category, count }),
+  ).sort((a, b) => b.count - a.count);
+  const topTopic = topicCounts[0];
+  const activeTopic = topic === "all" || topicCounts.some((c) => c.category === topic) ? topic : "all";
+  const groups = topicCounts
+    .filter((c) => activeTopic === "all" || c.category === activeTopic)
+    .map((c) => ({ ...c, stories: news.filter((n) => topicOf(n) === c.category) }));
+
   const latest = news.reduce<string | null>((max, n) => (!max || n.publishedAt > max ? n.publishedAt : max), null);
   const linkedCount = news.filter((n) => n.targetModule && MODULE_TAGS[n.targetModule]).length;
 
-  // Picture 1: stories per topic, biggest first (counted from `news`).
-  const topicCounts = categories
-    .filter((c) => c !== "all")
-    .map((c) => ({ category: c, count: news.filter((n) => n.category === c).length }))
-    .sort((a, b) => b.count - a.count);
-  const topTopic = topicCounts[0];
-  const linkedOfTen = news.length > 0 ? (linkedCount / news.length) * 10 : 0;
-  // A picture needs a few stories to mean anything; one article is not a pattern.
-  const showPicture = news.length >= 3;
-
-  // Picture 2: stories per publisher (the name shown on each card).
+  // Publishers (the name shown on each card).
   const byPublisher = new Map<string, number>();
   for (const n of news) {
-    const name = (n.publisher ?? n.source ?? "").trim();
+    const name = publisherOf(n);
     if (name) byPublisher.set(name, (byPublisher.get(name) ?? 0) + 1);
   }
   const publisherCounts = Array.from(byPublisher, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
@@ -276,169 +400,161 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
     ...(restCount > 0 ? [{ key: "__other", label: t("otherPublishers"), value: restCount, color: OTHER_SHADE }] : []),
   ];
   const publishedTotal = publisherCounts.reduce((s, p) => s + p.count, 0);
-  // Two publishers at least, or the ring is one solid circle.
-  const showPublishers = showPicture && publisherCounts.length >= 2;
+  const showPublishers = news.length >= 3 && publisherCounts.length >= 2;
   const topPublisher = publisherCounts[0];
+
+  // When the stories came out: one bar per day for the last TIMELINE_DAYS days (IST).
+  const dayKey = (d: string | number) => new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const days = Array.from({ length: TIMELINE_DAYS }, (_, i) => {
+    const ms = now - (TIMELINE_DAYS - 1 - i) * 86_400_000;
+    return { key: dayKey(ms), ms };
+  });
+  const perDay = days.map((d) => ({
+    key: d.key,
+    label: f.date(d.ms, { day: "numeric", month: "short" }),
+    stories: news.filter((n) => dayKey(n.publishedAt) === d.key).length,
+  }));
+  const inWindow = perDay.reduce((s, d) => s + d.stories, 0);
+  const activeDays = perDay.filter((d) => d.stories > 0).length;
+  const busiest = [...perDay].sort((a, b) => b.stories - a.stories)[0];
+  const showDays = inWindow >= 3 && activeDays >= 2;
 
   const bold = (c: React.ReactNode) => <strong>{c}</strong>;
 
   return (
-    <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
+    <ModulePage>
       <PageHeader
         icon={Newspaper}
         title={t("title")}
         description={t("description")}
         backHref={base}
-        accent={getModuleAccent("news")}
-        freshness={freshness?.asOf ? { asOf: freshness.asOf, status: freshness.status } : undefined}
+        freshness={freshness?.asOf ? { asOf: freshness.asOf, status: freshness.status } : latest ? { asOf: latest } : undefined}
         source={{ label: "Google News RSS" }}
       />
 
       <AIInsightCard module="news" district={district} />
-      {aiInsight && (
-        <AIInsightBanner
-          headline={aiInsight.headline}
-          summary={aiInsight.summary}
-          sentiment={aiInsight.sentiment}
-          confidence={aiInsight.confidence}
-          sourceUrls={aiInsight.sourceUrls}
-          createdAt={aiInsight.createdAt}
-        />
-      )}
       {isLoading && <LoadingShell rows={5} />}
       {error && <ErrorBlock />}
 
       {!isLoading && !error && news.length === 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <EmptyState emoji="📰" title={tNo("news.title")} body={tNo("news.body", { district: districtName })} />
-        </div>
+        <EmptyState emoji="📰" title={tNo("news.title")} body={tNo("news.body", { district: districtName })} />
       )}
 
       {!isLoading && news.length > 0 && (
         <>
-          <StatStrip cols={3}>
+          <Explainer emoji="🗞️">
+            {topTopic && latest
+              ? t.rich("simple", {
+                  count: news.length,
+                  district: districtName,
+                  topic: topicLabel(t, topTopic.category),
+                  topicCount: topTopic.count,
+                  newest: f.ago(latest),
+                  b: bold,
+                })
+              : null}
+          </Explainer>
+
+          <StatStrip cols={4}>
             <StatTile emoji="📰" label={t("statArticles")} value={f.number(news.length)} sub={t("statArticlesSub")} asOf={latest} />
-            <StatTile emoji="🏷️" label={t("statTopics")} value={f.number(categories.length - 1)} sub={t("statTopicsSub")} />
+            <StatTile
+              emoji="🏷️"
+              label={t("statTopics")}
+              value={f.number(topicCounts.length)}
+              sub={topTopic ? t("statTopicsSub", { topic: topicLabel(t, topTopic.category) }) : undefined}
+            />
+            <StatTile emoji="🗞️" label={t("statPublishers")} value={f.number(publisherCounts.length)} sub={t("statPublishersSub")} />
             <StatTile emoji="🔗" label={t("statLinked")} value={f.number(linkedCount)} sub={t("statLinkedSub")} />
           </StatStrip>
 
-          {showPicture && topTopic && (
-            <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-              <Card tinted padding={18}>
-                <Explainer emoji="🗞️">
-                  {t.rich("simple", {
-                    count: news.length,
-                    district: districtName,
-                    topic: topicLabel(t, topTopic.category),
-                    topicCount: topTopic.count,
-                    linked: linkedCount,
-                    b: bold,
-                  })}
-                </Explainer>
-                <Pictogram filled={linkedOfTen} emoji="📰" label={t("linkedPicto", { n: Math.round(linkedOfTen) })} />
-              </Card>
-              <Card tinted padding={18}>
-                <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-                  {t("aboutTitle")}
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {topicCounts.slice(0, 5).map((tc) => (
-                    <div key={tc.category} style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                      <span className="ftp-emoji" aria-hidden style={{ fontSize: 18, marginBottom: 1 }}>{topicEmoji(tc.category)}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <ProgressBar
-                          value={tc.count}
-                          max={news.length}
-                          label={t("topicBar", { topic: topicLabel(t, tc.category), n: f.number(tc.count) })}
-                          height={8}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {topicCounts.length > 5 && (
-                  <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                    {t("moreTopics", { n: topicCounts.length - 5 })}
-                  </p>
-                )}
-              </Card>
-            </div>
-          )}
-
-          {showPublishers && topPublisher && (
-            <div style={{ marginTop: 16 }}>
-              <ChartCard
-                title={t("publishersTitle")}
-                emoji="🗞️"
-                units={t("publishersUnits")}
-                simple={t.rich("publishersSimple", {
-                  name: topPublisher.name,
-                  n: f.number(topPublisher.count),
-                  total: f.number(publishedTotal),
-                  b: bold,
-                })}
-                source={{ label: "Google News RSS" }}
-                asOf={latest}
-                table={publisherSlices.map((s) => ({ label: s.label, value: f.number(s.value) }))}
-              >
-                <ShareDonut
-                  slices={publisherSlices}
-                  centerValue={f.number(publishedTotal)}
-                  centerLabel={t("storiesWord", { n: publishedTotal })}
-                  ariaLabel={t("publishersAria", {
-                    name: topPublisher.name,
-                    n: f.number(topPublisher.count),
-                    total: f.number(publishedTotal),
-                  })}
+          {/* The one picture: what the news is about. Each tile is also the topic filter. */}
+          <Section emoji="🧭" title={t("aboutTitle")}>
+            <p className="ftp-prose" style={{ margin: "-4px 0 12px", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("aboutIntro")}</p>
+            <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "160px", gap: 10 }}>
+              <TopicTile emoji="🗂️" label={t("all")} count={news.length} total={news.length} active={activeTopic === "all"} onClick={() => setTopic("all")} />
+              {topicCounts.map((c) => (
+                <TopicTile
+                  key={c.category}
+                  emoji={topicEmoji(c.category)}
+                  label={topicLabel(t, c.category)}
+                  count={c.count}
+                  total={news.length}
+                  active={activeTopic === c.category}
+                  onClick={() => setTopic(c.category)}
                 />
-              </ChartCard>
-            </div>
-          )}
-
-          <Section title={t("latestTitle")} emoji="🗞️">
-            {/* Topic filter */}
-            <div style={{ marginBottom: 16 }}>
-              <Chips
-                label={t("filterLabel")}
-                value={filter}
-                onChange={setFilter}
-                items={categories.map((c) => ({
-                  value: c,
-                  label: c === "all" ? t("all") : topicLabel(t, c),
-                  count: c === "all" ? news.length : news.filter((n) => n.category === c).length,
-                }))}
-              />
-            </div>
-
-            {/* Featured article (first in the filtered list) */}
-            {filtered.length > 0 && (() => {
-              const n = filtered[0];
-              return (
-                <Card as="article" tinted padding={20} style={{ marginBottom: 12 }}>
-                  <ArticleMeta source={n.publisher ?? n.source} publishedAt={n.publishedAt} category={n.category} />
-                  <Headline text={cleanHtml(n.headline)} url={n.url} featured />
-                  {n.summary && n.summary !== n.headline && (
-                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4, fontSize: 14, lineHeight: "21px" }}>{cleanHtml(n.summary)}</p>
-                  )}
-                  {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
-                </Card>
-              );
-            })()}
-
-            {/* Rest of the list */}
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              {filtered.slice(1).map((n) => (
-                <Card as="li" key={n.id} padding={16}>
-                  <ArticleMeta source={n.publisher ?? n.source} publishedAt={n.publishedAt} category={n.category} />
-                  <Headline text={cleanHtml(n.headline)} url={n.url} />
-                  {n.summary && n.summary !== n.headline && (
-                    <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "2px 0 0" }}>{cleanHtml(n.summary)}</p>
-                  )}
-                  {n.targetModule && <ModuleTag targetModule={n.targetModule} moduleAction={n.moduleAction} base={base} />}
-                </Card>
               ))}
-            </ul>
+            </div>
           </Section>
+
+          {/* The stories, grouped by topic. */}
+          {groups.map((g) => (
+            <Section
+              key={g.category}
+              emoji={topicEmoji(g.category)}
+              title={
+                <>
+                  {topicLabel(t, g.category)}{" "}
+                  <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(g.count) })}</span>
+                </>
+              }
+            >
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "300px" }}>
+                {g.stories.map((n) => (
+                  <StoryCard key={n.id} n={n} onOpen={setSelected} />
+                ))}
+              </div>
+            </Section>
+          ))}
+
+          {/* Charts: 2 per row on laptop and PC. */}
+          {(showPublishers || showDays) && (
+            <Section emoji="📊" title={t("chartsTitle")}>
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
+                {showPublishers && topPublisher && (
+                  <ChartCard
+                    title={t("publishersTitle")}
+                    emoji="🗞️"
+                    units={t("publishersUnits")}
+                    simple={t.rich("publishersSimple", { name: topPublisher.name, n: f.number(topPublisher.count), total: f.number(publishedTotal), b: bold })}
+                    source={{ label: "Google News RSS" }}
+                    asOf={latest}
+                    table={publisherSlices.map((s) => ({ label: s.label, value: f.number(s.value) }))}
+                  >
+                    <ShareDonut
+                      slices={publisherSlices}
+                      centerValue={f.number(publishedTotal)}
+                      centerLabel={t("storiesWord", { n: publishedTotal })}
+                      ariaLabel={t("publishersAria", { name: topPublisher.name, n: f.number(topPublisher.count), total: f.number(publishedTotal) })}
+                    />
+                  </ChartCard>
+                )}
+                {showDays && busiest && (
+                  <ChartCard
+                    title={t("daysTitle")}
+                    emoji="📆"
+                    units={t("daysUnits", { n: TIMELINE_DAYS })}
+                    simple={t.rich("daysSimple", { day: busiest.label, n: busiest.stories, count: f.number(busiest.stories), b: bold })}
+                    source={{ label: "Google News RSS" }}
+                    asOf={latest}
+                    table={perDay.map((d) => ({ label: d.label, value: f.number(d.stories) }))}
+                  >
+                    <div style={{ width: "100%", height: 230 }} role="img" aria-label={t("daysAria", { n: TIMELINE_DAYS, total: f.number(inWindow) })}>
+                      <ResponsiveContainer>
+                        <BarChart data={perDay} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+                          <ChartGradients />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                          <XAxis dataKey="label" tick={CHART_AXIS} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={12} />
+                          <YAxis tick={CHART_AXIS} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
+                          <Tooltip contentStyle={chartTooltipStyle} formatter={(v) => [f.number(Number(v)), t("storiesWord", { n: Number(v) })]} />
+                          <Bar dataKey="stories" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </ChartCard>
+                )}
+              </div>
+            </Section>
+          )}
         </>
       )}
 
@@ -454,7 +570,9 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
           {t("compare")}
         </ToolbarButton>
       </Toolbar>
-    </div>
+
+      {selected && <StorySheet n={selected} base={base} onClose={close} />}
+    </ModulePage>
   );
 }
 
