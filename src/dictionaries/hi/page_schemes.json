@@ -77,7 +77,7 @@
   },
   "get": {
     "health": "{amount} का स्वास्थ्य बीमा कवर",
-    "housing": "घर बनाने या खरीदने के लिए {amount}",
+    "housing": "पक्के घर के लिए {amount}",
     "education": "पढ़ाई के लिए {amount}",
     "farm": "किसानों के लिए {amount}",
     "women": "महिलाओं और परिवारों के लिए {amount}",
