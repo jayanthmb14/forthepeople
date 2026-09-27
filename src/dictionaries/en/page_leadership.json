@@ -1,13 +1,35 @@
 {
-  "title": "District leadership",
-  "description": "Who runs this district, from the President down to your MLA",
+  "description": "Who runs your district, from the President down to your town, and who is above whom",
   "tiers": {
-    "1": { "label": "National leadership", "short": "Country", "hint": "Heads of state and government" },
-    "2": { "label": "State leadership", "short": "State", "hint": "Governor, Chief Minister and key state ministers" },
-    "3": { "label": "District administration", "short": "District officers", "hint": "IAS / IPS officers running the district day to day" },
-    "4": { "label": "Elected representatives", "short": "MP and MLAs", "hint": "MP and MLAs elected by citizens of this district" },
-    "5": { "label": "Municipal and department heads", "short": "City and departments", "hint": "Mayor, municipal commissioner and department officers" },
-    "other": { "label": "Level {n}", "short": "Level {n}" }
+    "1": {
+      "label": "The whole country",
+      "short": "Country",
+      "hint": "The President and the Prime Minister lead India."
+    },
+    "2": {
+      "label": "Your state",
+      "short": "State",
+      "hint": "The Governor, the Chief Minister and state ministers run the state."
+    },
+    "3": {
+      "label": "District officers",
+      "short": "District officers",
+      "hint": "IAS and IPS officers who run the district every day. Nobody votes for them."
+    },
+    "4": {
+      "label": "People you vote for",
+      "short": "MP and MLAs",
+      "hint": "Your MP speaks for you in Parliament; your MLAs speak for you in the State Assembly."
+    },
+    "5": {
+      "label": "City and departments",
+      "short": "City and departments",
+      "hint": "The Mayor, the city commissioner and the heads of local departments."
+    },
+    "other": {
+      "label": "Level {n}",
+      "short": "Level {n}"
+    }
   },
   "provenance": {
     "news": "Updated from news",
@@ -20,26 +42,57 @@
     "pending": "Not verified yet"
   },
   "attribution": "As last reported in the news. Positions and party links change often, so check the official district website.",
-  "levelsCaption": "How many people are listed at each level, from the whole country at the top to your town at the bottom.",
-  "levelsAria": "People listed at each level. {summary}",
-  "email": "Email",
-  "emailAria": "Email {name}",
-  "callAria": "Call {name} on {phone}",
-  "electionPeriod": "Election period",
-  "electionPeriodTitle": "Active election period. Party links may change after the results.",
   "topNote": "Names come from public government records (the Election Commission of India, the state assembly and the district administration) and can lag behind. Positions and party links change often, so check the official district website before you rely on them.",
   "electionAlert": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "electionAlertDate": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results on {date}. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "emptyTitle": "No leadership data yet",
   "emptyBody": "We add elected representatives and officers for this district as soon as they are checked against official records.",
   "tilePeople": "People listed",
-  "tileElected": "Elected representatives",
+  "tileElected": "Chosen by voters",
   "tileElectedSub": "MP and MLAs",
   "tileOfficers": "District officers",
-  "tileOfficersSub": "IAS / IPS",
-  "simple": "{n, plural, one {<b>#</b> person is} other {<b>#</b> people are}} listed here, at {levels, plural, one {<b>#</b> level} other {<b>#</b> levels}} of government.",
-  "simpleElected": "{n, plural, one {<b>#</b> of them is the MP or MLA} other {<b>#</b> of them are the MP and MLAs}} that voters of this district elected.",
-  "simpleOfficers": "{n, plural, one {<b>#</b> is an officer who runs the district day to day.} other {<b>#</b> are officers who run the district day to day.}}",
+  "tileOfficersSub": "IAS and IPS",
+  "tileLevels": "Levels of government",
+  "tileLevelsSub": "From country to town",
+  "simple": "Here {n, plural, one {is <b>#</b> person} other {are <b>#</b> people}} who run {name}, at {levels, plural, one {<b>#</b> level} other {<b>#</b> levels}} of government, from the whole country down to your town.",
+  "simpleElected": "{n, plural, one {<b>#</b> of them is the MP or MLA that you vote for.} other {<b>#</b> of them are the MP and MLAs that you vote for.}}",
+  "simpleOfficers": "{n, plural, one {<b>#</b> is an officer who runs the district every day.} other {<b>#</b> are officers who run the district every day.}}",
+  "ladder": {
+    "title": "Who is above whom",
+    "lead": "The whole country at the top, your town at the bottom. Tap a name to see who they are and what they do.",
+    "aria": "Levels of government, from top to bottom. {summary}",
+    "people": "{n, plural, one {# person} other {# people}}",
+    "yourVote": "You vote for them",
+    "openPerson": "{name}, {role}. Open details",
+    "more": "+{n} more"
+  },
+  "card": {
+    "details": "Details",
+    "openAria": "{name}, {role}. Open details"
+  },
+  "sheet": {
+    "whatTheyDo": "What this person does",
+    "level": "Level",
+    "role": "Job",
+    "localName": "Name in the local language",
+    "party": "Party",
+    "noParty": "No party. Government officers do not belong to any party.",
+    "constituency": "Area they represent",
+    "since": "In this job since",
+    "phone": "Office phone",
+    "emailLabel": "Office email",
+    "checked": "How we checked",
+    "noContact": "We do not have an office phone or email for this person yet.",
+    "call": "Call",
+    "email": "Email",
+    "affidavit": "Election affidavit",
+    "affidavitHint": "The election affidavit (on the Election Commission's website) shows the assets, education and court cases this person declared when they stood for election.",
+    "newsTitle": "In the news",
+    "newsLead": "Up to 5 news stories from the last 6 months that name {name}.",
+    "newsEmpty": "No news story from the last 6 months names {name}.",
+    "newsError": "We could not load the news right now. Please try again later.",
+    "openStory": "{source}, {date}. Opens the story in a new tab."
+  },
   "partyTitle": "Elected representatives by party",
   "partyUnits": "MP and MLAs on this page, by party as last reported",
   "partySimple": "The {n} elected representatives listed here come from {parties, plural, one {# party} other {# parties}}.",
@@ -49,6 +102,12 @@
   "partyNone": "No party listed",
   "noteParties": "<b>Note on political parties:</b> party links are shown as last reported and may have changed through defections, cabinet reshuffles or elections. Government officers (IAS, IPS) have no party. ForThePeople.in does not support or oppose any political party or person.",
   "noteOfficers": "<b>On officer names:</b> IAS and IPS officers are transferred often, so a name here may not be the latest posting.",
+  "next": {
+    "title": "Next election",
+    "inDays": "{n, plural, =0 {voting today} one {voting in # day} other {voting in # days}}",
+    "about": "expected about {date}",
+    "link": "See the dates, and how to vote"
+  },
   "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
   "roleFallback": "Government official serving the district.",
   "roles": {
@@ -79,28 +138,6 @@
     "managing-director": "Head of a state public-sector undertaking or development authority. Runs day-to-day operations.",
     "chairman": "Top governing officer of a board, authority or commission. Sets strategic direction.",
     "tahsildar": "Sub-district revenue officer. Handles land records, mutations and revenue collection at the taluk level."
-  },
-  "elections": {
-    "title": "Elections",
-    "completed": "Completed",
-    "scheduled": "Scheduled",
-    "votingIn": "{n, plural, =0 {Voting today} one {Voting in # day} other {Voting in # days}}",
-    "approaching": "Approaching",
-    "upcoming": "Upcoming",
-    "polling": "Polling",
-    "results": "Results",
-    "lastHeld": "Last held",
-    "nextExpected": "Next expected",
-    "today": "today",
-    "daysAway": "{n, plural, one {# day} other {# days}} away",
-    "monthsAway": "{n, plural, =0 {this month} one {# month away} other {# months away}}",
-    "about": "About {date}",
-    "phase": "Phase",
-    "pollingDate": "Polling date",
-    "phasesCaption": "{label}: polling phases",
-    "seats": "{body}, {n, plural, one {# seat} other {# seats}}",
-    "liveNote": "During the election period, leadership data may change quickly. Party links and positions are shown as last reported.",
-    "disclaimer": "Election dates and schedules come from the Election Commission of India (eci.gov.in). ForThePeople.in is an independent citizen transparency platform. It is not linked to, supported by, or acting for the Election Commission of India or any political party, and it is not an official election information portal. For official election information, visit <link>eci.gov.in</link> or contact your District Election Officer."
   },
   "downloadCsv": "Download CSV",
   "share": "Share",

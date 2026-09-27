@@ -1,20 +1,189 @@
 {
   "descSpecific": "Civic actions picked for {name}, with who to tell when something goes wrong",
   "descGeneric": "Simple things you can do as a citizen to help {name} grow",
-  "intro": "<b>This is your district.</b> Government alone cannot fix everything. As citizens we have real power, and real responsibility. Small actions by many people add up to big change. Here is what you can do today.",
-  "emergency": "Helpline numbers and portal links come from official government pages. Please check them before you rely on them. If a life is in danger, always dial <emergency>112</emergency> (India's single emergency number) or <ambulance>108</ambulance> (ambulance).",
-  "tileActions": "Actions",
-  "tileActionsSub": "Picked for {name}",
-  "tileAreas": "Areas",
-  "tileAreasSub": "Groups of actions",
+  "simpleNews": "In the last 2 weeks, most news about {name} was about <b>{topic}</b> ({n, plural, one {# story} other {# stories}}). So <b>{action}</b> is at the top of your list.",
+  "simpleSpecific": "You can do <b>{n}</b> {n, plural, one {thing} other {things}} for {name}, in <b>{areas}</b> {areas, plural, one {area} other {areas}}.",
+  "simpleGeneric": "Here {n, plural, one {is <b>#</b> simple thing} other {are <b>#</b> simple things}} you can do for {name}, in <b>{areas}</b> {areas, plural, one {area} other {areas}}. Pick one and start today.",
+  "tileNews": "News in 2 weeks",
+  "tileNewsSub": "{n, plural, one {# about something you can help with} other {# about things you can help with}}",
+  "tileTopTopic": "Top topic",
+  "tileTopTopicSub": "{n, plural, one {# story} other {# stories}}",
+  "tileActions": "Things you can do",
+  "tileActionsSub": "{areas, plural, one {In # area} other {In # areas}}",
   "tileContacts": "Who to tell",
   "tileContactsSub": "Actions with a contact",
-  "tileSuggestions": "Suggestions",
-  "tileSuggestionsSub": "General guidance",
-  "simpleSpecific": "You can do <b>{n}</b> {n, plural, one {thing} other {things}} for {name}, in <b>{areas}</b> {areas, plural, one {area} other {areas}}.",
-  "simpleContact": "For <b>{n}</b> of them, we also tell you who to report to.",
+  "tileAreas": "Areas",
+  "tileAreasSub": "Groups of actions",
   "pictogramContact": "About {n} of every 10 actions come with someone you can report to.",
-  "simpleGeneric": "Here {n, plural, one {is <b>#</b> simple thing} other {are <b>#</b> simple things}} you can do for {name}, in <b>{areas}</b> {areas, plural, one {area} other {areas}}. Pick one and start today.",
+  "newsPic": {
+    "title": "What the news is about",
+    "lead": "News about {name} from the last 14 days, sorted into topics. The longer the bar, the more stories.",
+    "aria": "News stories by topic. {summary}",
+    "newest": "Newest story: {date}"
+  },
+  "newsTitle": "Because of what's in the news",
+  "newsLead": "Things in the news about {name} in the last 2 weeks, and what you can do about each. Tap a card for the steps.",
+  "newsNone": "No news about {name} in the last 2 weeks matched a topic, so the list below is in its usual order.",
+  "newsError": "We could not read the latest news just now, so the list below is in its usual order.",
+  "card": {
+    "whyNow": "{n, plural, one {# news story} other {# news stories}} about {topic} in the last 2 weeks",
+    "latest": "Latest:",
+    "open": "What to do",
+    "details": "Details"
+  },
+  "sheet": {
+    "stepsTitle": "What you can do",
+    "whyTitle": "Why this is here",
+    "why": "{n, plural, one {# news story} other {# news stories}} about {topic} in {name} came out in the last 14 days. The newest are below.",
+    "newsTitle": "The news",
+    "openStory": "{source}, {date}. Opens the story in a new tab.",
+    "call": "Call {number}",
+    "site": "Official website",
+    "moreOn": "Open {module}",
+    "whyHere": "Why it matters here",
+    "who": "Who to tell",
+    "phone": "Phone",
+    "website": "Website",
+    "source": "Where this comes from",
+    "visitPortal": "Visit website",
+    "checkNote": "Numbers and links come from official government pages. Please check them before you rely on them."
+  },
+  "topics": {
+    "dengue": {
+      "label": "Dengue and mosquitoes",
+      "action": "Stop mosquitoes from breeding",
+      "step1": "Empty standing water once a week: buckets, pots, coolers, old tyres and flower vases.",
+      "step2": "Sleep under a mosquito net, and cover arms and legs in the evening.",
+      "step3": "Fever with body pain? See a doctor early. Do not take aspirin or ibuprofen on your own."
+    },
+    "flood": {
+      "label": "Heavy rain and floods",
+      "action": "Stay safe in heavy rain",
+      "step1": "Never walk or drive through flowing water. Even knee-deep water can sweep you away.",
+      "step2": "Keep away from drains, open manholes and fallen electric wires.",
+      "step3": "Keep your phone charged and follow official warnings. If you are in danger, call 112."
+    },
+    "heat": {
+      "label": "Heat",
+      "action": "Beat the heat",
+      "step1": "Drink water often, even when you are not thirsty.",
+      "step2": "Stay out of the sun in the hottest hours, from about noon to 4 pm.",
+      "step3": "Check on old people, small children and anyone who works outside."
+    },
+    "cyber": {
+      "label": "Online fraud",
+      "action": "Stop online fraud",
+      "step1": "Never share an OTP, PIN or password, not even with someone who says they are from the bank or the police.",
+      "step2": "The police never arrest anyone on a video call. Hang up.",
+      "step3": "Lost money? Call 1930 at once, or report it at cybercrime.gov.in."
+    },
+    "water": {
+      "label": "Water",
+      "action": "Save water and report leaks",
+      "step1": "Fix dripping taps, and turn the tap off while you brush.",
+      "step2": "Report broken pipes and leaks to your water board or local body.",
+      "step3": "Collect rainwater from your roof if you can."
+    },
+    "air": {
+      "label": "Air pollution",
+      "action": "Keep the air clean",
+      "step1": "Do not burn rubbish, dry leaves or crop stubble.",
+      "step2": "Walk, cycle or take the bus for short trips when you can.",
+      "step3": "On smoggy days, keep children and old people indoors."
+    },
+    "waste": {
+      "label": "Garbage and drains",
+      "action": "Keep your street clean",
+      "step1": "Keep wet and dry waste apart, and give it to the garbage van.",
+      "step2": "Do not throw plastic into drains. Blocked drains cause floods and mosquitoes.",
+      "step3": "Report garbage dumps and overflowing drains to your local body."
+    },
+    "roads": {
+      "label": "Roads and potholes",
+      "action": "Report potholes and broken roads",
+      "step1": "Note the place (a landmark helps) and take a photo.",
+      "step2": "Report it to your city corporation, town council or gram panchayat.",
+      "step3": "Ask for the complaint number, and follow up if nothing happens."
+    },
+    "traffic": {
+      "label": "Road accidents",
+      "action": "Stay safe on the road",
+      "step1": "Wear a helmet on a two-wheeler and a seat belt in a car, every time.",
+      "step2": "Never drive after drinking, and do not use your phone while driving.",
+      "step3": "Saw an accident? Call 112 or 108. The law protects people who help (Good Samaritan rules)."
+    },
+    "power": {
+      "label": "Power cuts",
+      "action": "Save power and report faults",
+      "step1": "Report power cuts and sparking wires to your electricity company.",
+      "step2": "Stay away from fallen wires and wet electric poles.",
+      "step3": "Switch off lights and fans that nobody is using."
+    },
+    "farming": {
+      "label": "Farming",
+      "action": "Help farmers and the soil",
+      "step1": "Do not burn crop stubble. Mix it into the soil or give it for fodder.",
+      "step2": "Get your soil tested at the nearest Krishi Vigyan Kendra or agriculture office.",
+      "step3": "Buy seeds and fertiliser only from licensed shops, and keep the bill."
+    },
+    "health": {
+      "label": "Health",
+      "action": "Look after your family's health",
+      "step1": "Keep your children's vaccinations up to date.",
+      "step2": "Drink clean, boiled or filtered water, and wash your hands before eating.",
+      "step3": "In a medical emergency, call 108 for an ambulance."
+    },
+    "elections": {
+      "label": "Elections",
+      "action": "Get ready to vote",
+      "step1": "Check that your name is on the voter list.",
+      "step2": "Turned 18? Register with Form 6 on the Voters' Service Portal.",
+      "step3": "On voting day, go and vote, and help older neighbours reach the booth."
+    },
+    "schemes": {
+      "label": "Government schemes",
+      "action": "Get the schemes you are owed",
+      "step1": "See which schemes you can get on the Schemes page.",
+      "step2": "Apply only through official offices and websites.",
+      "step3": "Never pay a middleman, and ask for a receipt for every fee."
+    },
+    "schools": {
+      "label": "Schools and exams",
+      "action": "Help children learn",
+      "step1": "Make sure every child aged 6 to 14 goes to school. It is free, and it is their right.",
+      "step2": "Go to school meetings for parents and ask questions.",
+      "step3": "Check exam dates and results only on official websites."
+    },
+    "safety": {
+      "label": "Crime and safety",
+      "action": "Keep your area safe",
+      "step1": "In danger? Call 112.",
+      "step2": "Know your nearest police station and its phone number.",
+      "step3": "Report crimes. You can get a copy of the FIR, and it is free."
+    },
+    "civic": {
+      "label": "How your district is run",
+      "action": "Ask questions and take part",
+      "step1": "Go to your Gram Sabha or ward meeting and speak up.",
+      "step2": "Use RTI to ask the government for information.",
+      "step3": "Report anyone who asks for a bribe to the anti-corruption office or the Lokayukta."
+    }
+  },
+  "inNews": "In the news",
+  "allTitle": "All the things you can do",
+  "allLead": "Tap a card to see why it matters, who to tell and how to reach them.",
+  "allLeadNews": "Areas that are in the news come first. Tap a card to see why it matters, who to tell and how to reach them.",
+  "chipsLabel": "Show the actions for one area",
+  "all": "All",
+  "area": {
+    "count": "{n, plural, one {# thing to do} other {# things to do}}",
+    "open": "See all"
+  },
+  "emergencyTitle": "In an emergency",
+  "emergencyBody": "If a life is in danger, call 112. For an ambulance, call 108.",
+  "emergency112": "Emergency",
+  "emergency108": "Ambulance",
+  "callAria": "Call {name}: {number}",
   "chartTitle": "Actions in each area",
   "chartUnits": "How many actions each area has",
   "chartTop": "<b>{top}</b> has the most actions: {n} of {total}.",
@@ -23,21 +192,18 @@
   "chartAria": "Ring chart of actions by area. {summary}",
   "chartCenter": "{n, plural, one {action} other {actions}}",
   "otherAreas": "Other areas",
-  "reportTo": "Report to:",
-  "visitPortal": "Visit portal",
-  "portalAria": "Open the portal for {name} (opens in a new tab)",
-  "callAria": "Call {phone}",
-  "source": "Source",
-  "footSpecific": "These actions are based on official government sources. ForThePeople.in is not an official government website. Open \"Source\" under a card to see where it came from.",
+  "footSpecific": "These actions are based on official government sources. ForThePeople.in is not an official government website. Tap a card and see \"Where this comes from\".",
   "projectionLead": "If citizens and government work together, here is where {name} can be by 2030:",
   "footGeneric": "This is general guidance for {name}. Each district gets its own guide, built around its own challenges and strengths, as research is completed.",
+  "sourceNews": "News stories from the last 14 days (each story names its publisher)",
   "downloadCsv": "Download CSV",
   "share": "Share",
   "linkCopied": "Link copied",
   "compare": "Compare with another district",
   "toolbar": "Page actions",
   "freq": {
-    "quarterly": "Quarterly"
+    "quarterly": "Quarterly",
+    "news": "At least once a day"
   },
   "sourceNames": {
     "districtAdministration": "District Administration"

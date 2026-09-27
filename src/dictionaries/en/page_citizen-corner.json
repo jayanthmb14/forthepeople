@@ -1,32 +1,157 @@
 {
-  "description": "Civic tips written by AI, your rights, and emergency helplines",
+  "description": "Numbers to call for help, and the rights every citizen has",
+  "simple": "In any emergency, call <b>112</b>. Below are <b>{helplines}</b> helplines, grouped by what you need, and <b>{rights}</b> rights every citizen has. Tap a number to call it.",
+  "tileEmergency": "Emergency numbers",
+  "tileEmergencySub": "Police, fire, ambulance",
+  "tileRights": "Your rights",
+  "tileRightsSub": "Tap one to learn how to use it",
+  "helplinesLead": "Tap a card to call. Tap ⓘ to see when to call and what to say.",
+  "rightsLead": "Rights you have by law, in plain words. Tap a card to see how to use it.",
+  "tipsTitle": "This month's civic tips",
+  "tapToCall": "Tap to call",
+  "infoAria": "When to call {name}",
+  "callNumber": "Call {number}",
+  "whenToCall": "When to call",
+  "number": "Number",
+  "group": "For",
+  "sayEmergency": "Say where you are (a landmark helps), what happened, and how many people need help. Stay on the line.",
+  "sayOther": "Keep your name, your place and any reference number ready, and write down the complaint number they give you.",
+  "checkNote": "These are national numbers. Some states also run their own lines; your district office can tell you which work best where you live.",
+  "helplines": {
+    "national": {
+      "name": "National emergency",
+      "when": "Any emergency: police, fire or ambulance. One number for all of them."
+    },
+    "police": {
+      "name": "Police emergency",
+      "when": "A crime is happening, someone is in danger, or you need the police fast."
+    },
+    "ambulance": {
+      "name": "Ambulance",
+      "when": "A medical emergency: an accident, chest pain, a difficult birth, a snake bite."
+    },
+    "fire": {
+      "name": "Fire",
+      "when": "A fire, a gas leak, or someone trapped in a building."
+    },
+    "road": {
+      "name": "Road accident",
+      "when": "To report a road accident and get help to the spot."
+    },
+    "women": {
+      "name": "Women helpline",
+      "when": "A woman or girl is harassed, threatened or unsafe, at home or outside."
+    },
+    "child": {
+      "name": "Child helpline",
+      "when": "A child is lost, hurt, made to work, being married off, or in any danger."
+    },
+    "senior": {
+      "name": "Senior citizens",
+      "when": "An older person needs help: pension, abuse, loneliness or legal questions."
+    },
+    "cyber": {
+      "name": "Cyber crime",
+      "when": "Money was stolen online or through UPI. Call at once: the sooner you call, the better the chance to stop the money."
+    },
+    "corruption": {
+      "name": "Anti-corruption",
+      "when": "An official asks you for a bribe."
+    },
+    "consumer": {
+      "name": "Consumer helpline",
+      "when": "A complaint about something you bought: a faulty product, overcharging, or a bad service."
+    },
+    "pmkisan": {
+      "name": "PM-KISAN helpline",
+      "when": "Questions about PM-KISAN payments to farmers."
+    }
+  },
+  "rights": {
+    "rti": {
+      "title": "Right to Information (RTI)",
+      "desc": "Any citizen can ask for government information. The office must reply within 30 days. Fee: ₹10.",
+      "more": "Under the Right to Information Act, you can ask any government office for copies of its records, files and decisions. You do not have to say why you want them.",
+      "step1": "Write your question clearly: what you want, for which period, from which office.",
+      "step2": "Send it to the office's Public Information Officer, online or by post, with the ₹10 fee. People below the poverty line pay no fee.",
+      "step3": "No reply in 30 days, or a poor reply? File a first appeal with the same office.",
+      "law": "Right to Information Act, 2005"
+    },
+    "food": {
+      "title": "Right to Food",
+      "desc": "Families with a ration card under the National Food Security Act (NFSA) get food grain free every month: 5 kg per person, or 35 kg for an Antyodaya family.",
+      "more": "Under the National Food Security Act, families with a ration card (priority household or Antyodaya) get food grain from the ration shop every month.",
+      "step1": "Apply for a ration card at your food and civil supplies office, or on its website.",
+      "step2": "Collect your grain at the ration shop every month. With One Nation One Ration Card, your card works at any ration shop in India.",
+      "step3": "Refused, or given less? Complain to the food department's helpline or the district supply officer.",
+      "law": "National Food Security Act, 2013"
+    },
+    "education": {
+      "title": "Right to Education",
+      "desc": "Free and compulsory schooling for every child aged 6 to 14, under the RTE Act.",
+      "more": "Under the RTE Act, every child aged 6 to 14 can study free in a nearby government school. Private schools must keep a quarter of their entry-class seats free for children from poorer families.",
+      "step1": "Enrol your child in the nearest government school. No fee and no entrance test are allowed.",
+      "step2": "For the free seats in private schools, apply on your state's RTE admission portal when it opens.",
+      "step3": "Refused admission, or asked for money? Complain to the Block Education Officer.",
+      "law": "Right of Children to Free and Compulsory Education Act, 2009"
+    },
+    "mgnrega": {
+      "title": "MGNREGA (work guarantee)",
+      "desc": "100 days of guaranteed paid work a year for every rural household that asks for it.",
+      "more": "Every rural household can ask for up to 100 days of paid work a year. If work is not given within 15 days, you are owed an unemployment allowance.",
+      "step1": "Get a job card from your gram panchayat. It is free.",
+      "step2": "Ask for work in writing, and keep the dated receipt.",
+      "step3": "Wages must reach your bank account within 15 days. If they are late, you are owed extra money for the delay.",
+      "law": "Mahatma Gandhi National Rural Employment Guarantee Act, 2005"
+    },
+    "gramSabha": {
+      "title": "Gram Sabha",
+      "desc": "Go to your village's Gram Sabha meetings. Every adult voter of the village can take part.",
+      "more": "The Gram Sabha is the meeting of all adult voters of the village panchayat. It approves the village plan, picks who gets scheme benefits, and checks the panchayat's spending.",
+      "step1": "Ask your panchayat office when the next Gram Sabha is. It must meet a few times every year.",
+      "step2": "Go, and ask about works and spending. You can ask to see the accounts.",
+      "step3": "Help choose the families who should get scheme benefits.",
+      "law": "Your state's Panchayat Raj Act (73rd Amendment to the Constitution)"
+    },
+    "ward": {
+      "title": "Ward committee",
+      "desc": "Take part in your ward committee meetings, run by your city corporation.",
+      "more": "In cities, ward committees let people raise local problems and check local works. How they work depends on your state's city law.",
+      "step1": "Ask your ward office or councillor when the ward committee meets.",
+      "step2": "Go with your problem written down: roads, drains, garbage, street lights.",
+      "step3": "Ask for the ward's list of works and what was spent on them.",
+      "law": "Your state's municipal law (74th Amendment to the Constitution)"
+    },
+    "wardBody": {
+      "title": "Ward committee",
+      "desc": "Take part in your ward committee meetings, run by your city corporation ({body}).",
+      "more": "In cities, ward committees let people raise local problems and check local works. Here they are run by {body}.",
+      "step1": "Ask your ward office or councillor when the ward committee meets.",
+      "step2": "Go with your problem written down: roads, drains, garbage, street lights.",
+      "step3": "Ask for the ward's list of works and what was spent on them.",
+      "law": "Your state's municipal law (74th Amendment to the Constitution)"
+    },
+    "consumer": {
+      "title": "Consumer rights",
+      "desc": "File a consumer complaint online at consumerhelpline.gov.in.",
+      "more": "You are protected against faulty goods, poor service, overcharging and false adverts. You can complain online, and you do not need a lawyer for small cases.",
+      "step1": "Keep the bill, the warranty and any messages with the seller.",
+      "step2": "Complain to the seller first. No answer? Call 1915 or 1800-11-4000, or complain at consumerhelpline.gov.in.",
+      "step3": "Still not solved? File a case at the District Consumer Commission, online at e-daakhil.nic.in.",
+      "law": "Consumer Protection Act, 2019"
+    }
+  },
+  "readMore": "How to use it",
+  "whatItMeans": "What it means",
+  "howToUse": "How to use it",
+  "law": "The law",
+  "officialSite": "Official website",
+  "openPage": "Open {page}",
+  "rightsNote": "This is a short, plain guide, not legal advice. Rules can differ a little from state to state.",
+  "sourceHelplines": "Helpline numbers: Government of India national helplines",
   "tileTips": "Civic tips",
   "tileTipsFor": "For {period}",
   "tileTipsWeekly": "Written every week",
-  "tileNow": "Do now",
-  "tileNowSub": "Urgent tips",
-  "tileHelplines": "Helplines",
-  "tileHelplinesSub": "Tap a number to call",
-  "simple": "{hasPeriod, select, yes {For {period}, there {n, plural, one {is <b>#</b> civic tip} other {are <b>#</b> civic tips}} for your district.} other {There {n, plural, one {is <b>#</b> civic tip} other {are <b>#</b> civic tips}} for your district.}}",
-  "simpleNow": "{n, plural, one {<b>#</b> of them is something to do now.} other {<b>#</b> of them are things to do now.}}",
-  "pictogramPerTip": "{now} of these {total} tips are marked \"Do now\".",
-  "pictogramOutOf10": "About {n} of every 10 tips are marked \"Do now\".",
-  "emergencyName": "National emergency",
-  "emergencyLine": "One number for any emergency. Tap to call.",
-  "callAria": "Call {name}: {number}",
-  "kindsTitle": "{n} helplines, one tap to call",
-  "kindsLead": "What they are for. Tap a group to see its numbers.",
-  "kindsAria": "{label}: {n, plural, one {# helpline} other {# helplines}}",
-  "kinds": {
-    "emergency": "Emergencies",
-    "care": "Women, children and elders",
-    "complaints": "Report a crime or a complaint",
-    "farmers": "Farmers"
-  },
-  "tabsLabel": "Citizen Corner sections",
-  "tabTips": "AI tips",
-  "tabHelplines": "Helplines",
-  "tabRights": "Your rights",
   "emptyTitle": "Citizen tips are written every week",
   "emptyNext": "{n, plural, =0 {New tips are due today.} one {New tips are due in # day.} other {New tips are due in # days.}}",
   "emptyNextWeek": "New tips will be written automatically next week.",
@@ -57,32 +182,17 @@
   "topicsAria": "Ring chart of tips by topic. {summary}",
   "topicsOther": "Other topics",
   "tipsNote": "These tips are written by AI. Check them with official sources before you act.",
-  "helplinesTitle": "Emergency and important helplines",
-  "helplines": {
-    "police": "Police emergency",
-    "fire": "Fire",
-    "ambulance": "Ambulance",
-    "national": "National emergency",
-    "women": "Women helpline",
-    "child": "Child helpline",
-    "senior": "Senior citizens",
-    "cyber": "Cyber crime",
-    "corruption": "Anti-corruption",
-    "road": "Road accident",
-    "consumer": "Consumer helpline",
-    "pmkisan": "PM KISAN helpline"
+  "kindsTitle": "{n} helplines, one tap to call",
+  "kindsLead": "What they are for. Tap a group to see its numbers.",
+  "kindsAria": "{label}: {n, plural, one {# helpline} other {# helplines}}",
+  "kinds": {
+    "emergency": "Emergencies",
+    "care": "Women, children and elders",
+    "complaints": "Report a crime or a complaint",
+    "farmers": "Farmers"
   },
-  "rightsTitle": "Know your rights",
-  "rights": {
-    "rti": { "title": "Right to Information (RTI)", "desc": "Any citizen can ask for government information. The office must reply within 30 days. Fee: ₹10." },
-    "food": { "title": "Right to Food", "desc": "Families with a ration card under the National Food Security Act (NFSA) get food grain free every month: 5 kg per person, or 35 kg for an Antyodaya family." },
-    "education": { "title": "Right to Education", "desc": "Free and compulsory schooling for every child aged 6 to 14, under the RTE Act." },
-    "mgnrega": { "title": "MGNREGA", "desc": "100 days of guaranteed paid work a year for every rural household that asks for it." },
-    "ward": { "title": "Ward committee", "desc": "Take part in your ward committee meetings, run by your city corporation." },
-    "wardBody": { "title": "Ward committee", "desc": "Take part in your ward committee meetings, run by your city corporation ({body})." },
-    "gramSabha": { "title": "Gram Sabha", "desc": "Go to your village's Gram Sabha meetings. Every adult voter of the village can take part." },
-    "consumer": { "title": "Consumer rights", "desc": "File a consumer complaint online at consumerhelpline.gov.in." }
-  },
+  "emergencyLine": "One number for any emergency. Tap to call.",
+  "callAria": "Call {name}: {number}",
   "share": "Share",
   "linkCopied": "Link copied",
   "compare": "Compare with another district",
@@ -93,5 +203,10 @@
   "sourceNames": {
     "districtAdministration": "District Administration",
     "citizenFeedback": "Citizen feedback"
-  }
+  },
+  "helplinesTitle": "Emergency and important helplines",
+  "rightsTitle": "Know your rights",
+  "tileHelplines": "Helplines",
+  "tileHelplinesSub": "Tap a number to call",
+  "aboutTipsTitle": "About these tips"
 }
