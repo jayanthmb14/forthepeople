@@ -110,6 +110,18 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   - Copy: "next Census is expected in 2031" → Census 2027 is under way; the demographics
     disclaimer no longer names the company.
 
+### Changed — Design v4 "Rang", languages and location (branch `redesign-v4`)
+- 2026-09-27: English is always the default language. Browser-language detection and the locale
+  cookie are off, so `/` and unprefixed links always open in English.
+- 2026-09-27: "Find my district" checks district boundaries first and falls back to the nearest
+  centre. A "Your district" card then pops up.
+  - Live districts show their landmark, tagline, weather and grade, with a link to their dashboards.
+  - Districts that aren't live yet show the vote count and the nearest live district.
+- 2026-09-27: The language menu lists all 22 Indian languages. The ones not yet available are shown
+  locked with their native names.
+- 2026-09-27: The India map shows live districts as landmark badges in each district's colour, and
+  nearby pins fan out with leader lines. The district overview has a "Where is {district}?" locator map.
+
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked
   `.v1/.v2/.v3` snapshot files and the permanently redirected `india-detail` page.

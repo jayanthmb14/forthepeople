@@ -41,11 +41,12 @@ import { useTranslations } from "next-intl";
 import { ArrowRight, LocateFixed, MapPin } from "lucide-react";
 import { Pill, ToolbarButton } from "@/components/district/ui";
 import { INDIA_STATES, getState } from "@/lib/constants/districts";
-import { findStateForPoint, nearestDistrict, stateSlugFromName } from "@/lib/geo/locate";
+import { findStateForPoint, nearestDistrict, pointInPolygon, stateSlugFromName } from "@/lib/geo/locate";
 import type { DistrictCandidate, GeoFeatureCollection, NearestResult } from "@/lib/geo/locate";
 import { buildCandidates } from "@/lib/geo/district-centroids";
 import { useMyDistrict } from "@/hooks/useMyDistrict";
 import type { MyDistrict } from "@/hooks/useMyDistrict";
+import DistrictPopup from "./DistrictPopup";
 import styles from "./home.module.css";
 
 export { useMyDistrict } from "@/hooks/useMyDistrict";
@@ -67,6 +68,35 @@ function loadStates(): Promise<GeoFeatureCollection> {
       });
   }
   return geoPromise;
+}
+
+/** District boundaries for one state (/geo/<state>-districts.json), cached per state. */
+const districtGeo = new Map<string, Promise<GeoFeatureCollection | null>>();
+function loadDistrictShapes(stateSlug: string): Promise<GeoFeatureCollection | null> {
+  let p = districtGeo.get(stateSlug);
+  if (!p) {
+    p = fetch(`/geo/${stateSlug}-districts.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<GeoFeatureCollection>) : null))
+      .catch(() => null);
+    districtGeo.set(stateSlug, p);
+  }
+  return p;
+}
+
+/**
+ * The district whose boundary contains the point (exact), or null when the
+ * shape file is missing or the point falls in a gap between polygons.
+ */
+async function districtByBoundary(stateSlug: string, lng: number, lat: number): Promise<string | null> {
+  const shapes = await loadDistrictShapes(stateSlug);
+  if (!shapes) return null;
+  for (const f of shapes.features) {
+    if (pointInPolygon(lng, lat, f.geometry)) {
+      const slug = (f.properties as Record<string, unknown> | null)?.slug;
+      if (typeof slug === "string" && getState(stateSlug)?.districts.some((d) => d.slug === slug)) return slug;
+    }
+  }
+  return null;
 }
 
 /** Candidates are static registry data; build them once. */
@@ -128,17 +158,21 @@ async function resolvePosition(lat: number, lng: number): Promise<Status> {
   }
 
   const all = candidates();
-  const inState = nearestDistrict(lng, lat, all, { stateSlug });
+  // Exact answer first: the district boundary that contains the point.
+  // Only when that is unavailable, fall back to the nearest district centre.
+  const exactSlug = await districtByBoundary(stateSlug, lng, lat);
+  const exact = exactSlug ? state.districts.find((d) => d.slug === exactSlug) : undefined;
+  const inState = exact ? null : nearestDistrict(lng, lat, all, { stateSlug });
   const nearestLive = nearestDistrict(lng, lat, all, { activeOnly: true });
   const savedAt = new Date().toISOString();
 
-  if (inState) {
+  if (exact || inState) {
     const d: MyDistrict = {
-      slug: inState.candidate.slug,
+      slug: exact ? exact.slug : inState!.candidate.slug,
       stateSlug,
-      name: inState.candidate.name,
+      name: exact ? exact.name : inState!.candidate.name,
       stateName: state.name,
-      active: inState.candidate.active,
+      active: exact ? exact.active : inState!.candidate.active,
       savedAt,
     };
     if (d.active) return { kind: "found-live", district: d };
@@ -157,6 +191,8 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
   const t = useTranslations("locate");
   const privacy = t("privacy");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  // The "Your district" card pops up once a location has been resolved.
+  const [popupOpen, setPopupOpen] = useState(false);
   const my = useMyDistrict();
 
   function locate() {
@@ -169,6 +205,7 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
       async (pos) => {
         const next = await resolvePosition(pos.coords.latitude, pos.coords.longitude);
         setStatus(next);
+        if (next.kind === "found-live" || next.kind === "found-coming") setPopupOpen(true);
         if (next.kind === "found-live") my.save(next.district);
         else if (next.kind === "found-coming" && next.district) my.save(next.district);
       },
@@ -323,6 +360,25 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
           {renderStatus()}
         </div>
         {remember}
+        {popupOpen && (status.kind === "found-live" || status.kind === "found-coming") && (
+          <DistrictPopup
+            district={status.district}
+            stateOnly={status.kind === "found-coming" ? { name: status.stateName, slug: status.stateSlug } : undefined}
+            asked={status.kind === "found-coming" && status.district && votes ? votes[status.district.slug] : undefined}
+            nearestLive={
+              status.kind === "found-coming" && status.nearestLive
+                ? {
+                    name: status.nearestLive.candidate.name,
+                    slug: status.nearestLive.candidate.slug,
+                    stateSlug: status.nearestLive.candidate.stateSlug,
+                    km: Math.round(status.nearestLive.distanceKm),
+                  }
+                : null
+            }
+            extras={status.kind === "found-live" && extras ? extras(status.district) : undefined}
+            onClose={() => setPopupOpen(false)}
+          />
+        )}
       </section>
     );
   }

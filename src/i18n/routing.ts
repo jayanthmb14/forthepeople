@@ -14,6 +14,12 @@ export const routing = defineRouting({
   locales: ROUTED_LOCALES,
   defaultLocale: DEFAULT_LOCALE,
   localePrefix: "always", // /en/..., /kn/...
+  // English is ALWAYS the default. A visitor only sees another language
+  // when they pick it in the language menu or open a /<code>/ link.
+  // No guessing from the browser's Accept-Language header, and no cookie
+  // that would send them back to a non-English page on the next visit.
+  localeDetection: false,
+  localeCookie: false,
 });
 
 export type Locale = string;

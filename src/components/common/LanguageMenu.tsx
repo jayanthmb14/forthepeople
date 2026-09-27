@@ -15,7 +15,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, ChevronDown, Globe } from "lucide-react";
+import { Check, ChevronDown, Globe, Lock } from "lucide-react";
 import { LANGUAGES, PLANNED_LOCALES, ROUTED_LOCALES, getLanguage } from "@/i18n/languages";
 
 /** Replace the locale segment of a path (works for 2- and 3-letter codes). */
@@ -97,7 +97,27 @@ export default function LanguageMenu({ compact = false }: { compact?: boolean })
               </li>
             ))}
           </ul>
-          {PLANNED_LOCALES.length > 0 && <p className="ftp-lang-more">{t("more", { n: PLANNED_LOCALES.length })}</p>}
+          {PLANNED_LOCALES.length > 0 && (
+            <>
+              <p className="ftp-lang-more">{t("more", { n: PLANNED_LOCALES.length })}</p>
+              {/* Every scheduled language, locked until its translation is
+                  switched on in the registry (status "planned"). */}
+              <ul aria-label={t("comingList")}>
+                {LANGUAGES.filter((l) => l.status === "planned").map((l) => (
+                  <li key={l.code}>
+                    <span className="ftp-lang-item ftp-lang-locked" aria-disabled="true" title={t("lockedNote")}>
+                      <span className="ftp-lang-native" lang={l.code} dir={l.dir}>
+                        {l.native}
+                      </span>
+                      <span className="ftp-lang-english" lang="en">{l.english}</span>
+                      <Lock size={13} aria-hidden className="ftp-lang-check" />
+                      <span className="sr-only">{t("lockedNote")}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </div>

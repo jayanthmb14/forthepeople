@@ -29,7 +29,7 @@
 
 import { useTranslations } from "next-intl";
 import { scriptLang } from "@/lib/utils/script-lang";
-import { useFormat, useModuleText } from "@/i18n/client";
+import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import Link from "next/link";
 import { MessageSquareWarning } from "lucide-react";
 import {
@@ -54,6 +54,7 @@ import DistrictSponsorBanner from "@/components/common/DistrictSponsorBanner";
 import { getStateConfig } from "@/lib/constants/state-config";
 import InfraSnippet from "@/components/district/InfraSnippet";
 import LeadersSnippet from "@/components/district/LeadersSnippet";
+import DistrictLocator from "@/components/district/DistrictLocator";
 import PopulationSnippet from "@/components/district/PopulationSnippet";
 import TenderSnippet from "@/components/district/TenderSnippet";
 import LiveElectionBanner from "@/components/district/LiveElectionBanner";
@@ -212,6 +213,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const tu = useTranslations("subUnits");
   const mt = useModuleText();
   const f = useFormat();
+  const place = usePlaceText();
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
   const stateConfig = getStateConfig(stateSlug);
   const subUnitEn = stateConfig?.subDistrictUnitPlural ?? "Taluks";
@@ -506,6 +508,12 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             alignItems: "start",
           }}
         >
+          <DistrictLocator
+            stateSlug={stateSlug}
+            districtSlug={districtSlug}
+            districtName={displayName}
+            stateName={place.state(stateSlug, stateName)}
+          />
           <LeadersSnippet district={districtSlug} state={stateSlug} base={base} />
           <PopulationSnippet district={districtSlug} state={stateSlug} base={base} />
           <InfraSnippet district={districtSlug} state={stateSlug} base={base} />

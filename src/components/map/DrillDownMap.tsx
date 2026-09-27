@@ -8,8 +8,10 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Line, Marker, ZoomableGroup } from "react-simple-maps";
 import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
+import { getDistrictIcon } from "@/components/district/icons";
+import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 import { INDIA_STATES } from "@/lib/constants/districts";
 
@@ -54,6 +56,63 @@ const GEO_NAME_TO_SLUG: Record<string, string> = {
   "Uttarakhand": "uttarakhand",
   "West Bengal": "west-bengal",
 };
+
+/** One live-district pin, with its badge position fanned out if crowded. */
+interface Pin {
+  slug: string;
+  name: string;
+  stateSlug: string;
+  stateName: string;
+  lat: number;
+  lng: number;
+  pinLat: number;
+  pinLng: number;
+  moved: boolean;
+  color: string;
+  Icon: ReturnType<typeof getDistrictIcon>;
+}
+
+/** Degrees within which two pins are "crowded", and the ring radius they fan out to. */
+const CROWD_DEG = 1.6;
+const RING_DEG = 1.75;
+
+function buildPins(): Pin[] {
+  const pins: Pin[] = [];
+  for (const st of INDIA_STATES) {
+    for (const d of st.districts) {
+      const c = d.active ? DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`] : undefined;
+      if (!c) continue;
+      pins.push({
+        slug: d.slug, name: d.name, stateSlug: st.slug, stateName: st.name,
+        lat: c.lat, lng: c.lng, pinLat: c.lat, pinLng: c.lng, moved: false,
+        color: HUE_HEX[getDistrictHue(d.slug)].hue, Icon: getDistrictIcon(d.slug),
+      });
+    }
+  }
+  // Greedy clusters, then spread each crowded cluster around its centre.
+  const seen = new Set<number>();
+  for (let i = 0; i < pins.length; i++) {
+    if (seen.has(i)) continue;
+    const group = [i];
+    for (let j = i + 1; j < pins.length; j++) {
+      if (seen.has(j)) continue;
+      if (group.some((g) => Math.hypot(pins[g].lat - pins[j].lat, pins[g].lng - pins[j].lng) < CROWD_DEG)) group.push(j);
+    }
+    group.forEach((g) => seen.add(g));
+    if (group.length < 2) continue;
+    const cLat = group.reduce((s, g) => s + pins[g].lat, 0) / group.length;
+    const cLng = group.reduce((s, g) => s + pins[g].lng, 0) / group.length;
+    group.forEach((g, k) => {
+      const a = -Math.PI / 2 + (2 * Math.PI * k) / group.length;
+      pins[g].pinLat = cLat + RING_DEG * Math.sin(a);
+      pins[g].pinLng = cLng + RING_DEG * Math.cos(a);
+      pins[g].moved = true;
+    });
+  }
+  return pins;
+}
+
+const LIVE_PINS = buildPins();
 
 interface DrillDownMapProps {
   locale: string;
@@ -126,27 +185,37 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
             }
           </Geographies>
 
-          {/* v4: a saffron pin with a soft pulse on every LIVE district.
-              Clicking a pin opens that district. */}
-          {INDIA_STATES.flatMap((st) =>
-            st.districts
-              .filter((d) => d.active && DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`])
-              .map((d) => {
-                const c = DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`];
-                return (
-                  <Marker
-                    key={`${st.slug}/${d.slug}`}
-                    coordinates={[c.lng, c.lat]}
-                    onClick={() => router.push(`/${locale}/${st.slug}/${d.slug}`)}
-                    style={{ default: { cursor: "pointer" }, hover: { cursor: "pointer" }, pressed: { cursor: "pointer" } }}
-                  >
-                    <title>{`${d.name}, ${st.name}: open dashboard`}</title>
-                    <circle r={9} fill="#F97316" opacity={0.35} className="ftp-map-ping" />
-                    <circle r={5} fill="#F97316" stroke="#fff" strokeWidth={2} />
+          {/* v4: illustrated pins. Districts that sit close together (e.g.
+              Mandya, Mysuru, Bengaluru) fan out into a ring; a thin leader
+              line and a dot keep each badge tied to its real location. */}
+          {LIVE_PINS.map((pin) => (
+            <g key={`${pin.stateSlug}/${pin.slug}`}>
+              {pin.moved && (
+                <>
+                  <Line from={[pin.lng, pin.lat]} to={[pin.pinLng, pin.pinLat]} stroke={pin.color} strokeWidth={1.5} strokeLinecap="round" />
+                  <Marker coordinates={[pin.lng, pin.lat]}>
+                    <circle r={3} fill={pin.color} stroke="#fff" strokeWidth={1} />
                   </Marker>
-                );
-              }),
-          )}
+                </>
+              )}
+              <Marker
+                coordinates={[pin.pinLng, pin.pinLat]}
+                onClick={() => router.push(`/${locale}/${pin.stateSlug}/${pin.slug}`)}
+                style={{ default: { cursor: "pointer" }, hover: { cursor: "pointer" }, pressed: { cursor: "pointer" } }}
+              >
+                <title>{`${pin.name}, ${pin.stateName}`}</title>
+                <circle r={21} fill={pin.color} opacity={0.25} className="ftp-map-ping" />
+                <circle r={18} fill="#fff" stroke={pin.color} strokeWidth={3} />
+                {pin.Icon ? (
+                  <g transform="translate(-12,-12)">
+                    <pin.Icon size={24} />
+                  </g>
+                ) : (
+                  <circle r={5} fill={pin.color} />
+                )}
+              </Marker>
+            </g>
+          ))}
         </ZoomableGroup>
       </ComposableMap>
 

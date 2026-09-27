@@ -1113,3 +1113,29 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
    signs and conjuncts never collide or clip (docs/I18N.md §4). */
 .ftp-locale-root:not(:lang(en)) :is(h1, h2, h3, .ftp-h1, .ftp-h2, .ftp-display) { line-height: 1.32 !important; }
 .ftp-locale-root:not(:lang(en)) :is(p, li, .ftp-body) { line-height: 1.7; }
+.ftp-lang-panel { max-height: min(70vh, 560px); overflow-y: auto; }
+.ftp-lang-locked { color: var(--ftp-text-2); cursor: not-allowed; }
+.ftp-lang-locked:hover { background: transparent; }
+.ftp-lang-locked .ftp-lang-native { font-weight: 500; }
+
+/* "Your district" popup (after Go to my location) */
+.ftp-popup-wrap { position: fixed; z-index: 70; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); }
+.ftp-popup {
+  position: relative; padding: 18px 18px 16px; border-radius: 22px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--hue) 14%, #fff) 0%, #fff 60%);
+  border: 1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border));
+  box-shadow: 0 30px 60px -24px rgba(23, 26, 31, 0.45), 0 8px 18px -10px rgba(23, 26, 31, 0.25);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ftp-popup-close { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--ftp-border); background: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ftp-text-2); }
+.ftp-popup-badge { width: 64px; height: 64px; flex-shrink: 0; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--hue); box-shadow: 0 10px 20px -12px color-mix(in srgb, var(--hue) 90%, transparent); }
+.ftp-popup-eyebrow { margin: 0; font-size: 13px; font-weight: 600; color: var(--hue-deep); }
+.ftp-popup-title { margin: 2px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-family: var(--ftp-font-display); font-size: 26px; line-height: 1.2; font-weight: 700; color: var(--ftp-text); outline: none; }
+.ftp-popup-local { font-family: var(--ftp-font-sans); font-size: 17px; font-weight: 600; color: var(--hue-deep); }
+.ftp-popup-state { margin: 2px 0 0; font-size: 13px; color: var(--ftp-text-2); }
+.ftp-popup-tag { margin: 0; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: var(--hue-tint); color: var(--hue-deep); font-size: 13px; font-weight: 600; }
+.ftp-popup-extras { font-size: 14px; color: var(--ftp-text); }
+.ftp-popup-body { margin: 0; font-size: 14px; line-height: 21px; color: var(--ftp-text); }
+.ftp-popup-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 14px; background: var(--hue); color: #fff; font-weight: 700; font-size: 15px; text-decoration: none; }
+.ftp-popup-cta:hover { background: var(--hue-deep); }
+.ftp-popup-secondary { display: inline-flex; align-items: center; min-height: 46px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--ftp-border-strong); background: #fff; color: var(--ftp-text); font-weight: 600; font-size: 14px; text-decoration: none; }

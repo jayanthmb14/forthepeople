@@ -17,7 +17,7 @@ interface GenericStateMapProps {
   activeDistricts: Set<string>;
 }
 
-function computeCenter(geojson: { features: Array<{ geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> }): [number, number] {
+export function computeCenter(geojson: { features: Array<{ geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> }): [number, number] {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   for (const f of geojson.features) {
     const coords = f.geometry.coordinates;
@@ -37,7 +37,7 @@ function computeCenter(geojson: { features: Array<{ geometry: { coordinates: num
   return [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
 }
 
-function computeScale(geojson: { features: Array<{ geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> }): number {
+export function computeScale(geojson: { features: Array<{ geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> }): number {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   for (const f of geojson.features) {
     const coords = f.geometry.coordinates;

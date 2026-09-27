@@ -197,7 +197,9 @@
     "menuLabel": "Language",
     "beta": "beta",
     "betaNote": "Translation in progress; some text is still in English.",
-    "more": "{n} more Indian languages coming"
+    "more": "{n} more Indian languages coming",
+    "comingList": "Languages coming soon",
+    "lockedNote": "Coming soon: translation in progress"
   },
   "moduleGroups": {
     "civic": "Civic duty",
@@ -872,5 +874,30 @@
     "shareAria": "Share this page",
     "copied": "Link copied",
     "share": "Share"
+  },
+  "locator": {
+    "title": "Where is {name}?",
+    "sentence": {
+      "north": "{name} is in the north of {state}.",
+      "south": "{name} is in the south of {state}.",
+      "east": "{name} is in the east of {state}.",
+      "west": "{name} is in the west of {state}.",
+      "north-east": "{name} is in the north-east of {state}.",
+      "north-west": "{name} is in the north-west of {state}.",
+      "south-east": "{name} is in the south-east of {state}.",
+      "south-west": "{name} is in the south-west of {state}.",
+      "centre": "{name} is in the middle of {state}."
+    }
+  },
+  "popup": {
+    "close": "Close",
+    "youAreIn": "You are in",
+    "youAreInNotLive": "You are in",
+    "open": "Open {name}'s dashboards",
+    "notLive": "{name} is not live on ForThePeople.in yet.",
+    "stateNotLive": "No district in {state} is live yet.",
+    "asked": "{count} people have asked for it.",
+    "vote": "Vote for {name}",
+    "nearest": "Nearest live: {name}, {km} km"
   }
 }
