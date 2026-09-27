@@ -106,5 +106,18 @@
     "srcYahoo": "Yahoo Finance",
     "none": "Prices could not be loaded just now. The prices page may have them.",
     "note": "Gold and silver from IBJA (India Bullion and Jewellers Association); shares, the dollar and crude oil from Yahoo Finance. Crop prices for each district are on its Crop prices page."
+  },
+  "checks": {
+    "title": "How we get and check the data",
+    "lead": "Four steps before a number reaches you.",
+    "collectTitle": "Collect",
+    "collectBody": "From government portals and other reputed sources — some automatically, some by hand.",
+    "checkTitle": "Check automatically",
+    "checkBody": "Empty, zero or impossible values are left out — never filled in with a guess.",
+    "compareTitle": "Double-check",
+    "compareBody": "Where a second source exists, we compare the two. Doubtful updates from the news wait for a person to review them.",
+    "showTitle": "Show with date and source",
+    "showBody": "Every number says where it came from and when. Old data is marked as old.",
+    "link": "See it for yourself: check {name}'s data"
   }
 }

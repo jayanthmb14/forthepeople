@@ -9,7 +9,9 @@
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  A gold coin, a silver bar, a rising chart (Sensex, Nifty), a money note
-//  (US dollar), an oil drop (crude) and a sprout (mandi crop prices).
+//  (US dollar), an oil drop (crude) and a sprout (mandi crop prices); and
+//  four step pictures for "How we get and check the data" (collect, check,
+//  compare, show), drawn in the hue of their parent (.ftp-hue-<name>).
 //  Drawn on a 24 × 24 grid, flat pastel fills, colours from
 //  glyphs.module.css (never hex here). Decorative: the price's name is
 //  always written next to the picture, so every glyph is aria-hidden.
@@ -142,4 +144,81 @@ export function Glyph({ kind, ...p }: GlyphProps & { kind: GlyphKind }) {
     default:
       return <RisingChart {...p} />;
   }
+}
+
+// ── "How we get and check the data" — four step pictures (48 × 48) ─────
+
+function Step({ size = 48, children }: { size?: number; children: React.ReactNode }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" focusable="false" className={styles.glyph}>
+      <rect x="1" y="1" width="46" height="46" rx="14" className={styles.stepTile} />
+      {children}
+    </svg>
+  );
+}
+
+/** Collect: a portal window with a building, and an arrow into our tray. */
+export function StepCollect({ size }: { size?: number }) {
+  return (
+    <Step size={size}>
+      <rect x="9" y="9" width="30" height="21" rx="4" className={styles.stepPaper} />
+      <path d="M9 14h30" className={styles.stepLine} />
+      <circle cx="12.5" cy="11.6" r="1" className={styles.stepInk} />
+      <circle cx="15.5" cy="11.6" r="1" className={styles.stepInk} />
+      <path d="M17 26v-6M21.5 26v-6M26 26v-6M30.5 26v-6M15 26.5h18M15 19.5l9-3.5 9 3.5" className={styles.stepLine} />
+      <path d="M24 31v7m-3.5-3.5L24 38l3.5-3.5" className={styles.stepAccent} />
+      <path d="M15 40h18" className={styles.stepLine} />
+    </Step>
+  );
+}
+
+/** An even gear outline: `teeth` teeth between radius rIn and rOut. */
+function gearPath(cx: number, cy: number, rOut: number, rIn: number, teeth: number): string {
+  const step = (Math.PI * 2) / teeth;
+  const at = (r: number, a: number) => `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
+  const parts: string[] = [];
+  for (let i = 0; i < teeth; i++) {
+    const a = i * step - Math.PI / 2;
+    parts.push(`${i === 0 ? "M" : "L"}${at(rIn, a - step * 0.3)}`, `L${at(rOut, a - step * 0.17)}`, `L${at(rOut, a + step * 0.17)}`, `L${at(rIn, a + step * 0.3)}`);
+  }
+  return `${parts.join(" ")} Z`;
+}
+const GEAR = gearPath(24, 24, 14, 11, 9);
+
+/** Check automatically: a gear with a tick. */
+export function StepCheck({ size }: { size?: number }) {
+  return (
+    <Step size={size}>
+      <path d={GEAR} className={styles.stepPaper} />
+      <circle cx="24" cy="24" r="6.5" className={styles.stepFill} />
+      <path d="M20.8 24.2l2.2 2.2 4.3-4.6" className={styles.stepTick} />
+    </Step>
+  );
+}
+
+/** Double-check: two papers side by side with an "equals" between them. */
+export function StepCompare({ size }: { size?: number }) {
+  return (
+    <Step size={size}>
+      <rect x="7" y="12" width="15" height="21" rx="3" className={styles.stepPaper} />
+      <rect x="26" y="15" width="15" height="21" rx="3" className={styles.stepPaper} />
+      <path d="M10.5 17.5h8M10.5 21.5h8M10.5 25.5h5M29.5 20.5h8M29.5 24.5h8M29.5 28.5h5" className={styles.stepLine} />
+      <circle cx="24" cy="36" r="5.5" className={styles.stepFill} />
+      <path d="M21.6 34.8h4.8M21.6 37.2h4.8" className={styles.stepTick} />
+    </Step>
+  );
+}
+
+/** Show with date and source: a card with a calendar and a link tag. */
+export function StepShow({ size }: { size?: number }) {
+  return (
+    <Step size={size}>
+      <rect x="8" y="10" width="32" height="26" rx="4" className={styles.stepPaper} />
+      <path d="M13 17h13M13 21.5h9" className={styles.stepLine} />
+      <rect x="29" y="15" width="7" height="7" rx="1.5" className={styles.stepFill} />
+      <path d="M13 29.5h22" className={styles.stepLine} />
+      <rect x="12" y="33.5" width="15" height="7" rx="3.5" className={styles.stepFill} />
+      <path d="M15.5 37h8" className={styles.stepTick} />
+    </Step>
+  );
 }

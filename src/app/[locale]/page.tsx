@@ -38,6 +38,9 @@ import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance from "@/components/home/IndiaGlance";
 import PricesToday from "@/components/home/PricesToday";
 import SupportLine from "@/components/home/SupportLine";
+import DataChecks from "@/components/home/DataChecks";
+import { getDistrict } from "@/lib/constants/districts";
+import { placeName } from "@/i18n/place-name";
 import styles from "@/components/home/home.module.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
@@ -117,6 +120,16 @@ export default async function HomePage({
     goLiveDate: d.goLiveDate ? d.goLiveDate.toISOString() : null,
   }));
 
+  // "Check this data" example: the live district with the newest data.
+  const newestFirst = [...activeDistricts].sort(
+    (a, b) =>
+      (mapStats[`${b.stateSlug}/${b.slug}`]?.newest ?? "").localeCompare(mapStats[`${a.stateSlug}/${a.slug}`]?.newest ?? "") ||
+      a.name.localeCompare(b.name),
+  );
+  const ex = newestFirst[0];
+  const exReg = ex ? getDistrict(ex.stateSlug, ex.slug) : undefined;
+  const example = ex ? { stateSlug: ex.stateSlug, slug: ex.slug, name: exReg ? placeName(exReg, locale) : ex.name } : null;
+
   return (
     <main role="main" className={styles.home}>
       {/* Decides, before the first paint, whether the 1.2 s intro plays. */}
@@ -132,6 +145,7 @@ export default async function HomePage({
       <IndiaGlance locale={locale} figures={glance} />
       <LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />
       <PricesToday locale={locale} markets={markets} />
+      <DataChecks locale={locale} example={example} />
       <SupportLine locale={locale} />
     </main>
   );

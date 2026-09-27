@@ -1376,6 +1376,61 @@
   color: var(--ftp-brand-deep);
 }
 
+/* ───────────── How we get and check the data (DataChecks) ───────────── */
+
+.steps {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  counter-reset: none;
+}
+.step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--hue) 16%, var(--ftp-border));
+  border-radius: 18px;
+  background: linear-gradient(170deg, var(--hue-tint) 0%, var(--ftp-surface) 58%);
+}
+.stepTop {
+  position: relative;
+  display: inline-flex;
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+.stepNum {
+  position: absolute;
+  right: -8px;
+  top: -6px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ftp-surface);
+  border-radius: 50%;
+  background: var(--hue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.stepTitle {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 800;
+  color: var(--hue-deep);
+}
+.stepBody {
+  font-size: 13.5px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+
 /* ───────────── Support line ───────────── */
 
 .support {
@@ -1439,6 +1494,23 @@
 @media (min-width: 1024px) {
   .heroBand {
     padding: 44px 0 12px;
+  }
+  .steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  /* A soft arrow between the steps */
+  .step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: -12px;
+    top: 38px;
+    z-index: 1;
+    width: 10px;
+    height: 10px;
+    border-top: 2px solid var(--ftp-border-strong);
+    border-right: 2px solid var(--ftp-border-strong);
+    transform: rotate(45deg);
   }
   .hero {
     gap: 48px;
