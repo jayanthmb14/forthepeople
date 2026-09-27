@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
 import { MapTooltip, tint } from "@/components/map/mapTheme";
 import type { Hue } from "@/lib/design/hues";
@@ -91,6 +92,8 @@ interface TalukMapProps {
   state: string;
   district: string;
   taluks?: Array<{ slug: string; name: string; population?: number; villageCount?: number }>;
+  /** The sub-district word in the page language ("taluk", "ತಾಲೂಕು"), for the hint. */
+  unitLabel: string;
 }
 
 // Compute centroid of a coordinate ring for label placement
@@ -100,8 +103,9 @@ function ringCentroid(ring: number[][]): [number, number] {
   return [x / ring.length, y / ring.length];
 }
 
-export default function TalukMap({ locale, state, district, taluks = [] }: TalukMapProps) {
+export default function TalukMap({ locale, state, district, taluks = [], unitLabel }: TalukMapProps) {
   const router = useRouter();
+  const t = useTranslations("page_map");
   const [tooltip, setTooltip] = useState<{ name: string; x: number; y: number } | null>(null);
 
   const proj = DISTRICT_PROJECTION[district] ?? DEFAULT_PROJECTION;
@@ -202,7 +206,7 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
         }}
       >
         <span className="ftp-emoji" aria-hidden>👆</span>
-        Click a taluk to explore
+        {t("mapHint", { unit: unitLabel })}
       </div>
     </div>
   );

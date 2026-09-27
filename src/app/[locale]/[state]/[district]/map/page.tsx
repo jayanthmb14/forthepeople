@@ -11,24 +11,34 @@
 //  PageHeader → StatStrip of emoji tiles (taluks, villages, area,
 //  population) → an "In simple words" line with the same counts → the
 //  interactive taluk map (each taluk in its own hue) when our boundary
-//  file covers every taluk, otherwise an honest note + a card grid → the
-//  list of taluks with village counts, each with a bar for its share of
-//  the district's villages → SourcesFooter → Toolbar.
+//  file covers every taluk, otherwise an honest note + a card grid →
+//  "How the land is shared": a ring of each taluk's area (only when every
+//  taluk has an area on record) with a table view → the list of taluks
+//  with village counts, each with a bar for its share of the district's
+//  villages → SourcesFooter → Toolbar.
 //
 //  Map behaviour (click a taluk to open it) is unchanged; only the chrome
 //  around it uses the v4 kit and the page hue.
 //
+//  i18n: interface text is in page_map (en + kn); the sub-district word
+//  (Taluk / Mandal / Tehsil…) comes from the shared subUnitOne / subUnits
+//  namespaces. Taluk and village names are data.
+//
 "use client";
 import { use, useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Map, ChevronRight, Share2 } from "lucide-react";
 import { useTaluks, useOverview } from "@/hooks/useRealtimeData";
 import {
   PageHeader, StatStrip, StatTile, Section, Card, LoadingShell,
   SourcesFooter, Toolbar, ToolbarButton,
 } from "@/components/district/ui";
-import { Explainer } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { OTHER_SHADE, ShareDonut, type DonutSlice } from "@/components/community/CommunityVisuals";
+import { useDistrictName } from "@/components/community/usePlaceName";
 import TalukMap from "@/components/map/TalukMap";
 import { getStateConfig } from "@/lib/constants/state-config";
+import { useFormat } from "@/i18n/client";
 
 type TalukCard = {
   slug: string;
@@ -50,19 +60,28 @@ type Coverage =
   | { status: "partial"; features: number }
   | { status: "full" };
 
+/** Up to this many taluks get their own slice in the land ring. */
+const MAX_LAND_SLICES = 6;
+
 function DistrictMapArea({
   locale,
   state,
   district,
   talukList,
-  urbanLabel,
+  unitsWord,
+  unitWord,
 }: {
   locale: string;
   state: string;
   district: string;
   talukList: TalukCard[];
-  urbanLabel: boolean;
+  /** Plural sub-district word for sentences ("taluks", "zones"). */
+  unitsWord: string;
+  /** Singular sub-district word for the map hint ("taluk", "zone"). */
+  unitWord: string;
 }) {
+  const t = useTranslations("page_map");
+  const f = useFormat();
   const [coverage, setCoverage] = useState<Coverage>({ status: "loading" });
 
   useEffect(() => {
@@ -101,15 +120,15 @@ function DistrictMapArea({
 
   // Render the interactive map only when the GeoJSON covers every DB taluk.
   if (coverage.status === "full") {
-    const mapTaluks = talukList.map((t) => ({
-      slug: t.slug,
-      name: t.name,
-      population: t.population ?? undefined,
-      villageCount: t.villageCount,
+    const mapTaluks = talukList.map((tk) => ({
+      slug: tk.slug,
+      name: tk.name,
+      population: tk.population ?? undefined,
+      villageCount: tk.villageCount,
     }));
     return (
       <Card tinted padding={12}>
-        <TalukMap locale={locale} state={state} district={district} taluks={mapTaluks} />
+        <TalukMap locale={locale} state={state} district={district} taluks={mapTaluks} unitLabel={unitWord} />
       </Card>
     );
   }
@@ -117,8 +136,8 @@ function DistrictMapArea({
   // Fallback: an honest one-line note, then a card grid covering every DB taluk.
   const headline =
     coverage.status === "partial"
-      ? `Boundary data covers ${coverage.features} of ${talukList.length} ${urbanLabel ? "zones" : "taluks"} — showing the full list below.`
-      : "Boundary data is being prepared — showing the full list below.";
+      ? t("coveragePartial", { n: f.number(coverage.features), total: f.number(talukList.length), units: unitsWord })
+      : t("coverageMissing");
 
   return (
     <>
@@ -139,20 +158,21 @@ function DistrictMapArea({
           gap: 12,
         }}
       >
-        {talukList.map((t) => (
-          <Card key={t.slug} href={`/${locale}/${state}/${district}/${t.slug}`} padding={14}>
+        {talukList.map((tk) => (
+          <Card key={tk.slug} href={`/${locale}/${state}/${district}/${tk.slug}`} padding={14}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 16, borderRadius: 10 }}>📍</span>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div className="ftp-display" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 650, color: "var(--hue-deep)" }}>{t.name}</div>
-                {t.nameLocal && (
+                <div className="ftp-display" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 650, color: "var(--hue-deep)" }}>{tk.name}</div>
+                {tk.nameLocal && (
                   <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-                    {t.nameLocal}
+                    {tk.nameLocal}
                   </div>
                 )}
-                {(t.population != null || t.area != null) && (
+                {(tk.population != null || tk.area != null) && (
                   <div className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", fontWeight: 400, color: "var(--ftp-text-2)", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    {t.population != null && <span>{t.population.toLocaleString("en-IN")} people</span>}
-                    {t.area != null && <span>{t.area} km²</span>}
+                    {tk.population != null && <span>{t("people", { n: f.number(tk.population) })}</span>}
+                    {tk.area != null && <span>{t("areaKm", { n: f.number(tk.area) })}</span>}
                   </div>
                 )}
               </div>
@@ -167,6 +187,7 @@ function DistrictMapArea({
 
 /** Share button: the phone's share sheet when available, else copy the link. */
 function SharePageButton() {
+  const tf = useTranslations("pageFooter");
   const [copied, setCopied] = useState(false);
   function share() {
     const url = window.location.href;
@@ -176,11 +197,15 @@ function SharePageButton() {
       navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
     }
   }
-  return <ToolbarButton icon={Share2} onClick={share}>{copied ? "Link copied" : "Share"}</ToolbarButton>;
+  return <ToolbarButton icon={Share2} onClick={share}>{copied ? tf("copied") : tf("share")}</ToolbarButton>;
 }
 
 export default function MapPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
+  const t = useTranslations("page_map");
+  const tOne = useTranslations("subUnitOne");
+  const tMany = useTranslations("subUnits");
+  const f = useFormat();
   const base = `/${locale}/${state}/${district}`;
   const stateConfig = getStateConfig(state);
   const subUnit = stateConfig?.subDistrictUnit ?? "Taluk";
@@ -194,39 +219,60 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
   const isLoading = taluksLoading || overviewLoading;
   // Data date of the overview record (area / population), when the API has one.
   const overviewAsOf = overviewData?.meta?.lastUpdated ?? null;
+  const placeName = useDistrictName(state, district, overview?.name);
 
-  const talukList: TalukCard[] = taluks.map((t) => ({
-    slug: t.slug,
-    name: t.name,
-    nameLocal: t.nameLocal ?? null,
-    population: t.population ?? null,
-    area: t.area ?? null,
-    villageCount: t._count.villages,
+  // The sub-district words in the page language. Sentences use lower case
+  // (no effect on scripts without case).
+  const unitOne = tOne.has(subUnit) ? tOne(subUnit) : subUnit;
+  const unitMany = tMany.has(subUnitPlural) ? tMany(subUnitPlural) : subUnitPlural;
+  const lower = (s: string) => s.toLocaleLowerCase(locale);
+  const unitWord = hideVillages ? lower(t("zone")) : lower(unitOne);
+  const unitsWord = hideVillages ? t("zonesWord", { n: taluks.length }) : lower(taluks.length === 1 ? unitOne : unitMany);
+
+  const talukList: TalukCard[] = taluks.map((tk) => ({
+    slug: tk.slug,
+    name: tk.name,
+    nameLocal: tk.nameLocal ?? null,
+    population: tk.population ?? null,
+    area: tk.area ?? null,
+    villageCount: tk._count.villages,
   }));
 
-  const mapSectionLabel = hideVillages ? "Urban zones" : `${subUnit} map`;
-  const listSectionLabel = hideVillages
-    ? `Zones in ${overview?.name ?? "this district"}`
-    : `${subUnitPlural}${hideVillages ? "" : " & villages"}`;
+  const mapSectionLabel = hideVillages ? t("mapSectionUrban") : t("mapSection", { unit: unitOne });
+  const listSectionLabel = t("listSection", { units: unitMany });
 
   // StatStrip wants 2–4 tiles; count the ones we will render.
   const tileCount = 1 + (hideVillages ? 0 : 1) + (overview?.area ? 1 : 0) + (overview?.population ? 1 : 0);
 
   // The plain-words line: the same counts as the tiles, nothing else.
-  const totalVillages = taluks.reduce((s, t) => s + t._count.villages, 0);
-  const placeName = overview?.name ?? district.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const unitWord = (hideVillages ? (taluks.length === 1 ? "zone" : "zones") : (taluks.length === 1 ? subUnit : subUnitPlural)).toLowerCase();
+  const totalVillages = taluks.reduce((s, tk) => s + tk._count.villages, 0);
+  const withVillages = !hideVillages && totalVillages > 0;
+  const withArea = Boolean(overview?.area);
+  const simpleKey = withVillages ? (withArea ? "simpleVillagesArea" : "simpleVillages") : withArea ? "simpleArea" : "simple";
+  const bold = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
+
+  // The land ring: every taluk's area, biggest first. Only when ALL taluks
+  // have an area, so the shares add up to the whole district.
+  const allHaveArea = talukList.length >= 2 && talukList.every((tk) => typeof tk.area === "number" && tk.area > 0);
+  const byArea = allHaveArea ? [...talukList].sort((a, b) => (b.area ?? 0) - (a.area ?? 0)) : [];
+  const landTotal = byArea.reduce((s, tk) => s + (tk.area ?? 0), 0);
+  const ownSlices = byArea.length > MAX_LAND_SLICES ? byArea.slice(0, MAX_LAND_SLICES - 1) : byArea;
+  const restArea = byArea.slice(ownSlices.length).reduce((s, tk) => s + (tk.area ?? 0), 0);
+  const landSlices: DonutSlice[] = [
+    ...ownSlices.map((tk) => ({ key: tk.slug, label: tk.name, value: tk.area ?? 0 })),
+    ...(restArea > 0 ? [{ key: "__other", label: t("landOther", { units: lower(unitMany) }), value: restArea, color: OTHER_SHADE }] : []),
+  ];
+  const biggest = byArea[0];
+  const biggestShare = biggest && landTotal > 0
+    ? f.number((biggest.area ?? 0) / landTotal, { style: "percent", maximumFractionDigits: 0 })
+    : "";
 
   return (
     <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
       <PageHeader
         icon={Map}
-        title="District Map"
-        description={
-          hideVillages
-            ? "Browse the urban zones of this district — click any zone to see its data"
-            : `Interactive ${subUnit.toLowerCase()} map — click to explore each ${subUnit.toLowerCase()}`
-        }
+        title={t("title")}
+        description={hideVillages ? t("descriptionUrban") : t("descriptionRural", { unit: lower(unitOne) })}
         backHref={base}
         accent="blue"
         source={{ label: "OpenStreetMap", href: "https://www.openstreetmap.org/copyright" }}
@@ -236,33 +282,35 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
       {!isLoading && (
         <>
           <StatStrip cols={Math.min(4, Math.max(2, tileCount)) as 2 | 3 | 4}>
-            <StatTile emoji="🗺️" label={hideVillages ? "Zones" : subUnitPlural} value={taluks.length} />
+            <StatTile emoji="🗺️" label={hideVillages ? t("zones") : unitMany} value={f.number(taluks.length)} />
             {!hideVillages && (
-              <StatTile emoji="🏡" label="Villages" value={totalVillages.toLocaleString("en-IN")} />
+              <StatTile emoji="🏡" label={t("villages")} value={f.number(totalVillages)} />
             )}
             {overview?.area && (
-              <StatTile emoji="📐" label="Area" value={overview.area.toLocaleString("en-IN")} unit="km²" asOf={overviewAsOf} />
+              <StatTile emoji="📐" label={t("area")} value={f.number(overview.area)} unit="km²" asOf={overviewAsOf} />
             )}
             {overview?.population && (
-              <StatTile emoji="👥" label="Population" value={(overview.population / 1000000).toFixed(2)} unit="M" asOf={overviewAsOf} />
+              <StatTile
+                emoji="👥"
+                label={t("population")}
+                value={f.number(overview.population / 100_000, { maximumFractionDigits: 1 })}
+                unit={t("lakh")}
+                asOf={overviewAsOf}
+              />
             )}
           </StatStrip>
 
           {taluks.length > 0 && (
             <div style={{ marginTop: 16 }}>
-              <Explainer title="In simple words" emoji="🗺️">
-                {placeName} is split into <strong className="ftp-num">{taluks.length}</strong> {unitWord}
-                {!hideVillages && totalVillages > 0 ? (
-                  <>
-                    {" "}with <strong className="ftp-num">{totalVillages.toLocaleString("en-IN")}</strong> villages between them
-                  </>
-                ) : null}
-                {overview?.area ? (
-                  <>
-                    , covering <strong className="ftp-num">{overview.area.toLocaleString("en-IN")}</strong> km²
-                  </>
-                ) : null}
-                . Pick one to see its own page.
+              <Explainer emoji="🗺️">
+                {t.rich(simpleKey, {
+                  place: placeName,
+                  n: f.number(taluks.length),
+                  units: unitsWord,
+                  villages: f.number(totalVillages),
+                  area: f.number(overview?.area ?? 0),
+                  b: bold,
+                })}
               </Explainer>
             </div>
           )}
@@ -274,28 +322,57 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
               state={state}
               district={district}
               talukList={talukList}
-              urbanLabel={hideVillages}
+              unitsWord={unitsWord}
+              unitWord={unitWord}
             />
           </Section>
+
+          {/* How the land is shared (area per taluk). */}
+          {allHaveArea && biggest && (
+            <div style={{ marginTop: 20 }}>
+              <ChartCard
+                title={t("landTitle")}
+                emoji="📐"
+                units={t("landUnits", { unit: unitWord })}
+                simple={t.rich("landSimple", { name: biggest.name, unit: unitWord, share: biggestShare, b: (c) => <strong>{c}</strong> })}
+                table={byArea.map((tk) => ({ label: tk.name, value: t("areaKm", { n: f.number(tk.area ?? 0) }) }))}
+              >
+                <ShareDonut
+                  slices={landSlices}
+                  centerValue={f.number(byArea.length)}
+                  centerLabel={unitsWord}
+                  formatValue={(v) => t("areaKm", { n: f.number(v) })}
+                  ariaLabel={t("landAria", { name: biggest.name, unit: unitWord, share: biggestShare })}
+                />
+              </ChartCard>
+            </div>
+          )}
 
           {/* List with village counts for rural districts */}
           {!hideVillages && (
             <Section title={listSectionLabel} emoji="🏘️">
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-                {taluks.map((t) => (
-                  <li key={t.id}>
-                    <Card href={`/${locale}/${state}/${district}/${t.slug}`} padding={0}>
+                {taluks.map((tk) => (
+                  <li key={tk.id}>
+                    <Card href={`/${locale}/${state}/${district}/${tk.slug}`} padding={0}>
                       <div style={{ padding: "12px 16px", minHeight: 56 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div className="ftp-display" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 650, color: "var(--ftp-text)" }}>{t.name}</div>
-                            {t.nameLocal && (
-                              <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{t.nameLocal}</div>
-                            )}
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 16, borderRadius: 10 }}>🏘️</span>
+                            <div style={{ minWidth: 0 }}>
+                              <div className="ftp-display" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 650, color: "var(--ftp-text)" }}>{tk.name}</div>
+                              {tk.nameLocal && (
+                                <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{tk.nameLocal}</div>
+                              )}
+                            </div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                             <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                              <span className="ftp-num" style={{ color: "var(--hue-deep)", fontSize: 15 }}>{t._count.villages}</span> villages
+                              {t.rich("villagesCount", {
+                                count: f.number(tk._count.villages),
+                                n: tk._count.villages,
+                                num: (c) => <span className="ftp-num" style={{ color: "var(--hue-deep)", fontSize: 15 }}>{c}</span>,
+                              })}
                             </span>
                             <ChevronRight size={16} aria-hidden style={{ color: "var(--hue)" }} />
                           </div>
@@ -304,14 +381,14 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
                         {totalVillages > 0 && (
                           <div
                             aria-hidden
-                            title={`${t._count.villages} of ${totalVillages.toLocaleString("en-IN")} villages in the district`}
+                            title={t("villageShare", { n: f.number(tk._count.villages), total: f.number(totalVillages) })}
                             style={{ marginTop: 8, height: 6, borderRadius: 999, overflow: "hidden", background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))" }}
                           >
                             <div
                               className="ftp-grow-x"
                               style={{
                                 height: "100%",
-                                width: `${Math.max(2, Math.round((t._count.villages / totalVillages) * 100))}%`,
+                                width: `${Math.max(2, Math.round((tk._count.villages / totalVillages) * 100))}%`,
                                 borderRadius: 999,
                                 background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
                               }}
@@ -332,7 +409,7 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
           If a district's boundary file comes from elsewhere, add it here. */}
       <SourcesFooter
         sources={[
-          { name: "OpenStreetMap contributors (taluk boundaries)", url: "https://www.openstreetmap.org/copyright", licence: "ODbL" },
+          { name: t("sourceOsm", { unit: unitWord }), url: "https://www.openstreetmap.org/copyright", licence: "ODbL" },
         ]}
       />
       <Toolbar>

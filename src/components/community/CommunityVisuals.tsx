@@ -53,6 +53,8 @@ export interface DonutSlice {
  * @prop centerValue  Big text in the middle (usually the formatted total).
  * @prop centerLabel  Small word under it ("stories", "people").
  * @prop ariaLabel    One sentence describing the picture.
+ * @prop formatValue  How a slice's value is written in the legend
+ *                    (default: the number in the page language).
  */
 export function ShareDonut({
   slices,
@@ -60,12 +62,14 @@ export function ShareDonut({
   centerLabel,
   ariaLabel,
   size = 168,
+  formatValue,
 }: {
   slices: DonutSlice[];
   centerValue: string;
   centerLabel?: string;
   ariaLabel: string;
   size?: number;
+  formatValue?: (n: number) => string;
 }) {
   const f = useFormat();
   const shown = slices.filter((s) => s.value > 0);
@@ -123,7 +127,7 @@ export function ShareDonut({
             <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, flexShrink: 0, background: s.color ?? HUE_SHADES[i % HUE_SHADES.length] }} />
             {s.emoji && <span className="ftp-emoji" aria-hidden style={{ fontSize: 15 }}>{s.emoji}</span>}
             <span style={{ flex: 1, minWidth: 0, color: "var(--ftp-text)", overflowWrap: "anywhere" }}>{s.label}</span>
-            <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{f.number(s.value)}</span>
+            <span className="ftp-num" style={{ color: "var(--hue-deep)", whiteSpace: "nowrap" }}>{formatValue ? formatValue(s.value) : f.number(s.value)}</span>
             <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400, minWidth: 40, textAlign: "right" }}>
               {f.number(s.value / total, { style: "percent", maximumFractionDigits: 0 })}
             </span>
