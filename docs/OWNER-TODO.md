@@ -141,3 +141,73 @@ Still yours:
   Tell me if you want it elsewhere.
 - **Jev Router** is now the first AI model for news sorting (free today).
   If you want a different default, say which.
+
+Added 28 Sep, after the v5.1 round 3 merge:
+
+- **Delete the seeded tap-water rows BEFORE the JJM collector first runs
+  in production** (it is now in `vercel.json`). The tap-water page adds up
+  every row, so the 18 seeded `JJMStatus` rows (round numbers such as
+  "Mandya Taluk (aggregate)") would be counted twice next to the real
+  totals. After the dry run, with your approval:
+  `DELETE FROM "JJMStatus" WHERE source <> 'Jal Jeevan Mission dashboard (ejalshakti.gov.in) — district total, rural homes';`
+- **Other seeded rows waiting for your approval** (the pages already hide
+  or replace most of them):
+  - Courts: 44 hand-seeded `CourtStat` rows (no source, round numbers).
+    Delete them after the first court collector run, so the report card
+    has real rows to use:
+    `DELETE FROM "CourtStat" WHERE source IS NULL OR source NOT LIKE 'NJDG district dashboard%';`
+    The courtStat blocks should also come out of `prisma/seed*.ts`.
+  - Village councils: 8 seeded `GramPanchayat` rows with round numbers.
+    Hide or delete? No open source gives figures per panchayat.
+  - Schools: the hand-entered `School` rows. Keep them, or label them as
+    entered by hand?
+  - Tenders: 12 seeded tenders that closed in May. Delete or hide?
+  - Police (Hyderabad): 18 `CrimeStat` rows with source "NCRB Crime in
+    India Report (estimated)" and 12 `TrafficCollection` rows with source
+    "Estimated from Telangana Traffic Police reports". The page already
+    hides them; delete?
+- **NCRB crime rows that fail a cross-check.** These "NCRB" `CrimeStat`
+  rows do not match published figures:
+
+  | Figure | Database | Published |
+  |---|---|---|
+  | Bengaluru cyber crime, 2023 | 11,240 | 17,631 |
+  | Bengaluru cyber crime, 2022 | 9,870 | 9,940 |
+  | Bengaluru crimes against women, 2023 | 5,840 | 3,260 |
+  | Hyderabad cyber crime, 2022 | 2,100 (estimated row) | 4,436 |
+
+  Lucknow's rows are suspiciously round (18,500 and 17,200), and NCRB does
+  not publish figures for the New Delhi police district. Replace them from
+  NCRB's metropolitan-city tables, or remove them.
+- **Tender portals:** do the legal / robots check on the Maharashtra, Tamil
+  Nadu, West Bengal and Delhi e-procurement portals, and confirm the list
+  of bodies we follow (city corporations, Zilla Parishad Pune, BEST, MTC,
+  Kolkata Police, NDMC).
+- **Open-Meteo licence.** The weather forecast and the weather fallback use
+  Open-Meteo's free API. It is for non-commercial use (about 10,000 calls a
+  day) with CC BY 4.0 credit, which the weather page shows. Confirm the site
+  qualifies, or buy a plan.
+- **ForThePeople Jobs as a separate app?** The header's apps menu and the
+  footer now show Connect and Jobs as "coming soon" (not links). Today jobs
+  live in each district's "Exams & jobs" page. Confirm you want Jobs as its
+  own app, or I remove it.
+- **What should "New Delhi" cover?** The page lists the New Delhi and
+  Kasturba Nagar seats. Kasturba Nagar is inside the New Delhi Lok Sabha
+  seat but in the South East Delhi district. Choose: the Lok Sabha seat's
+  10 assembly seats, or the revenue district's own seats.
+- **Founding Builder label for a one-time gift.** Micah's one-time ₹50,000
+  gift is labelled "Founding Builder", which is sold as a monthly plan. The
+  new home support band and the supporters wall show the Founding Builder
+  first. Same question as in §4: keep the label or change it?
+- **Leaders:** run `npx tsx scripts/fix-leaders-2026-09.ts` (dry run), then
+  `--confirm`, then clear the caches (admin → Cache). The open questions
+  (Delhi Deputy CM title, West Bengal and Tamil Nadu Chief Secretaries,
+  vacant posts, news-written leader rows) are in
+  `docs/LEADERS-VERIFIED-2026-09.md`.
+- **Native-speaker review of the new Hindi and Kannada text** from this
+  round. All of it is a draft. Where it is:
+  - shared files (`hi.json`, `kn.json`): `header`, `footer2`, `lang`
+  - page files (`hi/`, `kn/`): `page_home`, `page_district-shell` (new),
+    `page_weather`, `page_courts`, `page_police` (crime-type names),
+    `page_support`
+  - new leader rows have no Kannada or Hindi names yet.
