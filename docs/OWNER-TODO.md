@@ -23,6 +23,12 @@ Done for you on 27 Sep (with your permission):
 - Neon: backup branch `backup-2026-09-27-pre-cleanup` (a full copy of the
   database from before the clean-ups below). It never auto-deletes; delete it
   in the Neon console once you are happy with the site.
+- Sentry: the site was sending errors to a Sentry project that no longer
+  exists, so Sentry showed nothing for months. `NEXT_PUBLIC_SENTRY_DSN` now
+  points at `forthepeoplein / javascript-nextjs` (all environments; takes
+  effect with the next deploy). Your Sentry organisation slug, needed for the
+  Sentry for Open Source form, is `forthepeoplein`
+  (https://forthepeoplein.sentry.io).
 - OpenRouter: key checked (works; $4.93 credit, $10/month key limit). The AI
   models were re-chosen from a test on 28 real headlines — see
   `docs/RUNBOOKS/ai-models.md`. Jev Router is first (free today).
@@ -43,14 +49,25 @@ Still yours:
 - **OpenRouter:** watch Activity once a month. Jev Router is free while it
   routes to a preview model; if it starts routing to paid models, the $10
   key limit caps the spend.
-- **Railway is still running the old collector container** (project
-  "ForthePeople", Pro plan: $20/month). Its logs on 27 Sep show it calling
-  data.gov.in and others every few seconds, getting 502/504 errors and saving
-  nothing. Everything it did moved to Vercel crons in April. It also
-  redeploys whenever `main` changes, and this branch removes its Dockerfiles.
-  **Stop or remove that service before merging this branch into `main`**, then
-  decide whether to keep the Railway plan (the `postgres-volume` there may be
-  the pre-April database; download a copy first if you want to keep it).
+- **Stop the old Railway collector** (project "ForthePeople", Pro plan
+  $20/month). It still runs the pre-April scheduler every few seconds. Its
+  weather job "succeeds", but into an old database — the live database got
+  nothing from it — and the rest fail with 502/504. Everything it did runs
+  as Vercel crons now. It redeploys whenever `main` changes, and this branch
+  removes its Dockerfile. My attempt to change it was blocked by the
+  permission system, so please do this before merging into `main`:
+  1. Railway → ForthePeople → service `forthepeople` → Deployments → the
+     Active deployment → ⋯ → **Remove** (stops it; the service stays).
+  2. Service → Settings → Source → **Disconnect** the GitHub repo (no more
+     auto-deploys from `main`).
+  3. Its variables hold copies of your database URL, admin password and AI
+     keys — delete the service once you are sure you don't need it.
+  4. `postgres-volume` (500 MB, us-west2) is attached to nothing; it may be
+     the pre-April database. Download a copy if you want it, then delete it.
+  5. Then downgrade or cancel the Railway Pro plan.
+  The database Railway writes weather into (its `DATABASE_URL`) is an old
+  one, not the live Neon project — if that old database still has a paid
+  plan somewhere, cancel it too.
 - **Cloudflare Project Galileo:** moving DNS from Hostinger to Cloudflare is
   your step (registrar login). Plan and day-1 settings are in vault note 33.
   Keep SSL on "Full (strict)" and never cache `/api/cron`, `/api/admin`,
