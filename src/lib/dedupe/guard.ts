@@ -781,7 +781,7 @@ async function runExams(db: Db, opts: GuardOptions): Promise<ExamReport> {
         );
       }
     }
-    if ("districtId" in plan.patch || "stateId" in plan.patch || "level" in plan.patch) report.rowsMoved++;
+    if (["districtId", "stateId", "level", "scope"].some((k) => k in plan.patch)) report.rowsMoved++;
     if ("status" in plan.patch) report.statusesNormalised++;
     if (opts.verbose && !plan.removeIds.length && Object.keys(plan.patch).length) {
       const parts = Object.entries(plan.patch).map(([k, v]) => `${k}: ${String((keep as Record<string, unknown>)[k] ?? "∅")} → ${v === null ? "∅" : String(v)}`);

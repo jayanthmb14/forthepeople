@@ -154,6 +154,8 @@ old Docker files are archived in `docs/archive/docker/`.
    - `health-score` recomputes district report cards (a stored grade expires
      after 7 days).
    - `verify-data` runs the double-check (item 7 below).
+   - `dedupe-data` runs the duplicate guard (item 9 below; not in
+     `vercel.json` yet).
    - `scrape-courts` reads NJDG; `scrape-jjm`, `scrape-schools`,
      `scrape-mgnrega` and `scrape-tenders` read the JJM dashboard, UDISE+,
      the NREGA "At a glance" page and the state e-procurement portals.
@@ -240,6 +242,18 @@ old Docker files are archived in `docs/archive/docker/`.
    - `src/components/weather/` draws it (`ForecastCards`, `ForecastStrip`,
      `ForecastDaySheet`, `WeatherArt`). `src/components/district/TodayWeatherTile.tsx`
      is built for the overview but not mounted yet.
+
+9. **Duplicates** — `src/lib/dedupe/`:
+   - `keys.ts`: when two rows are the same thing (canonical names, exam
+     keys, exam status and election-type sets, URL / PIN / constituency
+     keys, a similarity score). `match.ts`: `findSameNamed()`, the lookup
+     every named-row writer does before it creates.
+   - `exam-rules.ts`: government organisers only; one row per exam per
+     place (national: no state or district; state: no district).
+   - `guard.ts` + cron `dedupe-data`: exact duplicates merged
+     automatically, conflicts and similar names queued once in
+     `NewsActionQueue` (dataType `verify-duplicates`).
+   - `scripts/dedupe-2026-09.ts`: the one-time clean-up with the same guard.
 
 ## 4. AI
 
@@ -368,7 +382,8 @@ src/components/   UI by area: district/ (the kit: ui.tsx, visuals.tsx, DetailShe
 src/hooks/        React Query hooks for client components
 src/lib/          everything shared: db, redis, cache, ai-provider, ai-models, admin-auth,
                   tenders, validators; verification/ (double-check), weather/
-                  (forecast), courts/ (NJDG snapshot)
+                  (forecast), courts/ (NJDG snapshot), dedupe/ (canonical keys,
+                  duplicate guard)
 src/scraper/      collection job modules + parsers (lib/); the cron routes run news,
                   crops, weather, dams, alerts, exams, budget, AI analysis, courts,
                   JJM, schools, MGNREGA and tenders; the rest only from the local

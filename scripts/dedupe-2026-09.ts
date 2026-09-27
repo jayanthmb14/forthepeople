@@ -52,7 +52,7 @@ function print(report: GuardReport, slugOf: Map<string, string>) {
   if (ex) {
     line(`\n── GovernmentExam: ${ex.scanned} rows ──`);
     line(`  ${ex.groupsMerged} exams stored more than once → one row each (${ex.rowsRemoved} copies ${verb}removed)`);
-    line(`  ${ex.rowsMoved} rows ${verb}moved to their one national / state / district place`);
+    line(`  ${ex.rowsMoved} kept rows ${verb}moved to (or relabelled with) their one national / state / district place`);
     line(`  ${ex.statusesNormalised} statuses ${verb}rewritten in the canonical set`);
     for (const e of ex.examples) line(`    • ${e}`);
     if (ex.rewritten.length) {
