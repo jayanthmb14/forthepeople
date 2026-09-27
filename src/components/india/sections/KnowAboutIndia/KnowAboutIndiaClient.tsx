@@ -21,7 +21,6 @@
 import Link from "next/link";
 import styles from "./styles.module.css";
 import { SectionWatermark } from "../SectionWatermark";
-import { SectionRightRailDots } from "../SectionRightRailDots";
 import { BandNumber, BandVisibleProvider, useBandText, useBandVisible } from "../band-kit";
 import { useFormat } from "@/i18n/client";
 import {
@@ -282,11 +281,10 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
           </div>
 
           {/* RIGHT — drafting timeline + notable articles */}
-          <div className={styles.rightColumn} data-ftp-right-rail="1">
+          <div className={styles.rightColumn}>
             <DraftingTimelineCard locale={locale} text={text} />
             <NotableArticlesCard locale={locale} data={data} text={text} />
           </div>
-          <SectionRightRailDots count={2} accent="#2E2A6D" />
         </div>
       </section>
     </BandVisibleProvider>

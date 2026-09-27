@@ -1,12 +1,15 @@
 /**
- * /[locale]/india layout — fluid responsive container.
+ * /[locale]/india layout — responsive container.
  *
- * Wraps every India route (/, /category/<slug>, /<moduleSlug>, /updates)
- * with a max-width container that grows with the viewport up to 1600px.
- * Per file 47 §4.6.2: replaces the per-page max-w-1180px clamp.
+ * Wraps every India route (/, /category/<slug>, /<moduleSlug>, /updates).
+ * v4.1: capped at the kit's 1320 px frame (docs/LAYOUT.md) instead of
+ * 1600 px, so the sticky breadcrumb lines up with the page content and
+ * wide screens do not stretch the bands. Each page puts its content in
+ * the kit's ModulePage frame (phone 16 px, tablet 20 px, laptop/PC 28 px
+ * side gutters).
  *
- * Inner pages can still apply tighter `max-width: 70ch` on text-heavy
- * sections (paragraph prose, taglines) so line lengths stay readable.
+ * Inner pages can still apply tighter `max-width: 72ch` (`.ftp-prose`) on
+ * text-heavy blocks so line lengths stay readable.
  */
 
 import * as React from "react";
@@ -17,7 +20,7 @@ export default function IndiaLayout({ children }: { children: React.ReactNode })
       style={{
         margin: "0 auto",
         width: "100%",
-        maxWidth: "min(96vw, 1600px)",
+        maxWidth: 1320,
       }}
     >
       {children}

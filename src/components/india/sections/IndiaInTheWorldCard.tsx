@@ -15,10 +15,15 @@
  * TODO Phase 5+: populate the missing 16 rankings to reach the full 24
  * tracked rankings. Until then the toggle button + footer text honestly
  * declare "8 of 24" / "All 24 (8 active)" so the affordance is in place.
+ *
+ * v4.1: every row is a button (44 px+) that opens a DetailSheet with the
+ * rank, what it counts, the change since the last ranking, who published
+ * it and the year. Sizes are at least 12 px.
  */
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import {
   Award,
   Film,
@@ -148,7 +153,7 @@ function TrendNode({ movement, t }: { movement: Ranking["movement"]; t: Tr }) {
           fontWeight: 500,
           fontFamily: "var(--ftp-font-sans)",
           fontVariantNumeric: "tabular-nums",
-          fontSize: "11px",
+          fontSize: "12px",
         }}
       >
         {t("up", { from: movement.from ?? 0 })}
@@ -163,7 +168,7 @@ function TrendNode({ movement, t }: { movement: Ranking["movement"]; t: Tr }) {
           fontWeight: 500,
           fontFamily: "var(--ftp-font-sans)",
           fontVariantNumeric: "tabular-nums",
-          fontSize: "11px",
+          fontSize: "12px",
         }}
       >
         {t("down", { from: movement.from ?? 0 })}
@@ -178,7 +183,7 @@ function TrendNode({ movement, t }: { movement: Ranking["movement"]; t: Tr }) {
           background: "rgba(83, 74, 183, 0.10)",
           padding: "1px 6px",
           borderRadius: "999px",
-          fontSize: "11px",
+          fontSize: "12px",
           fontWeight: 600,
           fontFamily: "var(--ftp-font-sans)",
         }}
@@ -192,7 +197,7 @@ function TrendNode({ movement, t }: { movement: Ranking["movement"]; t: Tr }) {
       style={{
         color: "var(--color-text-tertiary)",
         fontFamily: "var(--ftp-font-sans)",
-        fontSize: "11px",
+        fontSize: "12px",
       }}
     >
       {t("stable")}
@@ -200,26 +205,54 @@ function TrendNode({ movement, t }: { movement: Ranking["movement"]; t: Tr }) {
   );
 }
 
-function RankRow({ ranking, t }: { ranking: Ranking; t: Tr }) {
+function rankTitle(ranking: Ranking, t: Tr): string {
+  return t.has(`titles.${ranking.category}`) ? t(`titles.${ranking.category}`) : ranking.title;
+}
+
+function rankNote(ranking: Ranking, t: Tr): string | null {
+  if (!ranking.annotation) return null;
+  return t.has(`notes.${ranking.category}`) ? t(`notes.${ranking.category}`) : ranking.annotation;
+}
+
+function moveText(movement: Ranking["movement"], t: Tr): string {
+  if (movement.kind === "up") return t("up", { from: movement.from ?? 0 });
+  if (movement.kind === "down") return t("down", { from: movement.from ?? 0 });
+  if (movement.kind === "new") return t("new");
+  return t("stable");
+}
+
+const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
+
+function RankRow({ ranking, t, onOpen }: { ranking: Ranking; t: Tr; onOpen: () => void }) {
   const Icon = ICON_BY_CATEGORY[ranking.category] ?? Trophy;
-  const title = t.has(`titles.${ranking.category}`) ? t(`titles.${ranking.category}`) : ranking.title;
-  const note = ranking.annotation ? (t.has(`notes.${ranking.category}`) ? t(`notes.${ranking.category}`) : ranking.annotation) : null;
+  const title = rankTitle(ranking, t);
+  const note = rankNote(ranking, t);
   const numColor = medalNumColor(ranking.rank);
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onOpen}
       className={rowClass(ranking.rank)}
+      aria-label={t("open", { title })}
       style={{
         background: rowBackground(ranking.rank),
-        padding: "9px 14px 9px 10px",
+        padding: "10px 14px 10px 10px",
         display: "grid",
         gridTemplateColumns: "36px minmax(0, 1fr) auto",
         gap: "10px",
         alignItems: "center",
         transition: "background 150ms",
+        width: "100%",
+        minHeight: 56,
+        border: 0,
+        textAlign: "start",
+        font: "inherit",
+        color: "inherit",
+        cursor: "pointer",
       }}
     >
-      <div
+      <span
         style={{
           width: "30px",
           height: "30px",
@@ -246,19 +279,19 @@ function RankRow({ ranking, t }: { ranking: Ranking; t: Tr }) {
         >
           {ranking.rank}
         </span>
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <Icon size={12} aria-hidden style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} />
-          <span style={{ fontSize: "13px", fontWeight: 600, lineHeight: 1.3 }}>
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <Icon size={13} aria-hidden style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} />
+          <span style={{ fontSize: "14px", fontWeight: 600, lineHeight: 1.3 }}>
             <span className="sr-only">{t("rankSr", { rank: ranking.rank })} </span>
             {title}
             {note && (
               <span
                 style={{
-                  fontSize: "11px",
-                  color: "var(--color-text-tertiary)",
-                  marginLeft: "6px",
+                  fontSize: "12px",
+                  color: "var(--color-text-secondary)",
+                  marginInlineStart: "6px",
                   fontWeight: 400,
                 }}
               >
@@ -266,24 +299,25 @@ function RankRow({ ranking, t }: { ranking: Ranking; t: Tr }) {
               </span>
             )}
           </span>
-        </div>
-        <div
+        </span>
+        <span
           style={{
-            fontSize: "11px",
-            lineHeight: "15px",
-            color: "var(--color-text-tertiary)",
+            display: "block",
+            fontSize: "12px",
+            lineHeight: "16px",
+            color: "var(--color-text-secondary)",
             marginTop: "2px",
             fontFamily: "var(--ftp-font-sans)",
             fontVariantNumeric: "tabular-nums",
           }}
         >
           {t("source", { source: ranking.source, year: ranking.year })}
-        </div>
-      </div>
-      <div style={{ textAlign: "end" }}>
+        </span>
+      </span>
+      <span style={{ textAlign: "end" }}>
         <TrendNode movement={ranking.movement} t={t} />
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -297,6 +331,8 @@ export function IndiaInTheWorldCard() {
   const visibleRankings = expanded ? rankings : rankings.slice(0, collapsedCount);
   const footerCount = expanded ? t("allShown", { total }) : t("someShown", { shown: collapsedCount, total });
   const toggleLabel = expanded ? t("showFewer") : t("viewAll");
+  const [open, setOpen] = React.useState<Ranking | null>(null);
+  const close = React.useCallback(() => setOpen(null), []);
 
   return (
     <section
@@ -364,14 +400,14 @@ export function IndiaInTheWorldCard() {
         className="india-rankings-grid"
       >
         {visibleRankings.map((r) => (
-          <RankRow key={`${r.category}-${r.rank}`} ranking={r} t={t} />
+          <RankRow key={`${r.category}-${r.rank}`} ranking={r} t={t} onOpen={() => setOpen(r)} />
         ))}
       </div>
 
       <div
         style={{
           marginTop: "12px",
-          fontSize: "11px",
+          fontSize: "12px",
           color: "var(--color-text-tertiary)",
           display: "flex",
           justifyContent: "space-between",
@@ -386,9 +422,10 @@ export function IndiaInTheWorldCard() {
           style={{
             background: "transparent",
             border: "none",
-            padding: "2px 4px",
+            padding: "0 8px",
+            minHeight: 44,
             color: "var(--color-text-info)",
-            fontSize: "11px",
+            fontSize: "12px",
             cursor: "pointer",
             transition: "color 150ms",
           }}
@@ -402,6 +439,44 @@ export function IndiaInTheWorldCard() {
           {toggleLabel}
         </button>
       </div>
+
+      <DetailSheet
+        open={open !== null}
+        onClose={close}
+        title={open ? rankTitle(open, t) : ""}
+        subtitle={open ? t("sheet.sub", { rank: open.rank }) : undefined}
+        emoji={open ? MEDAL_EMOJI[open.rank - 1] ?? "🌏" : undefined}
+        hueClassName="ftp-hue-amber"
+      >
+        {open ? (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 8,
+                padding: "14px 16px",
+                borderRadius: 14,
+                background: "var(--hue-tint)",
+              }}
+            >
+              <span className="ftp-bignum" style={{ fontSize: 40, lineHeight: 1, color: "var(--hue-deep)" }}>
+                #{open.rank}
+              </span>
+              <span style={{ fontSize: 15, color: "var(--ftp-text-2)" }}>{t("sheet.inWorld")}</span>
+            </div>
+            <DetailList
+              rows={[
+                { emoji: "🔢", label: t("sheet.figure"), value: rankNote(open, t) },
+                { emoji: open.movement.kind === "down" ? "📉" : "📈", label: t("sheet.change"), value: moveText(open.movement, t) },
+                { emoji: "🏛️", label: t("sheet.source"), value: open.source },
+                { emoji: "📅", label: t("sheet.year"), value: open.year },
+              ]}
+            />
+            <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("sheet.note")}</p>
+          </>
+        ) : null}
+      </DetailSheet>
 
       <style>{`
         .ftp-rank-row--gold:hover {

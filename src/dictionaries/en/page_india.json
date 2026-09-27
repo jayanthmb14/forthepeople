@@ -562,6 +562,16 @@
       "railway": "14 lakh staff",
       "internet": "90 crore users",
       "renewable": "191 GW"
+    },
+    "open": "Details: {title}",
+    "sheet": {
+      "sub": "India is #{rank} in the world",
+      "inWorld": "in the world",
+      "figure": "In numbers",
+      "change": "Change",
+      "source": "Published by",
+      "year": "Year",
+      "note": "Ranks compare countries on one measure only. Each rank is as published by the body named here, for the year shown."
     }
   },
   "langs": {
@@ -1107,5 +1117,8 @@
         }
       }
     }
+  },
+  "overview": {
+    "explain": "India has about {pop} billion people living in {states} states and {uts} union territories. This page brings {total} topics about the country together; {live} of them are live, and every figure shows its date and source."
   }
 }
