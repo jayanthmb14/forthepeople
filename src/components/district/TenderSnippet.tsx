@@ -3,7 +3,10 @@
  *
  * Shown only where tenders are really tracked for the district (v5):
  *   LIVE   — "Tracking": open tenders, closing soon, next deadline
- *   STALE  — "Update pending": the same numbers, plainly marked
+ *   STALE  — "Update pending": NO numbers (Sept 2026 audit: "0 open tenders ·
+ *            As of 19 Apr" paired today's count of April's rows — all closed
+ *            by now — with April's date, true for neither day), only a line
+ *            saying the list is not current, and its date
  * LOCKED (not switched on for this district) and NO_DATA render nothing —
  * the old "Locked / coming soon" card is gone; the sidebar, drawer and
  * topic index mark the module "coming soon" instead.
@@ -67,19 +70,25 @@ export default function TenderSnippet({
         </Link>
       </div>
 
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-        <span className="ftp-num" style={{ fontSize: 22, lineHeight: "28px", color: "var(--ftp-text)" }}>
-          {f.number(data.live.count)}
-        </span>
-        <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{t("tenders.open", { n: data.live.count })}</span>
-        {data.closing48hCount > 0 && (
-          <span style={{ fontSize: 13, color: "var(--ftp-danger)" }}>
-            · {t("tenders.closing", { n: f.number(data.closing48hCount) })}
-          </span>
-        )}
-      </div>
+      {status === "STALE" && (
+        <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "0 0 8px" }}>{t("tenders.staleNoCount")}</p>
+      )}
 
-      {data.nextDeadline && (
+      {status === "LIVE" && (
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+          <span className="ftp-num" style={{ fontSize: 22, lineHeight: "28px", color: "var(--ftp-text)" }}>
+            {f.number(data.live.count)}
+          </span>
+          <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{t("tenders.open", { n: data.live.count })}</span>
+          {data.closing48hCount > 0 && (
+            <span style={{ fontSize: 13, color: "var(--ftp-danger)" }}>
+              · {t("tenders.closing", { n: f.number(data.closing48hCount) })}
+            </span>
+          )}
+        </div>
+      )}
+
+      {status === "LIVE" && data.nextDeadline && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", marginBottom: 8 }}>
           <Clock size={12} aria-hidden style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
