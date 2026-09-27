@@ -2,7 +2,10 @@
 
 // NITI Aayog Multidimensional Poverty Index for the district, as a row of
 // kit StatTiles (headcount, intensity, MPI value, rank), each with an
-// emoji chip; the tiles take the page hue (Design v4).
+// emoji chip; the tiles take the page hue (Design v4). Words come from
+// page_population; numbers follow the page language.
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { StatStrip, StatTile } from "@/components/district/ui";
 import { isNonEmptyObject, type EconomicClassData, type ProfileLike } from "../types";
 import { ChartEmpty, ChartNote } from "../chartKit";
@@ -18,40 +21,41 @@ export function canRenderMPIIndicatorCard(profile: ProfileLike | null | undefine
 }
 
 export default function MPIIndicatorCard({ economicClass }: Props) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
+  const fixed = (v: number, d: number) => f.number(v, { minimumFractionDigits: d, maximumFractionDigits: d });
   if (
     !economicClass ||
     (typeof economicClass.mpiHeadcount !== "number" && typeof economicClass.mpi !== "number")
   ) {
-    return (
-      <ChartEmpty message="The Multidimensional Poverty Index is not yet published at district level for this district." />
-    );
+    return <ChartEmpty message={t("mpiEmpty")} />;
   }
 
   // Build only the tiles we have numbers for (never show a fake zero).
   const tiles: React.ReactNode[] = [];
   if (typeof economicClass.mpiHeadcount === "number") {
     tiles.push(
-      <StatTile key="headcount" emoji="👥" label="MPI headcount" value={economicClass.mpiHeadcount.toFixed(2)} unit="%" sub="of population is poor" />,
+      <StatTile key="headcount" emoji="👥" label={t("mpiHeadcount")} value={fixed(economicClass.mpiHeadcount, 2)} unit="%" sub={t("mpiHeadcountSub")} />,
     );
   }
   if (typeof economicClass.mpiIntensity === "number") {
     tiles.push(
-      <StatTile key="intensity" emoji="📉" label="Intensity" value={economicClass.mpiIntensity.toFixed(2)} unit="%" sub="average deprivation" />,
+      <StatTile key="intensity" emoji="📉" label={t("mpiIntensity")} value={fixed(economicClass.mpiIntensity, 2)} unit="%" sub={t("mpiIntensitySub")} />,
     );
   }
   if (typeof economicClass.mpi === "number") {
-    tiles.push(<StatTile key="mpi" emoji="🧮" label="MPI value" value={economicClass.mpi.toFixed(4)} sub="composite" />);
+    tiles.push(<StatTile key="mpi" emoji="🧮" label={t("mpiValue")} value={fixed(economicClass.mpi, 4)} sub={t("mpiValueSub")} />);
   }
   if (typeof economicClass.districtRankInState === "number") {
     tiles.push(
-      <StatTile key="rank" emoji="🏅" label="District rank" value={`#${economicClass.districtRankInState}`} sub="within state" />,
+      <StatTile key="rank" emoji="🏅" label={t("mpiRank")} value={`#${f.number(economicClass.districtRankInState)}`} sub={t("mpiRankSub")} />,
     );
   }
 
   return (
     <div>
       <StatStrip cols={Math.min(4, Math.max(2, tiles.length)) as 2 | 3 | 4}>{tiles}</StatStrip>
-      {economicClass.source && <ChartNote>Source: {economicClass.source}</ChartNote>}
+      {economicClass.source && <ChartNote>{t("mpiSource", { source: economicClass.source })}</ChartNote>}
     </div>
   );
 }

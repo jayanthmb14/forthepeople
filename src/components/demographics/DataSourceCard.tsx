@@ -1,13 +1,16 @@
 "use client";
 
 // Source line at the bottom of every Population chart card:
-//   [Source name ↗] [Reference year 2011] [age pill] [licence] [Retrieved 2026-04-23] [Boundary …]
+//   [Source name ↗] [Reference year 2011] [age pill] [licence] [Retrieved 23 Apr 2026] [Boundary …]
 // Design v4: separate small items with space between them (no middle-dot
 // string). A hairline border separates it from the chart above. The source
 // name is a pill-style link like the kit's SourcePill, composed here because
 // SourcePill never wraps and long Census source names must wrap at 375 px
-// instead of scrolling sideways.
+// instead of scrolling sideways. Words: page_population.source.*; the
+// retrieval date follows the page language.
 import { ExternalLink } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import DataAgeChip from "./DataAgeChip";
 
 interface DataSourceCardProps {
@@ -17,10 +20,6 @@ interface DataSourceCardProps {
   referenceYear: number;
   retrievedAt: Date;
   boundaryVintage?: string;
-}
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 /** The source name as a bordered pill that may wrap onto two lines. */
@@ -46,6 +45,9 @@ export default function DataSourceCard({
   retrievedAt,
   boundaryVintage,
 }: DataSourceCardProps) {
+  const t = useTranslations("page_population.source");
+  const f = useFormat();
+  const num = (c: React.ReactNode) => <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{c}</span>;
   return (
     <div
       style={{
@@ -61,7 +63,7 @@ export default function DataSourceCard({
         gap: "6px 12px",
       }}
     >
-      <span className="sr-only">Source:</span>
+      <span className="sr-only">{t("sr")}</span>
       {sourceUrl ? (
         <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={SOURCE_PILL}>
           {source}
@@ -70,15 +72,16 @@ export default function DataSourceCard({
       ) : (
         <span style={SOURCE_PILL}>{source}</span>
       )}
-      <span>
-        Reference year <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{referenceYear}</span>
-      </span>
+      <span>{t.rich("referenceYear", { year: String(referenceYear), n: num })}</span>
       <DataAgeChip referenceYear={referenceYear} />
-      {license && <span title={`Licence: ${license}`}>{license}</span>}
-      <span>
-        Retrieved <span className="ftp-num" suppressHydrationWarning>{formatDate(retrievedAt)}</span>
+      {license && <span title={t("licence", { licence: license })}>{license}</span>}
+      <span suppressHydrationWarning>
+        {t.rich("retrieved", {
+          date: f.date(retrievedAt, { day: "numeric", month: "short", year: "numeric" }),
+          n: (c) => <span className="ftp-num">{c}</span>,
+        })}
       </span>
-      {boundaryVintage && <span>Boundary: {boundaryVintage}</span>}
+      {boundaryVintage && <span>{t("boundary", { v: boundaryVintage })}</span>}
     </div>
   );
 }

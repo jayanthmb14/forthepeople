@@ -4,6 +4,8 @@
 // colour-blind-safe Okabe-Ito palette (../types); "Non-workers" is a
 // neutral token. Chrome comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import {
   OKABE_ITO,
   isNonEmptyObject,
@@ -29,13 +31,16 @@ export function canRenderEmploymentStackedBar(
 }
 
 export default function EmploymentStackedBar({ employment }: Props) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
+  const pct = (v: number, d = 2) => f.number(v / 100, { style: "percent", minimumFractionDigits: d, maximumFractionDigits: d });
   if (!employment) {
-    return <ChartEmpty message="Employment data is not available for this district yet." />;
+    return <ChartEmpty message={t("employmentEmpty")} />;
   }
 
   const data = [
     {
-      name: "Working-age pop.",
+      name: t("employmentAxis"),
       mainWorkers: employment.mainWorkersPct ?? 0,
       marginalWorkers: employment.marginalWorkersPct ?? 0,
       nonWorkers: employment.nonWorkersPct ?? 0,
@@ -47,22 +52,22 @@ export default function EmploymentStackedBar({ employment }: Props) {
       <div style={{ width: "100%", height: 180 }}>
         <ResponsiveContainer>
           <BarChart data={data} layout="vertical" margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
-            <YAxis type="category" dataKey="name" width={110} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
-            <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => pct(v, 0)} />
+            <YAxis type="category" dataKey="name" width={70} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
+            <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? pct(v) : "—")} />
             <Legend wrapperStyle={LEGEND_STYLE} />
-            <Bar dataKey="mainWorkers" name="Main workers" stackId="w" fill={OKABE_ITO.bluishGreen} radius={[6, 0, 0, 6]} />
-            <Bar dataKey="marginalWorkers" name="Marginal workers" stackId="w" fill={OKABE_ITO.yellow} />
-            <Bar dataKey="nonWorkers" name="Non-workers" stackId="w" fill={NEUTRAL_SERIES.mid} radius={[0, 6, 6, 0]} />
+            <Bar dataKey="mainWorkers" name={t("employment.main")} stackId="w" fill={OKABE_ITO.bluishGreen} radius={[6, 0, 0, 6]} />
+            <Bar dataKey="marginalWorkers" name={t("employment.marginal")} stackId="w" fill={OKABE_ITO.yellow} />
+            <Bar dataKey="nonWorkers" name={t("employment.non")} stackId="w" fill={NEUTRAL_SERIES.mid} radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       {typeof employment.workerParticipationRate === "number" && (
         <ChartNote>
-          Worker participation rate (WPR):{" "}
-          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
-            {employment.workerParticipationRate.toFixed(2)}%
-          </span>
+          {t.rich("wprNote", {
+            v: pct(employment.workerParticipationRate),
+            n: (c) => <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{c}</span>,
+          })}
         </ChartNote>
       )}
     </div>

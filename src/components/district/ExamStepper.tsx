@@ -12,9 +12,14 @@
 // The exam's status picks the colour of the connector line after the
 // next upcoming step. Design v4: the page hue for "coming up", semantic
 // tones for done / warning, tabular dates.
+//
+// i18n: step names, "TBA", the countdown and the Apply button come from
+// page_exams.stepper; dates go through useFormat() (the page language).
 // ═══════════════════════════════════════════════════════════
 "use client";
+import { useTranslations } from "next-intl";
 import { Check, Circle, ExternalLink } from "lucide-react";
+import { useFormat } from "@/i18n/client";
 
 interface ExamStepperProps {
   status: string;
@@ -30,24 +35,8 @@ interface ExamStepperProps {
 
 type MilestoneState = "done" | "upcoming" | "tba";
 
-const STEPS: Array<{ key: string; label: string }> = [
-  { key: "notification", label: "Notification" },
-  { key: "apply",        label: "Applications" },
-  { key: "admitCard",    label: "Admit card" },
-  { key: "exam",         label: "Exam" },
-  { key: "result",       label: "Result" },
-];
-
-function fmtDate(d: string | null | undefined): string {
-  if (!d) return "";
-  try {
-    return new Date(d).toLocaleDateString("en-IN", {
-      day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
-    });
-  } catch {
-    return "";
-  }
-}
+/** Milestones in order; each label is page_exams.stepper.<key>. */
+const STEPS = ["notification", "apply", "admitCard", "exam", "result"] as const;
 
 function daysBetween(future: string): number | null {
   try {
@@ -90,6 +79,12 @@ const STATUS_ACCENT: Record<string, string> = {
 
 export default function ExamStepper(props: ExamStepperProps) {
   const { status, applyUrl } = props;
+  const t = useTranslations("page_exams.stepper");
+  const f = useFormat();
+  const fmtDate = (d: string | null | undefined): string => {
+    if (!d || Number.isNaN(new Date(d).getTime())) return "";
+    return f.date(d, { day: "numeric", month: "short", year: "numeric" });
+  };
   const accent = STATUS_ACCENT[status] ?? "var(--hue)";
 
   const milestoneDates: Record<string, string | null | undefined> = {
@@ -107,7 +102,7 @@ export default function ExamStepper(props: ExamStepperProps) {
     // Scrolls sideways INSIDE its own box on narrow phones, so the page
     // itself never scrolls horizontally.
     <ol
-      aria-label="Exam timeline"
+      aria-label={t("aria")}
       style={{
         display: "flex",
         alignItems: "stretch",
@@ -122,7 +117,8 @@ export default function ExamStepper(props: ExamStepperProps) {
       }}
     >
       {STEPS.map((step, idx) => {
-        const date = milestoneDates[step.key];
+        const date = milestoneDates[step];
+        const stepLabel = t(step);
         const s = stateFor(date);
         const c = COLORS[s];
 
@@ -133,9 +129,9 @@ export default function ExamStepper(props: ExamStepperProps) {
         else if (s === "upcoming") {
           const days = date ? daysBetween(date) : null;
           subtitle = fmtDate(date);
-          if (days != null && days >= 0) countdown = `in ${days} day${days !== 1 ? "s" : ""}`;
+          if (days != null && days >= 0) countdown = t("inDays", { n: days });
         } else {
-          subtitle = "TBA";
+          subtitle = t("tba");
         }
 
         const connectorColor = idx < STEPS.length - 1
@@ -143,12 +139,12 @@ export default function ExamStepper(props: ExamStepperProps) {
           : undefined;
 
         return (
-          <li key={step.key} style={{ display: "flex", alignItems: "stretch", flex: "1 0 auto", minWidth: 120 }}>
+          <li key={step} style={{ display: "flex", alignItems: "stretch", flex: "1 0 auto", minWidth: 120 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 80, flex: 1 }}>
               {/* Marker */}
               <div
                 role="img"
-                aria-label={`${step.label}: ${s === "tba" ? "date not announced" : s === "done" ? "completed" : "upcoming"}`}
+                aria-label={t(s === "tba" ? "tbaAria" : s === "done" ? "done" : "upcoming", { step: stepLabel })}
                 style={{
                   width: 28,
                   height: 28,
@@ -169,7 +165,7 @@ export default function ExamStepper(props: ExamStepperProps) {
               </div>
               {/* Label */}
               <div style={{ fontSize: 11, lineHeight: "16px", fontWeight: 500, color: "var(--ftp-text)", marginTop: 6, textAlign: "center" }}>
-                {step.label}
+                {stepLabel}
               </div>
               {/* Date / TBA */}
               <div
@@ -192,7 +188,7 @@ export default function ExamStepper(props: ExamStepperProps) {
                 </div>
               )}
               {/* Apply button sits under the Applications step when still open */}
-              {step.key === "apply" && isApplicationsOpen && applyUrl && (
+              {step === "apply" && isApplicationsOpen && applyUrl && (
                 <a
                   href={applyUrl.startsWith("http") ? applyUrl : `https://${applyUrl}`}
                   target="_blank"
@@ -213,7 +209,7 @@ export default function ExamStepper(props: ExamStepperProps) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Apply
+                  {t("applyButton")}
                   <ExternalLink size={12} aria-hidden />
                 </a>
               )}

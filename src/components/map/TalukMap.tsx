@@ -8,8 +8,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
 import { useTranslations } from "next-intl";
+import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
 import { MapTooltip, tint } from "@/components/map/mapTheme";
 import type { Hue } from "@/lib/design/hues";
 
@@ -92,6 +92,8 @@ interface TalukMapProps {
   state: string;
   district: string;
   taluks?: Array<{ slug: string; name: string; population?: number; villageCount?: number }>;
+  /** The sub-district word in the page language ("taluk", "ತಾಲೂಕು"), for the hint. */
+  unitLabel: string;
 }
 
 // Compute centroid of a coordinate ring for label placement
@@ -101,13 +103,14 @@ function ringCentroid(ring: number[][]): [number, number] {
   return [x / ring.length, y / ring.length];
 }
 
-export default function TalukMap({ locale, state, district, taluks = [] }: TalukMapProps) {
+export default function TalukMap({ locale, state, district, taluks = [], unitLabel }: TalukMapProps) {
   const router = useRouter();
+  const t = useTranslations("page_map");
   const [tooltip, setTooltip] = useState<{ name: string; x: number; y: number } | null>(null);
 
   const proj = DISTRICT_PROJECTION[district] ?? DEFAULT_PROJECTION;
 
-  const t = useTranslations("map");
+  const tMap = useTranslations("map");
   return (
     <div style={{ position: "relative", width: "100%", minHeight: 300 }}>
       <ComposableMap
@@ -204,7 +207,7 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
         }}
       >
         <span className="ftp-emoji" aria-hidden>👆</span>
-        {t("clickTaluk")}
+        {t("mapHint", { unit: unitLabel })}
       </div>
 
       {/* The taluk files in public/geo are simple boxes, not surveyed
@@ -217,7 +220,7 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
           borderRadius: 6, padding: "2px 6px", pointerEvents: "none",
         }}
       >
-        {t("schematic")}
+        {tMap("schematic")}
       </p>
     </div>
   );

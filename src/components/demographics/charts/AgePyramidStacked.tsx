@@ -4,6 +4,8 @@
 // bars. One series, so it is drawn in the page hue (Design v4 recharts
 // theme: ChartGradients, rounded bar ends); chrome comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { ChartGradients } from "@/components/district/visuals";
 import { type ProfileLike } from "../types";
 import { AXIS_LINE, AXIS_TICK, CATEGORY_TICK, ChartEmpty, TOOLTIP_PROPS } from "../chartKit";
@@ -35,10 +37,12 @@ export function ageRows({ pop_0_6, pop_7_14, pop_15_59, pop_60_plus }: Props): {
 }
 
 export default function AgePyramidStacked(props: Props) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
   const rows = ageRows(props);
 
   if (rows.length === 0) {
-    return <ChartEmpty message="Age-band data is not available for this district yet." />;
+    return <ChartEmpty message={t("ageEmpty")} />;
   }
 
   return (
@@ -52,14 +56,14 @@ export default function AgePyramidStacked(props: Props) {
             tick={AXIS_TICK}
             axisLine={AXIS_LINE}
             tickLine={AXIS_LINE}
-            tickFormatter={(v) => new Intl.NumberFormat("en-IN").format(v)}
+            tickFormatter={(v) => f.number(v)}
           />
           <YAxis type="category" dataKey="band" width={60} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} />
           <Tooltip
             {...TOOLTIP_PROPS}
-            formatter={(v) => (typeof v === "number" ? new Intl.NumberFormat("en-IN").format(v) : "—")}
+            formatter={(v) => (typeof v === "number" ? f.number(v) : "—")}
           />
-          <Bar dataKey="value" name="Population" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
+          <Bar dataKey="value" name={t("statPopulation")} fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
