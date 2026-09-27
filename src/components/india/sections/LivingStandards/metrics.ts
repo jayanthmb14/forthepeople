@@ -31,7 +31,10 @@ export const LIVING_SPEC: BandSpec = {
     moduleSlug: H,
     emoji: "💗",
     headline: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1 },
-    growth: { ref: { moduleSlug: H, metricKey: "life_expectancy_change_1990" }, fmt: "living.growth" },
+    // No growth line: the "+14 years since 1990" row is on the World Bank basis
+    // (58.6 → 72.2), and under the SRS headline (70.6) it implied a 1990 value
+    // (56.6) that neither source gives (Sept 2026 audit). The gain stays on the
+    // health module page as its own figure with its own source.
     callout: { value: { ref: { moduleSlug: H, metricKey: "life_expectancy_target_2030" }, fmt: "living.fmt.yrs" }, sub: "calloutSub" },
     cells: [
       { key: "lifeExp", value: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1 }, sub: { text: "sub" } },
