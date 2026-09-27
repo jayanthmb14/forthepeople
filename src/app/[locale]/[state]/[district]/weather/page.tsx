@@ -222,6 +222,9 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
   // ── Which "right now": our stored reading when fresh (≤ 3 h), else the
   //    live value from the forecast service, else our old reading (grey). ──
   const choice = now > 0 ? chooseCurrent(latest?.recordedAt, live, now) : "none";
+  // While the forecast is still loading, don't flash our old reading (and
+  // the stale notice) for a second before the live value replaces it.
+  const waitingForLive = fLoading && choice === "storedOld";
   let nowView: NowView | null = null;
   if (choice === "live" && live && primary) {
     const src = FORECAST_SOURCES[primary.source];
@@ -237,7 +240,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       night: live.isDay === false,
       source: { label: src.label, href: src.url },
     };
-  } else if ((choice === "stored" || choice === "storedOld") && latest) {
+  } else if ((choice === "stored" || (choice === "storedOld" && !waitingForLive)) && latest) {
     nowView = {
       origin: choice,
       time: latest.recordedAt,
@@ -431,7 +434,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                 {nowView.feels !== null ? <> {t.rich("explain.feelsNow", { feels: deg(nowView.feels), b: bold })}</> : null}{" "}
               </>
             )}
-            {!showingLive && latest && explainKey && (
+            {!showingLive && !waitingForLive && latest && explainKey && (
               <>
                 {t.rich(`explain.${explainKey}`, { temp: hasTemp ? deg(latest.temperature as number) : "", cond: latestCond ?? "", when: when(latest.recordedAt), b: bold })}
                 {hasFeels ? <> {t.rich(isRecent ? "explain.feelsNow" : "explain.feelsThen", { feels: deg(latest.feelsLike as number), b: bold })}</> : null}

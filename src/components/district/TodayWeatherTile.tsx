@@ -164,13 +164,15 @@ export default function TodayWeatherTile({ locale, state, district }: { locale: 
   const nowMs = useClientNow();
   const districtName = useDistrictName(state, district);
   const { data: weather } = useWeather(district, state);
-  const { data: forecast } = useForecast(state, district);
+  const { data: forecast, isLoading: forecastLoading } = useForecast(state, district);
   if (!nowMs) return null;
 
   const latest = weather?.data?.[0];
   const primary = forecast?.primary ?? null;
   const now = tileNow(latest, primary?.current ?? null, primary ? FORECAST_SOURCES[primary.source].label : null, nowMs);
   const tomorrow = primary ? tomorrowOf(primary.days, nowMs) : null;
+  // Wait for the forecast before saying "our last reading is old".
+  if (!now && forecastLoading) return null;
   const oldReadingAt = !now && latest ? latest.recordedAt : null;
 
   return (
