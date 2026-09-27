@@ -8,12 +8,18 @@
  * based on its unique challenges, demographics, and opportunities.
  */
 
+/**
+ * One group of citizen actions. The responsibility page renders `title`
+ * as a section heading and `items` as a bullet list inside a Card.
+ *
+ * Design v3: the old `emoji`, `color` (hex/gradient) and `border` (hex)
+ * fields were removed — no component read them any more, and v3 uses
+ * Lucide icons and design tokens instead of emoji and hex colours.
+ */
 export interface ResponsibilitySection {
-  emoji: string;
   title: string;
-  color: string;
-  border: string;
   items: string[];
+  /** The "where can we be in 5 years" section; shown with a short lead-in. */
   isProjection?: boolean;
 }
 
@@ -31,10 +37,7 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
     "Mandya district faces real challenges — and real opportunities. Here's what YOU can do as a citizen to help your district grow.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Mandya generates ~180 tonnes of solid waste per day — only 62% is processed (source: SBM report 2023)",
         "Segregate waste at source: wet waste (green bin) + dry waste (blue bin)",
@@ -44,10 +47,7 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "KRS dam is the lifeline of Mandya — it irrigates 1.23 lakh hectares of farmland",
         "Switch to drip irrigation for sugarcane (saves 40-60% water vs flood irrigation)",
@@ -58,10 +58,7 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌾",
       title: "Agriculture",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Mandya produces 12+ lakh tonnes of sugarcane annually — India's sugar bowl",
         "Do NOT burn paddy stubble — it causes severe air pollution and kills soil organisms",
@@ -72,10 +69,7 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Environment",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Mandya's forest cover is declining — plant native trees (neem, peepal, banyan) in your land/village",
         "Protect village tanks: they recharge groundwater and support biodiversity",
@@ -85,10 +79,7 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Road Safety",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Mandya records ~200 road accidents annually on NH-275 and SH-17",
         "Always wear helmets on two-wheelers (mandatory in Karnataka)",
@@ -98,10 +89,7 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend Gram Sabha meetings — held twice a year in your village, open to all adults",
         "Pay property tax on time — unpaid taxes reduce funds for local infrastructure",
@@ -112,18 +100,15 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Mandya Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🏆 Top 5 districts in Karnataka for farmer income — if FPOs scale up and diversify crops",
-        "🌊 Model district for water conservation — if drip irrigation adoption reaches 60%",
-        "🏙️ Clean city ranking improvement — if 100% waste segregation is achieved",
-        "📚 75%+ literacy — 2011 census was 72.8%, achievable with community learning centres",
-        "🏃 Zero child malnutrition in anganwadis — if ICDS schemes are utilized fully",
-        "🛣️ Zero potholes on all taluk roads — if citizens actively report via apps",
+        "Top 5 districts in Karnataka for farmer income — if FPOs scale up and diversify crops",
+        "Model district for water conservation — if drip irrigation adoption reaches 60%",
+        "Clean city ranking improvement — if 100% waste segregation is achieved",
+        "75%+ literacy — 2011 census was 72.8%, achievable with community learning centres",
+        "Zero child malnutrition in anganwadis — if ICDS schemes are utilized fully",
+        "Zero potholes on all taluk roads — if citizens actively report via apps",
       ],
     },
   ],
@@ -137,10 +122,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
     "Bengaluru Urban is India's tech capital — but it faces mounting urban challenges. Here's what YOU can do as a citizen to keep this city liveable.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Bengaluru generates ~6,000 tonnes of solid waste per day — only ~40% is properly segregated (source: BBMP SWM)",
         "Segregate waste at source: wet (green), dry (blue), reject (red) — BBMP mandates 3-bin segregation",
@@ -151,10 +133,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Bengaluru's water is piped from Kaveri ~100 km away — the city has no local river source",
         "Groundwater table has dropped from 30 ft to 1,000+ ft in parts of the city over 30 years",
@@ -165,10 +144,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Transport",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Bengaluru has 80 lakh+ registered vehicles — average commute is 1.5-2 hours daily",
         "Use Namma Metro and BMTC buses wherever possible — every car off the road helps",
@@ -179,10 +155,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Environment & Lakes",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Bengaluru's green cover has dropped from 68% (1973) to under 3% today — plant native trees in your compound",
         "Bellandur and Varthur lakes have caught fire from toxic foam — never dump sewage or chemicals into storm drains",
@@ -193,10 +166,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💻",
       title: "Tech for Good",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Use IChangeMyCity app to report civic issues — potholes, garbage, broken streetlights",
         "Volunteer at government schools for digital literacy sessions — Bengaluru has the talent to bridge the digital divide",
@@ -206,10 +176,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend BBMP ward committee meetings — each of 243 wards has monthly meetings open to all residents",
         "Pay property tax on time via Bengaluru One portal — unpaid taxes reduce funds for roads and drains",
@@ -220,18 +187,15 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Bengaluru Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🏆 India's cleanest metro — if waste segregation compliance reaches 90% across all 243 wards",
-        "🌊 Water-secure city — if rainwater harvesting is enforced and 50+ lakes are restored",
-        "🚇 30-minute city — if Metro Phase 3 completes and last-mile connectivity improves",
-        "🌳 10% green cover recovery — if 1 crore trees are planted and protected across the district",
-        "📊 75%+ voter turnout — if young tech professionals exercise their democratic right",
-        "🛣️ Zero traffic fatalities — if signal compliance, helmet use, and lane discipline improve",
+        "India's cleanest metro — if waste segregation compliance reaches 90% across all 243 wards",
+        "Water-secure city — if rainwater harvesting is enforced and 50+ lakes are restored",
+        "30-minute city — if Metro Phase 3 completes and last-mile connectivity improves",
+        "10% green cover recovery — if 1 crore trees are planted and protected across the district",
+        "75%+ voter turnout — if young tech professionals exercise their democratic right",
+        "Zero traffic fatalities — if signal compliance, helmet use, and lane discipline improve",
       ],
     },
   ],
@@ -245,10 +209,7 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
     "Mysuru is Karnataka's heritage jewel — once India's cleanest city. Here's what YOU can do as a citizen to protect its legacy and build its future.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Mysuru was ranked India's cleanest city in 2015-16 (Swachh Survekshan) — let's reclaim that title",
         "The city generates ~400 tonnes of solid waste per day — segregation discipline must not slip",
@@ -259,10 +220,7 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Kabini and Kaveri rivers are Mysuru's primary water sources — both are under seasonal stress",
         "Mysuru district has 3,000+ lakes and tanks — help protect them from encroachment and pollution",
@@ -273,10 +231,7 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Heritage & Tourism",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Mysore Palace receives 6 million+ visitors annually — do not deface, litter, or damage heritage structures",
         "Support local artisans — Mysuru silk sarees, sandalwood crafts, and rosewood inlay are centuries-old traditions",
@@ -287,10 +242,7 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Wildlife & Environment",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Nagarahole National Park (tiger reserve) borders Mysuru district — never encroach forest buffer zones",
         "Human-wildlife conflict in H.D. Kote taluk is serious — report elephant/tiger sightings to Forest Dept: 0821-2480901",
@@ -301,10 +253,7 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌾",
       title: "Agriculture",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Mysuru district is a major producer of tobacco, sugarcane, and rice — diversification reduces risk",
         "Do NOT burn crop stubble — it destroys soil health and causes respiratory illness in nearby villages",
@@ -315,10 +264,7 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend Gram Sabha meetings — held twice a year in your village, open to all adults",
         "Pay property tax on time via Nada Kacheri — unpaid taxes reduce funds for local roads and drains",
@@ -329,18 +275,15 @@ const MYSURU_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Mysuru Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🏆 Reclaim India's cleanest city title — if 100% waste segregation and zero open dumping is achieved",
-        "🏛️ UNESCO World Heritage status for Mysore Palace precinct — if conservation standards are maintained",
-        "🌳 Zero human-wildlife conflict deaths — if buffer zones are respected and early warning systems work",
-        "📚 75%+ literacy — 2011 census was 72.64%, achievable with community learning centres and school enrollment drives",
-        "🌾 Model organic farming district — if 30% of farmers adopt organic practices for premium market access",
-        "🎭 Year-round cultural tourism hub — if Dasara success is extended to heritage festivals in every taluk",
+        "Reclaim India's cleanest city title — if 100% waste segregation and zero open dumping is achieved",
+        "UNESCO World Heritage status for Mysore Palace precinct — if conservation standards are maintained",
+        "Zero human-wildlife conflict deaths — if buffer zones are respected and early warning systems work",
+        "75%+ literacy — 2011 census was 72.64%, achievable with community learning centres and school enrollment drives",
+        "Model organic farming district — if 30% of farmers adopt organic practices for premium market access",
+        "Year-round cultural tourism hub — if Dasara success is extended to heritage festivals in every taluk",
       ],
     },
   ],
@@ -354,10 +297,7 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
     "New Delhi is India's capital and seat of power — but it faces severe pollution, water stress, and civic challenges. Here's what YOU can do as a citizen.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Delhi generates ~11,000 tonnes of solid waste per day — only ~55% is processed (source: MCD reports)",
         "Segregate waste at source: wet (green), dry (blue), hazardous (red) — MCD mandates segregation",
@@ -368,10 +308,7 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌫️",
       title: "Air Quality & Pollution",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Delhi's AQI crosses 400+ (severe) every winter — this is a public health emergency",
         "Do NOT burn crop stubble, garbage, or firecrackers — each contributes to PM2.5 spikes",
@@ -382,10 +319,7 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Delhi depends on Yamuna river for 70% of its water — yet Yamuna is one of India's most polluted rivers",
         "Rainwater harvesting is mandatory for plots >100 sq m — comply and install systems",
@@ -396,10 +330,7 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Transport",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Delhi has 1.3 crore+ registered vehicles — the highest in any Indian city",
         "Use Delhi Metro (285+ stations) and DTC/cluster buses — every car off the road reduces pollution",
@@ -410,10 +341,7 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Environment",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Delhi's green cover is ~21% — plant native trees (neem, peepal, jamun) in your colony and parks",
         "Protect the Yamuna floodplain — it's a critical biodiversity zone, not a construction site",
@@ -423,10 +351,7 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend Resident Welfare Association (RWA) meetings — they decide your colony's civic priorities",
         "Pay property tax on time via MCD portal — Delhi's tax collection efficiency is only ~65%",
@@ -437,18 +362,15 @@ const NEW_DELHI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What New Delhi Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🌫️ AQI under 100 year-round — if stubble burning, vehicle emissions, and waste burning are controlled",
-        "🌊 Clean Yamuna — if zero untreated sewage is discharged by completing all STP projects",
-        "🚇 World-class public transit city — if Metro Phase 4 completes and last-mile connectivity improves",
-        "🌳 30% green cover — if Delhi Ridge and floodplains are protected and 1 crore trees planted",
-        "🏙️ Zero-landfill city — if 100% waste segregation and waste-to-energy plants become operational",
-        "📊 Model capital for governance — if citizens actively participate through RWAs and digital platforms",
+        "AQI under 100 year-round — if stubble burning, vehicle emissions, and waste burning are controlled",
+        "Clean Yamuna — if zero untreated sewage is discharged by completing all STP projects",
+        "World-class public transit city — if Metro Phase 4 completes and last-mile connectivity improves",
+        "30% green cover — if Delhi Ridge and floodplains are protected and 1 crore trees planted",
+        "Zero-landfill city — if 100% waste segregation and waste-to-energy plants become operational",
+        "Model capital for governance — if citizens actively participate through RWAs and digital platforms",
       ],
     },
   ],
@@ -462,10 +384,7 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
     "Mumbai is India's financial capital and city of dreams — but it battles flooding, housing crises, and coastal erosion. Here's what YOU can do as a citizen.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Mumbai generates ~9,000 tonnes of solid waste per day — making it one of the highest waste generators in India",
         "Segregate waste at source: wet, dry, and hazardous — BMC mandates 3-bin segregation since 2017",
@@ -476,10 +395,7 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌊",
       title: "Flooding & Drainage",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Mumbai receives ~2,400mm rainfall — among the heaviest for any major city. Flooding is annual",
         "Do NOT throw garbage in nullahs (storm drains) — blocked drains are the #1 cause of urban flooding",
@@ -490,10 +406,7 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Transport",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Mumbai's suburban railways carry 75 lakh+ passengers daily — the busiest urban rail system in the world",
         "Use local trains, BEST buses, and Mumbai Metro — every private vehicle adds to gridlock",
@@ -504,10 +417,7 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Environment & Coast",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Mumbai has lost 40% of its mangrove cover in 25 years — mangroves prevent flooding and coastal erosion",
         "Sanjay Gandhi National Park is Mumbai's green lung — report encroachment and illegal construction",
@@ -518,10 +428,7 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏠",
       title: "Housing & Infrastructure",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "60%+ of Mumbai lives in informal settlements — support inclusive redevelopment, not displacement",
         "Verify building approvals via BMC's Development Plan portal before purchasing property",
@@ -531,10 +438,7 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend BMC ward committee meetings — Mumbai has 227 wards, each with monthly open meetings",
         "File RTI applications to question BMC, MMRDA, and MCGM spending in your area",
@@ -545,18 +449,15 @@ const MUMBAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Mumbai Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🌊 Flood-resilient city — if all nullahs are cleaned, mangroves protected, and Mithi River restored",
-        "🚇 India's best public transit — if Metro, coastal road, and trans-harbour link complete on schedule",
-        "🏙️ Zero-waste city — if 100% waste segregation is achieved across all 227 wards",
-        "🌳 Restored coastline — if beach cleanups scale up and plastic dumping is eliminated",
-        "📊 60%+ voter turnout — if citizens treat municipal elections as seriously as national ones",
-        "🏠 Affordable housing for all — if slum rehabilitation projects complete with transparency",
+        "Flood-resilient city — if all nullahs are cleaned, mangroves protected, and Mithi River restored",
+        "India's best public transit — if Metro, coastal road, and trans-harbour link complete on schedule",
+        "Zero-waste city — if 100% waste segregation is achieved across all 227 wards",
+        "Restored coastline — if beach cleanups scale up and plastic dumping is eliminated",
+        "60%+ voter turnout — if citizens treat municipal elections as seriously as national ones",
+        "Affordable housing for all — if slum rehabilitation projects complete with transparency",
       ],
     },
   ],
@@ -570,10 +471,7 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
     "Kolkata is India's cultural capital — a city of literature, art, and resilience. But it faces waterlogging, pollution, and ageing infrastructure. Here's what YOU can do.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Kolkata generates ~4,500 tonnes of solid waste per day — only ~60% reaches processing facilities",
         "Segregate waste at source: wet waste, dry waste, and hazardous waste — KMC mandates segregation",
@@ -584,10 +482,7 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌊",
       title: "Waterlogging & Drainage",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Kolkata receives ~1,600mm annual rainfall — large parts of the city flood during monsoon",
         "East Kolkata Wetlands are a UNESCO-recognised natural sewage treatment system — protect them from encroachment",
@@ -598,10 +493,7 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water & River Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Hooghly (Ganga) river is Kolkata's primary water source — do NOT dump waste, sewage, or industrial effluents",
         "Kolkata's groundwater is arsenic-contaminated in parts — use only tested/treated water for drinking",
@@ -611,10 +503,7 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Heritage & Culture",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Kolkata has 5,000+ heritage buildings — Victoria Memorial, Howrah Bridge, Indian Museum are national treasures",
         "Do NOT deface, litter near, or encroach upon heritage structures — report violations to KMC Heritage Cell",
@@ -625,10 +514,7 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Transport",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Use Kolkata Metro (India's first metro system), buses, trams, and ferries — reduce private vehicle use",
         "Kolkata records 500+ road accidents annually — follow lane discipline on EM Bypass and VIP Road",
@@ -639,10 +525,7 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend KMC ward meetings — Kolkata has 144 wards, each with elected councillors accountable to you",
         "Pay property tax on time via KMC e-portal — unpaid taxes reduce funds for roads and drainage",
@@ -653,18 +536,15 @@ const KOLKATA_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Kolkata Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🌊 Flood-free monsoons — if East Kolkata Wetlands are protected and drainage infrastructure upgraded",
-        "🏛️ India's best-preserved heritage city — if 5,000+ heritage buildings are restored and maintained",
-        "🚇 Seamless metro connectivity — if East-West and North-South metro corridors integrate fully",
-        "🏙️ Zero-waste city — if 100% waste segregation is achieved and Dhapa landfill is phased out",
-        "🌳 Green Kolkata — if urban tree cover increases to 25% and wetlands are conserved",
-        "🎭 Global cultural capital — if Durga Puja tourism is extended to year-round cultural festivals",
+        "Flood-free monsoons — if East Kolkata Wetlands are protected and drainage infrastructure upgraded",
+        "India's best-preserved heritage city — if 5,000+ heritage buildings are restored and maintained",
+        "Seamless metro connectivity — if East-West and North-South metro corridors integrate fully",
+        "Zero-waste city — if 100% waste segregation is achieved and Dhapa landfill is phased out",
+        "Green Kolkata — if urban tree cover increases to 25% and wetlands are conserved",
+        "Global cultural capital — if Durga Puja tourism is extended to year-round cultural festivals",
       ],
     },
   ],
@@ -678,10 +558,7 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
     "Chennai is India's gateway to the south — an industrial powerhouse and cultural hub. But it faces cyclones, water crises, and rapid urbanisation. Here's what YOU can do.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Chennai generates ~5,400 tonnes of solid waste per day — segregation compliance remains below 50%",
         "Segregate waste at source: biodegradable (green), non-biodegradable (blue), hazardous (red)",
@@ -692,10 +569,7 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌊",
       title: "Flood Resilience & Drainage",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Chennai floods devastated the city in 2015 (500+ deaths, ₹20,000 crore damage) — preparedness saves lives",
         "Do NOT dump garbage in Adyar, Cooum, or Buckingham Canal — blocked waterways cause catastrophic flooding",
@@ -706,10 +580,7 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Chennai faced Day Zero in 2019 — all 4 major reservoirs (Poondi, Cholavaram, Red Hills, Chembarambakkam) went dry",
         "Rainwater harvesting is MANDATORY for every building in Chennai — non-compliance is finable (TN law since 2003)",
@@ -720,10 +591,7 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Transport",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Chennai has 60 lakh+ registered vehicles — use Chennai Metro, MRTS, and MTC buses to reduce congestion",
         "Chennai records 1,200+ road fatalities annually — wear helmets, follow signals, avoid drunk driving",
@@ -734,10 +602,7 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Environment & Coast",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Chennai's coastline stretches 19 km — protect it from erosion, dumping, and illegal construction",
         "Plant native trees (neem, banyan, pongamia) — Chennai's green cover is under 15% and declining",
@@ -748,10 +613,7 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend GCC ward meetings — Chennai has 200 wards, each with elected councillors",
         "Pay property tax on time via GCC portal — Chennai's tax collection funds drainage and road projects",
@@ -762,18 +624,15 @@ const CHENNAI_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Chennai Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🌊 Flood-resilient city — if all waterways are desilted, wetlands protected, and drainage modernised",
-        "💧 Water-secure city — if rainwater harvesting reaches 100% compliance and reservoirs are maintained",
-        "🚇 India's best-connected metro — if Phase 2 completes and integrates with MRTS and suburban rail",
-        "🏙️ Zero-landfill Chennai — if waste segregation hits 90% and waste-to-energy plants scale up",
-        "🌳 25% green cover — if 50 lakh trees are planted and Adyar/Cooum riverfronts are restored",
-        "📊 Model civic governance — if digital grievance systems achieve 95% resolution rate",
+        "Flood-resilient city — if all waterways are desilted, wetlands protected, and drainage modernised",
+        "Water-secure city — if rainwater harvesting reaches 100% compliance and reservoirs are maintained",
+        "India's best-connected metro — if Phase 2 completes and integrates with MRTS and suburban rail",
+        "Zero-landfill Chennai — if waste segregation hits 90% and waste-to-energy plants scale up",
+        "25% green cover — if 50 lakh trees are planted and Adyar/Cooum riverfronts are restored",
+        "Model civic governance — if digital grievance systems achieve 95% resolution rate",
       ],
     },
   ],
@@ -787,10 +646,7 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
     "Lucknow is the city of Nawabs — rich in culture, cuisine, and tehzeeb. But it faces growing pollution, traffic congestion, and urban sprawl. Here's what YOU can do.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Lucknow generates ~2,500 tonnes of solid waste per day — segregation compliance is below 40%",
         "Segregate waste at source: wet (green), dry (blue), hazardous (red) — LMC mandates this",
@@ -801,10 +657,7 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌫️",
       title: "Air Quality & Pollution",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Lucknow's winter AQI regularly crosses 300+ (very poor) — stubble burning from western UP worsens it",
         "Do NOT burn garbage, crop residue, or firecrackers — each directly spikes PM2.5 levels",
@@ -815,10 +668,7 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water & River Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Gomti river is Lucknow's lifeline — it is severely polluted with untreated sewage and industrial waste",
         "Do NOT dump waste, sewage, or idol immersion materials directly into the Gomti",
@@ -829,10 +679,7 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Heritage & Culture",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Lucknow's Nawabi heritage (Bara Imambara, Rumi Darwaza, British Residency) is nationally significant — protect it",
         "Do NOT deface or litter near heritage monuments — report violations to ASI or LMC Heritage Cell",
@@ -842,10 +689,7 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Road Safety",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Lucknow has 30 lakh+ registered vehicles — use Lucknow Metro and public buses to reduce congestion",
         "Hazratganj, Aminabad, and Charbagh are chronic congestion zones — use metro and park-and-ride",
@@ -855,10 +699,7 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend LMC ward meetings — Lucknow has 110 wards, each with elected corporators",
         "Pay property tax and house tax on time via LMC portal — it funds roads, drains, and streetlights",
@@ -869,18 +710,15 @@ const LUCKNOW_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Lucknow Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🌫️ AQI under 150 year-round — if stubble burning stops, EVs scale, and green cover increases",
-        "🌊 Clean Gomti river — if zero untreated sewage is discharged and riverbanks are restored",
-        "🏛️ UNESCO Heritage City status — if Nawabi-era monuments are conserved and tourism infrastructure improves",
-        "🏙️ Top 10 in Swachh Survekshan — if waste segregation reaches 80% and open dumping is eliminated",
-        "🚇 Full metro connectivity — if Lucknow Metro Phase 2 completes and integrates with bus rapid transit",
-        "📊 Model UP city for governance — if digital civic platforms achieve 90%+ grievance resolution",
+        "AQI under 150 year-round — if stubble burning stops, EVs scale, and green cover increases",
+        "Clean Gomti river — if zero untreated sewage is discharged and riverbanks are restored",
+        "UNESCO Heritage City status — if Nawabi-era monuments are conserved and tourism infrastructure improves",
+        "Top 10 in Swachh Survekshan — if waste segregation reaches 80% and open dumping is eliminated",
+        "Full metro connectivity — if Lucknow Metro Phase 2 completes and integrates with bus rapid transit",
+        "Model UP city for governance — if digital civic platforms achieve 90%+ grievance resolution",
       ],
     },
   ],
@@ -894,10 +732,7 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
     "Every district in India faces unique challenges. Here are universal citizen responsibilities that apply everywhere — small actions by many people create big change.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Segregate waste at source: wet waste (green bin) + dry waste (blue bin) + reject (red bin)",
         "Never burn waste — it releases toxic fumes and violates Solid Waste Management Rules 2016",
@@ -907,10 +742,7 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Fix leaky taps and pipes — a single dripping tap wastes 15,000 litres/year",
         "Harvest rainwater at home — install rooftop collection systems",
@@ -920,10 +752,7 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌾",
       title: "Agriculture & Land",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Do NOT burn crop stubble — it destroys soil organisms and causes air pollution",
         "Get your soil tested free at the nearest Krishi Vigyan Kendra (KVK) every 3 years",
@@ -933,10 +762,7 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🌳",
       title: "Environment",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Plant native trees in your land, village, or neighbourhood — every tree counts",
         "Protect local water bodies — they recharge groundwater and support biodiversity",
@@ -946,10 +772,7 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Road Safety",
-      color: "#FFF1F0",
-      border: "#FECACA",
       items: [
         "Always wear helmets on two-wheelers and seatbelts in cars — it's the law and it saves lives",
         "Don't drink and drive — report drunk driving to traffic police: 100",
@@ -959,10 +782,7 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏛️",
       title: "Civic Duty",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Attend Gram Sabha meetings — held twice a year in your village, open to all adults",
         "Pay property tax on time — unpaid taxes reduce funds for local infrastructure",
@@ -973,18 +793,15 @@ const GENERIC_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "📊",
       title: "What Your District Can Become in 5 Years",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🏙️ Cleaner streets and zero open dumping — if 100% waste segregation is achieved",
-        "🌊 Water security for all — if rainwater harvesting and lake protection become the norm",
-        "📚 Higher literacy and school enrollment — if communities support education at every level",
-        "🛣️ Safer roads with zero fatalities — if traffic rules are followed by every citizen",
-        "🏆 A model district for governance — if citizens actively participate in democratic processes",
-        "🌳 Greener, cooler neighbourhoods — if every household plants and protects at least one tree",
+        "Cleaner streets and zero open dumping — if 100% waste segregation is achieved",
+        "Water security for all — if rainwater harvesting and lake protection become the norm",
+        "Higher literacy and school enrollment — if communities support education at every level",
+        "Safer roads with zero fatalities — if traffic rules are followed by every citizen",
+        "A model district for governance — if citizens actively participate in democratic processes",
+        "Greener, cooler neighbourhoods — if every household plants and protects at least one tree",
       ],
     },
   ],
@@ -998,10 +815,7 @@ const HYDERABAD_CONTENT: DistrictResponsibilityContent = {
     "Hyderabad is one of India's fastest-growing cities. Here's what YOU can do as a citizen to keep the City of Pearls thriving.",
   sections: [
     {
-      emoji: "🧹",
       title: "Cleanliness & Waste",
-      color: "#FFF7ED",
-      border: "#FED7AA",
       items: [
         "Hyderabad generates ~5,500 tonnes of solid waste per day — GHMC manages collection across 150 wards",
         "Segregate waste at source: wet waste (green bin) + dry waste (blue bin)",
@@ -1011,10 +825,7 @@ const HYDERABAD_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "💧",
       title: "Water Conservation",
-      color: "#EFF6FF",
-      border: "#BFDBFE",
       items: [
         "Hyderabad's water supply depends on Osmansagar, Himayatsagar, and Krishna/Godavari sources — all are stressed during summer",
         "Report water leaks and illegal connections to HMWSSB: 040-23420418",
@@ -1024,10 +835,7 @@ const HYDERABAD_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🏙️",
       title: "Urban Environment",
-      color: "#F0FDF4",
-      border: "#BBF7D0",
       items: [
         "Hyderabad's green cover has shrunk due to rapid construction — plant native trees (Neem, Peepal, Gulmohar)",
         "Use public transport: TSRTC buses, Hyderabad Metro, or MMTS for daily commute to reduce pollution",
@@ -1037,10 +845,7 @@ const HYDERABAD_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🗳️",
       title: "Democratic Participation",
-      color: "#F5F3FF",
-      border: "#DDD6FE",
       items: [
         "Check your voter enrollment: voterportal.eci.gov.in — ensure your address is updated",
         "Attend ward committee meetings held quarterly by GHMC — your voice shapes local decisions",
@@ -1050,10 +855,7 @@ const HYDERABAD_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🚦",
       title: "Traffic & Safety",
-      color: "#FFF1F2",
-      border: "#FECDD3",
       items: [
         "Hyderabad has a Commissionerate police system — Dial 100 for emergencies",
         "Follow traffic rules: Hyderabad Traffic Police actively uses e-challans — check at echallan.tspolice.gov.in",
@@ -1063,18 +865,15 @@ const HYDERABAD_CONTENT: DistrictResponsibilityContent = {
       ],
     },
     {
-      emoji: "🔮",
       title: "What Hyderabad Can Become in 5 Years",
-      color: "linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%)",
-      border: "#BFDBFE",
       isProjection: true,
       items: [
-        "🏙️ A global top-20 liveable city — if citizens participate in urban governance and hold GHMC accountable",
-        "💧 Zero water tanker dependency — if HMWSSB infrastructure is maintained and rainwater harvesting becomes universal",
-        "🌳 30% green cover — if every household plants and protects at least one tree",
-        "🚇 Full metro connectivity — if citizens use public transit and reduce private vehicle dependency",
-        "🛣️ Safer roads with zero fatalities — if traffic rules are followed by every citizen",
-        "🏆 A model city for governance — if citizens actively participate in ward committees and democratic processes",
+        "A global top-20 liveable city — if citizens participate in urban governance and hold GHMC accountable",
+        "Zero water tanker dependency — if HMWSSB infrastructure is maintained and rainwater harvesting becomes universal",
+        "30% green cover — if every household plants and protects at least one tree",
+        "Full metro connectivity — if citizens use public transit and reduce private vehicle dependency",
+        "Safer roads with zero fatalities — if traffic rules are followed by every citizen",
+        "A model city for governance — if citizens actively participate in ward committees and democratic processes",
       ],
     },
   ],
