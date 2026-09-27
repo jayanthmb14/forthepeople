@@ -12,6 +12,7 @@
 import { prisma } from "@/lib/db";
 import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 import type { DatasetDate } from "@/lib/constants/dataset-collection";
+import { NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 const latest = (...ds: Array<Date | null | undefined>) =>
@@ -37,7 +38,7 @@ export async function collectDatasetDates(districtId: string, stateId: string): 
     prisma.localAlert.aggregate({ where: d, _count: { _all: true }, _max: { createdAt: true } }),
     prisma.localAlert.count({ where: { ...d, active: true } }),
     prisma.weatherReading.aggregate({ where: d, _count: { _all: true }, _max: { recordedAt: true } }),
-    prisma.rainfallHistory.findFirst({ where: d, orderBy: [{ year: "desc" }, { month: "desc" }], select: { year: true, month: true } }),
+    prisma.rainfallHistory.findFirst({ where: { ...d, ...NOT_SEEDED_RAINFALL }, orderBy: [{ year: "desc" }, { month: "desc" }], select: { year: true, month: true } }),
     prisma.rainfallHistory.count({ where: d }),
     prisma.rtiStat.count({ where: d }),
     prisma.rtiStat.aggregate({ where: d, _max: { year: true } }),

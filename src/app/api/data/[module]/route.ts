@@ -15,7 +15,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
-import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
 import { dedupeStories } from "@/lib/news-dedupe";
 
 // Modules whose payload carries live text with stored translations
@@ -225,7 +225,7 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "rainfall": {
       const data = await prisma.rainfallHistory.findMany({
-        where: { districtId: did },
+        where: { districtId: did, ...NOT_SEEDED_RAINFALL },
         orderBy: [{ year: "desc" }, { month: "asc" }],
         take: 60,
       });
@@ -348,7 +348,10 @@ async function fetchModule(
           take: 24,
         }),
       ]);
-      return { data: { stations, crime, traffic }, meta };
+      // Seeded traffic fines were generated with Math.random() (fractional
+      // paise, e.g. 4709484.63874892); real collections are whole rupees.
+      const realTraffic = traffic.filter((r) => Number.isInteger(r.amount));
+      return { data: { stations, crime, traffic: realTraffic }, meta };
     }
 
     // ══════════════════════════════════════════════════
@@ -488,13 +491,22 @@ async function fetchModule(
     // 23. FACTORIES (Sugar)
     // ══════════════════════════════════════════════════
     case "factories": {
-      const data = await prisma.sugarFactory.findMany({
+      const rows = await prisma.sugarFactory.findMany({
         where: { districtId: did },
         include: {
           seasonData: { orderBy: { season: "desc" }, take: 3 },
         },
         orderBy: { name: "asc" },
       });
+      // Seeded arrears were Math.random() amounts (fractional rupees); a real
+      // figure from the Sugar Directorate is whole rupees. Show none rather
+      // than an invented one.
+      const data = rows.map((f) => ({
+        ...f,
+        seasonData: f.seasonData.map((sd) =>
+          sd.totalArrears !== null && !Number.isInteger(sd.totalArrears) ? { ...sd, totalArrears: null } : sd,
+        ),
+      }));
       return { data, meta };
     }
 

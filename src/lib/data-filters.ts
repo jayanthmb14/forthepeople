@@ -24,3 +24,19 @@ export const NOT_FROM_NEWS_OPTIONAL = { OR: [{ source: null }, NOT_FROM_NEWS] };
  * all ten), so district pages list DISTRICT and CITY projects only.
  */
 export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: ["DISTRICT", "CITY"] } }] };
+
+/**
+ * Monthly rainfall rows that the seed scripts generated with Math.random()
+ * (prisma/seed.ts — Mandya; seed-bengaluru-data.ts; seed-delhi-data.ts),
+ * labelled as KSNDMC / IMD. They are not measurements, so they are never
+ * shown. Matched by the exact seed source labels AND the seeded years
+ * (2020–2024), so a real collector writing current years is unaffected.
+ */
+export const NOT_SEEDED_RAINFALL = {
+  NOT: {
+    AND: [
+      { source: { in: ["Karnataka State Natural Disaster Monitoring Centre (KSNDMC)", "KSNDMC / IMD", "IMD Delhi"] } },
+      { year: { lte: 2024 } },
+    ],
+  },
+};
