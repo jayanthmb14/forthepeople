@@ -12,21 +12,27 @@
 //  Design v4 "Rang" (teal): SiteHeader band, the feedback types as big
 //  emoji cards (a radio group), 44 px inputs, and one primary button in
 //  the page hue. No picture: this page has no data. The submit logic and
-//  the request body are unchanged.
+//  the request body are unchanged. Text: "page_feedback" messages; an
+//  error message written by the API is shown as it comes. Metadata lives
+//  in the [locale] route file (this is a client component).
 // ═══════════════════════════════════════════════════════════════════════
 import { useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertCircle, MessageSquare } from "lucide-react";
 import { Card } from "@/components/district/ui";
 import SiteHeader from "@/components/site/SiteHeader";
+import { useFormat } from "@/i18n/client";
 
-const FEEDBACK_TYPES: { value: string; label: string; emoji: string; desc: string }[] = [
-  { value: "bug", label: "Bug report", emoji: "🐞", desc: "Something isn't working" },
-  { value: "wrong_data", label: "Wrong data", emoji: "📊", desc: "Incorrect government data" },
-  { value: "suggestion", label: "Suggestion", emoji: "💡", desc: "Feature or improvement idea" },
-  { value: "praise", label: "Praise", emoji: "💖", desc: "Something you love" },
-  { value: "other", label: "Other", emoji: "💬", desc: "General feedback" },
+const FEEDBACK_TYPES: { value: string; emoji: string }[] = [
+  { value: "bug", emoji: "🐞" },
+  { value: "wrong_data", emoji: "📊" },
+  { value: "suggestion", emoji: "💡" },
+  { value: "praise", emoji: "💖" },
+  { value: "other", emoji: "💬" },
 ];
+
+const MESSAGE_MAX = 2000;
 
 /** Shared input look: 44 px tall, 1 px border, 8 px radius, tokens only. */
 const INPUT: React.CSSProperties = {
@@ -38,7 +44,7 @@ const INPUT: React.CSSProperties = {
   background: "var(--ftp-surface)",
   color: "var(--ftp-text)",
   fontSize: 15,
-  lineHeight: "22px",
+  lineHeight: 1.5,
   outline: "none",
   boxSizing: "border-box",
   fontFamily: "inherit",
@@ -47,7 +53,7 @@ const INPUT: React.CSSProperties = {
 /** Field label (13 px, weight 600). */
 const LABEL: React.CSSProperties = {
   fontSize: 13,
-  lineHeight: "20px",
+  lineHeight: 1.5,
   fontWeight: 600,
   color: "var(--ftp-text)",
   display: "block",
@@ -71,7 +77,15 @@ const BUTTON: React.CSSProperties = {
   cursor: "pointer",
 };
 
+/** Red asterisk for a required field (the input's `required` tells screen readers). */
+function Req() {
+  return <span aria-hidden style={{ color: "var(--ftp-danger)" }}>*</span>;
+}
+
 export default function FeedbackPage() {
+  const t = useTranslations("page_feedback");
+  const locale = useLocale();
+  const { number } = useFormat();
   const [type, setType] = useState("suggestion");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -93,12 +107,12 @@ export default function FeedbackPage() {
         body: JSON.stringify({ type, subject, message, email: email || undefined, name: name || undefined }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to submit");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "");
       }
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit feedback");
+      setError(err instanceof Error && err.message ? err.message : t("errorFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -111,14 +125,11 @@ export default function FeedbackPage() {
           <div className="ftp-pop ftp-emoji" aria-hidden style={{ fontSize: 56, lineHeight: 1, marginBottom: 12 }}>
             🎉
           </div>
-          <h1 className="ftp-h2" style={{ marginBottom: 8 }}>Thank you for your feedback!</h1>
-          <p className="ftp-body" style={{ fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", marginBottom: 24 }}>
-            Every message helps make ForThePeople.in better for all citizens.
-            We read every submission personally.
-          </p>
+          <h1 className="ftp-h2" style={{ marginBottom: 8 }}>{t("thanksTitle")}</h1>
+          <p className="ftp-body" style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)", marginBottom: 24 }}>{t("thanksBody")}</p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/en" className="ftp-btn ftp-btn-primary" style={{ ...BUTTON, border: "1px solid var(--hue)", color: "#fff" }}>
-              Back to home
+            <Link href={`/${locale}`} className="ftp-btn ftp-btn-primary" style={{ ...BUTTON, border: "1px solid var(--hue)", color: "#fff" }}>
+              {t("backHome")}
             </Link>
             <button
               type="button"
@@ -126,7 +137,7 @@ export default function FeedbackPage() {
               className="ftp-btn ftp-btn-secondary"
               style={{ ...BUTTON, background: "var(--ftp-surface)", color: "var(--ftp-text)", border: "1px solid var(--ftp-border)" }}
             >
-              Submit another
+              {t("another")}
             </button>
           </div>
         </div>
@@ -138,28 +149,23 @@ export default function FeedbackPage() {
     <main className="ftp-hue-teal" style={{ minHeight: "calc(100vh - 56px)", background: "var(--ftp-bg)", paddingBottom: 64 }}>
       <div className="ftp-container" style={{ paddingTop: 24 }}>
         <div style={{ maxWidth: 680 }}>
-          <SiteHeader
-            emoji="💬"
-            icon={MessageSquare}
-            title="Share your feedback"
-            description="Found wrong data? Have a suggestion? Love something? Your feedback makes this platform better for every Indian citizen."
-          />
+          <SiteHeader emoji="💬" icon={MessageSquare} title={t("title")} description={t("description")} backHref={`/${locale}`} />
 
           <Card padding={20}>
             <form onSubmit={handleSubmit}>
               {/* Feedback type — a radio group drawn as emoji cards */}
               <fieldset style={{ border: "none", padding: 0, margin: "0 0 24px" }}>
-                <legend style={{ ...LABEL, marginBottom: 10 }}>What kind of feedback?</legend>
+                <legend style={{ ...LABEL, marginBottom: 10 }}>{t("kindLegend")}</legend>
                 <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 150px), 1fr))", gap: 8 }}>
-                  {FEEDBACK_TYPES.map((t) => {
-                    const active = type === t.value;
+                  {FEEDBACK_TYPES.map((ft) => {
+                    const active = type === ft.value;
                     return (
                       <button
-                        key={t.value}
+                        key={ft.value}
                         type="button"
                         role="radio"
                         aria-checked={active}
-                        onClick={() => setType(t.value)}
+                        onClick={() => setType(ft.value)}
                         style={{
                           padding: "12px 14px",
                           minHeight: 44,
@@ -168,18 +174,20 @@ export default function FeedbackPage() {
                           background: active ? "var(--hue-tint)" : "var(--ftp-surface)",
                           boxShadow: active ? "0 6px 14px -10px color-mix(in srgb, var(--hue) 80%, transparent)" : "none",
                           cursor: "pointer",
-                          textAlign: "left",
+                          textAlign: "start",
                           fontFamily: "inherit",
                           transition: "background-color 150ms ease, border-color 150ms ease",
                         }}
                       >
                         <span className="ftp-emoji" aria-hidden style={{ display: "block", fontSize: 22, marginBottom: 6 }}>
-                          {t.emoji}
+                          {ft.emoji}
                         </span>
-                        <span style={{ display: "block", fontSize: 14, lineHeight: "20px", fontWeight: 600, color: active ? "var(--hue-deep)" : "var(--ftp-text)" }}>
-                          {t.label}
+                        <span style={{ display: "block", fontSize: 14, lineHeight: 1.45, fontWeight: 600, color: active ? "var(--hue-deep)" : "var(--ftp-text)" }}>
+                          {t(`type_${ft.value}_label`)}
                         </span>
-                        <span style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{t.desc}</span>
+                        <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", marginTop: 2 }}>
+                          {t(`type_${ft.value}_desc`)}
+                        </span>
                       </button>
                     );
                   })}
@@ -189,7 +197,7 @@ export default function FeedbackPage() {
               {/* Subject */}
               <div style={{ marginBottom: 16 }}>
                 <label htmlFor="fb-subject" style={LABEL}>
-                  Subject <span style={{ color: "var(--ftp-danger)" }}>*</span>
+                  {t("subject")} <Req />
                 </label>
                 <input
                   id="fb-subject"
@@ -198,7 +206,7 @@ export default function FeedbackPage() {
                   maxLength={200}
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Brief summary of your feedback"
+                  placeholder={t("subjectPlaceholder")}
                   style={INPUT}
                 />
               </div>
@@ -206,20 +214,20 @@ export default function FeedbackPage() {
               {/* Message */}
               <div style={{ marginBottom: 16 }}>
                 <label htmlFor="fb-message" style={LABEL}>
-                  Message <span style={{ color: "var(--ftp-danger)" }}>*</span>
+                  {t("message")} <Req />
                 </label>
                 <textarea
                   id="fb-message"
                   required
-                  maxLength={2000}
+                  maxLength={MESSAGE_MAX}
                   rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Please describe in detail. For data errors, mention the specific district, module, and what the correct value should be."
+                  placeholder={t("messagePlaceholder")}
                   style={{ ...INPUT, resize: "vertical" }}
                 />
-                <div className="ftp-num" style={{ fontSize: 12, color: "var(--ftp-text-2)", marginTop: 4, textAlign: "right" }}>
-                  {message.length}/2000
+                <div className="ftp-num" style={{ fontSize: 12, color: "var(--ftp-text-2)", marginTop: 4, textAlign: "end" }}>
+                  {t("count", { n: number(message.length), max: number(MESSAGE_MAX) })}
                 </div>
               </div>
 
@@ -227,7 +235,7 @@ export default function FeedbackPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 12, marginBottom: 24 }}>
                 <div>
                   <label htmlFor="fb-name" style={LABEL}>
-                    Your name <span style={OPTIONAL}>(optional)</span>
+                    {t("name")} <span style={OPTIONAL}>{t("optional")}</span>
                   </label>
                   <input
                     id="fb-name"
@@ -235,13 +243,13 @@ export default function FeedbackPage() {
                     maxLength={100}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="How should we address you?"
+                    placeholder={t("namePlaceholder")}
                     style={INPUT}
                   />
                 </div>
                 <div>
                   <label htmlFor="fb-email" style={LABEL}>
-                    Email <span style={OPTIONAL}>(optional)</span>
+                    {t("email")} <span style={OPTIONAL}>{t("optional")}</span>
                   </label>
                   <input
                     id="fb-email"
@@ -249,7 +257,7 @@ export default function FeedbackPage() {
                     maxLength={200}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="If you want a response"
+                    placeholder={t("emailPlaceholder")}
                     style={INPUT}
                   />
                 </div>
@@ -278,15 +286,12 @@ export default function FeedbackPage() {
                   opacity: submitting ? 0.6 : 1,
                 }}
               >
-                {submitting ? "Submitting…" : "Submit feedback"}
+                {submitting ? t("submitting") : t("submit")}
               </button>
             </form>
           </Card>
 
-          <p style={{ fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)", textAlign: "center", marginTop: 20 }}>
-            All feedback is read personally. We may reach out if you provided an email.
-            Thank you for helping improve India&apos;s citizen transparency platform.
-          </p>
+          <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--ftp-text-2)", textAlign: "center", marginTop: 20 }}>{t("footnote")}</p>
         </div>
       </div>
     </main>

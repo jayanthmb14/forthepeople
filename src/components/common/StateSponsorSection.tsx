@@ -13,15 +13,19 @@
 //  /api/data/contributors request as before; prices come from TIER_CONFIG.
 //  Colours come from the page hue — the state page wraps this block in
 //  the support colour (.ftp-hue-rose).
+//  Text: "page_state" messages; supporter badges from "page_site.tier";
+//  supporter names are shown as entered.
 // ═══════════════════════════════════════════════════════════
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
-import { getContributorLabel } from "@/lib/contributor-label";
 import { normalizeSocialLink } from "@/lib/social-link";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { Card } from "@/components/district/ui";
+import { useFormat, usePlaceText } from "@/i18n/client";
+import { tierLabel } from "@/components/site/tier-label";
 
 interface StateSponsor {
   id: string;
@@ -39,6 +43,7 @@ interface StateSponsor {
 interface Props {
   locale: string;
   stateSlug: string;
+  /** English registry name (used in the support link and as the fallback). */
   stateName: string;
 }
 
@@ -53,8 +58,6 @@ const SOCIAL_ICONS: Record<string, typeof Instagram> = {
 /** Names shown per row before "+N more". */
 const CHIPS_PER_LINE = 15;
 
-const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
 const HUE_LINK: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
@@ -66,10 +69,14 @@ const HUE_LINK: React.CSSProperties = {
 };
 
 function Chip({ s }: { s: StateSponsor }) {
+  const t = useTranslations("page_state");
+  const ts = useTranslations("page_site");
   const SocialIcon = s.socialPlatform ? SOCIAL_ICONS[s.socialPlatform] : null;
   const initials = s.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const label = getContributorLabel(s.tier, s.districtName, s.stateName);
-  const title = `${s.name}, ${label}${s.monthsActive ? `, ${s.monthsActive} months` : ""}`;
+  const label = tierLabel(ts, s.tier, s.districtName, s.stateName);
+  const title = s.monthsActive
+    ? t("sponsorTitleMonths", { name: s.name, label, months: s.monthsActive })
+    : t("sponsorTitle", { name: s.name, label });
   const href = normalizeSocialLink(s.socialLink);
 
   const inner = (
@@ -107,21 +114,27 @@ function Chip({ s }: { s: StateSponsor }) {
 
 function Line({
   label,
+  emoji,
   sponsors,
   viewAllHref,
   emptyCta,
 }: {
   label: string;
+  emoji: string;
   sponsors: StateSponsor[];
   viewAllHref: string;
   emptyCta?: { text: string; href: string };
 }) {
+  const t = useTranslations("page_state");
   const visible = sponsors.slice(0, CHIPS_PER_LINE);
   const hiddenCount = sponsors.length - visible.length;
 
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", padding: "6px 0" }}>
-      <span className="ftp-label" style={{ width: 150, flexShrink: 0 }}>{label}</span>
+      <span className="ftp-label" style={{ minWidth: 150, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <span className="ftp-emoji" aria-hidden>{emoji}</span>
+        {label}
+      </span>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
         {visible.length > 0
           ? visible.map((s) => <Chip key={s.id} s={s} />)
@@ -132,7 +145,7 @@ function Line({
             )}
         {hiddenCount > 0 && (
           <Link href={viewAllHref} style={HUE_LINK}>
-            +<span className="ftp-num">{hiddenCount}</span>&nbsp;more
+            <span className="ftp-num">{t("more", { n: hiddenCount })}</span>
           </Link>
         )}
       </div>
@@ -141,6 +154,11 @@ function Line({
 }
 
 export default function StateSponsorSection({ locale, stateSlug, stateName }: Props) {
+  const t = useTranslations("page_state");
+  const { number } = useFormat();
+  const place = usePlaceText();
+  const shownState = place.state(stateSlug, stateName);
+  const inr = (n: number) => `₹${number(n)}`;
   const { data } = useQuery<{ contributors: StateSponsor[]; total: number }>({
     queryKey: ["state-sponsors", stateSlug],
     queryFn: () => fetch(`/api/data/contributors?type=state-page&state=${stateSlug}&limit=60`).then((r) => r.json()),
@@ -160,26 +178,28 @@ export default function StateSponsorSection({ locale, stateSlug, stateName }: Pr
           <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
             💖
           </span>
-          <h2 id="ftp-state-backed-by" className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650 }}>
-            Backed by
+          <h2 id="ftp-state-backed-by" className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+            {t("backedBy")}
           </h2>
         </div>
         <Link href={`/${locale}/contributors`} style={{ ...HUE_LINK, minHeight: 44 }}>
-          View all
+          {t("viewAll")}
         </Link>
       </div>
 
       <Line
-        label="All India"
+        label={t("allIndia")}
+        emoji="🇮🇳"
         sponsors={indiaLine}
         viewAllHref={`/${locale}/contributors`}
-        emptyCta={{ text: `Be the first, from ${inr(TIER_CONFIG.patron.amount)} a month`, href: `/${locale}/support?tier=patron` }}
+        emptyCta={{ text: t("beFirstPatron", { amount: inr(TIER_CONFIG.patron.amount) }), href: `/${locale}/support?tier=patron` }}
       />
       <Line
-        label={`${stateName} champions`}
+        label={t("stateChampions", { state: shownState })}
+        emoji="🏅"
         sponsors={stateLine}
         viewAllHref={`/${locale}/contributors`}
-        emptyCta={{ text: `Be the first ${stateName} champion, from ${inr(TIER_CONFIG.state.amount)} a month`, href: supportHref }}
+        emptyCta={{ text: t("beFirstState", { state: shownState, amount: inr(TIER_CONFIG.state.amount) }), href: supportHref }}
       />
 
       <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))" }}>
@@ -201,7 +221,7 @@ export default function StateSponsorSection({ locale, stateSlug, stateName }: Pr
           }}
         >
           <span className="ftp-emoji" aria-hidden>🤝</span>
-          Sponsor {stateName} for {inr(TIER_CONFIG.state.amount)} a month
+          {t("sponsorState", { state: shownState, amount: inr(TIER_CONFIG.state.amount) })}
         </Link>
       </div>
     </Card>

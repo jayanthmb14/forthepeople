@@ -24,21 +24,29 @@
  *   - Preselected district (from ?d=<slug>) gets a hue-tint row
  *
  * Design v4 "Rang" (amber — the vote colour, deep enough for white text):
- * SiteHeader band; the picture (one plain sentence and the five
- * most-requested districts as bars, from the same vote counts as the
- * list, shown once they have loaded); hue-coloured vote buttons; 44 px
- * targets; tabular vote counts. Vote logic unchanged.
+ * SiteHeader band; two pictures from the same vote counts as the list,
+ * shown once they have loaded:
+ *   • one plain sentence and the five most-requested districts as bars;
+ *   • a ring of all votes by state (the top six states, the rest as one
+ *     slice), one colour per state;
+ * hue-coloured vote buttons; 44 px targets; tabular vote counts. Vote
+ * logic unchanged. Text: "page_vote" messages; state names via
+ * usePlaceText; district names are proper nouns.
  */
 
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight, ChevronUp, Lock, Search, Vote } from "lucide-react";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { getPlatformFacts } from "@/lib/platform-facts";
+import { HUE_HEX, type Hue } from "@/lib/design/hues";
 import { Card, EmptyState } from "@/components/district/ui";
-import { Explainer } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
+import { BarList, Donut, type DonutSlice } from "@/components/site/SiteVisuals";
+import { useFormat, usePlaceText } from "@/i18n/client";
 
 type LockedDistrict = {
   slug: string;
@@ -59,6 +67,12 @@ const PAGE_SIZE = 20;
 
 /** How many leaders the picture shows. */
 const TOP_N = 5;
+
+/** The votes-by-state ring shows this many states; the rest share one slice. */
+const TOP_STATES = 6;
+
+/** One colour per state slice in the ring (the "other" slice is grey). */
+const STATE_SLICE_HUES: Hue[] = ["amber", "rose", "violet", "teal", "blue", "green"];
 
 function flattenLocked(): LockedDistrict[] {
   const out: LockedDistrict[] = [];
@@ -87,6 +101,10 @@ export default function VoteDistrictPage({
   locale,
   preselected,
 }: VoteDistrictPageProps) {
+  const t = useTranslations("page_vote");
+  const { number } = useFormat();
+  const place = usePlaceText();
+  const b = (c: React.ReactNode) => <strong>{c}</strong>;
   const allLocked = useMemo(() => flattenLocked(), []);
 
   // ── Augment with live vote counts (all districts, not just top 5) ──
@@ -143,7 +161,8 @@ export default function VoteDistrictPage({
       list = list.filter(
         (d) =>
           d.name.toLowerCase().includes(q) ||
-          d.stateName.toLowerCase().includes(q),
+          d.stateName.toLowerCase().includes(q) ||
+          place.state(d.stateSlug, d.stateName).toLowerCase().includes(q),
       );
     }
     if (stateFilter !== "all") {
@@ -156,7 +175,7 @@ export default function VoteDistrictPage({
       list.sort((a, b) => b.voteCount - a.voteCount || a.name.localeCompare(b.name));
     }
     return list;
-  }, [allLocked, voteMap, bumps, search, stateFilter, sortBy]);
+  }, [allLocked, voteMap, bumps, search, stateFilter, sortBy, place]);
 
   // The picture: every locked district's count (ignoring search and filters),
   // the same numbers the list shows.
@@ -165,16 +184,46 @@ export default function VoteDistrictPage({
       .map((d) => ({
         name: d.name,
         stateName: d.stateName,
+        stateSlug: d.stateSlug,
         votes: (voteMap[`${d.stateName}::${d.name}`.toLowerCase()] ?? d.voteCount) + (bumps[d.slug] ?? 0),
       }))
       .filter((d) => d.votes > 0)
       .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name));
+    // Votes added up per state, biggest first.
+    const perState = new Map<string, { stateSlug: string; stateName: string; votes: number }>();
+    for (const d of counted) {
+      const row = perState.get(d.stateSlug) ?? { stateSlug: d.stateSlug, stateName: d.stateName, votes: 0 };
+      row.votes += d.votes;
+      perState.set(d.stateSlug, row);
+    }
     return {
       voted: counted.length,
       total: counted.reduce((s, d) => s + d.votes, 0),
       top: counted.slice(0, TOP_N),
+      byState: [...perState.values()].sort((a, b) => b.votes - a.votes),
     };
   }, [allLocked, voteMap, bumps]);
+
+  // Picture 2: all votes by state, as a ring.
+  const stateSlices: DonutSlice[] = useMemo(() => {
+    const total = voteSummary.total;
+    if (total <= 0) return [];
+    const pct = (n: number) => `${number((n / total) * 100, { maximumFractionDigits: 0 })}%`;
+    const slices: DonutSlice[] = voteSummary.byState.slice(0, TOP_STATES).map((s, i) => ({
+      key: s.stateSlug,
+      label: place.state(s.stateSlug, s.stateName),
+      value: s.votes,
+      display: pct(s.votes),
+      color: HUE_HEX[STATE_SLICE_HUES[i % STATE_SLICE_HUES.length]].hue,
+      sub: t("votes", { n: s.votes }),
+    }));
+    const rest = voteSummary.byState.slice(TOP_STATES);
+    if (rest.length > 0) {
+      const restVotes = rest.reduce((s, r) => s + r.votes, 0);
+      slices.push({ key: "other", label: t("statesOther"), value: restVotes, display: pct(restVotes), color: "var(--ftp-text-2)", sub: t("votes", { n: restVotes }) });
+    }
+    return slices;
+  }, [voteSummary, number, place, t]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -242,9 +291,9 @@ export default function VoteDistrictPage({
   const stateOptions = useMemo(() => {
     return [...INDIA_STATES]
       .filter((s) => s.districts.some((d) => !d.active))
-      .map((s) => ({ slug: s.slug, name: s.name }))
+      .map((s) => ({ slug: s.slug, name: place.state(s.slug, s.name) }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
+  }, [place]);
 
 
   // How many districts are still waiting — from the registry, never typed.
@@ -384,50 +433,67 @@ export default function VoteDistrictPage({
           <SiteHeader
             emoji="🗳️"
             icon={Vote}
-            title="Vote for the next district"
-            description={`${comingDistricts.toLocaleString("en-IN")} districts waiting. Your vote prioritises which goes live next.`}
+            title={t("title")}
+            description={t("description", { n: number(comingDistricts) })}
             backHref={`/${locale}`}
-            backLabel="Back to home"
+            backLabel={t("backHome")}
           />
 
-          {/* The picture — once the counts have loaded, and only if someone has voted */}
+          {/* The pictures — once the counts have loaded, and only if someone has voted */}
           {votesLoaded && leader && (
-            <Card tinted padding={18} style={{ marginBottom: 20 }}>
-              <Explainer title="In simple words">
-                People have cast <strong>{voteSummary.total.toLocaleString("en-IN")}</strong>{" "}
-                {voteSummary.total === 1 ? "vote" : "votes"} for <strong>{voteSummary.voted}</strong>{" "}
-                {voteSummary.voted === 1 ? "district" : "districts"} so far. <strong>{leader.name}</strong> is ahead with{" "}
-                <strong>{leader.votes.toLocaleString("en-IN")}</strong> {leader.votes === 1 ? "vote" : "votes"}.
-              </Explainer>
-              <p className="ftp-label" style={{ marginBottom: 10 }}>Most-requested districts</p>
-              <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-                {voteSummary.top.map((d, i) => (
-                  <li key={`${d.stateName}-${d.name}`}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, lineHeight: "20px" }}>
-                      <span style={{ fontWeight: 600, color: "var(--ftp-text)", minWidth: 0 }}>
-                        {d.name}
-                        <span style={{ fontWeight: 400, color: "var(--ftp-text-2)" }}>, {d.stateName}</span>
-                      </span>
-                      <span className="ftp-num" style={{ color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
-                        {d.votes.toLocaleString("en-IN")} {d.votes === 1 ? "vote" : "votes"}
-                      </span>
-                    </div>
-                    <div aria-hidden style={{ marginTop: 4, height: 10, borderRadius: "var(--ftp-radius-pill)", background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
-                      <div
-                        className="ftp-grow-x"
-                        style={{
-                          width: `${Math.max(2, Math.round((d.votes / leader.votes) * 100))}%`,
-                          height: "100%",
-                          borderRadius: "var(--ftp-radius-pill)",
-                          background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
-                          ["--i" as string]: i,
-                        }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </Card>
+            <div className={stateSlices.length >= 2 ? "ftp-picture-row" : undefined} style={{ marginBottom: 20 }}>
+              <Card tinted padding={18}>
+                <Explainer>
+                  {t.rich("simple", {
+                    total: voteSummary.total,
+                    voted: voteSummary.voted,
+                    leader: leader.name,
+                    votes: leader.votes,
+                    b,
+                  })}
+                </Explainer>
+                <p className="ftp-label" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="ftp-emoji" aria-hidden>🏆</span>
+                  {t("topLabel")}
+                </p>
+                <BarList
+                  rows={voteSummary.top.map((d) => ({
+                    key: `${d.stateName}-${d.name}`,
+                    label: (
+                      <>
+                        <span style={{ fontWeight: 600 }}>{d.name}</span>
+                        <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+                          {place.state(d.stateSlug, d.stateName)}
+                        </span>
+                      </>
+                    ),
+                    value: d.votes,
+                    display: t("votes", { n: d.votes }),
+                  }))}
+                />
+              </Card>
+              {stateSlices.length >= 2 && voteSummary.byState[0] && (
+                <ChartCard
+                  title={t("statesTitle")}
+                  emoji="🗺️"
+                  units={t("statesUnits")}
+                  simple={t.rich("statesSimple", {
+                    state: stateSlices[0].label,
+                    pct: number((voteSummary.byState[0].votes / voteSummary.total) * 100, { maximumFractionDigits: 0 }),
+                    b,
+                  })}
+                  source={{ label: t("statesSource") }}
+                  table={stateSlices.map((s) => ({ label: s.label, value: `${s.sub} (${s.display})` }))}
+                >
+                  <Donut
+                    slices={stateSlices}
+                    label={t("statesAria")}
+                    center={stateSlices[0].display}
+                    centerSub={stateSlices[0].label}
+                  />
+                </ChartCard>
+              )}
+            </div>
           )}
 
           <div className="ftp-vote-toolbar">
@@ -436,13 +502,13 @@ export default function VoteDistrictPage({
               <input
                 type="search"
                 className="ftp-vote-input"
-                placeholder="Search any locked district…"
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setPage(0);
                 }}
-                aria-label="Search locked districts"
+                aria-label={t("searchAria")}
               />
             </label>
             <select
@@ -452,9 +518,9 @@ export default function VoteDistrictPage({
                 setStateFilter(e.target.value);
                 setPage(0);
               }}
-              aria-label="Filter by state"
+              aria-label={t("stateFilterAria")}
             >
-              <option value="all">All states</option>
+              <option value="all">{t("allStates")}</option>
               {stateOptions.map((s) => (
                 <option key={s.slug} value={s.slug}>
                   {s.name}
@@ -468,15 +534,15 @@ export default function VoteDistrictPage({
                 setSortBy(e.target.value as "votes" | "alpha");
                 setPage(0);
               }}
-              aria-label="Sort by"
+              aria-label={t("sortAria")}
             >
-              <option value="votes">Sort: most votes</option>
-              <option value="alpha">Sort: alphabetical</option>
+              <option value="votes">{t("sortVotes")}</option>
+              <option value="alpha">{t("sortAlpha")}</option>
             </select>
           </div>
 
           {pageItems.length === 0 ? (
-            <EmptyState emoji="🔍" title="No matching districts." body="Try a different search or state filter." />
+            <EmptyState emoji="🔍" title={t("emptyTitle")} body={t("emptyBody")} />
           ) : (
             <ul className="ftp-vote-list">
               {pageItems.map((d) => {
@@ -493,24 +559,22 @@ export default function VoteDistrictPage({
                       <Lock size={14} aria-hidden="true" style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
                       <div style={{ minWidth: 0 }}>
                         <span className="ftp-vote-name">{d.name}</span>
-                        <span className="ftp-vote-state">, {d.stateName}</span>
+                        <span className="ftp-vote-state">, {place.state(d.stateSlug, d.stateName)}</span>
                       </div>
                     </div>
                     <button
                       type="button"
                       className="ftp-vote-btn"
                       onClick={() => handleVote(d)}
-                      aria-label={`Vote for ${d.name}, ${d.stateName}. ${d.voteCount} votes so far.`}
+                      aria-label={t("voteAria", { district: d.name, state: place.state(d.stateSlug, d.stateName), n: d.voteCount })}
                     >
                       <ChevronUp size={16} aria-hidden="true" />
-                      <span className="ftp-num">{d.voteCount.toLocaleString("en-IN")}</span>
-                      Vote
+                      <span className="ftp-num">{number(d.voteCount)}</span>
+                      {t("vote")}
                     </button>
                     {hadError && (
                       <span className="ftp-vote-error" role="alert">
-                        {errorKind === "rate"
-                          ? "Slow down, and try again in a minute."
-                          : "Could not save your vote. Try again."}
+                        {errorKind === "rate" ? t("errRate") : t("errGeneric")}
                       </span>
                     )}
                   </li>
@@ -519,18 +583,17 @@ export default function VoteDistrictPage({
             </ul>
           )}
 
-          <nav className="ftp-vote-pagination" aria-label="Pages">
+          <nav className="ftp-vote-pagination" aria-label={t("pagesAria")}>
             <button
               type="button"
               className="ftp-vote-page-btn"
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
             >
-              <ArrowLeft size={14} aria-hidden="true" /> Previous
+              <ArrowLeft size={14} aria-hidden="true" /> {t("prev")}
             </button>
-            <span style={{ textAlign: "center" }}>
-              Page <span className="ftp-num">{safePage + 1}</span> of <span className="ftp-num">{totalPages}</span>, with{" "}
-              <span className="ftp-num">{filteredSorted.length.toLocaleString("en-IN")}</span> districts
+            <span className="ftp-num" style={{ textAlign: "center" }}>
+              {t("pageOf", { page: safePage + 1, pages: totalPages, n: filteredSorted.length })}
             </span>
             <button
               type="button"
@@ -538,7 +601,7 @@ export default function VoteDistrictPage({
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={safePage >= totalPages - 1}
             >
-              Next <ArrowRight size={14} aria-hidden="true" />
+              {t("next")} <ArrowRight size={14} aria-hidden="true" />
             </button>
           </nav>
         </div>

@@ -15,15 +15,23 @@
  * 20–2000 char details), the request body, the success reset and the
  * error display — including the server's rate-limit message (HTTP 429,
  * max 3 per hour), which is shown exactly as the API words it.
+ *
+ * Text comes from the "page_features" messages (the category values sent to
+ * the API stay English; only their labels are translated). Name errors from
+ * the shared validator are translated by nameErrorText().
  */
 
 import { useId, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, ChevronDown, MessageSquarePlus } from "lucide-react";
 import { validateContributorName } from "@/lib/validators/contributor-name";
+import { nameErrorText } from "@/components/site/name-error";
 
 const CATEGORIES = ["Feature", "Bug", "Data", "UX", "Other"] as const;
 
 export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }) {
+  const t = useTranslations("page_features");
+  const ts = useTranslations("page_site");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("Feature");
@@ -49,7 +57,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
   };
 
   const nameCheck = useMemo(() => validateContributorName(name), [name]);
-  const nameError = name.length > 0 && !nameCheck.ok ? nameCheck.reason : null;
+  const nameError = name.length > 0 && !nameCheck.ok ? nameErrorText(ts, nameCheck.reason) : null;
   const titleTrim = title.trim();
   const bodyTrim = body.trim();
   const titleOk = titleTrim.length >= 5 && titleTrim.length <= 120;
@@ -76,7 +84,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       onSuccess?.();
       setTimeout(() => setSuccess(false), 4000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Submit failed");
+      setError(e instanceof Error && e.message ? e.message : t("sf_failed"));
     } finally {
       setSubmitting(false);
     }
@@ -87,7 +95,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       {success && (
         <div role="status" style={{ ...notice, color: "var(--ftp-live-text)", background: "var(--ftp-live-tint)" }}>
           <CheckCircle2 size={16} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-          <span>Thanks! Your suggestion is pending review.</span>
+          <span>{t("sf_thanks")}</span>
         </div>
       )}
       {error && (
@@ -98,7 +106,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       )}
 
       <div>
-        <label htmlFor={ids.name} style={label}>Your name <Req /></label>
+        <label htmlFor={ids.name} style={label}>{t("sf_name")} <Req /></label>
         <input
           id={ids.name}
           type="text"
@@ -115,7 +123,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       </div>
 
       <div>
-        <label htmlFor={ids.email} style={label}>Email (optional, so we can follow up)</label>
+        <label htmlFor={ids.email} style={label}>{t("sf_email")}</label>
         <input
           id={ids.email}
           type="email"
@@ -128,7 +136,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       </div>
 
       <div>
-        <label htmlFor={ids.category} style={label}>Category</label>
+        <label htmlFor={ids.category} style={label}>{t("sf_category")}</label>
         {/* Native <select> with the OS chevron hidden; a Lucide chevron sits
             on top (pointer-events: none so clicks still reach the select). */}
         <div style={{ position: "relative" }}>
@@ -145,7 +153,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
               paddingRight: 36,
             }}
           >
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIES.map((c) => <option key={c} value={c}>{t(`sf_cat_${c}`)}</option>)}
           </select>
           <ChevronDown
             size={16}
@@ -156,7 +164,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       </div>
 
       <div>
-        <label htmlFor={ids.title} style={label}>Title (5–120 characters) <Req /></label>
+        <label htmlFor={ids.title} style={label}>{t("sf_title")} <Req /></label>
         <input
           id={ids.title}
           type="text"
@@ -178,7 +186,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
       </div>
 
       <div>
-        <label htmlFor={ids.body} style={label}>Details (20–2000 characters) <Req /></label>
+        <label htmlFor={ids.body} style={label}>{t("sf_details")} <Req /></label>
         <textarea
           id={ids.body}
           value={body}
@@ -189,7 +197,7 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
           aria-describedby={ids.bodyHint}
           aria-invalid={bodyTrim.length > 0 && !bodyOk ? true : undefined}
           style={{ ...input, resize: "vertical", minHeight: 120, padding: "10px 12px", lineHeight: "20px" }}
-          placeholder="What's the idea? Who benefits? Anything we should know?"
+          placeholder={t("sf_placeholder")}
         />
         <div
           id={ids.bodyHint}
@@ -222,10 +230,10 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
         }}
       >
         {!submitting && <MessageSquarePlus size={16} aria-hidden />}
-        {submitting ? "Submitting…" : "Share your idea"}
+        {submitting ? t("sf_submitting") : t("sf_submit")}
       </button>
       <p style={{ ...hint, margin: 0 }}>
-        Your submission is reviewed before being shown publicly. Limit: <span className="ftp-num">3</span> submissions per hour.
+        {t.rich("sf_note", { num: (c) => <span className="ftp-num">{c}</span> })}
       </p>
     </form>
   );

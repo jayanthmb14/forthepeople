@@ -7,20 +7,28 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  /about — Design v4 "Rang"
 // ═══════════════════════════════════════════════════════════════════════
-//  SiteHeader band (brand blue) → the long-form introduction (kept word for
-//  word: search engines and AI crawlers quote it) → mission → builder →
-//  "Platform at a glance" emoji tiles + an "In simple words" line built
-//  from the same registry counts → what we stand for (one colour per
-//  pillar) → sources → pledge → disclaimer → two buttons.
+//  SiteHeader band (brand blue) → the long-form introduction (the English
+//  wording is kept: search engines and AI crawlers quote it) → mission →
+//  builder → "Platform at a glance" emoji tiles + an "In simple words" line
+//  built from the same registry counts + the picture: live districts per
+//  state as bars, one colour per state → what we stand for (one colour per
+//  pillar) → sources (each with its own emoji) → pledge → disclaimer → two
+//  buttons. Text: "page_about" messages; state names from "states".
+//
+//  Served at /<locale>/about through src/app/[locale]/about/page.tsx.
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AlertTriangle, ExternalLink, Info } from "lucide-react";
 import { Card, Section, StatStrip, StatTile } from "@/components/district/ui";
-import { Explainer } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
-import type { Hue } from "@/lib/design/hues";
-import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
+import { BarList } from "@/components/site/SiteVisuals";
+import { HUE_HEX, type Hue } from "@/lib/design/hues";
+import { INDIA_STATES } from "@/lib/constants/districts";
+import { getPlatformFacts } from "@/lib/platform-facts";
+import { languageAlternates } from "@/i18n/seo";
 
 // Every count on this page comes from the registry (issue #36) — never type
 // "9 districts" or "29 modules" by hand here again.
@@ -28,42 +36,51 @@ const FACTS = getPlatformFacts();
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
-export const metadata: Metadata = {
-  title: "About ForThePeople.in — India's Citizen Transparency Platform",
-  description:
-    "ForThePeople.in is India's free citizen transparency platform. Built by Jayanth M B in 2026, it aggregates district-level government data under NDSAP across 780+ districts.",
-  alternates: { canonical: `${BASE_URL}/en/about` },
-  openGraph: {
-    url: `${BASE_URL}/en/about`,
-    title: "About ForThePeople.in",
-    description: "India's citizen transparency platform — free district-level government data for every Indian citizen.",
-  },
-};
+type Props = { params: Promise<{ locale?: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = (await params).locale ?? "en";
+  const t = await getTranslations({ locale, namespace: "page_about" });
+  return {
+    title: { absolute: t("metaTitle") },
+    description: t("metaDescription", { total: FACTS.totalIndiaDistricts }),
+    alternates: languageAlternates("/about", locale),
+    openGraph: {
+      url: `${BASE_URL}/${locale}/about`,
+      title: t("ogTitle"),
+      description: t("ogDescription"),
+    },
+  };
+}
 
 // Each pillar has one emoji and its own hue, so the six cards read as a
 // colourful set rather than six identical boxes.
-const PILLARS: { emoji: string; hue: Hue; title: string; desc: string }[] = [
-  { emoji: "📊", hue: "blue", title: "Real data, not opinions", desc: "Every number comes from a government portal, official API, or publicly available document. We never fabricate or estimate data." },
-  { emoji: "🗺️", hue: "green", title: "Every district, every state", desc: `Currently live in ${getCoveragePhrase()} — expanding to all ${FACTS.totalIndiaDistricts}+ districts across India.` },
-  { emoji: "🗣️", hue: "violet", title: "Local languages first", desc: "Data is presented in English and the regional language of each state — Kannada, Tamil, Telugu, Hindi, and more." },
-  { emoji: "🕰️", hue: "amber", title: "Current and historical", desc: "Crop prices and news are refreshed whenever the source portal publishes; every reading shows the date it was recorded. Budget and census data go back years. Both matter." },
-  { emoji: "🔓", hue: "teal", title: "Free forever", desc: "No paywalls, no subscriptions. Government data belongs to citizens. We just make it accessible." },
-  { emoji: "📜", hue: "indigo", title: "RTI ready", desc: "Don't see what you need? We provide ready-to-send RTI templates so you can get any government information by right." },
+const PILLARS: { key: string; emoji: string; hue: Hue }[] = [
+  { key: "data", emoji: "📊", hue: "blue" },
+  { key: "reach", emoji: "🗺️", hue: "green" },
+  { key: "lang", emoji: "🗣️", hue: "violet" },
+  { key: "time", emoji: "🕰️", hue: "amber" },
+  { key: "free", emoji: "🔓", hue: "teal" },
+  { key: "rti", emoji: "📜", hue: "indigo" },
 ];
 
-const DATA_SOURCES = [
-  { name: "AGMARKNET", desc: "Agricultural Marketing Information Network — crop mandi prices", url: "https://agmarknet.gov.in" },
-  { name: "India-WRIS", desc: "Water Resources Information System — dam and reservoir levels", url: "https://indiawris.gov.in" },
-  { name: "IMD", desc: "India Meteorological Department — rainfall and weather data", url: "https://mausam.imd.gov.in" },
-  { name: "Election Commission of India", desc: "Assembly and Lok Sabha election results and voter data", url: "https://eci.gov.in" },
-  { name: "eGramSwaraj / PFMS", desc: "Panchayat + finance data (MGNREGA, district budgets)", url: "https://egramswaraj.gov.in" },
-  { name: "UDISE+", desc: "School enrollment, pass rates, student-teacher ratios", url: "https://udiseplus.gov.in" },
-  { name: "National Scholarship Portal", desc: "Government scholarship and scheme data", url: "https://scholarships.gov.in" },
-  { name: "PMAY-G / PMAY-U", desc: "Pradhan Mantri Awas Yojana housing scheme data", url: "https://pmayg.nic.in" },
+// Portal names are proper nouns; the one-line descriptions are translated.
+const DATA_SOURCES: { name: string; key: string; emoji: string; url: string }[] = [
+  { name: "AGMARKNET", key: "agmarknet", emoji: "🌾", url: "https://agmarknet.gov.in" },
+  { name: "India-WRIS", key: "wris", emoji: "💧", url: "https://indiawris.gov.in" },
+  { name: "IMD", key: "imd", emoji: "🌦️", url: "https://mausam.imd.gov.in" },
+  { name: "Election Commission of India", key: "eci", emoji: "🗳️", url: "https://eci.gov.in" },
+  { name: "eGramSwaraj / PFMS", key: "egram", emoji: "🏘️", url: "https://egramswaraj.gov.in" },
+  { name: "UDISE+", key: "udise", emoji: "🎓", url: "https://udiseplus.gov.in" },
+  { name: "National Scholarship Portal", key: "nsp", emoji: "🎒", url: "https://scholarships.gov.in" },
+  { name: "PMAY-G / PMAY-U", key: "pmay", emoji: "🏠", url: "https://pmayg.nic.in" },
 ];
+
+/** One colour per state row in the "where we are live" bars. */
+const STATE_ROW_HUES: Hue[] = ["blue", "green", "violet", "amber", "teal", "rose", "indigo", "orange", "cyan", "pink"];
 
 /** Body text at the reading size used across this page (15/24, text-2). */
-const READ: React.CSSProperties = { fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", margin: 0 };
+const READ: React.CSSProperties = { fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)", margin: 0 };
 
 /** Inline text link in the page hue. */
 const INLINE_LINK: React.CSSProperties = { color: "var(--hue-deep)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 };
@@ -81,86 +98,126 @@ const BUTTON: React.CSSProperties = {
   textDecoration: "none",
 };
 
-export default function AboutPage() {
+export default async function AboutPage({ params }: Props) {
+  const locale = (await params).locale ?? "en";
+  setRequestLocale(locale);
+  const [t, tStates] = await Promise.all([
+    getTranslations({ locale, namespace: "page_about" }),
+    getTranslations({ locale, namespace: "states" }),
+  ]);
+  const b = (c: React.ReactNode) => <strong style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{c}</strong>;
+  const { activeDistricts: d, activeStates: s, totalIndiaDistricts: total, modulesPerDistrict } = FACTS;
+  const coverage = t("coverage", { d, s });
+
+  // The picture: live districts per state, straight from the registry.
+  const liveByState = INDIA_STATES.map((st) => ({
+    slug: st.slug,
+    name: tStates.has(st.slug) ? tStates(st.slug) : st.name,
+    districts: st.districts.filter((x) => x.active).map((x) => x.name),
+  }))
+    .filter((st) => st.districts.length > 0)
+    .sort((a, b2) => b2.districts.length - a.districts.length);
+  const topState = liveByState[0];
+  const allEven = liveByState.every((st) => st.districts.length === topState?.districts.length);
+
   return (
     <main className="ftp-hue-blue" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
       <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 64 }}>
         {/* Reading column: long-form page, so it stays at a comfortable 760 px. */}
         <div style={{ maxWidth: 760 }}>
           {/* ── Header ─────────────────────────────────────────────── */}
-          <SiteHeader
-            emoji="📖"
-            icon={Info}
-            title="Your District. Your Data. Your Right."
-            description="Free district-level government data for every Indian citizen."
-            backHref="/"
-          />
+          <SiteHeader emoji="📖" icon={Info} title={t("title")} description={t("description")} backHref={`/${locale}`} />
 
-          <p style={READ}>
-            ForThePeople.in is India&apos;s citizen transparency platform, launched in 2026. We aggregate
-            district-level government data — budgets, crop prices, water levels, scheme coverage,
-            infrastructure, and more — and present it in a clear, accessible interface for every Indian.
-            The platform covers {getCoveragePhrase()} and plans to expand to all {FACTS.totalIndiaDistricts}+ Indian districts.
-          </p>
+          <p style={READ}>{t("intro", { coverage, total })}</p>
 
           {/* ── Mission ────────────────────────────────────────────── */}
-          <Section title="Our mission" emoji="🎯">
+          <Section title={t("missionTitle")} emoji="🎯">
             <Card tinted padding={24}>
-              <p className="ftp-display" style={{ margin: 0, fontSize: 19, lineHeight: "28px", fontWeight: 600, color: "var(--hue-deep)" }}>
-                To make government data as easy to access as checking the weather — so that every citizen,
-                journalist, researcher, and elected representative can engage with governance based on facts.
+              <p className="ftp-display" style={{ margin: 0, fontSize: 19, lineHeight: 1.5, fontWeight: 600, color: "var(--hue-deep)" }}>
+                {t("mission")}
               </p>
             </Card>
           </Section>
 
           {/* ── Builder — E-E-A-T expertise signal ─────────────────── */}
-          <Section title="Who built this?" emoji="🧑‍💻">
+          <Section title={t("builderTitle")} emoji="🧑‍💻">
             <Card padding={20} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
               <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
                 👤
               </span>
               <div style={{ minWidth: 0 }}>
-                <p className="ftp-title" style={{ fontWeight: 600 }}>Jayanth M B</p>
-                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>
-                  Entrepreneur and civic-tech advocate based in India. Built ForThePeople.in in 2026 as an independent
-                  public-interest project to help citizens, journalists, researchers, and elected representatives
-                  access India&apos;s government data in one place. Not affiliated with any government body or political organisation.
-                </p>
+                <p className="ftp-title" style={{ fontWeight: 600 }}>{t("builderName")}</p>
+                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{t("builderBio")}</p>
               </div>
             </Card>
           </Section>
 
           {/* ── Platform stats — citability block. Counts come from
                  getPlatformFacts() (registry-derived), never typed here. ── */}
-          <Section title="Platform at a glance" emoji="📊">
-            <Explainer title="In simple words">
-              Today ForThePeople.in is live in <strong>{FACTS.activeDistricts}</strong> district{FACTS.activeDistricts === 1 ? "" : "s"}{" "}
-              across <strong>{FACTS.activeStates}</strong> state{FACTS.activeStates === 1 ? "" : "s"}. India has{" "}
-              <strong>{FACTS.totalIndiaDistricts}+</strong> districts, and the plan is to cover every one of them.
-            </Explainer>
+          <Section title={t("glanceTitle")} emoji="📊">
+            <Explainer>{t.rich("glanceSimple", { d, s, total, b })}</Explainer>
             <StatStrip cols={3}>
-              <StatTile emoji="🚀" label="Year launched" value="2026" countUp={false} />
-              <StatTile emoji="🏙️" label="Live districts" value={FACTS.activeDistricts} sub={`Across ${FACTS.activeStates} state${FACTS.activeStates === 1 ? "" : "s"}`} />
-              <StatTile emoji="🗺️" label="Districts planned" value={`${FACTS.totalIndiaDistricts}+`} />
-              <StatTile emoji="🧩" label="Data modules per district" value={FACTS.modulesPerDistrict} />
-              <StatTile emoji="🆓" label="Cost to access" value="Free" />
-              <StatTile emoji="⚖️" label="Legal data basis" value="NDSAP" />
+              <StatTile emoji="🚀" label={t("tileLaunched")} value="2026" countUp={false} />
+              <StatTile emoji="🏙️" label={t("tileLive")} value={d} sub={t("tileLiveSub", { s })} />
+              <StatTile emoji="🗺️" label={t("tilePlanned")} value={`${total}+`} />
+              <StatTile emoji="🧩" label={t("tileModules")} value={modulesPerDistrict} />
+              <StatTile emoji="🆓" label={t("tileCost")} value={t("tileCostValue")} />
+              <StatTile emoji="⚖️" label={t("tileBasis")} value="NDSAP" />
             </StatStrip>
+
+            {/* The picture: live districts per state, one colour per state. */}
+            {topState && (
+              <div style={{ marginTop: 16 }}>
+                <ChartCard
+                  title={t("whereTitle")}
+                  emoji="📍"
+                  units={t("whereUnits")}
+                  simple={
+                    allEven
+                      ? t("whereSimpleEven", { n: topState.districts.length })
+                      : t.rich("whereSimple", { state: topState.name, n: topState.districts.length, b })
+                  }
+                  source={{ label: t("whereSource") }}
+                  table={liveByState.map((st) => ({ label: st.name, value: st.districts.join(", ") }))}
+                >
+                  <BarList
+                    height={12}
+                    rows={liveByState.map((st, i) => {
+                      const hex = HUE_HEX[STATE_ROW_HUES[i % STATE_ROW_HUES.length]];
+                      return {
+                        key: st.slug,
+                        label: (
+                          <>
+                            <span style={{ fontWeight: 600 }}>{st.name}</span>
+                            <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>{st.districts.join(", ")}</span>
+                          </>
+                        ),
+                        value: st.districts.length,
+                        display: t("whereDistricts", { n: st.districts.length }),
+                        color: `linear-gradient(90deg, ${hex.pop}, ${hex.hue})`,
+                      };
+                    })}
+                  />
+                </ChartCard>
+              </div>
+            )}
           </Section>
 
           {/* ── Pillars ────────────────────────────────────────────── */}
-          <Section title="What we stand for" emoji="🧭">
+          <Section title={t("pillarsTitle")} emoji="🧭">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
               {PILLARS.map((p) => (
-                <div key={p.title} className={`ftp-hue-${p.hue}`}>
+                <div key={p.key} className={`ftp-hue-${p.hue}`}>
                   <Card as="article" tinted padding={20} style={{ height: "100%" }}>
                     <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
                       {p.emoji}
                     </span>
-                    <h3 className="ftp-display" style={{ margin: "12px 0 0", fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-                      {p.title}
+                    <h3 className="ftp-display" style={{ margin: "12px 0 0", fontSize: 17, lineHeight: 1.4, fontWeight: 650, color: "var(--hue-deep)" }}>
+                      {t(`pillar_${p.key}_title`)}
                     </h3>
-                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6 }}>{p.desc}</p>
+                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6 }}>
+                      {t(`pillar_${p.key}_desc`, { coverage, total })}
+                    </p>
                   </Card>
                 </div>
               ))}
@@ -168,47 +225,50 @@ export default function AboutPage() {
           </Section>
 
           {/* ── Data sources ───────────────────────────────────────── */}
-          <Section title="Data sources and methodology" emoji="🏛️">
-            <p style={{ ...READ, marginBottom: 16 }}>
-              ForThePeople.in is an independent citizen transparency platform built on India&apos;s
-              Right to Information principles (Article 19(1)(a) of the Constitution). Data is
-              aggregated from official Government of India portals released under the{" "}
-              <strong style={{ color: "var(--ftp-text)", fontWeight: 600 }}>National Data Sharing and Accessibility Policy (NDSAP) 2012</strong>,
-              accredited research institutions (IIPS for NFHS, ICMR, IMD), and publicly accessible
-              verified sources (weather APIs, news headlines under fair use). We do not claim
-              affiliation with any government body. Every numeric value is traceable to its
-              original public source — please verify critical information at the source portal
-              before acting on it.
-            </p>
+          <Section title={t("sourcesTitle")} emoji="🏛️">
+            <p style={{ ...READ, marginBottom: 16 }}>{t.rich("sourcesBody", { b })}</p>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
-              {DATA_SOURCES.map((s) => (
-                <Card key={s.name} as="li" padding={12} style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "baseline", columnGap: 16 }}>
-                  <a
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 140, minHeight: 32, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
-                  >
-                    {s.name}
-                    <ExternalLink size={12} aria-hidden />
-                  </a>
-                  <span className="ftp-body" style={{ color: "var(--ftp-text-2)", flex: "1 1 240px" }}>{s.desc}</span>
+              {DATA_SOURCES.map((src) => (
+                <Card key={src.key} as="li" padding={12} style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
+                    {src.emoji}
+                  </span>
+                  <span style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "baseline", columnGap: 16, minWidth: 0, flex: 1 }}>
+                    <a
+                      href={src.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 140, minHeight: 32, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
+                    >
+                      {src.name}
+                      <ExternalLink size={12} aria-hidden />
+                    </a>
+                    <span className="ftp-body" style={{ color: "var(--ftp-text-2)", flex: "1 1 240px" }}>{t(`src_${src.key}`)}</span>
+                  </span>
                 </Card>
               ))}
             </ul>
           </Section>
 
           {/* ── Data pledge ────────────────────────────────────────── */}
-          <Section title="Our data pledge" emoji="🤝">
+          <Section title={t("pledgeTitle")} emoji="🤝">
             <p style={{ ...READ, marginBottom: 12 }}>
-              Every data point is sourced from official government portals, public APIs, and gazetted documents.
-              We document every source on our{" "}
-              <Link href="/en/karnataka/mandya/data-sources" style={INLINE_LINK}>Data Sources</Link>{" "}
-              page for each district.
+              {t.rich("pledge1", {
+                link: (c) => (
+                  <Link href={`/${locale}/karnataka/mandya/data-sources`} style={INLINE_LINK}>
+                    {c}
+                  </Link>
+                ),
+              })}
             </p>
             <p style={READ}>
-              If you find an error, please <Link href="/contribute" style={INLINE_LINK}>let us know</Link>.
-              We will correct it within 24 hours and publish the correction.
+              {t.rich("pledge2", {
+                link: (c) => (
+                  <Link href={`/${locale}/contribute`} style={INLINE_LINK}>
+                    {c}
+                  </Link>
+                ),
+              })}
             </p>
           </Section>
 
@@ -216,28 +276,26 @@ export default function AboutPage() {
           <Card padding={20} style={{ marginTop: 32, display: "flex", gap: 12, alignItems: "flex-start", borderColor: "color-mix(in srgb, var(--ftp-warn) 35%, var(--ftp-border))" }}>
             <AlertTriangle size={18} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 1 }} />
             <div>
-              <p className="ftp-label" style={{ color: "var(--ftp-warn)" }}>Important disclaimer</p>
+              <p className="ftp-label" style={{ color: "var(--ftp-warn)" }}>{t("disclaimerTitle")}</p>
               <p className="ftp-body" style={{ color: "var(--ftp-text)", marginTop: 6 }}>
-                ForThePeople.in is an <strong style={{ fontWeight: 600 }}>independent, non-governmental initiative</strong>. It is NOT an official government website.
-                Data is sourced from public government portals under NDSAP and is provided for informational purposes only.
-                For official records, always refer to the original government source.
+                {t.rich("disclaimerBody", { b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
               </p>
             </div>
           </Card>
 
           {/* ── Calls to action ────────────────────────────────────── */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 32 }}>
-            <Link href="/" className="ftp-btn ftp-btn-primary" style={{ ...BUTTON, border: "1px solid var(--hue)", color: "#fff" }}>
+            <Link href={`/${locale}`} className="ftp-btn ftp-btn-primary" style={{ ...BUTTON, border: "1px solid var(--hue)", color: "#fff" }}>
               <span className="ftp-emoji" aria-hidden>📍</span>
-              Explore your district
+              {t("ctaExplore")}
             </Link>
             <Link
-              href="/contribute"
+              href={`/${locale}/contribute`}
               className="ftp-btn ftp-btn-secondary"
               style={{ ...BUTTON, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", color: "var(--ftp-text)" }}
             >
               <span className="ftp-emoji" aria-hidden>🙌</span>
-              Contribute
+              {t("ctaContribute")}
             </Link>
           </div>
         </div>

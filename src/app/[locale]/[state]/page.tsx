@@ -13,7 +13,11 @@
 //     (Census 2011 rows) and area covered by the live districts (summed
 //     from the registry — we do not have state-wide census figures in the
 //     registry, so we only show what we can add up honestly, and label it).
-//  3. The picture: one symbol per district, the live ones lit.
+//  3. The pictures, side by side:
+//       • one symbol per district, the live ones lit;
+//       • a ring of the live districts' people, one slice per district in
+//         that district's own colour (only when two or more live districts
+//         have a population on record).
 //  4. District grid: live districts as colourful cards, each in its own
 //     district hue (name, script, tagline, health grade, 2 numbers, a New
 //     pill for the first 30 days), then the not-live districts as compact
@@ -21,26 +25,33 @@
 //  5. Map, "Vote for the next district" list, and supporters.
 //
 //  Every count is derived from the registry (src/lib/constants/districts.ts)
-//  — never typed by hand.
+//  — never typed by hand. All text comes from the "page_state" messages;
+//  state names from "states", taglines from "placeLabels", the taluk word
+//  from "subUnits". District names are proper nouns and stay as stored.
 
 export const revalidate = 300; // ISR: the New pills depend on go-live dates
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CheckCircle2, Clock, Lock, MapPin } from "lucide-react";
 import { getState } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { prisma } from "@/lib/db";
-import { getDistrictHue } from "@/lib/design/hues";
+import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
+import { intlLocale } from "@/i18n/languages";
+import { languageAlternates } from "@/i18n/seo";
+import { scriptLang } from "@/lib/utils/script-lang";
 import StateMapSection from "@/components/map/StateMapSection";
 import StateSponsorSection from "@/components/common/StateSponsorSection";
 import StateVoteList from "@/components/district/StateVoteList";
 import { HealthScoreRing } from "@/components/district/DistrictHealthScoreCard";
 import { getDistrictIcon } from "@/components/district/icons";
 import { Card, EmptyState, Pill, Section, StatStrip, StatTile } from "@/components/district/ui";
-import { Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
+import { Donut, type DonutSlice } from "@/components/site/SiteVisuals";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -50,17 +61,25 @@ const NEW_WINDOW_DAYS = 30;
 /** Above this many districts the picture switches from "one symbol each" to "out of 10". */
 const MAX_SYMBOLS = 40;
 
+/** The people ring shows at most this many slices; the rest share one "other" slice. */
+const MAX_SLICES = 6;
+
 type Props = { params: Promise<{ locale: string; state: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { state } = await params;
+  const { locale, state } = await params;
   const stateData = getState(state);
   if (!stateData) return {};
+  const [t, tStates] = await Promise.all([
+    getTranslations({ locale, namespace: "page_state" }),
+    getTranslations({ locale, namespace: "states" }),
+  ]);
+  const name = tStates.has(state) ? tStates(state) : stateData.name;
   return {
-    title: `${stateData.name} Districts — Government Data | ForThePeople.in`,
-    description: `Explore all ${stateData.districts.length} districts in ${stateData.name}. Free district-level government data: crop prices, water levels, schemes, budgets, and more.`,
-    alternates: { canonical: `${BASE_URL}/en/${state}` },
-    openGraph: { url: `${BASE_URL}/en/${state}` },
+    title: t("metaTitle", { state: name }),
+    description: t("metaDescription", { state: name, n: stateData.districts.length }),
+    alternates: languageAlternates(`/${state}`, locale),
+    openGraph: { url: `${BASE_URL}/${locale}/${state}` },
   };
 }
 
@@ -111,7 +130,7 @@ async function getCensusPopulation(stateSlug: string): Promise<Map<string, numbe
 function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{label}</dt>
+      <dt style={{ fontSize: 12, lineHeight: 1.4, color: "var(--ftp-text-2)" }}>{label}</dt>
       <dd className="ftp-bignum" style={{ margin: 0, fontSize: 18, lineHeight: "24px", color: "var(--hue-deep)" }}>
         {value}
       </dd>
@@ -121,13 +140,28 @@ function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default async function StatePage({ params }: Props) {
   const { locale, state: stateSlug } = await params;
+  setRequestLocale(locale);
   const stateData = getState(stateSlug);
   if (!stateData) notFound();
+
+  const [t, tStates, tLabels, tSub] = await Promise.all([
+    getTranslations({ locale, namespace: "page_state" }),
+    getTranslations({ locale, namespace: "states" }),
+    getTranslations({ locale, namespace: "placeLabels" }),
+    getTranslations({ locale, namespace: "subUnits" }),
+  ]);
+  const nf = new Intl.NumberFormat(intlLocale(locale));
+  const fmt = (n: number) => nf.format(n);
+  const b = (c: React.ReactNode) => <strong>{c}</strong>;
+
+  const stateName = tStates.has(stateSlug) ? tStates(stateSlug) : stateData.name;
+  const tagline = (text: string) => (tLabels.has(text) ? tLabels(text) : text);
 
   const live = stateData.districts.filter((d) => d.active);
   const coming = stateData.districts.filter((d) => !d.active);
   const totalDistricts = stateData.districts.length;
-  const subUnitLabel = getStateConfig(stateSlug)?.subDistrictUnitPlural ?? "Taluks";
+  const subUnitEn = getStateConfig(stateSlug)?.subDistrictUnitPlural ?? "Taluks";
+  const subUnitLabel = tSub.has(subUnitEn) ? tSub(subUnitEn) : subUnitEn;
 
   // Totals across the LIVE districts only (what we can add up). Population
   // uses the sourced Census 2011 rows when EVERY live district has one;
@@ -138,6 +172,7 @@ export default async function StatePage({ params }: Props) {
     allCensus ? censusPop.get(d.slug) ?? 0 : d.population ?? 0;
   const livePopulation = live.reduce((s, d) => s + popOf(d), 0);
   const liveArea = live.reduce((s, d) => s + (d.area ?? 0), 0);
+  const censusSource = { label: t("censusOfIndia"), href: "https://censusindia.gov.in/" };
 
   const goLive = await getGoLiveDates(stateSlug);
   // Server render: one clock read per request (ISR regenerates every 5 min).
@@ -147,12 +182,53 @@ export default async function StatePage({ params }: Props) {
     return d ? renderedAt - d.getTime() <= NEW_WINDOW_DAYS * 86_400_000 : false;
   };
 
-  // The picture: one symbol per district when they fit, otherwise "out of 10".
+  // Picture 1: one symbol per district when they fit, otherwise "out of 10".
   const oneEach = totalDistricts <= MAX_SYMBOLS;
   const pictoFilled = oneEach ? live.length : totalDistricts > 0 ? (live.length / totalDistricts) * 10 : 0;
   const pictoLabel = oneEach
-    ? `${live.length} of ${totalDistricts} districts in ${stateData.name} ${live.length === 1 ? "is" : "are"} live.`
-    : `About ${Math.round(pictoFilled)} of every 10 districts in ${stateData.name} are live.`;
+    ? t("pictoOneEach", { live: live.length, total: totalDistricts, state: stateName })
+    : t("pictoOutOf10", { n: Math.round(pictoFilled), state: stateName });
+
+  // Picture 2: the live districts' people as a ring — one slice per district
+  // in its own colour. Needs two or more districts with a population.
+  const withPop = live
+    .map((d) => ({ d, pop: popOf(d) }))
+    .filter((x) => x.pop > 0)
+    .sort((a, b2) => b2.pop - a.pop);
+  const popTotal = withPop.reduce((s, x) => s + x.pop, 0);
+  const pct = (n: number) => (popTotal > 0 ? Math.round((n / popTotal) * 100) : 0);
+  const slices: DonutSlice[] = withPop.slice(0, MAX_SLICES).map(({ d, pop }) => ({
+    key: d.slug,
+    label: d.name,
+    value: pop,
+    display: `${pct(pop)}%`,
+    color: HUE_HEX[getDistrictHue(d.slug)].hue,
+    sub: fmt(pop),
+  }));
+  const rest = withPop.slice(MAX_SLICES);
+  if (rest.length > 0) {
+    const restPop = rest.reduce((s, x) => s + x.pop, 0);
+    slices.push({ key: "other", label: t("popOther"), value: restPop, display: `${pct(restPop)}%`, color: "var(--ftp-text-2)", sub: fmt(restPop) });
+  }
+  const showPeopleRing = withPop.length >= 2;
+  const biggest = withPop[0];
+
+  const pictogramCard = totalDistricts > 0 && (
+    <Card tinted padding={18}>
+      <Explainer emoji="🧭">
+        {live.length === 0
+          ? t.rich("simpleNone", { total: totalDistricts, state: stateName, b })
+          : t.rich("simpleSome", { live: live.length, total: totalDistricts, coming: coming.length, state: stateName, b })}
+      </Explainer>
+      <Pictogram
+        filled={pictoFilled}
+        total={oneEach ? totalDistricts : 10}
+        emoji="🏙️"
+        size={oneEach && totalDistricts > 12 ? 18 : 26}
+        label={pictoLabel}
+      />
+    </Card>
+  );
 
   return (
     <main className="ftp-hue-blue" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px - 32px)" }}>
@@ -161,94 +237,91 @@ export default async function StatePage({ params }: Props) {
         <SiteHeader
           emoji="🗺️"
           icon={MapPin}
-          chip={stateData.type === "ut" ? "Union territory" : "State"}
-          title={stateData.name}
-          titleLocal={stateData.nameLocal && stateData.nameLocal !== stateData.name ? stateData.nameLocal : null}
+          chip={stateData.type === "ut" ? t("chipUt") : t("chipState")}
+          title={stateName}
+          titleLocal={stateData.nameLocal && stateData.nameLocal !== stateName ? stateData.nameLocal : null}
           description={
-            stateData.active ? (
-              "Pick a district to see its budget, crop prices, water levels, schools and more."
-            ) : (
-              <>
-                This state is coming soon to ForThePeople.in. District data is being prepared. You can{" "}
-                <Link href={`/${locale}/support`} style={{ color: "#fff", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>
-                  sponsor a district
-                </Link>{" "}
-                to help us launch faster.
-              </>
-            )
+            stateData.active
+              ? t("descActive")
+              : t.rich("descComing", {
+                  state: stateName,
+                  link: (c) => (
+                    <Link href={`/${locale}/support`} style={{ color: "#fff", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>
+                      {c}
+                    </Link>
+                  ),
+                })
           }
           backHref={`/${locale}`}
-          backLabel="India"
+          backLabel={t("backIndia")}
         >
           {/* Icons go in as children, not via the `icon` prop: this is a
               server component and a component function cannot be passed
               as a prop to the (client) kit Pill. */}
           <Pill tone="live">
             <CheckCircle2 size={12} aria-hidden />
-            <span><span className="ftp-num">{live.length}</span>&nbsp;live</span>
+            <span className="ftp-num">{t("pillLive", { n: live.length })}</span>
           </Pill>
           <Pill tone="neutral">
             <Clock size={12} aria-hidden />
-            <span><span className="ftp-num">{coming.length}</span>&nbsp;coming</span>
+            <span className="ftp-num">{t("pillComing", { n: coming.length })}</span>
           </Pill>
-          {stateData.capital && <Pill tone="neutral">Capital: {stateData.capital}</Pill>}
+          {stateData.capital && <Pill tone="neutral">{t("pillCapital", { capital: stateData.capital })}</Pill>}
         </SiteHeader>
 
         {/* ═══ 2. Numbers ═══ */}
         <StatStrip cols={4}>
-          <StatTile emoji="🏙️" label="Districts live" value={live.length} />
-          <StatTile emoji="⏳" label="Coming soon" value={coming.length} sub={`of ${totalDistricts} districts`} />
+          <StatTile emoji="🏙️" label={t("tileLive")} value={live.length} />
+          <StatTile emoji="⏳" label={t("tileComing")} value={coming.length} sub={t("tileComingSub", { total: totalDistricts })} />
           <StatTile
             emoji="👥"
-            label="Population covered"
-            value={livePopulation > 0 ? livePopulation.toLocaleString("en-IN") : "—"}
-            sub={allCensus ? "Live districts only" : "Live districts only, latest available estimate"}
-            asOfPeriod={allCensus && livePopulation > 0 ? "Census 2011" : undefined}
-            source={allCensus && livePopulation > 0 ? { label: "Census of India", href: "https://censusindia.gov.in/" } : undefined}
+            label={t("tilePopulation")}
+            value={livePopulation > 0 ? fmt(livePopulation) : "—"}
+            sub={allCensus ? t("liveOnly") : t("liveOnlyEstimate")}
+            asOfPeriod={allCensus && livePopulation > 0 ? t("census2011") : undefined}
+            source={allCensus && livePopulation > 0 ? censusSource : undefined}
           />
           <StatTile
             emoji="📐"
-            label="Area covered"
-            value={liveArea > 0 ? liveArea.toLocaleString("en-IN") : "—"}
-            unit={liveArea > 0 ? "km²" : undefined}
-            sub="Live districts only"
+            label={t("tileArea")}
+            value={liveArea > 0 ? fmt(liveArea) : "—"}
+            unit={liveArea > 0 ? t("unitKm2") : undefined}
+            sub={t("liveOnly")}
           />
         </StatStrip>
 
-        {/* ═══ 3. The picture — straight from the registry counts ═══ */}
-        {totalDistricts > 0 && (
-          <Card tinted padding={18} style={{ marginTop: 16 }}>
-            <Explainer title="In simple words" emoji="🧭">
-              {live.length === 0 ? (
-                <>
-                  None of the <strong>{totalDistricts}</strong> districts in {stateData.name} is live yet. The ones people vote
-                  for most go live first.
-                </>
-              ) : (
-                <>
-                  <strong>{live.length}</strong> of the <strong>{totalDistricts}</strong> districts in {stateData.name}{" "}
-                  {live.length === 1 ? "is" : "are"} live on ForThePeople.in. The other <strong>{coming.length}</strong>{" "}
-                  {coming.length === 1 ? "is" : "are"} waiting for votes.
-                </>
-              )}
-            </Explainer>
-            <Pictogram
-              filled={pictoFilled}
-              total={oneEach ? totalDistricts : 10}
-              emoji="🏙️"
-              size={oneEach && totalDistricts > 12 ? 18 : 26}
-              label={pictoLabel}
-            />
-          </Card>
+        {/* ═══ 3. The pictures — straight from the registry / census rows ═══ */}
+        {pictogramCard && (
+          <div className={showPeopleRing ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
+            {pictogramCard}
+            {showPeopleRing && biggest && (
+              <ChartCard
+                title={t("popTitle")}
+                emoji="👥"
+                units={allCensus ? t("popUnits") : t("popUnitsEstimate")}
+                simple={t.rich("popSimple", { name: biggest.d.name, pct: pct(biggest.pop), state: stateName, b })}
+                source={allCensus ? censusSource : undefined}
+                asOfPeriod={allCensus ? t("census2011") : undefined}
+                table={slices.map((s) => ({ label: s.label, value: `${s.sub} (${s.display})` }))}
+              >
+                <Donut
+                  slices={slices}
+                  label={t("popAria", { state: stateName })}
+                  center={`${pct(biggest.pop)}%`}
+                  centerSub={biggest.d.name}
+                />
+              </ChartCard>
+            )}
+          </div>
         )}
 
         {/* ═══ 4a. Live districts ═══ */}
-        <Section title="Live districts" emoji="🏙️">
+        <Section title={t("sectionLive")} emoji="🏙️">
           {live.length === 0 ? (
             <EmptyState
               emoji="🗳️"
-              title={`No ${stateData.name} district is live yet.`}
-              body="Vote for the district you want first — the most-requested ones launch first."
+              title={t("emptyLiveTitle", { state: stateName })}
+              body={t("emptyLiveBody")}
             />
           ) : (
             <ul
@@ -272,18 +345,18 @@ export default async function StatePage({ params }: Props) {
                               {d.name}
                             </h3>
                             {d.nameLocal && d.nameLocal !== d.name && (
-                              <span lang="und" style={{ fontSize: 13, color: "var(--hue-deep)" }}>{d.nameLocal}</span>
+                              <span lang={scriptLang(d.nameLocal) ?? "und"} style={{ fontSize: 13, color: "var(--hue-deep)" }}>{d.nameLocal}</span>
                             )}
                           </div>
-                          {d.tagline && <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>{d.tagline}</p>}
+                          {d.tagline && <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>{tagline(d.tagline)}</p>}
                           <div style={{ marginTop: 8 }}>
-                            {isNew(d.slug) ? <Pill tone="brand">New</Pill> : <Pill tone="live" dot>Live</Pill>}
+                            {isNew(d.slug) ? <Pill tone="brand">{t("pillNew")}</Pill> : <Pill tone="live" dot>{t("pillLive1")}</Pill>}
                           </div>
                         </div>
                         <HealthScoreRing districtSlug={d.slug} size={44} compact />
                       </div>
                       <dl style={{ display: "flex", gap: 24, margin: "14px 0 0", flexWrap: "wrap" }}>
-                        <MiniStat label="Population" value={popOf(d) > 0 ? popOf(d).toLocaleString("en-IN") : "—"} />
+                        <MiniStat label={t("miniPopulation")} value={popOf(d) > 0 ? fmt(popOf(d)) : "—"} />
                         <MiniStat label={subUnitLabel} value={d.talukCount ?? (d.taluks.length || "—")} />
                       </dl>
                     </Card>
@@ -296,7 +369,7 @@ export default async function StatePage({ params }: Props) {
 
         {/* ═══ 4b. Coming districts (compact, quiet slate) ═══ */}
         {coming.length > 0 && (
-          <Section title="Coming soon" emoji="⏳">
+          <Section title={t("sectionComing")} emoji="⏳">
             <ul
               className="ftp-hue-slate"
               style={{
@@ -311,10 +384,10 @@ export default async function StatePage({ params }: Props) {
                       <span style={{ minWidth: 0 }}>
                         <span style={{ display: "block", fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{d.name}</span>
                         {d.nameLocal && d.nameLocal !== d.name && (
-                          <span lang="und" style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{d.nameLocal}</span>
+                          <span lang={scriptLang(d.nameLocal) ?? "und"} style={{ display: "block", fontSize: 12, lineHeight: 1.4, color: "var(--ftp-text-2)" }}>{d.nameLocal}</span>
                         )}
                       </span>
-                      <Pill tone="neutral"><Lock size={12} aria-hidden />Soon</Pill>
+                      <Pill tone="neutral"><Lock size={12} aria-hidden />{t("pillSoon")}</Pill>
                     </span>
                   </Card>
                 </li>
@@ -324,7 +397,7 @@ export default async function StatePage({ params }: Props) {
         )}
 
         {/* ═══ 5a. Map ═══ */}
-        <Section title="Map" emoji="🗺️">
+        <Section title={t("sectionMap")} emoji="🗺️">
           <Card padding={0} style={{ overflow: "hidden" }}>
             <StateMapSection locale={locale} stateSlug={stateSlug} activeDistrictSlugs={live.map((d) => d.slug)} />
           </Card>
@@ -333,7 +406,7 @@ export default async function StatePage({ params }: Props) {
         {/* ═══ 5b. Vote list (the vote colour from the home page) ═══ */}
         {coming.length > 0 && (
           <div className="ftp-hue-yellow">
-            <Section title="Vote for the next district" emoji="🗳️">
+            <Section title={t("sectionVote")} emoji="🗳️">
               <StateVoteList
                 locale={locale}
                 stateSlug={stateSlug}

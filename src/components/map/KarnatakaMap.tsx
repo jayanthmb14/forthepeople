@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 
@@ -18,6 +19,7 @@ interface KarnatakaMapProps {
 
 export default function KarnatakaMap({ locale, activeDistricts }: KarnatakaMapProps) {
   const router = useRouter();
+  const tm = useTranslations("map");
   const [tooltip, setTooltip] = useState<{ name: string; active: boolean; x: number; y: number } | null>(null);
 
   return (
@@ -71,11 +73,11 @@ export default function KarnatakaMap({ locale, activeDistricts }: KarnatakaMapPr
 
       {/* Tooltip */}
       {tooltip && (
-        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} />
+        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} lockedHint={tm("comingSoon")} />
       )}
 
       {/* Legend */}
-      <MapLegend liveLabel="Active" lockedLabel="Coming soon" />
+      <MapLegend liveLabel={tm("activeState")} lockedLabel={tm("comingSoon")} />
     </div>
   );
 }

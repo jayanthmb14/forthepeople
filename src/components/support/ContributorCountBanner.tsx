@@ -9,13 +9,16 @@
 // Contributor count row on /support — "N people already backing …" with a
 // link to the leaderboard. Design v4: a tinted Card in the page hue, an
 // emoji chip, the number in the deep hue. While loading it says so (never
-// a fake 0).
+// a fake 0). Text: "page_support" messages.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { Card } from "@/components/district/ui";
 
 export default function ContributorCountBanner() {
+  const t = useTranslations("page_support");
+  const locale = useLocale();
   // Plain fetch — /support page is outside the QueryClientProvider tree.
   const [total, setTotal] = useState<number | null>(null);
 
@@ -41,22 +44,25 @@ export default function ContributorCountBanner() {
       padding={12}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 8 }}
     >
-      <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, lineHeight: "20px", color: "var(--ftp-text)" }}>
+      <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, lineHeight: 1.45, color: "var(--ftp-text)" }}>
         <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
           🙌
         </span>
         {total && total > 0 ? (
           <span>
-            <span className="ftp-num" style={{ color: "var(--hue-deep)", fontSize: 16 }}>{total.toLocaleString("en-IN")}</span> people already backing India&apos;s data revolution
+            {t.rich("countSome", {
+              n: total,
+              num: (c) => <span className="ftp-num" style={{ color: "var(--hue-deep)", fontSize: 16 }}>{c}</span>,
+            })}
           </span>
         ) : total === 0 ? (
-          <span>Be the first to back India&apos;s data revolution</span>
+          <span>{t("countNone")}</span>
         ) : (
-          <span style={{ color: "var(--ftp-text-2)" }}>Loading contributors…</span>
+          <span style={{ color: "var(--ftp-text-2)" }}>{t("countLoading")}</span>
         )}
       </span>
       <Link
-        href="/en/contributors"
+        href={`/${locale}/contributors`}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -70,7 +76,7 @@ export default function ContributorCountBanner() {
           whiteSpace: "nowrap",
         }}
       >
-        View leaderboard
+        {t("viewLeaderboard")}
       </Link>
     </Card>
   );

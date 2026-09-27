@@ -22,9 +22,11 @@
 //  page wraps this list in the vote colour (.ftp-hue-yellow).
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { Card, EmptyState, LoadingShell, ProgressBar } from "@/components/district/ui";
+import { usePlaceText } from "@/i18n/client";
 
 interface DistrictRequestRow {
   stateName: string;
@@ -53,6 +55,8 @@ const ALL_STATES_LINK: React.CSSProperties = {
 };
 
 export default function StateVoteList({ locale, stateSlug, stateName, lockedDistricts, limit = 8 }: Props) {
+  const t = useTranslations("page_state");
+  const place = usePlaceText();
   const { data, isLoading } = useQuery<{ all: DistrictRequestRow[] }>({
     queryKey: ["district-requests", "all"],
     queryFn: () => fetch(`/api/district-request?all=1`).then((r) => r.json()),
@@ -60,6 +64,10 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
   });
 
   if (isLoading) return <LoadingShell rows={3} />;
+
+  // `stateName` is the English registry name (the request rows store it that
+  // way); the reader sees the translated one.
+  const shownState = place.state(stateSlug, stateName);
 
   // Match request rows (stored by display name) to this state's locked districts.
   const bySlugName = new Map(lockedDistricts.map((d) => [d.name.toLowerCase(), d.slug]));
@@ -72,11 +80,11 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
     return (
       <EmptyState
         emoji="🗳️"
-        title={`No one has asked for a ${stateName} district yet.`}
-        body="Open any district below that is not live and tap Vote — the most-requested districts go live first."
+        title={t("voteEmptyTitle", { state: shownState })}
+        body={t("voteEmptyBody")}
         action={
           <Link href={`/${locale}/vote-district`} style={ALL_STATES_LINK}>
-            See requests from all states
+            {t("voteAllStates")}
           </Link>
         }
       />
@@ -87,7 +95,7 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
 
   return (
     <Card padding={0}>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+      <ol aria-label={t("voteListAria", { state: shownState })} style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {rows.map((r, i) => {
           const slug = bySlugName.get(r.districtName.toLowerCase());
           return (
@@ -124,8 +132,10 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
                   </span>
                 </span>
                 <span style={{ fontSize: 13, color: "var(--ftp-text-2)", whiteSpace: "nowrap" }}>
-                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{r.requestCount.toLocaleString("en-IN")}</span>{" "}
-                  {r.requestCount === 1 ? "vote" : "votes"}
+                  {t.rich("votes", {
+                    n: r.requestCount,
+                    num: (c) => <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{c}</span>,
+                  })}
                 </span>
                 <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
               </Link>
@@ -135,7 +145,7 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
       </ol>
       <div style={{ borderTop: "1px solid var(--ftp-border)", padding: "0 16px" }}>
         <Link href={`/${locale}/vote-district`} style={ALL_STATES_LINK}>
-          See requests from all states
+          {t("voteAllStates")}
         </Link>
       </div>
     </Card>

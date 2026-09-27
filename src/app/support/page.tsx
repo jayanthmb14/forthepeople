@@ -11,37 +11,50 @@
 //  This is a SERVER component. It reads the admin-editable bio / cost /
 //  help content from the DB (falls back to SUPPORT_DEFAULTS) and lays the
 //  page out with the v4 kit: a SiteHeader band, tier cards with the tier's
-//  emoji, emoji StatTiles and Sections, and one picture — 10 coins lit for
-//  the biggest share of "Where your money goes" (the same percentages as
-//  the bars under it).
+//  emoji, emoji StatTiles and Sections, and two pictures:
+//    • "Cost at scale": the monthly running cost for one district, one
+//      state and all of India as bars on one scale (the April 2026
+//      estimate), replacing three look-alike cards;
+//    • "Where your money goes": 10 coins lit for the biggest share, beside
+//      the same percentages as bars.
 //
 //  The money flow lives entirely in <SupportCheckout /> (a client
 //  component). This page only decides WHERE each checkout sits and what
 //  tier data it receives — the props passed to SupportCheckout are the same
-//  as before the redesign, so Razorpay behaviour is unchanged.
+//  as before the redesign (the tier `label` stays English because it is
+//  also the Razorpay description), so Razorpay behaviour is unchanged.
+//
+//  Text: "page_support" messages. The bio, cost rows and help items are
+//  admin-written content and are shown as stored.
 //
 //  Server → client rule: kit components are client components, so this
 //  file never passes a Lucide icon *component* as a prop to them
 //  (functions cannot cross that boundary). SiteHeader is not a client
 //  component, so it may take one.
 //
+//  Served at /<locale>/support through src/app/[locale]/support/page.tsx.
+//
 import { Suspense, Fragment } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, ChevronRight, ExternalLink, HeartHandshake } from "lucide-react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ChevronRight, ExternalLink, HeartHandshake } from "lucide-react";
 import SupportCheckout from "@/components/support/SupportCheckout";
 import ContributorWallClient from "@/components/support/ContributorWallClient";
 import ContributorCountBanner from "@/components/support/ContributorCountBanner";
 import FeedbackModal from "@/components/common/FeedbackModal";
 import { Card, Pill, ProgressBar, Section, StatStrip, StatTile } from "@/components/district/ui";
-import { Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
+import { BarList } from "@/components/site/SiteVisuals";
 import { TIER_CONFIG, TIER_ORDER } from "@/lib/constants/razorpay-plans";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import SupporterQuotes from "@/components/support/SupporterQuotes";
 import styles from "./support.module.css";
 import { prisma } from "@/lib/db";
 import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem, type SupportPageContent } from "@/lib/support-defaults";
+import { intlLocale } from "@/i18n/languages";
+import { languageAlternates } from "@/i18n/seo";
 
 export const revalidate = 60; // content rarely changes; 60s cache is enough
 
@@ -51,7 +64,7 @@ function renderBioText(text: string): React.ReactNode {
   return paragraphs.map((para, i) => {
     const parts = para.split(/(\*\*[^*]+\*\*)/g);
     return (
-      <p key={i} style={{ fontSize: 15, lineHeight: "24px", color: "var(--ftp-text)", margin: i === 0 ? 0 : "12px 0 0" }}>
+      <p key={i} style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text)", margin: i === 0 ? 0 : "12px 0 0" }}>
         {parts.map((seg, j) => {
           if (seg.startsWith("**") && seg.endsWith("**")) {
             return (
@@ -90,18 +103,26 @@ async function loadSupportContent(): Promise<SupportPageContent> {
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 const FACTS = getPlatformFacts();
 
-export const metadata: Metadata = {
-  title: "Support ForThePeople.in — ₹3.30/day serves one district",
-  description: `Help keep India's citizen transparency platform running. ₹12 lakh/year to serve ${FACTS.totalIndiaDistricts}+ districts. Every rupee keeps government data free and accessible.`,
-  alternates: { canonical: `${BASE_URL}/en/support` },
-};
+type Props = { params: Promise<{ locale?: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = (await params).locale ?? "en";
+  const t = await getTranslations({ locale, namespace: "page_support" });
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription", { total: FACTS.totalIndiaDistricts }),
+    alternates: languageAlternates("/support", locale),
+    openGraph: { url: `${BASE_URL}/${locale}/support` },
+  };
+}
 
 // Projected running costs at each scale (April 2026 estimate — see the
-// "The scale" block below). Plain strings on purpose: they are prose, not data.
-const SCALE_COSTS = [
-  { emoji: "🏘️", label: "1 District", monthly: "₹500/month", yearly: "₹6,000/year", usd: "~$6/month" },
-  { emoji: "🗺️", label: "1 State (avg 31 districts)", monthly: "₹7,000/month", yearly: "₹84,000/year", usd: "~$85/month" },
-  { emoji: "🌏", label: `All India (${FACTS.totalIndiaDistricts} districts)`, monthly: "₹96,000/month", yearly: "₹11.5 lakh/year", usd: "~$1,175/month" },
+// "The scale" block below). Whole rupees and US dollars a month; the year
+// figure is what the estimate states.
+const SCALE_COSTS: { key: "district" | "state" | "india"; emoji: string; monthly: number; yearly: number; usd: number }[] = [
+  { key: "district", emoji: "🏘️", monthly: 500, yearly: 6_000, usd: 6 },
+  { key: "state", emoji: "🗺️", monthly: 7_000, yearly: 84_000, usd: 85 },
+  { key: "india", emoji: "🌏", monthly: 96_000, yearly: 11_50_000, usd: 1_175 },
 ];
 
 const INSTAGRAM_URL = "https://www.instagram.com/forthepeople_in/";
@@ -123,25 +144,6 @@ function helpEmojiFor(item: HelpItem): string {
   return "🤝";
 }
 
-/**
- * Some tier copy in razorpay-plans.ts ends with an emoji (e.g. a coffee cup).
- * The tier card already shows the tier's emoji in its chip, and v4 allows
- * one emoji per element, so pictographs are stripped from the copy.
- * (The RegExp is built from a string so the ES2017 TypeScript target
- * accepts the \p{…} property escape.)
- */
-const EMOJI_RE = new RegExp("[\\p{Extended_Pictographic}\\u{1F1E6}-\\u{1F1FF}\\u{FE0F}\\u{200D}]", "gu");
-function withoutEmoji(text: string): string {
-  return text.replace(EMOJI_RE, "").replace(/\s{2,}/g, " ").trim();
-}
-
-/** Short line under a tier's name: how the price works for that tier. */
-function tierPriceNote(isRecurring: boolean, isCustom: boolean): string {
-  if (isRecurring) return "Monthly, cancel anytime";
-  if (isCustom) return "Any amount helps";
-  return "One-time, edit the amount below";
-}
-
 /** Shared style for the small quiet text links on this page. */
 const QUIET_LINK: React.CSSProperties = {
   display: "inline-flex",
@@ -149,19 +151,34 @@ const QUIET_LINK: React.CSSProperties = {
   gap: 4,
   minHeight: 44,
   fontSize: 14,
-  lineHeight: "20px",
+  lineHeight: 1.45,
   fontWeight: 600,
   color: "var(--hue-deep)",
   textDecoration: "none",
 };
 
-export default async function SupportPage() {
+export default async function SupportPage({ params }: Props) {
+  const locale = (await params).locale ?? "en";
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "page_support" });
+  const nf = new Intl.NumberFormat(intlLocale(locale));
+  const fmt = (n: number) => nf.format(n);
+  const inr = (n: number) => `₹${fmt(n)}`;
+  const usd = (n: number) => `$${fmt(n)}`;
+  const b = (c: React.ReactNode) => <strong style={{ fontWeight: 700 }}>{c}</strong>;
+
   const { activeDistricts, activeStates, modulesPerDistrict, totalIndiaDistricts } = FACTS;
   const content = await loadSupportContent();
   // "N districts × M modules" — derived from the registries, never typed by hand.
   const totalModulesAtScale = totalIndiaDistricts * modulesPerDistrict;
+  // Values for the patron tier's text (same numbers razorpay-plans.ts uses).
+  const tierValues = { districts: fmt(totalIndiaDistricts), dashboards: fmt(totalModulesAtScale) };
+  const tierText = (key: string, part: "name" | "desc" | "hook", fallback: string) =>
+    t.has(`tier_${key}_${part}`) ? t(`tier_${key}_${part}`, tierValues) : fallback;
   // The picture: the biggest slice of "Where your money goes".
-  const biggestCost = [...content.costBreakdown].filter((c) => c.pct > 0).sort((a, b) => b.pct - a.pct)[0] ?? null;
+  const biggestCost = [...content.costBreakdown].filter((c) => c.pct > 0).sort((a, b2) => b2.pct - a.pct)[0] ?? null;
+  // Cost-at-scale picture: how many times one district's cost all of India is.
+  const scaleTimes = Math.round(SCALE_COSTS[2].monthly / SCALE_COSTS[0].monthly);
 
   return (
     <main className="ftp-hue-rose" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 80 }}>
@@ -170,27 +187,19 @@ export default async function SupportPage() {
         <SiteHeader
           emoji="💝"
           icon={HeartHandshake}
-          chip="Support the platform"
-          title="Bringing government data to every Indian citizen"
-          description={
-            <>
-              ForThePeople.in makes government data accessible, visual, and free for all{" "}
-              <strong style={{ fontWeight: 700 }}>
-                <span className="ftp-num">{totalIndiaDistricts}</span>+ districts
-              </strong>{" "}
-              in India. No paywalls. No ads. Just public data for the public.
-            </>
-          }
-          backHref="/en"
+          chip={t("chip")}
+          title={t("title")}
+          description={t.rich("description", { total: fmt(totalIndiaDistricts), b })}
+          backHref={`/${locale}`}
         />
         <div style={{ maxWidth: 480, marginBottom: 16 }}>
           <StatTile
             emoji="🪙"
-            label="Target cost at full scale"
+            label={t("targetLabel")}
             value="₹3.30"
-            unit="/ district / day"
+            unit={t("targetUnit")}
             countUp={false}
-            sub={`At ${totalIndiaDistricts} districts. Current cost per district is higher with ${activeDistricts} active district${activeDistricts === 1 ? "" : "s"}; it falls as we scale.`}
+            sub={t("targetSub", { total: fmt(totalIndiaDistricts), active: activeDistricts })}
           />
         </div>
 
@@ -199,13 +208,14 @@ export default async function SupportPage() {
           <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
             🌍
           </span>
-          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
-            International supporters: we currently accept payments within India only. If you&apos;d like to contribute
-            from outside India, please DM us on Instagram{" "}
-            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none" }}>
-              @forthepeople_in
-            </a>{" "}
-            and we&apos;ll arrange an alternative payment method.
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, lineHeight: 1.6 }}>
+            {t.rich("intlNote", {
+              link: (c) => (
+                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none" }}>
+                  {c}
+                </a>
+              ),
+            })}
           </p>
         </Card>
 
@@ -213,18 +223,19 @@ export default async function SupportPage() {
         <ContributorCountBanner />
 
         {/* ── Tier cards ─────────────────────────────────────────────── */}
-        <Section title="Choose your contribution" id="tiers" emoji="🎯">
+        <Section title={t("tiersTitle")} id="tiers" emoji="🎯">
           <div className={styles.tierGrid}>
             {TIER_ORDER.map((key) => {
               const tier = TIER_CONFIG[key];
               const isCustom = key === "custom";
+              const shownName = tierText(key, "name", tier.name);
               return (
                 <Card
                   key={key}
                   as="article"
                   tinted={Boolean(tier.featured)}
                   padding={16}
-                  aria-label={tier.name}
+                  aria-label={shownName}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -239,25 +250,25 @@ export default async function SupportPage() {
                     <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 19, borderRadius: 11 }}>
                       {tier.emoji}
                     </span>
-                    {tier.featured && <Pill tone="support">Most popular</Pill>}
-                    <Pill tone="neutral">{tier.isRecurring ? "Monthly" : "One-time"}</Pill>
+                    {tier.featured && <Pill tone="support">{t("pillPopular")}</Pill>}
+                    <Pill tone="neutral">{tier.isRecurring ? t("pillMonthly") : t("pillOneTime")}</Pill>
                   </div>
-                  <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
-                    {tier.name}
+                  <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: 1.35, fontWeight: 650, color: "var(--ftp-text)" }}>
+                    {shownName}
                   </h3>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
                     <span className="ftp-bignum" style={{ fontSize: 30, lineHeight: "34px", color: "var(--hue-deep)" }}>
-                      ₹{tier.amount.toLocaleString("en-IN")}
+                      {inr(tier.amount)}
                     </span>
-                    <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                      {tier.isRecurring ? "/ month" : isCustom ? "suggested" : ""}
+                    <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
+                      {tier.isRecurring ? t("perMonth") : isCustom ? t("suggested") : ""}
                     </span>
                   </div>
-                  <p style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>
-                    {tierPriceNote(tier.isRecurring, isCustom)}
+                  <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: 0 }}>
+                    {tier.isRecurring ? t("noteMonthly") : isCustom ? t("noteCustom") : t("noteOneTime")}
                   </p>
-                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{withoutEmoji(tier.description)}</p>
-                  <p className="ftp-body" style={{ color: "var(--hue-deep)", fontStyle: "italic" }}>{withoutEmoji(tier.hookLine)}</p>
+                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{tierText(key, "desc", tier.description)}</p>
+                  <p className="ftp-body" style={{ color: "var(--hue-deep)", fontStyle: "italic" }}>{tierText(key, "hook", tier.hookLine)}</p>
                   <div style={{ marginTop: "auto", paddingTop: 8 }}>
                     <Suspense>
                       <SupportCheckout
@@ -288,22 +299,22 @@ export default async function SupportPage() {
         {/* ── Supporters (subscribers + one-time) ────────────────────── */}
         <ContributorWallClient />
         <div style={{ textAlign: "center", marginTop: 4 }}>
-          <Link href="/en/contributors" style={QUIET_LINK}>
-            View full contributor leaderboard
+          <Link href={`/${locale}/contributors`} style={QUIET_LINK}>
+            {t("leaderboardLink")}
           </Link>
         </div>
 
         {/* ── Supporter quotes (renders nothing when there are none) ─── */}
         <SupporterQuotes />
 
-        {/* ── Personal message (bio) ─────────────────────────────────── */}
-        <Section title="Why this exists" emoji="👋">
+        {/* ── Personal message (bio, admin-written) ──────────────────── */}
+        <Section title={t("bioTitle")} emoji="👋">
           <Card padding={24}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={content.photoUrl}
-                alt={`${content.bioName} — Founder, ForThePeople.in`}
+                alt={t("photoAlt", { name: content.bioName })}
                 width={64}
                 height={64}
                 style={{
@@ -316,8 +327,8 @@ export default async function SupportPage() {
                   flexShrink: 0,
                 }}
               />
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <h3 className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650 }}>{content.bioName}</h3>
+              <div lang={locale === "en" ? undefined : "en"} style={{ flex: 1, minWidth: 220 }}>
+                <h3 className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>{content.bioName}</h3>
                 <p className="ftp-body" style={{ color: "var(--hue-deep)", marginBottom: 16 }}>{content.bioSubtitle}</p>
                 {renderBioText(content.bioText)}
               </div>
@@ -326,70 +337,87 @@ export default async function SupportPage() {
         </Section>
 
         {/* ── The scale ──────────────────────────────────────────────── */}
-        <Section title="The scale" emoji="📈">
+        <Section title={t("scaleTitle")} emoji="📈">
           <Card padding={24}>
-            <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650 }}>More than ₹12 lakh / year to serve all of India</p>
+            <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>{t("scaleHeadline")}</p>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-              <span className="ftp-num">{totalIndiaDistricts}</span> districts ×{" "}
-              <span className="ftp-num">{modulesPerDistrict}</span> dashboards ={" "}
-              <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
-                <span className="ftp-num">{totalModulesAtScale.toLocaleString("en-IN")}</span> data modules
-              </span>{" "}
-              — updated every 5–30 minutes from government portals.
+              {t.rich("scaleMath", {
+                districts: fmt(totalIndiaDistricts),
+                modules: modulesPerDistrict,
+                total: fmt(totalModulesAtScale),
+                n: (c) => <span className="ftp-num">{c}</span>,
+                hl: (c) => <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{c}</span>,
+              })}
             </p>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-              This is the current annual cost as of April 2026, covering {activeDistricts} active district
-              {activeDistricts === 1 ? "" : "s"} across {activeStates} state{activeStates === 1 ? "" : "s"}. As we expand to all{" "}
-              {totalIndiaDistricts}+ districts, costs will grow significantly. Pricing for sponsorship tiers may be revised as the
-              platform scales. <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>Early supporters lock in current rates.</span>
+              {t.rich("scaleBody", {
+                active: activeDistricts,
+                states: activeStates,
+                total: fmt(totalIndiaDistricts),
+                b: (c) => <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{c}</span>,
+              })}
             </p>
             <div style={{ marginTop: 16 }}>
               <StatStrip cols={4}>
-                <StatTile emoji="🖥️" label="Monthly server cost" value="₹96K" sub="All India, April 2026 estimate" />
-                <StatTile emoji="🧩" label="Data modules" value={totalModulesAtScale.toLocaleString("en-IN")} sub={`At ${totalIndiaDistricts} districts`} />
-                <StatTile emoji="⚡" label="Fastest refresh" value="5" unit="min" />
-                <StatTile emoji="🆓" label="Cost to citizens" value="₹0" />
+                <StatTile emoji="🖥️" label={t("tileServer")} value={t("tileServerValue")} sub={t("tileServerSub")} />
+                <StatTile emoji="🧩" label={t("tileModules")} value={fmt(totalModulesAtScale)} sub={t("tileModulesSub", { n: fmt(totalIndiaDistricts) })} />
+                <StatTile emoji="⚡" label={t("tileRefresh")} value="5" unit={t("tileRefreshUnit")} />
+                <StatTile emoji="🆓" label={t("tileCitizens")} value="₹0" />
               </StatStrip>
             </div>
           </Card>
         </Section>
 
-        {/* ── Cost at scale ──────────────────────────────────────────── */}
-        <Section title="Cost at scale" emoji="🪜">
-          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 12 }}>
-            Projected running cost at each scale, from the April 2026 estimate.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 230px), 1fr))", gap: 12 }}>
-            {SCALE_COSTS.map((c) => (
-              <Card key={c.label} tinted padding={20}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>
-                    {c.emoji}
-                  </span>
-                  <p className="ftp-label">{c.label}</p>
-                </div>
-                <p className="ftp-bignum" style={{ fontSize: 24, lineHeight: "30px", color: "var(--hue-deep)", margin: "10px 0 0" }}>{c.monthly}</p>
-                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{c.yearly}</p>
-                <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{c.usd}</p>
-              </Card>
-            ))}
-          </div>
+        {/* ── Cost at scale — picture 1: the three scales on one bar scale ── */}
+        <Section title={t("costScaleTitle")} emoji="🪜">
+          <ChartCard
+            title={t("costScaleChart")}
+            emoji="💸"
+            units={t("costScaleUnits")}
+            simple={t.rich("costScaleSimple", { times: fmt(scaleTimes), b: (c) => <strong>{c}</strong> })}
+            source={{ label: t("costScaleSource") }}
+            table={SCALE_COSTS.map((c) => ({
+              label: t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) }),
+              value: `${t("perMonthAmount", { amount: inr(c.monthly) })}; ${t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}`,
+            }))}
+          >
+            <BarList
+              height={14}
+              rows={SCALE_COSTS.map((c) => ({
+                key: c.key,
+                emoji: c.emoji,
+                label: (
+                  <>
+                    <span style={{ fontWeight: 600 }}>{t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) })}</span>
+                    <span className="ftp-num" style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+                      {t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}
+                    </span>
+                  </>
+                ),
+                value: c.monthly,
+                display: t("perMonthAmount", { amount: inr(c.monthly) }),
+              }))}
+            />
+          </ChartCard>
         </Section>
 
-        {/* ── Where your money goes ──────────────────────────────────── */}
-        <Section title="Where your money goes" emoji="🧾">
+        {/* ── Where your money goes — picture 2 ──────────────────────── */}
+        <Section title={t("moneyTitle")} emoji="🧾">
           <div className={biggestCost ? "ftp-picture-row" : undefined}>
-            {/* The picture: 10 coins, lit for the biggest slice below. */}
+            {/* 10 coins, lit for the biggest slice below. */}
             {biggestCost && (
               <Card tinted padding={18}>
-                <Explainer title="In simple words" emoji="🪙">
-                  Out of every <strong>₹10</strong> you give, about <strong>₹{Math.round(biggestCost.pct / 10)}</strong> goes to the
-                  biggest cost: <strong>{biggestCost.label}</strong>.
+                <Explainer emoji="🪙">
+                  {t.rich("moneySimple", {
+                    n: Math.round(biggestCost.pct / 10),
+                    label: biggestCost.label,
+                    b: (c) => <strong>{c}</strong>,
+                  })}
                 </Explainer>
                 <Pictogram
                   filled={biggestCost.pct / 10}
                   emoji="💰"
-                  label={`About ${Math.round(biggestCost.pct / 10)} of every 10 rupees go to ${biggestCost.label}.`}
+                  label={t("moneyPicto", { n: Math.round(biggestCost.pct / 10), label: biggestCost.label })}
                 />
               </Card>
             )}
@@ -402,8 +430,8 @@ export default async function SupportPage() {
           </div>
         </Section>
 
-        {/* ── Other ways to help ─────────────────────────────────────── */}
-        <Section title="Other ways to help" emoji="🙌">
+        {/* ── Other ways to help (admin-written items) ───────────────── */}
+        <Section title={t("helpTitle")} emoji="🙌">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {content.helpItems.map((item) => (
               <a
@@ -443,9 +471,9 @@ export default async function SupportPage() {
                 🐞
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="ftp-title" style={{ display: "block", fontWeight: 600 }}>Report data errors</span>
+                <span className="ftp-title" style={{ display: "block", fontWeight: 600 }}>{t("reportTitle")}</span>
                 <span className="ftp-body" style={{ display: "block", color: "var(--ftp-text-2)" }}>
-                  Found wrong data? <FeedbackModal label="Use our feedback form" />
+                  {t("reportBody")} <FeedbackModal label={t("reportLink")} />
                 </span>
               </span>
             </Card>
@@ -455,12 +483,11 @@ export default async function SupportPage() {
         {/* ── Closing call to action ─────────────────────────────────── */}
         <Card tinted padding={24} style={{ marginTop: 32, textAlign: "center" }}>
           <span className="ftp-emoji" aria-hidden style={{ display: "block", fontSize: 36, marginBottom: 6 }}>🪙</span>
-          <h2 className="ftp-h2">Even ₹50 helps.</h2>
+          <h2 className="ftp-h2">{t("ctaTitle", { amount: inr(TIER_CONFIG.custom.amount) })}</h2>
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", maxWidth: 560, margin: "8px auto 20px" }}>
-            It pays for one day of collecting data for a district — weather updates, crop prices, dam levels, and{" "}
-            {Math.max(0, modulesPerDistrict - 3)} more data streams. Free for every citizen in that district.
+            {t("ctaBody", { n: Math.max(0, modulesPerDistrict - 3) })}
           </p>
-          <div style={{ display: "inline-block", width: "100%", maxWidth: 280, textAlign: "left" }}>
+          <div style={{ display: "inline-block", width: "100%", maxWidth: 280, textAlign: "start" }}>
             <Suspense>
               <SupportCheckout
                 tier={{
@@ -478,20 +505,6 @@ export default async function SupportPage() {
             </Suspense>
           </div>
         </Card>
-
-        {/* ── International reminder + back link ─────────────────────── */}
-        <p className="ftp-body" style={{ textAlign: "center", color: "var(--ftp-text-2)", marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
-          <span className="ftp-emoji" aria-hidden>🌍</span>
-          International?
-          <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ ...QUIET_LINK, minHeight: 0 }}>
-            DM @forthepeople_in on Instagram
-          </a>
-        </p>
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <Link href="/en" style={{ ...QUIET_LINK, fontWeight: 400, color: "var(--ftp-text-2)" }}>
-            <ArrowLeft size={14} aria-hidden /> Back to ForThePeople.in
-          </Link>
-        </div>
       </div>
     </main>
   );
