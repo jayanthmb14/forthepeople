@@ -12,17 +12,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { intlLocale, NUMBER_LOCALE } from "./languages";
-import { SIDEBAR_MODULES, tierFromPriority, type TierLabel } from "@/lib/constants/sidebar-modules";
+import { SIDEBAR_MODULES, MODULE_GROUPS, getModuleGroup } from "@/lib/constants/sidebar-modules";
 import { INDIA_STATES, getDistrict } from "@/lib/constants/districts";
 import { placeName } from "./place-name";
 
-const TIER_KEY: Record<TierLabel, string> = {
-  "Civic duty": "civic",
-  "Money & resources": "money",
-  "Daily services": "services",
-  "Accountability": "accountability",
-  "Community & people": "community",
-};
 
 /** Locale-aware number and date formatting (IST for dates). */
 export function useFormat() {
@@ -59,16 +52,17 @@ export function useModuleText() {
   return {
     label: (slug: string) => (tName.has(slug) ? tName(slug) : find(slug)?.label ?? slug),
     description: (slug: string) => (tDesc.has(slug) ? tDesc(slug) : find(slug)?.description ?? ""),
-    group: (tier: TierLabel) => {
-      const key = TIER_KEY[tier];
-      return key && tGroup.has(key) ? tGroup(key) : tier;
+    /** A group's name by its key ("start") or English label ("Start here"). */
+    group: (keyOrLabel: string) => {
+      const g = MODULE_GROUPS.find((x) => x.key === keyOrLabel || x.label === keyOrLabel);
+      if (!g) return keyOrLabel;
+      return tGroup.has(g.key) ? tGroup(g.key) : g.label;
     },
+    /** The translated name of the group a module belongs to (docs/MODULE-MAP.md). */
     groupOf: (slug: string) => {
-      const m = find(slug);
-      if (!m) return null;
-      const tier = tierFromPriority(m.priority);
-      const key = TIER_KEY[tier];
-      return key && tGroup.has(key) ? tGroup(key) : tier;
+      const g = getModuleGroup(slug);
+      if (!g) return null;
+      return tGroup.has(g.key) ? tGroup(g.key) : g.label;
     },
   };
 }

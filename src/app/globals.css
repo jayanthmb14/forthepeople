@@ -1210,3 +1210,24 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
   .ftp-sheet, .ftp-sheet-backdrop { animation: none; }
   .ftp-countdown-fill { transition: none; }
 }
+
+/* ═══ Indic fonts ═══
+   Latin keeps Plus Jakarta / Bricolage; Kannada and Devanagari glyphs fall
+   through to Noto (loaded in src/lib/fonts.ts). Applies to the whole page on
+   /kn and /hi, and to any lang-tagged name on other pages (ಮಂಡ್ಯ on /en).
+   Without this, the Noto files loaded but the system font drew the text. */
+.ftp-locale-root:lang(kn), [lang="kn"] {
+  --ftp-font-sans: var(--font-plus-jakarta), var(--font-noto-kannada), "Noto Sans Kannada", system-ui, sans-serif;
+  --ftp-font-display: var(--font-bricolage), var(--font-noto-kannada), "Noto Sans Kannada", sans-serif;
+  font-family: var(--ftp-font-sans);
+}
+.ftp-locale-root:lang(hi), [lang="hi"], [lang="mr"], [lang="ne"], [lang="sa"], [lang="mai"], [lang="kok"], [lang="doi"], [lang="brx"] {
+  --ftp-font-sans: var(--font-plus-jakarta), var(--font-noto-devanagari), "Noto Sans Devanagari", system-ui, sans-serif;
+  --ftp-font-display: var(--font-bricolage), var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
+  font-family: var(--ftp-font-sans);
+}
+/* Tablet: 4-up stat tiles were ~170 px wide at 768 px (sidebar gone below
+   1024 px, but numbers + labels still cramped); 2-up until laptop. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .ftp-stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
