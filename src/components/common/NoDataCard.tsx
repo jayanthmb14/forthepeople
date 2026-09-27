@@ -6,7 +6,14 @@
 
 "use client";
 
-import { Info } from "lucide-react";
+// ═══════════════════════════════════════════════════════════
+//  NoDataCard — the honest "no data yet" block for a module page.
+//  Design v3: renders the kit <EmptyState> (one honest sentence as the
+//  title, what is being done about it as the body). No amber box, no
+//  stripe. The per-module wording below is unchanged from v2.
+// ═══════════════════════════════════════════════════════════
+
+import { EmptyState } from "@/components/district/ui";
 import { getStateConfig } from "@/lib/constants/state-config";
 import type { StateConfig } from "@/lib/constants/state-config";
 
@@ -172,26 +179,16 @@ export default function NoDataCard({ module, district, state, isUrban = false, c
     : getNoDataMessage(module, district, state, stateConfig, isUrban);
 
   return (
-    <div
-      style={{
-        background: "#FFFBEB",
-        border: "1px solid #FDE68A",
-        borderLeft: "3px solid #F59E0B",
-        borderRadius: 12,
-        padding: "16px 20px",
-        marginBottom: 20,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <Info size={18} style={{ color: "#D97706", flexShrink: 0, marginTop: 1 }} />
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#92400E", marginBottom: 6 }}>{title}</div>
-          <div style={{ fontSize: 13, color: "#78350F", lineHeight: 1.6 }}>{body}</div>
-          <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 10 }}>
+    <div style={{ marginBottom: 20 }}>
+      <EmptyState
+        title={title}
+        body={body}
+        action={
+          <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>
             Data is sourced from official government portals under India&apos;s Open Data Policy (NDSAP).
-          </div>
-        </div>
-      </div>
+          </p>
+        }
+      />
     </div>
   );
 }

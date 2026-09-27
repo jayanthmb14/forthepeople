@@ -2,22 +2,27 @@
  * ForThePeople.in — Compact leadership snippet for the district overview.
  *
  * Shows the four key positions citizens look for first:
- *   👤 Collector  (T3 District Collector / Deputy Commissioner)
- *   👮 SP         (T3 Superintendent of Police / Commissioner of Police)
- *   🗳 MP         (T4 row whose role mentions MP / Member of Parliament)
- *   📋 MLAs       (count + per-party tally for T4 rows whose role starts MLA)
+ *   Collector  (T3 District Collector / Deputy Commissioner)
+ *   SP         (T3 Superintendent of Police / Commissioner of Police)
+ *   MP         (T4 row whose role mentions MP / Member of Parliament)
+ *   MLAs       (count + per-party tally for T4 rows whose role starts MLA)
  *
  * Renders nothing if the district has zero leaders, so empty districts
  * don't show a hollow shell. Links to /leadership for the full hierarchy.
+ *
+ * Design v3: a kit Card with a title row; each position is one 44 px row
+ * (Lucide icon · role label · name). Party colour appears only as a 6 px dot.
  */
 
 "use client";
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Users } from "lucide-react";
+import { BadgeCheck, Landmark, Shield, Users, Vote } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
+import { Card } from "@/components/district/ui";
 
 interface ApiResponse { data: Leader[]; meta?: unknown }
 
@@ -32,6 +37,22 @@ function isMP(l: Leader): boolean {
 }
 function isMLA(l: Leader): boolean {
   return /^mla\b|member of legislative assembly/i.test(l.role);
+}
+
+/** One labelled row: icon · role · value. */
+function Row({ icon: Icon, role, children }: { icon: LucideIcon; role: string; children: React.ReactNode }) {
+  return (
+    <li style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 36, fontSize: 13, lineHeight: "20px" }}>
+      <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+      <span style={{ color: "var(--ftp-text-2)", width: 72, flexShrink: 0 }}>{role}</span>
+      <span style={{ minWidth: 0, flex: 1, color: "var(--ftp-text)" }}>{children}</span>
+    </li>
+  );
+}
+
+/** Honest placeholder text (italic, secondary colour). */
+function Pending({ children }: { children: React.ReactNode }) {
+  return <span style={{ color: "var(--ftp-text-2)", fontStyle: "italic" }}>{children}</span>;
 }
 
 export default function LeadersSnippet({
@@ -65,65 +86,53 @@ export default function LeadersSnippet({
   // Bureaucrat names that are placeholders (e.g. "[Verify at mandya.nic.in]")
   // render in italic grey so users see the action item, not a fake person.
   const renderName = (l: Leader | undefined, fallback: string) => {
-    if (!l) return <span style={{ color: "#9CA3AF", fontStyle: "italic" }}>{fallback}</span>;
-    if (l.name.startsWith("[")) return <span style={{ color: "#9CA3AF", fontStyle: "italic" }}>{l.name}</span>;
-    return <strong style={{ color: "#1A1A1A" }}>{l.name}</strong>;
+    if (!l) return <Pending>{fallback}</Pending>;
+    if (l.name.startsWith("[")) return <Pending>{l.name}</Pending>;
+    return <span style={{ fontWeight: 500 }}>{l.name}</span>;
   };
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Users size={14} style={{ color: "#7C3AED" }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#9B9B9B", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            District Leadership
-          </span>
-        </div>
-        <Link
-          href={`${base}/leadership`}
-          style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", fontWeight: 500 }}
-        >
-          View all →
+    <Card as="section" aria-label="District leadership">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Users size={16} aria-hidden style={{ color: "var(--accent-purple-700)" }} />
+          <h3 className="ftp-title">District leadership</h3>
+        </span>
+        <Link href={`${base}/leadership`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+          View all
         </Link>
       </div>
 
-      <div
-        style={{
-          background: "#FFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 14,
-          padding: "14px 16px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-          display: "flex", flexDirection: "column", gap: 8,
-          fontSize: 13, color: "#1A1A1A",
-        }}
-      >
-        <div>
-          👤 Collector: {renderName(collector, "Verify at district website")}
-        </div>
-        <div>
-          👮 SP: {renderName(sp, "Verify at state police website")}
-        </div>
-        <div>
-          🗳 MP: {mp ? (
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <Row icon={Landmark} role="Collector">{renderName(collector, "Verify at district website")}</Row>
+        <Row icon={Shield} role="SP">{renderName(sp, "Verify at state police website")}</Row>
+        <Row icon={BadgeCheck} role="MP">
+          {mp ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 500 }}>{mp.name}</span>
+              {mp.party && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--ftp-text-2)" }}>
+                  {/* Party colour as a 6 px dot only (design rule: no tinted boxes). */}
+                  <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: getPartyColor(mp.party).text }} />
+                  {mp.party}
+                </span>
+              )}
+            </span>
+          ) : (
+            <Pending>Not yet recorded</Pending>
+          )}
+        </Row>
+        <Row icon={Vote} role="MLAs">
+          {mlas.length > 0 ? (
             <>
-              <strong style={{ color: "#1A1A1A" }}>{mp.name}</strong>
-              {mp.party && (() => {
-                const tone = getPartyColor(mp.party);
-                return <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 12, color: tone.text, background: tone.bg, border: `1px solid ${tone.border}` }}>{mp.party}</span>;
-              })()}
+              <span className="ftp-num">{mlas.length}</span>
+              {partyLine && <span style={{ color: "var(--ftp-text-2)" }}> ({partyLine})</span>}
             </>
-          ) : <span style={{ color: "#9CA3AF", fontStyle: "italic" }}>Not yet recorded</span>}
-        </div>
-        <div>
-          📋 MLAs: {mlas.length > 0 ? (
-            <>
-              <strong style={{ color: "#1A1A1A", fontFamily: "var(--font-mono)" }}>{mlas.length}</strong>
-              {partyLine && <span style={{ color: "#6B6B6B" }}> ({partyLine})</span>}
-            </>
-          ) : <span style={{ color: "#9CA3AF", fontStyle: "italic" }}>Not yet recorded</span>}
-        </div>
-      </div>
-    </div>
+          ) : (
+            <Pending>Not yet recorded</Pending>
+          )}
+        </Row>
+      </ul>
+    </Card>
   );
 }

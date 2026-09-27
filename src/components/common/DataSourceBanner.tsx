@@ -6,7 +6,25 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════
+//  DataSourceBanner — "where this data comes from" line (Design v3)
+// ═══════════════════════════════════════════════════════════
+//
+//  Used by ~30 module pages, so the PROPS CONTRACT IS UNCHANGED:
+//    moduleName       (kept for callers; not shown)
+//    sources          list of source names → one SourcePill each
+//    lastUpdated      ISO timestamp → kit FreshnessPill ("Updated 2h ago",
+//                     "As of 12 Sep"); nothing when missing
+//    updateFrequency  plain text, e.g. "Daily"
+//    isLive           kept for callers. It no longer paints a "LIVE"
+//                     badge by itself: the FreshnessPill only says the
+//                     data is live when `lastUpdated` is under 30 minutes
+//                     old (honesty rule, CONCEPT-v3 §2.5).
+//
+//  Look: a quiet row on the page background — no left stripe, no tint.
+
 import { Info } from "lucide-react";
+import { FreshnessPill, SourcePill } from "@/components/district/ui";
 
 interface DataSourceBannerProps {
   moduleName: string;
@@ -16,53 +34,31 @@ interface DataSourceBannerProps {
   isLive?: boolean;
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
-
-export default function DataSourceBanner({ sources, lastUpdated, updateFrequency, isLive }: DataSourceBannerProps) {
+export default function DataSourceBanner({ sources, lastUpdated, updateFrequency }: DataSourceBannerProps) {
   return (
     <div
+      role="note"
+      aria-label="Data sources"
       style={{
-        fontSize: 12,
-        color: "#6B6B6B",
-        lineHeight: 1.6,
-        padding: "10px 14px",
-        background: "#FAFAF8",
-        borderRadius: 8,
-        borderLeft: "3px solid #2563EB",
-        marginBottom: 14,
+        padding: "10px 0",
+        marginBottom: 16,
+        borderBottom: "1px solid var(--ftp-border)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-        <Info size={13} style={{ color: "#9B9B9B", flexShrink: 0, marginTop: 2 }} />
-        <div>
-          <span>
-            Data sourced from{" "}
-            <strong style={{ color: "#4B4B4B" }}>{sources.join(", ")}</strong>.
-            {lastUpdated && (
-              <> Last updated: <strong>{timeAgo(lastUpdated)}</strong>.</>
-            )}
-            {" "}Update frequency: {updateFrequency}.
-            {isLive && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 6, color: "#16A34A", fontWeight: 600 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16A34A", display: "inline-block" }} />
-                LIVE
-              </span>
-            )}
-          </span>
-          <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 4 }}>
-            ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India&apos;s Open Data Policy (NDSAP).
-          </div>
-        </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <Info size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+        <span className="ftp-label">Source</span>
+        {sources.map((s) => (
+          <SourcePill key={s} label={s} />
+        ))}
+        {lastUpdated && <FreshnessPill asOf={lastUpdated} />}
+        <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+          Update frequency: {updateFrequency}
+        </span>
       </div>
+      <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "6px 0 0" }}>
+        ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India&apos;s Open Data Policy (NDSAP).
+      </p>
     </div>
   );
 }

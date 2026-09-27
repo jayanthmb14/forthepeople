@@ -95,24 +95,23 @@ export default async function DistrictLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
-      {/* Session 19.10: DistrictStatusBar restored — sticky bar under the
-          header showing "Pune, Maharashtra · Monday, 27 April 2026 · 18:16:04
-          IST · Live". Was removed in S19.4 in favour of consolidating into
-          the inline breadcrumb, but the live timestamp + Live indicator are
-          information users actually rely on. The breadcrumb-in-header still
-          handles navigation; the sub-bar handles "when was this updated". */}
-      {/* Mobile-only drawer host — listens for the
-          'ftp:open-modules-drawer' window event dispatched by
-          HeaderBar's mobile hamburger panel and opens the LEFT module
-          drawer. Renders nothing visible until opened. */}
+      {/* Mobile-only chrome: the 44 px module bar under the header
+          ("current module · All modules") plus the bottom sheet that lists
+          the 5 module groups. It also listens for the
+          'ftp:open-modules-drawer' window event dispatched by HeaderBar's
+          mobile menu. Hidden on desktop (the left rail takes over). */}
       <MobileDistrictChrome
         locale={locale}
         stateSlug={stateSlug}
         districtSlug={districtSlug}
         districtName={districtData!.name}
       />
+      {/* 32 px status strip: district · state · date · time · data
+          freshness (from /api/data/freshness). Tells people WHEN the
+          numbers below were last updated. */}
       <DistrictStatusBar
         districtSlug={districtSlug}
+        stateSlug={stateSlug}
         districtName={districtData!.name}
         stateName={stateData?.name ?? ""}
       />
@@ -133,7 +132,7 @@ export default async function DistrictLayout({
 
         {/* Main content */}
         <main
-          style={{ flex: 1, minWidth: 0, background: "#FAFAF8" }}
+          style={{ flex: 1, minWidth: 0, background: "var(--ftp-bg)" }}
           role="main"
           aria-label={`${districtData!.name} district data`}
         >

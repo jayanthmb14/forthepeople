@@ -6,12 +6,20 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════
+//  StateSponsorSection — "Backed by" block on a state page (Design v3).
+//  Two quiet rows (All India · <State> champions) of supporter names,
+//  wrapping instead of side-scrolling, plus one sponsor link. Same
+//  /api/data/contributors request as v2; prices come from TIER_CONFIG.
+// ═══════════════════════════════════════════════════════════
+
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Instagram, Linkedin, Github, Twitter, ExternalLink } from "lucide-react";
-import { BADGE_COLORS } from "@/lib/badge-level";
+import { ExternalLink, Github, HandHeart, Instagram, Linkedin, Twitter } from "lucide-react";
 import { getContributorLabel } from "@/lib/contributor-label";
 import { normalizeSocialLink } from "@/lib/social-link";
+import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+import { Card } from "@/components/district/ui";
 
 interface StateSponsor {
   id: string;
@@ -40,69 +48,57 @@ const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   website: ExternalLink,
 };
 
+/** Names shown per row before "+N more". */
 const CHIPS_PER_LINE = 15;
 
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
 function Chip({ s }: { s: StateSponsor }) {
-  const badgeColors = s.badgeLevel ? BADGE_COLORS[s.badgeLevel] : null;
   const SocialIcon = s.socialPlatform ? SOCIAL_ICONS[s.socialPlatform] : null;
   const initials = s.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const label = getContributorLabel(s.tier, s.districtName, s.stateName);
   const title = `${s.name} · ${label}${s.monthsActive ? ` · ${s.monthsActive}mo` : ""}`;
+  const href = normalizeSocialLink(s.socialLink);
 
   const inner = (
     <>
-      <div
+      <span
+        aria-hidden
+        className="ftp-num"
         style={{
-          width: 22, height: 22, borderRadius: "50%",
-          background: badgeColors?.bg ?? "#FEF3C7",
-          color: badgeColors?.text ?? "#92400E",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 10, fontWeight: 700, flexShrink: 0,
-          border: badgeColors ? `1.5px solid ${badgeColors.border}` : undefined,
+          width: 20, height: 20, borderRadius: "50%",
+          background: "var(--ftp-surface-2)", color: "var(--ftp-text-2)",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          fontSize: 9, flexShrink: 0,
         }}
       >
         {initials}
-      </div>
-      <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1A1A", whiteSpace: "nowrap" }}>{s.name}</span>
-      {SocialIcon && <SocialIcon size={11} color="#6B6B6B" />}
+      </span>
+      <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", whiteSpace: "nowrap" }}>{s.name}</span>
+      {SocialIcon && <SocialIcon size={11} aria-hidden style={{ color: "var(--ftp-text-2)" }} />}
     </>
   );
 
-  return (
-    <div
-      title={title}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "5px 10px",
-        background: "#FFFFFF",
-        border: "1px solid #FDE68A",
-        borderRadius: 999,
-        flexShrink: 0,
-        scrollSnapAlign: "start",
-      }}
-    >
-      {normalizeSocialLink(s.socialLink) ? (
-        <a href={normalizeSocialLink(s.socialLink)!} target="_blank" rel="noopener noreferrer"
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none", color: "inherit" }}>
-          {inner}
-        </a>
-      ) : (
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{inner}</div>
-      )}
-    </div>
+  const style: React.CSSProperties = {
+    display: "inline-flex", alignItems: "center", gap: 6, minHeight: 32,
+    padding: "0 10px 0 4px", borderRadius: "var(--ftp-radius-pill)",
+    border: "1px solid var(--ftp-border)", background: "var(--ftp-surface)",
+    textDecoration: "none", color: "inherit",
+  };
+
+  return href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" title={title} style={style}>{inner}</a>
+  ) : (
+    <span title={title} style={style}>{inner}</span>
   );
 }
 
 function Line({
-  icon,
   label,
   sponsors,
   viewAllHref,
   emptyCta,
 }: {
-  icon: string;
   label: string;
   sponsors: StateSponsor[];
   viewAllHref: string;
@@ -112,43 +108,19 @@ function Line({
   const hiddenCount = sponsors.length - visible.length;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#92400E", flexShrink: 0, width: 130, display: "flex", alignItems: "center", gap: 4 }}>
-        <span>{icon}</span>
-        <span>{label}:</span>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          gap: 6,
-          overflowX: "auto",
-          scrollSnapType: "x mandatory",
-          flex: 1,
-          paddingBottom: 2,
-          scrollbarWidth: "none",
-        }}
-      >
+    <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", padding: "6px 0" }}>
+      <span className="ftp-label" style={{ width: 150, flexShrink: 0 }}>{label}</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
         {visible.length > 0
           ? visible.map((s) => <Chip key={s.id} s={s} />)
           : emptyCta && (
-              <Link
-                href={emptyCta.href}
-                style={{ fontSize: 11, color: "#92400E", textDecoration: "none", fontStyle: "italic", whiteSpace: "nowrap", padding: "4px 0" }}
-              >
+              <Link href={emptyCta.href} style={{ fontSize: 13, color: "var(--ftp-text-2)", textDecoration: "none", minHeight: 32, display: "inline-flex", alignItems: "center" }}>
                 {emptyCta.text}
               </Link>
             )}
         {hiddenCount > 0 && (
-          <Link
-            href={viewAllHref}
-            style={{
-              display: "inline-flex", alignItems: "center", padding: "5px 10px",
-              background: "rgba(255,255,255,0.6)", border: "1px dashed #FDE68A",
-              borderRadius: 999, fontSize: 11, fontWeight: 600, color: "#92400E",
-              textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0, scrollSnapAlign: "start",
-            }}
-          >
-            +{hiddenCount} more
+          <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 32, display: "inline-flex", alignItems: "center" }}>
+            +<span className="ftp-num">{hiddenCount}</span>&nbsp;more
           </Link>
         )}
       </div>
@@ -167,60 +139,39 @@ export default function StateSponsorSection({ locale, stateSlug, stateName }: Pr
   const all = data?.contributors ?? [];
   const indiaLine = all.filter((s) => s.tier === "founder" || s.tier === "patron");
   const stateLine = all.filter((s) => s.tier === "state");
+  const supportHref = `/${locale}/support?tier=state&state=${stateSlug}`;
 
   return (
-    <div
-      style={{
-        background: "linear-gradient(135deg, #FFFBEB, #FEF3C7)",
-        border: "1px solid #FDE68A",
-        borderRadius: 14,
-        padding: "16px 20px",
-        marginTop: 24,
-        marginBottom: 24,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#92400E", letterSpacing: "0.06em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-          <span>🏆</span><span>Supported By</span>
-        </div>
-        <Link href={`/${locale}/contributors`} style={{ fontSize: 11, color: "#92400E", textDecoration: "none", fontWeight: 600 }}>
-          View all →
+    <Card as="section" aria-labelledby="ftp-state-backed-by">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+        <h2 id="ftp-state-backed-by" className="ftp-title">Backed by</h2>
+        <Link href={`/${locale}/contributors`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+          View all
         </Link>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <Line
-          icon="👑"
-          label="India"
-          sponsors={indiaLine}
-          viewAllHref={`/${locale}/contributors`}
-          emptyCta={{ text: "Be the first → ₹9,999/mo", href: `/${locale}/support?tier=patron` }}
-        />
-        <Line
-          icon="🇮🇳"
-          label={`${stateName} Champions`}
-          sponsors={stateLine}
-          viewAllHref={`/${locale}/contributors`}
-          emptyCta={{ text: `Be the first ${stateName} Champion → ₹999/mo`, href: `/${locale}/support?tier=state&state=${stateSlug}` }}
-        />
-      </div>
+      <Line
+        label="All India"
+        sponsors={indiaLine}
+        viewAllHref={`/${locale}/contributors`}
+        emptyCta={{ text: `Be the first — ${inr(TIER_CONFIG.patron.amount)}/mo`, href: `/${locale}/support?tier=patron` }}
+      />
+      <Line
+        label={`${stateName} champions`}
+        sponsors={stateLine}
+        viewAllHref={`/${locale}/contributors`}
+        emptyCta={{ text: `Be the first ${stateName} Champion — ${inr(TIER_CONFIG.state.amount)}/mo`, href: supportHref }}
+      />
 
-      <Link
-        href={`/${locale}/support?tier=state&state=${stateSlug}`}
-        style={{
-          display: "inline-block",
-          marginTop: 14,
-          padding: "9px 18px",
-          background: "#7C3AED",
-          color: "#fff",
-          borderRadius: 10,
-          fontSize: 13,
-          fontWeight: 600,
-          textDecoration: "none",
-        }}
-      >
-        ❤️ Sponsor {stateName} — ₹999/mo →
-      </Link>
-    </div>
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ftp-border)" }}>
+        <Link
+          href={supportHref}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-support)", textDecoration: "none" }}
+        >
+          <HandHeart size={16} aria-hidden />
+          Sponsor {stateName} — {inr(TIER_CONFIG.state.amount)}/mo
+        </Link>
+      </div>
+    </Card>
   );
 }
