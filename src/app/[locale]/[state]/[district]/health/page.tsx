@@ -5,20 +5,24 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Health — Design v3 module page (CONCEPT-v3 §5)
+//  Health — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Mostly reference content (helplines, schemes, the kinds of hospitals a
 //  district has) plus the sanctioned-vs-filled staffing numbers, which
 //  carry their own "as of" date. Phone numbers are real tel: links with
 //  44 px tap targets on phones.
+//
+//  Picture: the staffing section draws ten health workers with the filled
+//  share lit, plus a dial, from the real sanctioned and working counts.
+//  With no staffing rows nothing is drawn (the rest is reference text).
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { getStateConfig } from "@/lib/constants/state-config";
 import ModuleNews from "@/components/district/ModuleNews";
 import { use } from "react";
-import { Heart, Phone, ExternalLink } from "lucide-react";
+import { Heart, ExternalLink } from "lucide-react";
 import { PageHeader, Section, Card, ToolbarButton } from "@/components/district/ui";
 import StaffingSection from "@/components/district/daily-services/StaffingSection";
 import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
@@ -27,12 +31,12 @@ import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 // Static health helplines for India — national numbers only.
 // `urgent` marks the life-safety numbers, shown in the danger colour.
 const HELPLINES = [
-  { name: "National Emergency", number: "112", urgent: true },
-  { name: "Ambulance", number: "108", urgent: true },
-  { name: "iCALL (Mental Health)", number: "9152987821" },
-  { name: "Anti-Poison (AIIMS)", number: "1800-116-117" },
-  { name: "Ayushman Bharat", number: "14555" },
-  { name: "National Health Helpline", number: "1800-180-1104" },
+  { name: "National Emergency", number: "112", urgent: true, emoji: "🆘" },
+  { name: "Ambulance", number: "108", urgent: true, emoji: "🚑" },
+  { name: "iCALL (Mental Health)", number: "9152987821", emoji: "💬" },
+  { name: "Anti-Poison (AIIMS)", number: "1800-116-117", emoji: "🧪" },
+  { name: "Ayushman Bharat", number: "14555", emoji: "🪪" },
+  { name: "National Health Helpline", number: "1800-180-1104", emoji: "📞" },
 ];
 
 // State-specific health schemes — always show national + state schemes
@@ -71,12 +75,25 @@ function getHospitalTypes(stateSlug: string) {
   const healthSubLabel = config?.healthSubLabel ?? "Taluk Hospitals";
   const subUnit = config?.subDistrictUnit ?? "Taluk";
   return [
-    { type: "Government District Hospital", description: "Primary referral hospital with emergency, OPD, and specialty services" },
-    { type: healthSubLabel, description: `Secondary care hospitals at ${subUnit.toLowerCase()} level` },
-    { type: "PHC (Primary Health Centres)", description: "Primary care centers covering ~30,000 population" },
-    { type: "Sub-Health Centres", description: "Basic health services at village level" },
-    { type: "Private Hospitals", description: "Empanelled under Ayushman Bharat Yojana" },
+    { type: "Government District Hospital", emoji: "🏥", description: "Primary referral hospital with emergency, OPD, and specialty services" },
+    { type: healthSubLabel, emoji: "🏨", description: `Secondary care hospitals at ${subUnit.toLowerCase()} level` },
+    { type: "PHC (Primary Health Centres)", emoji: "🩺", description: "Primary care centers covering ~30,000 population" },
+    { type: "Sub-Health Centres", emoji: "🏡", description: "Basic health services at village level" },
+    { type: "Private Hospitals", emoji: "🏢", description: "Empanelled under Ayushman Bharat Yojana" },
   ];
+}
+
+/** Small emoji chip used on helpline cards and facility rows. */
+function EmojiChip({ emoji, size = 36 }: { emoji: string; size?: number }) {
+  return (
+    <span
+      className="ftp-icon-chip ftp-emoji"
+      aria-hidden
+      style={{ width: size, height: size, fontSize: Math.round(size / 2), borderRadius: Math.round(size / 3) }}
+    >
+      {emoji}
+    </span>
+  );
 }
 
 function HealthPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -96,11 +113,20 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
 
       <AIInsightCard module="health" district={district} />
 
-      {/* Sanctioned vs. filled staffing (renders nothing when there is no data). */}
-      <StaffingSection module="health" roleLabel="Healthcare staff" district={district} state={state} />
+      {/* Sanctioned vs. filled staffing, with the page's picture
+          (renders nothing when there is no data). */}
+      <StaffingSection
+        module="health"
+        roleLabel="Healthcare staff"
+        district={district}
+        state={state}
+        emoji="🩺"
+        personEmoji="🧑‍⚕️"
+        picture
+      />
 
       {/* Emergency helplines — each card is a tel: link. */}
-      <Section title="Emergency helplines">
+      <Section title="Emergency helplines" emoji="🚑">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
           {HELPLINES.map((h) => (
             <a
@@ -114,18 +140,23 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
                 gap: 12,
                 minHeight: 44,
                 padding: "12px 14px",
-                background: "var(--ftp-surface)",
-                border: "1px solid var(--ftp-border)",
+                background: h.urgent
+                  ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 8%, #fff) 0%, #fff 72%)"
+                  : "var(--ftp-surface)",
+                border: h.urgent
+                  ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))"
+                  : "1px solid var(--ftp-border)",
                 borderRadius: "var(--ftp-radius-card)",
+                boxShadow: "var(--ftp-shadow-1)",
                 textDecoration: "none",
               }}
             >
-              <Phone size={18} aria-hidden style={{ color: h.urgent ? "var(--ftp-danger)" : "var(--ftp-text-2)", flexShrink: 0 }} />
+              <EmojiChip emoji={h.emoji} />
               <div style={{ minWidth: 0 }}>
-                <div className="ftp-num" style={{ fontSize: 18, lineHeight: "24px", color: h.urgent ? "var(--ftp-danger)" : "var(--ftp-text)" }}>
+                <div className="ftp-num" style={{ fontSize: 18, lineHeight: "24px", color: h.urgent ? "var(--ftp-danger)" : "var(--hue-deep)" }}>
                   {h.number}
                 </div>
-                <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
+                <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
               </div>
             </a>
           ))}
@@ -133,18 +164,18 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Section>
 
       {/* Health schemes — national + state-specific. */}
-      <Section title="Government health schemes">
+      <Section title="Government health schemes" emoji="🛡️">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
           {schemes.map((s) => (
             <Card key={s.name} as="article">
-              <h3 className="ftp-title">{s.name}</h3>
+              <h3 className="ftp-title" style={{ fontWeight: 600 }}>{s.name}</h3>
               <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 0" }}>{s.desc}</p>
               {s.url && (
                 <a
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, marginTop: 8, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, marginTop: 8, fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
                 >
                   Learn more <ExternalLink size={12} aria-hidden />
                 </a>
@@ -155,13 +186,19 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Section>
 
       {/* The kinds of facilities a district has (reference). */}
-      <Section title="Healthcare infrastructure">
+      <Section title="Healthcare infrastructure" emoji="🏥">
         <Card padding={0}>
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {getHospitalTypes(state).map((h, i) => (
-              <li key={h.type} style={{ padding: "12px 16px", borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
-                <div className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>{h.type}</div>
-                <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{h.description}</div>
+              <li
+                key={h.type}
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}
+              >
+                <EmojiChip emoji={h.emoji} size={32} />
+                <div style={{ minWidth: 0 }}>
+                  <div className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600 }}>{h.type}</div>
+                  <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{h.description}</div>
+                </div>
               </li>
             ))}
           </ul>
@@ -169,13 +206,16 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Section>
 
       {/* Find a hospital on the NHM portal. */}
-      <Card style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div className="ftp-title">Find nearest hospital</div>
-          <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>View hospitals on NHM portal</div>
+      <Card tinted style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <EmojiChip emoji="📍" />
+          <div style={{ minWidth: 0 }}>
+            <div className="ftp-title" style={{ fontWeight: 600 }}>Find the nearest hospital</div>
+            <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>View hospitals on the NHM portal</div>
+          </div>
         </div>
         <ToolbarButton icon={ExternalLink} href="https://nhm.gov.in" external>
-          NHM Portal
+          NHM portal
         </ToolbarButton>
       </Card>
 
