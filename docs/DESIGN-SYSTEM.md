@@ -153,6 +153,12 @@ Rules:
 the only place map colours are set. Paint only what is really live (a live
 district, not its whole state).
 
+The home India map (`indiaStateStyle`) draws states in four soft pastel blues
+(`INDIA_LAND_TONES`, neighbours never share one; no lines, because the state
+shapes are made of district pieces), `--ftp-map-live-hover` on hover or tap,
+and live districts as hue pins with a small name beside them
+(`src/components/map/pin-layout.ts`).
+
 ## 3. Type
 
 - **Plus Jakarta Sans for everything** (`--ftp-font-sans`): text, headings,
