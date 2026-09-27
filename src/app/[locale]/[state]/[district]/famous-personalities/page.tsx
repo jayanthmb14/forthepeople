@@ -9,17 +9,18 @@
 //  (docs/LAYOUT.md recipe; docs/MODULE-MAP.md "Know your district")
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  ModulePage → PageHeader → AI summary → Explainer (how many, how many
-//  born here, the biggest field) → 4 StatTiles → ONE picture: 10 people,
-//  the ones born here lit up → "Known for": a tile per field (emoji, count,
-//  a bar) that is also the filter, plus search → the people as TapCards
-//  (photo or emoji avatar, name, local name, years, field, one line of what
+//  ModulePage → PageHeader → Explainer (how many, how many born here, the
+//  biggest field) → 4 StatTiles → ONE picture: 10 people (Lucide), the ones
+//  born here lit up → "Known for": a tile per field (name, count, a bar)
+//  that is also the filter, plus search → the people as TapCards (photo or
+//  initials, name, local name, years, field, one line of what
 //  they are known for) in "Born in …" and "Linked to …" groups → tapping a
 //  person opens a DetailSheet with the photo, the full biography, birth and
 //  death years, birthplace, whether they were born here, field, the photo
 //  credit and "Read on Wikipedia" → "When they were born": a dot per person
-//  (tap a dot for that person) → sources (Wikipedia, CC-BY-SA) → related
-//  news → Share / Compare.
+//  (tap a dot for that person) → AI summary → related news → Share /
+//  Compare. Wikipedia (CC-BY-SA) is credited in the header and each sheet;
+//  the page-wide sources list is the layout's verification panel.
 //
 //  i18n: page_famous-personalities (en / kn / hi). Names, bios, "known for"
 //  lines and birthplaces are data, shown as saved (English on Wikipedia).
@@ -27,16 +28,16 @@
 import { use, useCallback, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ExternalLink, Search, GitCompare, Star } from "lucide-react";
+import { ExternalLink, Search, Star, User } from "lucide-react";
 import { useFamousPersonalities, type FamousPersonality } from "@/hooks/useRealtimeData";
 import {
   ModulePage, PageHeader, Section, Card, StatStrip, StatTile, LoadingShell, ErrorBlock,
-  EmptyState, SourcesFooter, Toolbar, ToolbarButton,
+  EmptyState,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram, PageActions } from "@/components/district/page-kit";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { TapCard } from "@/components/community/TapCard";
-import { SharePageButton } from "@/components/community/pageTools";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
 import { hueClass } from "@/lib/design/hues";
@@ -47,27 +48,6 @@ type Person = FamousPersonality & { bornInDistrict?: boolean };
 
 /** The page_famous-personalities translator, handed to small helpers. */
 type T = ReturnType<typeof useTranslations>;
-
-// Field → emoji (avatar, field chip, tiles).
-const CATEGORY_EMOJI: Record<string, string> = {
-  Politician: "🏛️",
-  Scientist: "🔬",
-  Artist: "🎨",
-  Writer: "✍️",
-  Athlete: "🏅",
-  Activist: "📣",
-  Business: "💼",
-  Military: "🎖️",
-  Spiritual: "🙏",
-  Educator: "📚",
-  Film: "🎬",
-  Music: "🎵",
-  Other: "🌟",
-};
-
-function fieldEmoji(category: string): string {
-  return CATEGORY_EMOJI[category] ?? "🌟";
-}
 
 /** Translated field name; an unknown field is shown as saved. */
 function fieldLabel(t: T, category: string): string {
@@ -85,7 +65,7 @@ function initialsOf(name: string): string {
     .toUpperCase();
 }
 
-/** The Wikipedia photo when there is one, else a tile with the field emoji and initials. */
+/** The Wikipedia photo when there is one, else a soft tile with the person's initials. */
 function Avatar({ p, size }: { p: Person; size: number }) {
   const [imgError, setImgError] = useState(false);
   const radius = Math.round(size * 0.26);
@@ -122,7 +102,7 @@ function Avatar({ p, size }: { p: Person; size: number }) {
         height: size,
         borderRadius: radius,
         flexShrink: 0,
-        background: "linear-gradient(135deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-pop) 50%, #fff) 100%)",
+        background: "var(--hue-tint)",
         border: "1px solid color-mix(in srgb, var(--hue) 25%, transparent)",
         display: "flex",
         flexDirection: "column",
@@ -131,8 +111,7 @@ function Avatar({ p, size }: { p: Person; size: number }) {
         gap: 2,
       }}
     >
-      <span className="ftp-emoji" style={{ fontSize: Math.round(size * 0.36) }}>{fieldEmoji(p.category)}</span>
-      <span className="ftp-display" style={{ fontSize: Math.max(10, Math.round(size * 0.17)), lineHeight: 1, fontWeight: 700, color: "var(--hue-deep)" }}>
+      <span style={{ fontSize: Math.max(12, Math.round(size * 0.3)), lineHeight: 1, fontWeight: 700, color: "var(--hue-deep)" }}>
         {initialsOf(p.name)}
       </span>
     </div>
@@ -148,7 +127,7 @@ function useYears() {
   };
 }
 
-/** The field as a small chip: "🎨 Art". */
+/** The field as a small chip: "Art". */
 function FieldChip({ category }: { category: string }) {
   const t = useTranslations("page_famous-personalities");
   return (
@@ -167,7 +146,6 @@ function FieldChip({ category }: { category: string }) {
         fontWeight: 600,
       }}
     >
-      <span className="ftp-emoji" aria-hidden>{fieldEmoji(category)}</span>
       {fieldLabel(t, category)}
     </span>
   );
@@ -254,7 +232,6 @@ function PersonSheet({ p, districtLabel, onClose }: { p: Person; districtLabel: 
               flex: "1 1 auto",
             }}
           >
-            <span className="ftp-emoji" aria-hidden>📖</span>
             {t("readWiki")}
             <ExternalLink size={14} aria-hidden />
           </a>
@@ -266,22 +243,20 @@ function PersonSheet({ p, districtLabel, onClose }: { p: Person; districtLabel: 
       </div>
       {p.notable && (
         <p style={{ margin: 0, padding: "10px 12px", borderRadius: 12, background: "var(--hue-tint)", color: "var(--hue-deep)", fontSize: 14, lineHeight: "21px", fontWeight: 600 }}>
-          <span className="ftp-emoji" aria-hidden>⭐ </span>
           {p.notable}
         </p>
       )}
       {p.bio && <p className="ftp-prose" style={{ margin: 0, fontSize: 15, lineHeight: "24px", color: "var(--ftp-text)" }}>{p.bio}</p>}
       <DetailList
         rows={[
-          { emoji: "🎂", label: t("sheet.born"), value: p.birthYear ? <span className="ftp-num">{p.birthYear}</span> : t("sheet.notRecorded") },
-          { emoji: "🕊️", label: t("sheet.died"), value: p.deathYear ? <span className="ftp-num">{p.deathYear}</span> : null },
-          { emoji: "📍", label: t("sheet.birthPlace"), value: p.birthPlace ?? t("sheet.notRecorded") },
+          { label: t("sheet.born"), value: p.birthYear ? <span className="ftp-num">{p.birthYear}</span> : t("sheet.notRecorded") },
+          { label: t("sheet.died"), value: p.deathYear ? <span className="ftp-num">{p.deathYear}</span> : null },
+          { label: t("sheet.birthPlace"), value: p.birthPlace ?? t("sheet.notRecorded") },
           {
-            emoji: "🏡",
             label: t("sheet.bornHere", { name: districtLabel }),
             value: p.bornInDistrict ? t("sheet.yes") : t("sheet.noLinked"),
           },
-          { emoji: "📷", label: t("sheet.photo"), value: p.photoUrl ? p.photoCredit ?? t("sheet.photoWiki") : null },
+          { label: t("sheet.photo"), value: p.photoUrl ? p.photoCredit ?? t("sheet.photoWiki") : null },
         ]}
       />
       <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{t("sheet.license")}</p>
@@ -289,8 +264,8 @@ function PersonSheet({ p, districtLabel, onClose }: { p: Person; districtLabel: 
   );
 }
 
-/** One field tile ("🎨 Art 4"): part of the picture and the filter. */
-function FieldTile({ emoji, label, count, total, active, onClick }: { emoji: string; label: string; count: number; total: number; active: boolean; onClick: () => void }) {
+/** One field tile ("Art 4"): part of the picture and the filter. */
+function FieldTile({ label, count, total, active, onClick }: { label: string; count: number; total: number; active: boolean; onClick: () => void }) {
   const f = useFormat();
   const share = total > 0 ? count / total : 0;
   return (
@@ -316,7 +291,6 @@ function FieldTile({ emoji, label, count, total, active, onClick }: { emoji: str
       }}
     >
       <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <span className="ftp-emoji" aria-hidden style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
         <span style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "anywhere" }}>{label}</span>
         <span className="ftp-bignum" style={{ fontSize: 20, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
       </span>
@@ -476,18 +450,16 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
         freshness={data?.meta?.lastUpdated ? { asOf: data.meta.lastUpdated, thresholdHours: 24 * 90 } : undefined}
         source={{ label: "Wikipedia (CC-BY-SA)", href: "https://en.wikipedia.org" }}
       />
-      <AIInsightCard module="famous-personalities" district={district} />
-
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
       {!isLoading && !error && personalities.length === 0 && (
-        <EmptyState emoji="🌟" title={t("noneListed", { name: districtLabel })} body={t("noneListedBody")} />
+        <EmptyState title={t("noneListed", { name: districtLabel })} body={t("noneListedBody")} />
       )}
 
       {!isLoading && !error && personalities.length > 0 && (
         <>
-          <Explainer emoji="🌟">
+          <Explainer>
             {t.rich("simple", {
               count: personalities.length,
               name: districtLabel,
@@ -498,12 +470,11 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
           </Explainer>
 
           <StatStrip cols={showTimeline ? 4 : 3}>
-            <StatTile emoji="🌟" label={t("statPeople")} value={f.number(personalities.length)} />
-            <StatTile emoji="🏡" label={t("statBorn", { name: districtLabel })} value={f.number(bornTotal)} />
-            <StatTile emoji="🧭" label={t("statFields")} value={f.number(fieldCounts.length)} sub={topFields.length > 0 ? listFormat.format(topFields) : undefined} />
+            <StatTile label={t("statPeople")} value={f.number(personalities.length)} />
+            <StatTile label={t("statBorn", { name: districtLabel })} value={f.number(bornTotal)} />
+            <StatTile label={t("statFields")} value={f.number(fieldCounts.length)} sub={topFields.length > 0 ? listFormat.format(topFields) : undefined} />
             {showTimeline && (
               <StatTile
-                emoji="🕰️"
                 label={t("statYears")}
                 value={`${firstBorn.birthYear}–${lastBorn.birthYear}`}
                 countUp={false}
@@ -516,19 +487,18 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
           {personalities.length >= 3 && (
             <div style={{ marginTop: 20 }}>
               <Card tinted padding={18}>
-                <Pictogram filled={bornOfTen} emoji="🧑" label={t("bornPicto", { n: Math.round(bornOfTen), name: districtLabel })} />
+                <IconPictogram icon={User} filled={bornOfTen} label={t("bornPicto", { n: Math.round(bornOfTen), name: districtLabel })} />
               </Card>
             </div>
           )}
 
           {/* Known for: the field tiles (also the filter) and search. */}
-          <Section emoji="🧭" title={t("knownFor")}>
+          <Section title={t("knownFor")}>
             <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "160px", gap: 10 }}>
-              <FieldTile emoji="🗂️" label={t("all")} count={personalities.length} total={personalities.length} active={activeField === "all"} onClick={() => setFilter("all")} />
+              <FieldTile label={t("all")} count={personalities.length} total={personalities.length} active={activeField === "all"} onClick={() => setFilter("all")} />
               {fieldCounts.map((fc) => (
                 <FieldTile
                   key={fc.category}
-                  emoji={fieldEmoji(fc.category)}
                   label={fieldLabel(t, fc.category)}
                   count={fc.count}
                   total={personalities.length}
@@ -564,13 +534,12 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
 
           {filtered.length === 0 && (
             <div style={{ marginTop: 20 }}>
-              <EmptyState emoji="🔍" title={t("noneFound")} body={t("tryDifferent")} />
+              <EmptyState title={t("noneFound")} body={t("tryDifferent")} />
             </div>
           )}
 
           {bornHere.length > 0 && (
             <Section
-              emoji="🏡"
               title={
                 <>
                   {t("bornIn", { name: districtLabel })}{" "}
@@ -588,7 +557,6 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
 
           {rootsHere.length > 0 && (
             <Section
-              emoji="🔗"
               title={
                 <>
                   {t("associated", { name: districtLabel })}{" "}
@@ -608,10 +576,9 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
           )}
 
           {showTimeline && (
-            <Section emoji="📊" title={t("chartsTitle")}>
+            <Section title={t("chartsTitle")}>
               <ChartCard
                 title={t("timelineTitle")}
-                emoji="🕰️"
                 units={lastBorn.birthYear - firstBorn.birthYear > 600 ? t("timelineUnitsCentury") : t("timelineUnits")}
                 simple={t.rich("timelineSimple", {
                   first: String(firstBorn.birthYear),
@@ -643,14 +610,15 @@ export default function FamousPersonalitiesPage({ params }: { params: Promise<{ 
         </>
       )}
 
-      <SourcesFooter sources={[{ name: "Wikipedia (CC-BY-SA)", url: "https://en.wikipedia.org", frequency: t("frequency") }]} />
+      {!isLoading && personalities.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <AIInsightCard module="famous-personalities" district={district} />
+        </div>
+      )}
       <ModuleNews district={district} state={state} locale={locale} module="famous-personalities" />
-      <Toolbar>
-        <SharePageButton />
-        <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=famous-personalities&a=${district}`}>
-          {t("compare")}
-        </ToolbarButton>
-      </Toolbar>
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="famous-personalities" />
+      </div>
 
       {selected && <PersonSheet p={selected} districtLabel={districtLabel} onClose={close} />}
     </ModulePage>
