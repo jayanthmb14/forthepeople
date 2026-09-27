@@ -10,6 +10,22 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — money: budgets, projects, industries, tenders, schemes (branch `v54/fix-money`, 2026-09-28)
+Owner rule: verified or hidden. Nothing here is deployed or applied to the database yet.
+- **Budgets**: seeded sector rows (state or city totals filed under one district, "spent" as a
+  fixed share of the allocation) and department rows with no source link are no longer shown or
+  counted (`SHOWN_BUDGET_ENTRY` / `SHOWN_BUDGET_ALLOCATION`); spend a row calls an estimate shows as
+  "not published yet"; the finance page names the rows' own source instead of a hard-coded PFMS.
+- **Projects**: budget change is worked out from the two budgets (no stale "+298%"); only a
+  political party is shown or stored as a party; a finished project shows 100% and no plan end
+  dates; the news sync refuses 10x budget slips and no longer dates an announcement by sync day.
+- **Industries**: seeded sugar seasons and retired mills hidden; FRP/SAP labelled per quintal;
+  unsourced job estimates and zero values not shown.
+- **Tenders**: the seed's placeholder rows are never listed or counted; the seed writes none.
+- **Schemes**: every amount carries its unit (a month / a year / one time / cover / loan up to);
+  loans left out of "Biggest benefit"; retired schemes hidden.
+- **Data**: `scripts/fix-audit-2026-09-money.ts` (dry run by default; `--confirm` = one transaction).
+
 ### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
 Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed
 or applied to the database yet.
