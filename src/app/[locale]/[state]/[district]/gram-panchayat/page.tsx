@@ -12,13 +12,17 @@
 //  The answer, in one line: "Mandya has 4 gram panchayats (village
 //  councils). Out of every ₹100 given to them, about ₹85 has been used."
 //
-//    PageHeader → Explainer → 4 StatTiles → picture: ten coins, lit for
-//    the share of money used, with given / used / not used yet → one card
-//    per panchayat, searchable and filterable by taluk (tap →
+//    PageHeader → Explainer → 4 StatTiles → picture: ten coin icons, lit
+//    for the share of money used, with given / used / not used yet → one
+//    card per panchayat, searchable and filterable by taluk (tap →
 //    PanchayatSheet: funds dial, drinking water ring, every figure,
 //    eGramSwaraj + NREGA links) → AI insight → charts (drinking water ·
-//    least of their funds used) → footer. Urban districts get their
-//    municipal body instead of an empty page.
+//    least of their funds used) → Share / Compare. Urban districts (from
+//    the per-district config, so Pune is not treated like Mumbai) get
+//    their municipal body instead of an empty page. Sources, the "not an
+//    official website" line and "report a mistake" live in the district
+//    shell's verification panel, not here (v5: no repetition, no emoji
+//    except the module's own in the header).
 //
 //  Data: usePanchayats() (every column of the district's GramPanchayat
 //  rows) and useOverview() for taluk names. Amounts are whole rupees and
@@ -30,7 +34,8 @@
 import type React from "react";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Building, Search } from "lucide-react";
+import { Building, Building2, Coins, Droplets, Hammer, Home, Search, Users, Wallet } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useOverview, usePanchayats } from "@/hooks/useRealtimeData";
 import { useFormat, useModuleText } from "@/i18n/client";
 import {
@@ -46,14 +51,15 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram, StaleNote } from "@/components/district/calm-parts";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { HueBarList, HueDonut, namePair, useDistrictName } from "@/components/land-water/visuals";
 import type { DonutSlice } from "@/components/land-water/visuals";
-import { fitGrid, Chip, EmojiTile, TapCard, TapHint } from "@/components/land-water/cards";
-import { EGRAMSWARAJ, NREGA, PanchayatSheet, type PanchayatRow } from "@/components/land-water/PanchayatSheet";
-import { LandWaterFooter } from "@/components/land-water/PageFooter";
+import { fitGrid, Chip, TapCard, TapHint } from "@/components/land-water/cards";
+import { EGRAMSWARAJ, PanchayatSheet, type PanchayatRow } from "@/components/land-water/PanchayatSheet";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { scriptLang } from "@/lib/utils/script-lang";
 
@@ -61,12 +67,14 @@ import { scriptLang } from "@/lib/utils/script-lang";
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
 /** Drinking-water coverage bands for the donut, highest first. */
-const WATER_BANDS: Array<{ key: "full" | "most" | "half" | "low"; min: number; emoji: string }> = [
-  { key: "full", min: 100, emoji: "🚰" },
-  { key: "most", min: 75, emoji: "💧" },
-  { key: "half", min: 50, emoji: "🪣" },
-  { key: "low", min: 0, emoji: "🏜️" },
+const WATER_BANDS: Array<{ key: "full" | "most" | "half" | "low"; min: number }> = [
+  { key: "full", min: 100 },
+  { key: "most", min: 75 },
+  { key: "half", min: 50 },
+  { key: "low", min: 0 },
 ];
+/** eGramSwaraj publishes monthly; a record older than this gets the calm "N days old" note. */
+const MAX_AGE_DAYS = 90;
 
 /** How many panchayats the "used the least" bars show. */
 const LEAST_MAX = 5;
@@ -74,11 +82,13 @@ const LEAST_MAX = 5;
 const SEARCH_FROM = 8;
 
 /** A card naming who governs an urban district (municipal body, water board). */
-function GovernedByCard({ emoji, label, name, body }: { emoji: string; label: string; name: string; body: string }) {
+function GovernedByCard({ icon: Icon, label, name, body }: { icon: LucideIcon; label: string; name: string; body: string }) {
   return (
-    <Card tinted>
+    <Card>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <EmojiTile emoji={emoji} size={32} />
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}>
+          <Icon size={15} />
+        </span>
         <span className="ftp-label">{label}</span>
       </div>
       <div className="ftp-display" style={{ fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
@@ -94,7 +104,6 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
   const t = useTranslations("page_gram-panchayat");
   const f = useFormat();
   const mt = useModuleText();
-  const base = `/${locale}/${state}/${district}`;
   const districtName = useDistrictName(state, district);
   const { data, isLoading, error } = usePanchayats(district, state);
   const { data: overview } = useOverview(district, state);
@@ -138,7 +147,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
   const waterSlices: DonutSlice[] = WATER_BANDS.map((band, i) => {
     const upper = i === 0 ? Infinity : WATER_BANDS[i - 1].min;
     const n = withWater.filter((g) => (g.waterCoverage as number) >= band.min && (g.waterCoverage as number) < upper).length;
-    return { key: band.key, label: t(`waterBand.${band.key}`), value: n, emoji: band.emoji };
+    return { key: band.key, label: t(`waterBand.${band.key}`), value: n };
   });
   const showWater = withWater.length >= 3;
 
@@ -159,13 +168,10 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
   const opened = openId ? gps.find((g) => g.id === openId) ?? null : null;
 
   // Urban districts have no gram panchayats — show who governs instead.
-  const sc = getStateConfig(state);
+  // Per-district config: Mumbai is fully urban, Pune is not.
+  const sc = getStateConfig(state, district);
   const isUrbanDistrict = !!sc && !sc.gramPanchayatApplicable;
 
-  const shareText =
-    gps.length > 0
-      ? t("share", { district: districtName, n: gps.length, used: pct(overallUtilPct), funds: hasSpend ? "yes" : "no" })
-      : t("shareEmpty", { district: districtName });
   const hasData = !isLoading && !error && gps.length > 0;
 
   return (
@@ -174,8 +180,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
         icon={Building}
         title={mt.label("gram-panchayat")}
         description={t("description")}
-        backHref={base}
-        freshness={lastUpdated ? { asOf: lastUpdated, thresholdHours: 24 * 30 } : undefined}
+        freshness={lastUpdated ? { asOf: lastUpdated, thresholdHours: 24 * MAX_AGE_DAYS } : undefined}
         source={{ label: "eGramSwaraj", href: EGRAMSWARAJ }}
       />
 
@@ -185,10 +190,10 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
       {/* No rows: urban district with a municipal body → who governs instead. */}
       {!isLoading && !error && gps.length === 0 && isUrbanDistrict && sc?.municipalBody && (
         <>
-          <EmptyState emoji="🏙️" title={t("urbanTitle")} body={t("urbanBody", { district: districtName })} />
+          <EmptyState title={t("urbanTitle")} body={t("urbanBody", { district: districtName })} />
           <div style={fitGrid(260, { marginTop: 12 })}>
-            <GovernedByCard emoji="🏛️" label={t("municipalBody")} name={sc.municipalBody} body={t("municipalBodyText", { district: districtName })} />
-            {sc.waterBoard && <GovernedByCard emoji="🚰" label={t("waterSupply")} name={sc.waterBoard} body={t("waterSupplyText")} />}
+            <GovernedByCard icon={Building2} label={t("municipalBody")} name={sc.municipalBody} body={t("municipalBodyText", { district: districtName })} />
+            {sc.waterBoard && <GovernedByCard icon={Droplets} label={t("waterSupply")} name={sc.waterBoard} body={t("waterSupplyText")} />}
           </div>
           <p style={{ margin: "12px 0 0", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("urbanSource")}</p>
         </>
@@ -198,15 +203,18 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
         gps.length === 0 &&
         !(isUrbanDistrict && sc?.municipalBody) &&
         (isUrbanDistrict ? (
-          <EmptyState emoji="🏙️" title={t("urbanNaTitle")} body={t("urbanBody", { district: districtName })} />
+          <EmptyState title={t("urbanNaTitle")} body={t("urbanBody", { district: districtName })} />
         ) : (
-          <EmptyState emoji="🏘️" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+          <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
         ))}
 
       {hasData && (
         <>
+          {/* Old records say so plainly. */}
+          <StaleNote asOf={lastUpdated} maxAgeDays={MAX_AGE_DAYS} style={{ marginBottom: 16 }} />
+
           {/* 1 · The answer in plain words. */}
-          <Explainer emoji="🏘️">
+          <Explainer>
             {t.rich("answer", { b: bold, district: districtName, n: gps.length })}{" "}
             {hasSpend
               ? t.rich("answerFunds", { b: bold, used: f.number(Math.round(overallUtilPct)) })
@@ -218,12 +226,12 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
 
           {/* 2 · The big numbers. */}
           <StatStrip>
-            <StatTile emoji="🏘️" label={t("tileGps")} value={f.number(gps.length)} asOf={lastUpdated} />
-            {totalPop > 0 && <StatTile emoji="👥" label={t("tilePopulation")} value={f.number(totalPop)} />}
-            {hasMgnregaData && <StatTile emoji="🛠️" label={t("tileMgnrega")} value={f.number(totalMgnrega)} />}
+            <StatTile icon={Home} label={t("tileGps")} value={f.number(gps.length)} asOf={lastUpdated} />
+            {totalPop > 0 && <StatTile icon={Users} label={t("tilePopulation")} value={f.number(totalPop)} />}
+            {hasMgnregaData && <StatTile icon={Hammer} label={t("tileMgnrega")} value={f.number(totalMgnrega)} />}
             {totalFunds > 0 && (
               <StatTile
-                emoji="💰"
+                icon={Wallet}
                 label={t("tileFunds")}
                 value={hasSpend ? f.number(Math.round(overallUtilPct)) : t("pending")}
                 unit={hasSpend ? "%" : undefined}
@@ -232,16 +240,16 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
             )}
           </StatStrip>
 
-          {/* 3 · The picture: ten coins, lit for the share of money used. */}
+          {/* 3 · The picture: ten coin icons, lit for the share of money used. */}
           {totalFunds > 0 && (
-            <Card tinted padding={18} style={{ marginTop: 16 }}>
+            <Card padding={18} style={{ marginTop: 16 }}>
               <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
                 {t("moneyTitle")}
               </p>
               {hasSpend ? (
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20 }}>
                   <div style={{ flex: "1 1 300px", minWidth: 0 }}>
-                    <Pictogram filled={overallUtilPct / 10} emoji="💰" label={t("fundsCoins", { n: Math.round(overallUtilPct / 10) })} size={26} />
+                    <IconPictogram filled={overallUtilPct / 10} icon={Coins} label={t("fundsCoins", { n: Math.round(overallUtilPct / 10) })} />
                   </div>
                   <dl style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "8px 20px", flex: "0 1 auto" }}>
                     {[
@@ -275,7 +283,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
           )}
 
           {/* 4 · One card per panchayat. Tap → everything about it. */}
-          <Section title={t("allTitle", { n: gps.length })} emoji="🏘️">
+          <Section title={t("allTitle", { n: gps.length })}>
             {(gps.length > SEARCH_FROM || showTalukChips) && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
                 {gps.length > SEARCH_FROM && (
@@ -317,7 +325,7 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
               </div>
             )}
 
-            {filtered.length === 0 && <EmptyState emoji="🔍" title={t("noMatch", { q: search })} />}
+            {filtered.length === 0 && <EmptyState title={t("noMatch", { q: search })} />}
 
             <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, ["--ftp-grid-min" as string]: "260px" }}>
               {filtered.map((g) => {
@@ -330,7 +338,6 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
                   <li key={g.id}>
                     <TapCard onClick={() => setOpenId(g.id)} label={t("detailsFor", { name: n.primary })}>
                       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                        <EmojiTile emoji="🏘️" size={40} />
                         <div style={{ minWidth: 0 }}>
                           <h3 lang={n.primaryLang} className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, overflowWrap: "anywhere" }}>
                             {n.primary}
@@ -365,26 +372,22 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         {g.population ? (
                           <Chip tone="quiet">
-                            <span aria-hidden>👥</span>
                             {t("peopleChip", { n: f.number(g.population) })}
                           </Chip>
                         ) : null}
                         {g.waterCoverage !== null && g.waterCoverage !== undefined && (
                           <Chip tone="hue">
-                            <span aria-hidden>🚰</span>
                             {t("waterChip", { pct: pct(g.waterCoverage) })}
                           </Chip>
                         )}
                         {/* Only when we actually know — unknown is not "No road". */}
                         {g.roadConnected != null && (
                           <Chip tone={g.roadConnected ? "hue" : "quiet"}>
-                            <span aria-hidden>🛣️</span>
                             {g.roadConnected ? t("roadYes") : t("roadNo")}
                           </Chip>
                         )}
                         {g.mgnregaWorks != null && (
                           <Chip tone="hue">
-                            <span aria-hidden>🛠️</span>
                             {t("mgnregaChip", { n: g.mgnregaWorks })}
                           </Chip>
                         )}
@@ -407,7 +410,6 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
               {showWater && (
                 <ChartCard
                   title={t("waterTitle")}
-                  emoji="🚰"
                   units={t("waterUnits")}
                   simple={t.rich("waterSimple", { b: bold, n: waterSlices[0].value, total: withWater.length })}
                   source={{ label: "eGramSwaraj", href: EGRAMSWARAJ }}
@@ -429,7 +431,6 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
               {showLeast && (
                 <ChartCard
                   title={t("leastTitle")}
-                  emoji="🔍"
                   units={t("leastUnits")}
                   simple={t.rich("leastSimple", { b: bold, name: shownName(least[0].g).primary, used: pct(least[0].used) })}
                   source={{ label: "eGramSwaraj", href: EGRAMSWARAJ }}
@@ -447,7 +448,6 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
                         key: g.id,
                         label: n.primary,
                         labelLang: n.primaryLang,
-                        emoji: "🏘️",
                         value: used,
                         display: pct(used),
                         sub: t("leastSub", { spent: money(g.fundsUtilized ?? 0), given: money(g.totalFunds ?? 0) }),
@@ -463,18 +463,9 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
         </>
       )}
 
-      <LandWaterFooter
-        ns="page_gram-panchayat"
-        about={t("summary")}
-        sources={[
-          { name: t("sourceEgs"), url: EGRAMSWARAJ, frequency: t("footer.frequency") },
-          { name: t("sourceNrega"), url: NREGA, frequency: t("footer.frequency") },
-        ]}
-        locale={locale}
-        district={district}
-        moduleSlug="gram-panchayat"
-        shareText={shareText}
-      />
+      {/* One row of actions. Sources and "report a mistake" are in the
+          district's verification panel at the bottom of the page. */}
+      <MoneyToolbar shareTitle={mt.label("gram-panchayat")} compareHref={`/${locale}/compare?module=gram-panchayat&a=${district}`} />
 
       <PanchayatSheet gp={opened} locale={locale} taluk={opened ? talukName(opened.talukId) : null} money={money} onClose={() => setOpenId(null)} />
     </ModulePage>

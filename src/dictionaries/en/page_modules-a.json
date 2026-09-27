@@ -1,0 +1,7 @@
+{
+  "stale": {
+    "old": "This is {n, plural, one {# day} other {# days}} old.",
+    "noNewer": "We could not find newer data.",
+    "noDate": "Date not published by the source."
+  }
+}
