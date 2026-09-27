@@ -12,18 +12,21 @@
  *
  * Design v3: a kit Card with a title row; each position is one 44 px row
  * (Lucide icon · role label · name). Party colour appears only as a 6 px dot.
+ *
+ * v5.1 "Warm Calm": OverviewCard frame with the drawn public-hall mark;
+ * each named person gets a round initials badge in the hue (a dashed "?"
+ * circle when the name is not published), so the card reads as people.
  */
 
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Landmark, Shield, Users, Vote } from "lucide-react";
+import { Vote } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
-import { Card } from "@/components/district/ui";
+import OverviewCard from "@/components/district/shell/OverviewCard";
+import { LeadersMark } from "@/components/district/shell/overview-art";
 
 interface ApiResponse { data: Leader[]; meta?: unknown }
 
@@ -40,13 +43,27 @@ function isMLA(l: Leader): boolean {
   return /^mla\b|member of legislative assembly/i.test(l.role);
 }
 
-/** One labelled row: icon · role · value. */
-function Row({ icon: Icon, role, children }: { icon: LucideIcon; role: string; children: React.ReactNode }) {
+/** "H.D. Kumaraswamy" → "HK"; titles like Dr./Smt. are skipped. */
+function initials(name: string): string {
+  const words = name
+    .replace(/[.,]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w && !/^(dr|smt|shri|sri|mr|mrs|ms|prof|ias|ips)$/i.test(w));
+  if (words.length === 0) return "?";
+  const first = words[0][0] ?? "";
+  const last = words.length > 1 ? (words[words.length - 1][0] ?? "") : "";
+  return (first + last).toUpperCase();
+}
+
+/** One row: round badge · role · value. `badge` null = a dashed "?" (name not published). */
+function Row({ badge, role, children }: { badge: React.ReactNode | null; role: string; children: React.ReactNode }) {
   return (
-    <li style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 36, fontSize: 13, lineHeight: "20px" }}>
-      <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
-      <span style={{ color: "var(--ftp-text-2)", width: 72, flexShrink: 0 }}>{role}</span>
-      <span style={{ minWidth: 0, flex: 1, color: "var(--ftp-text)" }}>{children}</span>
+    <li className="ftp-ovl-row">
+      <span className="ftp-ovl-badge" data-empty={badge === null ? "true" : undefined} aria-hidden>
+        {badge ?? "?"}
+      </span>
+      <span className="ftp-ovl-role">{role}</span>
+      <span className="ftp-ovl-value">{children}</span>
     </li>
   );
 }
@@ -88,47 +105,50 @@ export default function LeadersSnippet({
 
   // Bureaucrat names that are placeholders (e.g. "[Verify at mandya.nic.in]")
   // render in italic grey so users see the action item, not a fake person.
+  const named = (l: Leader | undefined): l is Leader => Boolean(l && !l.name.startsWith("["));
   const renderName = (l: Leader | undefined, pending: string) => {
-    if (!l || l.name.startsWith("[")) return <Pending>{pending}</Pending>;
-    return <span lang="en" style={{ fontWeight: 500 }}>{l.name}</span>;
+    if (!named(l)) return <Pending>{pending}</Pending>;
+    return <span lang="en" style={{ fontWeight: 600 }}>{l.name}</span>;
   };
+  const mp = mps[0];
 
   return (
-    <Card as="section" aria-label={t("aria")} className="ftp-hue-indigo" tinted>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--hue-deep)" }}><Users size={16} /></span>
-          <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{t("title")}</h3>
-        </span>
-        <Link href={`${base}/leadership`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          {t("viewAll")}
-        </Link>
-      </div>
-
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        <Row icon={Landmark} role={t("collector")}>{renderName(collector, t("collectorPending"))}</Row>
-        <Row icon={Shield} role={t("sp")}>{renderName(sp, t("spPending"))}</Row>
-        <Row icon={BadgeCheck} role={mps.length > 1 ? t("mps") : t("mp")}>
-          {mps.length > 0 ? (() => { const mp = mps[0]; return (
+    <OverviewCard
+      hue="indigo"
+      mark={<LeadersMark size={36} />}
+      title={t("title")}
+      ariaLabel={t("aria")}
+      href={`${base}/leadership`}
+      linkText={t("viewAll")}
+    >
+      <ul className="ftp-ovl-list">
+        <Row badge={named(collector) ? initials(collector.name) : null} role={t("collector")}>
+          {renderName(collector, t("collectorPending"))}
+        </Row>
+        <Row badge={named(sp) ? initials(sp.name) : null} role={t("sp")}>
+          {renderName(sp, t("spPending"))}
+        </Row>
+        <Row badge={named(mp) ? initials(mp.name) : null} role={mps.length > 1 ? t("mps") : t("mp")}>
+          {named(mp) ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span lang="en" style={{ fontWeight: 500 }}>{mp.name}</span>
+              <span lang="en" style={{ fontWeight: 600 }}>{mp.name}</span>
               {mp.party && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--ftp-text-2)" }}>
-                  {/* Party colour as a 6 px dot only (design rule: no tinted boxes). */}
-                  <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: getPartyColor(mp.party).text }} />
+                <span className="ftp-ovl-party">
+                  {/* Party colour as a small dot only (design rule: no tinted boxes). */}
+                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: getPartyColor(mp.party).text }} />
                   {mp.party}
                 </span>
               )}
               {mps.length > 1 && <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>{t("more", { n: mps.length - 1 })}</span>}
             </span>
-          ); })() : (
+          ) : (
             <Pending>{t("notRecorded")}</Pending>
           )}
         </Row>
-        <Row icon={Vote} role={t("mlas")}>
+        <Row badge={mlas.length > 0 ? <Vote size={15} /> : null} role={t("mlas")}>
           {mlas.length > 0 ? (
             <>
-              <span className="ftp-num">{mlas.length}</span>
+              <span className="ftp-num" style={{ fontSize: 15 }}>{mlas.length}</span>
               {partyLine && <span style={{ color: "var(--ftp-text-2)" }}> ({partyLine})</span>}
             </>
           ) : (
@@ -136,6 +156,6 @@ export default function LeadersSnippet({
           )}
         </Row>
       </ul>
-    </Card>
+    </OverviewCard>
   );
 }

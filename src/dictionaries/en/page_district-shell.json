@@ -7,5 +7,39 @@
     "feedCurrent": "Up to date",
     "feedNoDate": "Date not published",
     "feedsMore": "How we check every topic"
+  },
+  "hero": {
+    "kicker": "{state} · {n} {units}"
+  },
+  "tiles": {
+    "alerts": "Warnings now",
+    "estimate": "Estimate, not a census count",
+    "estimateFlag": "Estimate",
+    "census": "Census {year}",
+    "projects": "Projects being built",
+    "projectsSub": "out of {total} we track",
+    "budget": "Budget given",
+    "oldYear": "Old year",
+    "about": "about {date}",
+    "inDays": "{n, plural, =0 {today} one {in # day} other {in # days}}",
+    "inMonths": "{n, plural, one {in # month} other {in # months}}",
+    "inYears": "{n, plural, one {in about # year} other {in about # years}}",
+    "gradeSub": "{score} out of 100 · {date}"
+  },
+  "cards": {
+    "people": {
+      "people": "people",
+      "readWrite": "{n} of every 100 people can read and write",
+      "literacyAria": "Literacy: {pct}% of people can read and write",
+      "womenPerMen": "{n} women for every 1,000 men",
+      "women": "Women",
+      "men": "Men"
+    },
+    "projects": {
+      "building": "{n} being built",
+      "delayed": "{n} of them late",
+      "done": "{n} completed",
+      "barAria": "{building} being built, {delayed} of them late, {done} completed"
+    }
   }
 }

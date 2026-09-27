@@ -14,6 +14,13 @@
 .ftp-dshell {
   --ftp-dbar-h: 48px;
   --ftp-shell-top: calc(var(--ftp-header-h, 56px) + var(--ftp-dbar-h));
+  /* v5.1 "Warm Calm" metal accents for money pictures (gold) — the site
+     tokens win once globals.css defines them; these are the fallbacks. */
+  --ov-gold: var(--ftp-gold, #D4A017);
+  --ov-gold-deep: var(--ftp-gold-deep, #7C5A06);
+  --ov-gold-pop: var(--ftp-gold-pop, #F3DB8B);
+  --ov-gold-tint: var(--ftp-gold-tint, #FCF6E3);
+  --ov-silver: var(--ftp-silver, #9CA3AF);
 }
 
 /* ---------- District bar ---------- */
@@ -228,68 +235,123 @@
 .ftp-dshell-strip:not(:empty) + .ftp-module-page,
 .ftp-dshell-strip:not(:empty) + * > .ftp-module-page:first-child { padding-top: 16px; }
 
-/* ---------- Glance row ---------- */
-.ftp-glance { min-width: 0; }
-.ftp-glance-list {
+/* ---------- Glance tiles (overview only, v5.1) ----------
+   Each tile: a pastel wash of its module hue, a drawn picture in a white
+   medallion, the number in the deep hue, and where the number is from. */
+.ftp-tiles { min-width: 0; }
+.ftp-tiles-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  gap: 8px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  /* room for the focus ring inside the scroller */
-  padding-block: 2px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.ftp-glance-list::-webkit-scrollbar { display: none; }
 @media (min-width: 640px) {
-  .ftp-glance:not([data-compact="true"]) .ftp-glance-list { flex-wrap: wrap; overflow: visible; }
+  .ftp-tiles-list { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
 }
-.ftp-glance-list > li { flex: 0 0 auto; }
-.ftp-glance-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  max-width: 320px;
-  padding: 4px 12px 4px 6px;
-  border-radius: 12px;
-  background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
-  color: var(--ftp-text);
+@media (max-width: 639px) {
+  .ftp-tiles-list > li[data-wide="true"] { grid-column: 1 / -1; }
+}
+.ftp-tile {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  min-height: 124px;
+  box-sizing: border-box;
+  padding: 12px 14px 12px;
+  border-radius: 16px;
   text-decoration: none;
-  transition: border-color 150ms ease, background 150ms ease;
+  color: var(--ftp-text);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hue-tint) 92%, var(--hue-pop)) 0%, var(--ftp-surface) 78%);
+  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+  transition: transform 180ms var(--ftp-ease-out), box-shadow 180ms var(--ftp-ease-out), border-color 150ms ease;
 }
-.ftp-glance-chip:hover { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); background: var(--hue-tint); }
-.ftp-glance-icon {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
+/* A soft pastel circle in the corner — the tile's "sun". */
+.ftp-tile::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -30px;
+  right: -30px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hue-pop) 55%, transparent);
+}
+.ftp-tile:hover { transform: translateY(-2px); box-shadow: var(--ftp-shadow-2); border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border)); }
+.ftp-tile-art {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 46px;
+  height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--hue-tint);
+  border-radius: 14px;
+  background: var(--ftp-surface);
   color: var(--hue-deep);
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.06), inset 0 0 0 1px color-mix(in srgb, var(--hue) 18%, transparent);
 }
-.ftp-glance-text { display: flex; flex-direction: column; min-width: 0; }
-.ftp-glance-label { font-size: 11px; line-height: 14px; color: var(--ftp-text-2); }
-.ftp-glance-value {
+.ftp-tile-label {
+  max-width: calc(100% - 52px);
   font-size: 13px;
   line-height: 18px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--hue-deep);
 }
-.ftp-glance-chip[data-tone="warn"] { background: var(--ftp-warn-tint); border-color: color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-border)); }
-.ftp-glance-chip[data-tone="warn"] .ftp-glance-icon { background: transparent; color: var(--ftp-warn); }
-.ftp-glance-chip[data-tone="danger"] { background: var(--ftp-danger-tint); border-color: color-mix(in srgb, var(--ftp-danger) 30%, var(--ftp-border)); }
-.ftp-glance-chip[data-tone="danger"] .ftp-glance-icon { background: transparent; color: var(--ftp-danger); }
-.ftp-glance-skeleton { width: 150px; height: 44px; border-radius: 12px; }
+.ftp-tile-value {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--hue-deep);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ftp-tile-value[data-kind="text"] { font-size: 17px; line-height: 23px; font-weight: 700; }
+.ftp-tile-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; font-size: 12px; line-height: 17px; color: var(--ftp-text-2); }
+.ftp-tile-sub-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ftp-tile-flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  min-height: 18px;
+  border-radius: var(--ftp-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text-2);
+}
+.ftp-tile-flag[data-tone="warn"] { background: var(--ftp-warn-tint); color: var(--ftp-warn-text); box-shadow: inset 0 0 0 1px var(--ftp-warn-border); }
+/* Money is gold. */
+.ftp-tile[data-key="budget"] { background: linear-gradient(160deg, var(--ov-gold-tint) 0%, var(--ftp-surface) 78%); border-color: color-mix(in srgb, var(--ov-gold) 35%, var(--ftp-border)); }
+.ftp-tile[data-key="budget"]::before { background: color-mix(in srgb, var(--ov-gold-pop) 60%, transparent); }
+.ftp-tile[data-key="budget"] .ftp-tile-label, .ftp-tile[data-key="budget"] .ftp-tile-value { color: var(--ov-gold-deep); }
+/* Warnings. */
+.ftp-tile[data-tone="warn"] { background: linear-gradient(160deg, var(--ftp-warn-tint) 0%, var(--ftp-surface) 80%); border-color: var(--ftp-warn-border); }
+.ftp-tile[data-tone="warn"]::before { background: color-mix(in srgb, var(--ftp-warn-border) 70%, transparent); }
+.ftp-tile[data-tone="warn"] .ftp-tile-art, .ftp-tile[data-tone="warn"] .ftp-tile-label, .ftp-tile[data-tone="warn"] .ftp-tile-value { color: var(--ftp-warn-text); }
+.ftp-tile[data-tone="danger"] { background: linear-gradient(160deg, var(--ftp-danger-tint) 0%, var(--ftp-surface) 80%); border-color: color-mix(in srgb, var(--ftp-danger) 30%, var(--ftp-border)); }
+.ftp-tile[data-tone="danger"]::before { background: color-mix(in srgb, var(--ftp-danger) 14%, transparent); }
+.ftp-tile[data-tone="danger"] .ftp-tile-art, .ftp-tile[data-tone="danger"] .ftp-tile-label, .ftp-tile[data-tone="danger"] .ftp-tile-value { color: var(--ftp-danger); }
+.ftp-tile-skeleton { height: 124px; border-radius: 16px; }
+@media (max-width: 639px) {
+  .ftp-tile { min-height: 116px; padding: 12px; }
+  .ftp-tile-art { width: 40px; height: 40px; border-radius: 12px; top: 8px; right: 8px; }
+  .ftp-tile-art svg:not(.lucide) { width: 30px; height: 30px; }
+  .ftp-tile-label { max-width: calc(100% - 44px); }
+  .ftp-tile-value { font-size: 21px; line-height: 27px; }
+  .ftp-tile-value[data-kind="text"] { font-size: 16px; line-height: 21px; }
+}
 
 /* ---------- Stale-data notice ---------- */
 .ftp-stale {
@@ -498,15 +560,260 @@
 
 
 /* ============================================================
+ * District hero (DistrictIdentityCard, v5.1 "Warm Calm")
+ * A pastel sky in the district's colours, a sun glow, hills along the
+ * bottom and the landmark drawing. Text never sits on a strong colour.
+ * ============================================================ */
+.ftp-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
+}
+.ftp-hero-sky {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background:
+    radial-gradient(circle at 84% 20%, color-mix(in srgb, var(--ov-gold-pop) 60%, transparent) 0 46px, color-mix(in srgb, var(--ov-gold-pop) 22%, transparent) 90px, transparent 170px),
+    radial-gradient(110% 90% at 100% 0%, color-mix(in srgb, var(--hue-pop) 42%, transparent) 0%, transparent 62%),
+    linear-gradient(135deg, var(--hero-base, var(--hue-tint)) 0%, var(--ftp-surface) 52%, color-mix(in srgb, var(--hue-tint) 75%, var(--ftp-surface)) 100%);
+}
+.ftp-hero .ftp-hero-art {
+  position: absolute;
+  z-index: -2;
+  top: 6px;
+  right: 1%;
+  bottom: 14px;
+  width: 44%;
+  opacity: 1;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to left, #000 72%, transparent 100%);
+          mask-image: linear-gradient(to left, #000 72%, transparent 100%);
+}
+.ftp-hero-hills {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 46px;
+  pointer-events: none;
+}
+.ftp-hero-hill-back { fill: color-mix(in srgb, var(--hue-pop) 55%, transparent); }
+.ftp-hero-hill-front { fill: color-mix(in srgb, var(--hue-pop) 38%, var(--ftp-surface)); }
+.ftp-hero-body { position: relative; padding: clamp(18px, 3vw, 30px) clamp(18px, 3vw, 30px) 54px; }
+.ftp-hero-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.ftp-hero-text { flex: 1 1 auto; min-width: 0; max-width: 60%; }
+.ftp-hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--ftp-radius-pill);
+  background: color-mix(in srgb, var(--ftp-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  color: var(--hue-deep);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+.ftp-hero-names { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; margin-top: 12px; }
+.ftp-hero-name {
+  margin: 0;
+  font-family: var(--ftp-font-sans);
+  font-size: clamp(36px, 5vw, 54px);
+  line-height: 1.02;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--ftp-text);
+  text-wrap: balance;
+}
+.ftp-hero-local { font-size: clamp(20px, 2.6vw, 28px); line-height: 1.2; font-weight: 650; color: var(--hue-deep); }
+.ftp-hero-tags { margin-top: 14px; max-width: 560px; }
+
+/* Phones and small tablets: the picture becomes a band along the bottom. */
+@media (max-width: 767px) {
+  .ftp-hero { border-radius: 20px; }
+  .ftp-hero .ftp-hero-art {
+    top: auto;
+    right: -2%;
+    bottom: 8px;
+    width: 72%;
+    height: 132px;
+    -webkit-mask-image: linear-gradient(to left, #000 60%, transparent 100%);
+            mask-image: linear-gradient(to left, #000 60%, transparent 100%);
+  }
+  .ftp-hero-text { max-width: none; }
+  .ftp-hero-body { padding-bottom: 124px; }
+  .ftp-hero-hills { height: 40px; }
+}
+
+/* ============================================================
  * Overview (OverviewClient, v5)
  * ============================================================ */
 .ftp-ov-grid {
   display: grid;
   /* 1 column on a phone, 2 on a tablet or laptop, 3 on a wide PC. */
   grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
-  gap: 12px;
-  align-items: start;
+  gap: 14px;
+  align-items: stretch;
 }
+
+/* ---------- The four picture cards (OverviewCard, v5.1) ---------- */
+.ftp-ovc {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-width: 0;
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hue-tint) 94%, var(--hue-pop)) 0px, var(--ftp-surface) 110px);
+  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+}
+.ftp-ovc::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -46px;
+  right: -40px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hue-pop) 40%, transparent);
+}
+.ftp-ovc[data-tone="gold"] {
+  background: linear-gradient(180deg, var(--ov-gold-tint) 0px, var(--ftp-surface) 110px);
+  border-color: color-mix(in srgb, var(--ov-gold) 32%, var(--ftp-border));
+}
+.ftp-ovc[data-tone="gold"]::before { background: color-mix(in srgb, var(--ov-gold-pop) 45%, transparent); }
+.ftp-ovc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ftp-ovc-mark {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--ftp-surface);
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.06), inset 0 0 0 1px color-mix(in srgb, var(--hue) 18%, transparent);
+}
+.ftp-ovc-title { flex: 1; min-width: 0; margin: 0; font-size: 17px; line-height: 23px; font-weight: 700; color: var(--hue-deep); }
+.ftp-ovc[data-tone="gold"] .ftp-ovc-title { color: var(--ov-gold-deep); }
+.ftp-ovc-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px 0 10px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--hue-deep);
+  text-decoration: none;
+  border-radius: var(--ftp-radius-pill);
+}
+.ftp-ovc-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ftp-ovc[data-tone="gold"] .ftp-ovc-more { color: var(--ov-gold-deep); }
+.ftp-ovc-foot { margin: 10px 0 0; font-size: 12px; line-height: 16px; color: var(--ftp-text-2); }
+
+/* Leaders: round initials badges. */
+.ftp-ovl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ftp-ovl-row { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; line-height: 20px; }
+.ftp-ovl-badge {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hue-pop) 70%, var(--ftp-surface));
+  color: var(--hue-deep);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+.ftp-ovl-badge[data-empty="true"] { background: var(--ftp-surface); border: 1.5px dashed color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); color: var(--ftp-text-2); }
+.ftp-ovl-role { width: 74px; flex-shrink: 0; font-size: 13px; color: var(--ftp-text-2); }
+.ftp-ovl-value { flex: 1; min-width: 0; color: var(--ftp-text); }
+.ftp-ovl-party { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ftp-text-2); }
+
+/* People: head count, literacy ring, women vs men bars. */
+.ftp-ovp-count { margin: 0 0 12px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.ftp-ovp-num { font-size: 26px; line-height: 32px; font-weight: 750; color: var(--hue-deep); font-variant-numeric: tabular-nums; }
+.ftp-ovp-unit { font-size: 14px; color: var(--ftp-text-2); }
+.ftp-ovp-visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 10px; }
+.ftp-ovp-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface));
+  border: 1px solid color-mix(in srgb, var(--hue) 12%, var(--ftp-border));
+}
+.ftp-ovp-box[data-kind="ratio"] { flex-direction: column; align-items: stretch; gap: 4px; }
+.ftp-ovp-ring { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.ftp-ovp-ring-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--hue-deep);
+  font-variant-numeric: tabular-nums;
+}
+.ftp-ovp-cap { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 13px; line-height: 18px; color: var(--ftp-text); }
+.ftp-ovp-ratio-line { font-size: 13px; line-height: 18px; color: var(--ftp-text); }
+.ftp-ovp-bars { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.ftp-ovp-bar { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; color: var(--ftp-text-2); }
+.ftp-ovp-bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ftp-ovp-bar-track { height: 8px; border-radius: var(--ftp-radius-pill); background: var(--ftp-surface); overflow: hidden; }
+.ftp-ovp-bar-track > span { display: block; height: 100%; border-radius: var(--ftp-radius-pill); }
+.ftp-ovp-bar[data-who="women"] .ftp-ovp-bar-track > span { background: var(--hue); }
+.ftp-ovp-bar[data-who="men"] .ftp-ovp-bar-track > span { background: color-mix(in srgb, var(--hue-pop) 85%, var(--hue)); }
+
+/* Projects: one bar for the mix of statuses + a legend. */
+.ftp-ovi-total { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--ftp-text); font-variant-numeric: tabular-nums; }
+.ftp-ovi-bar { display: flex; gap: 3px; height: 12px; border-radius: var(--ftp-radius-pill); overflow: hidden; background: var(--ftp-surface-2); }
+.ftp-ovi-seg { display: block; min-width: 6px; height: 100%; }
+.ftp-ovi-seg[data-seg="building"], .ftp-ovi-legend [data-seg="building"] > span { background: var(--hue); }
+.ftp-ovi-seg[data-seg="delayed"], .ftp-ovi-legend [data-seg="delayed"] > span { background: var(--ftp-warn); }
+.ftp-ovi-seg[data-seg="done"], .ftp-ovi-legend [data-seg="done"] > span { background: var(--ftp-live); }
+.ftp-ovi-legend { list-style: none; margin: 8px 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; line-height: 20px; color: var(--ftp-text); font-variant-numeric: tabular-nums; }
+.ftp-ovi-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.ftp-ovi-legend li > span { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* Money: gold ring + the two amounts. */
+.ftp-ovm-fy { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 0 0 10px; font-size: 13px; color: var(--ftp-text-2); }
+.ftp-ovm-body { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.ftp-ovm-ring { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+.ftp-ovm-ring-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 750;
+  color: var(--ov-gold-deep);
+  font-variant-numeric: tabular-nums;
+}
+.ftp-ovm-figs { flex: 1 1 160px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.ftp-ovm-figs dd { margin: 2px 0 0; }
+.ftp-ovm-amount { font-size: 19px; line-height: 25px; font-weight: 750; color: var(--ov-gold-deep); font-variant-numeric: tabular-nums; }
+.ftp-ovm-amount[data-muted="true"] { color: var(--ftp-text-2); }
+.ftp-ovm-line { margin: 12px 0 0; font-size: 13px; line-height: 19px; color: var(--ftp-text-2); }
 .ftp-ov-note {
   margin: 10px 0 0;
   padding: 8px 10px;
@@ -597,7 +904,9 @@
   font-size: 13px;
   font-weight: 500;
 }
-.ftp-ov-taluk:hover { border-color: var(--ftp-border-strong); background: var(--ftp-surface-2); }
+.ftp-ov-taluk:hover { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); background: var(--hue-tint); }
+.ftp-ov-taluk { align-items: center; background: color-mix(in srgb, var(--hue-tint) 55%, var(--ftp-surface)); border-color: color-mix(in srgb, var(--hue) 16%, var(--ftp-border)); min-height: 44px; }
+.ftp-ov-taluk-pin { flex-shrink: 0; color: var(--hue); align-self: center; }
 .ftp-ov-taluk-local { font-size: 12px; font-weight: 400; color: var(--ftp-text-2); }
 
 /* Report card (folded) */
@@ -682,5 +991,6 @@ details[open] > .ftp-rc-summary .ftp-rc-open { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ftp-dbar-topics, .ftp-dbar-fresh, .ftp-glance-chip { transition: none; }
+  .ftp-dbar-topics, .ftp-dbar-fresh, .ftp-tile { transition: none; }
+  .ftp-tile:hover { transform: none; }
 }

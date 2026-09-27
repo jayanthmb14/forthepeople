@@ -7,5 +7,39 @@
     "feedCurrent": "ताज़ा",
     "feedNoDate": "तारीख़ प्रकाशित नहीं",
     "feedsMore": "हम हर विषय को कैसे जाँचते हैं"
+  },
+  "hero": {
+    "kicker": "{state} · {n} {units}"
+  },
+  "tiles": {
+    "alerts": "अभी की चेतावनियाँ",
+    "estimate": "अनुमान, जनगणना की गिनती नहीं",
+    "estimateFlag": "अनुमान",
+    "census": "जनगणना {year}",
+    "projects": "बन रही परियोजनाएँ",
+    "projectsSub": "हमारी नज़र की कुल {total} में से",
+    "budget": "मिला बजट",
+    "oldYear": "पुराना साल",
+    "about": "लगभग {date}",
+    "inDays": "{n, plural, =0 {आज} one {# दिन में} other {# दिन में}}",
+    "inMonths": "{n, plural, one {# महीने में} other {# महीनों में}}",
+    "inYears": "{n, plural, one {लगभग # साल में} other {लगभग # साल में}}",
+    "gradeSub": "100 में से {score} · {date}"
+  },
+  "cards": {
+    "people": {
+      "people": "लोग",
+      "readWrite": "हर 100 में से {n} लोग पढ़-लिख सकते हैं",
+      "literacyAria": "साक्षरता: {pct}% लोग पढ़-लिख सकते हैं",
+      "womenPerMen": "हर 1,000 पुरुषों पर {n} महिलाएँ",
+      "women": "महिलाएँ",
+      "men": "पुरुष"
+    },
+    "projects": {
+      "building": "{n} बन रही हैं",
+      "delayed": "इनमें से {n} देर से",
+      "done": "{n} पूरी हुईं",
+      "barAria": "{building} बन रही हैं, इनमें से {delayed} देर से, {done} पूरी हुईं"
+    }
   }
 }

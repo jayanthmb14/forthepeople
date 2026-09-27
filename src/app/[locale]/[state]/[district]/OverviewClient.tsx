@@ -5,28 +5,33 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-//  District overview — v5 "calm"
+//  District overview — v5 "calm", v5.1 "Warm Calm"
 // ═══════════════════════════════════════════════════════════
 //
 //  What a visitor needs first, then details, then the fine print:
 //
 //   Above the fold
-//   1. Name block     — the district's name (+ local script), one or two
-//                       tagline chips. The state and taluk switchers are in
-//                       the district bar above.
-//   2. Glance row     — Collector, MP, people, projects, budget, next
-//                       election, report card (if current), warnings.
+//   1. District hero  — a pastel sky in the district's colours, its
+//                       landmark drawing, the name (+ local script), the
+//                       state and taluk count, one or two tagline chips.
+//                       The state and taluk switchers are in the bar above.
+//   2. Number tiles   — colourful tiles: warnings (only when active),
+//                       people, projects, budget (says "Old year" when it
+//                       is), next election with a countdown, report card
+//                       (only while current), MP. Overview only (v5.1).
 //   3. Warning banner — only while a high or critical warning is active.
 //
 //   Below
-//   4. Leaders, people, projects and money — the four snippets + budget.
+//   4. Leaders, people, projects and money — four picture cards
+//      (OverviewCard: drawn mark, pastel wash, one visual each) + tenders.
 //   5. Recent news and notices — three headlines, the next state or
 //      district exam, and weather / mandi in one honest line each
 //      ("the last reading is from 20 Apr, 160 days ago").
 //   6. Taluks as compact chips.
 //   7. Report card, folded.
 //   8. All topics, folded (the sidebar and drawer already list them).
-//   9. Check this data (VerifyPanel), then supporters last.
+//   9. Check this data (VerifyPanel, with the double-check status of each
+//      dataset when the verification API is live), then supporters last.
 //
 //  Removed in v5: the "Today" tiles, the 37-tile module grid, the identity
 //  card's census tiles, freshness pills and health ring, the tenders
@@ -35,25 +40,22 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, BookOpen, CloudSun, ExternalLink, Wheat } from "lucide-react";
+import { AlertTriangle, BookOpen, CloudSun, ExternalLink, MapPin, Wheat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useFormat, useModuleText } from "@/i18n/client";
 import { placeName, placeNamePair } from "@/i18n/place-name";
 import { getDistrict } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { getGroupedModules } from "@/lib/constants/sidebar-modules";
-import { hueClass } from "@/lib/design/hues";
+import { getDistrictHue, hueClass } from "@/lib/design/hues";
 import { ageInDays, isWithinMinutes } from "@/lib/utils/timeAgo";
-import {
-  useAlerts, useBudget, useCropPrices, useExams, useNews, useWeather,
-} from "@/hooks/useRealtimeData";
+import { useAlerts, useCropPrices, useExams, useNews, useWeather } from "@/hooks/useRealtimeData";
 import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
-import { Card, ModulePage, ProgressBar, Section } from "@/components/district/ui";
+import { Card, ModulePage, Section } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import DistrictSponsorBanner from "@/components/common/DistrictSponsorBanner";
 import { useModuleGroupName } from "@/components/layout/useModuleGroups";
-import { useMoney } from "@/components/money/useMoney";
 import { DistrictHealthScoreCard } from "@/components/district/DistrictHealthScoreCard";
 import DistrictIdentityCard from "@/components/district/DistrictIdentityCard";
 import InfraSnippet from "@/components/district/InfraSnippet";
@@ -62,6 +64,7 @@ import LiveElectionBanner from "@/components/district/LiveElectionBanner";
 import PopulationSnippet from "@/components/district/PopulationSnippet";
 import TenderSnippet from "@/components/district/TenderSnippet";
 import GlanceRow from "@/components/district/shell/GlanceRow";
+import MoneySnippet from "@/components/district/shell/MoneySnippet";
 import VerifyPanel from "@/components/district/shell/VerifyPanel";
 import type { DistrictBadge } from "@/lib/constants/districts";
 
@@ -142,7 +145,6 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const mt = useModuleText();
   const groupName = useModuleGroupName();
   const f = useFormat();
-  const money = useMoney();
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
   const stateConfig = getStateConfig(stateSlug, districtSlug);
   const subUnitEn = stateConfig?.subDistrictUnitPlural ?? "Taluks";
@@ -154,23 +156,12 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const { data: weather } = useWeather(districtSlug, stateSlug);
   const { data: crops } = useCropPrices(districtSlug, stateSlug);
   const { data: alerts } = useAlerts(districtSlug, stateSlug);
-  const { data: budgetData } = useBudget(districtSlug, stateSlug);
   const { data: newsData, isLoading: newsLoading } = useNews(districtSlug, stateSlug);
   const { data: examsData } = useExams(districtSlug, stateSlug);
   const fresh = useFreshness(stateSlug, districtSlug);
 
   // ── Warning banner ──
   const serious = pickSeriousAlert(alerts?.data ?? []);
-
-  // ── Budget: newest financial year ──
-  const allBudget = budgetData?.data?.entries ?? [];
-  const latestFY = allBudget.length > 0 ? allBudget[0].fiscalYear : null;
-  const fyRows = latestFY ? allBudget.filter((e) => e.fiscalYear === latestFY) : [];
-  const allocated = fyRows.reduce((s, e) => s + e.allocated, 0);
-  const spent = fyRows.reduce((s, e) => s + e.spent, 0);
-  const spentShare = allocated > 0 ? spent / allocated : 0;
-  const spendEstimated = fyRows.some((e) => /estimat/i.test(e.source ?? ""));
-  const budgetLate = fresh.primary("finance")?.status === "late";
 
   // ── Recent: headlines, exam, weather, mandi ──
   const headlines = (newsData?.data ?? []).filter((n) => {
@@ -191,7 +182,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
 
   return (
     <ModulePage className="ftp-overview">
-      {/* ═══ 1. Name ═══ */}
+      {/* ═══ 1. District hero ═══ */}
       <DistrictIdentityCard
         districtSlug={districtSlug}
         name={districtData.name}
@@ -200,11 +191,12 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         stateName={stateName}
         tagline={districtData.tagline}
         badges={districtData.tagline ? districtData.badges?.slice(0, 1) : districtData.badges?.slice(0, 2)}
+        subUnitCount={districtData.taluks.length || null}
+        subUnitLabel={subUnitPlural}
         showStats={false}
-        showStateChip={false}
       />
 
-      {/* ═══ 2. Glance row ═══ */}
+      {/* ═══ 2. Number tiles ═══ */}
       <div style={{ marginTop: 14 }}>
         <GlanceRow stateSlug={stateSlug} districtSlug={districtSlug} />
       </div>
@@ -230,45 +222,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
           <LeadersSnippet district={districtSlug} state={stateSlug} base={base} />
           <PopulationSnippet district={districtSlug} state={stateSlug} base={base} />
           <InfraSnippet district={districtSlug} state={stateSlug} base={base} />
-          {latestFY && allocated > 0 && (
-            <Card as="section" aria-label={to("v5.money.aria")} className="ftp-hue-amber" tinted>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>💰</span>
-                  <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{mt.label("finance")}</h3>
-                </span>
-                <Link href={`${base}/finance`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-                  {to("v5.money.viewAll")}
-                </Link>
-              </div>
-              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ftp-text-2)" }}>{to("v5.money.fy", { fy: latestFY })}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-                <div>
-                  <div className="ftp-label">{to("v5.money.given")}</div>
-                  <div className="ftp-num" style={{ fontSize: 17, lineHeight: "24px" }}>{money.short(allocated, 0)}</div>
-                </div>
-                <div>
-                  <div className="ftp-label">{to("v5.money.spent")}</div>
-                  <div className="ftp-num" style={{ fontSize: 17, lineHeight: "24px" }}>{spent > 0 ? money.short(spent, 0) : "—"}</div>
-                </div>
-              </div>
-              {spent > 0 ? (
-                <div style={{ marginTop: 10 }}>
-                  <ProgressBar value={spentShare * 100} max={100} height={6} />
-                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--ftp-text-2)" }}>{to("v5.money.share", { pct: money.pct(spentShare) })}</p>
-                </div>
-              ) : (
-                <p style={{ margin: "10px 0 0", fontSize: 13, color: "var(--ftp-text-2)" }}>{to("v5.money.noSpend")}</p>
-              )}
-              {(budgetLate || spendEstimated) && (
-                <p className="ftp-ov-note">
-                  {budgetLate ? to("v5.money.old", { fy: latestFY }) : ""}
-                  {budgetLate && spendEstimated ? " " : ""}
-                  {spendEstimated ? to("v5.money.estimate") : ""}
-                </p>
-              )}
-            </Card>
-          )}
+          <MoneySnippet district={districtSlug} state={stateSlug} base={base} />
           <TenderSnippet locale={locale} district={districtSlug} state={stateSlug} base={base} />
         </div>
       </Section>
@@ -350,7 +304,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       {/* ═══ 6. Taluks ═══ */}
       {districtData.taluks.length > 0 && (
         <Section title={t("subUnits", { units: subUnitPlural, name: displayName })}>
-          <ul className="ftp-ov-taluks">
+          <ul className={`ftp-ov-taluks ${hueClass(getDistrictHue(districtSlug))}`}>
             {districtData.taluks.map((tal) => {
               const names = placeNamePair(
                 { name: tal.name, nameLocal: tal.nameLocal, names: reg?.taluks.find((x) => x.slug === tal.slug)?.names },
@@ -359,6 +313,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               return (
                 <li key={tal.slug}>
                   <Link href={`${base}/${tal.slug}`} className="ftp-ov-taluk">
+                    <MapPin size={13} aria-hidden className="ftp-ov-taluk-pin" />
                     <span lang={names.primaryLang}>{names.primary}</span>
                     {names.secondary && (
                       <span lang={names.secondaryLang} className="ftp-ov-taluk-local">{names.secondary}</span>

@@ -7,15 +7,22 @@
  *
  * Design v3: kit Card + title row, three small mono figures, and the census
  * year as the as-of line (these numbers are from a census, not live).
+ *
+ * v5.1 "Warm Calm": OverviewCard frame with the drawn family mark; the head
+ * count counts up once; literacy is a ring ("70 of every 100 can read and
+ * write") and the sex ratio two bars (women vs men per 1,000), so a child
+ * can read both without the jargon. No emoji.
  */
 
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import type { PopulationProfileResponse } from "@/hooks/useRealtimeData";
-import { Card } from "@/components/district/ui";
+import { CountUp } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
+import OverviewCard from "@/components/district/shell/OverviewCard";
+import { PeopleMark } from "@/components/district/shell/overview-art";
 
 interface Props {
   district: string;
@@ -47,16 +54,30 @@ function top3Alphabetical(religion: Record<string, number> | null): Array<{
     }));
 }
 
-/** Label above a mono figure. */
-function Figure({ label, value, unit }: { label: string; value: string; unit?: string }) {
+/** A thin ring showing a percentage, drawn in once (reduced motion: static). */
+function Ring({ pct, size = 64 }: { pct: number; size?: number }) {
+  const stroke = 8;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, pct));
   return (
-    <div style={{ minWidth: 0 }}>
-      <div className="ftp-label">{label}</div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-        <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", color: "var(--ftp-text)" }}>{value}</span>
-        {unit && <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{unit}</span>}
-      </div>
-    </div>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden focusable="false">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} />
+      <circle
+        className="ftp-draw-path"
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--hue)"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - p / 100)}
+        style={{ ["--len" as string]: c }}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </svg>
   );
 }
 
@@ -71,31 +92,69 @@ export default function PopulationSnippet({ district, state, base }: Props) {
   });
 
   const t = useTranslations("popSnippet");
+  const td = useTranslations("page_district-shell.cards.people");
+  const f = useFormat();
   const profile = data?.data ?? null;
   if (!profile) return null;
 
   const religions = top3Alphabetical(profile.religion);
+  const literacy = typeof profile.literacyTotal === "number" ? profile.literacyTotal : null;
+  const ratio = typeof profile.sexRatio === "number" && profile.sexRatio > 0 ? profile.sexRatio : null;
+  const barMax = ratio ? Math.max(ratio, 1000) : 1000;
 
   return (
-    <Card as="section" aria-label={t("aria")} className="ftp-hue-teal" tinted>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>📈</span>
-          <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{t("title")}</h3>
-        </span>
-        <Link href={`${base}/population`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          {t("viewAll")}
-        </Link>
-      </div>
+    <OverviewCard
+      hue="teal"
+      mark={<PeopleMark size={36} />}
+      title={t("title")}
+      ariaLabel={t("aria")}
+      href={`${base}/population`}
+      linkText={t("viewAll")}
+    >
+      {profile.totalPopulation != null && (
+        <p className="ftp-ovp-count">
+          <span className="ftp-ovp-num"><CountUp value={formatInt(profile.totalPopulation)} /></span>{" "}
+          <span className="ftp-ovp-unit">{td("people")}</span>
+        </p>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 10 }}>
-        <Figure label={t("population")} value={formatInt(profile.totalPopulation)} />
-        {typeof profile.sexRatio === "number" && <Figure label={t("sexRatio")} value={String(profile.sexRatio)} unit={t("perThousand")} />}
-        {typeof profile.literacyTotal === "number" && <Figure label={t("literacy")} value={profile.literacyTotal.toFixed(1)} unit="%" />}
-      </div>
+      {(literacy !== null || ratio !== null) && (
+        <div className="ftp-ovp-visuals">
+          {literacy !== null && (
+            <div className="ftp-ovp-box" role="img" aria-label={td("literacyAria", { pct: f.number(literacy, { maximumFractionDigits: 1 }) })}>
+              <span className="ftp-ovp-ring">
+                <Ring pct={literacy} />
+                <span className="ftp-ovp-ring-num">{f.number(Math.round(literacy))}%</span>
+              </span>
+              <span className="ftp-ovp-cap">
+                <span className="ftp-label">{t("literacy")}</span>
+                <span>{td("readWrite", { n: f.number(Math.round(literacy)) })}</span>
+              </span>
+            </div>
+          )}
+          {ratio !== null && (
+            <div className="ftp-ovp-box" data-kind="ratio">
+              <span className="ftp-label">{t("sexRatio")}</span>
+              <span className="ftp-ovp-ratio-line">{td("womenPerMen", { n: f.number(ratio) })}</span>
+              <span className="ftp-ovp-bars" aria-hidden>
+                <span className="ftp-ovp-bar" data-who="women">
+                  <span className="ftp-ovp-bar-name">{td("women")}</span>
+                  <span className="ftp-ovp-bar-track"><span className="ftp-grow-x" style={{ width: `${(ratio / barMax) * 100}%` }} /></span>
+                  <span className="ftp-num">{f.number(ratio)}</span>
+                </span>
+                <span className="ftp-ovp-bar" data-who="men">
+                  <span className="ftp-ovp-bar-name">{td("men")}</span>
+                  <span className="ftp-ovp-bar-track"><span className="ftp-grow-x" style={{ width: `${(1000 / barMax) * 100}%` }} /></span>
+                  <span className="ftp-num">{f.number(1000)}</span>
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {religions.length > 0 && (
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "12px 0 0", fontSize: 13 }}>
           {t("religionLabel")}{" "}
           {religions.map((r, i) => (
             <span key={r.name}>
@@ -108,10 +167,8 @@ export default function PopulationSnippet({ district, state, base }: Props) {
       )}
 
       {profile.year && (
-        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "8px 0 0" }}>
-          {t("asOf", { year: profile.year })}
-        </p>
+        <p className="ftp-ovc-foot">{t("asOf", { year: profile.year })}</p>
       )}
-    </Card>
+    </OverviewCard>
   );
 }
