@@ -109,7 +109,8 @@ export default function StateVoteList({ locale, stateSlug, stateName, lockedDist
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: 12,
-                    background: i === 0 ? "var(--hue)" : "var(--hue-tint)",
+                    // Deep hue behind white digits: the light yellow hue is too pale for white text.
+                    background: i === 0 ? "var(--hue-deep)" : "var(--hue-tint)",
                     color: i === 0 ? "#fff" : "var(--hue-deep)",
                   }}
                 >
