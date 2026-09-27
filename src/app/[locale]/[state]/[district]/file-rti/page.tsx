@@ -4,15 +4,47 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// File RTI page — Design v3 "Civic Ledger" module template.
+// A citizen picks a topic, sees the ready-made RTI application (English +
+// local language when we have it), copies it and files it online.
+// Templates come from useRTI() → data.templates (only `active` ones shown).
+
 "use client";
+import type React from "react";
 import { use, useState } from "react";
-import { FileText, Copy, Check, ExternalLink } from "lucide-react";
+import { FileText, Copy, Check, ExternalLink, Lightbulb } from "lucide-react";
 import { useRTI } from "@/hooks/useRealtimeData";
-import { ModuleHeader, SectionLabel, LoadingShell, ErrorBlock } from "@/components/district/ui";
+import { PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
+import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { getDistrict } from "@/lib/constants/districts";
+
+/** Page wrapper: the v3 container (24 px sides, 16 on phones) at reading width. */
+const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
+
+/** Shared 44 px button shape (easy to tap on phones). */
+const BUTTON_BASE: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  minHeight: 44,
+  padding: "0 16px",
+  borderRadius: "var(--ftp-radius-tile)",
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: "pointer",
+  textDecoration: "none",
+};
+
+/** Small uppercase label above a block (11 px, text-2). */
+function BlockLabel({ children }: { children: React.ReactNode }) {
+  return <div className="ftp-label" style={{ marginBottom: 4 }}>{children}</div>;
+}
 
 export default function FileRTIPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const base = `/${locale}/${state}/${district}`;
+  const districtName = getDistrict(state, district)?.name ?? district.replace(/-/g, " ");
   const { data, isLoading, error } = useRTI(district, state);
   const [selected, setSelected] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -28,89 +60,147 @@ export default function FileRTIPage({ params }: { params: Promise<{ locale: stri
     }
   };
 
+  // The local-language heading: Kannada for Karnataka (where the templates
+  // were written), a neutral phrase elsewhere. Never machine-translated.
+  const localHeading = state === "karnataka" ? "ಕನ್ನಡದಲ್ಲಿ" : "In the local language";
+
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={FileText} title="File RTI" description="Choose a template, copy the application text, and submit online" backHref={base} />
+    <div className="ftp-container" style={PAGE_STYLE}>
+      <PageHeader
+        icon={FileText}
+        title="File RTI"
+        description="Choose a template, copy the application text, and submit online"
+        backHref={base}
+        accent={getModuleAccent("file-rti")}
+        source={{ label: "rtionline.gov.in", href: "https://rtionline.gov.in" }}
+      />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
-      {!isLoading && (
-        <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 1fr" : "1fr", gap: 16 }}>
+      {!isLoading && !error && templates.length === 0 && (
+        <EmptyState
+          title={`No RTI templates yet for ${districtName}.`}
+          body="You can still file an RTI with any central government office on the official RTI Online portal."
+          action={
+            <a href="https://rtionline.gov.in" target="_blank" rel="noopener noreferrer" style={{ ...BUTTON_BASE, border: "1px solid var(--ftp-border)", background: "var(--ftp-surface)", color: "var(--ftp-text)" }}>
+              File Online <ExternalLink size={12} aria-hidden />
+            </a>
+          }
+        />
+      )}
+
+      {!isLoading && templates.length > 0 && (
+        // One column on phones; two side by side once a template is open on wider screens.
+        <div style={{ display: "grid", gridTemplateColumns: selected ? "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" : "1fr", gap: 24, alignItems: "start" }}>
           {/* Template list */}
-          <div>
-            <SectionLabel>Choose Topic</SectionLabel>
+          <Section title="Choose Topic">
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {templates.map((t) => (
-                <button key={t.id} onClick={() => setSelected(t.id === selected ? null : t.id)} style={{
-                  padding: "12px 14px", borderRadius: 10, textAlign: "left", cursor: "pointer",
-                  background: selected === t.id ? "#EFF6FF" : "#FFF",
-                  border: selected === t.id ? "1px solid #2563EB" : "1px solid #E8E8E4",
-                }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{t.topic}</div>
-                  {t.topicLocal && <div style={{ fontSize: 12, color: "#9B9B9B", fontFamily: "var(--font-regional)" }}>{t.topicLocal}</div>}
-                  <div style={{ fontSize: 12, color: "#6B6B6B", marginTop: 2 }}>PIO: {t.department}</div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                    <span style={{ fontSize: 11, color: "#9B9B9B", background: "#F5F5F0", padding: "2px 7px", borderRadius: 8 }}>Fee: ₹{String(t.feeAmount ?? "").replace(/^\s*(₹|Rs\.?)\s*/i, "") || "0"}</span>
-                  </div>
-                </button>
-              ))}
+              {templates.map((t) => {
+                const isActive = selected === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setSelected(t.id === selected ? null : t.id)}
+                    style={{
+                      padding: "12px 14px",
+                      minHeight: 44,
+                      borderRadius: "var(--ftp-radius-card)",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      background: isActive ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
+                      border: `1px solid ${isActive ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
+                      color: "var(--ftp-text)",
+                      fontFamily: "var(--ftp-font-sans)",
+                    }}
+                  >
+                    <div className="ftp-title">{t.topic}</div>
+                    {t.topicLocal && (
+                      <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)" }}>{t.topicLocal}</div>
+                    )}
+                    <div className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>PIO: {t.department}</div>
+                    <div style={{ marginTop: 6 }}>
+                      <Pill>
+                        Fee: <span className="ftp-num">₹{String(t.feeAmount ?? "").replace(/^\s*(₹|Rs\.?)\s*/i, "") || "0"}</span>
+                      </Pill>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </Section>
 
           {/* Selected template */}
           {selectedTpl && (
-            <div>
-              <SectionLabel>RTI Application</SectionLabel>
-              <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16 }}>
+            <Section title="RTI Application">
+              <Card>
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", marginBottom: 4 }}>To:</div>
-                  <div style={{ fontSize: 13, color: "#4B4B4B", lineHeight: 1.5 }}>{selectedTpl.pioName && `${selectedTpl.pioName},\n`}{selectedTpl.pioAddress}</div>
+                  <BlockLabel>To</BlockLabel>
+                  <div className="ftp-body" style={{ whiteSpace: "pre-line" }}>
+                    {selectedTpl.pioName && `${selectedTpl.pioName},\n`}{selectedTpl.pioAddress}
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", marginBottom: 4 }}>APPLICATION TEXT</div>
-                  <div style={{ background: "#F9F9F7", borderRadius: 8, padding: 12, fontSize: 13, color: "#1A1A1A", lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", maxHeight: 280, overflowY: "auto" }}>
+                  <BlockLabel>Application text</BlockLabel>
+                  <div className="ftp-num" style={{ background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-tile)", padding: 12, fontSize: 13, lineHeight: "22px", fontWeight: 400, color: "var(--ftp-text)", whiteSpace: "pre-wrap", maxHeight: 280, overflowY: "auto" }}>
                     {selectedTpl.templateText}
                   </div>
                 </div>
 
                 {selectedTpl.templateTextLocal && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", marginBottom: 4 }}>ಕನ್ನಡದಲ್ಲಿ</div>
-                    <div style={{ background: "#F9F9F7", borderRadius: 8, padding: 12, fontSize: 13, color: "#4B4B4B", lineHeight: 1.7, fontFamily: "var(--font-regional)", maxHeight: 160, overflowY: "auto" }}>
+                    <BlockLabel>{localHeading}</BlockLabel>
+                    <div style={{ background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-tile)", padding: 12, fontSize: 13, lineHeight: "22px", color: "var(--ftp-text)", fontFamily: "var(--font-regional)", maxHeight: 160, overflowY: "auto" }}>
                       {selectedTpl.templateTextLocal}
                     </div>
                   </div>
                 )}
 
+                {/* Tip — semantic colour on the icon only, no tinted box. */}
                 {selectedTpl.tips && (
-                  <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#92400E", marginBottom: 2 }}>TIP</div>
-                    <div style={{ fontSize: 12, color: "#78350F" }}>{selectedTpl.tips}</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
+                    <Lightbulb size={16} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <BlockLabel>Tip</BlockLabel>
+                      <div className="ftp-body">{selectedTpl.tips}</div>
+                    </div>
                   </div>
                 )}
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={handleCopy} style={{
-                    display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px",
-                    background: copied ? "#16A34A" : "#2563EB", color: "#FFF", borderRadius: 8,
-                    fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
-                  }}>
-                    {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy Text</>}
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    style={{ ...BUTTON_BASE, background: "var(--ftp-brand)", color: "var(--ftp-surface)", border: "none" }}
+                  >
+                    {copied ? <><Check size={14} aria-hidden /> Copied!</> : <><Copy size={14} aria-hidden /> Copy Text</>}
                   </button>
-                  <a href="https://rtionline.gov.in" target="_blank" rel="noopener noreferrer" style={{
-                    display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px",
-                    background: "#F5F5F0", color: "#1A1A1A", borderRadius: 8,
-                    fontSize: 13, fontWeight: 600, textDecoration: "none", border: "1px solid #E8E8E4",
-                  }}>
-                    File Online <ExternalLink size={12} />
+                  <a
+                    href="https://rtionline.gov.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ftp-btn-secondary"
+                    style={{ ...BUTTON_BASE, background: "var(--ftp-surface)", color: "var(--ftp-text)", border: "1px solid var(--ftp-border)" }}
+                  >
+                    File Online <ExternalLink size={12} aria-hidden />
                   </a>
                 </div>
-              </div>
-            </div>
+              </Card>
+            </Section>
           )}
         </div>
       )}
+
+      <ModulePageFooter
+        moduleSlug="rti"
+        locale={locale}
+        state={state}
+        district={district}
+        showCompare={false}
+        sourceUrls={{ "RTI Online Portal": "https://rtionline.gov.in" }}
+      />
     </div>
   );
 }
