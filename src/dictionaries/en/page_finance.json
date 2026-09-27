@@ -10,7 +10,7 @@
     "spent": "Spent",
     "utilisation": "Utilisation",
     "lapsed": "Lapsed funds",
-    "lapsedSub": "Funds not utilised",
+    "lapsedSub": "Not spent in the year, so it went back",
     "unitCr": "₹ Cr",
     "dataPending": "Data pending",
     "pending": "Pending"
@@ -66,7 +66,7 @@
     "allocated": "Given (allocated)",
     "released": "Released",
     "spent": "Spent",
-    "lapsed": "Lapsed (not spent)",
+    "lapsed": "Lapsed (went back unspent)",
     "used": "Share spent",
     "period": "Period",
     "quarter": "Quarter {n}",
