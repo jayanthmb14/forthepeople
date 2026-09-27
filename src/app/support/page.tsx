@@ -125,6 +125,17 @@ function helpIconFor(item: HelpItem): React.ReactNode {
   return <HeartHandshake size={18} aria-hidden />;
 }
 
+/**
+ * Some tier copy in razorpay-plans.ts ends with an emoji (e.g. "… free ☕").
+ * v3 has no emoji in chrome, so pictographs are stripped before rendering.
+ * (The RegExp is built from a string so the ES2017 TypeScript target
+ * accepts the \p{…} property escape.)
+ */
+const EMOJI_RE = new RegExp("[\\p{Extended_Pictographic}\\u{1F1E6}-\\u{1F1FF}\\u{FE0F}\\u{200D}]", "gu");
+function withoutEmoji(text: string): string {
+  return text.replace(EMOJI_RE, "").replace(/\s{2,}/g, " ").trim();
+}
+
 /** Short line under a tier's name: how the price works for that tier. */
 function tierPriceNote(isRecurring: boolean, isCustom: boolean): string {
   if (isRecurring) return "Monthly · cancel anytime";
@@ -244,8 +255,8 @@ export default async function SupportPage() {
                   <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>
                     {tierPriceNote(tier.isRecurring, isCustom)}
                   </p>
-                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{tier.description}</p>
-                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontStyle: "italic" }}>{tier.hookLine}</p>
+                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{withoutEmoji(tier.description)}</p>
+                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontStyle: "italic" }}>{withoutEmoji(tier.hookLine)}</p>
                   <div style={{ marginTop: "auto", paddingTop: 8 }}>
                     <Suspense>
                       <SupportCheckout
