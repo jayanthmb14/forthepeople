@@ -1,6 +1,5 @@
 {
   "description": "Warnings in force for the district, colour-coded, with what to do",
-  "summary": "Active warnings and advisories for {district}, such as heavy rain, floods, heat, water or power cuts and health notices. Each warning shows its colour (how serious it is), where it applies, the dates it covers, when it was posted, who reported it, and what to do.",
   "empty": {
     "title": "No active warnings for {district} right now.",
     "body": "Warnings from IMD, the district administration and NDMA appear here when they are published."
@@ -10,10 +9,6 @@
     "n112": "Call 112 (emergency)",
     "n1077": "Call 1077 (district disaster help)",
     "n101": "Call 101 (fire)"
-  },
-  "toWeather": {
-    "title": "Check the weather and rain",
-    "body": "Today's weather, and this year's rain against normal."
   },
   "answer": "{total, plural, =0 {No warning is in force for {district} now.} one {<b>#</b> warning is in force for {district}.} other {<b>#</b> warnings are in force for {district}.}}",
   "answerSevere": "Red (act now): <b>{red}</b>. Orange (be ready): <b>{orange}</b>.",
@@ -187,28 +182,5 @@
     "advisory": "Advisory"
   },
   "share": "{district} warnings: {total} in force ({red} red, {orange} orange)",
-  "shareEmpty": "No active warnings for {district}",
-  "end": {
-    "about": "About this page",
-    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
-    "freq": {
-      "every30": "Checked every 30 minutes",
-      "every6h": "Checked every 6 hours",
-      "daily": "Updated every day",
-      "weekly": "Updated every week",
-      "monthly": "Updated every month",
-      "quarterly": "Updated every 3 months",
-      "annual": "Updated every year",
-      "whenPublished": "Updated when the source publishes"
-    },
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "csv": "Download CSV",
-    "shareHead": "{district} district update",
-    "shareSource": "Source: {url}",
-    "actions": "Page actions"
-  }
+  "shareEmpty": "No active warnings for {district}"
 }

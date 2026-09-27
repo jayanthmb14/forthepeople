@@ -47,22 +47,27 @@ export function TapCard({
   title,
   titleLang,
   subtitle,
+  subtitleLang,
   aside,
   hint,
   onOpen,
   children,
   tone,
+  style,
 }: {
   /** Optional Lucide marker in a soft hue chip, only when it carries meaning. */
   icon?: LucideIcon;
   title: React.ReactNode;
   titleLang?: string;
   subtitle?: React.ReactNode;
+  subtitleLang?: string;
   aside?: React.ReactNode;
   hint: string;
   onOpen: () => void;
   children?: React.ReactNode;
   tone?: "alert";
+  /** Extra styles, e.g. a severity wash on the Alerts page. */
+  style?: React.CSSProperties;
 }) {
   return (
     <button
@@ -92,6 +97,7 @@ export function TapCard({
             : "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
         boxShadow: "var(--ftp-shadow-1)",
+        ...style,
       }}
     >
       <span style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%", minWidth: 0 }}>
@@ -109,7 +115,7 @@ export function TapCard({
             {title}
           </span>
           {subtitle && (
-            <span style={{ display: "block", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)", marginTop: 2, overflowWrap: "anywhere" }}>
+            <span lang={subtitleLang} style={{ display: "block", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)", marginTop: 2, overflowWrap: "anywhere" }}>
               {subtitle}
             </span>
           )}
