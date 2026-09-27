@@ -1,319 +1,201 @@
 "use client";
 
 /**
- * v6 KnowAboutIndia band — Section 02.
+ * "Know about India" band — Section 02.
  *
- * Mirrors the IndiaAtGlance v12 structure:
- *   Identity zone (320px, indigo gradient) with marquee directory
- *   Featured zone (1fr, white) showing the Constitution Works module
- *   Right column (240px) with two editorial cards:
- *     1. Drafting Timeline — 4 immutable constitution-drafting milestones
- *     2. Notable Articles — 5 well-known Article numbers + their labels
+ *   left    identity zone with the module directory (a plain list)
+ *   middle  the featured module (how the Constitution works)
+ *   right   the drafting timeline and five well-known Articles
  *
- * IntersectionObserver flips `visible`; CountUpNumber animates numeric
- * cells once visible. Editorial constants render directly without
- * count-up because they're text, not numbers.
+ * All know-india modules are status "planned" today, so the count strip
+ * says "All planned" and the featured module carries a "Planned" pill.
  *
- * All 6 know-india modules are status='planned' today, so:
- *   - The "modules count" strip shows "all planned" (amber dot)
- *   - The featured module gets a "PLANNED" pill (amber)
- *   - Directory rows show their seeded values, not a planned-state fallback
+ * Sep 2026: text through next-intl (page_india "band.*", "know.*");
+ * numbers and dates in the page language, right in the server HTML; the
+ * marquee copy and the two "#" links are gone ("Full timeline" and "All
+ * articles" now open the matching module pages). The featured caption
+ * said the Constitution was "adopted 26 January 1950"; it was adopted on
+ * 26 November 1949 and came into force on 26 January 1950.
  */
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
 import { SectionWatermark } from "../SectionWatermark";
 import { SectionRightRailDots } from "../SectionRightRailDots";
-import { CountUpNumber } from "../IndiaAtGlance/CountUpNumber";
+import { BandNumber, BandVisibleProvider, useBandText, useBandVisible } from "../band-kit";
+import { useFormat } from "@/i18n/client";
 import {
   KNOW_DIRECTORY,
   FEATURED_CELLS,
   CONSTITUTION_TIMELINE,
   NOTABLE_ARTICLES,
-  TOTAL_ARTICLE_COUNT_LABEL,
-  FEATURED_HEADLINE_LABEL,
-  FEATURED_CAPTION,
-  FEATURED_DESCRIPTION,
+  IN_FORCE_DATE,
   indicatorKey,
   type DirectoryRow,
   type DirectoryFormat,
   type FeaturedCell,
 } from "./metrics";
 import { INDIA_SUPER_CATEGORIES } from "@/lib/india/india-super-categories";
-import type {
-  KnowAboutIndiaData,
-  KnowIndicator,
-} from "@/lib/india/getKnowAboutIndiaData";
+import { getIndiaModuleBySlug } from "@/lib/india/india-modules";
+import type { KnowAboutIndiaData, KnowIndicator } from "@/lib/india/getKnowAboutIndiaData";
 
 type Props = {
   data: KnowAboutIndiaData;
   locale: string;
 };
 
+type Text = ReturnType<typeof useBandText>;
+
 const EM_DASH = "—";
 
-// ── Visible context ──
-
-const VisibleCtx = createContext(false);
-
-function CountUpValue({
-  value,
-  decimals,
-  duration = 1200,
-}: {
-  value: number;
-  decimals: number;
-  duration?: number;
-}) {
-  const visible = useContext(VisibleCtx);
-  return (
-    <CountUpNumber
-      value={value}
-      decimals={decimals}
-      duration={duration}
-      visible={visible}
-    />
-  );
-}
-
-// ── Helpers ──
-
-function getInd(
-  byKey: Record<string, KnowIndicator>,
-  ref: { moduleSlug: string; metricKey: string },
-): KnowIndicator | undefined {
+function getInd(byKey: Record<string, KnowIndicator>, ref: { moduleSlug: string; metricKey: string }): KnowIndicator | undefined {
   return byKey[indicatorKey(ref)];
 }
 
-function formatYearToDateString(year: number): string {
-  // The Constitution came into force on 26 January 1950 — well-known
-  // historical citation. Any other year just shows the year.
-  return year === 1950 ? "26.01.1950" : `${year}`;
-}
-
-function renderDirectoryDisplay(
-  format: DirectoryFormat,
-  primary: number,
-  companion?: number,
-): React.ReactNode {
+function DirectoryValue({ format, primary, companion, text }: { format: DirectoryFormat; primary: number; companion?: number; text: Text }) {
+  const { t, tb } = text;
   switch (format) {
     case "count_with_suffix":
-      return (
-        <>
-          <CountUpValue value={primary} decimals={0} />+
-        </>
-      );
+      return <BandNumber value={primary} render={(v) => t("fmt.plus", { value: v })} />;
     case "year_span":
-      return (
-        <>
-          <CountUpValue value={primary} decimals={0} /> yrs
-        </>
-      );
+      return <BandNumber value={primary} render={(v) => t("fmt.years", { value: v })} />;
     case "million_km2":
-      return (
-        <>
-          <CountUpValue value={primary} decimals={2} />M km²
-        </>
-      );
+      return <BandNumber value={primary} decimals={2} render={(v) => tb("fmt.millionKm2", { value: v })} />;
     case "lok_rajya":
-      if (companion === undefined) {
-        return <CountUpValue value={primary} decimals={0} />;
-      }
+      if (companion === undefined) return <BandNumber value={primary} />;
       return (
         <>
-          <CountUpValue value={primary} decimals={0} /> +{" "}
-          <CountUpValue value={companion} decimals={0} />
+          <BandNumber value={primary} /> + <BandNumber value={companion} />
         </>
       );
     case "millions_voters":
-      return (
-        <>
-          <CountUpValue value={Math.round(primary)} decimals={0} />M+ voters
-        </>
-      );
+      return <BandNumber value={Math.round(primary)} render={(v) => tb("fmt.millionVoters", { value: v })} />;
     case "stages_count":
-      return (
-        <>
-          <CountUpValue value={Math.round(primary)} decimals={0} /> stages
-        </>
-      );
+      return <BandNumber value={Math.round(primary)} render={(v) => tb("fmt.stages", { value: v })} />;
   }
 }
 
-function DirectoryRowItem({
-  row,
-  data,
-  locale,
-  duplicate = false,
-}: {
-  row: DirectoryRow;
-  data: KnowAboutIndiaData;
-  locale: string;
-  duplicate?: boolean;
-}) {
+function DirectoryRowItem({ row, data, locale, text }: { row: DirectoryRow; data: KnowAboutIndiaData; locale: string; text: Text }) {
   const module_ = data.moduleBySlug[row.moduleSlug];
+  const def = getIndiaModuleBySlug(row.moduleSlug);
   const headlineInd = getInd(data.indicatorByKey, row.headlineRef);
   const companionInd = row.companion ? getInd(data.indicatorByKey, row.companion) : undefined;
-
   if (!module_) return null;
 
-  const displayValue: React.ReactNode = headlineInd
-    ? renderDirectoryDisplay(row.format, headlineInd.value, companionInd?.value)
-    : EM_DASH;
-
   return (
-    <Link
-      href={`/${locale}/india/${row.moduleSlug}`}
-      className={styles.directoryRow}
-      aria-hidden={duplicate}
-      tabIndex={duplicate ? -1 : 0}
-    >
+    <Link href={`/${locale}/india/${row.moduleSlug}`} className={styles.directoryRow}>
       <span className={styles.directoryRowLabel}>
-        {row.emoji} {module_.title}
-        {row.isFeatured && (
-          <span className={styles.directoryRowFeaturedTag}>▸ featured</span>
-        )}
+        <span aria-hidden>{row.emoji}</span> {def ? text.x.moduleTitle(def) : module_.title}
+        {row.isFeatured && <span className={styles.directoryRowFeaturedTag}>{text.t("band.featured")}</span>}
       </span>
-      <span className={styles.directoryRowValue}>{displayValue}</span>
+      <span className={styles.directoryRowValue}>
+        {headlineInd ? <DirectoryValue format={row.format} primary={headlineInd.value} companion={companionInd?.value} text={text} /> : EM_DASH}
+      </span>
     </Link>
   );
 }
 
-function RepeatsDivider() {
-  return (
-    <div className={styles.repeatsDivider} aria-hidden>
-      <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>Repeats</span>
-    </div>
-  );
-}
-
-function FeaturedCellItem({
-  cell,
-  data,
-}: {
-  cell: FeaturedCell;
-  data: KnowAboutIndiaData;
-}) {
+function FeaturedCellItem({ cell, data, text }: { cell: FeaturedCell; data: KnowAboutIndiaData; text: Text }) {
+  const { t, tb } = text;
+  const { date } = useFormat();
   const primary = getInd(data.indicatorByKey, cell.primary);
 
   let valueNode: React.ReactNode = EM_DASH;
   if (primary) {
     switch (cell.primaryFormat) {
-      case "with_suffix":
-        valueNode = (
-          <>
-            <CountUpValue value={primary.value} decimals={0} />
-            {cell.primarySuffix ?? ""}
-          </>
-        );
+      case "with_plus":
+        valueNode = <BandNumber value={primary.value} render={(v) => t("fmt.plus", { value: v })} />;
         break;
       case "count":
-        valueNode = <CountUpValue value={primary.value} decimals={0} />;
+        valueNode = <BandNumber value={primary.value} />;
         break;
-      case "year_to_date_string":
-        valueNode = formatYearToDateString(primary.value);
+      case "in_force_date":
+        // The stored row is the year; the exact day is a fixed historical fact.
+        valueNode =
+          Math.round(primary.value) === 1950
+            ? date(IN_FORCE_DATE, { dateStyle: "medium" })
+            : String(Math.round(primary.value));
         break;
     }
   }
 
   return (
     <div className={styles.featuredCell}>
-      <div className={styles.featuredCellLabel}>{cell.label}</div>
+      <div className={styles.featuredCellLabel}>{tb(`cells.${cell.key}`)}</div>
       <div className={styles.featuredCellValue}>{valueNode}</div>
     </div>
   );
 }
 
-function DraftingTimelineCard() {
+function DraftingTimelineCard({ locale, text }: { locale: string; text: Text }) {
+  const { tb } = text;
+  const { date } = useFormat();
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Drafting timeline</span>
+        <span className={styles.rightCardTitle}>{tb("timelineTitle")}</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⏳
         </span>
       </div>
-      <div className={styles.rightCardList}>
+      <ol className={styles.rightCardList} style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {CONSTITUTION_TIMELINE.map((entry) => (
-          <div key={entry.date} className={styles.rightCardListEntry}>
-            <span className={styles.rightCardListEntryDate}>{entry.date}</span>
-            <span className={styles.rightCardListEntryLabel}>{entry.event}</span>
-          </div>
+          <li key={entry.key} className={styles.rightCardListEntry}>
+            <span className={styles.rightCardListEntryDate}>{date(entry.date, { dateStyle: "medium" })}</span>
+            <span className={styles.rightCardListEntryLabel}>{tb(`timeline.${entry.key}`)}</span>
+          </li>
         ))}
-      </div>
-      <a href="#" className={styles.rightCardLink}>
-        Full timeline
-      </a>
+      </ol>
+      <Link href={`/${locale}/india/know-india-history-timeline`} className={styles.rightCardLink}>
+        {tb("timelineLink")}
+      </Link>
     </div>
   );
 }
 
-function NotableArticlesCard() {
+function NotableArticlesCard({ locale, data, text }: { locale: string; data: KnowAboutIndiaData; text: Text }) {
+  const { tb } = text;
+  const { number } = useFormat();
+  const articles = getInd(data.indicatorByKey, { moduleSlug: "know-india-constitution", metricKey: "articles_count" });
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Notable articles</span>
+        <span className={styles.rightCardTitle}>{tb("articlesTitle")}</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⚖
         </span>
       </div>
-      <div className={styles.rightCardList}>
+      <ul className={styles.rightCardList} style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {NOTABLE_ARTICLES.map((entry) => (
-          <div key={entry.num} className={styles.rightCardListEntry}>
-            <span className={styles.rightCardListArticleNum}>
-              Art {entry.num}
-            </span>
-            <span className={styles.rightCardListArticleLabel}>
-              {entry.label}
-            </span>
-          </div>
+          <li key={entry.num} className={styles.rightCardListEntry}>
+            <span className={styles.rightCardListArticleNum}>{tb("article", { n: entry.num })}</span>
+            <span className={styles.rightCardListArticleLabel}>{tb(`articles.${entry.key}`)}</span>
+          </li>
         ))}
-      </div>
-      <a href="#" className={styles.rightCardLink}>
-        All {TOTAL_ARTICLE_COUNT_LABEL} articles
-      </a>
+      </ul>
+      <Link href={`/${locale}/india/know-india-constitution`} className={styles.rightCardLink}>
+        {articles ? tb("articlesLink", { n: number(articles.value) }) : tb("articlesLinkPlain")}
+      </Link>
     </div>
   );
 }
 
-// ── Main composition ──
-
 export function KnowAboutIndiaClient({ data, locale }: Props) {
-  const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [ref, visible] = useBandVisible();
+  const text = useBandText("know");
+  const { t, tb, x } = text;
 
-  useEffect(() => {
-    if (!ref.current) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) setVisible(true);
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -10% 0px" },
-    );
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-
-  // Featured zone references — Constitution Works.
   const featuredRow = KNOW_DIRECTORY.find((r) => r.isFeatured);
   const featuredModuleSlug = featuredRow?.moduleSlug;
-  const featuredModule = featuredModuleSlug
-    ? data.moduleBySlug[featuredModuleSlug]
-    : undefined;
-  const featuredHeadlineInd = featuredRow
-    ? getInd(data.indicatorByKey, featuredRow.headlineRef)
-    : undefined;
+  const featuredDef = featuredModuleSlug ? getIndiaModuleBySlug(featuredModuleSlug) : undefined;
+  const featuredModule = featuredModuleSlug ? data.moduleBySlug[featuredModuleSlug] : undefined;
+  const featuredHeadlineInd = featuredRow ? getInd(data.indicatorByKey, featuredRow.headlineRef) : undefined;
 
-  // Status copy — all 6 know-india modules are 'planned'.
   const statusText =
-    data.plannedCount === data.totalCount
-      ? "all planned"
-      : `${data.liveCount} of ${data.totalCount} live`;
+    data.plannedCount === data.totalCount ? t("band.allPlanned") : t("band.liveOf", { live: data.liveCount, total: data.totalCount });
 
   return (
-    <VisibleCtx.Provider value={visible}>
+    <BandVisibleProvider visible={visible}>
       <section
         ref={ref}
         data-tint-id="know"
@@ -321,105 +203,59 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
         aria-labelledby="know-about-india-title"
       >
         <div className={styles.layout}>
-          {/* LEFT — Identity zone */}
+          {/* LEFT — identity zone */}
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              Section {data.superCategory.displayOrder} of {INDIA_SUPER_CATEGORIES.length}
+              {t("band.sectionOf", { n: data.superCategory.displayOrder, total: INDIA_SUPER_CATEGORIES.length })}
             </div>
-            <h2
-              id="know-about-india-title"
-              className={styles.identityTitle}
-            >
-              {data.superCategory.title}
+            <h2 id="know-about-india-title" className={styles.identityTitle}>
+              {x.scTitle(data.superCategory)}
             </h2>
-            <p className={styles.identityDesc}>
-              {data.superCategory.tagline ?? ""}
-            </p>
+            <p className={styles.identityDesc}>{x.scTagline(data.superCategory)}</p>
 
             <div className={styles.modulesCount}>
-              <span className={styles.modulesCountLabel}>
-                {data.totalCount} modules · in development
-              </span>
+              <span className={styles.modulesCountLabel}>{t("band.inDevelopment", { n: data.totalCount })}</span>
               <span className={styles.modulesCountValue}>{statusText}</span>
             </div>
 
             <div className={styles.directoryWindow}>
               <div className={styles.directoryTrack}>
                 {KNOW_DIRECTORY.map((row) => (
-                  <DirectoryRowItem
-                    key={row.moduleSlug}
-                    row={row}
-                    data={data}
-                    locale={locale}
-                  />
+                  <DirectoryRowItem key={row.moduleSlug} row={row} data={data} locale={locale} text={text} />
                 ))}
-                <RepeatsDivider />
-                {KNOW_DIRECTORY.map((row) => (
-                  <DirectoryRowItem
-                    key={`dup-${row.moduleSlug}`}
-                    row={row}
-                    data={data}
-                    locale={locale}
-                    duplicate
-                  />
-                ))}
-                <RepeatsDivider />
               </div>
             </div>
 
-            <Link
-              href={`/${locale}/india/category/${data.superCategory.slug}`}
-              className={styles.browseBtn}
-            >
-              <span>Browse all {data.totalCount}</span>
+            <Link href={`/${locale}/india/category/${data.superCategory.slug}`} className={styles.browseBtn}>
+              <span>{t("band.browseAll", { n: data.totalCount })}</span>
             </Link>
 
-            <SectionWatermark
-              slug="know-india"
-              className={styles.bookWatermark}
-            />
+            <SectionWatermark slug="know-india" className={styles.bookWatermark} />
           </div>
 
-          {/* MIDDLE — Featured (Constitution) */}
+          {/* MIDDLE — featured (the Constitution) */}
           <div className={styles.featured}>
             <div className={styles.featuredHeader}>
               <div className={styles.featuredHeaderLeft}>
                 <span className={styles.featuredIcon} aria-hidden>
                   {featuredRow?.emoji ?? ""}
                 </span>
-                <span className={styles.featuredTitle}>
-                  {featuredModule?.title ?? featuredModuleSlug ?? ""}
-                </span>
-                {featuredHeadlineInd?.source && (
-                  <span className={styles.featuredSourceInline}>
-                    {featuredHeadlineInd.source}
-                  </span>
-                )}
+                <span className={styles.featuredTitle}>{featuredDef ? x.moduleTitle(featuredDef) : featuredModuleSlug ?? ""}</span>
+                {featuredHeadlineInd?.source && <span className={styles.featuredSourceInline}>{featuredHeadlineInd.source}</span>}
               </div>
-              {featuredModule?.status === "planned" && (
-                <span className={styles.plannedPill}>Planned</span>
-              )}
+              {featuredModule?.status === "planned" && <span className={styles.plannedPill}>{t("band.planned")}</span>}
             </div>
 
             <div className={styles.headlineRow}>
               {featuredHeadlineInd ? (
                 <>
                   <span className={styles.headlineMajor}>
-                    <CountUpValue
-                      value={featuredHeadlineInd.value}
-                      decimals={0}
-                      duration={1500}
-                    />
-                    +
+                    <BandNumber value={featuredHeadlineInd.value} duration={1500} render={(v) => t("fmt.plus", { value: v })} />
                   </span>
                   <div className={styles.headlineMinorBlock}>
-                    <span className={styles.headlineMinor}>
-                      {FEATURED_HEADLINE_LABEL}
-                    </span>
-                    <span className={styles.featuredCaption}>
-                      {FEATURED_CAPTION}
-                    </span>
+                    <span className={styles.headlineMinor}>{tb("headlineUnit")}</span>
+                    <span className={styles.featuredCaption}>{tb("caption")}</span>
                   </div>
                 </>
               ) : (
@@ -427,37 +263,32 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
               )}
             </div>
 
-            <div className={styles.featuredDesc}>{FEATURED_DESCRIPTION}</div>
+            <div className={styles.featuredDesc}>{tb("desc")}</div>
 
             <div className={styles.featuredGrid}>
               {FEATURED_CELLS.map((cell) => (
-                <FeaturedCellItem key={cell.label} cell={cell} data={data} />
+                <FeaturedCellItem key={cell.key} cell={cell} data={data} text={text} />
               ))}
             </div>
 
             <div className={styles.featuredBottom}>
-              <span className={styles.featuredSources}>
-                {featuredHeadlineInd?.source ?? ""}
-              </span>
+              <span className={styles.featuredSources}>{featuredHeadlineInd?.source ?? ""}</span>
               {featuredModuleSlug && (
-                <Link
-                  href={`/${locale}/india/${featuredModuleSlug}`}
-                  className={styles.openModuleLink}
-                >
-                  Open module
+                <Link href={`/${locale}/india/${featuredModuleSlug}`} className={styles.openModuleLink}>
+                  {t("band.openModule")}
                 </Link>
               )}
             </div>
           </div>
 
-          {/* RIGHT — Drafting Timeline + Notable Articles */}
+          {/* RIGHT — drafting timeline + notable articles */}
           <div className={styles.rightColumn} data-ftp-right-rail="1">
-            <DraftingTimelineCard />
-            <NotableArticlesCard />
+            <DraftingTimelineCard locale={locale} text={text} />
+            <NotableArticlesCard locale={locale} data={data} text={text} />
           </div>
           <SectionRightRailDots count={2} accent="#2E2A6D" />
         </div>
       </section>
-    </VisibleCtx.Provider>
+    </BandVisibleProvider>
   );
 }

@@ -13,6 +13,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Building,
   BookOpenText,
@@ -40,6 +41,7 @@ import {
   type WatermarkIconKey,
 } from "@/lib/india/india-super-categories";
 import { SECTION_ACCENT_COLORS } from "@/lib/india/section-accents";
+import { INDIA_NS, indiaText, type IndiaText } from "../i18n";
 
 const SC_ICONS: Record<WatermarkIconKey, LucideIcon> = {
   "trending-up": TrendingUp,
@@ -60,7 +62,7 @@ export interface ModuleSelectorDropdownProps {
   triggerLabel: string;
 }
 
-function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
+function StatusPill({ status, x }: { status: IndiaModuleDef["status"]; x: IndiaText }) {
   const isLive = status === "live";
   return (
     <span
@@ -75,7 +77,7 @@ function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
         flexShrink: 0,
       }}
     >
-      {isLive ? "Live" : "Soon"}
+      {x.statusShort(status)}
     </span>
   );
 }
@@ -84,10 +86,12 @@ function ModuleRow({
   module,
   onClick,
   indented,
+  x,
 }: {
   module: IndiaModuleDef;
   onClick: () => void;
   indented: boolean;
+  x: IndiaText;
 }) {
   return (
     <button
@@ -95,8 +99,10 @@ function ModuleRow({
       onClick={onClick}
       style={{
         width: "100%",
-        textAlign: "left",
-        padding: "6px 12px 6px " + (indented ? "44px" : "12px"),
+        textAlign: "start",
+        paddingBlock: "6px",
+        paddingInlineEnd: "12px",
+        paddingInlineStart: indented ? "44px" : "12px",
         fontSize: "12px",
         background: "transparent",
         border: "none",
@@ -117,8 +123,8 @@ function ModuleRow({
       <span style={{ fontSize: "14px" }} aria-hidden>
         {module.icon}
       </span>
-      <span style={{ flex: 1, lineHeight: 1.4 }}>{module.title}</span>
-      <StatusPill status={module.status} />
+      <span style={{ flex: 1, lineHeight: 1.4 }}>{x.moduleTitle(module)}</span>
+      <StatusPill status={module.status} x={x} />
     </button>
   );
 }
@@ -129,6 +135,9 @@ export function ModuleSelectorDropdown({
   triggerLabel,
 }: ModuleSelectorDropdownProps) {
   const router = useRouter();
+  const t = useTranslations(INDIA_NS);
+  const ti = useTranslations("india");
+  const x = indiaText(t, ti);
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [expandedSCs, setExpandedSCs] = React.useState<Set<string>>(new Set());
@@ -190,14 +199,11 @@ export function ModuleSelectorDropdown({
     }
     if (!lower) return pool.slice().sort((a, b) => a.displayOrder - b.displayOrder);
     return pool
-      .filter(
-        (m) =>
-          m.slug.toLowerCase().includes(lower) ||
-          m.title.toLowerCase().includes(lower) ||
-          m.tagline.toLowerCase().includes(lower),
+      .filter((m) =>
+        [m.slug, m.title, m.tagline, x.moduleTitle(m), x.moduleTagline(m)].some((s) => s.toLowerCase().includes(lower)),
       )
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [lower, superCategorySlug]);
+  }, [lower, superCategorySlug, x]);
 
   // Group view (when no search and no scoping)
   const groupedSCs: IndiaSuperCategoryDef[] = React.useMemo(
@@ -230,7 +236,7 @@ export function ModuleSelectorDropdown({
         }}
       >
         {triggerLabel}
-        <ChevronDown size={11} />
+        <ChevronDown size={11} aria-hidden />
       </button>
 
       {open && (
@@ -270,13 +276,14 @@ export function ModuleSelectorDropdown({
               marginBottom: "10px",
             }}
           >
-            <Search size={14} style={{ color: "var(--color-text-tertiary)" }} />
+            <Search size={14} aria-hidden style={{ color: "var(--color-text-tertiary)" }} />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search modules…"
+              placeholder={t("picker.search")}
+              aria-label={t("picker.search")}
               style={{
                 flex: 1,
                 border: "none",
@@ -300,12 +307,12 @@ export function ModuleSelectorDropdown({
                     textAlign: "center",
                   }}
                 >
-                  No modules match &ldquo;{query}&rdquo;.
+                  {t("picker.noMatch", { q: query })}
                 </li>
               )}
               {matchingModules.map((m) => (
                 <li key={m.slug}>
-                  <ModuleRow module={m} onClick={() => goTo(m.slug)} indented={false} />
+                  <ModuleRow module={m} onClick={() => goTo(m.slug)} indented={false} x={x} />
                 </li>
               ))}
             </ul>
@@ -326,7 +333,7 @@ export function ModuleSelectorDropdown({
                       aria-expanded={isExpanded}
                       style={{
                         width: "100%",
-                        textAlign: "left",
+                        textAlign: "start",
                         padding: "8px 12px",
                         fontSize: "12.5px",
                         fontWeight: 500,
@@ -375,7 +382,7 @@ export function ModuleSelectorDropdown({
                         {sectionNumber}
                       </span>
                       <SCIcon size={14} style={{ color: accentHex, flexShrink: 0 }} />
-                      <span style={{ flex: 1 }}>{sc.title}</span>
+                      <span style={{ flex: 1 }}>{x.scTitle(sc)}</span>
                       <span
                         style={{
                           fontFamily: "var(--ftp-font-sans)",
@@ -387,7 +394,7 @@ export function ModuleSelectorDropdown({
                           borderRadius: "999px",
                         }}
                       >
-                        {scModules.length} {scModules.length === 1 ? "module" : "modules"}
+                        {t("picker.count", { n: scModules.length })}
                       </span>
                       <ChevronRight
                         size={11}
@@ -406,6 +413,7 @@ export function ModuleSelectorDropdown({
                               module={m}
                               onClick={() => goTo(m.slug)}
                               indented
+                              x={x}
                             />
                           </li>
                         ))}

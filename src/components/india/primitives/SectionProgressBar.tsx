@@ -280,10 +280,9 @@ export function SectionProgressBar() {
 
   return (
     <div
-      role="progressbar"
-      aria-label="Section scroll progress"
-      aria-valuemin={0}
-      aria-valuemax={SECTION_SLUGS_IN_ORDER.length}
+      // Decorative: it reports no value a screen reader could use, and the
+      // band headings already carry the structure.
+      aria-hidden="true"
       style={{
         position: "sticky",
         // Butts directly against the bottom of IndiaBreadcrumb.

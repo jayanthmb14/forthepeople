@@ -22,6 +22,9 @@
  *       - States/UTs: 36 is a constitutional fact (28 states + 8 union
  *         territories), kept as the named constant STATES_AND_UTS_OF_INDIA.
  *
+ * i18n (Sep 2026): labels from page_india "liveStrip.*"; the status list is
+ * joined with Intl.ListFormat in the page language.
+ *
  * Server Component (reads Prisma). The FreshnessPill it renders is a client
  * component; the date is passed as an ISO string so it serialises cleanly.
  *
@@ -31,12 +34,15 @@
  */
 
 import * as React from "react";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { FreshnessPill } from "@/components/district/ui";
 import { INDIA_MODULES } from "@/lib/india/india-modules";
 import type { IndiaModuleStatus } from "@/lib/india/india-modules";
 import { INDIA_SOURCES } from "@/lib/india/india-sources";
+import { intlLocale } from "@/i18n/languages";
+import { INDIA_NS } from "../i18n";
 
 /**
  * India has 28 states and 8 union territories (Constitution, First
@@ -45,24 +51,19 @@ import { INDIA_SOURCES } from "@/lib/india/india-sources";
  */
 const STATES_AND_UTS_OF_INDIA = 36;
 
-/** Display words for each module status, in the order they are listed. */
-const STATUS_WORDS: Array<[IndiaModuleStatus, string]> = [
-  ["live", "live"],
-  ["beta", "beta"],
-  ["coming_soon", "coming soon"],
-  ["planned", "planned"],
+/** Message key for each module status, in the order they are listed. */
+const STATUS_KEYS: Array<[IndiaModuleStatus, string]> = [
+  ["live", "liveStrip.live"],
+  ["beta", "liveStrip.beta"],
+  ["coming_soon", "liveStrip.soon"],
+  ["planned", "liveStrip.planned"],
 ];
 
-/**
- * "31 live · 22 coming soon · 6 planned" — counted from INDIA_MODULES.
- * Statuses with zero modules are left out.
- */
-function countModulesByStatus(): string {
+/** Module counts by status from INDIA_MODULES; statuses with zero modules are left out. */
+function countModulesByStatus(): Array<[string, number]> {
   const counts = new Map<IndiaModuleStatus, number>();
   for (const m of INDIA_MODULES) counts.set(m.status, (counts.get(m.status) ?? 0) + 1);
-  return STATUS_WORDS.filter(([s]) => (counts.get(s) ?? 0) > 0)
-    .map(([s, word]) => `${counts.get(s)} ${word}`)
-    .join(" · ");
+  return STATUS_KEYS.filter(([s]) => (counts.get(s) ?? 0) > 0).map(([s, key]) => [key, counts.get(s) ?? 0]);
 }
 
 /** Number of distinct registered sources that at least one module cites. */
@@ -74,10 +75,13 @@ function countCitedSources(): number {
   return cited.size;
 }
 
-/** One "LABEL value" pair. Label 11 px uppercase, value in JetBrains Mono. */
-function Item({ label, value }: { label: string; value: string }) {
+/** One "label value" pair with an emoji. */
+function Item({ emoji, label, value }: { emoji: string; label: string; value: string }) {
   return (
     <span style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+      <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>
+        {emoji}
+      </span>
       <span className="ftp-label">{label}</span>
       <span className="ftp-num" style={{ color: "var(--ftp-text)", fontSize: 11, lineHeight: "16px" }}>
         {value}
@@ -90,18 +94,26 @@ function Divider() {
   return <span aria-hidden style={{ width: 1, height: 12, background: "var(--ftp-border)", flexShrink: 0 }} />;
 }
 
-export async function LiveStrip() {
+export async function LiveStrip({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: INDIA_NS });
   // Registry-derived counts (see the header comment). Cheap: plain array walks.
-  const moduleSummary = countModulesByStatus();
+  const moduleSummary = new Intl.ListFormat(intlLocale(locale), { style: "narrow", type: "unit" }).format(
+    countModulesByStatus().map(([key, n]) => t(key, { n })),
+  );
   const sourceCount = countCitedSources();
 
   // The honest freshness signal is the most recent source asOfDate across
   // all India indicators. Phase D 2026-05-21 replaced the misleading
   // "LAST SYNC X h ago" (seed-placeholder timestamps) with this.
-  const latestIndicator = await prisma.indiaIndicator.findFirst({
-    orderBy: { asOfDate: "desc" },
-    select: { asOfDate: true },
-  });
+  let latestIndicator: { asOfDate: Date } | null = null;
+  try {
+    latestIndicator = await prisma.indiaIndicator.findFirst({
+      orderBy: { asOfDate: "desc" },
+      select: { asOfDate: true },
+    });
+  } catch {
+    latestIndicator = null;
+  }
   const asOfIso = latestIndicator?.asOfDate ? latestIndicator.asOfDate.toISOString() : null;
 
   // Registry-derived coverage (issue #36: never hand-type these).
@@ -110,7 +122,7 @@ export async function LiveStrip() {
   return (
     <div
       role="status"
-      aria-label="Platform freshness and coverage"
+      aria-label={t("liveStrip.aria")}
       style={{
         // Phase D 2026-05-21: pin the strip below the section progress bar
         // so it stays visible as a contextual anchor while the user scrolls.
@@ -132,20 +144,23 @@ export async function LiveStrip() {
     >
       {asOfIso ? (
         <span style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="ftp-label">Data</span>
+          <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>
+            🗓️
+          </span>
+          <span className="ftp-label">{t("liveStrip.data")}</span>
           <FreshnessPill asOf={asOfIso} />
         </span>
       ) : (
-        <Item label="Data as of" value="—" />
+        <Item emoji="🗓️" label={t("liveStrip.dataAsOf")} value="—" />
       )}
       <Divider />
-      <Item label="Sources" value={`${sourceCount} cited`} />
+      <Item emoji="📚" label={t("liveStrip.sources")} value={t("liveStrip.sourcesValue", { n: sourceCount })} />
       <Divider />
-      <Item label="Modules" value={moduleSummary} />
+      <Item emoji="🧩" label={t("liveStrip.modules")} value={moduleSummary} />
       <Divider />
-      <Item label="Districts" value={`${activeDistricts} of ${totalIndiaDistricts}`} />
+      <Item emoji="📍" label={t("liveStrip.districts")} value={t("liveStrip.ofTotal", { n: activeDistricts, total: totalIndiaDistricts })} />
       <Divider />
-      <Item label="States" value={`${activeStates} of ${STATES_AND_UTS_OF_INDIA}`} />
+      <Item emoji="🗺️" label={t("liveStrip.states")} value={t("liveStrip.ofTotal", { n: activeStates, total: STATES_AND_UTS_OF_INDIA })} />
     </div>
   );
 }

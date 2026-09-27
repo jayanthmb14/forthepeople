@@ -280,7 +280,7 @@ export default function IndiaUpdateLog() {
                     </span>
                     <span style={{ display: "flex", gap: "2px 12px", flexWrap: "wrap", fontSize: 12, color: "var(--ftp-text-2)", marginTop: 2 }}>
                       <span>{row.source}</span>
-                      <span>{t("asOf", { date: f.date(row.asOfDate, { day: "numeric", month: "short", year: "numeric" }) })}</span>
+                      <span>{t("asOf", { date: f.date(row.asOfDate, { dateStyle: "medium" }) })}</span>
                       <span suppressHydrationWarning>{t("recorded", { ago: f.ago(row.fetchedAt) })}</span>
                     </span>
                   </span>

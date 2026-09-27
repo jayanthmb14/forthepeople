@@ -1,42 +1,38 @@
 /**
  * Metric KEY registry + editorial constants for the know-india
- * "Know About India" v6 band (Section 02).
+ * "Know about India" band (Section 02).
  *
- * Identifiers + immutable historical/curated facts. Numeric values
- * (article counts, Lok Sabha seats, etc.) come from Prisma — the
- * (moduleSlug, metricKey) pairs declared below tell the fetcher
- * which IndiaIndicator rows to load. Editorial constants
- * (Constitution drafting milestones, notable Article numbers and
- * their well-known short labels) are immutable historical citations
- * and live in code.
+ * Identifiers + immutable historical facts. Numbers (article counts,
+ * Lok Sabha seats, etc.) come from Prisma — the (moduleSlug, metricKey)
+ * pairs declared below tell the fetcher which IndiaIndicator rows to load.
+ * Words live in the messages (page_india "know.*"); `key` fields point
+ * at them. Dates are ISO strings, formatted in the page language.
  */
 
 export type MetricRef = { moduleSlug: string; metricKey: string };
 
 // ── Editorial constants (constitutional history, immutable facts) ──
 
-export const CONSTITUTION_TIMELINE: ReadonlyArray<{ date: string; event: string }> = [
-  { date: "9 Dec 1946", event: "Assembly formed" },
-  { date: "29 Aug 1947", event: "Drafting Cmte." },
-  { date: "26 Nov 1949", event: "Adopted" },
-  { date: "26 Jan 1950", event: "In force" },
+/** Constituent Assembly milestones: first sitting, Drafting Committee, adoption, coming into force. */
+export const CONSTITUTION_TIMELINE: ReadonlyArray<{ date: string; key: "assembly" | "drafting" | "adopted" | "inForce" }> = [
+  { date: "1946-12-09", key: "assembly" },
+  { date: "1947-08-29", key: "drafting" },
+  { date: "1949-11-26", key: "adopted" },
+  { date: "1950-01-26", key: "inForce" },
 ];
 
-export const NOTABLE_ARTICLES: ReadonlyArray<{ num: number; label: string }> = [
-  { num: 14, label: "Equality before law" },
-  { num: 19, label: "Free speech" },
-  { num: 21, label: "Right to life" },
-  { num: 32, label: "Const. remedies" },
-  { num: 370, label: "Ex-J&K status" },
+export const NOTABLE_ARTICLES: ReadonlyArray<{ num: number; key: "a14" | "a19" | "a21" | "a32" | "a370" }> = [
+  { num: 14, key: "a14" },
+  { num: 19, key: "a19" },
+  { num: 21, key: "a21" },
+  { num: 32, key: "a32" },
+  { num: 370, key: "a370" },
 ];
 
-export const TOTAL_ARTICLE_COUNT_LABEL = "470+";
-export const FEATURED_HEADLINE_LABEL = "articles";
-export const FEATURED_CAPTION = "Adopted 26 January 1950 · NCERT Class 11";
-export const FEATURED_DESCRIPTION =
-  "Preamble, Fundamental Rights, DPSP and Schedule structure.";
+/** The Constitution came into force on this day (used for the "In force" cell). */
+export const IN_FORCE_DATE = "1950-01-26";
 
-// ── Module DIRECTORY (left identity-zone marquee) ──
+// ── Module DIRECTORY (left identity zone) ──
 
 export type DirectoryFormat =
   | "count_with_suffix"
@@ -96,42 +92,22 @@ export const KNOW_DIRECTORY: DirectoryRow[] = [
   },
 ];
 
-// ── FEATURED zone (Constitution Works) ──
+// ── FEATURED zone (How the Constitution works) ──
 
-export type FeaturedCellPrimaryFormat =
-  | "with_suffix"
-  | "count"
-  | "year_to_date_string";
+export type FeaturedCellPrimaryFormat = "with_plus" | "count" | "in_force_date";
 
 export type FeaturedCell = {
-  label: string;
+  /** Message key under know.cells. */
+  key: "articles" | "schedules" | "parts" | "inForce";
   primary: MetricRef;
   primaryFormat: FeaturedCellPrimaryFormat;
-  primarySuffix?: string;
 };
 
 export const FEATURED_CELLS: FeaturedCell[] = [
-  {
-    label: "Articles",
-    primary: { moduleSlug: "know-india-constitution", metricKey: "articles_count" },
-    primaryFormat: "with_suffix",
-    primarySuffix: "+",
-  },
-  {
-    label: "Schedules",
-    primary: { moduleSlug: "know-india-constitution", metricKey: "schedules_count" },
-    primaryFormat: "count",
-  },
-  {
-    label: "Parts",
-    primary: { moduleSlug: "know-india-constitution", metricKey: "parts_count" },
-    primaryFormat: "count",
-  },
-  {
-    label: "Adopted",
-    primary: { moduleSlug: "know-india-constitution", metricKey: "adopted_year" },
-    primaryFormat: "year_to_date_string",
-  },
+  { key: "articles", primary: { moduleSlug: "know-india-constitution", metricKey: "articles_count" }, primaryFormat: "with_plus" },
+  { key: "schedules", primary: { moduleSlug: "know-india-constitution", metricKey: "schedules_count" }, primaryFormat: "count" },
+  { key: "parts", primary: { moduleSlug: "know-india-constitution", metricKey: "parts_count" }, primaryFormat: "count" },
+  { key: "inForce", primary: { moduleSlug: "know-india-constitution", metricKey: "adopted_year" }, primaryFormat: "in_force_date" },
 ];
 
 // ── Helpers ──

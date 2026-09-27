@@ -35,10 +35,12 @@ export function fmtFixed(locale: string, n: number, d: number): string {
   return fmtNumber(locale, n, { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 
+/** Full dates use dateStyle "medium": "26 Jan 1950" / "ಜನ 26, 1950" (the
+ *  day/month/year option set drops the space after the comma in Kannada). */
 export function fmtDate(
   locale: string,
   d: Date | string | number,
-  opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" },
+  opts: Intl.DateTimeFormatOptions = { dateStyle: "medium" },
 ): string {
   return new Date(d).toLocaleDateString(intlLocale(locale), { timeZone: "Asia/Kolkata", ...opts });
 }

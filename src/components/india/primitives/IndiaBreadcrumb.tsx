@@ -13,6 +13,8 @@
  * bar lives directly below this breadcrumb (sticky at top:100px, z-index one
  * less than the breadcrumb).
  *
+ * i18n (Sep 2026): labels from the shared "india.breadcrumb" messages.
+ *
  * Design v3 alignment (2026-09-27): colours are --ftp-* tokens, the row
  * sits on the same 16/24 px gutter as .ftp-container, icons are 14 px
  * Lucide. Height is unchanged (the sticky offsets below depend on it).
@@ -20,38 +22,24 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Home, ChevronRight, MapPin } from "lucide-react";
 import { ModuleSelectorDropdown } from "./ModuleSelectorDropdown";
 
-export interface IndiaBreadcrumbDict {
-  home: string;
-  india: string;
-  selectModule: string;
-}
-
 export interface IndiaBreadcrumbProps {
   locale: string;
-  dict?: IndiaBreadcrumbDict;
   /** When set, the picker scopes to that super-category's modules (flat list). */
   superCategorySlug?: string;
 }
 
-const FALLBACK: IndiaBreadcrumbDict = {
-  home: "Home",
-  india: "India",
-  selectModule: "Select module",
-};
-
-export function IndiaBreadcrumb({
-  locale,
-  dict,
-  superCategorySlug,
-}: IndiaBreadcrumbProps) {
-  const t = dict ?? FALLBACK;
+export function IndiaBreadcrumb({ locale, superCategorySlug }: IndiaBreadcrumbProps) {
+  const tb = useTranslations("india.breadcrumb");
+  const t = { home: tb("home"), india: tb("india"), selectModule: tb("selectModule") };
+  const aria = useTranslations("page_india-module")("crumbs.aria");
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={aria}
       style={{
         position: "sticky",
         top: "41px",
