@@ -123,6 +123,11 @@ export interface TableSpec {
   selfRefs?: string[];
   /** Fuzzy review: rows in the same bucket whose names are ≥ threshold alike. */
   fuzzy?: { bucket(r: Row): string | null; names(r: Row): string[]; threshold?: number };
+  /**
+   * Rows that fill the same slot (one election seat) but whose exact keys
+   * differ (different winners) CONFLICT: never merged, sent for review.
+   */
+  conflictKey?(r: Row): string | null;
   /** Short human label for reports. */
   label(r: Row): string;
   /** Rewrite a column in its canonical spelling (grouped by old value). */
@@ -130,6 +135,8 @@ export interface TableSpec {
 }
 
 const byDistrict = (r: Row) => (r.districtId ? str(r.districtId) : null);
+const electionSeat = (r: Row) =>
+  electionResultKey({ districtId: str(r.districtId), year: Number(r.year), electionType: str(r.electionType), constituency: str(r.constituency) });
 
 export const FUZZY_THRESHOLD = 0.85;
 
@@ -138,7 +145,13 @@ export const TABLE_SPECS: TableSpec[] = [
     table: "ElectionResult",
     delegate: "electionResult",
     columns: ["districtId", "year", "electionType", "constituency", "winnerName", "winnerVotes", "runnerUpName", "runnerUpVotes", "totalVoters", "votesPolled", "turnoutPct", "margin", "source"],
-    key: (r) => electionResultKey({ districtId: str(r.districtId), year: Number(r.year), electionType: str(r.electionType), constituency: str(r.constituency) }),
+    // Same seat AND same winner = duplicate. Same seat, different winner = conflict (a person decides).
+    key: (r) => {
+      const seat = electionSeat(r);
+      const winner = nameKey(str(r.winnerName).replace(/\([^)]*\)/g, " "));
+      return seat && winner ? `${seat}|${winner}` : null;
+    },
+    conflictKey: (r) => electionSeat(r),
     score: (r) =>
       sourceScore(r.source) +
       filled(r, ["runnerUpName", "runnerUpVotes", "totalVoters", "votesPolled", "turnoutPct", "margin"]) +
@@ -171,7 +184,8 @@ export const TABLE_SPECS: TableSpec[] = [
     ],
     mergeArrays: ["sourceUrls"],
     children: [{ delegate: "infraUpdate", fk: "projectId", sameBy: ["newsUrl", "updateType"] }],
-    fuzzy: { bucket: byDistrict, names: (r) => [str(r.name), str(r.shortName)].filter((n) => nameTokens(n).length >= 2) },
+    // Full names only: short names ("Namma Metro") are shared by different lines.
+    fuzzy: { bucket: byDistrict, names: (r) => [str(r.name)] },
     label: (r) => str(r.name),
   },
   {
@@ -482,6 +496,8 @@ export function planExactDuplicates(rows: Row[], spec: TableSpec): ExactPlan[] {
 }
 
 export interface FuzzyCandidate {
+  /** "similar": names ≥ threshold alike; "conflict": same slot, different facts (election seat, two winners). */
+  kind: "similar" | "conflict";
   table: string;
   districtId: string | null;
   ids: [string, string];
@@ -521,6 +537,7 @@ export function findFuzzyCandidates(rows: Row[], spec: TableSpec, removed: Reado
         if (best < threshold) continue;
         const [x, y] = [group[i], group[j]].sort((p, q) => p.id.localeCompare(q.id));
         out.push({
+          kind: "similar",
           table: spec.table,
           districtId: x.districtId ? str(x.districtId) : null,
           ids: [x.id, y.id],
@@ -532,6 +549,36 @@ export function findFuzzyCandidates(rows: Row[], spec: TableSpec, removed: Reado
     }
   }
   return out.sort((a, b) => b.score - a.score);
+}
+
+/** Rows that fill the same slot with different facts (conflictKey equal, exact keys different). */
+export function findConflicts(rows: Row[], spec: TableSpec, removed: ReadonlySet<string> = new Set()): FuzzyCandidate[] {
+  if (!spec.conflictKey) return [];
+  const slots = new Map<string, Row[]>();
+  for (const r of rows) {
+    if (removed.has(r.id)) continue;
+    const k = spec.conflictKey(r);
+    if (k) slots.set(k, [...(slots.get(k) ?? []), r]);
+  }
+  const out: FuzzyCandidate[] = [];
+  for (const group of slots.values()) {
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        if (spec.key(group[i]) === spec.key(group[j])) continue;
+        const [x, y] = [group[i], group[j]].sort((p, q) => p.id.localeCompare(q.id));
+        out.push({
+          kind: "conflict",
+          table: spec.table,
+          districtId: x.districtId ? str(x.districtId) : null,
+          ids: [x.id, y.id],
+          names: [spec.label(x), spec.label(y)],
+          score: 1,
+          fingerprint: `${spec.table}:conflict:${x.id}+${y.id}`,
+        });
+      }
+    }
+  }
+  return out;
 }
 
 // ── The run ─────────────────────────────────────────────────
@@ -564,6 +611,8 @@ export interface ExamReport {
   /** Same exam stored under two scopes (e.g. national and one state) — for a person. */
   crossScope: string[];
   examples: string[];
+  /** Verbose only: single rows whose status or placement is rewritten. */
+  rewritten: string[];
 }
 
 export interface GuardReport {
@@ -592,6 +641,8 @@ export interface GuardOptions {
   maxQueue?: number;
   /** Also delete exams whose organiser is clearly not government (the one-time clean-up; the daily cron only reports them). */
   removeNonGovernmentExams?: boolean;
+  /** List every exact group in the report (default: the first 5 per table). */
+  verbose?: boolean;
   log?: (m: string) => void;
 }
 
@@ -633,7 +684,7 @@ async function runTable(db: Db, spec: TableSpec, opts: GuardOptions): Promise<{ 
   const rows = await d.findMany({ where: spec.where ?? {}, select, take: spec.take ?? 20_000 });
   const plans = planExactDuplicates(rows, spec);
   const removed = new Set(plans.flatMap((p) => p.removeIds));
-  const fuzzy = findFuzzyCandidates(rows, spec, removed);
+  const fuzzy = [...findConflicts(rows, spec, removed), ...findFuzzyCandidates(rows, spec, removed)];
 
   // Column spellings to rewrite, grouped by old value (one updateMany each).
   const rewrites = new Map<string, string>();
@@ -661,7 +712,9 @@ async function runTable(db: Db, spec: TableSpec, opts: GuardOptions): Promise<{ 
     childrenDropped: 0,
     normalised,
     fuzzy: fuzzy.length,
-    examples: plans.slice(0, 5).map((p) => `keep "${p.keepLabel}" ← ${p.removeLabels.map((l) => `"${l}"`).join(", ")}`),
+    examples: plans
+      .slice(0, opts.verbose ? plans.length : 5)
+      .map((p) => `keep "${p.keepLabel}" [${p.keepId}] ← ${p.removeLabels.map((l, i) => `"${l}" [${p.removeIds[i]}]`).join(", ")}${Object.keys(p.fill).length ? ` (fills ${Object.keys(p.fill).join(", ")})` : ""}`),
   };
   if (opts.dryRun) return { report, fuzzy };
 
@@ -699,6 +752,7 @@ async function runExams(db: Db, opts: GuardOptions): Promise<ExamReport> {
     conflicts: [],
     crossScope: [],
     examples: [],
+    rewritten: [],
   };
   const nonGov = new Set<string>();
   for (const r of rows) {
@@ -718,12 +772,21 @@ async function runExams(db: Db, opts: GuardOptions): Promise<ExamReport> {
     if (plan.removeIds.length) {
       report.groupsMerged++;
       report.rowsRemoved += plan.removeIds.length;
-      if (report.examples.length < 12) {
-        report.examples.push(`keep "${keep.title}" (+${plan.removeIds.length} ${plan.removeIds.length === 1 ? "copy" : "copies"}) → ${String(plan.patch.level ?? keep.level)}`);
+      if (opts.verbose || report.examples.length < 12) {
+        const place = String(plan.patch.level ?? keep.level);
+        const changes = Object.keys(plan.patch).filter((k) => !["level", "scope", "stateId", "districtId"].includes(k));
+        report.examples.push(
+          `keep "${keep.title}" [${keep.id}] as the one ${place} row, remove ${plan.removeIds.length} ${plan.removeIds.length === 1 ? "copy" : "copies"}` +
+            (changes.length ? `; sets ${changes.map((k) => (k === "status" ? `status=${String(plan.patch.status)}` : k)).join(", ")}` : ""),
+        );
       }
     }
     if ("districtId" in plan.patch || "stateId" in plan.patch || "level" in plan.patch) report.rowsMoved++;
     if ("status" in plan.patch) report.statusesNormalised++;
+    if (opts.verbose && !plan.removeIds.length && Object.keys(plan.patch).length) {
+      const parts = Object.entries(plan.patch).map(([k, v]) => `${k}: ${String((keep as Record<string, unknown>)[k] ?? "∅")} → ${v === null ? "∅" : String(v)}`);
+      report.rewritten.push(`"${keep.title}" [${keep.id}] ${parts.join("; ")}`);
+    }
     report.conflicts.push(...plan.conflicts.map((c) => `${keep.title}: ${c}`));
   }
 
@@ -772,15 +835,22 @@ async function queueFuzzy(db: Db, candidates: FuzzyCandidate[], max: number): Pr
         dataType: REVIEW_DATA_TYPE,
         extractedData: {
           origin: "dedupe-guard",
+          kind: c.kind,
           fingerprint: c.fingerprint,
           table: c.table,
           ids: c.ids,
           names: c.names,
           similarity: c.score,
-          suggestion: "Same thing? Merge the two rows in the admin content editor (keep the one with the source). Not the same? Reject this item — it will not be raised again.",
+          suggestion:
+            c.kind === "conflict"
+              ? "Two rows claim the same slot with different facts. Check the official source, correct or delete the wrong row in the admin content editor, then close this item."
+              : "Same thing? Merge the two rows in the admin content editor (keep the one with the source). Not the same? Reject this item — it will not be raised again.",
         },
         sourceUrl: `internal:dedupe-guard/${c.table}`,
-        headline: `Possible duplicate ${c.table}: "${c.names[0]}" / "${c.names[1]}" (${Math.round(c.score * 100)}% alike)`.slice(0, 300),
+        headline: (c.kind === "conflict"
+          ? `Conflicting ${c.table} rows for one slot: "${c.names[0]}" / "${c.names[1]}"`
+          : `Possible duplicate ${c.table}: "${c.names[0]}" / "${c.names[1]}" (${Math.round(c.score * 100)}% alike)`
+        ).slice(0, 300),
         confidence: c.score,
         status: "pending",
       },

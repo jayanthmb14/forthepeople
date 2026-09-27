@@ -90,6 +90,26 @@ describe("similarity", () => {
     expect(similarity("Hebbal Flyover", "Peenya Police Station")).toBeLessThan(0.5);
     expect(similarity("", "x")).toBe(0);
   });
+
+  it("does not count shared category words ('Police Station', 'High School')", () => {
+    expect(similarity("Park Street Police Station", "Hare Street Police Station")).toBeLessThan(0.85);
+    expect(similarity("Malad Police Station", "Dadar Police Station")).toBeLessThan(0.85);
+    expect(similarity("Government High School Devanahalli", "Government High School Dasarahalli")).toBeLessThan(0.85);
+    expect(similarity("BMTC Head Office", "BMRCL Head Office")).toBeLessThan(0.85);
+    expect(similarity("Pune Outer Ring Road", "Pune Inner Ring Road")).toBeLessThan(0.85);
+    expect(similarity("Jayanagar Police Station", "Vijayanagar Police Station")).toBeLessThan(0.85);
+    expect(similarity("Dept of Sericulture, Mysuru", "Dept of Agriculture, Mysuru")).toBeLessThan(0.85);
+    expect(similarity("Govt. Model Primary School, Electronic City", "Government High School Electronic City")).toBeLessThan(0.85);
+    expect(similarity("Government High School Electronic City", "VIBGYOR High School Electronic City")).toBeLessThan(0.85);
+    expect(similarity("Oxford High School BTM Layout", "Government High School BTM Layout")).toBeLessThan(0.85);
+    expect(similarity("Government High School Electronic City", "Government First Grade High School Electronic City")).toBeLessThan(0.85);
+    expect(similarity("Hyderabad Metro Rail", "Hyderabad Metro Rail Phase 2")).toBeLessThan(0.85);
+  });
+
+  it("forgives a small typo in a long word", () => {
+    expect(similarity("D.K. Shivakumar", "D K Shivkumar")).toBeGreaterThanOrEqual(0.85);
+    expect(similarity("Regional Transport Office (RTO), Bengaluru East", "Regional Transport Office — Bengaluru East")).toBeGreaterThanOrEqual(0.85);
+  });
 });
 
 describe("examKey", () => {

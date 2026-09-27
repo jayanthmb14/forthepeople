@@ -12,7 +12,7 @@
 // findSameNamed() before creating:
 //   exact    — same nameKey ("Atal Setu" = "Mumbai Trans Harbour Link",
 //              "Metro Phase II" = "Metro Phase 2"), or the same 2+-word
-//              short name;
+//              short name when the full names are at least half alike;
 //   similar  — similarity() ≥ threshold (0.85 by default);
 // never across different numbers ("Phase 1" vs "Phase 2"). A match is
 // updated fill-only instead of creating a second row.
@@ -47,8 +47,11 @@ export function findSameNamed<T extends Named>(
     if (numbersConflict(row.name, incoming.name)) continue;
     let m: NameMatch<T> | null = null;
     if (key && nameKey(row.name) === key) m = { row, how: "exact", score: 1 };
-    else if (shortKey && row.shortName && nameKey(row.shortName) === shortKey) m = { row, how: "short-name", score: 0.95 };
-    else if (!opts.exactOnly) {
+    // Same 2+-word short name only counts when the full names are also half alike:
+    // "Namma Metro" is the short name of several different lines.
+    else if (shortKey && row.shortName && nameKey(row.shortName) === shortKey && similarity(row.name, incoming.name) >= 0.5) {
+      m = { row, how: "short-name", score: 0.95 };
+    } else if (!opts.exactOnly) {
       const score = similarity(row.name, incoming.name);
       if (score >= threshold) m = { row, how: "similar", score };
     }

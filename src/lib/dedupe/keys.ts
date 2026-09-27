@@ -98,7 +98,7 @@ const ABBREVIATIONS: Record<string, string> = {
   stp: "sewage treatment plant", wtp: "water treatment plant", rd: "road", overbridge: "over bridge",
   // government words
   govt: "government", gov: "government", dept: "department", dist: "district", hq: "headquarters",
-  hosp: "hospital", ps: "police station", phc: "primary health centre", chc: "community health centre",
+  hosp: "hospital", ps: "police station", stn: "station", phc: "primary health centre", chc: "community health centre",
   center: "centre", harbor: "harbour", intl: "international", natl: "national",
   // schemes
   pm: "pradhan mantri", pmay: "pradhan mantri awas yojana", pmgsy: "pradhan mantri gram sadak yojana",
@@ -241,27 +241,63 @@ export function numbersConflict(a: string | null | undefined, b: string | null |
 }
 
 /**
- * How alike two names are, 0–1, on their canonical words: the best of the
- * Dice word overlap, the edit-distance ratio of the sorted word strings, and
- * 0.88 when one name's 3+ words all appear in the other. When both names
- * carry numbers and the numbers differ ("Phase 1" / "Phase 2", "Line 2A" /
+ * Category words that say what a thing is, not which one it is ("… Police
+ * Station", "Government High School …", "… Head Office"). Two names that
+ * share only these are not alike.
+ */
+const DESCRIPTOR_WORDS = new Set([
+  "police", "station", "school", "office", "head", "headquarters", "zone", "international",
+  "public", "english", "medium", "convent", "taluk", "district", "department", "dept", "branch", "division",
+  "circle", "extension", "the",
+]);
+
+function distinctiveTokens(input: string | null | undefined): string[] {
+  const all = nameTokens(input);
+  const own = all.filter((w) => !DESCRIPTOR_WORDS.has(w));
+  return own.length ? own : all;
+}
+
+/**
+ * Same word, or a small typo in a longer word ("shivakumar" / "shivkumar"):
+ * same first letter, one edit (two in words of 10+ letters). Never across
+ * numbers, and not "jayanagar" / "vijayanagar" or "sericulture" / "agriculture".
+ */
+function tokensAlike(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (hasDigit(a) || hasDigit(b) || Math.min(a.length, b.length) < 5 || a[0] !== b[0]) return false;
+  return levenshtein(a, b) <= (Math.min(a.length, b.length) >= 10 ? 2 : 1);
+}
+
+/**
+ * How alike two names are, 0–1, on their distinctive canonical words
+ * (category words like "police station" or "high school" left out): the
+ * Dice overlap of the words, allowing small typos in long words, or 0.88
+ * when one name's 3+ words all appear in the other and the extra words
+ * carry no number. When both names carry
+ * numbers and the numbers differ ("Phase 1" / "Phase 2", "Line 2A" /
  * "Line 3") the score is capped at 0.6: those are different things.
  */
 export function similarity(a: string | null | undefined, b: string | null | undefined): number {
-  const ta = nameTokens(a);
-  const tb = nameTokens(b);
-  if (!ta.length || !tb.length) return 0;
-  const sa = new Set(ta);
-  const sb = new Set(tb);
-  let inter = 0;
-  for (const w of sa) if (sb.has(w)) inter++;
-  const dice = (2 * inter) / (sa.size + sb.size);
-  const ja = ta.join(" ");
-  const jb = tb.join(" ");
-  const lev = 1 - levenshtein(ja, jb) / Math.max(ja.length, jb.length);
-  const minSize = Math.min(sa.size, sb.size);
-  const subset = minSize >= 3 && inter === minSize ? 0.88 : 0;
-  let score = Math.max(dice, lev, subset);
+  if (!nameKey(a) || !nameKey(b)) return 0;
+  if (nameKey(a) === nameKey(b)) return 1;
+  const ta = distinctiveTokens(a);
+  const tb = distinctiveTokens(b);
+  const used = new Set<number>();
+  let matched = 0;
+  for (const x of ta) {
+    const j = tb.findIndex((y, k) => !used.has(k) && tokensAlike(x, y));
+    if (j >= 0) {
+      used.add(j);
+      matched++;
+    }
+  }
+  const dice = (2 * matched) / (ta.length + tb.length);
+  // One name is the other plus a word or two ("Mumbai Metro Line 3" / "… Line 3 (Aqua Line)"),
+  // unless the extra words carry a number ("… Rail" / "… Rail Phase 2").
+  const [small, large] = [nameTokens(a), nameTokens(b)].sort((x, y) => x.length - y.length);
+  const extra = large.filter((w) => !small.includes(w));
+  const subset = small.length >= 3 && small.every((w) => large.includes(w)) && !extra.some(hasDigit) ? 0.88 : 0;
+  let score = Math.max(dice, subset);
   if (numbersConflict(a, b)) score = Math.min(score, 0.6);
   return Math.round(score * 1000) / 1000;
 }

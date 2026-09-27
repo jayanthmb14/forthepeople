@@ -6,7 +6,7 @@
  * duplicates, which one is kept, what it inherits, which pairs go to a person.
  */
 import { describe, expect, it } from "vitest";
-import { TABLE_SPECS, findFuzzyCandidates, placeNameKey, planExactDuplicates, type Row, type TableSpec } from "@/lib/dedupe/guard";
+import { TABLE_SPECS, findConflicts, findFuzzyCandidates, placeNameKey, planExactDuplicates, type Row, type TableSpec } from "@/lib/dedupe/guard";
 import { findSameNamed } from "@/lib/dedupe/match";
 
 const spec = (table: string): TableSpec => {
@@ -33,6 +33,16 @@ describe("ElectionResult — the Bengaluru 2024 Lok Sabha pairs", () => {
     const plan = planExactDuplicates(rows, spec("ElectionResult")).find((p) => p.key.includes("LOK_SABHA"))!;
     expect(plan.keepId).toBe("cmnuptbxg0001");
     expect(plan.removeIds).toEqual(["cmmvn6vjp00io"]);
+  });
+
+  it("never merges two different winners for one seat — that is a conflict for a person", () => {
+    const seat: Row[] = [
+      { id: "x1", districtId: "blr", year: 2023, electionType: "Assembly", constituency: "Bangalore South", winnerName: "M. Krishnappa", source: "ECI" },
+      { id: "x2", districtId: "blr", year: 2023, electionType: "Assembly", constituency: "Bengaluru South", winnerName: "Tejasvi Surya (MLA)", source: "ECI" },
+    ];
+    expect(planExactDuplicates(seat, spec("ElectionResult"))).toEqual([]);
+    const [c] = findConflicts(seat, spec("ElectionResult"));
+    expect(c).toMatchObject({ kind: "conflict", ids: ["x1", "x2"] });
   });
 
   it("rewrites every type in the canonical spelling", () => {
@@ -129,7 +139,7 @@ describe("fuzzy candidates — for a person, never merged", () => {
     const s: TableSpec = { ...spec("Scheme"), key: (r) => `${r.districtId}|${r.name}` };
     const out = findFuzzyCandidates(rows, s);
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ ids: ["a", "b"], districtId: "d1", fingerprint: "Scheme:a+b" });
+    expect(out[0]).toMatchObject({ kind: "similar", ids: ["a", "b"], districtId: "d1", fingerprint: "Scheme:a+b" });
     expect(out[0].score).toBeGreaterThanOrEqual(0.85);
   });
 
