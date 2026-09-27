@@ -194,16 +194,19 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT count(*) FROM "CanalRelease" x WHERE x."districtId" = d.id)::int AS canals_rows,
       (SELECT max(x."createdAt") FROM "PowerOutage" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%') AS power_date,
       (SELECT count(*) FROM "PowerOutage" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%')::int AS power_rows,
-      (SELECT count(*) FROM "BusRoute" x WHERE x."districtId" = d.id)::int AS buses_rows,
-      (SELECT count(*) FROM "TrainSchedule" x WHERE x."districtId" = d.id)::int AS trains_rows,
-      GREATEST(
-        (SELECT max(x."asOfDate") FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'),
-        (SELECT max(x."updatedAt") FROM "GovOffice" x WHERE x."districtId" = d.id
-          AND (x.department ILIKE '%health%' OR x.type ILIKE '%hospital%' OR x.type ILIKE '%health%'))
-      ) AS health_date,
+      (SELECT count(*) FROM "BusRoute" x WHERE x."districtId" = d.id AND x.active)::int AS buses_rows,
+      (SELECT count(*) FROM "TrainSchedule" x WHERE x."districtId" = d.id AND x.active)::int AS trains_rows,
+      -- Health: the data date is the staffing figures' own "as of" date
+      -- (government-sourced rows only, as the pages show them). The
+      -- hand-entered hospital list has no source date, so its updatedAt —
+      -- which any maintenance edit moves — is never used as one (Sept 2026
+      -- audit: a clean-up made March seed rows read "Data date 28 Sept").
+      (SELECT max(x."asOfDate") FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'
+        AND x."sourceUrl" ~* '^https?://([a-z0-9-]+\.)*(gov\.in|nic\.in)(/|:|$)') AS health_date,
       ((SELECT count(*) FROM "GovOffice" x WHERE x."districtId" = d.id
           AND (x.department ILIKE '%health%' OR x.type ILIKE '%hospital%' OR x.type ILIKE '%health%'))
-        + (SELECT count(*) FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'))::int AS health_rows,
+        + (SELECT count(*) FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'
+          AND x."sourceUrl" ~* '^https?://([a-z0-9-]+\.)*(gov\.in|nic\.in)(/|:|$)'))::int AS health_rows,
       (SELECT max(x."updatedAt") FROM "School" x WHERE x."districtId" = d.id) AS schools_date,
       (SELECT count(*) FROM "School" x WHERE x."districtId" = d.id)::int AS schools_rows,
       (SELECT max(x."date") FROM "CropPrice" x WHERE x."districtId" = d.id) AS crops_date,
@@ -224,7 +227,7 @@ async function queryRow(districtId: string): Promise<Row | null> {
         AND x.year <= EXTRACT(YEAR FROM now())) AS census_hist_year,
       ((SELECT count(*) FROM "DemographicProfile" x WHERE x."districtId" = d.id)
         + (SELECT count(*) FROM "PopulationHistory" x WHERE x."districtId" = d.id))::int AS census_rows,
-      (SELECT count(*) FROM "FamousPersonality" x WHERE x."districtId" = d.id AND x.active)::int AS famous_rows,
+      (SELECT count(*) FROM "FamousPersonality" x WHERE x."districtId" = d.id AND x.active AND x."bornInDistrict")::int AS famous_rows,
       (SELECT max(x."generatedAt") FROM "AIModuleInsight" x WHERE x."districtId" = d.id) AS ai_date
     FROM "District" d
     WHERE d.id = ${districtId}
