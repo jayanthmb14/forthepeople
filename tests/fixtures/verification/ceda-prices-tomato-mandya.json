@@ -1,0 +1,31 @@
+{
+ "data": [
+  {
+   "t": "2025-10-30",
+   "cmdty": "Tomato",
+   "district_id": 573,
+   "district": "Mandya",
+   "p_min": 1500,
+   "p_max": 1500,
+   "p_modal": 1500
+  },
+  {
+   "t": "2025-10-29",
+   "cmdty": "Tomato",
+   "district_id": 573,
+   "district": "Mandya",
+   "p_min": 1000,
+   "p_max": 2000,
+   "p_modal": 2000
+  },
+  {
+   "t": "2025-10-28",
+   "cmdty": "Tomato",
+   "district_id": 573,
+   "district": "Mandya",
+   "p_min": 1000,
+   "p_max": 2000,
+   "p_modal": 2000
+  }
+ ]
+}

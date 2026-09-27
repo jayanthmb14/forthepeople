@@ -1,0 +1,203 @@
+{
+ "entities": {
+  "Q17089931": {
+   "type": "item",
+   "id": "Q17089931",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "D. K. Shivakumar"
+    }
+   },
+   "aliases": {
+    "en": [
+     {
+      "language": "en",
+      "value": "Doddalahalli Kempegowda Shivakumar"
+     },
+     {
+      "language": "en",
+      "value": "DK Shivakumar"
+     },
+     {
+      "language": "en",
+      "value": "D K Shivakumar"
+     },
+     {
+      "language": "en",
+      "value": "DKS"
+     }
+    ]
+   },
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "D. K. Shivakumar",
+     "badges": []
+    }
+   }
+  },
+  "Q7711496": {
+   "type": "item",
+   "id": "Q7711496",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Thawar Chand Gehlot"
+    }
+   },
+   "aliases": {
+    "en": [
+     {
+      "language": "en",
+      "value": "Thaawarchand Gehlot"
+     },
+     {
+      "language": "en",
+      "value": "Thaawar Chand Gehlot"
+     }
+    ]
+   },
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Thawar Chand Gehlot",
+     "badges": []
+    }
+   }
+  },
+  "Q18750400": {
+   "type": "item",
+   "id": "Q18750400",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Eknath Shinde"
+    }
+   },
+   "aliases": {
+    "en": [
+     {
+      "language": "en",
+      "value": "Eknath Sambhaji Shinde"
+     }
+    ]
+   },
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Eknath Shinde",
+     "badges": []
+    }
+   }
+  },
+  "Q16728896": {
+   "type": "item",
+   "id": "Q16728896",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Devendra Fadnavis"
+    }
+   },
+   "aliases": {
+    "en": [
+     {
+      "language": "en",
+      "value": "Devendra Gangadharrao Fadnavis"
+     },
+     {
+      "language": "en",
+      "value": "Devendra Sarita Gangadharrao Fadnavis"
+     }
+    ]
+   },
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Devendra Fadnavis",
+     "badges": []
+    }
+   }
+  },
+  "Q7289378": {
+   "type": "item",
+   "id": "Q7289378",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "जिष्णू देव वर्मा"
+    }
+   },
+   "aliases": {},
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Ramesh Bais",
+     "badges": []
+    }
+   }
+  },
+  "Q19560653": {
+   "type": "item",
+   "id": "Q19560653",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Rekha Gupta"
+    }
+   },
+   "aliases": {
+    "en": [
+     {
+      "language": "en",
+      "value": "Rekha Jindal"
+     },
+     {
+      "language": "en",
+      "value": "Rekha Jindal Gupta"
+     }
+    ]
+   },
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Rekha Gupta",
+     "badges": []
+    }
+   }
+  },
+  "Q140067842": {
+   "type": "item",
+   "id": "Q140067842",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Pravesh Wahi"
+    }
+   },
+   "aliases": {},
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Pravesh Wahi",
+     "badges": []
+    }
+   }
+  },
+  "Q528496": {
+   "type": "item",
+   "id": "Q528496",
+   "labels": {},
+   "aliases": {},
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "C. Joseph Vijay",
+     "badges": []
+    }
+   }
+  }
+ },
+ "success": 1
+}

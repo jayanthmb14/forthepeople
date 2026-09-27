@@ -2540,3 +2540,41 @@ model ContentTranslation {
   @@unique([entityType, entityId, field, locale])
   @@index([entityType, locale])
 }
+
+// ═══ DATA VERIFICATION (Sept 2026, v5.1) ═══════════════════
+// One automatic cross-check of something we show against another source.
+// Written only by the daily cron /api/cron/verify-data
+// (src/lib/verification/, docs/VERIFICATION.md); read by
+// /api/data/verification for the "Check this data" panel.
+// Rows are history: the newest row per datasetKey is the current state;
+// the cron deletes rows older than 120 days. A check NEVER overwrites the
+// data it checks — a disagreement becomes a NewsActionQueue review item.
+model DataVerification {
+  id              String   @id @default(cuid())
+  runId           String // groups the rows of one cron run
+  datasetKey      String // "<dataset>:<district>[:<item>]", e.g. "weather:mandya", "leaders:mandya:chief-minister"
+  dataset         String // freshness dataset key (src/lib/freshness.ts): weather | mandi | dams | leaders | news | alerts | projects | exams
+  kind            String // "cross-source" | "source-recheck" | "freshness" | "placeholder" | "coverage"
+  stateSlug       String?
+  districtSlug    String?
+  entityType      String? // Prisma model checked: "WeatherReading" | "CropPrice" | "DamReading" | "Leader"
+  entityId        String?
+  dataDate        DateTime? // the date the checked data describes
+  checkedAt       DateTime @default(now())
+  primarySource   String // where the value we show came from
+  primaryValue    String?  @db.Text
+  secondarySource String? // the first other source consulted
+  secondaryValue  String?  @db.Text
+  sources         Json? // every outside check: [{ source, value, agreed, independent, url, asOf }]
+  agreed          Boolean? // null = could not compare
+  tolerance       String? // "±3 °C", "same person", "±2 points"
+  status          String // verified | single-source | disagreement | unchecked | fresh | stale | placeholder | missing
+  reason          String? // machine code the UI translates, e.g. "second-source-no-data"
+  notes           String?  @db.Text // admin-facing English
+  reviewItemId    String? // NewsActionQueue.id of the review item this check raised
+
+  @@index([districtSlug, checkedAt])
+  @@index([stateSlug, checkedAt])
+  @@index([datasetKey, checkedAt])
+  @@index([status, checkedAt])
+}
