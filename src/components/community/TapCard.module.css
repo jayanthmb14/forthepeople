@@ -1,0 +1,102 @@
+/* TapCard — a whole card that opens a DetailSheet.
+   The title's <button> stretches over the card (::after), so the full card
+   is one big touch target while the heading stays a real heading. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+  box-shadow: var(--ftp-shadow-1);
+  cursor: pointer;
+}
+
+.tinted {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%);
+  border-color: color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+}
+
+.card:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--hue) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.titleWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ftp-font-display);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 650;
+  color: var(--ftp-text);
+  overflow-wrap: anywhere;
+}
+
+.stretch {
+  all: unset;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+.stretch:focus-visible {
+  outline: none;
+}
+
+.stretch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--hue-deep);
+}
+
+@media (max-width: 639px) {
+  .card {
+    padding: 14px;
+  }
+}

@@ -5,22 +5,27 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// StaffingWidget — Sanctioned vs. Filled posts for one module
-// Used in: Health, Police, Schools pages.
+// StaffingWidget — sanctioned vs. filled posts for one module
+// Used on the Police page (Health and Schools use
+// daily-services/StaffingSection). Reads the same staffing rows the
+// Exams page shows (/api/data/exams).
 //
-// Design v3 "Civic Ledger":
-//   • A plain Card (no tinted background, no coloured border).
-//   • Semantic colour only as text, a 6 px dot or a progress fill:
-//       more than 30 % vacant → danger, 70 %+ filled → live, else warn.
-//   • Every number in mono; the data date ("As of …") is always shown.
-//   • Lucide icons, no emoji.
+// Design v4 "Rang": a Card in the page hue. One bar for all posts
+// together, then one row per role with a ring of the share filled.
+// Semantic colour only when it carries a warning: more than 30 % empty
+// → danger. Every number in tabular figures; the data date ("As of …")
+// and the official source are always shown.
+//
+// i18n: text is page_exams.widget (en / kn / hi); numbers and percentages
+// go through useFormat(). Role and department names are data.
 // ═══════════════════════════════════════════════════════════
 "use client";
-import { AlertTriangle, ExternalLink, HeartPulse, Shield, GraduationCap } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDistrictData } from "@/hooks/useDistrictData";
-import { Card, SectionHeader, ProgressBar, Pill, AsOfText } from "@/components/district/ui";
-import type { Tone } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
+import { Card, SectionHeader, ProgressBar, AsOfText } from "@/components/district/ui";
+import { RingMeter } from "@/components/community/CommunityVisuals";
 
 interface StaffingRecord {
   id: string;
@@ -43,139 +48,97 @@ interface StaffingResponse {
 
 interface StaffingWidgetProps {
   module: "health" | "police" | "schools";
-  roleLabel: string;   // e.g. "Doctors", "Police Officers", "Teachers"
+  /** The role in the page language, e.g. "Police force". */
+  roleLabel: string;
   district: string;
   state: string;
-  /**
-   * DEPRECATED (v2 hex theme colour). Accepted so existing callers keep
-   * compiling, but ignored — v3 widgets carry no module colour.
-   */
+  /** DEPRECATED (v2 hex colour). Accepted so callers keep compiling; the page hue is used. */
   accentColor?: string;
 }
 
-const MODULE_ICONS: Record<StaffingWidgetProps["module"], LucideIcon> = {
-  health: HeartPulse,
-  police: Shield,
-  schools: GraduationCap,
+const MODULE_EMOJI: Record<StaffingWidgetProps["module"], string> = {
+  health: "🩺",
+  police: "👮",
+  schools: "👩‍🏫",
 };
 
-/** Tone for a fill rate: >30 % vacant = danger, ≥70 % filled = live, else warn. */
-function fillTone(filledPct: number): Tone {
-  const vacantPct = 100 - filledPct;
-  if (vacantPct > 30) return "danger";
-  if (filledPct >= 70) return "live";
-  return "warn";
-}
+/** More than 30 % of posts empty is a shortage. */
+const SHORTAGE_PCT = 30;
 
-export default function StaffingWidget({
-  module,
-  roleLabel,
-  district,
-  state,
-}: StaffingWidgetProps) {
+export default function StaffingWidget({ module, roleLabel, district, state }: StaffingWidgetProps) {
+  const t = useTranslations("page_exams.widget");
+  const f = useFormat();
   const { data: apiResponse, isLoading } = useDistrictData<StaffingResponse>("exams", district, state);
-  const allStaffing: StaffingRecord[] = apiResponse?.data?.staffing ?? [];
-  const moduleStaffing = allStaffing.filter((s) => s.module === module);
+  const rows = (apiResponse?.data?.staffing ?? []).filter((s) => s.module === module);
 
-  if (isLoading || moduleStaffing.length === 0) return null;
+  if (isLoading || rows.length === 0) return null;
 
-  const totalSanctioned = moduleStaffing.reduce((s, r) => s + r.sanctionedPosts, 0);
-  const totalWorking = moduleStaffing.reduce((s, r) => s + r.workingStrength, 0);
-  const totalVacant = moduleStaffing.reduce((s, r) => s + r.vacantPosts, 0);
-  const overallFilledPct = totalSanctioned > 0
-    ? Math.round((totalWorking / totalSanctioned) * 100)
-    : 0;
-  const overallVacantPct = 100 - overallFilledPct;
-  const hasDanger = overallVacantPct > 30;
-  const Icon = MODULE_ICONS[module];
+  const pctText = (p: number) => f.number(p / 100, { style: "percent", maximumFractionDigits: 0 });
+  const sanctioned = rows.reduce((s, r) => s + r.sanctionedPosts, 0);
+  const working = rows.reduce((s, r) => s + r.workingStrength, 0);
+  const vacant = rows.reduce((s, r) => s + r.vacantPosts, 0);
+  const filledPct = sanctioned > 0 ? Math.round((working / sanctioned) * 100) : 0;
+  const shortage = 100 - filledPct > SHORTAGE_PCT;
+  const asOf = rows.reduce<string | null>((max, r) => (!max || r.asOfDate > max ? r.asOfDate : max), null);
+  const source = rows.find((r) => r.sourceUrl)?.sourceUrl ?? null;
 
   return (
     <section style={{ marginBottom: 20 }}>
-      <SectionHeader
-        as="h3"
-        title={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Icon size={18} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-            {roleLabel} — sanctioned vs. filled
-          </span>
-        }
-        action={<AsOfText asOf={moduleStaffing[0]?.asOfDate} />}
-      />
-      <Card>
-        {/* Overall fill rate */}
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", fontSize: 13, lineHeight: "20px", marginBottom: 6 }}>
-          <span style={{ fontWeight: 500, color: "var(--ftp-text)" }}>Overall fill rate</span>
-          <span className="ftp-num" style={{ color: hasDanger ? "var(--ftp-danger)" : "var(--ftp-live-text)" }}>
-            {overallFilledPct}% filled · {overallVacantPct}% vacant
+      <SectionHeader as="h3" emoji={MODULE_EMOJI[module]} title={t("title", { role: roleLabel })} action={<AsOfText asOf={asOf} />} />
+      <Card tinted>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", fontSize: 14, lineHeight: "20px", marginBottom: 6 }}>
+          <span style={{ fontWeight: 650, color: "var(--ftp-text)" }}>{t("overall")}</span>
+          <span className="ftp-num" style={{ color: shortage ? "var(--ftp-danger)" : "var(--hue-deep)" }}>
+            {t("filledEmpty", { filled: pctText(filledPct), empty: pctText(100 - filledPct) })}
           </span>
         </div>
-        <ProgressBar pct={overallFilledPct} tone={hasDanger ? "danger" : "live"} height={8} />
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-          <span>
-            Working: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{totalWorking.toLocaleString("en-IN")}</span>
-            {" / "}Sanctioned: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{totalSanctioned.toLocaleString("en-IN")}</span>
-          </span>
-          {hasDanger && (
-            <span style={{ color: "var(--ftp-danger)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <AlertTriangle size={12} aria-hidden />
-              Shortage: <span className="ftp-num">{totalVacant}</span> posts vacant
+        <ProgressBar pct={filledPct} tone={shortage ? "danger" : "brand"} height={10} />
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+          <span className="ftp-num">{t("counts", { working: f.number(working), sanctioned: f.number(sanctioned) })}</span>
+          {shortage && (
+            <span style={{ color: "var(--ftp-danger)", fontWeight: 600 }}>
+              <span className="ftp-emoji" aria-hidden>⚠️ </span>
+              {t("shortage", { n: vacant, count: f.number(vacant) })}
             </span>
           )}
         </div>
 
-        {/* Per-department breakdown — hairline-separated rows, not nested boxes */}
-        <ul style={{ listStyle: "none", margin: "16px 0 0", padding: 0 }}>
-          {moduleStaffing.map((s) => {
-            const filledPct = s.sanctionedPosts > 0
-              ? Math.round((s.workingStrength / s.sanctionedPosts) * 100)
-              : 0;
-            const vacantPct = 100 - filledPct;
-            const dangerLevel = vacantPct > 30;
-            const tone = fillTone(filledPct);
-
+        <ul style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))" }}>
+          {rows.map((s) => {
+            const pct = s.sanctionedPosts > 0 ? Math.round((s.workingStrength / s.sanctionedPosts) * 100) : 0;
+            const short = 100 - pct > SHORTAGE_PCT;
             return (
-              <li key={s.id} style={{ borderTop: "1px solid var(--ftp-border)", padding: "12px 0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text)" }}>{s.roleName}</div>
-                    <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{s.department}</div>
+              <li
+                key={s.id}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, borderRadius: "var(--ftp-radius-tile)", background: "#fff", border: "1px solid var(--ftp-border)" }}
+              >
+                <RingMeter
+                  pct={pct}
+                  size={54}
+                  color={short ? "var(--ftp-danger)" : "var(--hue)"}
+                  ariaLabel={t("rowAria", { role: s.roleName, pct: pctText(pct) })}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{s.roleName}</div>
+                  <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{s.department}</div>
+                  <div className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: short ? "var(--ftp-danger)" : "var(--ftp-text-2)", marginTop: 2 }}>
+                    {t("rowCounts", { working: f.number(s.workingStrength), vacant: f.number(s.vacantPosts) })}
                   </div>
-                  <Pill tone={tone} dot>
-                    <span className="ftp-num">{filledPct}%</span> filled
-                  </Pill>
-                </div>
-                <ProgressBar pct={filledPct} tone={tone} height={6} />
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                  <span>
-                    <span className="ftp-num">{s.workingStrength}</span>
-                    {" working · "}
-                    <span className="ftp-num">{s.vacantPosts}</span>
-                    {" vacant"}
-                  </span>
-                  {dangerLevel && (
-                    <span style={{ color: "var(--ftp-danger)" }}>
-                      <span className="ftp-num">{vacantPct}%</span> shortage
-                    </span>
-                  )}
                 </div>
               </li>
             );
           })}
         </ul>
 
-        {/* Source link */}
-        {moduleStaffing[0]?.sourceUrl && (
-          <div style={{ marginTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-            Source:{" "}
-            <a
-              href={moduleStaffing[0].sourceUrl!}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
-            >
-              Official data <ExternalLink size={11} aria-hidden />
-            </a>
-          </div>
+        {source && (
+          <a
+            href={source.startsWith("http") ? source : `https://${source}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, marginTop: 8, fontSize: 12, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
+          >
+            {t("source")} <ExternalLink size={12} aria-hidden />
+          </a>
         )}
       </Card>
     </section>
