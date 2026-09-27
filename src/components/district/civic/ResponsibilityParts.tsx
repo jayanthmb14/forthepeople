@@ -9,13 +9,14 @@
 //   TopicSheet    its detail: steps, why it is here, the headlines, helpline
 //   ActionCard / ActionSheet   one researched action (why, who to tell, source)
 //   AreaCard / AreaSheet       one area of the general guide (all its tips)
-//   EmergencyCard              112 and 108, big tap-to-call buttons
+// No emoji: topics and areas are words; only "who to tell" keeps a small
+// Lucide megaphone. Emergency numbers live on "Helplines & your rights".
 // Text: "page_responsibility" namespace. Headlines, researched actions and
 // the general guide are data and are shown as written.
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ChevronRight, ExternalLink, Globe, Phone } from "lucide-react";
+import { ChevronRight, ExternalLink, Globe, Megaphone, Phone } from "lucide-react";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { useFormat, useModuleText } from "@/i18n/client";
 import { hueClass } from "@/lib/design/hues";
@@ -114,7 +115,6 @@ export function InNewsTag() {
         whiteSpace: "nowrap",
       }}
     >
-      <span aria-hidden>📰</span>
       {t("inNews")}
     </span>
   );
@@ -143,11 +143,8 @@ export function TopicBars({ topics, name, latestAt }: { topics: NewsTopicCount[]
           <div
             key={x.topic}
             aria-hidden
-            style={{ display: "grid", gridTemplateColumns: "32px minmax(0, 10em) minmax(40px, 1fr) 2.5em", alignItems: "center", gap: 10 }}
+            style={{ display: "grid", gridTemplateColumns: "minmax(0, 10em) minmax(40px, 1fr) 2.5em", alignItems: "center", gap: 10 }}
           >
-            <span className="ftp-emoji" style={{ fontSize: 22, textAlign: "center" }}>
-              {topicRule(x.topic)?.emoji ?? "📰"}
-            </span>
             <span style={{ fontSize: 14, lineHeight: "18px", color: "var(--ftp-text)" }}>{t(`topics.${x.topic}.label`)}</span>
             <span style={{ display: "block", height: 14, borderRadius: 999, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
               <span
@@ -181,7 +178,6 @@ export function TopicBars({ topics, name, latestAt }: { topics: NewsTopicCount[]
 
 export function TopicCard({ x, onOpen }: { x: NewsTopicCount; onOpen: (x: NewsTopicCount) => void }) {
   const t = useTranslations("page_responsibility");
-  const rule = topicRule(x.topic);
   const latest = x.headlines[0];
   const topic = t(`topics.${x.topic}.label`);
   return (
@@ -197,9 +193,6 @@ export function TopicCard({ x, onOpen }: { x: NewsTopicCount; onOpen: (x: NewsTo
       }}
     >
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 48, height: 48, fontSize: 26, borderRadius: 14, background: "#fff" }}>
-          {rule?.emoji ?? "📰"}
-        </span>
         <span style={{ minWidth: 0 }}>
           <span className="ftp-display" style={{ display: "block", fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
             {t(`topics.${x.topic}.action`)}
@@ -258,13 +251,11 @@ export function TopicSheet({ x, onClose, name, base }: { x: NewsTopicCount | nul
       onClose={onClose}
       title={t(`topics.${x.topic}.action`)}
       subtitle={t("card.whyNow", { n: x.count, topic })}
-      emoji={rule?.emoji ?? "📰"}
       hueClassName={SHEET_HUE}
       footer={footer}
     >
       <section>
         <h3 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 16, lineHeight: "22px", fontWeight: 650 }}>
-          <span aria-hidden>✅ </span>
           {t("sheet.stepsTitle")}
         </h3>
         <ol style={{ margin: 0, paddingInlineStart: 0, listStyle: "none", display: "grid", gap: 8 }}>
@@ -296,7 +287,6 @@ export function TopicSheet({ x, onClose, name, base }: { x: NewsTopicCount | nul
       </section>
       <section>
         <h3 className="ftp-display" style={{ margin: "0 0 4px", fontSize: 16, lineHeight: "22px", fontWeight: 650 }}>
-          <span aria-hidden>🔎 </span>
           {t("sheet.whyTitle")}
         </h3>
         <p style={{ margin: 0, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("sheet.why", { n: x.count, topic, name })}</p>
@@ -304,7 +294,6 @@ export function TopicSheet({ x, onClose, name, base }: { x: NewsTopicCount | nul
       {x.headlines.length > 0 && (
         <section>
           <h3 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 16, lineHeight: "22px", fontWeight: 650 }}>
-            <span aria-hidden>📰 </span>
             {t("sheet.newsTitle")}
           </h3>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
@@ -357,13 +346,11 @@ export function TopicSheet({ x, onClose, name, base }: { x: NewsTopicCount | nul
 export function ActionCard({
   item,
   area,
-  emoji,
   inNews,
   onOpen,
 }: {
   item: ResearchItem;
   area: string;
-  emoji: string;
   inNews: boolean;
   onOpen: () => void;
 }) {
@@ -371,9 +358,6 @@ export function ActionCard({
   return (
     <button type="button" onClick={onOpen} className="ftp-card-link" aria-haspopup="dialog" style={CARD_BUTTON}>
       <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
-          {emoji}
-        </span>
         <span style={{ fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)", flex: 1, minWidth: 0 }}>{area}</span>
         {inNews && <InNewsTag />}
       </span>
@@ -386,10 +370,10 @@ export function ActionCard({
       <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: "auto", fontSize: 12, lineHeight: "18px" }}>
         <span style={{ color: "var(--hue-deep)", fontWeight: 600, minWidth: 0 }}>
           {item.reportTo?.name ? (
-            <>
-              <span aria-hidden>📣 </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Megaphone size={13} aria-hidden />
               {item.reportTo.name}
-            </>
+            </span>
           ) : null}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontWeight: 600, color: "var(--hue-deep)", flexShrink: 0 }}>
@@ -405,12 +389,12 @@ export function ActionSheet({
   open,
   onClose,
 }: {
-  open: { item: ResearchItem; area: string; emoji: string } | null;
+  open: { item: ResearchItem; area: string } | null;
   onClose: () => void;
 }) {
   const t = useTranslations("page_responsibility");
   if (!open) return null;
-  const { item, area, emoji } = open;
+  const { item, area } = open;
   const phone = item.reportTo?.phone ?? null;
   const url = item.reportTo?.url ?? null;
   const footer =
@@ -429,7 +413,7 @@ export function ActionSheet({
       </>
     ) : undefined;
   return (
-    <DetailSheet open onClose={onClose} title={item.action} subtitle={area} emoji={emoji} hueClassName={SHEET_HUE} footer={footer}>
+    <DetailSheet open onClose={onClose} title={item.action} subtitle={area} hueClassName={SHEET_HUE} footer={footer}>
       <div
         style={{
           padding: "12px 14px",
@@ -439,16 +423,14 @@ export function ActionSheet({
         }}
       >
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
-          <span aria-hidden>💡 </span>
           {t("sheet.whyHere")}
         </p>
         <p style={{ margin: "4px 0 0", fontSize: 15, lineHeight: "23px" }}>{item.whyRelevant}</p>
       </div>
       <DetailList
         rows={[
-          { emoji: "📣", label: t("sheet.who"), value: item.reportTo?.name },
+          { label: t("sheet.who"), value: item.reportTo?.name },
           {
-            emoji: "☎️",
             label: t("sheet.phone"),
             value: phone ? (
               <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
@@ -457,7 +439,6 @@ export function ActionSheet({
             ) : null,
           },
           {
-            emoji: "🌐",
             label: t("sheet.website"),
             value: url ? (
               <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
@@ -465,7 +446,7 @@ export function ActionSheet({
               </a>
             ) : null,
           },
-          { emoji: "📄", label: t("sheet.source"), value: item.sourceNotes },
+          { label: t("sheet.source"), value: item.sourceNotes },
         ]}
       />
       {(phone || url) && <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{t("sheet.checkNote")}</p>}
@@ -477,13 +458,11 @@ export function ActionSheet({
 
 export function AreaCard({
   title,
-  emoji,
   items,
   inNews,
   onOpen,
 }: {
   title: string;
-  emoji: string;
   items: string[];
   inNews: boolean;
   onOpen: () => void;
@@ -492,9 +471,6 @@ export function AreaCard({
   return (
     <button type="button" onClick={onOpen} className="ftp-card-link" aria-haspopup="dialog" style={CARD_BUTTON}>
       <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 13 }}>
-          {emoji}
-        </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="ftp-title" style={{ display: "block", fontWeight: 650, fontSize: 16 }}>
             {title}
@@ -521,11 +497,11 @@ export function AreaCard({
   );
 }
 
-export function AreaSheet({ open, onClose }: { open: { title: string; emoji: string; items: string[] } | null; onClose: () => void }) {
+export function AreaSheet({ open, onClose }: { open: { title: string; items: string[] } | null; onClose: () => void }) {
   const t = useTranslations("page_responsibility");
   if (!open) return null;
   return (
-    <DetailSheet open onClose={onClose} title={open.title} subtitle={t("area.count", { n: open.items.length })} emoji={open.emoji} hueClassName={SHEET_HUE}>
+    <DetailSheet open onClose={onClose} title={open.title} subtitle={t("area.count", { n: open.items.length })} hueClassName={SHEET_HUE}>
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
         {open.items.map((it, i) => (
           <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: "22px" }}>
@@ -538,63 +514,6 @@ export function AreaSheet({ open, onClose }: { open: { title: string; emoji: str
       </ul>
       <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{t("sheet.checkNote")}</p>
     </DetailSheet>
-  );
-}
-
-// ── Emergency ───────────────────────────────────────────────────────────
-
-export function EmergencyCard() {
-  const t = useTranslations("page_responsibility");
-  const big: React.CSSProperties = {
-    flex: "1 1 130px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-    minHeight: 88,
-    padding: 12,
-    borderRadius: 16,
-    textDecoration: "none",
-    background: "#fff",
-    border: "1px solid color-mix(in srgb, var(--hue) 26%, var(--ftp-border))",
-    color: "var(--ftp-text)",
-  };
-  return (
-    <div
-      style={{
-        padding: 18,
-        borderRadius: "var(--ftp-radius-card)",
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 9%, #fff) 0%, #fff 75%)",
-        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
-        boxShadow: "var(--ftp-shadow-1)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
-      <div>
-        <p className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
-          <span aria-hidden>🚨 </span>
-          {t("emergencyTitle")}
-        </p>
-        <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("emergencyBody")}</p>
-      </div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <a href="tel:112" className="ftp-card-link" style={big} aria-label={t("callAria", { name: t("emergency112"), number: "112" })}>
-          <span className="ftp-bignum" style={{ fontSize: 32, lineHeight: 1, color: "var(--hue-deep)" }}>
-            112
-          </span>
-          <span style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600 }}>{t("emergency112")}</span>
-        </a>
-        <a href="tel:108" className="ftp-card-link" style={big} aria-label={t("callAria", { name: t("emergency108"), number: "108" })}>
-          <span className="ftp-bignum" style={{ fontSize: 32, lineHeight: 1, color: "var(--hue-deep)" }}>
-            108
-          </span>
-          <span style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600 }}>{t("emergency108")}</span>
-        </a>
-      </div>
-    </div>
   );
 }
 
