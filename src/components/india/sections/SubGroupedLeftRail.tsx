@@ -21,6 +21,11 @@ export interface SubGroupedLeftRailProps {
   className?: string;
 }
 
+/** Registry sub-group keys are upper case ("JUSTICE"); show them in sentence case. */
+function sentenceCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 export function SubGroupedLeftRail({
   superCategorySlug,
   modules,
@@ -48,14 +53,13 @@ export function SubGroupedLeftRail({
     >
       <div
         style={{
-          fontSize: "11px",
-          color: "var(--color-text-tertiary)",
+          fontSize: "12px",
+          color: "var(--color-text-secondary)",
           marginBottom: "12px",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
+          fontVariantNumeric: "tabular-nums",
         }}
       >
-        {modules.length} modules · {liveCount} live · {soonCount} soon
+        {modules.length} modules, {liveCount} live, {soonCount} soon
       </div>
 
       {Array.from(groups.entries()).map(([groupLabel, mods]) => (
@@ -63,17 +67,15 @@ export function SubGroupedLeftRail({
           {groupLabel !== "UNGROUPED" && (
             <div
               style={{
-                fontSize: "10px",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
+                fontSize: "12px",
                 color: accent.hex,
-                fontWeight: 500,
+                fontWeight: 600,
                 paddingBottom: "4px",
                 borderBottom: "0.5px solid var(--color-border-tertiary)",
                 marginBottom: "6px",
               }}
             >
-              {groupLabel}
+              {sentenceCase(groupLabel)}
             </div>
           )}
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -101,14 +103,12 @@ export function SubGroupedLeftRail({
                     {(m.status === "coming_soon" || m.status === "planned") && (
                       <span
                         style={{
-                          fontSize: "9px",
+                          fontSize: "10px",
                           background: "#FAEEDA",
                           color: "#854F0B",
                           padding: "1px 5px",
                           borderRadius: "3px",
-                          letterSpacing: "0.05em",
-                          textTransform: "uppercase",
-                          fontWeight: 500,
+                          fontWeight: 600,
                         }}
                       >
                         Soon

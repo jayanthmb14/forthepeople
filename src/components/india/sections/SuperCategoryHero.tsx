@@ -68,22 +68,20 @@ export function SuperCategoryHero({ superCategory }: SuperCategoryHeroProps) {
       <div style={{ position: "relative" }}>
         <div
           style={{
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.07em",
+            fontSize: "13px",
             color: accent.hex,
             marginBottom: "4px",
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
-          {superCategory.icon} {superCategory.title} · {totalInSC} modules
+          {superCategory.icon} {totalInSC} modules
         </div>
 
         <h1
           style={{
-            fontFamily: "var(--font-jakarta)",
-            fontSize: "32px",
-            fontWeight: 500,
+            fontFamily: "var(--ftp-font-display)",
+            fontSize: "34px",
+            fontWeight: 650,
             margin: "0 0 6px",
             letterSpacing: "-0.02em",
             lineHeight: 1.1,
