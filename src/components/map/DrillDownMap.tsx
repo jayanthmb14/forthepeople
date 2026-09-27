@@ -13,8 +13,10 @@ import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 import { getDistrictIcon } from "@/components/district/icons";
 import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
-import { INDIA_STATES } from "@/lib/constants/districts";
+import { INDIA_STATES, getDistrict } from "@/lib/constants/districts";
 import { INDIA_STATE_NAME_TO_SLUG } from "@/lib/geo/aliases";
+import { usePlaceText } from "@/i18n/client";
+import { placeName } from "@/i18n/place-name";
 
 // Maps GeoJSON `name` property → our state slugs
 const GEO_NAME_TO_SLUG = INDIA_STATE_NAME_TO_SLUG;
@@ -83,6 +85,12 @@ interface DrillDownMapProps {
 export default function DrillDownMap({ locale }: DrillDownMapProps) {
   const router = useRouter();
   const [tooltip, setTooltip] = useState<{ name: string; active: boolean; x: number; y: number } | null>(null);
+  // State and district names in the page language (मंड्या, ಕರ್ನಾಟಕ).
+  const place = usePlaceText();
+  const districtLabel = (pin: Pin) => {
+    const d = getDistrict(pin.stateSlug, pin.slug);
+    return `${d ? placeName(d, locale) : pin.name}, ${place.state(pin.stateSlug, pin.stateName)}`;
+  };
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", minHeight: 420, background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-tile)" }}>
@@ -128,7 +136,7 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
                     onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => {
                       const rect = (e.target as SVGElement).closest("svg")?.getBoundingClientRect();
                       if (rect) {
-                        setTooltip({ name: geoName, active: isActive, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                        setTooltip({ name: state ? place.state(state.slug, geoName) : geoName, active: isActive, x: e.clientX - rect.left, y: e.clientY - rect.top });
                       }
                     }}
                     onMouseMove={(e: React.MouseEvent<SVGPathElement>) => {
@@ -165,7 +173,7 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
                 onClick={() => router.push(`/${locale}/${pin.stateSlug}/${pin.slug}`)}
                 style={{ default: { cursor: "pointer" }, hover: { cursor: "pointer" }, pressed: { cursor: "pointer" } }}
               >
-                <title>{`${pin.name}, ${pin.stateName}`}</title>
+                <title>{districtLabel(pin)}</title>
                 <circle r={21} fill={pin.color} opacity={0.25} className="ftp-map-ping" />
                 <circle r={18} fill="#fff" stroke={pin.color} strokeWidth={3} />
                 {pin.Icon ? (

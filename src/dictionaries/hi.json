@@ -353,7 +353,8 @@
     "myDistrictTitle": "आपका जिला (सिर्फ़ इसी ब्राउज़र में सहेजा गया)",
     "forget": "मेरा जिला भूल जाएं",
     "stars": "{n} स्टार",
-    "current": "मौजूदा"
+    "current": "मौजूदा",
+    "skip": "मुख्य सामग्री पर जाएँ"
   },
   "status": {
     "dataBehind": "डेटा पुराना है",
@@ -943,5 +944,37 @@
     "moduleDescription": "{district} जिला, {state}: {description}। हर आँकड़े के साथ उसकी तारीख और सरकारी स्रोत।",
     "talukTitle": "{taluk} {unit} — {district}",
     "talukDescription": "{district} जिला, {state} — {taluk} {unit}: गाँव और जनसंख्या, सरकारी रिकॉर्ड से।"
+  },
+  "popSnippet": {
+    "aria": "जनसंख्या और लोग",
+    "title": "जनसंख्या और लोग",
+    "viewAll": "सब देखें",
+    "population": "जनसंख्या",
+    "sexRatio": "लिंगानुपात",
+    "perThousand": "/1000",
+    "literacy": "साक्षरता",
+    "religionLabel": "धर्म (शीर्ष 3):",
+    "asOf": "{year} के आँकड़े",
+    "religion": {
+      "Hindu": "हिंदू",
+      "Muslim": "मुस्लिम",
+      "Christian": "ईसाई",
+      "Sikh": "सिख",
+      "Buddhist": "बौद्ध",
+      "Jain": "जैन",
+      "Other": "अन्य",
+      "Not stated": "नहीं बताया"
+    }
+  },
+  "sponsorBanner": {
+    "kicker": "इस ज़िले को प्रायोजित करें",
+    "title": "क्या आप {name} के लोगों को अपना व्यवसाय दिखाना चाहते हैं?",
+    "body": "इस पेज पर अपना ब्रांड बैनर लगाएँ और <b>{people}</b> के लिए मुफ़्त सरकारी डेटा का समर्थन करें।",
+    "peopleCrore": "{n} करोड़ लोगों",
+    "peopleLakh": "{n} लाख लोगों",
+    "peopleExact": "{n} लोगों",
+    "everyone": "हर नागरिक",
+    "note": "सभी भारतीय व्यवसायों के लिए खुला: निजी, सार्वजनिक या स्टार्टअप।",
+    "pricing": "कीमत ज़िले की पहुँच और अवधि के आधार पर अलग-अलग तय होती है।"
   }
 }

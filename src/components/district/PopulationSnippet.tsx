@@ -12,6 +12,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import type { PopulationProfileResponse } from "@/hooks/useRealtimeData";
 import { Card } from "@/components/district/ui";
@@ -69,36 +70,37 @@ export default function PopulationSnippet({ district, state, base }: Props) {
     staleTime: 10 * 60_000,
   });
 
+  const t = useTranslations("popSnippet");
   const profile = data?.data ?? null;
   if (!profile) return null;
 
   const religions = top3Alphabetical(profile.religion);
 
   return (
-    <Card as="section" aria-label="Population and demographics" className="ftp-hue-teal" tinted>
+    <Card as="section" aria-label={t("aria")} className="ftp-hue-teal" tinted>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>📈</span>
-          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>Population &amp; demographics</h3>
+          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{t("title")}</h3>
         </span>
         <Link href={`${base}/population`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          View all
+          {t("viewAll")}
         </Link>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 10 }}>
-        <Figure label="Population" value={formatInt(profile.totalPopulation)} />
-        {typeof profile.sexRatio === "number" && <Figure label="Sex ratio" value={String(profile.sexRatio)} unit="/1k" />}
-        {typeof profile.literacyTotal === "number" && <Figure label="Literacy" value={profile.literacyTotal.toFixed(1)} unit="%" />}
+        <Figure label={t("population")} value={formatInt(profile.totalPopulation)} />
+        {typeof profile.sexRatio === "number" && <Figure label={t("sexRatio")} value={String(profile.sexRatio)} unit={t("perThousand")} />}
+        {typeof profile.literacyTotal === "number" && <Figure label={t("literacy")} value={profile.literacyTotal.toFixed(1)} unit="%" />}
       </div>
 
       {religions.length > 0 && (
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
-          Religion (top 3, alphabetical):{" "}
+          {t("religionLabel")}{" "}
           {religions.map((r, i) => (
             <span key={r.name}>
               {i > 0 && " · "}
-              <span style={{ color: "var(--ftp-text)" }}>{r.name}</span>{" "}
+              <span style={{ color: "var(--ftp-text)" }}>{t.has(`religion.${r.name}`) ? t(`religion.${r.name}`) : r.name}</span>{" "}
               <span className="ftp-num">{r.pct.toFixed(1)}%</span>
             </span>
           ))}
@@ -107,7 +109,7 @@ export default function PopulationSnippet({ district, state, base }: Props) {
 
       {profile.year && (
         <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "8px 0 0" }}>
-          Figures as of <span className="ftp-num">{profile.year}</span>
+          {t("asOf", { year: profile.year })}
         </p>
       )}
     </Card>

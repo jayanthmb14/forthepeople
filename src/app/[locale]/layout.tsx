@@ -20,6 +20,7 @@ import PageProgressBar from "@/components/common/PageProgressBar";
 import HeaderBar from "@/components/home/HeaderBar";
 import { getGithubStars } from "@/components/home/github-stars";
 import Footer from "@/components/home/Footer";
+import SkipLink from "@/components/common/SkipLink";
 
 /**
  * Only the locales in src/i18n/routing.ts may render this layout.
@@ -66,6 +67,7 @@ export default async function LocaleLayout({
           readers, hyphenation, the :lang() font rules in globals.css,
           right-to-left scripts). The inline script also updates <html>. */}
       <div lang={locale} dir={lang.dir} className="ftp-locale-root">
+        <SkipLink />
         <script
           dangerouslySetInnerHTML={{
             __html: `document.documentElement.lang=${JSON.stringify(locale)};document.documentElement.dir=${JSON.stringify(lang.dir)};`,

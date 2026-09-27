@@ -214,10 +214,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
       <body className="antialiased">
-        {/* Skip navigation link for keyboard / screen-reader users */}
-        <a href="#main-content" className="skip-nav">
-          Skip to main content
-        </a>
+        {/* The skip link is rendered by [locale]/layout.tsx, in the page language. */}
         {/* Global structured data */}
         <Script
           id="webapp-jsonld"

@@ -14,36 +14,39 @@
 // ═══════════════════════════════════════════════════════════
 
 import { AtSign, Building2, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card, ToolbarButton } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
 
 interface Props {
   districtName: string;
   population?: number | null;
 }
 
-/** "18.1 lakh citizens" / "1.2 crore citizens" / "every citizen". */
-function formatPop(pop: number | null | undefined): string {
-  if (!pop || pop <= 0) return "every citizen";
-  if (pop >= 10_000_000) return `${(pop / 10_000_000).toFixed(1)} crore citizens`;
-  if (pop >= 100_000) return `${(pop / 100_000).toFixed(1)} lakh citizens`;
-  return `${pop.toLocaleString("en-IN")} citizens`;
-}
-
 export default function CorporateSponsorBanner({ districtName, population }: Props) {
-  const popText = formatPop(population);
+  const t = useTranslations("sponsorBanner");
+  const f = useFormat();
+  // "18.1 lakh people" / "1.2 crore people" / "every citizen".
+  const popText =
+    !population || population <= 0
+      ? t("everyone")
+      : population >= 10_000_000
+        ? t("peopleCrore", { n: f.number(population / 10_000_000, { maximumFractionDigits: 1 }) })
+        : population >= 100_000
+          ? t("peopleLakh", { n: f.number(population / 100_000, { maximumFractionDigits: 1 }) })
+          : t("peopleExact", { n: f.number(population) });
   return (
     <Card as="section" padding={20} aria-labelledby="ftp-corporate-sponsor" style={{ marginBottom: 24 }}>
       <p className="ftp-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
         <Building2 size={14} aria-hidden />
-        Sponsor this district
+        {t("kicker")}
       </p>
 
       <h2 id="ftp-corporate-sponsor" className="ftp-title" style={{ marginBottom: 4 }}>
-        Want to showcase your business to {districtName}&apos;s citizens?
+        {t("title", { name: districtName })}
       </h2>
       <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 14 }}>
-        Display your brand banner on this page and support free government data for{" "}
-        <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{popText}</span>.
+        {t.rich("body", { people: popText, b: (c) => <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{c}</span> })}
       </p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 }}>
@@ -56,9 +59,9 @@ export default function CorporateSponsorBanner({ districtName, population }: Pro
       </div>
 
       <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>
-        Open to all Indian businesses — private, public, or startups.
+        {t("note")}
         <br />
-        Pricing discussed individually based on district reach and duration.
+        {t("pricing")}
       </p>
     </Card>
   );

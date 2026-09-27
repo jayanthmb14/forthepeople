@@ -358,7 +358,8 @@
     "myDistrictTitle": "Your district (stored only in this browser)",
     "forget": "Forget my district",
     "stars": "{n} stars",
-    "current": "Current"
+    "current": "Current",
+    "skip": "Skip to main content"
   },
   "status": {
     "dataBehind": "Data behind",
@@ -939,5 +940,37 @@
     "gradeOnly": "Report card {grade}",
     "temp": "{temp}°C",
     "weatherAsOf": "Weather as of {date}"
+  },
+  "popSnippet": {
+    "aria": "Population and people",
+    "title": "Population & people",
+    "viewAll": "View all",
+    "population": "Population",
+    "sexRatio": "Sex ratio",
+    "perThousand": "/1k",
+    "literacy": "Literacy",
+    "religionLabel": "Religion (top 3, A–Z):",
+    "asOf": "Figures as of {year}",
+    "religion": {
+      "Hindu": "Hindu",
+      "Muslim": "Muslim",
+      "Christian": "Christian",
+      "Sikh": "Sikh",
+      "Buddhist": "Buddhist",
+      "Jain": "Jain",
+      "Other": "Other",
+      "Not stated": "Not stated"
+    }
+  },
+  "sponsorBanner": {
+    "kicker": "Sponsor this district",
+    "title": "Want to show your business to the people of {name}?",
+    "body": "Put your brand banner on this page and support free government data for <b>{people}</b>.",
+    "peopleCrore": "{n} crore people",
+    "peopleLakh": "{n} lakh people",
+    "peopleExact": "{n} people",
+    "everyone": "every citizen",
+    "note": "Open to all Indian businesses: private, public or startups.",
+    "pricing": "Pricing is agreed one to one, based on the district's reach and how long it runs."
   }
 }
