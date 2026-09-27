@@ -5,13 +5,29 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Job: News — Google News RSS feed
-// Schedule: Every 1 hour
+// Job: News — Google News RSS + The Hindu state/city feeds
+// Schedule: daily (cron scrape-news, 06:00 UTC, vercel.json)
+//
+// v5 (Sept 2026 audit): queries and feeds use the district's OWN state
+// (they said "Karnataka" for every district); the keyword classifier
+// matches whole words; the AI classifier answers isAboutDistrict, and
+// items it says are about another place are not saved or acted on; the
+// caller can pass a deadline after which no AI call is started.
+// Keyword tables and source lists live in src/lib/news-keywords.ts (pure).
 // ═══════════════════════════════════════════════════════════
 import * as cheerio from "cheerio";
 import { prisma } from "@/lib/db";
 import { classifyArticleWithAI, executeNewsAction } from "@/lib/news-action-engine";
 import { logUpdate } from "@/lib/update-log";
+import {
+  buildNewsQueries,
+  categorize,
+  classifyModule,
+  mentionsDistrict,
+  mentionsOtherState,
+  newsFeedsFor,
+} from "@/lib/news-keywords";
+import { JobContext, ScraperResult } from "../types";
 
 // Keyword-matcher categories that still benefit from AI-driven data extraction
 // (because we act on them downstream — create Infrastructure projects, alerts,
@@ -27,72 +43,6 @@ const ACTIONABLE_MODULES = [
   "power",
   "schemes",
 ];
-import { JobContext, ScraperResult } from "../types";
-
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  politics: ["election", "mla", "mp", "bjp", "congress", "party", "minister", "vote", "rally"],
-  development: ["project", "scheme", "fund", "tender", "launch", "inaugurate", "development"],
-  agriculture: ["crop", "farmer", "agri", "harvest", "sugar", "paddy", "mandi", "market"],
-  crime: ["arrest", "murder", "theft", "robbery", "fraud", "police", "fir", "accused"],
-  health: ["hospital", "health", "doctor", "disease", "covid", "dengue", "treatment"],
-  education: ["school", "college", "exam", "result", "student", "education", "teacher"],
-  infrastructure: ["road", "bridge", "water", "power", "electricity", "construction", "nh"],
-  weather: ["rain", "flood", "drought", "storm", "temperature", "weather"],
-};
-
-// NOTE: precedence matters — first match wins. "transport" sits ABOVE crops,
-// police, and generic categories so that specific train/metro keywords like
-// "vande bharat" or "mumbai local" win over incidental "agri"/"crime" mentions.
-const MODULE_KEYWORDS: Array<[string, string[]]> = [
-  ["leaders",        ["mla", "mp", "minister", "collector", "sp police", "deputy commissioner", "dc ", "elected", "appointment", "sworn in", "cabinet", "official"]],
-  ["infrastructure", ["road", "bridge", "highway", "nh-", "overbridge", "underpass", "construction", "inaugurate", "flyover", "project"]],
-  ["transport",      [
-    // Core + existing
-    "bus", "transport", "ksrtc", "railway", "metro", "taxi", "auto", "road accident", "traffic",
-    // Rail services — named trains (these were being misclassified as crops)
-    "vande bharat", "shatabdi", "rajdhani", "duronto", "tejas", "jan shatabdi",
-    // Mumbai-specific suburban rail + buses
-    "local train", "mumbai local", "suburban", "suburban rail", "wr local", "cr local",
-    "best bus", "best undertaking", "monorail", "metro line",
-    // Commuter / crowding — previously snagged by "police/crime"
-    "commuter", "commuters", "overcrowding", "overcrowded", "stampede at station",
-    // Generic rail
-    "train", "platform", "station", "irctc",
-  ]],
-  ["budget",         ["budget", "fund", "crore", "lakh", "allocation", "grant", "expenditure", "revenue", "deficit", "treasury"]],
-  ["water",          ["dam", "reservoir", "water level", "krishnaraja sagar", "krs", "kabini", "irrigation", "cauvery", "drinking water supply"]],
-  ["crops",          ["crop", "farmer", "paddy", "sugarcane", "mandi price", "apmc", "harvest", "agri", "ragi", "tomato price", "onion price"]],
-  ["weather",        ["rain", "flood", "drought", "cyclone", "storm", "temperature", "imd", "monsoon", "heatwave"]],
-  ["police",         ["police", "arrest", "fir", "crime", "murder", "theft", "robbery", "accused", "case registered", "custody", "sp ", "ips officer"]],
-  ["elections",      ["election", "vote", "polling", "candidate", "bjp", "congress", "jds", "bypoll", "constituency", "electoral"]],
-  ["education",      ["school", "college", "university", "exam", "result", "student", "teacher", "sylhet", "sslc", "puc result"]],
-  ["health",         ["hospital", "health", "doctor", "disease", "dengue", "malaria", "covid", "vaccination", "primary health centre", "phc"]],
-  ["schemes",        ["scheme", "yojana", "pmay", "mgnrega", "welfare", "beneficiary", "pension", "ration card", "anna bhagya"]],
-  ["housing",        ["housing", "house", "flat", "apartment", "pmay", "slum", "eviction", "shelter"]],
-  ["power",          ["power cut", "electricity", "outage", "load shedding", "substation", "bescom", "mescom", "voltage", "power supply"]],
-  ["courts",         ["court", "hc order", "high court", "supreme court", "verdict", "judgment", "bail", "hearing", "legal"]],
-  ["jjm",            ["jal jeevan", "jjm", "tap water", "household water connection", "piped water"]],
-  ["gram-panchayat", ["panchayat", "gram sabha", "village council", "grama panchayati", "taluk panchayat", "zilla panchayat"]],
-  ["alerts",         ["alert", "red alert", "orange alert", "warning", "emergency", "disaster", "rescue", "ndrf"]],
-  ["sugar-factory",  ["sugar factory", "sugar mill", "sugarcane crushing", "mandya sugar", "mysore sugar"]],
-  ["rti",            ["rti", "right to information", "transparency", "public information officer"]],
-];
-
-function categorize(headline: string): string {
-  const lower = headline.toLowerCase();
-  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    if (keywords.some((kw) => lower.includes(kw))) return cat;
-  }
-  return "general";
-}
-
-function classifyModule(headline: string): string | null {
-  const lower = headline.toLowerCase();
-  for (const [module, keywords] of MODULE_KEYWORDS) {
-    if (keywords.some((kw) => lower.includes(kw))) return module;
-  }
-  return "news";
-}
 
 function parseRSSDate(dateStr: string): Date {
   try {
@@ -199,25 +149,12 @@ async function isTitleDuplicate(
   return !!existing;
 }
 
-function buildQueries(districtSlug: string): string[] {
-  const name = districtSlug.replace(/-/g, " ");
-  return [
-    `${name} Karnataka`,
-    `${name} district news`,
-    `${name} Karnataka latest`,
-  ];
-}
-
-// Static RSS sources filtered by district name match
-function buildStaticSources(districtName: string, stateName: string): Array<{ url: string; sourceName: string }> {
-  return [
-    { url: `https://www.thehindu.com/news/national/karnataka/feeder/default.rss`, sourceName: "The Hindu" },
-    { url: `https://www.deccanherald.com/rss/karnataka.rss`, sourceName: "Deccan Herald" },
-    { url: `https://news.google.com/rss/search?q=${encodeURIComponent(districtName + " " + stateName + " government")}&hl=en-IN&gl=IN&ceid=IN:en`, sourceName: "Google News" },
-  ];
-}
-
-async function fetchStaticRSSItems(sourceUrl: string, sourceName: string, districtName: string): Promise<Array<{
+async function fetchStaticRSSItems(
+  sourceUrl: string,
+  sourceName: string,
+  districtName: string,
+  filterByDistrict: boolean,
+): Promise<Array<{
   headline: string; url: string; summary: string; source: string; publishedAt: Date;
 }>> {
   const res = await fetch(sourceUrl, {
@@ -228,7 +165,6 @@ async function fetchStaticRSSItems(sourceUrl: string, sourceName: string, distri
 
   const xml = await res.text();
   const $ = cheerio.load(xml, { xmlMode: true });
-  const districtLower = districtName.toLowerCase();
 
   return $("item").toArray()
     .map((item) => ({
@@ -239,8 +175,7 @@ async function fetchStaticRSSItems(sourceUrl: string, sourceName: string, distri
       publishedAt: parseRSSDate($(item).find("pubDate").text().trim()),
     }))
     .filter((item) =>
-      (item.headline.toLowerCase().includes(districtLower) ||
-       item.summary.toLowerCase().includes(districtLower)) &&
+      (!filterByDistrict || mentionsDistrict(`${item.headline} ${item.summary}`, districtName)) &&
       isArticleFresh(item.publishedAt)
     )
     .slice(0, 10);
@@ -270,9 +205,15 @@ async function fetchRSSItems(query: string): Promise<Array<{
   })).filter((item) => isArticleFresh(item.publishedAt));
 }
 
-export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
+export async function scrapeNews(
+  ctx: JobContext,
+  opts: { deadlineAt?: number } = {},
+): Promise<ScraperResult> {
+  const pastDeadline = () => opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt;
   try {
-    const queries = buildQueries(ctx.districtSlug);
+    const queries = buildNewsQueries(ctx.districtName, ctx.stateName);
+    let aiSkippedForTime = 0;
+    let offTopicSkipped = 0;
     const seenUrls = new Set<string>();
     const seenTitleKeys = new Set<string>();
     let newCount = 0;
@@ -301,28 +242,42 @@ export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
         }
         seenUrls.add(item.url);
 
-        // April 13, 2026 — cost optimisation: keyword-first, AI only when
-        // keyword matcher gives us nothing useful OR when the article falls
-        // into an actionable module (infrastructure/alerts/exams/etc.) where
-        // we want structured data extraction from the AI.
+        // Keyword-first (April 2026 cost rule): AI only when the keyword
+        // matcher gives us nothing useful, when the article falls into an
+        // actionable module (we want structured data), or when it may be
+        // about another place (no district name, or another state named).
+        const text = `${item.headline} ${item.summary ?? ""}`;
         const keywordModule = classifyModule(item.headline);
         const needsAI =
-          !keywordModule ||
           keywordModule === "news" ||
-          ACTIONABLE_MODULES.includes(keywordModule);
+          ACTIONABLE_MODULES.includes(keywordModule) ||
+          !mentionsDistrict(text, ctx.districtName) ||
+          mentionsOtherState(text, ctx.stateName);
 
-        const aiClassification = needsAI
-          ? await classifyArticleWithAI(
-              item.headline,
-              item.source,
-              ctx.districtName,
-              item.publishedAt
-            ).catch(() => null)
-          : null;
+        let aiClassification: Awaited<ReturnType<typeof classifyArticleWithAI>> = null;
+        if (needsAI && pastDeadline()) {
+          aiSkippedForTime++;
+        } else if (needsAI) {
+          aiClassification = await classifyArticleWithAI(
+            item.headline,
+            item.source,
+            ctx.districtName,
+            item.publishedAt,
+            { stateName: ctx.stateName, summary: item.summary, deadlineAt: opts.deadlineAt },
+          ).catch(() => null);
+        }
 
-        const targetMod = aiClassification?.targetModule ?? keywordModule ?? "news";
+        // The AI read it and says it is about another district/state: do not
+        // show it on this district's page, and never act on it.
+        if (aiClassification && !aiClassification.isAboutDistrict) {
+          offTopicSkipped++;
+          ctx.log(`[News] SKIPPED (not about ${ctx.districtName}): "${item.headline.slice(0, 60)}"`);
+          continue;
+        }
+
+        const targetMod = aiClassification?.targetModule ?? keywordModule;
         const modAction = aiClassification?.moduleAction ?? "";
-        const classifiedBy = aiClassification?.provider ?? "keyword";
+        const classifiedBy = aiClassification ? `ai:${aiClassification.model}`.slice(0, 120) : "keyword";
 
         // Extract publisher from RSS description suffix + clean summary if
         // it's just a title dupe (Google News pattern).
@@ -358,8 +313,9 @@ export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
           },
         });
 
-        // Execute module action if AI classified with confidence
-        if (aiClassification && aiClassification.confidence >= 0.60) {
+        // Execute module action only if the AI says it is about this district
+        // and is confident (executeNewsAction checks both again).
+        if (aiClassification && aiClassification.isAboutDistrict && aiClassification.confidence >= 0.60) {
           executeNewsAction({
             articleId: saved.id,
             articleTitle: item.headline,
@@ -378,6 +334,7 @@ export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
     }
 
     for (const query of queries) {
+      if (pastDeadline()) break;
       let items: Awaited<ReturnType<typeof fetchRSSItems>>;
       try {
         items = await fetchRSSItems(query);
@@ -388,11 +345,14 @@ export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
       await saveItems(items, 20);
     }
 
-    // Additional static sources (The Hindu, Deccan Herald) — filtered by district name
-    const staticSources = buildStaticSources(ctx.districtName, ctx.stateName);
+    // Fixed feeds for the district's own city/state (The Hindu) + a Google
+    // News "government" search. State-wide feeds keep only items naming the
+    // district. (Deccan Herald's Karnataka feed was dropped: 404 since 2026.)
+    const staticSources = newsFeedsFor(ctx.districtSlug, ctx.districtName, ctx.stateSlug, ctx.stateName);
     for (const src of staticSources) {
+      if (pastDeadline()) break;
       try {
-        const items = await fetchStaticRSSItems(src.url, src.sourceName, ctx.districtName);
+        const items = await fetchStaticRSSItems(src.url, src.sourceName, ctx.districtName, src.filterByDistrict);
         await saveItems(items, 10);
       } catch (err) {
         ctx.log(`Static source "${src.sourceName}" failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -410,7 +370,10 @@ export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
       await prisma.newsItem.deleteMany({ where: { id: { in: old.map((n) => n.id) } } });
     }
 
-    const summary = `News: ${newCount} new items across ${queries.length} queries`;
+    const summary =
+      `News: ${newCount} new items across ${queries.length} queries` +
+      (offTopicSkipped ? `, ${offTopicSkipped} about other places skipped` : "") +
+      (aiSkippedForTime ? `, ${aiSkippedForTime} classified by keyword only (time budget)` : "");
     ctx.log(summary);
 
     if (newCount > 0) {
