@@ -24,39 +24,52 @@
 // Strategy: Keep Karnataka portal (works), add dam-config for capacity
 // data, and gracefully skip other states until their portals are integrated.
 //
-// Schedule: Every 30 minutes
+// Schedule: every 6 hours via /api/cron/scrape-dams (vercel.json).
+//
+// Sept 2026 (v5), see src/scraper/lib/dams.ts:
+//  - One canonical name per dam; a reading is stored under the name the
+//    district already uses (e.g. the seed's "Krishna Raja Sagara (KRS)"),
+//    so the water page shows ONE card per dam, not a live one next to a
+//    stale seed one.
+//  - KRS full level fixed (2,624 ft was wrong; 2,468.8 ft = 752.50 m).
+//  - Each reading keeps the portal's own date. Readings older than 7 days
+//    (the portal still lists one from 2021), % full outside 0–105 or
+//    disagreeing with storage ÷ capacity, and missing figures are rejected.
+//  - The portal payload is fetched once per run, not once per district.
+//  - If the portal revises a day's figures, the stored row is updated.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
 import { getDamConfig } from "@/lib/constants/dam-config";
+import {
+  canonicalDam,
+  checkedFullLevel,
+  damReadingProblems,
+  parsePortalDate,
+  pickStoredName,
+} from "../lib/dams";
 
 // ── Karnataka state portal (the only working live source) ──
 const KARNATAKA_WATER_URL =
   "https://water.karnataka.gov.in/CommonXyZABC.aspx/GetReservoirLocs";
+export const KARNATAKA_DAM_SOURCE = "Karnataka Water Resources Department";
 
-// Map Karnataka portal dam names → our config dam names
-const KARNATAKA_NAME_MAP: Record<string, string> = {
-  "K.R.Sagara Dam": "KRS (Krishna Raja Sagara)",
-  "Kabini Dam": "Kabini Dam",
-  "Hemavathy Dam": "Hemavathy Dam",
-  "Harangi Dam": "Harangi Dam",
-  "TG Halli": "TG Halli Reservoir",
-};
-
-// Which portal dam names to track per Karnataka district
+// Which portal reservoirs to track per Karnataka district (portal names).
 const KARNATAKA_DISTRICT_DAMS: Record<string, string[]> = {
   mandya: ["K.R.Sagara Dam", "Hemavathy Dam"],
   mysuru: ["K.R.Sagara Dam", "Kabini Dam"],
   "bengaluru-urban": ["K.R.Sagara Dam"],
 };
 
-// Full Reservoir Level (FRL) in ft — static design values for Karnataka
-const DAM_FRL: Record<string, number> = {
-  "K.R.Sagara Dam": 2624.0,
-  "Kabini Dam": 2284.0,
-  "Hemavathy Dam": 2922.0,
-  "Harangi Dam": 2859.0,
-};
+/**
+ * True when a live reservoir feed exists for this district. Today that is
+ * only the Karnataka portal for the districts mapped above; every other
+ * district is "not collected", and the cron says so instead of counting
+ * it as a successful run.
+ */
+export function hasLiveDamSource(stateSlug: string, districtSlug: string): boolean {
+  return stateSlug === "karnataka" && (KARNATAKA_DISTRICT_DAMS[districtSlug]?.length ?? 0) > 0;
+}
 
 interface KarnatakaReservoir {
   ReservoirName: string;
@@ -69,79 +82,128 @@ interface KarnatakaReservoir {
   Flow_OutFlow: number;
 }
 
-function parseDate(dateStr: string): Date | null {
-  const months: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-  const parts = dateStr.trim().split(" ");
-  if (parts.length !== 3) return null;
-  const [dd, mon, yyyy] = parts;
-  const month = months[mon];
-  if (month === undefined) return null;
-  const d = new Date(Date.UTC(parseInt(yyyy), month, parseInt(dd)));
-  return isNaN(d.getTime()) ? null : d;
+const num = (v: unknown): number | null => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+  return null;
+};
+
+// One portal download per run (every Karnataka district reads the same payload).
+let portalCache: { at: number; data: Promise<KarnatakaReservoir[]> } | null = null;
+const PORTAL_CACHE_MS = 5 * 60_000;
+
+function loadKarnatakaPortal(): Promise<KarnatakaReservoir[]> {
+  if (portalCache && Date.now() - portalCache.at < PORTAL_CACHE_MS) return portalCache.data;
+  const data = (async () => {
+    const res = await fetch(KARNATAKA_WATER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        Referer: "https://water.karnataka.gov.in/ReservoirPublic",
+        "User-Agent": "ForThePeople.in Data Aggregator",
+      },
+      body: "{}",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error(`Karnataka water portal HTTP ${res.status}`);
+    const json = await res.json();
+    const geojson = JSON.parse(json.d ?? "{}");
+    const features: { properties: KarnatakaReservoir }[] = geojson.features ?? [];
+    return features.map((f) => f.properties);
+  })();
+  portalCache = { at: Date.now(), data };
+  // A failed download must not be cached for the next district.
+  data.catch(() => {
+    if (portalCache?.data === data) portalCache = null;
+  });
+  return data;
 }
 
 // ── Karnataka portal parser ─────────────────────────────────
-async function scrapeKarnataka(ctx: JobContext): Promise<{ newCount: number }> {
+async function scrapeKarnataka(ctx: JobContext): Promise<{ newCount: number; updatedCount: number }> {
   const targetDams = KARNATAKA_DISTRICT_DAMS[ctx.districtSlug];
-  if (!targetDams || targetDams.length === 0) return { newCount: 0 };
+  if (!targetDams || targetDams.length === 0) return { newCount: 0, updatedCount: 0 };
 
-  const res = await fetch(KARNATAKA_WATER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      Referer: "https://water.karnataka.gov.in/ReservoirPublic",
-      "User-Agent": "ForThePeople.in Data Aggregator",
-    },
-    body: "{}",
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (!res.ok) throw new Error(`Karnataka water portal HTTP ${res.status}`);
-
-  const json = await res.json();
-  const geojson = JSON.parse(json.d ?? "{}");
-  const features: { properties: KarnatakaReservoir }[] = geojson.features ?? [];
+  const reservoirs = await loadKarnatakaPortal();
+  const existingNames = (
+    await prisma.damReading.findMany({
+      where: { districtId: ctx.districtId },
+      distinct: ["damName"],
+      select: { damName: true, damNameLocal: true },
+    })
+  );
 
   let newCount = 0;
-  for (const feature of features) {
-    const p = feature.properties;
+  let updatedCount = 0;
+  const now = Date.now();
+  for (const p of reservoirs) {
     if (!targetDams.includes(p.ReservoirName)) continue;
 
-    const recordedAt = parseDate(p.Date);
-    if (!recordedAt) continue;
+    const figures = {
+      date: parsePortalDate(p.Date),
+      percentFull: num(p.PercentFull),
+      level: num(p.Reservior_Level),
+      storage: num(p.TMC_GrossCapacity),
+      maxStorage: num(p.StorageCapacity_AsPerDesign),
+      inflow: num(p.Flow_Inflow),
+      outflow: num(p.Flow_OutFlow),
+    };
+    const problems = damReadingProblems(figures, now);
+    if (problems.length > 0) {
+      ctx.log(`${p.ReservoirName} (${p.Date}): rejected — ${problems.join(", ")}`);
+      continue;
+    }
+    // damReadingProblems() guarantees these are present.
+    const recordedAt = figures.date as Date;
+    const level = figures.level as number;
+
+    const damName = pickStoredName(p.ReservoirName, existingNames.map((e) => e.damName));
+    const fullLevel = checkedFullLevel(p.ReservoirName, level);
+    if (fullLevel.mismatch) {
+      ctx.log(`${p.ReservoirName}: level ${level} ft is above our full level — full level stored as unknown; check CANONICAL_DAMS`);
+    }
+    const data = {
+      waterLevel: level,
+      maxLevel: fullLevel.frlFt,
+      storage: figures.storage as number,
+      maxStorage: figures.maxStorage as number,
+      inflow: figures.inflow as number,
+      outflow: figures.outflow as number,
+      storagePct: figures.percentFull as number,
+    };
 
     const existing = await prisma.damReading.findFirst({
-      where: { districtId: ctx.districtId, damName: p.ReservoirName, recordedAt },
+      where: { districtId: ctx.districtId, damName, recordedAt },
     });
-    if (existing) continue;
+    if (existing) {
+      // Same day already stored: update only if the portal revised the figures.
+      const changed = (Object.keys(data) as Array<keyof typeof data>).some((k) => existing[k] !== data[k]);
+      if (changed) {
+        await prisma.damReading.update({
+          where: { id: existing.id },
+          data: { ...data, source: KARNATAKA_DAM_SOURCE, fetchedAt: new Date() },
+        });
+        updatedCount++;
+      }
+      continue;
+    }
 
-    const configName = KARNATAKA_NAME_MAP[p.ReservoirName] ?? p.ReservoirName;
-    const damConfig = getDamConfig(ctx.districtSlug);
-    const dam = damConfig?.dams.find((d) => d.name === configName);
-
+    const local =
+      existingNames.find((e) => e.damName === damName)?.damNameLocal ?? canonicalDam(p.ReservoirName)?.nameLocal ?? null;
     await prisma.damReading.create({
       data: {
         districtId: ctx.districtId,
-        damName: p.ReservoirName,
-        damNameLocal: dam?.nameLocal ?? null,
-        waterLevel: p.Reservior_Level ?? 0,
-        maxLevel: DAM_FRL[p.ReservoirName] ?? 0,
-        storage: p.TMC_GrossCapacity ?? 0,
-        maxStorage: p.StorageCapacity_AsPerDesign ?? 0,
-        inflow: p.Flow_Inflow ?? 0,
-        outflow: p.Flow_OutFlow ?? 0,
-        storagePct: typeof p.PercentFull === "number" ? p.PercentFull : 0,
+        damName,
+        damNameLocal: local,
+        ...data,
         recordedAt,
-        source: "Karnataka Water Resources Department",
+        source: KARNATAKA_DAM_SOURCE,
       },
     });
     newCount++;
   }
 
-  return { newCount };
+  return { newCount, updatedCount };
 }
 
 // ── Cleanup old readings (keep last 48 per dam) ─────────────
@@ -177,11 +239,13 @@ export async function scrapeDams(ctx: JobContext): Promise<ScraperResult> {
 
   try {
     let newCount = 0;
+    let updatedCount = 0;
 
     // Karnataka: use the working state portal API
     if (stateSlug === "karnataka") {
       const result = await scrapeKarnataka(ctx);
       newCount = result.newCount;
+      updatedCount = result.updatedCount;
     } else {
       // Other states: no live portal API available yet
       // India-WRIS has no public REST API (researched 2026-04-10)
@@ -193,8 +257,8 @@ export async function scrapeDams(ctx: JobContext): Promise<ScraperResult> {
     // Cleanup old readings
     await cleanupOldReadings(ctx.districtId);
 
-    ctx.log(`Dams: ${newCount} new readings for ${ctx.districtSlug}`);
-    return { success: true, recordsNew: newCount, recordsUpdated: 0 };
+    ctx.log(`Dams: ${newCount} new, ${updatedCount} revised readings for ${ctx.districtSlug}`);
+    return { success: true, recordsNew: newCount, recordsUpdated: updatedCount };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     ctx.log(`Error: ${msg}`);
