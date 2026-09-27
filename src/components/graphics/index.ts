@@ -18,6 +18,7 @@
 //    <GlyphChips items={…} />          filter chips with glyphs
 //    <GlyphBarList rows={…} />         "how many of each kind" with glyphs
 //    <GlyphEmptyState pick={…} … />    empty state with a small illustration
+//    <GlyphStack picks={…} />          a few chips overlapping (an "All" tile)
 //
 //  Adding a glyph: draw it in glyph-data.ts (24 × 24 grid, the part tones
 //  explained there), give it a hue in GLYPH_HUE (category-map.ts), map the
@@ -44,4 +45,5 @@ export { CategoryGlyph, Glyph, glyphChipStyle, glyphStroke } from "./CategoryGly
 export { GlyphChips, type GlyphChipItem } from "./GlyphChips";
 export { GlyphBarList, type GlyphBarRow } from "./GlyphBarList";
 export { GlyphScene } from "./GlyphScene";
+export { GlyphStack } from "./GlyphStack";
 export { GlyphEmptyState } from "./GlyphEmptyState";
