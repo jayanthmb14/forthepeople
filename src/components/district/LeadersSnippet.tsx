@@ -18,7 +18,8 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Landmark, Shield, Vote } from "lucide-react";
+import { BadgeCheck, Landmark, Shield, Users, Vote } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
@@ -66,15 +67,17 @@ export default function LeadersSnippet({
     staleTime: 5 * 60_000,
   });
 
+  const t = useTranslations("page_snippets.leaders");
   const leaders = data?.data ?? [];
   if (leaders.length === 0) return null;
 
   const collector = leaders.find(isCollector);
   const sp = leaders.find(isSP);
-  const mp = leaders.find(isMP);
+  // Some districts have several MPs (Pune: 4); list them all.
+  const mps = leaders.filter(isMP);
   const mlas = leaders.filter(isMLA);
   const partyTally = mlas.reduce<Record<string, number>>((acc, l) => {
-    const k = l.party ?? "Other";
+    const k = l.party ?? t("other");
     acc[k] = (acc[k] ?? 0) + 1;
     return acc;
   }, {});
@@ -85,31 +88,30 @@ export default function LeadersSnippet({
 
   // Bureaucrat names that are placeholders (e.g. "[Verify at mandya.nic.in]")
   // render in italic grey so users see the action item, not a fake person.
-  const renderName = (l: Leader | undefined, fallback: string) => {
-    if (!l) return <Pending>{fallback}</Pending>;
-    if (l.name.startsWith("[")) return <Pending>{l.name}</Pending>;
-    return <span style={{ fontWeight: 500 }}>{l.name}</span>;
+  const renderName = (l: Leader | undefined, pending: string) => {
+    if (!l || l.name.startsWith("[")) return <Pending>{pending}</Pending>;
+    return <span lang="en" style={{ fontWeight: 500 }}>{l.name}</span>;
   };
 
   return (
-    <Card as="section" aria-label="District leadership" className="ftp-hue-indigo" tinted>
+    <Card as="section" aria-label={t("aria")} className="ftp-hue-indigo" tinted>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>👥</span>
-          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>District leadership</h3>
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--hue-deep)" }}><Users size={16} /></span>
+          <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{t("title")}</h3>
         </span>
         <Link href={`${base}/leadership`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          View all
+          {t("viewAll")}
         </Link>
       </div>
 
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        <Row icon={Landmark} role="Collector">{renderName(collector, "Verify at district website")}</Row>
-        <Row icon={Shield} role="SP">{renderName(sp, "Verify at state police website")}</Row>
-        <Row icon={BadgeCheck} role="MP">
-          {mp ? (
+        <Row icon={Landmark} role={t("collector")}>{renderName(collector, t("collectorPending"))}</Row>
+        <Row icon={Shield} role={t("sp")}>{renderName(sp, t("spPending"))}</Row>
+        <Row icon={BadgeCheck} role={mps.length > 1 ? t("mps") : t("mp")}>
+          {mps.length > 0 ? (() => { const mp = mps[0]; return (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontWeight: 500 }}>{mp.name}</span>
+              <span lang="en" style={{ fontWeight: 500 }}>{mp.name}</span>
               {mp.party && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--ftp-text-2)" }}>
                   {/* Party colour as a 6 px dot only (design rule: no tinted boxes). */}
@@ -117,19 +119,20 @@ export default function LeadersSnippet({
                   {mp.party}
                 </span>
               )}
+              {mps.length > 1 && <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>{t("more", { n: mps.length - 1 })}</span>}
             </span>
-          ) : (
-            <Pending>Not yet recorded</Pending>
+          ); })() : (
+            <Pending>{t("notRecorded")}</Pending>
           )}
         </Row>
-        <Row icon={Vote} role="MLAs">
+        <Row icon={Vote} role={t("mlas")}>
           {mlas.length > 0 ? (
             <>
               <span className="ftp-num">{mlas.length}</span>
               {partyLine && <span style={{ color: "var(--ftp-text-2)" }}> ({partyLine})</span>}
             </>
           ) : (
-            <Pending>Not yet recorded</Pending>
+            <Pending>{t("notRecorded")}</Pending>
           )}
         </Row>
       </ul>

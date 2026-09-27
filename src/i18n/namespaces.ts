@@ -55,6 +55,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_shell",
   "page_site",
   "page_site-contributors",
+  "page_snippets",
   "page_staffing",
   "page_state",
   "page_support",

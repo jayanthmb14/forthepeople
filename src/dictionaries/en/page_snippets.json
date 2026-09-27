@@ -1,0 +1,50 @@
+{
+  "infra": {
+    "aria": "Projects being built, at a glance",
+    "title": "Projects being built",
+    "viewAll": "View all",
+    "projects": "{n, plural, one {# project} other {# projects}}",
+    "active": "{n} active",
+    "completed": "{n} completed",
+    "delayed": "{n} delayed",
+    "done": "Completed",
+    "notStarted": "Not started · {status}",
+    "progress": "{pct}% · {status}",
+    "total": "Total budget tracked: <b>{amount}</b>",
+    "checked": "Checked",
+    "status": {
+      "PROPOSED": "Proposed",
+      "APPROVED": "Approved",
+      "TENDER_ISSUED": "Tender issued",
+      "UNDER_CONSTRUCTION": "Under construction",
+      "ON_TRACK": "On track",
+      "DELAYED": "Delayed",
+      "STALLED": "Stalled",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "OPERATIONAL": "Running",
+      "OTHER": "In progress"
+    }
+  },
+  "money": {
+    "lakhCrore": "₹{n} lakh crore",
+    "crore": "₹{n} crore",
+    "lakh": "₹{n} lakh",
+    "rupees": "₹{n}"
+  },
+  "leaders": {
+    "aria": "District leaders at a glance",
+    "title": "District leaders",
+    "viewAll": "View all",
+    "collector": "Collector",
+    "sp": "SP",
+    "mp": "MP",
+    "mps": "MPs",
+    "mlas": "MLAs",
+    "notRecorded": "Not recorded yet",
+    "collectorPending": "Name not published yet — check the district website",
+    "spPending": "Name not published yet — check the state police website",
+    "more": "+{n} more",
+    "other": "Other"
+  }
+}

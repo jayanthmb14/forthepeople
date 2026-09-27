@@ -15,6 +15,8 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import {
   HardHat, Route, Train, TramFront, Landmark, Droplets, Waves, Building2,
   Zap, Heart, GraduationCap, Trophy, Plane, Anchor, TreePine, TrafficCone,
@@ -60,11 +62,12 @@ function normalizeStatus(s: string | null | undefined): string {
   return s.trim().toUpperCase().replace(/[\s-]+/g, "_");
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PROPOSED: "Proposed", APPROVED: "Approved", TENDER_ISSUED: "Tender Issued",
-  UNDER_CONSTRUCTION: "Under Construction", IN_PROGRESS: "Under Construction",
-  ONGOING: "Under Construction", ON_TRACK: "On Track",
-  DELAYED: "Delayed", STALLED: "Stalled", COMPLETED: "Completed", CANCELLED: "Cancelled",
+// Status keys with a translated label in page_snippets.infra.status.
+const STATUS_KEY: Record<string, string> = {
+  PROPOSED: "PROPOSED", APPROVED: "APPROVED", TENDER_ISSUED: "TENDER_ISSUED",
+  UNDER_CONSTRUCTION: "UNDER_CONSTRUCTION", IN_PROGRESS: "UNDER_CONSTRUCTION", ONGOING: "UNDER_CONSTRUCTION",
+  ON_TRACK: "ON_TRACK", DELAYED: "DELAYED", STALLED: "STALLED", COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED", OPERATIONAL: "OPERATIONAL",
 };
 
 function isCompleted(p: InfraProject) { return ["COMPLETED", "INAUGURATED"].includes(normalizeStatus(p.status)); }
@@ -74,13 +77,6 @@ function isDelayed(p: InfraProject) {
   return s === "DELAYED" || s === "STALLED" || (p.delayMonths ?? 0) > 0;
 }
 
-function formatINR(rupees: number | null | undefined): string {
-  if (rupees == null || rupees <= 0) return "—";
-  if (rupees >= 1_00_00_00_00_000) return `₹${(rupees / 1_00_00_00_00_000).toFixed(2)} Lakh Cr`;
-  if (rupees >= 10_00_00_000) return `₹${(rupees / 10_00_00_000).toFixed(0)} Cr`;
-  if (rupees >= 1_00_000) return `₹${(rupees / 1_00_000).toFixed(0)} Lakh`;
-  return `₹${rupees.toLocaleString("en-IN")}`;
-}
 
 interface ApiResponse { data: InfraProject[]; meta?: unknown }
 
@@ -95,8 +91,19 @@ export default function InfraSnippet({
     staleTime: 5 * 60_000,
   });
 
+  const t = useTranslations("page_snippets");
+  const f = useFormat();
   const projects = data?.data ?? [];
   if (projects.length === 0) return null; // no shell when no data
+
+  // Rupees → words in the page language. (The old helper used 10^11 for
+  // "lakh crore" and 10^8 for "crore", so every total was off by 10×.)
+  const money = (rupees: number): string => {
+    if (rupees >= 1e12) return t("money.lakhCrore", { n: f.number(rupees / 1e12, { maximumFractionDigits: 2 }) });
+    if (rupees >= 1e7) return t("money.crore", { n: f.number(Math.round(rupees / 1e7)) });
+    if (rupees >= 1e5) return t("money.lakh", { n: f.number(Math.round(rupees / 1e5)) });
+    return t("money.rupees", { n: f.number(Math.round(rupees)) });
+  };
 
   const counts = {
     total: projects.length,
@@ -127,31 +134,31 @@ export default function InfraSnippet({
     .pop() ?? null;
 
   return (
-    <Card as="section" aria-label="Infrastructure at a glance" className="ftp-hue-orange" tinted>
+    <Card as="section" aria-label={t("infra.aria")} className="ftp-hue-orange" tinted>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>🏗️</span>
-          <h3 className="ftp-title ftp-display" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>Infrastructure</h3>
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--hue-deep)" }}><HardHat size={16} /></span>
+          <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{t("infra.title")}</h3>
         </span>
         <Link href={`${base}/infrastructure`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          View all
+          {t("infra.viewAll")}
         </Link>
       </div>
 
       {/* Counts row — semantic colour only as a 6 px dot. */}
       <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0, display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
-        <li><span className="ftp-num">{counts.total}</span> projects</li>
+        <li className="ftp-num">{t("infra.projects", { n: counts.total })}</li>
         <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-warn)" }} />
-          <span className="ftp-num">{counts.active}</span> active
+          <span className="ftp-num">{t("infra.active", { n: f.number(counts.active) })}</span>
         </li>
         <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)" }} />
-          <span className="ftp-num">{counts.completed}</span> completed
+          <span className="ftp-num">{t("infra.completed", { n: f.number(counts.completed) })}</span>
         </li>
         <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: counts.delayed > 0 ? "var(--ftp-danger)" : "var(--ftp-border-strong)" }} />
-          <span className="ftp-num">{counts.delayed}</span> delayed
+          <span className="ftp-num">{t("infra.delayed", { n: f.number(counts.delayed) })}</span>
         </li>
       </ul>
 
@@ -160,7 +167,7 @@ export default function InfraSnippet({
         {top.map((p) => {
           const Icon = CATEGORY_ICON[normalizeCategory(p.category)] ?? HardHat;
           const status = normalizeStatus(p.status);
-          const statusLabel = STATUS_LABEL[status] ?? status;
+          const statusLabel = t(`infra.status.${STATUS_KEY[status] ?? "OTHER"}`);
           const completedRow = isCompleted(p);
           const progress = p.progressPct ?? (completedRow ? 100 : 0);
           const shortDesc = p.description && p.description.length > 60
@@ -172,19 +179,20 @@ export default function InfraSnippet({
               <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 3 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                  <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span lang="en" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {p.name}
                   </span>
                   <span style={{ fontSize: 11, color: "var(--ftp-text-2)", flexShrink: 0 }}>
                     {completedRow
-                      ? "Completed"
+                      ? t("infra.done")
                       : progress > 0
-                        ? <><span className="ftp-num">{progress}%</span> · {statusLabel}</>
-                        : `Not started · ${statusLabel}`}
+                        ? <span className="ftp-num">{t("infra.progress", { pct: progress, status: statusLabel })}</span>
+                        : t("infra.notStarted", { status: statusLabel })}
                   </span>
                 </div>
                 {shortDesc && (
                   <div
+                    lang="en"
                     style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}
                     title={p.description ?? undefined}
                   >
@@ -205,10 +213,10 @@ export default function InfraSnippet({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
         {totalBudget > 0 ? (
           <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
-            Total budget tracked: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatINR(totalBudget)}</span>
+            {t.rich("infra.total", { amount: money(totalBudget), b: (c) => <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{c}</span> })}
           </span>
         ) : <span />}
-        <AsOfText asOf={asOf} prefix="Checked" />
+        <AsOfText asOf={asOf} prefix={t("infra.checked")} />
       </div>
     </Card>
   );
