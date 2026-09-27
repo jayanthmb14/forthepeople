@@ -448,7 +448,7 @@
     "recorded": "ನಾವು ದಾಖಲಿಸಿದ ದಿನ",
     "openSource": "ಮೂಲವನ್ನು ತೆರೆಯಿರಿ",
     "place": "ಸ್ಥಾನ",
-    "placeValue": "ಮೊದಲ {total} ರಲ್ಲಿ #{n}",
+    "placeRank": "ಭಾರತದಲ್ಲಿ #{n}",
     "vsTop": "ಮೊದಲ ರಾಜ್ಯಕ್ಕೆ ಹೋಲಿಸಿದರೆ",
     "vsTopValue": "{leader} ರ {pct}"
   }

@@ -51,6 +51,8 @@ export interface StateValue {
   stateSlug: string;
   stateName: string;
   value: number;
+  /** Rank in India as published by the source, when stored. */
+  rank: number | null;
   unit: string | null;
   asOf: string;
   source: string;
@@ -160,6 +162,7 @@ export async function getModuleStates(moduleSlug: string): Promise<Record<string
         stateSlug: r.stateSlug,
         stateName: r.stateName,
         value: Number(r.value),
+        rank: r.rank ?? null,
         unit: r.unit,
         asOf: r.asOfDate.toISOString(),
         source: r.source,

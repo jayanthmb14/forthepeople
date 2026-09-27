@@ -448,7 +448,7 @@
     "recorded": "We recorded it on",
     "openSource": "Open the source",
     "place": "Place",
-    "placeValue": "#{n} of the top {total}",
+    "placeRank": "#{n} in India",
     "vsTop": "Compared with the top state",
     "vsTopValue": "{pct} of {leader}"
   }

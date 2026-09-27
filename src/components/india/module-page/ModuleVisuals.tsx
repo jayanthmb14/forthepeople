@@ -30,6 +30,13 @@ export interface BarItem {
   value: number;
   /** Formatted value with unit, e.g. "45 GW". */
   display: string;
+  /**
+   * The state's rank in India, as the source publishes it
+   * (IndiaStateBreakdown.rank). Without it no number is shown: the
+   * position in a short list is not a rank (Sept 2026 audit — Karnataka,
+   * 6th in power capacity, was numbered "5").
+   */
+  rank?: number | null;
 }
 
 interface CardBase {
@@ -79,13 +86,15 @@ export function TopStatesBars({
                 }}
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                  <span
-                    className="ftp-icon-chip ftp-num"
-                    aria-hidden
-                    style={{ width: 24, height: 24, borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--hue-deep)" }}
-                  >
-                    {i + 1}
-                  </span>
+                  {typeof it.rank === "number" ? (
+                    <span
+                      className="ftp-icon-chip ftp-num"
+                      aria-hidden
+                      style={{ width: 24, height: 24, borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--hue-deep)" }}
+                    >
+                      {it.rank}
+                    </span>
+                  ) : null}
                   <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{it.label}</span>
                 </span>
                 <span className="ftp-num" style={{ fontWeight: 650, color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
@@ -131,7 +140,7 @@ export function TopStatesBars({
             </div>
             <DetailList
               rows={[
-                { emoji: "🏆", label: t("sheet.place"), value: t("sheet.placeValue", { n: open + 1, total: items.length }) },
+                { emoji: "🏆", label: t("sheet.place"), value: typeof sel.rank === "number" ? t("sheet.placeRank", { n: sel.rank }) : null },
                 {
                   emoji: "📏",
                   label: t("sheet.vsTop"),

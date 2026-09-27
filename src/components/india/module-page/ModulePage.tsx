@@ -136,10 +136,14 @@ export default async function ModulePage({ locale, module }: Props) {
       label: stateName(r.stateSlug, r.stateName),
       value: r.value,
       display: text(r.value, r.unit),
+      rank: r.rank,
     }));
     barsSource = { label: stateRows[0].source, href: stateRows[0].sourceUrl || undefined };
     barsAsOf = stateRows[0].asOf;
   } else if (groups.topStates.length >= 3) {
+    // top_state_* indicator rows carry no published rank, and a list may
+    // skip states (UP, 5th in power capacity, has no row) or mix crops, so
+    // these bars get no rank numbers.
     bars = groups.topStates.slice(0, 5).map((s) => {
       const name = stateName(s.stateSlug, s.stateSlug);
       return {

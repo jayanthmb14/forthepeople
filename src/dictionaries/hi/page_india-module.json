@@ -448,7 +448,7 @@
     "recorded": "हमने दर्ज किया",
     "openSource": "स्रोत खोलें",
     "place": "स्थान",
-    "placeValue": "शीर्ष {total} में #{n}",
+    "placeRank": "भारत में #{n}",
     "vsTop": "सबसे आगे वाले राज्य की तुलना में",
     "vsTopValue": "{leader} का {pct}"
   }
