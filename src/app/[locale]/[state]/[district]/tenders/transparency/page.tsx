@@ -68,7 +68,11 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
         {isLoading && <LoadingShell rows={3} />}
         {error && <ErrorBlock message="Couldn't load flag data." />}
         {data && data.totalTenders === 0 && (
-          <EmptyState title={`No flagged tenders in ${data.districtName} right now. Flags recompute every 2 hours.`} />
+          // Honest cadence: no tender cron is scheduled, so no fixed interval is promised.
+          <EmptyState
+            title={`No flagged tenders in ${data.districtName} right now.`}
+            body="Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive."
+          />
         )}
 
         {data && Object.entries(data.flagGroups).map(([flagType, rows]) => (
