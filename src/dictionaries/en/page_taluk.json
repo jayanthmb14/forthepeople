@@ -1,0 +1,30 @@
+{
+  "backTo": "Back to {name}",
+  "loading": "Loading {unit}…",
+  "title": "{name} {unit}",
+  "descVillages": "Part of {district} district, with {n} {label}.",
+  "descUrban": "Part of {district} district. An urban zone.",
+  "tilePopulation": "Population",
+  "tileArea": "Area",
+  "unitKm2": "km²",
+  "simplePeople": "About <b>{pop}</b> people live in {name}, across <b>{n}</b> {label}.",
+  "simpleBiggestSome": "Of the {k} with a population on record, the biggest is <b>{name}</b>, with <b>{pop}</b> people.",
+  "simpleBiggestAll": "The biggest is <b>{name}</b>, with <b>{pop}</b> people.",
+  "biggestTitle": "The {n} biggest {label}",
+  "biggestUnits": "People living in each",
+  "people": "{n} people",
+  "sizesTitle": "{label} by size",
+  "sizesUnits": "How many fall in each population group",
+  "sizesSimple": "{count} of the {total} {label} with a population on record fall in one group: <b>{band}</b>.",
+  "sizesAria": "{label} of {name}, grouped by how many people live in each",
+  "bandUnder": "Under {max} people",
+  "bandRange": "{min} to {max} people",
+  "bandTop": "{min} people or more",
+  "sectionSee": "See data for this {unit}",
+  "sectionVillages": "{label} in {name}",
+  "labels": {
+    "Villages": { "title": "Villages", "inline": "villages" },
+    "Localities": { "title": "Localities", "inline": "localities" },
+    "Wards": { "title": "Wards", "inline": "wards" }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "backTo": "ಹಿಂತಿರುಗಿ: {name}",
+  "loading": "{unit} ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+  "title": "{name} {unit}",
+  "descVillages": "{district} ಜಿಲ್ಲೆಯ ಭಾಗ. ಇಲ್ಲಿ {n} {label} ಇವೆ.",
+  "descUrban": "{district} ಜಿಲ್ಲೆಯ ಭಾಗ. ಇದು ನಗರ ವಲಯ.",
+  "tilePopulation": "ಜನಸಂಖ್ಯೆ",
+  "tileArea": "ವಿಸ್ತೀರ್ಣ",
+  "unitKm2": "ಚ.ಕಿ.ಮೀ",
+  "simplePeople": "ಇಲ್ಲಿ ಸುಮಾರು <b>{pop}</b> ಜನರು ವಾಸಿಸುತ್ತಾರೆ. ಒಟ್ಟು <b>{n}</b> {label} ಇವೆ.",
+  "simpleBiggestSome": "ಜನಸಂಖ್ಯೆ ದಾಖಲಾಗಿರುವ {k} ಪೈಕಿ ಅತಿ ದೊಡ್ಡದು <b>{name}</b>. ಇಲ್ಲಿ <b>{pop}</b> ಜನರಿದ್ದಾರೆ.",
+  "simpleBiggestAll": "ಅತಿ ದೊಡ್ಡದು <b>{name}</b>. ಇಲ್ಲಿ <b>{pop}</b> ಜನರಿದ್ದಾರೆ.",
+  "biggestTitle": "ಅತಿ ದೊಡ್ಡ {n} {label}",
+  "biggestUnits": "ಪ್ರತಿಯೊಂದರಲ್ಲಿ ವಾಸಿಸುವ ಜನರು",
+  "people": "{n} ಜನರು",
+  "sizesTitle": "ಗಾತ್ರದ ಪ್ರಕಾರ {label}",
+  "sizesUnits": "ಪ್ರತಿ ಜನಸಂಖ್ಯಾ ಗುಂಪಿನಲ್ಲಿ ಎಷ್ಟು ಇವೆ",
+  "sizesSimple": "ಜನಸಂಖ್ಯೆ ದಾಖಲಾಗಿರುವ {total} {label} ಪೈಕಿ {count} ಒಂದೇ ಗುಂಪಿನಲ್ಲಿವೆ: <b>{band}</b>.",
+  "sizesAria": "{name}: ಜನಸಂಖ್ಯೆಯ ಪ್ರಕಾರ ಗುಂಪು ಮಾಡಿದ {label}",
+  "bandUnder": "{max}ಕ್ಕಿಂತ ಕಡಿಮೆ ಜನರು",
+  "bandRange": "{min} ರಿಂದ {max} ಜನರು",
+  "bandTop": "{min} ಅಥವಾ ಹೆಚ್ಚು ಜನರು",
+  "sectionSee": "{unit} ಮಟ್ಟದ ಮಾಹಿತಿ ನೋಡಿ",
+  "sectionVillages": "{name}: {label}",
+  "labels": {
+    "Villages": { "title": "ಗ್ರಾಮಗಳು", "inline": "ಗ್ರಾಮಗಳು" },
+    "Localities": { "title": "ಬಡಾವಣೆಗಳು", "inline": "ಬಡಾವಣೆಗಳು" },
+    "Wards": { "title": "ವಾರ್ಡ್‌ಗಳು", "inline": "ವಾರ್ಡ್‌ಗಳು" }
+  }
+}
