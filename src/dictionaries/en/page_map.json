@@ -25,7 +25,6 @@
   "landSimple": "<b>{name}</b> is the biggest {unit}, with {share} of the land.",
   "landAria": "A ring of the land split by {unit}. {name} is the biggest, with {share} of the land.",
   "landOther": "Other {units}",
-  "sourceShapes": "{unit} list: district administration and Census of India. Map shapes are approximate, not official borders.",
   "sourceLabel": "Approximate shapes",
   "details": "See details",
   "villagesPlain": "{n, plural, one {{count} village} other {{count} villages}}",

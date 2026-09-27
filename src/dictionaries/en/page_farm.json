@@ -1,6 +1,5 @@
 {
   "description": "Weekly crop advice and soil test results for farmers",
-  "summary": "This page shows weekly crop advisories from the local Krishi Vigyan Kendra (KVK) and ICAR, and soil health test results for villages in this district from the Soil Health Card portal. Each advisory shows the week it is for, and each soil report shows the date the soil was tested.",
   "emptyTitle": "No soil reports or crop advisories for {district} yet.",
   "emptyBody": "Soil health records and weekly advisories from the local Krishi Vigyan Kendra (KVK) and ICAR will show here once we receive them.",
   "answerAdvice": "There {n, plural, one {is <b>#</b> crop advisory} other {are <b>#</b> crop advisories}} for {crops, plural, one {# crop} other {# crops}}, the newest for the week of {date}.",
@@ -61,8 +60,6 @@
   "topicsCenter": "{n, plural, one {advisory} other {advisories}}",
   "topicsAria": "Active advisories by topic: {list}",
   "topicsAriaItem": "{topic} {n}",
-  "sourceShc": "Soil Health Card portal (data.gov.in)",
-  "sourceKvk": "Krishi Vigyan Kendra (KVK) / ICAR crop advisories",
   "shcLabel": "Soil Health Card",
   "share": "Farm advice and soil health for {district}: {advisories, plural, one {# active advisory} other {# active advisories}}, {villages, plural, one {# village soil report} other {# village soil reports}}",
   "phBand": {
@@ -86,17 +83,5 @@
     "nitrogen": "Nitrogen",
     "phosphorus": "Phosphorus",
     "potassium": "Potassium"
-  },
-  "footer": {
-    "aboutTitle": "About this page",
-    "frequencyShc": "When new tests are published",
-    "frequencyKvk": "Weekly",
-    "notOfficial": "ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "csv": "Download CSV",
-    "whatsapp": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district"
   }
 }

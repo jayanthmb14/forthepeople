@@ -41,8 +41,6 @@
   "associated": "Associated with {name}",
   "associatedBody": "These personalities were born elsewhere but have deep ties to {name} through their work, representation, or cultural impact.",
   "count": "({n})",
-  "compare": "Compare with another district",
-  "frequency": "Changes rarely",
   "timelineUnitsCentury": "Each dot is one person, placed at the century they were born",
   "yearsBorn": "Born {from}",
   "statYears": "Born between",

@@ -12,11 +12,13 @@
 //
 //    PageHeader → Explainer (sent, answered, waiting; how many offices were
 //    slower than the 30-day limit) → 4 StatTiles → ONE picture: 10 letters
-//    lit for the ones still waiting, beside the average reply time racing
-//    the 30-day limit → "Ask the government" link → office cards; tapping
-//    one opens a DetailSheet (sent / answered / waiting / reply days, month
-//    by month, source; "Ask this office") → charts (reply time against the
-//    limit; where letters wait) → sources.
+//    (Lucide envelopes) lit for the ones still waiting, beside the average
+//    reply time against the 30-day limit → office cards; tapping one opens
+//    a DetailSheet (sent / answered / waiting / reply days, month by month,
+//    source; "Ask this office") → charts (reply time against the limit;
+//    where letters wait) → AI insight → Share / Compare. No emoji; "Ask the
+//    government" is linked by the layout's See also and in the sheet;
+//    sources are in the layout's verification panel.
 //
 //  Data: useRTI(). Rows are stored per department per MONTH, so each
 //  department's months are added together (sent and answered are summed;
@@ -30,7 +32,7 @@ import type React from "react";
 import { use, useCallback, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Mail } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { useRTI, type RtiStat } from "@/hooks/useRealtimeData";
@@ -47,11 +49,11 @@ import {
   EmptyState,
   SourcePill,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram, PageActions } from "@/components/district/page-kit";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
-import { RankBars, officeEmoji } from "@/components/accountability/AccountabilityVisuals";
+import { RankBars } from "@/components/accountability/AccountabilityVisuals";
 import {
-  AccountabilityFooter,
   CardChip,
   CardList,
   ChartRow,
@@ -59,8 +61,8 @@ import {
   SheetHeading,
   SheetNote,
   ShowAllButton,
-  TapCard,
 } from "@/components/accountability/AccountabilityKit";
+import { TapCard } from "@/components/services-1/kit";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
@@ -114,6 +116,7 @@ function totalsByDepartment(rows: RtiRow[]): DeptTotals[] {
 function RTIPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const t = useTranslations("page_rti");
+  const ta = useTranslations("page_accountability");
   const f = useFormat();
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
@@ -182,9 +185,6 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
         textDecoration: "none",
       }}
     >
-      <span className="ftp-emoji" aria-hidden>
-        📜
-      </span>
       {t("fileRti")}
     </Link>
   );
@@ -203,12 +203,12 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
       {error && <ErrorBlock />}
 
       {!isLoading && !error && stats.length === 0 && (
-        <EmptyState emoji="🏛️" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} action={askLink} />
+        <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} action={askLink} />
       )}
 
       {!isLoading && stats.length > 0 && (
         <>
-          <Explainer emoji="📨">
+          <Explainer>
             {t.rich("explain", { period, district: districtName, filed: num(filed), disposed: num(disposed), pending: num(pending), b: bold })}
             {withDays.length > 0 && (
               <>
@@ -221,11 +221,11 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
           </Explainer>
 
           <StatStrip>
-            <StatTile emoji="📨" label={t("tileFiled")} value={num(filed)} sub={period} />
-            <StatTile emoji="✅" label={t("tileDisposed")} value={num(disposed)} sub={period} />
-            <StatTile emoji="⏳" label={t("tilePending")} value={num(pending)} sub={period} />
+            <StatTile label={t("tileFiled")} value={num(filed)} sub={period} />
+            <StatTile label={t("tileDisposed")} value={num(disposed)} sub={period} />
+            <StatTile label={t("tilePending")} value={num(pending)} sub={period} />
             {overallDays !== null && (
-              <StatTile emoji="⏱️" label={t("tileDays")} value={days(overallDays)} unit={t("daysUnit")} sub={t("tileDaysSub")} />
+              <StatTile label={t("tileDays")} value={days(overallDays)} unit={t("daysUnit")} sub={t("tileDaysSub")} />
             )}
           </StatStrip>
 
@@ -236,13 +236,10 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
                 <h2 className="ftp-display" style={{ margin: "0 0 12px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
                   {t("pictureTitle")}
                 </h2>
-                <Pictogram filled={waitingShare * 10} emoji="✉️" label={t("picto", { n: num(Math.round(waitingShare * 10)), period })} />
+                <IconPictogram icon={Mail} filled={waitingShare * 10} label={t("picto", { n: num(Math.round(waitingShare * 10)), period })} />
               </Card>
               {overallDays !== null && (
                 <Card padding={18} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
-                  <span className="ftp-emoji" aria-hidden style={{ fontSize: 34 }}>
-                    {overallDays > LEGAL_REPLY_DAYS ? "🐢" : "🐇"}
-                  </span>
                   <p className="ftp-label">{t("raceLabel")}</p>
                   <div
                     className="ftp-bignum"
@@ -259,36 +256,32 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
             </div>
           )}
 
-          {/* The pair: ask a question yourself. */}
-          <Card tinted style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5 }}>{t("ctaBody")}</p>
-            {askLink}
-          </Card>
-
-          <AIInsightCard module="rti" district={district} />
 
           {/* Every office as a card; tap for everything about it. */}
-          <Section title={t("officesTitle", { period })} emoji="🏢">
+          <Section title={t("officesTitle", { period })}>
             <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)" }}>
               {t("officesHint")}
             </p>
             <CardList label={t("officesTitle", { period })}>
               {shownCards.map((d) => (
-                <TapCard
-                  key={d.dept}
-                  emoji={officeEmoji(d.dept)}
-                  title={d.dept}
-                  titleLang="en"
-                  sub={t("cardWaiting", { n: d.pending, count: num(d.pending) })}
-                  onOpen={() => setOpen(d.dept)}
-                >
-                  <CardChip emoji="✅">{t("cardAnswered", { answered: num(d.disposed), sent: num(d.filed) })}</CardChip>
-                  {d.avgDays != null && (
-                    <CardChip emoji={d.avgDays > LEGAL_REPLY_DAYS ? "🐢" : "⏱️"} tone={d.avgDays > LEGAL_REPLY_DAYS ? "danger" : "live"}>
-                      {t("daysValue", { days: days(d.avgDays) })}
-                    </CardChip>
-                  )}
-                </TapCard>
+                <li key={d.dept} style={{ listStyle: "none", minWidth: 0, display: "flex" }}>
+                  <TapCard
+                    title={d.dept}
+                    titleLang="en"
+                    subtitle={t("cardWaiting", { n: d.pending, count: num(d.pending) })}
+                    hint={ta("seeDetails")}
+                    onOpen={() => setOpen(d.dept)}
+                  >
+                    <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <CardChip>{t("cardAnswered", { answered: num(d.disposed), sent: num(d.filed) })}</CardChip>
+                      {d.avgDays != null && (
+                        <CardChip tone={d.avgDays > LEGAL_REPLY_DAYS ? "danger" : "live"}>
+                          {t("daysValue", { days: days(d.avgDays) })}
+                        </CardChip>
+                      )}
+                    </span>
+                  </TapCard>
+                </li>
               ))}
             </CardList>
             {cards.length > FIRST_CARDS && <ShowAllButton expanded={showAll} total={cards.length} onToggle={() => setShowAll((x) => !x)} />}
@@ -299,7 +292,6 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
               {slowest.length > 1 && (
                 <ChartCard
                   title={t("daysTitle", { period })}
-                  emoji="⏱️"
                   units={withDays.length > MAX_BARS ? t("daysUnitsTop", { n: MAX_BARS }) : t("daysUnits")}
                   simple={
                     overLimit > 0
@@ -318,7 +310,6 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
                       label: d.dept,
                       value: d.avgDays,
                       display: t("daysValue", { days: days(d.avgDays) }),
-                      emoji: officeEmoji(d.dept),
                       alert: d.avgDays > LEGAL_REPLY_DAYS,
                     }))}
                   />
@@ -327,7 +318,6 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
               {waitingBars.length > 1 && (
                 <ChartCard
                   title={t("waitingTitle", { period })}
-                  emoji="⏳"
                   units={t("waitingUnits")}
                   simple={t.rich("waitingSimple", { dept: waitingBars[0].dept, count: num(waitingBars[0].pending), b: bold })}
                   asOf={lastUpdated}
@@ -341,7 +331,6 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
                       label: d.dept,
                       value: d.pending,
                       display: num(d.pending),
-                      emoji: officeEmoji(d.dept),
                     }))}
                   />
                 </ChartCard>
@@ -351,8 +340,14 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
         </>
       )}
 
+      {!isLoading && stats.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <AIInsightCard module="rti" district={district} />
+        </div>
+      )}
+
       <div style={{ marginTop: 28 }}>
-        <AccountabilityFooter moduleSlug="rti" locale={locale} state={state} district={district} sourceUrls={{ "RTI Online Portal": "https://rtionline.gov.in" }} />
+        <PageActions locale={locale} district={district} moduleSlug="rti" />
       </div>
 
       {/* Everything about one office. */}
@@ -362,10 +357,9 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
         title={openDept?.dept ?? ""}
         titleLang="en"
         subtitle={period}
-        emoji={openDept ? officeEmoji(openDept.dept) : "🏢"}
         hueClassName={hueClass("rti")}
         footer={
-          <SheetAction href={`${base}/file-rti`} emoji="📜">
+          <SheetAction href={`${base}/file-rti`}>
             {t("askOffice")}
           </SheetAction>
         }
@@ -374,11 +368,10 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
           <>
             <DetailList
               rows={[
-                { emoji: "📨", label: t("tileFiled"), value: num(openDept.filed) },
-                { emoji: "✅", label: t("tileDisposed"), value: num(openDept.disposed) },
-                { emoji: "⏳", label: t("tilePending"), value: num(openDept.pending) },
+                { label: t("tileFiled"), value: num(openDept.filed) },
+                { label: t("tileDisposed"), value: num(openDept.disposed) },
+                { label: t("tilePending"), value: num(openDept.pending) },
                 {
-                  emoji: "⏱️",
                   label: t("tileDays"),
                   value:
                     openDept.avgDays != null ? (
@@ -389,10 +382,10 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
                 },
               ]}
             />
-            <SheetNote emoji="⚖️">{t("sheetLimit")}</SheetNote>
+            <SheetNote>{t("sheetLimit")}</SheetNote>
             {openMonths.length > 1 && (
               <>
-                <SheetHeading emoji="📆">{t("sheetMonths")}</SheetHeading>
+                <SheetHeading>{t("sheetMonths")}</SheetHeading>
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                   {openMonths.map((r) => (
                     <li key={r.id} style={{ display: "flex", gap: 10, fontSize: 14, lineHeight: "20px", flexWrap: "wrap" }}>

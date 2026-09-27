@@ -25,7 +25,6 @@
   "landSimple": "ಅತಿ ದೊಡ್ಡ {unit} <b>{name}</b>; ಭೂಮಿಯ {share} ಭಾಗ ಅದರಲ್ಲಿದೆ.",
   "landAria": "ಭೂಮಿಯ ಹಂಚಿಕೆಯನ್ನು ತೋರಿಸುವ ವೃತ್ತ. ಅತಿ ದೊಡ್ಡದು {name}, ಭೂಮಿಯ {share} ಭಾಗ.",
   "landOther": "ಇತರ {units}",
-  "sourceShapes": "{unit} ಪಟ್ಟಿ: ಜಿಲ್ಲಾಡಳಿತ ಮತ್ತು ಭಾರತದ ಜನಗಣತಿ. ನಕ್ಷೆಯ ಆಕಾರಗಳು ಅಂದಾಜು ಮಾತ್ರ, ಅಧಿಕೃತ ಗಡಿಗಳಲ್ಲ.",
   "sourceLabel": "ಅಂದಾಜು ಆಕಾರಗಳು",
   "details": "ವಿವರ ನೋಡಿ",
   "villagesPlain": "{n, plural, other {{count} ಗ್ರಾಮಗಳು}}",

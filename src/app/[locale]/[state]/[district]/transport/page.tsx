@@ -20,7 +20,7 @@
 //  coloured for the biggest operator) → "Where do you want to go?" search
 //  with bus / train cards (tap → a sheet with the stops, timings, fare,
 //  a map link and the operator's site) → charts (kinds of buses, trains
-//  on each weekday) → AI insight → sources, news, share.
+//  on each weekday) → AI insight → news, share (sources are in the layout's verification panel).
 //
 //  Text: page_transport (en/kn/hi). Day names, numbers and fares go
 //  through useFormat(). Operator names, bus types, places and train names
@@ -43,7 +43,8 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/page-kit";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -103,16 +104,9 @@ function NumberTag({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Small fact chip on a card ("Every 10 min", "₹30"). */
-function Fact({ emoji, children }: { emoji: string; children: React.ReactNode }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "18px", color: "var(--ftp-text)" }}>
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>
-        {emoji}
-      </span>
-      {children}
-    </span>
-  );
+/** Small fact on a card ("Every 10 min", "₹30"). */
+function Fact({ children }: { children: React.ReactNode }) {
+  return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "18px", color: "var(--ftp-text)" }}>{children}</span>;
 }
 
 /** Seven day chips; the days the train runs are filled. */
@@ -343,7 +337,7 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
       {!isLoading && (buses.length > 0 || trains.length > 0) && (
         <>
           {/* 1. The answer in one sentence. */}
-          <Explainer emoji="🚏">
+          <Explainer>
             {t.rich("answer.main", {
               buses: buses.length,
               busesN: f.number(buses.length),
@@ -357,12 +351,11 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
 
           {/* 2. Big numbers. */}
           <StatStrip>
-            <StatTile emoji="🚌" label={t("tiles.buses")} value={f.number(buses.length)} sub={refresh} />
-            <StatTile emoji="🚆" label={t("tiles.trains")} value={f.number(trains.length)} sub={refresh} />
-            {operators.length > 0 && <StatTile emoji="🏢" label={t("tiles.operators")} value={f.number(operators.length)} sub={refresh} />}
+            <StatTile label={t("tiles.buses")} value={f.number(buses.length)} sub={refresh} />
+            <StatTile label={t("tiles.trains")} value={f.number(trains.length)} sub={refresh} />
+            {operators.length > 0 && <StatTile label={t("tiles.operators")} value={f.number(operators.length)} sub={refresh} />}
             {minFare !== null && maxFare !== null && (
               <StatTile
-                emoji="💰"
                 label={t("tiles.fare")}
                 value={rupees(minFare)}
                 sub={minFare === maxFare ? refresh : t("tiles.fareSub", { max: rupees(maxFare) })}
@@ -377,10 +370,10 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
               <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
                 {t("picture.title")}
               </p>
-              <Pictogram
+              <IconPictogram
+                icon={Bus}
                 filled={busesLit}
                 total={busesTotal}
-                emoji="🚌"
                 label={
                   operators.length === 1
                     ? t("picture.busesOne", { op: topOperator.op })
@@ -393,7 +386,7 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
           )}
 
           {/* 4. Find a bus or train; tap a card for the stops, times and fare. */}
-          <Section title={t("list.title")} emoji="🔎">
+          <Section title={t("list.title")}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
               <SearchBox
                 id="transport-search"
@@ -434,7 +427,6 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
 
             {listed.length === 0 ? (
               <EmptyState
-                emoji={tab === "bus" ? "🚌" : "🚆"}
                 title={query ? t("list.noMatch", { query }) : tab === "bus" ? t("list.emptyBuses") : t("list.emptyTrains")}
                 body={query ? t("list.noMatchBody") : undefined}
               />
@@ -445,7 +437,6 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                     busList.slice(0, limit).map((r) => (
                       <TapCard
                         key={r.id}
-                        emoji="🚌"
                         title={t("route", { from: r.origin, to: r.destination })}
                         titleLang={place(r.origin).lang}
                         subtitle={r.via ? t("bus.via", { via: r.via }) : r.operator}
@@ -455,14 +446,14 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                       >
                         <span style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px" }}>
                           {r.departureTime && (
-                            <Fact emoji="🕒">
+                            <Fact>
                               <span className="ftp-num">{t("bus.leaves", { time: r.departureTime })}</span>
                             </Fact>
                           )}
-                          {r.frequency && <Fact emoji="🔁">{busEvery(r.frequency)}</Fact>}
-                          {r.duration && <Fact emoji="⏱️">{busDuration(r.duration)}</Fact>}
+                          {r.frequency && <Fact>{busEvery(r.frequency)}</Fact>}
+                          {r.duration && <Fact>{busDuration(r.duration)}</Fact>}
                           {r.fare ? (
-                            <Fact emoji="💰">
+                            <Fact>
                               <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>
                                 {rupees(r.fare)}
                               </span>
@@ -475,7 +466,6 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                     trainList.slice(0, limit).map((tr) => (
                       <TapCard
                         key={tr.id}
-                        emoji="🚆"
                         title={tr.trainName}
                         subtitle={t("route", { from: tr.origin, to: tr.destination })}
                         aside={<NumberTag>{tr.trainNumber}</NumberTag>}
@@ -512,7 +502,6 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
               {typeItems.length >= 2 && topType && (
                 <ChartCard
                   title={t("types.title")}
-                  emoji="🚍"
                   units={t("types.units")}
                   simple={t.rich("types.simple", { type: topType.label, count: f.number(topType.value), total: f.number(typedTotal), b })}
                   table={typeItems.map((i) => ({ label: i.label, value: f.number(i.value) }))}
@@ -528,7 +517,6 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
               {trains.length >= 2 && dayMax > 0 && (
                 <ChartCard
                   title={t("days.title")}
-                  emoji="📅"
                   units={t("days.units")}
                   simple={
                     dayMax === dayMin
@@ -567,18 +555,17 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
         open={openBus !== null}
         onClose={() => setOpen(null)}
         hueClassName={hueClass("transport")}
-        emoji="🚌"
         title={openBus ? t("route", { from: openBus.origin, to: openBus.destination }) : ""}
         titleLang={openBus ? place(openBus.origin).lang : undefined}
         subtitle={openBus ? (openBus.routeNumber ? t("sheet.busNumber", { n: openBus.routeNumber, op: openBus.operator }) : openBus.operator) : undefined}
         footer={
           openBus ? (
             <>
-              <ActionLink href={mapsUrl(`${openBus.origin}, ${districtName}`)} emoji="🗺️" primary newTab>
+              <ActionLink href={mapsUrl(`${openBus.origin}, ${districtName}`)} primary newTab>
                 {t("sheet.map", { place: openBus.origin })}
               </ActionLink>
               {corpSite(openBus.operator) && (
-                <ActionLink href={corpSite(openBus.operator) as string} emoji="🔗" newTab>
+                <ActionLink href={corpSite(openBus.operator) as string} newTab>
                   {t("sheet.operatorSite", { op: openBus.operator })}
                 </ActionLink>
               )}
@@ -588,24 +575,24 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
       >
         {openBus && (
           <>
-            <SheetNote emoji="🚏">
+            <SheetNote>
               {openBus.departureTime
                 ? t.rich("sheet.busLeaves", { from: openBus.origin, to: openBus.destination, time: openBus.departureTime, b })
                 : openBus.frequency
                   ? t.rich("sheet.busEvery", { from: openBus.origin, to: openBus.destination, every: busEvery(openBus.frequency), b })
                   : t.rich("sheet.busGoes", { from: openBus.origin, to: openBus.destination, b })}
             </SheetNote>
-            <SheetHeading emoji="📍">{viaStops(openBus.via).length > 0 ? t("sheet.stops") : t("sheet.ends")}</SheetHeading>
+            <SheetHeading>{viaStops(openBus.via).length > 0 ? t("sheet.stops") : t("sheet.ends")}</SheetHeading>
             <RouteLine stops={[openBus.origin, ...viaStops(openBus.via), openBus.destination]} />
             <DetailList
               rows={[
-                { emoji: "🔢", label: t("sheet.number"), value: openBus.routeNumber },
-                { emoji: "🏢", label: t("sheet.operator"), value: openBus.operator },
-                { emoji: "🚍", label: t("sheet.busType"), value: openBus.busType },
-                { emoji: "🕒", label: t("sheet.leavesAt"), value: openBus.departureTime ? <span className="ftp-num">{openBus.departureTime}</span> : null },
-                { emoji: "🔁", label: t("sheet.howOften"), value: openBus.frequency ? busEvery(openBus.frequency) : null },
-                { emoji: "⏱️", label: t("sheet.journey"), value: openBus.duration ? busDuration(openBus.duration) : null },
-                { emoji: "💰", label: t("sheet.fare"), value: openBus.fare ? rupees(openBus.fare) : null },
+                { label: t("sheet.number"), value: openBus.routeNumber },
+                { label: t("sheet.operator"), value: openBus.operator },
+                { label: t("sheet.busType"), value: openBus.busType },
+                { label: t("sheet.leavesAt"), value: openBus.departureTime ? <span className="ftp-num">{openBus.departureTime}</span> : null },
+                { label: t("sheet.howOften"), value: openBus.frequency ? busEvery(openBus.frequency) : null },
+                { label: t("sheet.journey"), value: openBus.duration ? busDuration(openBus.duration) : null },
+                { label: t("sheet.fare"), value: openBus.fare ? rupees(openBus.fare) : null },
               ]}
             />
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("sheet.checkNote")}</p>
@@ -618,16 +605,15 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
         open={openTrain !== null}
         onClose={() => setOpen(null)}
         hueClassName={hueClass("transport")}
-        emoji="🚆"
         title={openTrain?.trainName ?? ""}
         subtitle={openTrain ? t("sheet.trainNumber", { n: openTrain.trainNumber }) : undefined}
         footer={
           openTrain ? (
             <>
-              <ActionLink href="https://enquiry.indianrail.gov.in/mntes/" emoji="🛤️" primary newTab>
+              <ActionLink href="https://enquiry.indianrail.gov.in/mntes/" primary newTab>
                 {t("sheet.ntes")}
               </ActionLink>
-              <ActionLink href={mapsUrl(`${openTrain.stationName} railway station`)} emoji="🗺️" newTab>
+              <ActionLink href={mapsUrl(`${openTrain.stationName} railway station`)} newTab>
                 {t("sheet.map", { place: openTrain.stationName })}
               </ActionLink>
             </>
@@ -636,22 +622,22 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
       >
         {openTrain && (
           <>
-            <SheetNote emoji="🚉">
+            <SheetNote>
               {t.rich("sheet.trainStops", { station: openTrain.stationName, days: daysText(openTrain), count: trainDays(openTrain).length, b })}
             </SheetNote>
-            <SheetHeading emoji="📍">{t("sheet.ends")}</SheetHeading>
+            <SheetHeading>{t("sheet.ends")}</SheetHeading>
             <RouteLine stops={[openTrain.origin, openTrain.stationName, openTrain.destination].filter((s, i, a) => a.indexOf(s) === i)} />
             {trainDays(openTrain).length > 0 && (
               <DayChips days={trainDays(openTrain)} labels={dayShort} ariaLabel={t("train.runsOn", { days: daysText(openTrain) })} />
             )}
             <DetailList
               rows={[
-                { emoji: "🔢", label: t("sheet.number"), value: openTrain.trainNumber },
-                { emoji: "🛤️", label: t("sheet.fromTo"), value: t("route", { from: openTrain.origin, to: openTrain.destination }) },
-                { emoji: "🚉", label: t("sheet.station"), value: openTrain.stationName },
-                { emoji: "🕒", label: t("sheet.arrives"), value: openTrain.arrivalTime ? <span className="ftp-num">{openTrain.arrivalTime}</span> : null },
-                { emoji: "🕓", label: t("sheet.leaves"), value: openTrain.departureTime ? <span className="ftp-num">{openTrain.departureTime}</span> : null },
-                { emoji: "📅", label: t("sheet.days"), value: trainDays(openTrain).length > 0 ? daysText(openTrain) : null },
+                { label: t("sheet.number"), value: openTrain.trainNumber },
+                { label: t("sheet.fromTo"), value: t("route", { from: openTrain.origin, to: openTrain.destination }) },
+                { label: t("sheet.station"), value: openTrain.stationName },
+                { label: t("sheet.arrives"), value: openTrain.arrivalTime ? <span className="ftp-num">{openTrain.arrivalTime}</span> : null },
+                { label: t("sheet.leaves"), value: openTrain.departureTime ? <span className="ftp-num">{openTrain.departureTime}</span> : null },
+                { label: t("sheet.days"), value: trainDays(openTrain).length > 0 ? daysText(openTrain) : null },
               ]}
             />
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("sheet.checkNote")}</p>

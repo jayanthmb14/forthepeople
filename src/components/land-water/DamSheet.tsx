@@ -24,12 +24,18 @@ import { useFormat } from "@/i18n/client";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { CHART_AXIS, ChartCard, ChartGradients, WaterTank, chartTooltipStyle } from "@/components/district/visuals";
 import { hueClass } from "@/lib/design/hues";
-import { SheetAction, SheetBlock, SheetNote } from "./cards";
+import { SheetNote } from "@/components/services-2/kit";
+import { ReadingAge, isOlderThan, useClientNow } from "@/components/district/page-kit";
+import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
+import { SheetAction, SheetBlock } from "./cards";
 import { namePair } from "./visuals";
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
 /** Filling / emptying / steady from the latest inflow and outflow. */
+/** Dam readings older than this are not current (src/lib/constants/dataset-collection.ts). */
+const DAM_MAX_AGE_HOURS = maxAgeHoursOf("dams") ?? 72;
+
 export function flowState(d: Pick<DamReading, "inflow" | "outflow">): "filling" | "emptying" | "steady" {
   return d.inflow > d.outflow ? "filling" : d.inflow < d.outflow ? "emptying" : "steady";
 }
@@ -55,6 +61,7 @@ export function DamSheet({
 }) {
   const t = useTranslations("page_water");
   const f = useFormat();
+  const now = useClientNow();
   if (!dam) return null;
 
   const n = namePair(dam.damName, dam.damNameLocal, locale);
@@ -64,6 +71,8 @@ export function DamSheet({
   const readingTime = (iso: string) =>
     new Date(iso).toLocaleString(f.intl, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
   const state = flowState(dam);
+  // An old reading is not today's level: grey the number and say how old it is.
+  const isOld = isOlderThan(dam.recordedAt, DAM_MAX_AGE_HOURS, now);
   const series = history.map((h) => ({ at: h.recordedAt, storage: h.storagePct }));
 
   const trendSimple = (() => {
@@ -89,11 +98,10 @@ export function DamSheet({
           </>
         ) : undefined
       }
-      emoji="🏞️"
       hueClassName={hueClass("water")}
       footer={
         portal ? (
-          <SheetAction href={portal.href} emoji="🔗" primary>
+          <SheetAction href={portal.href} primary>
             {t("openPortal", { portal: portal.name })}
           </SheetAction>
         ) : undefined
@@ -102,7 +110,7 @@ export function DamSheet({
       <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <WaterTank pct={dam.storagePct} label={t("tankOne")} width={128} height={160} />
         <div style={{ minWidth: 0, flex: "1 1 160px" }}>
-          <div className="ftp-bignum" style={{ fontSize: 44, lineHeight: "48px", color: "var(--hue-deep)" }}>
+          <div className="ftp-bignum" style={{ fontSize: 44, lineHeight: "48px", color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
             {pct(dam.storagePct, 1)}
           </div>
           <p style={{ margin: "2px 0 0", fontSize: 14, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("fullOfCapacity")}</p>
@@ -111,10 +119,13 @@ export function DamSheet({
               {t("storageOf", { stored: tmc(dam.storage), capacity: tmc(dam.maxStorage) })}
             </p>
           )}
+          <div style={{ marginTop: 10 }}>
+            <ReadingAge at={dam.recordedAt} maxAgeHours={DAM_MAX_AGE_HOURS} withTime now={now} />
+          </div>
         </div>
       </div>
 
-      <SheetNote emoji={state === "filling" ? "📈" : state === "emptying" ? "📉" : "➖"}>
+      <SheetNote>
         {t.rich("sheetSentence", {
           b: bold,
           dam: n.primary,
@@ -128,7 +139,6 @@ export function DamSheet({
       {series.length > 1 && (
         <ChartCard
           title={t("trendTitle", { dam: n.primary })}
-          emoji="📈"
           units={t("trendUnitsOne")}
           simple={trendSimple}
           source={{ label: dam.source }}
@@ -155,17 +165,15 @@ export function DamSheet({
         </ChartCard>
       )}
 
-      <SheetBlock emoji="📋" title={t("rowsTitle")}>
+      <SheetBlock title={t("rowsTitle")}>
         <DetailList
           rows={[
-            { emoji: "💧", label: t("rowFull"), value: pct(dam.storagePct, 1) },
+            { label: t("rowFull"), value: pct(dam.storagePct, 1) },
             {
-              emoji: "🛢️",
               label: t("rowStorage"),
               value: dam.maxStorage > 0 ? t("storageOf", { stored: tmc(dam.storage), capacity: tmc(dam.maxStorage) }) : null,
             },
             {
-              emoji: "📏",
               label: t("rowLevel"),
               value:
                 dam.waterLevel > 0
@@ -174,11 +182,11 @@ export function DamSheet({
                     : t("levelFt", { level: f.number(dam.waterLevel, { maximumFractionDigits: 1 }) })
                   : null,
             },
-            { emoji: "⬇️", label: t("rowInflow"), value: t("cusecs", { n: f.number(Math.round(dam.inflow)) }) },
-            { emoji: "⬆️", label: t("rowOutflow"), value: t("cusecs", { n: f.number(Math.round(dam.outflow)) }) },
-            { emoji: "🏞️", label: t("rowRiver"), value: river ?? null },
-            { emoji: "📅", label: t("rowReading"), value: readingTime(dam.recordedAt) },
-            { emoji: "📜", label: t("rowSource"), value: dam.source },
+            { label: t("rowInflow"), value: t("cusecs", { n: f.number(Math.round(dam.inflow)) }) },
+            { label: t("rowOutflow"), value: t("cusecs", { n: f.number(Math.round(dam.outflow)) }) },
+            { label: t("rowRiver"), value: river ?? null },
+            { label: t("rowReading"), value: readingTime(dam.recordedAt) },
+            { label: t("rowSource"), value: dam.source },
           ]}
         />
         <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>

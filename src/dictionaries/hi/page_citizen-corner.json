@@ -196,17 +196,8 @@
   "officialSite": "आधिकारिक वेबसाइट",
   "openPage": "{page} खोलें",
   "rightsNote": "यह एक छोटी, आसान गाइड है, कानूनी सलाह नहीं। नियम हर राज्य में थोड़े अलग हो सकते हैं।",
-  "sourceHelplines": "हेल्पलाइन नंबर: भारत सरकार की राष्ट्रीय हेल्पलाइन",
-  "share": "शेयर करें",
-  "linkCopied": "लिंक कॉपी हो गया",
-  "compare": "किसी दूसरे जिले से तुलना करें",
-  "toolbar": "पेज के विकल्प",
-  "freq": {
-    "weekly": "हर हफ्ते"
-  },
   "sourceNames": {
-    "districtAdministration": "जिला प्रशासन",
-    "citizenFeedback": "नागरिकों की राय"
+    "districtAdministration": "जिला प्रशासन"
   },
   "aboutTipsTitle": "इन सुझावों के बारे में"
 }

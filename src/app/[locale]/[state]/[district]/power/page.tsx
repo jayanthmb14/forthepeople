@@ -28,14 +28,14 @@
 //
 //  Page: header → the answer → 4 tiles → one picture (the week around
 //  today, or bulbs when no notice is near today) → "Is my area affected?"
-//  search + cards (tap → sheet) → charts → AI insight → sources, share.
+//  search + cards (tap → sheet) → charts → AI insight → news, share (sources are in the layout's verification panel).
 //
 //  Text: page_power (en/kn/hi). Area names, reasons and sources are data
 //  and stay as published.
 "use client";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Zap } from "lucide-react";
+import { Lightbulb, Zap, ZapOff } from "lucide-react";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import {
   ModulePage,
@@ -51,7 +51,8 @@ import {
   EmptyState,
 } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/page-kit";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -90,7 +91,6 @@ const ONE_BULB_EACH_MAX = 12;
 /** Bars in each chart. */
 const BARS_SHOWN = 5;
 
-const STATUS_EMOJI: Record<Status, string> = { now: "🔌", soon: "🗓️", over: "💡", unclear: "❔" };
 const STATUS_TONE: Record<Status, Tone> = { now: "warn", soon: "brand", over: "live", unclear: "neutral" };
 const STATUS_ORDER: Record<Status, number> = { now: 0, soon: 1, unclear: 2, over: 3 };
 
@@ -242,7 +242,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
       {!isLoading && outages.length > 0 && (
         <>
           {/* 1. The answer in one sentence. */}
-          <Explainer emoji={onNow.length > 0 ? "🔌" : "💡"}>
+          <Explainer>
             {onNow.length > 0
               ? t.rich("answer.now", { count: onNow.length, n: f.number(onNow.length), district: districtName, b })
               : t.rich("answer.noneNow", { district: districtName, b })}{" "}
@@ -255,17 +255,15 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
-            <StatTile emoji="🔌" label={t("tiles.now")} value={f.number(onNow.length)} asOf={newest} />
-            <StatTile emoji="🗓️" label={t("tiles.soon")} value={f.number(soon.length)} asOf={newest} />
+            <StatTile label={t("tiles.now")} value={f.number(onNow.length)} asOf={newest} />
+            <StatTile label={t("tiles.soon")} value={f.number(soon.length)} asOf={newest} />
             <StatTile
-              emoji="✅"
               label={t("tiles.over")}
               value={f.number(over.length)}
               sub={t("tiles.overSub", { n: f.number(outages.length) })}
               asOf={newest}
             />
             <StatTile
-              emoji="⏱️"
               label={t("tiles.avg")}
               value={avgHours !== null ? hours(avgHours) : "—"}
               unit={avgHours !== null ? t("tiles.hoursUnit") : undefined}
@@ -311,8 +309,8 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
                         <span aria-hidden className="ftp-num" style={{ fontSize: 15, lineHeight: "18px" }}>
                           {f.date(ms, { day: "numeric" })}
                         </span>
-                        <span aria-hidden className="ftp-emoji" style={{ fontSize: 18, lineHeight: "22px" }}>
-                          {n > 0 ? "⚡" : "💡"}
+                        <span aria-hidden style={{ display: "inline-flex", height: 22, alignItems: "center" }}>
+                          {n > 0 ? <ZapOff size={17} strokeWidth={1.75} /> : <Lightbulb size={17} strokeWidth={1.75} style={{ opacity: 0.55 }} />}
                         </span>
                         <span aria-hidden className="ftp-num" style={{ fontSize: 12, lineHeight: "14px", minHeight: 14 }}>
                           {n > 0 ? f.number(n) : ""}
@@ -322,12 +320,12 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
                   })}
                 </ol>
                 <figcaption style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 10, fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
-                  <span>
-                    <span className="ftp-emoji" aria-hidden>⚡ </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <ZapOff size={14} aria-hidden />
                     {t("week.legendCut")}
                   </span>
-                  <span>
-                    <span className="ftp-emoji" aria-hidden>💡 </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <Lightbulb size={14} aria-hidden style={{ opacity: 0.55 }} />
                     {t("week.legendNone")}
                   </span>
                 </figcaption>
@@ -337,10 +335,10 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
                 <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
                   {t("bulbs.title")}
                 </p>
-                <Pictogram
+                <IconPictogram
+                  icon={Lightbulb}
                   filled={bulbsLit}
                   total={bulbsTotal}
-                  emoji="💡"
                   label={
                     oneEach
                       ? t("bulbs.each", { ended: f.number(ended), total: f.number(outages.length) })
@@ -352,7 +350,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
           </Card>
 
           {/* 4. "Is my area affected?" and every notice as a card. */}
-          <Section title={t("list.title")} emoji="📍">
+          <Section title={t("list.title")}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
               <SearchBox
                 id="power-search"
@@ -383,7 +381,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
             {/* The plain answer for the area typed. */}
             {q && (
               <div style={{ marginBottom: 14 }}>
-                <SheetNote emoji={hitNow ? "🔌" : hitSoon ? "🗓️" : "💡"}>
+                <SheetNote>
                   {hitNow
                     ? t.rich("check.now", { area: hitNow.o.area, b })
                     : hitSoon
@@ -396,14 +394,13 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
             )}
 
             {listed.length === 0 ? (
-              !q && <EmptyState emoji="💡" title={t("list.emptyFilter")} />
+              !q && <EmptyState title={t("list.emptyFilter")} />
             ) : (
               <>
                 <div className="ftp-grid">
                   {shown.map(({ o, status, h, kind }) => (
                     <TapCard
                       key={o.id}
-                      emoji={STATUS_EMOJI[status]}
                       title={o.area}
                       titleLang={place(o.area).lang}
                       subtitle={<span className="ftp-num" suppressHydrationWarning>{span(o)}</span>}
@@ -436,7 +433,6 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
               {longest.length >= 2 && (
                 <ChartCard
                   title={t("longest.title")}
-                  emoji="⏳"
                   units={t("longest.units")}
                   simple={t.rich("longest.simple", { area: longest[0].label, hours: hours(longest[0].value), b })}
                   asOf={newest}
@@ -448,7 +444,6 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
               {repeated.length >= 2 && (
                 <ChartCard
                   title={t("repeat.title")}
-                  emoji="🔁"
                   units={t("repeat.units")}
                   simple={t.rich("repeat.simple", { area: repeated[0].label, n: f.number(repeated[0].value), b })}
                   asOf={newest}
@@ -490,13 +485,12 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
         open={open !== null}
         onClose={() => setOpenId(null)}
         hueClassName={hueClass("power")}
-        emoji="⚡"
         title={open?.o.area ?? ""}
         titleLang={open ? place(open.o.area).lang : undefined}
         subtitle={open ? t(`status.${open.status}`) : undefined}
         footer={
           discomUrl ? (
-            <ActionLink href={discomUrl} emoji="🔗" primary newTab>
+            <ActionLink href={discomUrl} primary newTab>
               {t("sheet.discomSite", { discom: discomName })}
             </ActionLink>
           ) : undefined
@@ -504,7 +498,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
       >
         {open && (
           <>
-            <SheetNote emoji={STATUS_EMOJI[open.status]}>
+            <SheetNote>
               {open.status === "now"
                 ? open.o.endTime
                   ? t.rich("sheet.nowUntil", { end: `${day(open.o.endTime)}, ${clock(open.o.endTime)}`, b })
@@ -519,13 +513,13 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
             </SheetNote>
             <DetailList
               rows={[
-                { emoji: "🕘", label: t("sheet.from"), value: `${dayYear(open.o.startTime)}, ${clock(open.o.startTime)}` },
-                { emoji: "🕔", label: t("sheet.to"), value: open.o.endTime ? `${dayYear(open.o.endTime)}, ${clock(open.o.endTime)}` : t("sheet.noEnd") },
-                { emoji: "⏱️", label: t("sheet.length"), value: open.h !== null ? t("card.length", { h: hours(open.h) }) : null },
-                { emoji: "🛠️", label: t("sheet.reason"), value: open.o.reason },
-                { emoji: "🏷️", label: t("sheet.kind"), value: open.kind ? t(`kind.${open.kind}`) : open.o.type },
-                { emoji: "📄", label: t("sheet.source"), value: open.o.source },
-                { emoji: "🗓️", label: t("sheet.added"), value: open.o.createdAt ? dayYear(open.o.createdAt) : null },
+                { label: t("sheet.from"), value: `${dayYear(open.o.startTime)}, ${clock(open.o.startTime)}` },
+                { label: t("sheet.to"), value: open.o.endTime ? `${dayYear(open.o.endTime)}, ${clock(open.o.endTime)}` : t("sheet.noEnd") },
+                { label: t("sheet.length"), value: open.h !== null ? t("card.length", { h: hours(open.h) }) : null },
+                { label: t("sheet.reason"), value: open.o.reason },
+                { label: t("sheet.kind"), value: open.kind ? t(`kind.${open.kind}`) : open.o.type },
+                { label: t("sheet.source"), value: open.o.source },
+                { label: t("sheet.added"), value: open.o.createdAt ? dayYear(open.o.createdAt) : null },
               ]}
             />
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("sheet.note")}</p>

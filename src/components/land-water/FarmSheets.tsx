@@ -23,12 +23,12 @@ import { useTranslations } from "next-intl";
 import type { AgriAdvisory, SoilHealth } from "@/hooks/useRealtimeData";
 import { useFormat } from "@/i18n/client";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
-import { cropEmoji } from "@/components/crops/CropVisuals";
-import { advisoryEmoji, nutrientLevel, phBand, PH_ACIDIC_BELOW, PH_ALKALINE_ABOVE } from "@/components/farm/SoilVisuals";
+import { nutrientLevel, phBand, PH_ACIDIC_BELOW, PH_ALKALINE_ABOVE } from "@/components/farm/SoilVisuals";
 import type { NutrientLevel } from "@/components/farm/SoilVisuals";
 import { hueClass } from "@/lib/design/hues";
 import { scriptLang } from "@/lib/utils/script-lang";
-import { SheetAction, SheetBlock, SheetNote } from "./cards";
+import { SheetNote } from "@/components/services-2/kit";
+import { SheetAction, SheetBlock } from "./cards";
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 /** Kisan Call Centre, Ministry of Agriculture & Farmers Welfare (toll-free). */
@@ -77,15 +77,14 @@ export function AdvisorySheet({
         </>
       }
       subtitle={t("adviceSub", { date: week, topic: topicLabel(a.category) })}
-      emoji={cropEmoji(a.crop)}
       hueClassName={hueClass("farm")}
       footer={
-        <SheetAction href={KCC_TEL} emoji="📞" primary>
+        <SheetAction href={KCC_TEL} primary>
           {t("callKcc")}
         </SheetAction>
       }
     >
-      <SheetBlock emoji={advisoryEmoji(a.category)} title={t("adviceTitle")}>
+      <SheetBlock title={t("adviceTitle")}>
         {texts.map((x, i) => (
           <p
             key={i}
@@ -102,14 +101,14 @@ export function AdvisorySheet({
           </p>
         ))}
       </SheetBlock>
-      <SheetNote emoji="📞">{t.rich("kccNote", { b: bold })}</SheetNote>
-      <SheetBlock emoji="📋" title={t("rowsTitle")}>
+      <SheetNote>{t.rich("kccNote", { b: bold })}</SheetNote>
+      <SheetBlock title={t("rowsTitle")}>
         <DetailList
           rows={[
-            { emoji: cropEmoji(a.crop), label: t("rowCrop"), value: a.crop },
-            { emoji: advisoryEmoji(a.category), label: t("rowTopic"), value: topicLabel(a.category) },
-            { emoji: "📅", label: t("rowWeek"), value: week },
-            { emoji: "📜", label: t("rowSource"), value: a.source },
+            { label: t("rowCrop"), value: a.crop },
+            { label: t("rowTopic"), value: topicLabel(a.category) },
+            { label: t("rowWeek"), value: week },
+            { label: t("rowSource"), value: a.source },
           ]}
         />
       </SheetBlock>
@@ -168,16 +167,15 @@ export function SoilSheet({
       onClose={onClose}
       title={s.villageName ?? t("villageUnnamed")}
       subtitle={tested ? t("soilSub", { date: tested }) : t("soilSubNoDate")}
-      emoji="🧪"
       hueClassName={hueClass("farm")}
       footer={
-        <SheetAction href={SHC_URL} emoji="🔗" primary>
+        <SheetAction href={SHC_URL} primary>
           {t("openShc")}
         </SheetAction>
       }
     >
       {hasPh && (
-        <SheetNote emoji={phBand(s.pH as number) === "neutral" ? "🌱" : "⚠️"}>
+        <SheetNote>
           {t.rich("soilSentence", {
             b: bold,
             village: s.villageName ?? t("villageUnnamed"),
@@ -187,28 +185,28 @@ export function SoilSheet({
           {t("phBandsHelp", { low, high })}
         </SheetNote>
       )}
-      <SheetBlock emoji="🧪" title={t("nutrientsBlock")}>
+      <SheetBlock title={t("nutrientsBlock")}>
         <DetailList
           rows={[
-            { emoji: "⚖️", label: t("phLabel"), value: hasPh ? f.number(s.pH as number, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : null },
-            { emoji: "🍃", label: t("nutrient.nitrogen"), value: levelOrText(s.nitrogen) },
-            { emoji: "🌸", label: t("nutrient.phosphorus"), value: levelOrText(s.phosphorus) },
-            { emoji: "🍌", label: t("nutrient.potassium"), value: levelOrText(s.potassium) },
-            { emoji: "🪵", label: t("organicCarbon"), value: levelOrText(s.organicCarbon) },
+            { label: t("phLabel"), value: hasPh ? f.number(s.pH as number, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : null },
+            { label: t("nutrient.nitrogen"), value: levelOrText(s.nitrogen) },
+            { label: t("nutrient.phosphorus"), value: levelOrText(s.phosphorus) },
+            { label: t("nutrient.potassium"), value: levelOrText(s.potassium) },
+            { label: t("organicCarbon"), value: levelOrText(s.organicCarbon) },
           ]}
         />
       </SheetBlock>
       {showRecommendation && (
-        <SheetBlock emoji="📝" title={t("recommendation")}>
+        <SheetBlock title={t("recommendation")}>
           <p style={{ margin: 0, fontSize: 15, lineHeight: "24px" }}>{s.recommendation}</p>
         </SheetBlock>
       )}
-      <SheetBlock emoji="📋" title={t("rowsTitle")}>
+      <SheetBlock title={t("rowsTitle")}>
         <DetailList
           rows={[
-            { emoji: "🏡", label: t("rowVillage"), value: s.villageName ?? null },
-            { emoji: "📅", label: t("rowTested"), value: tested },
-            { emoji: "📜", label: t("rowSource"), value: s.source },
+            { label: t("rowVillage"), value: s.villageName ?? null },
+            { label: t("rowTested"), value: tested },
+            { label: t("rowSource"), value: s.source },
           ]}
         />
       </SheetBlock>

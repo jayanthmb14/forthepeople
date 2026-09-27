@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Pointer } from "lucide-react";
 import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
 import { MapTooltip, tint } from "@/components/map/mapTheme";
 import type { Hue } from "@/lib/design/hues";
@@ -206,7 +207,7 @@ export default function TalukMap({ locale, state, district, taluks = [], unitLab
           pointerEvents: "none",
         }}
       >
-        <span className="ftp-emoji" aria-hidden>👆</span>
+        <Pointer size={14} aria-hidden />
         {t("mapHint", { unit: unitLabel })}
       </div>
 

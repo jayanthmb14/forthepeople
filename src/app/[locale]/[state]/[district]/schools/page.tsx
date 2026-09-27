@@ -24,14 +24,14 @@
 //  pass share + one teacher's class) → "Find a school" cards (tap → a
 //  sheet with results by year, facilities, students and teachers, the
 //  UDISE code, directions) → charts (kinds of schools, pass rate by year)
-//  → teachers' posts → AI insight → sources, news, share.
+//  → teachers' posts → AI insight → news, share (sources are in the layout's verification panel).
 //
 //  Text: page_schools (en/kn/hi). School names, types, levels and exam
 //  names are data and stay as published.
 "use client";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, User } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import {
@@ -48,7 +48,8 @@ import {
   EmptyState,
 } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, Explainer, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/page-kit";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -124,14 +125,12 @@ function ClassroomPicture({ ratio }: { ratio: number }) {
   return (
     <figure style={{ margin: 0 }}>
       <div role="img" aria-label={sentence} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 52, height: 52, fontSize: 30, borderRadius: 16 }}>
-          🧑‍🏫
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 52, height: 52, borderRadius: 16 }}>
+          <User size={30} strokeWidth={2} />
         </span>
         <div aria-hidden style={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", minWidth: 0 }}>
           {Array.from({ length: shown }).map((_, i) => (
-            <span key={i} className="ftp-emoji" style={{ fontSize: 16, lineHeight: "22px" }}>
-              🧒
-            </span>
+            <User key={i} size={16} strokeWidth={1.75} style={{ color: "var(--hue)" }} />
           ))}
           {kids > shown && (
             <span className="ftp-num" style={{ marginInlineStart: 4, fontSize: 13, color: "var(--hue-deep)" }}>
@@ -225,7 +224,7 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
       {!isLoading && schools.length > 0 && (
         <>
           {/* 1. The answer in one sentence. */}
-          <Explainer emoji="🎒">
+          <Explainer>
             {hasRatio
               ? t.rich("answer.main", {
                   count: schools.length,
@@ -244,11 +243,10 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
 
           {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
-            <StatTile emoji="🏫" label={t("tiles.schools")} value={f.number(schools.length)} sub={tileSub} />
-            <StatTile emoji="🧒" label={t("tiles.students")} value={f.number(totalStudents)} sub={tileSub} />
-            <StatTile emoji="🧑‍🏫" label={t("tiles.teachers")} value={f.number(totalTeachers)} sub={tileSub} />
+            <StatTile label={t("tiles.schools")} value={f.number(schools.length)} sub={tileSub} />
+            <StatTile label={t("tiles.students")} value={f.number(totalStudents)} sub={tileSub} />
+            <StatTile label={t("tiles.teachers")} value={f.number(totalTeachers)} sub={tileSub} />
             <StatTile
-              emoji="⚖️"
               label={t("tiles.ratio")}
               value={hasRatio ? t("ratioValue", { n: f.number(Math.round(avgRatio)) }) : "—"}
               sub={hasRatio ? t(`band.${ratioBand(avgRatio)}`) : tileSub}
@@ -264,9 +262,9 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
                   <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
                     {t("picture.passTitle", { year: latestYear })}
                   </p>
-                  <Pictogram
+                  <IconPictogram
+                    icon={GraduationCap}
                     filled={Math.min(100, latestPassPct) / 10}
-                    emoji="🎓"
                     label={t("picture.pass", { year: latestYear, passed: f.number(latestTotals.passed), total: f.number(latestTotals.total) })}
                   />
                 </Card>
@@ -283,7 +281,7 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
           )}
 
           {/* 4. Find a school; tap a card for everything about it. */}
-          <Section title={t("list.title")} emoji="🏫">
+          <Section title={t("list.title")}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
               <SearchBox
                 id="schools-search"
@@ -326,7 +324,7 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
               </div>
             )}
             {listed.length === 0 ? (
-              <EmptyState emoji="🔎" title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
+              <EmptyState title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
             ) : (
               <>
                 <div className="ftp-grid">
@@ -337,7 +335,6 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
                     return (
                       <TapCard
                         key={sc.id}
-                        emoji="🏫"
                         title={nm.text}
                         titleLang={nm.lang}
                         subtitle={t("list.typeLevel", { type: sc.type, level: sc.level })}
@@ -389,7 +386,6 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
               {typeItems.length >= 2 && topType && (
                 <ChartCard
                   title={t("types.title")}
-                  emoji="🏫"
                   units={t("types.units")}
                   simple={t.rich("types.simple", { type: topType.label, count: f.number(topType.value), total: f.number(typedTotal), b })}
                   source={UDISE}
@@ -408,7 +404,6 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
               {passChart.length > 1 && firstPoint && lastPoint && (
                 <ChartCard
                   title={t("chart.title")}
-                  emoji="📈"
                   units={t("chart.units")}
                   simple={
                     firstPoint.passRate === lastPoint.passRate
@@ -442,7 +437,7 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
           )}
 
           {/* 6. Are the teachers' posts filled? (nothing without rows) */}
-          <StaffingSection module="schools" district={district} state={state} emoji="🧑‍🏫" personEmoji="🧑‍🏫" />
+          <StaffingSection module="schools" district={district} state={state} />
 
           <div style={{ marginTop: 24 }}>
             <AIInsightCard module="schools" district={district} />
@@ -470,17 +465,16 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
         open={open !== null}
         onClose={() => setOpenId(null)}
         hueClassName={hueClass("schools")}
-        emoji="🏫"
         title={open ? place(open.name, open.nameLocal).text : ""}
         titleLang={open ? place(open.name, open.nameLocal).lang : undefined}
         subtitle={open ? t("list.typeLevel", { type: open.type, level: open.level }) : undefined}
         footer={
           open ? (
             <>
-              <ActionLink href={mapsUrl([open.name, open.address].filter(Boolean).join(", "), open.latitude, open.longitude)} emoji="🗺️" primary newTab>
+              <ActionLink href={mapsUrl([open.name, open.address].filter(Boolean).join(", "), open.latitude, open.longitude)} primary newTab>
                 {t("sheet.directions")}
               </ActionLink>
-              <ActionLink href={UDISE.href} emoji="🔗" newTab>
+              <ActionLink href={UDISE.href} newTab>
                 {t("sheet.udise")}
               </ActionLink>
             </>
@@ -490,7 +484,7 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
         {open && (
           <>
             {openRatio !== null && open.students && open.teachers ? (
-              <SheetNote emoji="🧑‍🏫">
+              <SheetNote>
                 {t.rich("sheet.people", {
                   students: f.number(open.students),
                   teachers: f.number(open.teachers),
@@ -500,10 +494,10 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
                 {t(`sheet.band.${ratioBand(openRatio)}`)}
               </SheetNote>
             ) : (
-              <SheetNote emoji="🏫">{t("sheet.noPeople")}</SheetNote>
+              <SheetNote>{t("sheet.noPeople")}</SheetNote>
             )}
 
-            <SheetHeading emoji="🎓">{t("sheet.results")}</SheetHeading>
+            <SheetHeading>{t("sheet.results")}</SheetHeading>
             {open.results.length === 0 ? (
               <p style={{ margin: 0, fontSize: 14, color: "var(--ftp-text-2)" }}>{t("sheet.noResults")}</p>
             ) : (
@@ -535,35 +529,34 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
             (open.hasLibrary !== null && open.hasLibrary !== undefined) ||
             (open.hasLab !== null && open.hasLab !== undefined) ? (
               <>
-                <SheetHeading emoji="🧰">{t("sheet.facilities")}</SheetHeading>
+                <SheetHeading>{t("sheet.facilities")}</SheetHeading>
                 <DetailList
                   rows={[
-                    { emoji: "🚻", label: t("sheet.toilets"), value: yesNo(open.hasToilets) },
-                    { emoji: "📚", label: t("sheet.library"), value: yesNo(open.hasLibrary) },
-                    { emoji: "🔬", label: t("sheet.lab"), value: yesNo(open.hasLab) },
+                    { label: t("sheet.toilets"), value: yesNo(open.hasToilets) },
+                    { label: t("sheet.library"), value: yesNo(open.hasLibrary) },
+                    { label: t("sheet.lab"), value: yesNo(open.hasLab) },
                   ]}
                 />
               </>
             ) : null}
 
-            <SheetHeading emoji="📋">{t("sheet.about")}</SheetHeading>
+            <SheetHeading>{t("sheet.about")}</SheetHeading>
             <DetailList
               rows={[
-                { emoji: "🏷️", label: t("sheet.type"), value: open.type },
-                { emoji: "🎒", label: t("sheet.level"), value: open.level },
-                { emoji: "🧒", label: t("sheet.students"), value: open.students ? f.number(open.students) : null },
-                { emoji: "🧑‍🏫", label: t("sheet.teachers"), value: open.teachers ? f.number(open.teachers) : null },
+                { label: t("sheet.type"), value: open.type },
+                { label: t("sheet.level"), value: open.level },
+                { label: t("sheet.students"), value: open.students ? f.number(open.students) : null },
+                { label: t("sheet.teachers"), value: open.teachers ? f.number(open.teachers) : null },
                 {
-                  emoji: "⚖️",
                   label: t("sheet.ratio"),
                   value:
                     openRatio !== null ? (
                       <Pill tone={BAND_TONE[ratioBand(openRatio)]}>{t("ratioValue", { n: f.number(Math.round(openRatio)) })}</Pill>
                     ) : null,
                 },
-                { emoji: "🆔", label: t("sheet.udiseCode"), value: open.udiseCode ? <span className="ftp-num">{open.udiseCode}</span> : null },
-                { emoji: "📍", label: t("sheet.address"), value: open.address },
-                { emoji: "🗓️", label: t("sheet.updated"), value: open.updatedAt ? f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
+                { label: t("sheet.udiseCode"), value: open.udiseCode ? <span className="ftp-num">{open.udiseCode}</span> : null },
+                { label: t("sheet.address"), value: open.address },
+                { label: t("sheet.updated"), value: open.updatedAt ? f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
               ]}
             />
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("sheet.note")}</p>

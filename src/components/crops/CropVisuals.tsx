@@ -8,10 +8,10 @@
 //  Crop prices — small v4 pictures used only by the crops page
 // ═══════════════════════════════════════════════════════════════════════
 //
-//    cropEmoji(name)  one emoji for a commodity name ("Tomato" → 🍅)
 //    PriceRange       a bar from the cheapest to the dearest lot of the
-//                     day, with the crop emoji standing on the typical
-//                     (modal) price
+//                     day, with a marker on the typical (modal) price
+//    MoveSplit        one bar split into crops that went up / stayed /
+//                     went down since their previous market day
 //    PriceMoves       the biggest price changes since each crop's previous
 //                     market day, as bars that go right (up) or left (down)
 //                     from a middle line
@@ -23,78 +23,33 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { useFormat } from "@/i18n/client";
-
-/** Commodity-name patterns → emoji. First match wins, so specific names come first. */
-const CROP_EMOJI: Array<[RegExp, string]> = [
-  [/sweet ?potato/, "🍠"],
-  [/tomato/, "🍅"],
-  [/onion/, "🧅"],
-  [/potato/, "🥔"],
-  [/banana/, "🍌"],
-  [/coconut|copra/, "🥥"],
-  [/mango/, "🥭"],
-  [/maize|corn/, "🌽"],
-  [/chil+i|capsicum/, "🌶️"],
-  [/garlic/, "🧄"],
-  [/carrot/, "🥕"],
-  [/brinjal|egg ?plant/, "🍆"],
-  [/cucumber|gherkin/, "🥒"],
-  [/grape/, "🍇"],
-  [/pine ?apple/, "🍍"],
-  [/water ?melon/, "🍉"],
-  [/apple/, "🍎"],
-  [/lemon|\blime\b/, "🍋"],
-  [/orange|mosambi/, "🍊"],
-  [/cauliflower|broccoli/, "🥦"],
-  [/cabbage|lettuce|spinach|methi|coriander|leaf|leaves|greens/, "🥬"],
-  [/ground ?nut|peanut/, "🥜"],
-  [/beans|peas|gram|\bdal\b|lentil|\btur\b|arhar|moong|urad|masur|pulse|cowpea|rajma/, "🫘"],
-  [/coffee/, "☕"],
-  [/\btea\b/, "🍵"],
-  [/mushroom/, "🍄"],
-  [/flower|marigold|jasmine|\brose\b|chrysanthemum/, "🌼"],
-  [/milk/, "🥛"],
-  [/\begg\b/, "🥚"],
-  [/fish/, "🐟"],
-  [/honey/, "🍯"],
-  [/rice|paddy|wheat|jowar|bajra|ragi|millet|barley|sorghum/, "🌾"],
-];
-
-/** One emoji for a commodity name. Unknown produce gets a basket. */
-export function cropEmoji(name: string | null | undefined): string {
-  const n = (name ?? "").toLowerCase();
-  for (const [re, emoji] of CROP_EMOJI) if (re.test(n)) return emoji;
-  return "🧺";
-}
 
 /**
  * PriceRange — the day's price spread for one crop, as a picture:
  * a coloured bar from the cheapest lot (left) to the dearest (right), with
- * the crop emoji and a marker on the typical (modal) price.
+ * a marker on the typical (modal) price.
  *
  * @prop min / modal / max  Prices already converted to the display unit.
  * @prop unit               "kg" or "quintal" (picks the "/kg" or "/q" suffix).
- * @prop emoji              The crop emoji that stands on the typical price.
  */
 export function PriceRange({
   min,
   modal,
   max,
   unit,
-  emoji,
 }: {
   min: number;
   modal: number;
   max: number;
   unit: "kg" | "quintal";
-  emoji: string;
 }) {
   const t = useTranslations("page_crops");
   const f = useFormat();
   const span = max - min;
   // Where the typical price sits between cheapest and dearest (0–100),
-  // kept a little inside the ends so the emoji never spills off the bar.
+  // kept a little inside the ends so the marker never spills off the bar.
   const raw = span > 0 ? ((modal - min) / span) * 100 : 50;
   const pos = Math.max(6, Math.min(94, raw));
   const rupees = (v: number) => f.number(v, { style: "currency", currency: "INR", maximumFractionDigits: 0 });
@@ -110,15 +65,8 @@ export function PriceRange({
         role="img"
         aria-label={t("rangeAria", { min: perUnit(min), modal: perUnit(modal), max: perUnit(max) })}
         dir="ltr"
-        style={{ position: "relative", paddingTop: 34 }}
+        style={{ position: "relative", paddingTop: 10 }}
       >
-        <span
-          aria-hidden
-          className="ftp-emoji"
-          style={{ position: "absolute", top: 0, left: `${pos}%`, transform: "translateX(-50%)", fontSize: 26 }}
-        >
-          {emoji}
-        </span>
         <div aria-hidden style={{ height: 14, borderRadius: "var(--ftp-radius-pill)", background: "var(--hue-tint)", overflow: "hidden" }}>
           <div
             className="ftp-grow-x"
@@ -129,7 +77,7 @@ export function PriceRange({
           aria-hidden
           style={{
             position: "absolute",
-            top: 29,
+            top: 5,
             left: `${pos}%`,
             width: 4,
             height: 24,
@@ -158,7 +106,6 @@ export function PriceRange({
 export interface PriceMove {
   key: string;
   crop: string;
-  emoji: string;
   /** Change in per cent: positive = dearer, negative = cheaper. */
   pct: number;
   /** "₹38/kg to ₹42/kg, since 12 Sep", already formatted and translated. */
@@ -184,20 +131,6 @@ export function PriceMoves({ moves }: { moves: PriceMove[] }) {
         const pctText = f.number(Math.abs(m.pct) / 100, { style: "percent", maximumFractionDigits: 1 });
         return (
           <li key={m.key} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span
-              className="ftp-icon-chip ftp-emoji"
-              aria-hidden
-              style={{
-                width: 34,
-                height: 34,
-                fontSize: 18,
-                borderRadius: 11,
-                background: "#fff",
-                border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
-              }}
-            >
-              {m.emoji}
-            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
                 <span style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)", overflowWrap: "anywhere" }}>{m.crop}</span>
@@ -253,3 +186,51 @@ export function PriceMoves({ moves }: { moves: PriceMove[] }) {
   );
 }
 
+
+/**
+ * MoveSplit — one bar split into the crops that went up, stayed the same
+ * and went down since their previous market day, with the three counts
+ * underneath (a Lucide arrow, the number, the words), so it never relies
+ * on colour alone.
+ */
+export function MoveSplit({
+  up,
+  same,
+  down,
+  labels,
+  ariaLabel,
+}: {
+  up: number;
+  same: number;
+  down: number;
+  labels: { up: string; same: string; down: string };
+  ariaLabel: string;
+}) {
+  const f = useFormat();
+  const total = up + same + down;
+  const parts = [
+    { key: "up", n: up, label: labels.up, Icon: TrendingUp, fill: "var(--hue)" },
+    { key: "same", n: same, label: labels.same, Icon: Minus, fill: "var(--hue-pop)" },
+    { key: "down", n: down, label: labels.down, Icon: TrendingDown, fill: "color-mix(in srgb, var(--hue-pop) 45%, var(--ftp-surface))" },
+  ];
+  return (
+    <figure style={{ margin: 0 }}>
+      <div role="img" aria-label={ariaLabel} dir="ltr" style={{ display: "flex", height: 16, borderRadius: 999, overflow: "hidden", background: "var(--ftp-surface-2)" }}>
+        {total > 0 && parts.map((p) => (p.n > 0 ? <span key={p.key} style={{ width: `${(p.n / total) * 100}%`, background: p.fill }} /> : null))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 12 }}>
+        {parts.map((p) => (
+          <div key={p.key} style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <p.Icon size={16} aria-hidden style={{ color: "var(--hue-deep)" }} />
+              <span className="ftp-num" style={{ fontSize: 20, lineHeight: "26px", color: "var(--hue-deep)" }}>
+                {f.number(p.n)}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{p.label}</div>
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
+}

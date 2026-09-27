@@ -23,7 +23,7 @@
 
 import React from "react";
 import { useLocale } from "next-intl";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, type LucideIcon } from "lucide-react";
 import { scriptLang } from "@/lib/utils/script-lang";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ import { scriptLang } from "@/lib/utils/script-lang";
  * opens the item's DetailSheet. Content is phrasing-only (spans), so it is
  * valid inside a <button>.
  *
- * @prop emoji     One emoji in the tinted chip on the left.
+ * @prop icon      Optional Lucide marker in a soft hue chip (only when it carries meaning).
  * @prop title     The item's name.
  * @prop subtitle  One short line under the name.
  * @prop aside     Right-hand badge or number (a Pill, "82%").
@@ -43,25 +43,31 @@ import { scriptLang } from "@/lib/utils/script-lang";
  * @prop tone      "alert" draws a warm border (an ongoing power cut).
  */
 export function TapCard({
-  emoji,
+  icon: Icon,
   title,
   titleLang,
   subtitle,
+  subtitleLang,
   aside,
   hint,
   onOpen,
   children,
   tone,
+  style,
 }: {
-  emoji: string;
+  /** Optional Lucide marker in a soft hue chip, only when it carries meaning. */
+  icon?: LucideIcon;
   title: React.ReactNode;
   titleLang?: string;
   subtitle?: React.ReactNode;
+  subtitleLang?: string;
   aside?: React.ReactNode;
   hint: string;
   onOpen: () => void;
   children?: React.ReactNode;
   tone?: "alert";
+  /** Extra styles, e.g. a severity wash on the Alerts page. */
+  style?: React.CSSProperties;
 }) {
   return (
     <button
@@ -91,12 +97,15 @@ export function TapCard({
             : "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
         boxShadow: "var(--ftp-shadow-1)",
+        ...style,
       }}
     >
       <span style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%", minWidth: 0 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
-          {emoji}
-        </span>
+        {Icon && (
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11 }}>
+            <Icon size={18} strokeWidth={1.75} />
+          </span>
+        )}
         <span style={{ display: "block", flex: 1, minWidth: 0 }}>
           <span
             lang={titleLang}
@@ -106,7 +115,7 @@ export function TapCard({
             {title}
           </span>
           {subtitle && (
-            <span style={{ display: "block", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)", marginTop: 2, overflowWrap: "anywhere" }}>
+            <span lang={subtitleLang} style={{ display: "block", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)", marginTop: 2, overflowWrap: "anywhere" }}>
               {subtitle}
             </span>
           )}
@@ -262,14 +271,12 @@ export function matches(query: string, ...fields: Array<string | null | undefine
  */
 export function ActionLink({
   href,
-  emoji,
   children,
   primary,
   newTab,
   ariaLabel,
 }: {
   href: string;
-  emoji?: string;
   children: React.ReactNode;
   primary?: boolean;
   newTab?: boolean;
@@ -300,18 +307,13 @@ export function ActionLink({
         flex: "1 1 auto",
       }}
     >
-      {emoji && (
-        <span className="ftp-emoji" aria-hidden style={{ fontSize: 16 }}>
-          {emoji}
-        </span>
-      )}
       {children}
     </a>
   );
 }
 
 /** The plain sentence at the top of a sheet, on a soft hue wash. */
-export function SheetNote({ emoji, children }: { emoji?: string; children: React.ReactNode }) {
+export function SheetNote({ children }: { children: React.ReactNode }) {
   return (
     <p
       style={{
@@ -328,25 +330,15 @@ export function SheetNote({ emoji, children }: { emoji?: string; children: React
         color: "var(--ftp-text)",
       }}
     >
-      {emoji && (
-        <span className="ftp-emoji" aria-hidden style={{ fontSize: 20, lineHeight: 1.2 }}>
-          {emoji}
-        </span>
-      )}
       <span style={{ minWidth: 0 }}>{children}</span>
     </p>
   );
 }
 
-/** A small heading inside a sheet ("🧪 Water tests"). */
-export function SheetHeading({ emoji, children }: { emoji?: string; children: React.ReactNode }) {
+/** A small heading inside a sheet ("Water tests"). */
+export function SheetHeading({ children }: { children: React.ReactNode }) {
   return (
     <h3 style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 15, lineHeight: 1.4, fontWeight: 650, color: "var(--hue-deep)" }}>
-      {emoji && (
-        <span className="ftp-emoji" aria-hidden>
-          {emoji}
-        </span>
-      )}
       {children}
     </h3>
   );

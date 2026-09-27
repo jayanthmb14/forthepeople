@@ -16,8 +16,10 @@
 //  news" (one action card per busy topic, with the headline that triggered
 //  it; tap → steps, why, the headlines, helpline) → all the things you can
 //  do, as tappable cards, with the areas that are in the news first (tap →
-//  why, who to tell, call / website, source) → areas ring + emergency card
-//  → sources → toolbar.
+//  why, who to tell, call / website, source) → areas ring → CSV · Share ·
+//  Compare. No emoji: topics and areas are words. Emergency numbers are on
+//  "Helplines & your rights"; sources are in the layout's verification
+//  panel.
 //
 //  Responsibilities change with the news: /api/data/responsibility-news
 //  counts the district's last 14 days of news by topic with a plain rule
@@ -33,7 +35,7 @@
 import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, Download, Flame, Share2 } from "lucide-react";
+import { Flame, Megaphone } from "lucide-react";
 import {
   Card,
   Chips,
@@ -41,20 +43,17 @@ import {
   ModulePage,
   PageHeader,
   Section,
-  SourcesFooter,
   StatStrip,
   StatTile,
-  Toolbar,
-  ToolbarButton,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { IconPictogram, PageActions } from "@/components/district/page-kit";
 import { HueDonut } from "@/components/district/civic/HueDonut";
 import {
   ActionCard,
   ActionSheet,
   AreaCard,
   AreaSheet,
-  EmergencyCard,
   TopicBars,
   TopicCard,
   TopicSheet,
@@ -63,7 +62,6 @@ import {
 } from "@/components/district/civic/ResponsibilityParts";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { getResponsibilityContent } from "@/lib/constants/responsibility-content";
-import { getModuleSources } from "@/lib/constants/state-config";
 import { topicRule } from "@/lib/civic/news-topics";
 import type { NewsTopicCount, ResponsibilityNewsPayload } from "@/app/api/data/responsibility-news/route";
 import knDict from "@/dictionaries/kn.json";
@@ -85,9 +83,6 @@ type ResponsibilityApiResponse = {
   fallback: "generic" | null;
 };
 
-/** Source names and update frequencies from getModuleSources() that have a translation. */
-const SOURCE_KEY: Record<string, string> = { "District Administration": "districtAdministration" };
-const FREQ_KEY: Record<string, string> = { Quarterly: "quarterly" };
 /** Topic cards shown in "Because of what's in the news". */
 const TOP_TOPICS = 4;
 
@@ -105,38 +100,9 @@ function downloadCsv(filename: string, rows: Array<Record<string, string | numbe
   URL.revokeObjectURL(url);
 }
 
-/**
- * Emoji for a group of actions, picked from its title. Used for the generic
- * guide (which carries no emoji) and when a researched section has none.
- * Order matters: "Flooding & Drainage" must match floods before water.
- */
-const GROUP_EMOJI: Array<[RegExp, string]> = [
-  [/can become|years/i, "🌟"],
-  [/clean|waste/i, "🧹"],
-  [/flood|drain|waterlog|disaster/i, "🌊"],
-  [/water|river/i, "💧"],
-  [/air|pollution/i, "🌫️"],
-  [/traffic|road|transport|commute/i, "🚦"],
-  [/wildlife/i, "🐘"],
-  [/lake|coast/i, "🏞️"],
-  [/environment|green/i, "🌳"],
-  [/agri|farm|land/i, "🌾"],
-  [/heritage|culture|tourism/i, "🏛️"],
-  [/housing|infrastructure/i, "🏗️"],
-  [/health|education/i, "🏥"],
-  [/tech/i, "💻"],
-  [/civic|democra|engagement/i, "🗳️"],
-];
-function groupEmoji(title: string, fromData?: string | null): string {
-  const given = fromData?.trim();
-  if (given) return given;
-  return GROUP_EMOJI.find(([re]) => re.test(title))?.[1] ?? "🌱";
-}
-
 interface AreaCount {
   key: string;
   label: string;
-  emoji: string;
   value: number;
 }
 
@@ -159,13 +125,12 @@ function AreasRing({ areas }: { areas: AreaCount[] }) {
   return (
     <ChartCard
       title={t("chartTitle")}
-      emoji="🧩"
       units={t("chartUnits")}
       simple={simple}
       table={sorted.map((a) => ({ label: a.label, value: f.number(a.value) }))}
     >
       <HueDonut
-        slices={areas.map((a) => ({ key: a.key, label: a.label, value: a.value, emoji: a.emoji }))}
+        slices={areas.map((a) => ({ key: a.key, label: a.label, value: a.value }))}
         centerValue={f.number(total)}
         centerLabel={t("chartCenter", { n: total })}
         ariaLabel={t("chartAria", { summary })}
@@ -183,11 +148,10 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
   const topicText = useTopicText();
   const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
-  const [shareNote, setShareNote] = useState<string | null>(null);
   const [area, setArea] = useState("all");
   const [topicOpen, setTopicOpen] = useState<NewsTopicCount | null>(null);
-  const [actionOpen, setActionOpen] = useState<{ item: ResearchItem; area: string; emoji: string } | null>(null);
-  const [areaOpen, setAreaOpen] = useState<{ title: string; emoji: string; items: string[] } | null>(null);
+  const [actionOpen, setActionOpen] = useState<{ item: ResearchItem; area: string } | null>(null);
+  const [areaOpen, setAreaOpen] = useState<{ title: string; items: string[] } | null>(null);
   const closeTopic = useCallback(() => setTopicOpen(null), []);
   const closeAction = useCallback(() => setActionOpen(null), []);
   const closeArea = useCallback(() => setAreaOpen(null), []);
@@ -205,7 +169,6 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
 
   const districtSpecific = apiData?.data && apiData.data.sections.length > 0 ? apiData.data : null;
   const genericContent = getResponsibilityContent(district);
-  const src = getModuleSources("responsibility", state);
   const titleLocal = state === "karnataka" ? knDict.modules.responsibility : undefined;
   const moduleTitle = mt.label("responsibility");
   const b = (c: React.ReactNode) => <strong>{c}</strong>;
@@ -241,23 +204,8 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
   const actionCount = districtSpecific ? districtSpecific.itemCount : genericActionCount;
   const areaCount = districtSpecific ? districtSpecific.sections.length : genericActionSections.length;
   const areas: AreaCount[] = districtSpecific
-    ? specificSections.map((s) => ({ key: s.section, label: s.section, emoji: groupEmoji(s.section, s.icon), value: s.items.length }))
-    : genericActionSections.map((s) => ({ key: s.title, label: s.title, emoji: groupEmoji(s.title), value: s.items.length }));
-
-  const onShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: moduleTitle, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareNote(t("linkCopied"));
-        setTimeout(() => setShareNote(null), 2000);
-      }
-    } catch {
-      /* The visitor closed the share sheet — nothing to do. */
-    }
-  };
+    ? specificSections.map((s) => ({ key: s.section, label: s.section, value: s.items.length }))
+    : genericActionSections.map((s) => ({ key: s.title, label: s.title, value: s.items.length }));
 
   const onCsv = () =>
     districtSpecific
@@ -297,7 +245,7 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
       />
 
       {!isLoading && !newsLoading && (
-        <Explainer emoji="🙋">
+        <Explainer>
           {lead
             ? t.rich("simpleNews", {
                 name: districtName,
@@ -316,21 +264,20 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
 
       {!isLoading && (
         <StatStrip>
-          {news && <StatTile emoji="📰" label={t("tileNews")} value={f.number(news.totalStories)} sub={t("tileNewsSub", { n: news.topicalStories })} />}
+          {news && <StatTile label={t("tileNews")} value={f.number(news.totalStories)} sub={t("tileNewsSub", { n: news.topicalStories })} />}
           {lead && (
             <StatTile
-              emoji={topicRule(lead.topic)?.emoji ?? "📰"}
               label={t("tileTopTopic")}
               value={topicText.label(lead.topic)}
               sub={t("tileTopTopicSub", { n: lead.count })}
               countUp={false}
             />
           )}
-          <StatTile emoji="✅" label={t("tileActions")} value={f.number(actionCount)} sub={t("tileActionsSub", { areas: areaCount })} />
+          <StatTile label={t("tileActions")} value={f.number(actionCount)} sub={t("tileActionsSub", { areas: areaCount })} />
           {districtSpecific ? (
-            <StatTile emoji="📣" label={t("tileContacts")} value={f.number(withContact)} sub={t("tileContactsSub")} />
+            <StatTile label={t("tileContacts")} value={f.number(withContact)} sub={t("tileContactsSub")} />
           ) : (
-            <StatTile emoji="🗂️" label={t("tileAreas")} value={f.number(areaCount)} sub={t("tileAreasSub")} />
+            <StatTile label={t("tileAreas")} value={f.number(areaCount)} sub={t("tileAreasSub")} />
           )}
         </StatStrip>
       )}
@@ -348,7 +295,7 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
         withContact > 0 && (
           <div style={{ marginTop: 16 }}>
             <Card tinted padding={18}>
-              <Pictogram filled={contactShare * 10} emoji="📣" label={t("pictogramContact", { n: Math.round(contactShare * 10) })} />
+              <IconPictogram icon={Megaphone} filled={contactShare * 10} label={t("pictogramContact", { n: Math.round(contactShare * 10) })} />
             </Card>
           </div>
         )
@@ -356,7 +303,7 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
 
       {/* Because of what's in the news */}
       {!newsLoading && (
-        <Section title={t("newsTitle")} emoji="📰">
+        <Section title={t("newsTitle")}>
           {topTopics.length > 0 ? (
             <>
               <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
@@ -378,7 +325,7 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
 
       {/* All the things you can do */}
       {!isLoading && (
-        <Section title={t("allTitle")} emoji="✅">
+        <Section title={t("allTitle")}>
           <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
             {topTopics.length > 0 ? t("allLeadNews") : t("allLead")}
           </p>
@@ -393,16 +340,14 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
                 {specificSections
                   .filter((s) => area === "all" || s.section === area)
                   .flatMap((s) => {
-                    const emoji = groupEmoji(s.section, s.icon);
                     const inNews = areaInNews(s.section);
                     return s.items.map((item, idx) => (
                       <ActionCard
                         key={`${s.section}-${idx}`}
                         item={item}
                         area={s.section}
-                        emoji={emoji}
                         inNews={inNews}
-                        onOpen={() => setActionOpen({ item, area: s.section, emoji })}
+                        onOpen={() => setActionOpen({ item, area: s.section })}
                       />
                     ));
                   })}
@@ -415,15 +360,13 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
             <>
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
                 {genericActionSections.map((s) => {
-                  const emoji = groupEmoji(s.title);
                   return (
                     <AreaCard
                       key={s.title}
                       title={s.title}
-                      emoji={emoji}
                       items={s.items}
                       inNews={areaInNews(s.title)}
-                      onOpen={() => setAreaOpen({ title: s.title, emoji, items: s.items })}
+                      onOpen={() => setAreaOpen({ title: s.title, items: s.items })}
                     />
                   );
                 })}
@@ -432,7 +375,6 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
                 <div style={{ marginTop: 16 }}>
                   <Card tinted padding={18}>
                     <p className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
-                      <span aria-hidden>🌟 </span>
                       {genericProjection.title}
                     </p>
                     <p className="ftp-body" style={{ margin: "4px 0 10px", color: "var(--ftp-text-2)" }}>
@@ -454,35 +396,16 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
         </Section>
       )}
 
-      {/* Chart + the emergency numbers, side by side on wide screens. */}
-      {!isLoading && (
-        <div className={areas.length >= 2 ? "ftp-picture-row" : undefined} style={{ marginTop: 28 }}>
+      {/* How the actions spread across areas (hidden with fewer than two). */}
+      {!isLoading && areas.length >= 2 && (
+        <div style={{ marginTop: 28, maxWidth: 640 }}>
           <AreasRing areas={areas} />
-          <EmergencyCard />
         </div>
       )}
 
-      <SourcesFooter
-        sources={[
-          ...src.sources.map((name) => ({
-            name: SOURCE_KEY[name] ? t(`sourceNames.${SOURCE_KEY[name]}`) : name,
-            frequency: FREQ_KEY[src.frequency] ? t(`freq.${FREQ_KEY[src.frequency]}`) : src.frequency,
-          })),
-          { name: t("sourceNews"), frequency: t("freq.news") },
-        ]}
-      />
-
-      <Toolbar label={t("toolbar")}>
-        <ToolbarButton icon={Download} onClick={onCsv} disabled={isLoading}>
-          {t("downloadCsv")}
-        </ToolbarButton>
-        <ToolbarButton icon={Share2} onClick={onShare}>
-          {shareNote ?? t("share")}
-        </ToolbarButton>
-        <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=responsibility&a=${district}`}>
-          {t("compare")}
-        </ToolbarButton>
-      </Toolbar>
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="responsibility" onCsv={isLoading ? undefined : onCsv} csvLabel={t("downloadCsv")} />
+      </div>
 
       <TopicSheet x={topicOpen} onClose={closeTopic} name={districtName} base={base} />
       <ActionSheet open={actionOpen} onClose={closeAction} />

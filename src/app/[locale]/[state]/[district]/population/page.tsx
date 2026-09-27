@@ -9,16 +9,19 @@
 //  (docs/LAYOUT.md recipe; docs/MODULE-MAP.md "Know your district")
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  ModulePage → PageHeader → AI summary → Explainer (how many people at the
+//  ModulePage → PageHeader → Explainer (how many people at the
 //  last Census, then literacy and the sex ratio in words) + a line on how
 //  old the Census is → 4 StatTiles (people, literacy, sex ratio, living in
-//  towns) → ONE picture row: 10 books with the readers lit, 10 men and the
-//  matching women, and a card of the other Census numbers → the disclosure
+//  towns) → ONE picture row: 10 books (Lucide) with the readers lit, 10
+//  men and the matching women, and a card of the other Census numbers →
+//  the disclosure
 //  panel (legal text, English is official) → the charts, 2 per row on
 //  laptop/PC, 1 on phones: each is a ChartCard with a plain sentence, a
 //  "Show as table" view and its own source badge. Charts with no data for
 //  this district are not drawn; one line names them instead → the poverty
-//  index → sources → related news → Share / Compare.
+//  index → AI summary → related news → Share / Compare. No emoji; the
+//  page-wide sources list is the layout's verification panel (each chart
+//  keeps its own source badge).
 //
 //  Colours: the page hue (teal) for single-series charts and pictures.
 //  Religion, caste, education and employment keep their colour-blind-safe
@@ -31,7 +34,7 @@
 "use client";
 import { use } from "react";
 import { useTranslations } from "next-intl";
-import { Users, GitCompare } from "lucide-react";
+import { BookOpen, User, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 import { usePopulation, usePopulationProfile } from "@/hooks/useRealtimeData";
@@ -46,18 +49,14 @@ import {
   ErrorBlock,
   EmptyState,
   AsOfText,
-  SourcesFooter,
-  Toolbar,
-  ToolbarButton,
 } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, Explainer } from "@/components/district/visuals";
+import { IconPictogram, PageActions } from "@/components/district/page-kit";
 import { DetailList } from "@/components/district/DetailSheet";
 import { ShareDonut } from "@/components/community/CommunityVisuals";
-import { SharePageButton } from "@/components/community/pageTools";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
-import { getModuleSources } from "@/lib/constants/state-config";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
 import DemographicDisclaimer from "@/components/demographics/DemographicDisclaimer";
@@ -142,7 +141,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
   const profile = profileQ.data?.data ?? null;
   const history = historyQ.data?.data ?? [];
 
-  const sources = getModuleSources("population", state);
 
   // Number helpers in the page language.
   const int = (n: number | null | undefined) => (n == null ? "—" : f.number(n));
@@ -293,18 +291,17 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
 
   // Other Census numbers, each only when the Census has it.
   const moreRows = [
-    { emoji: "🧒", label: t("statChildSexRatio"), value: profile?.childSexRatio ? t("childRatioValue", { v: int(profile.childSexRatio), thousand }) : null },
-    { emoji: "🏘️", label: t("statDensity"), value: profile?.density ? t("densityValue", { v: int(profile.density) }) : null },
-    { emoji: "🏠", label: t("households"), value: profile?.households ? int(profile.households) : null },
+    { label: t("statChildSexRatio"), value: profile?.childSexRatio ? t("childRatioValue", { v: int(profile.childSexRatio), thousand }) : null },
+    { label: t("statDensity"), value: profile?.density ? t("densityValue", { v: int(profile.density) }) : null },
+    { label: t("households"), value: profile?.households ? int(profile.households) : null },
     {
-      emoji: "👪",
       label: t("avgHousehold"),
       value: profile?.avgHouseholdSize ? f.number(profile.avgHouseholdSize, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : null,
     },
-    { emoji: "👨", label: t("menCount"), value: profile?.malePopulation ? int(profile.malePopulation) : null },
-    { emoji: "👩", label: t("womenCount"), value: profile?.femalePopulation ? int(profile.femalePopulation) : null },
-    { emoji: "📐", label: t("areaLabel"), value: profile?.areaSqKm ? t("areaValue", { v: int(profile.areaSqKm) }) : null },
-    { emoji: "🎂", label: t("medianAge"), value: profile?.medianAge ? t("medianAgeValue", { v: f.number(profile.medianAge, { maximumFractionDigits: 1 }) }) : null },
+    { label: t("menCount"), value: profile?.malePopulation ? int(profile.malePopulation) : null },
+    { label: t("womenCount"), value: profile?.femalePopulation ? int(profile.femalePopulation) : null },
+    { label: t("areaLabel"), value: profile?.areaSqKm ? t("areaValue", { v: int(profile.areaSqKm) }) : null },
+    { label: t("medianAge"), value: profile?.medianAge ? t("medianAgeValue", { v: f.number(profile.medianAge, { maximumFractionDigits: 1 }) }) : null },
   ];
   const moreCount = moreRows.filter((r) => r.value).length;
 
@@ -326,24 +323,20 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
         source={{ label: tOv("censusOfIndia"), href: "https://censusindia.gov.in" }}
       />
 
-      <AIInsightCard module="population" district={district} />
-
       {isLoading && <LoadingShell rows={8} />}
       {profileQ.error && <ErrorBlock />}
 
       {!isLoading && !hasAnyData && (
         <EmptyState
-          emoji="📈"
           title={tNo("population.title")}
           body={tNo("population.body", { district: districtName })}
-          action={<p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{tNo("footer")}</p>}
         />
       )}
 
       {!isLoading && hasAnyData && (
         <>
           {(headlinePopulation || simpleKey) && (
-          <Explainer emoji="👥">
+          <Explainer>
             {headlinePopulation && (
               <>
                 {t.rich("answerPop", { name: districtName, pop: int(headlinePopulation.value), year: String(headlinePopulation.year), b: boldNum })}{" "}
@@ -362,28 +355,24 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
           )}
           {/* How old the Census is: Census 2011 is the baseline until 2027. */}
           <p className="ftp-prose" style={{ color: "var(--ftp-text-2)", margin: "-8px 0 16px", fontSize: 13, lineHeight: "20px" }}>
-            <span className="ftp-emoji" aria-hidden>📅 </span>
             <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{t("currencyLead")}</span> {t("currencyBody")}
           </p>
 
           <StatStrip cols={4}>
             <StatTile
-              emoji="👥"
               label={headlinePopulation ? t("statPopulationYear", { year: String(headlinePopulation.year) }) : t("statPopulation")}
               value={headlinePopulation ? int(headlinePopulation.value) : "—"}
               asOfPeriod={headlinePopulation ? t("censusYear", { year: String(headlinePopulation.year) }) : undefined}
             />
             <StatTile
-              emoji="📖"
               label={t("statLiteracy")}
               value={literacy ? f.number(literacy, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—"}
               unit={literacy ? "%" : undefined}
               sub={t("statLiteracySub")}
               asOfPeriod={censusSub}
             />
-            <StatTile emoji="⚖️" label={t("statSexRatio")} value={sexRatio ? int(sexRatio) : "—"} sub={t("statSexRatioSub")} asOfPeriod={censusSub} />
+            <StatTile label={t("statSexRatio")} value={sexRatio ? int(sexRatio) : "—"} sub={t("statSexRatioSub")} asOfPeriod={censusSub} />
             <StatTile
-              emoji="🏙️"
               label={t("statUrban")}
               value={profile?.urbanPct ? f.number(profile.urbanPct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—"}
               unit={profile?.urbanPct ? "%" : undefined}
@@ -398,17 +387,15 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {literacy ? (
                 <Card tinted padding={18} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <p className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-                    <span className="ftp-emoji" aria-hidden>📖 </span>
                     {t("readersTitle")}
                   </p>
-                  <Pictogram filled={literacy / 10} emoji="📖" label={t("literacyPicto", { n: Math.round(literacy / 10), pct: pct(literacy) })} />
+                  <IconPictogram icon={BookOpen} filled={literacy / 10} label={t("literacyPicto", { n: Math.round(literacy / 10), pct: pct(literacy) })} />
                   <AsOfText period={censusSub} />
                 </Card>
               ) : null}
               {womenPerTenMen && sexRatio ? (
                 <Card tinted padding={18} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <p className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-                    <span className="ftp-emoji" aria-hidden>👫 </span>
                     {t("menAndWomen")}
                   </p>
                   <SexRatioPicture womenPerTenMen={womenPerTenMen} sexRatio={sexRatio} />
@@ -418,7 +405,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {moreCount > 0 && (
                 <Card padding={18} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <p className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}>
-                    <span className="ftp-emoji" aria-hidden>🔢 </span>
                     {t("moreTitle")}
                   </p>
                   <DetailList rows={moreRows} />
@@ -433,12 +419,11 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
             <DemographicDisclaimer districtName={districtName} defaultOpen={false} />
           </div>
 
-          <Section emoji="📊" title={t("chartsTitle")}>
+          <Section title={t("chartsTitle")}>
             <div style={chartGrid}>
               {showTrend && firstCensus && lastCensus && (
                 <ChartCard
                   title={t("trendTitle")}
-                  emoji="📈"
                   units={t("trendUnits")}
                   simple={t.rich("trendSimple", {
                     first: String(firstCensus.year),
@@ -475,7 +460,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {showTowns && urbanCount !== null && ruralCount !== null && (
                 <ChartCard
                   title={t("townsTitle")}
-                  emoji="🏙️"
                   units={t("townsUnits")}
                   simple={
                     Math.round(urbanShare * 10) === 0
@@ -493,8 +477,8 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
                 >
                   <ShareDonut
                     slices={[
-                      { key: "urban", label: t("towns"), value: urbanCount, emoji: "🏙️", color: "var(--hue-deep)" },
-                      { key: "rural", label: t("villages"), value: ruralCount, emoji: "🏡", color: "var(--hue-pop)" },
+                      { key: "urban", label: t("towns"), value: urbanCount, color: "var(--hue-deep)" },
+                      { key: "rural", label: t("villages"), value: ruralCount, color: "var(--hue-pop)" },
                     ]}
                     centerValue={f.number(urbanShare, { style: "percent", maximumFractionDigits: 0 })}
                     centerLabel={t("towns")}
@@ -509,7 +493,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.age && (
                 <ChartCard
                   title={t("ageTitle")}
-                  emoji="🎂"
                   units={t("ageUnits")}
                   simple={biggestAge ? t.rich("ageSimple", { band: bandWords(biggestAge.band), n: int(biggestAge.value), b: boldNum }) : undefined}
                   table={<RowsTable caption={t("ageCaption")} rows={ages.map((r) => ({ label: t("ageRow", { band: bandWords(r.band) }), value: int(r.value) }))} cite={cite()} />}
@@ -527,7 +510,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.literacy && (
                 <ChartCard
                   title={t("literacyTitle")}
-                  emoji="📖"
                   units={t("literacyUnits")}
                   simple={
                     litMale !== null && litFemale !== null
@@ -549,7 +531,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.education && (
                 <ChartCard
                   title={t("educationTitle")}
-                  emoji="🎓"
                   units={t("educationUnits")}
                   simple={topEducation ? t.rich("educationSimple", { level: topEducation.label, pct: pct(topEducation.n), b: bold }) : undefined}
                   table={<RowsTable caption={t("educationCaption")} rows={educationRows.map((r) => ({ label: r.label, value: pct(r.n, 2) }))} cite={cite()} />}
@@ -562,7 +543,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.employment && (
                 <ChartCard
                   title={t("employmentTitle")}
-                  emoji="👷"
                   units={t("employmentUnits")}
                   simple={
                     employment &&
@@ -587,7 +567,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.amenities && (
                 <ChartCard
                   title={t("amenitiesTitle")}
-                  emoji="🏠"
                   units={t("amenitiesUnits")}
                   simple={
                     amenityHigh && amenityLow
@@ -604,7 +583,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.language && (
                 <ChartCard
                   title={t("languageTitle")}
-                  emoji="🗣️"
                   units={t("languageUnits")}
                   simple={t.rich("languageSimple", { name: languageRows[0].name, pct: pct(languageRows[0].pct), b: bold })}
                   table={<RowsTable caption={t("languageCaption")} rows={languageRows.map((l) => ({ label: l.name, value: pct(l.pct) }))} cite={cite()} />}
@@ -617,7 +595,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.migration && (
                 <ChartCard
                   title={t("migrationTitle")}
-                  emoji="🧳"
                   units={t("migrationUnits")}
                   simple={
                     migration && (typeof migration.totalInMigrantsPct === "number" || topReason) ? (
@@ -638,7 +615,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.sexRatio && (
                 <ChartCard
                   title={t("sexRatioTitle")}
-                  emoji="⚖️"
                   units={t("sexRatioUnits")}
                   simple={
                     sexRatio
@@ -667,7 +643,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.religion && (
                 <ChartCard
                   title={t("religionTitle")}
-                  emoji="🧩"
                   units={t("religionUnits")}
                   simple={t("religionSimple")}
                   table={<RowsTable caption={t("religionCaption")} rows={religionRows} cite={cite()} />}
@@ -680,7 +655,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
               {has.caste && (
                 <ChartCard
                   title={t("casteTitle")}
-                  emoji="🗂️"
                   units={t("casteUnits")}
                   simple={t("casteSimple")}
                   table={<RowsTable caption={t("casteCaption")} rows={casteRows} cite={cite()} />}
@@ -693,7 +667,6 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
 
             {missing.length > 0 && (
               <p style={{ margin: "14px 0 0", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                <span className="ftp-emoji" aria-hidden>🗂️ </span>
                 {t("missingLine", { list: listFormat.format(missing) })}
               </p>
             )}
@@ -701,25 +674,25 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
 
           {/* Economic class (NITI MPI): the component draws its own tiles. */}
           {has.mpi && (
-            <Section title={t("mpiTitle")} emoji="🧾">
+            <Section title={t("mpiTitle")}>
               <MPIIndicatorCard economicClass={economicClass} />
             </Section>
           )}
         </>
       )}
 
-      <SourcesFooter sources={sources.sources.map((name) => ({ name }))} />
-      <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "8px 0 0" }}>{t("frequency")}</p>
+      {!isLoading && hasAnyData && (
+        <div style={{ marginTop: 24 }}>
+          <AIInsightCard module="population" district={district} />
+        </div>
+      )}
 
       {/* Related news (targetModule === "population") */}
       <ModuleNews district={district} state={state} locale={locale} module="population" />
 
-      <Toolbar>
-        <SharePageButton />
-        <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=population&a=${district}`}>
-          {t("compare")}
-        </ToolbarButton>
-      </Toolbar>
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="population" />
+      </div>
     </ModulePage>
   );
 }
@@ -744,11 +717,11 @@ function SexRatioPicture({ womenPerTenMen, sexRatio }: { womenPerTenMen: number;
   const womenTotal = Math.max(10, Math.ceil(womenPerTenMen));
   return (
     <div role="group" aria-label={t("sexRatioGroup", { ratio: f.number(sexRatio), thousand: f.number(1000) })} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <Pictogram filled={10} total={10} emoji="👨" size={16} label={t("tenMen")} />
-      <Pictogram
+      <IconPictogram icon={User} filled={10} total={10} size={16} label={t("tenMen")} />
+      <IconPictogram
+        icon={User}
         filled={womenPerTenMen}
         total={womenTotal}
-        emoji="👩"
         size={16}
         label={t("aboutWomen", { n: f.number(womenPerTenMen, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}
       />

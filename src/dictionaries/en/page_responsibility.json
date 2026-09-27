@@ -179,11 +179,6 @@
     "count": "{n, plural, one {# thing to do} other {# things to do}}",
     "open": "See all"
   },
-  "emergencyTitle": "In an emergency",
-  "emergencyBody": "If a life is in danger, call 112. For an ambulance, call 108.",
-  "emergency112": "Emergency",
-  "emergency108": "Ambulance",
-  "callAria": "Call {name}: {number}",
   "chartTitle": "Actions in each area",
   "chartUnits": "How many actions each area has",
   "chartTop": "<b>{top}</b> has the most actions: {n} of {total}.",
@@ -192,20 +187,8 @@
   "chartAria": "Ring chart of actions by area. {summary}",
   "chartCenter": "{n, plural, one {action} other {actions}}",
   "otherAreas": "Other areas",
-  "footSpecific": "These actions are based on official government sources. ForThePeople.in is not an official government website. Tap a card and see \"Where this comes from\".",
+  "footSpecific": "These actions were researched from government pages, official reports and local news. Tap a card to see where each one comes from.",
   "projectionLead": "If citizens and government work together, here is where {name} can be by 2030:",
   "footGeneric": "This is general guidance for {name}. Each district gets its own guide, built around its own challenges and strengths, as research is completed.",
-  "sourceNews": "News stories from the last 14 days (each story names its publisher)",
-  "downloadCsv": "Download CSV",
-  "share": "Share",
-  "linkCopied": "Link copied",
-  "compare": "Compare with another district",
-  "toolbar": "Page actions",
-  "freq": {
-    "quarterly": "Quarterly",
-    "news": "At least once a day"
-  },
-  "sourceNames": {
-    "districtAdministration": "District Administration"
-  }
+  "downloadCsv": "Download CSV"
 }

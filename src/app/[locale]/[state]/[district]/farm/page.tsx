@@ -19,7 +19,8 @@
 //    full advice, crop, topic, week, source, Kisan Call Centre) → soil
 //    cards (tap → SoilSheet: pH sentence, N/P/K meters, date, source) →
 //    AI insight → charts (soil nutrients · what the advice is about) →
-//    news → footer.
+//    news → Share. Sources and "report a mistake" are in the layout's
+//    verification panel.
 //
 //  Data: useSoil() → { soil (≤ 20 village reports), advisories (≤ 10
 //  newest KVK / ICAR advisories) }. Every advisory shows its week and
@@ -55,7 +56,6 @@ import {
   PhScale,
   NutrientBars,
   NUTRIENT_FILL,
-  advisoryEmoji,
   advisoryTopic,
   nutrientLevel,
   phBand,
@@ -63,12 +63,11 @@ import {
   PH_ALKALINE_ABOVE,
 } from "@/components/farm/SoilVisuals";
 import type { NutrientRow } from "@/components/farm/SoilVisuals";
-import { cropEmoji } from "@/components/crops/CropVisuals";
 import { HueDonut, useDistrictName } from "@/components/land-water/visuals";
 import type { DonutSlice } from "@/components/land-water/visuals";
-import { fitGrid, Chip, EmojiTile, TapCard, TapHint } from "@/components/land-water/cards";
+import { fitGrid, Chip, TapCard, TapHint } from "@/components/land-water/cards";
 import { AdvisorySheet, SoilSheet, adviceTexts } from "@/components/land-water/FarmSheets";
-import { LandWaterFooter } from "@/components/land-water/PageFooter";
+import { PageActions } from "@/components/district/page-kit";
 import { scriptLang } from "@/lib/utils/script-lang";
 
 const SHC_URL = "https://soilhealth.dac.gov.in";
@@ -125,14 +124,14 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
   const cropsCovered = new Set(activeAdvisories.map((a) => a.crop.trim().toLowerCase())).size;
 
   // Topics of the active advisories (filter chips + donut).
-  const topicCounts = new Map<string, { key: string; label: string; emoji: string; n: number }>();
+  const topicCounts = new Map<string, { key: string; label: string; n: number }>();
   for (const a of activeAdvisories) {
     const key = advisoryTopic(a.category) ?? `other:${a.category.trim().toLowerCase()}`;
     const prev = topicCounts.get(key);
-    topicCounts.set(key, { key, label: topicLabel(a.category), emoji: advisoryEmoji(a.category), n: (prev?.n ?? 0) + 1 });
+    topicCounts.set(key, { key, label: topicLabel(a.category), n: (prev?.n ?? 0) + 1 });
   }
   const topics = Array.from(topicCounts.values()).sort((a, b) => b.n - a.n);
-  const topicSlices: DonutSlice[] = topics.map((x) => ({ key: x.key, label: x.label, value: x.n, emoji: x.emoji }));
+  const topicSlices: DonutSlice[] = topics.map((x) => ({ key: x.key, label: x.label, value: x.n }));
   const showTopics = activeAdvisories.length >= 2 && topicSlices.length >= 2;
   const topicKeyOf = (a: AgriAdvisory) => advisoryTopic(a.category) ?? `other:${a.category.trim().toLowerCase()}`;
   const shownAdvisories = [...activeAdvisories]
@@ -182,13 +181,13 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && soilData.length === 0 && advisories.length === 0 && (
-        <EmptyState emoji="🌱" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+        <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
       )}
 
       {hasAny && (
         <>
           {/* 1 · The answer in plain words. */}
-          <Explainer emoji="🚜">
+          <Explainer>
             {activeAdvisories.length > 0 && latestWeek
               ? t.rich("answerAdvice", { b: bold, n: activeAdvisories.length, crops: cropsCovered, date: weekDate(latestWeek) })
               : t("answerNoAdvice")}
@@ -199,17 +198,15 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
           <StatStrip>
             {advisories.length > 0 && (
               <StatTile
-                emoji="📢"
                 label={t("tileAdvisories")}
                 value={f.number(activeAdvisories.length)}
                 sub={latestWeek ? t("tileAdvisoriesSub", { date: weekDate(latestWeek) }) : t("tileAdvisoriesNone")}
               />
             )}
-            {activeAdvisories.length > 0 && <StatTile emoji="🌾" label={t("tileCrops")} value={f.number(cropsCovered)} />}
-            {soilData.length > 0 && <StatTile emoji="🧪" label={t("tileTested")} value={f.number(soilData.length)} asOf={latestTest} />}
+            {activeAdvisories.length > 0 && <StatTile label={t("tileCrops")} value={f.number(cropsCovered)} />}
+            {soilData.length > 0 && <StatTile label={t("tileTested")} value={f.number(soilData.length)} asOf={latestTest} />}
             {avgPh !== null && (
               <StatTile
-                emoji="⚖️"
                 label={t("tileAvgPh")}
                 value={f.number(avgPh, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                 sub={t("tileAvgPhSub", { band: phBand(avgPh), n: phReadings.length })}
@@ -234,7 +231,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
           )}
           {topicsAsPicture && (
             <div style={{ marginTop: 16 }}>
-              <ChartCard title={t("topicsTitle")} emoji="📢" units={t("topicsUnits")} simple={topicsSimple} source={{ label: "KVK / ICAR" }} asOf={latestWeek}>
+              <ChartCard title={t("topicsTitle")} units={t("topicsUnits")} simple={topicsSimple} source={{ label: "KVK / ICAR" }} asOf={latestWeek}>
                 {topicDonut}
               </ChartCard>
             </div>
@@ -242,7 +239,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
 
           {/* 4a · Advisories as picture cards. Tap → the full advice. */}
           {activeAdvisories.length > 0 && (
-            <Section title={t("advisoriesTitle")} emoji="📢">
+            <Section title={t("advisoriesTitle")}>
               {topics.length >= 2 && activeAdvisories.length > 3 && (
                 <div style={{ marginBottom: 14 }}>
                   <Chips
@@ -251,7 +248,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
                     onChange={setTopicFilter}
                     items={[
                       { value: "all", label: t("topicAll"), count: activeAdvisories.length },
-                      ...topics.map((x) => ({ value: x.key, label: `${x.emoji} ${x.label}`, count: x.n })),
+                      ...topics.map((x) => ({ value: x.key, label: x.label, count: x.n })),
                     ]}
                   />
                 </div>
@@ -263,12 +260,8 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
                     <li key={a.id}>
                       <TapCard onClick={() => setOpenAdvice(a)} label={t("detailsFor", { name: a.crop })} tinted={advisoryTopic(a.category) === "pest"}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <EmojiTile emoji={advisoryEmoji(a.category)} size={48} />
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, overflowWrap: "anywhere" }}>
-                              <span className="ftp-emoji" aria-hidden style={{ marginInlineEnd: 6 }}>
-                                {cropEmoji(a.crop)}
-                              </span>
                               {a.crop}
                             </h3>
                             {a.cropLocal && a.cropLocal !== a.crop && (
@@ -308,7 +301,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
 
           {/* 4b · Soil reports, one card per village. Tap → the full report. */}
           {soilData.length > 0 && (
-            <Section title={t("soilTitle", { n: soilData.length })} emoji="🧪">
+            <Section title={t("soilTitle", { n: soilData.length })}>
               <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, ["--ftp-grid-min" as string]: "220px" }}>
                 {soilData.map((s) => {
                   const hasPh = s.pH !== null && s.pH !== undefined;
@@ -317,7 +310,6 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
                     <li key={s.id}>
                       <TapCard onClick={() => setOpenSoil(s)} label={t("detailsFor", { name: s.villageName ?? t("villageUnnamed") })}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <EmojiTile emoji="🏡" size={38} />
                           <h3 className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "21px", fontWeight: 650, minWidth: 0, overflowWrap: "anywhere" }}>
                             {s.villageName ?? t("villageUnnamed")}
                           </h3>
@@ -364,7 +356,6 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
               {showNutrients && mostLow && (
                 <ChartCard
                   title={t("nutrientsTitle")}
-                  emoji="🧪"
                   units={t("nutrientsUnits")}
                   simple={
                     mostLow.low > 0
@@ -390,7 +381,6 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
               {showTopics && !topicsAsPicture && (
                 <ChartCard
                   title={t("topicsTitle")}
-                  emoji="📢"
                   units={t("topicsUnits")}
                   simple={topicsSimple}
                   source={{ label: "KVK / ICAR" }}
@@ -407,18 +397,9 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
 
       <ModuleNews district={district} state={state} locale={locale} module="farm" />
 
-      <LandWaterFooter
-        ns="page_farm"
-        about={t("summary")}
-        sources={[
-          { name: t("sourceShc"), url: SHC_URL, frequency: t("footer.frequencyShc") },
-          { name: t("sourceKvk"), frequency: t("footer.frequencyKvk") },
-        ]}
-        locale={locale}
-        district={district}
-        moduleSlug="farm"
-        shareText={shareText}
-      />
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="farm" shareText={shareText} />
+      </div>
 
       <AdvisorySheet advisory={openAdvice} locale={locale} topicLabel={topicLabel} onClose={() => setOpenAdvice(null)} />
       <SoilSheet soil={openSoil} onClose={() => setOpenSoil(null)} />

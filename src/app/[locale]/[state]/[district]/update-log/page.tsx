@@ -9,26 +9,32 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  The question: "What changed on my district's pages, and when?"
 //
-//    PageHeader → Explainer (the newest change and how many of the latest
-//    changes came in automatically) → 4 StatTiles → ONE picture: 10 robots,
-//    lit for the share of recent changes that were automatic, beside the
-//    newest change → filter chips → the changes GROUPED BY DAY as cards;
-//    tapping one opens a DetailSheet (when, page, kind of change, made by,
-//    records, what changed; Open the page) → "which data changed most" →
-//    Load more → sources.
+//    PageHeader → Explainer (the newest change, in words) → 4 StatTiles →
+//    ONE picture (who made the recent changes) → filter chips → the
+//    changes GROUPED BY DAY. Inside a day, repeated changes of the same
+//    kind to the same page are one line ("News · 3 new news stories ·
+//    automatically"), so 288 weather readings are one line, not 288 rows.
+//    Tapping a line opens a DetailSheet with every entry behind it (time,
+//    the note as it was logged, records) and "Open the page" → Show older
+//    changes → Share.
 //
-//  Data: GET /api/data/update-log (newest first; `filter` narrows it to
-//  automatic updates, admin edits or data imports — "scrapers" is only the
-//  API's filter key; citizens see "Automatic updates"). Change descriptions
-//  are shown as they were logged (English). The person behind an admin
-//  edit is never shown. Words: src/dictionaries/<locale>/page_update-log.json.
+//  Data: GET /api/data/update-log (newest first, cursor paging). `filter`
+//  narrows it to automatic updates, admin edits or data imports
+//  ("scrapers" is only the API's filter key). `?module=<slug>` on this
+//  page's URL shows one page's changes (the verification panel links here
+//  that way). The notes are shown as they were logged (English), inside the
+//  sheet only; every line on the page is built from the log's fields in the
+//  reader's language. The person behind an admin edit is never shown.
+//  Words: src/dictionaries/<locale>/page_update-log.json.
 "use client";
 
 import type React from "react";
-import { use, useCallback, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Suspense, use, useCallback, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { History } from "lucide-react";
+import { ChevronRight, History, X } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import {
   ModulePage,
@@ -45,10 +51,9 @@ import {
   ToolbarButton,
   formatIST,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
+import { Explainer } from "@/components/district/visuals";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
-import { RankBars } from "@/components/accountability/AccountabilityVisuals";
-import { AccountabilityFooter, CardChip, CardList, SheetAction, TapCard } from "@/components/accountability/AccountabilityKit";
+import { PageActions, useClientNow } from "@/components/district/page-kit";
 import { getModuleMeta, hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
@@ -72,25 +77,25 @@ interface UpdateLogResponse {
 
 type FilterTab = "all" | "scrapers" | "admin" | "seeds";
 
-/** Who made the change → message key + emoji. */
-const BY: Record<string, { key: string; emoji: string; auto?: boolean }> = {
-  scraper: { key: "byAuto", emoji: "🤖", auto: true },
-  cron: { key: "byScheduled", emoji: "⏰", auto: true },
-  admin_edit: { key: "byAdmin", emoji: "🧑‍💼" },
-  api: { key: "byImport", emoji: "📥" },
-  ai_bot: { key: "byAi", emoji: "✨" },
+/** Who made the change → message key; `auto` = came in on its own. */
+const BY: Record<string, { key: string; auto?: boolean }> = {
+  scraper: { key: "byAuto", auto: true },
+  cron: { key: "byScheduled", auto: true },
+  admin_edit: { key: "byAdmin" },
+  api: { key: "byImport" },
+  ai_bot: { key: "byAi" },
 };
 
-/** Kind of change → message key + emoji + tone. */
-const ACTIONS: Record<string, { key: string; emoji: string; tone: "live" | "warn" | "danger" }> = {
-  create: { key: "actionCreate", emoji: "➕", tone: "live" },
-  update: { key: "actionUpdate", emoji: "✏️", tone: "warn" },
-  delete: { key: "actionDelete", emoji: "➖", tone: "danger" },
-};
+/** Kind of change → message key. */
+const ACTIONS: Record<string, string> = { create: "actionCreate", update: "actionUpdate", delete: "actionDelete" };
 
-/** Top modules in "which data changed most". */
-const MAX_MODULE_BARS = 5;
-const PAGE_STEP = 30;
+/** Pages with their own wording for "N new …" (line.<slug>). */
+const OWN_WORDS = new Set(["news", "weather", "crops"]);
+
+/** Rows per API call (the API's maximum). */
+const PAGE_SIZE = 100;
+/** Entries listed in one line's sheet before "and N more". */
+const SHEET_ROWS = 25;
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
@@ -99,10 +104,21 @@ function istDay(ts: string | number | Date): string {
   return new Date(ts).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
-/** Today's and yesterday's IST day keys. */
-function recentDays(): { today: string; yesterday: string } {
-  const now = Date.now();
-  return { today: istDay(now), yesterday: istDay(now - 86_400_000) };
+/** "Mandya Industrial Hub: ANNOUNCEMENT" → "Mandya Industrial Hub: announcement". */
+function tidyNote(note: string): string {
+  return note.replace(/:\s*([A-Z][A-Z_]+)\s*$/, (_, tag: string) => `: ${tag.toLowerCase().replace(/_/g, " ")}`);
+}
+
+/** One line on the page: every change of one kind to one page on one day. */
+interface Line {
+  key: string;
+  moduleName: string | null;
+  action: string;
+  source: string;
+  records: number;
+  newest: string;
+  oldest: string;
+  rows: UpdateLogRow[];
 }
 
 function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -112,60 +128,84 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
+  const searchParams = useSearchParams();
+  const moduleParam = searchParams.get("module");
+  const moduleFilter = moduleParam && getModuleMeta(moduleParam) ? moduleParam : null;
   const [filter, setFilter] = useState<FilterTab>("all");
-  const [pageSize, setPageSize] = useState(PAGE_STEP);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   // Stable, so the sheet's focus handling does not re-run on every render.
-  const closeSheet = useCallback(() => setOpenId(null), []);
+  const closeSheet = useCallback(() => setOpenKey(null), []);
   const num = (n: number) => f.number(n);
 
-  const { data, isLoading, error } = useQuery<UpdateLogResponse>({
-    queryKey: ["update-log", district, filter, pageSize],
-    queryFn: async () => {
-      const qs = new URLSearchParams({ district, filter, limit: String(pageSize) });
+  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<UpdateLogResponse>({
+    queryKey: ["update-log", district, filter, moduleFilter],
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      const qs = new URLSearchParams({ district, filter, limit: String(PAGE_SIZE) });
+      if (moduleFilter) qs.set("module", moduleFilter);
+      if (pageParam) qs.set("cursor", String(pageParam));
       const res = await fetch(`/api/data/update-log?${qs.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     staleTime: 30_000,
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const rows = useMemo(() => (data?.pages ?? []).flatMap((p) => p.data), [data]);
+  const total = data?.pages[0]?.total ?? 0;
   const autoCount = rows.filter((r) => BY[r.source]?.auto).length;
   const adminCount = rows.filter((r) => r.source === "admin_edit").length;
   const newest = rows[0] ?? null;
 
   const pageName = (slug: string | null) => (slug ? (getModuleMeta(slug) ? mt.label(slug) : slug) : t("otherData"));
-  const actionLabel = (action: string) => (ACTIONS[action] ? t(ACTIONS[action].key) : action);
   const byLabel = (source: string) => (BY[source] ? t(BY[source].key) : source);
-  const whatChanged = (r: UpdateLogRow) => r.description ?? t("actionOn", { action: actionLabel(r.action), table: r.tableName });
+  const byHow = (source: string) => (BY[source] ? t(`how.${BY[source].key}`) : source);
+  /** "3 new news stories" / "1 entry changed" — built from the log's fields. */
+  const lineWords = (moduleName: string | null, action: string, n: number) =>
+    action === "create" && moduleName && OWN_WORDS.has(moduleName)
+      ? t(`line.${moduleName}`, { n })
+      : t(`line.${ACTIONS[action] ? action : "update"}`, { n });
 
-  // Group the loaded changes by IST day, newest day first (rows arrive newest first).
-  const { today, yesterday } = recentDays();
-  const groups: Array<{ day: string; rows: UpdateLogRow[] }> = [];
-  for (const r of rows) {
-    const day = istDay(r.timestamp);
-    const last = groups[groups.length - 1];
-    if (last && last.day === day) last.rows.push(r);
-    else groups.push({ day, rows: [r] });
-  }
-  const dayLabel = (day: string, sample: string) =>
-    day === today
-      ? t("today")
-      : day === yesterday
-        ? t("yesterday")
-        : f.date(sample, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  // Group by IST day (rows arrive newest first), then fold each day's
+  // changes of one kind to one page into one line (newest line first).
+  const days = useMemo(() => {
+    const out: Array<{ day: string; sample: string; count: number; lines: Line[] }> = [];
+    for (const r of rows) {
+      const day = istDay(r.timestamp);
+      let g = out[out.length - 1];
+      if (!g || g.day !== day) {
+        g = { day, sample: r.timestamp, count: 0, lines: [] };
+        out.push(g);
+      }
+      g.count += 1;
+      const key = `${day}|${r.moduleName ?? ""}|${r.action}|${r.source}`;
+      let line = g.lines.find((l) => l.key === key);
+      if (!line) {
+        line = { key, moduleName: r.moduleName, action: r.action, source: r.source, records: 0, newest: r.timestamp, oldest: r.timestamp, rows: [] };
+        g.lines.push(line);
+      }
+      line.records += r.recordCount && r.recordCount > 0 ? r.recordCount : 1;
+      line.oldest = r.timestamp;
+      line.rows.push(r);
+    }
+    return out;
+  }, [rows]);
+
+  // "Today" / "Yesterday" only once the page knows the time (after hydration).
+  const now = useClientNow();
+  const today = now ? istDay(now) : "";
+  const yesterday = now ? istDay(now - 86_400_000) : "";
+  const dayLabel = (day: string, sample: string) => {
+    const full = f.date(sample, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    return day === today ? t("todayOn", { date: full }) : day === yesterday ? t("yesterdayOn", { date: full }) : full;
+  };
+  const hhmm = (ts: string) => f.time(ts, { hour: "2-digit", minute: "2-digit", hour12: false });
 
   // The changes on screen, counted by who made them (most first).
   const bySource = new Map<string, number>();
   for (const r of rows) bySource.set(r.source, (bySource.get(r.source) ?? 0) + 1);
   const bySplit = [...bySource.entries()].map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count);
-
-  // Which data changed most among the rows on screen.
-  const moduleCounts = new Map<string, number>();
-  for (const r of rows) if (r.moduleName) moduleCounts.set(r.moduleName, (moduleCounts.get(r.moduleName) ?? 0) + 1);
-  const topModules = [...moduleCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, MAX_MODULE_BARS);
 
   const tabs: Array<{ id: FilterTab; label: string }> = [
     { id: "all", label: t("tabAll") },
@@ -174,7 +214,7 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
     { id: "seeds", label: t("tabImports") },
   ];
 
-  const open = openId ? rows.find((r) => r.id === openId) ?? null : null;
+  const open = openKey ? days.flatMap((d) => d.lines).find((l) => l.key === openKey) ?? null : null;
   const openSlug = open?.moduleName && getModuleMeta(open.moduleName) ? open.moduleName : null;
 
   return (
@@ -188,9 +228,15 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
       />
 
       {!isLoading && !error && newest && (
-        <Explainer emoji="🕒">
+        <Explainer>
           <span suppressHydrationWarning>
-            {t.rich("explainNewest", { ago: f.ago(newest.timestamp), page: pageName(newest.moduleName), district: districtName, b: bold })}
+            {t.rich("explainNewestLine", {
+              ago: f.ago(newest.timestamp),
+              what: lineWords(newest.moduleName, newest.action, newest.recordCount && newest.recordCount > 0 ? newest.recordCount : 1),
+              page: pageName(newest.moduleName),
+              district: districtName,
+              b: bold,
+            })}
           </span>
           {filter === "all" && rows.length > 1 && (
             <>
@@ -204,200 +250,187 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
       )}
 
       <StatStrip>
-        <StatTile emoji="🧮" label={t("tileTotal")} value={num(total)} sub={t("tileTotalSub", { district: districtName })} />
+        <StatTile label={t("tileTotal")} value={num(total)} sub={t("tileTotalSub", { district: districtName })} />
         {newest && (
-          <StatTile
-            emoji="🕒"
-            label={t("tileNewest")}
-            value={f.ago(newest.timestamp)}
-            sub={formatIST(newest.timestamp, f.intl) ?? undefined}
-            countUp={false}
-          />
+          <StatTile label={t("tileNewest")} value={f.ago(newest.timestamp)} sub={formatIST(newest.timestamp, f.intl) ?? undefined} countUp={false} />
         )}
-        <StatTile emoji="🤖" label={t("tileAuto")} value={num(autoCount)} sub={t("amongShown", { shown: rows.length })} />
-        <StatTile emoji="🧑‍💼" label={t("tileAdmin")} value={num(adminCount)} sub={t("amongShown", { shown: rows.length })} />
+        <StatTile label={t("tileAuto")} value={num(autoCount)} sub={t("amongShown", { shown: rows.length })} />
+        <StatTile label={t("tileAdmin")} value={num(adminCount)} sub={t("amongShown", { shown: rows.length })} />
       </StatStrip>
 
-      {/* ONE picture: how much of the recent change came in on its own. */}
-      {!isLoading && !error && filter === "all" && rows.length > 0 && (
-        <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-          <Card tinted padding={18}>
-            <h2 className="ftp-display" style={{ margin: "0 0 12px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
-              {t("pictureTitle")}
-            </h2>
-            <Pictogram
-              filled={(autoCount / rows.length) * 10}
-              emoji="🤖"
-              label={t("pictoLabel", { n: num(Math.round((autoCount / rows.length) * 10)) })}
-            />
-          </Card>
-          {/* The same changes, counted by who made them. */}
-          <Card padding={18}>
-            <p className="ftp-label" style={{ marginBottom: 10 }}>
-              {t("bySplit", { shown: rows.length })}
-            </p>
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-              {bySplit.map(({ source, count }) => (
-                <li key={source}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, lineHeight: "20px", marginBottom: 4 }}>
-                    <span>
-                      <span className="ftp-emoji" aria-hidden>
-                        {BY[source]?.emoji ?? "🙋"}{" "}
-                      </span>
-                      {byLabel(source)}
-                    </span>
-                    <strong className="ftp-num" style={{ color: "var(--hue-deep)" }}>
-                      {num(count)}
-                    </strong>
-                  </div>
-                  <ProgressBar pct={(count / rows.length) * 100} height={8} />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
+      {/* ONE picture: who made the recent changes. */}
+      {!isLoading && !error && filter === "all" && bySplit.length > 0 && (
+        <Card padding={18} style={{ marginTop: 16 }}>
+          <h2 style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>{t("pictureTitle")}</h2>
+          <p className="ftp-label" style={{ marginBottom: 10 }}>
+            {t("bySplit", { shown: rows.length })}
+          </p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10, maxWidth: 560 }}>
+            {bySplit.map(({ source, count }) => (
+              <li key={source}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, lineHeight: "20px", marginBottom: 4 }}>
+                  <span>{byLabel(source)}</span>
+                  <strong className="ftp-num" style={{ color: "var(--hue-deep)" }}>
+                    {num(count)}
+                  </strong>
+                </div>
+                <ProgressBar pct={(count / rows.length) * 100} height={8} />
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
-      <Section title={t("changesTitle")} emoji="🗒️">
+      <Section title={t("changesTitle")}>
+        {moduleFilter && (
+          <p style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 12px", fontSize: 14, lineHeight: "20px" }}>
+            {t.rich("onlyPage", { page: pageName(moduleFilter), b: bold })}
+            <Link
+              href={`${base}/update-log`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 44, color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none" }}
+            >
+              <X size={14} aria-hidden />
+              {t("showAllPages")}
+            </Link>
+          </p>
+        )}
         <div style={{ marginBottom: 14 }}>
-          <Chips
-            label={t("filterLabel")}
-            items={tabs.map((tab) => ({ value: tab.id, label: tab.label }))}
-            value={filter}
-            onChange={(v) => {
-              setFilter(v as FilterTab);
-              setPageSize(PAGE_STEP);
-            }}
-          />
+          <Chips label={t("filterLabel")} items={tabs.map((tab) => ({ value: tab.id, label: tab.label }))} value={filter} onChange={(v) => setFilter(v as FilterTab)} />
         </div>
 
         {isLoading && <LoadingShell rows={5} />}
         {error && <ErrorBlock />}
-        {!isLoading && !error && rows.length === 0 && <EmptyState emoji="🕒" title={t("emptyTitle")} body={t("emptyBody")} />}
+        {!isLoading && !error && rows.length === 0 && <EmptyState title={t("emptyTitle")} body={t("emptyBody")} />}
 
-        {!isLoading && !error && groups.length > 0 && (
+        {!isLoading && !error && days.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {groups.map((g) => (
-              <section key={g.day} aria-label={dayLabel(g.day, g.rows[0].timestamp)}>
+            {days.map((g) => (
+              <section key={g.day} aria-label={dayLabel(g.day, g.sample)}>
                 <h3
-                  className="ftp-display"
-                  style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 10px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}
+                  style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", margin: "0 0 8px", fontSize: 16, lineHeight: 1.35, fontWeight: 650 }}
                   suppressHydrationWarning
                 >
-                  <span className="ftp-emoji" aria-hidden>
-                    📅
-                  </span>
-                  {dayLabel(g.day, g.rows[0].timestamp)}
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ftp-text-2)" }}>
-                    {t("changesCount", { n: g.rows.length, count: num(g.rows.length) })}
-                  </span>
+                  {dayLabel(g.day, g.sample)}
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ftp-text-2)" }}>{t("changesCount", { n: g.count, count: num(g.count) })}</span>
                 </h3>
-                <CardList min={250} label={dayLabel(g.day, g.rows[0].timestamp)}>
-                  {g.rows.map((r) => {
-                    const meta = r.moduleName ? getModuleMeta(r.moduleName) : null;
-                    const act = ACTIONS[r.action];
-                    return (
-                      <TapCard
-                        key={r.id}
-                        emoji={meta?.emoji ?? "🗂️"}
-                        title={pageName(r.moduleName)}
-                        sub={
-                          <span
-                            lang={r.description ? "en" : undefined}
-                            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-                          >
-                            {whatChanged(r)}
+                <Card padding={0}>
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {g.lines.map((l, i) => (
+                      <li key={l.key} className={hueClass(l.moduleName && getModuleMeta(l.moduleName) ? l.moduleName : "update-log")}>
+                        <button
+                          type="button"
+                          aria-haspopup="dialog"
+                          onClick={() => setOpenKey(l.key)}
+                          className="ftp-card-link"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            width: "100%",
+                            minHeight: 56,
+                            padding: "10px 16px",
+                            border: 0,
+                            borderTop: i === 0 ? 0 : "1px solid var(--ftp-border)",
+                            borderRadius: 0,
+                            background: "transparent",
+                            font: "inherit",
+                            color: "var(--ftp-text)",
+                            textAlign: "start",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: "var(--hue)", flexShrink: 0 }} />
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: "block", fontSize: 15, lineHeight: "21px", fontWeight: 600 }}>{pageName(l.moduleName)}</span>
+                            <span style={{ display: "block", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
+                              {t("lineSummary", { what: lineWords(l.moduleName, l.action, l.records), how: byHow(l.source) })}
+                            </span>
                           </span>
-                        }
-                        hueClassName={meta ? hueClass(r.moduleName) : undefined}
-                        onOpen={() => setOpenId(r.id)}
-                      >
-                        <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          <CardChip emoji="🕒">
-                            <span className="ftp-num">{f.time(r.timestamp, { hour: "2-digit", minute: "2-digit", hour12: false })}</span>
-                          </CardChip>
-                          <CardChip emoji={act?.emoji} tone={act?.tone}>
-                            {actionLabel(r.action)}
-                          </CardChip>
-                          <CardChip emoji={BY[r.source]?.emoji}>{byLabel(r.source)}</CardChip>
-                        </span>
-                      </TapCard>
-                    );
-                  })}
-                </CardList>
+                          <span className="ftp-num" suppressHydrationWarning style={{ fontSize: 13, color: "var(--ftp-text-2)", whiteSpace: "nowrap" }}>
+                            {l.rows.length > 1 && hhmm(l.oldest) !== hhmm(l.newest) ? t("timeRange", { from: hhmm(l.oldest), to: hhmm(l.newest) }) : hhmm(l.newest)}
+                          </span>
+                          <ChevronRight size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
               </section>
             ))}
           </div>
         )}
 
-        {!isLoading && rows.length >= pageSize && rows.length < total && (
+        {!isLoading && hasNextPage && (
           <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
-            <ToolbarButton onClick={() => setPageSize((n) => n + PAGE_STEP)}>{t("loadMore")}</ToolbarButton>
+            <ToolbarButton onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+              {isFetchingNextPage ? t("loading") : t("loadMore")}
+            </ToolbarButton>
           </div>
         )}
       </Section>
 
-      {/* Which data changed most — the pages behind the changes on screen. */}
-      {!isLoading && !error && topModules.length > 1 && (
-        <div style={{ marginTop: 24 }}>
-          <ChartCard
-            title={t("modulesTitle")}
-            emoji="🗂️"
-            units={t("modulesUnits", { shown: num(rows.length) })}
-            simple={t.rich("modulesSimple", { module: pageName(topModules[0][0]), n: topModules[0][1], shown: num(rows.length), b: bold })}
-            asOf={newest?.timestamp}
-            table={topModules.map(([slug, n]) => ({ label: pageName(slug), value: num(n) }))}
-          >
-            <RankBars
-              ariaLabel={t("modulesAria")}
-              items={topModules.map(([slug, n]) => ({
-                key: slug,
-                label: pageName(slug),
-                value: n,
-                display: t("changesCount", { n, count: num(n) }),
-                emoji: getModuleMeta(slug)?.emoji ?? "🗂️",
-                hueClassName: getModuleMeta(slug) ? hueClass(slug) : undefined,
-              }))}
-            />
-          </ChartCard>
-        </div>
-      )}
-
       <div style={{ marginTop: 28 }}>
-        <AccountabilityFooter moduleSlug="update-log" locale={locale} state={state} district={district} showCompare={false} />
+        <PageActions locale={locale} district={district} moduleSlug="update-log" compare={false} />
       </div>
 
-      {/* Everything about one change. */}
+      {/* Everything behind one line. */}
       <DetailSheet
         open={open !== null}
         onClose={closeSheet}
         title={open ? pageName(open.moduleName) : ""}
-        subtitle={open ? <span suppressHydrationWarning>{formatIST(open.timestamp, f.intl)}</span> : undefined}
-        emoji={open?.moduleName ? getModuleMeta(open.moduleName)?.emoji ?? "🗂️" : "🗂️"}
+        subtitle={open ? t("lineSummary", { what: lineWords(open.moduleName, open.action, open.records), how: byHow(open.source) }) : undefined}
         hueClassName={openSlug ? hueClass(openSlug) : hueClass("update-log")}
         footer={
           openSlug ? (
-            <SheetAction href={`${base}/${openSlug}`} emoji={getModuleMeta(openSlug)?.emoji ?? "📄"}>
+            <Link
+              href={`${base}/${openSlug}`}
+              className="ftp-btn ftp-btn-primary"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 44, padding: "0 16px", borderRadius: 12, color: "#fff", textDecoration: "none", fontWeight: 600 }}
+            >
               {t("openPage", { page: pageName(openSlug) })}
-            </SheetAction>
+              <ChevronRight size={16} aria-hidden />
+            </Link>
           ) : null
         }
       >
         {open && (
-          <DetailList
-            rows={[
-              { emoji: "📝", label: t("rowWhat"), value: whatChanged(open), lang: open.description ? "en" : undefined },
-              {
-                emoji: "🕒",
-                label: t("rowWhen"),
-                value: <span suppressHydrationWarning>{`${formatIST(open.timestamp, f.intl) ?? ""} · ${f.ago(open.timestamp)}`}</span>,
-              },
-              { emoji: ACTIONS[open.action]?.emoji ?? "✏️", label: t("rowChange"), value: actionLabel(open.action) },
-              { emoji: BY[open.source]?.emoji ?? "🙋", label: t("rowBy"), value: byLabel(open.source) },
-              { emoji: "🔢", label: t("rowRecords"), value: open.recordCount != null && open.recordCount > 1 ? num(open.recordCount) : null },
-              { emoji: "🗃️", label: t("rowTable"), value: open.tableName, lang: "en" },
-            ]}
-          />
+          <>
+            <DetailList
+              rows={[
+                {
+                  label: t("rowWhen"),
+                  value: (
+                    <span suppressHydrationWarning>
+                      {open.rows.length > 1
+                        ? `${formatIST(open.oldest, f.intl) ?? ""} – ${formatIST(open.newest, f.intl) ?? ""}`
+                        : `${formatIST(open.newest, f.intl) ?? ""} · ${f.ago(open.newest)}`}
+                    </span>
+                  ),
+                },
+                { label: t("rowChange"), value: t(ACTIONS[open.action] ?? "actionUpdate") },
+                { label: t("rowBy"), value: byLabel(open.source) },
+                { label: t("rowEntries"), value: num(open.rows.length) },
+                { label: t("rowTable"), value: open.rows[0]?.tableName, lang: "en" },
+              ]}
+            />
+            <h3 style={{ margin: "18px 0 8px", fontSize: 14, lineHeight: "20px", fontWeight: 650 }}>{t("entriesTitle")}</h3>
+            <p style={{ margin: "0 0 8px", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{t("entriesNote")}</p>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {open.rows.slice(0, SHEET_ROWS).map((r) => (
+                <li key={r.id} style={{ display: "flex", gap: 10, fontSize: 13, lineHeight: "19px" }}>
+                  <span className="ftp-num" suppressHydrationWarning style={{ color: "var(--ftp-text-2)", minWidth: 44 }}>
+                    {hhmm(r.timestamp)}
+                  </span>
+                  <span lang={r.description ? "en" : undefined} style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                    {r.description ? tidyNote(r.description) : lineWords(r.moduleName, r.action, r.recordCount && r.recordCount > 0 ? r.recordCount : 1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {open.rows.length > SHEET_ROWS && (
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--ftp-text-2)" }}>{t("andMore", { n: open.rows.length - SHEET_ROWS })}</p>
+            )}
+          </>
         )}
       </DetailSheet>
     </ModulePage>
@@ -408,7 +441,9 @@ export default function UpdateLogPage({ params }: { params: Promise<{ locale: st
   const mt = useModuleText();
   return (
     <ModuleErrorBoundary moduleName={mt.label("update-log")}>
-      <UpdateLogInner params={params} />
+      <Suspense fallback={<LoadingShell rows={5} />}>
+        <UpdateLogInner params={params} />
+      </Suspense>
     </ModuleErrorBoundary>
   );
 }

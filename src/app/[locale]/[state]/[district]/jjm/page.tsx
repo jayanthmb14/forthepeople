@@ -21,7 +21,7 @@
 //    header → the answer → 4 tiles → one picture (ten houses + a tank)
 //    → "Find your area" cards (tap → a sheet with everything about that
 //    area) → charts (water tests ring, areas still waiting) → AI insight
-//    → sources, news, share.
+//    → news, share (sources are in the layout's verification panel).
 //  Urban districts where JJM does not apply get the water-board note.
 //
 //  Text: every sentence comes from page_jjm (en/kn/hi). Area names and
@@ -29,7 +29,7 @@
 "use client";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Droplets } from "lucide-react";
+import { CircleAlert, CircleCheck, CircleHelp, Clock, Droplets, House, type LucideIcon } from "lucide-react";
 import { useJJM, useTaluks } from "@/hooks/useRealtimeData";
 import type { JJMStatus } from "@/hooks/useRealtimeData";
 import {
@@ -45,7 +45,8 @@ import {
   EmptyState,
   Pill,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram, WaterTank } from "@/components/district/visuals";
+import { ChartCard, Explainer, WaterTank } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/page-kit";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
@@ -81,7 +82,8 @@ function qualityOf(v: JJMStatus): Quality {
   return "other";
 }
 
-const QUALITY_EMOJI: Record<Quality, string> = { safe: "✅", issue: "⚠️", other: "🧪", untested: "⏳" };
+/** A small Lucide marker for the latest water test (the words say it too). */
+const QUALITY_ICON: Record<Quality, LucideIcon> = { safe: CircleCheck, issue: CircleAlert, other: CircleHelp, untested: Clock };
 
 /** Coverage → colour: every home green, half or more amber, below that red. */
 function coverageColor(pct: number): string {
@@ -137,7 +139,6 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
     key: q,
     label: t(`quality.${q}`),
     value: qCount[q],
-    emoji: QUALITY_EMOJI[q],
     color: q === "safe" ? "var(--hue)" : q === "issue" ? "var(--ftp-warn)" : q === "other" ? "var(--hue-pop)" : OTHER_SHADE,
   }));
   const qValues = {
@@ -185,9 +186,6 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
         (urbanWaterBoard ? (
           <Card tinted>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-                🚰
-              </span>
               <h2 className="ftp-title" style={{ fontWeight: 600 }}>{t("urban.title")}</h2>
             </div>
             <p className="ftp-body ftp-prose" style={{ margin: "0 0 8px" }}>
@@ -204,7 +202,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
       {!isLoading && areas.length > 0 && (
         <>
           {/* 1. The answer in one sentence. */}
-          <Explainer emoji="💧">
+          <Explainer>
             {totalHH > 0
               ? t.rich("answer.main", {
                   tenths: f.number(tenths),
@@ -227,16 +225,14 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
           {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
             <StatTile
-              emoji="💧"
               label={t("tiles.coverage")}
               value={f.number(coverage, { maximumFractionDigits: 1 })}
               unit="%"
               asOf={asOf}
             />
-            <StatTile emoji="🚰" label={t("tiles.taps")} value={f.number(totalTaps)} sub={t("tiles.tapsSub", { homes: f.number(totalHH) })} asOf={asOf} />
-            <StatTile emoji="⏳" label={t("tiles.waiting")} value={f.number(waiting)} sub={t("tiles.waitingSub")} asOf={asOf} />
+            <StatTile label={t("tiles.taps")} value={f.number(totalTaps)} sub={t("tiles.tapsSub", { homes: f.number(totalHH) })} asOf={asOf} />
+            <StatTile label={t("tiles.waiting")} value={f.number(waiting)} sub={t("tiles.waitingSub")} asOf={asOf} />
             <StatTile
-              emoji="🧪"
               label={t("tiles.tested")}
               value={f.number(testedPct, { maximumFractionDigits: 0 })}
               unit="%"
@@ -253,7 +249,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                 <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
                   {t("picture.title")}
                 </p>
-                <Pictogram filled={Math.min(100, coverage) / 10} emoji="🏠" label={t("picture.homes", { n: f.number(tenths) })} />
+                <IconPictogram icon={House} filled={Math.min(100, coverage) / 10} label={t("picture.homes", { n: f.number(tenths) })} />
               </Card>
               <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <WaterTank pct={coverage} label={t("picture.tank")} />
@@ -262,7 +258,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
           )}
 
           {/* 4. Every area as a card; tap one for everything about it. */}
-          <Section title={t("list.title")} emoji="🏘️">
+          <Section title={t("list.title")}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
               <SearchBox
                 id="jjm-search"
@@ -306,7 +302,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
               </div>
             )}
             {listed.length === 0 ? (
-              <EmptyState emoji="🔎" title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
+              <EmptyState title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
             ) : (
               <>
                 <p aria-live="polite" style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ftp-text-2)" }}>
@@ -320,7 +316,6 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                     return (
                       <TapCard
                         key={v.id}
-                        emoji="🏘️"
                         title={nm}
                         titleLang={place(nm).lang}
                         subtitle={tk ? t("list.taluk", { taluk: tk.text }) : undefined}
@@ -341,9 +336,10 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                           }
                         />
                         <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 13, color: "var(--ftp-text-2)" }}>
-                          <span className="ftp-emoji" aria-hidden>
-                            {QUALITY_EMOJI[q]}
-                          </span>
+                          {(() => {
+                            const QIcon = QUALITY_ICON[q];
+                            return <QIcon size={14} aria-hidden style={{ color: q === "issue" ? "var(--ftp-warn)" : "var(--hue)" }} />;
+                          })()}
                           {t(`quality.${q}`)}
                         </span>
                       </TapCard>
@@ -366,7 +362,6 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
               {tested > 0 && (
                 <ChartCard
                   title={t("quality.title")}
-                  emoji="🧪"
                   units={t("quality.units")}
                   simple={
                     qCount.issue > 0
@@ -390,7 +385,6 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
               {stillWaiting.length >= 2 && (
                 <ChartCard
                   title={t("waiting.title")}
-                  emoji="⏳"
                   units={t("waiting.units")}
                   simple={t.rich("waiting.simple", { name: nameOf(stillWaiting[0]), pct: pct(stillWaiting[0].coveragePct), b })}
                   source={EJALSHAKTI}
@@ -446,19 +440,18 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
         open={open !== null}
         onClose={() => setOpenId(null)}
         hueClassName={hueClass("jjm")}
-        emoji="🚰"
         title={open ? nameOf(open) : ""}
         titleLang={open ? place(nameOf(open)).lang : undefined}
         subtitle={open?.talukId && talukName.get(open.talukId) ? t("list.taluk", { taluk: talukName.get(open.talukId)?.text ?? "" }) : undefined}
         footer={
-          <ActionLink href={EJALSHAKTI.href} emoji="🔗" primary newTab>
+          <ActionLink href={EJALSHAKTI.href} primary newTab>
             {t("sheet.source")}
           </ActionLink>
         }
       >
         {open && (
           <>
-            <SheetNote emoji={open.coveragePct >= 100 ? "🎉" : "💧"}>
+            <SheetNote>
               {open.coveragePct >= 100
                 ? t.rich("sheet.full", { homes: f.number(open.totalHouseholds), b: bNum })
                 : t.rich("sheet.some", {
@@ -473,12 +466,11 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
             </div>
             <DetailList
               rows={[
-                { emoji: "🏠", label: t("sheet.homes"), value: f.number(open.totalHouseholds) },
-                { emoji: "🚰", label: t("sheet.taps"), value: f.number(open.tapConnections) },
-                { emoji: "⏳", label: t("sheet.waiting"), value: f.number(Math.max(0, open.totalHouseholds - open.tapConnections)) },
-                { emoji: "📊", label: t("sheet.coverage"), value: pct(open.coveragePct, 1) },
+                { label: t("sheet.homes"), value: f.number(open.totalHouseholds) },
+                { label: t("sheet.taps"), value: f.number(open.tapConnections) },
+                { label: t("sheet.waiting"), value: f.number(Math.max(0, open.totalHouseholds - open.tapConnections)) },
+                { label: t("sheet.coverage"), value: pct(open.coveragePct, 1) },
                 {
-                  emoji: QUALITY_EMOJI[qualityOf(open)],
                   label: t("sheet.test"),
                   value: open.waterQualityTested ? (
                     <>
@@ -495,9 +487,9 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                     t("quality.untested")
                   ),
                 },
-                { emoji: "🗺️", label: t("sheet.taluk"), value: open.talukId ? talukName.get(open.talukId)?.text : null },
-                { emoji: "🗓️", label: t("sheet.updated"), value: f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) },
-                { emoji: "📄", label: t("sheet.sourceRow"), value: open.source },
+                { label: t("sheet.taluk"), value: open.talukId ? talukName.get(open.talukId)?.text : null },
+                { label: t("sheet.updated"), value: f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) },
+                { label: t("sheet.sourceRow"), value: open.source },
               ]}
             />
           </>

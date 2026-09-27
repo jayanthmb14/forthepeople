@@ -35,20 +35,20 @@ export default function MPIIndicatorCard({ economicClass }: Props) {
   const tiles: React.ReactNode[] = [];
   if (typeof economicClass.mpiHeadcount === "number") {
     tiles.push(
-      <StatTile key="headcount" emoji="👥" label={t("mpiHeadcount")} value={fixed(economicClass.mpiHeadcount, 2)} unit="%" sub={t("mpiHeadcountSub")} />,
+      <StatTile key="headcount" label={t("mpiHeadcount")} value={fixed(economicClass.mpiHeadcount, 2)} unit="%" sub={t("mpiHeadcountSub")} />,
     );
   }
   if (typeof economicClass.mpiIntensity === "number") {
     tiles.push(
-      <StatTile key="intensity" emoji="📉" label={t("mpiIntensity")} value={fixed(economicClass.mpiIntensity, 2)} unit="%" sub={t("mpiIntensitySub")} />,
+      <StatTile key="intensity" label={t("mpiIntensity")} value={fixed(economicClass.mpiIntensity, 2)} unit="%" sub={t("mpiIntensitySub")} />,
     );
   }
   if (typeof economicClass.mpi === "number") {
-    tiles.push(<StatTile key="mpi" emoji="🧮" label={t("mpiValue")} value={fixed(economicClass.mpi, 4)} sub={t("mpiValueSub")} />);
+    tiles.push(<StatTile key="mpi" label={t("mpiValue")} value={fixed(economicClass.mpi, 4)} sub={t("mpiValueSub")} />);
   }
   if (typeof economicClass.districtRankInState === "number") {
     tiles.push(
-      <StatTile key="rank" emoji="🏅" label={t("mpiRank")} value={`#${f.number(economicClass.districtRankInState)}`} sub={t("mpiRankSub")} />,
+      <StatTile key="rank" label={t("mpiRank")} value={`#${f.number(economicClass.districtRankInState)}`} sub={t("mpiRankSub")} />,
     );
   }
 

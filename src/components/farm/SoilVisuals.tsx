@@ -13,7 +13,6 @@
 //    NutrientBars    nitrogen, phosphorus and potassium: one bar each,
 //                    split into villages rated low / medium / high
 //    advisoryTopic   an advisory category → a topic key (pest, weather…)
-//    advisoryEmoji   one emoji per advisory topic (pest → 🐛 …)
 //    nutrientLevel   "Low" / "medium" / "HIGH" → low | medium | high
 //
 //  The neutral band, the dots and the nutrient bars use the page hue; the
@@ -49,20 +48,6 @@ export function advisoryTopic(category: string): AdvisoryTopic | null {
   if (c.includes("irrigat") || c.includes("water")) return "water";
   if (c.includes("crop") || c.includes("sow")) return "sowing";
   return null;
-}
-
-const TOPIC_EMOJI: Record<AdvisoryTopic, string> = {
-  pest: "🐛",
-  weather: "🌦️",
-  nutrients: "🧪",
-  water: "💧",
-  sowing: "🌱",
-};
-
-/** Advisory category → emoji (one per chip). */
-export function advisoryEmoji(category: string): string {
-  const topic = advisoryTopic(category);
-  return topic ? TOPIC_EMOJI[topic] : "📢";
 }
 
 export type NutrientLevel = "low" | "medium" | "high";
@@ -198,12 +183,6 @@ export const NUTRIENT_FILL: Record<NutrientLevel, string> = {
   high: "var(--hue-deep)",
 };
 
-const NUTRIENT_EMOJI: Record<NutrientRow["key"], string> = {
-  nitrogen: "🍃",
-  phosphorus: "🌸",
-  potassium: "🍌",
-};
-
 /**
  * NutrientBars — one bar per nutrient, split by how many villages were
  * rated low, medium and high. Each bar is the villages that have a rating
@@ -220,20 +199,6 @@ export function NutrientBars({ rows }: { rows: NutrientRow[] }) {
         const total = row.low + row.medium + row.high;
         return (
           <li key={row.key} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span
-              className="ftp-icon-chip ftp-emoji"
-              aria-hidden
-              style={{
-                width: 34,
-                height: 34,
-                fontSize: 18,
-                borderRadius: 11,
-                background: "#fff",
-                border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
-              }}
-            >
-              {NUTRIENT_EMOJI[row.key]}
-            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, marginBottom: 5 }}>
                 <span style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{t(`nutrient.${row.key}`)}</span>

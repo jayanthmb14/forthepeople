@@ -148,7 +148,6 @@
   "officialSite": "Official website",
   "openPage": "Open {page}",
   "rightsNote": "This is a short, plain guide, not legal advice. Rules can differ a little from state to state.",
-  "sourceHelplines": "Helpline numbers: Government of India national helplines",
   "tileTips": "Civic tips",
   "tileTipsFor": "For {period}",
   "tileTipsWeekly": "Written every week",
@@ -193,16 +192,8 @@
   },
   "emergencyLine": "One number for any emergency. Tap to call.",
   "callAria": "Call {name}: {number}",
-  "share": "Share",
-  "linkCopied": "Link copied",
-  "compare": "Compare with another district",
-  "toolbar": "Page actions",
-  "freq": {
-    "weekly": "Weekly"
-  },
   "sourceNames": {
-    "districtAdministration": "District Administration",
-    "citizenFeedback": "Citizen feedback"
+    "districtAdministration": "District Administration"
   },
   "helplinesTitle": "Emergency and important helplines",
   "rightsTitle": "Know your rights",

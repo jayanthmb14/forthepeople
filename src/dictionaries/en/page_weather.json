@@ -1,6 +1,5 @@
 {
-  "description": "The weather right now, and whether this year's rain is above or below normal",
-  "summary": "This page shows the latest weather reading for {district} (from OpenWeatherMap) and monthly rainfall against the normal for each month (from the India Meteorological Department, IMD). Temperature is in degrees Celsius, wind in kilometres an hour and rain in millimetres. Each reading shows the time it was recorded.",
+  "description": "The latest weather reading with its time, and whether rain is above or below normal",
   "mm": "{v} mm",
   "kmh": "km/h",
   "mmUnit": "mm",
@@ -8,7 +7,8 @@
   "km": "{v} km",
   "hero": {
     "now": "Right now",
-    "last": "Last recorded"
+    "last": "Last recorded",
+    "old": "Last reading we have"
   },
   "tiles": {
     "feels": "Feels like",
@@ -38,7 +38,8 @@
     "thenTemp": "When last recorded, on {when} IST, it was <b>{temp}</b>.",
     "thenCond": "When last recorded, on {when} IST, the weather showed {cond}.",
     "feelsNow": "It feels like <b>{feels}</b>.",
-    "feelsThen": "It felt like <b>{feels}</b>."
+    "feelsThen": "It felt like <b>{feels}</b>.",
+    "oldNote": "That reading is <b>{n, plural, one {# day} other {# days}} old</b>; we could not find a newer one."
   },
   "rainShort": "Rain this year so far: <b>{pct}</b> of normal ({period}).",
   "rain": {
@@ -49,7 +50,8 @@
     "monthsAria": "{n, plural, one {# month} other {# months}} of {total} got at least normal rain.",
     "monthAria": "{month}: {actual} of rain, {pct} of normal",
     "ringAria": "{pct} of normal rain in {period}",
-    "ringCaption": "of normal rain, {period}"
+    "ringCaption": "of normal rain, {period}",
+    "titlePast": "Rain in {year} vs normal"
   },
   "charts": {
     "title": "Charts"
@@ -100,26 +102,7 @@
   "shareTemp": "{district} weather: {temp}",
   "shareEmpty": "Weather and rain for {district}",
   "end": {
-    "about": "About this page",
-    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
-    "freq": {
-      "every30": "Checked every 30 minutes",
-      "every6h": "Checked every 6 hours",
-      "daily": "Updated every day",
-      "weekly": "Updated every week",
-      "monthly": "Updated every month",
-      "quarterly": "Updated every 3 months",
-      "annual": "Updated every year",
-      "whenPublished": "Updated when the source publishes"
-    },
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "csv": "Download rain data (CSV)",
-    "shareHead": "{district} district update",
-    "shareSource": "Source: {url}",
-    "actions": "Page actions"
-  }
+    "csv": "Download rain data (CSV)"
+  },
+  "rainShortPast": "Rain in {period}: <b>{pct}</b> of normal. We could not find newer monthly rain figures."
 }

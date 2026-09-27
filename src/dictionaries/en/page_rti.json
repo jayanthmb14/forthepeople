@@ -19,7 +19,6 @@
   "raceLabel": "Average time to reply",
   "raceOk": "Within the 30-day limit in the RTI Act.",
   "raceSlow": "Slower than the 30-day limit in the RTI Act.",
-  "ctaBody": "Want to ask an office something yourself? It takes three steps.",
   "officesTitle": "Offices, {period}",
   "officesHint": "Tap an office to see its letters month by month.",
   "cardWaiting": "{n, plural, one {{count} letter waiting} other {{count} letters waiting}}",

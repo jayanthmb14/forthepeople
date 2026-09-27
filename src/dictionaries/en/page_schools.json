@@ -94,21 +94,6 @@
   "end": {
     "shareWithData": "Schools in {district}: {n} listed, {ratio} students per teacher",
     "shareNoRatio": "Schools in {district}: {n} listed",
-    "shareNoData": "School information for {district}",
-    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share this page on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "freq": {
-      "monthly": "Updated monthly",
-      "weekly": "Updated weekly",
-      "daily": "Updated daily",
-      "annual": "Updated once a year",
-      "quarterly": "Updated every three months",
-      "onPublish": "Updated when the source publishes"
-    }
+    "shareNoData": "School information for {district}"
   }
 }

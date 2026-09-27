@@ -26,14 +26,14 @@
 //  picture (where to go for care, a staircase from the village centre to
 //  the district hospital) → hospital cards (tap → address, phone to call,
 //  directions, hours, services) → staff posts → schemes → more helplines
-//  → AI insight → sources, news, share.
+//  → AI insight → news, share (sources are in the layout's verification panel).
 //
 //  Text: page_health (en/kn/hi). Hospital names, types, addresses and
 //  services are data and stay as published; scheme names are proper nouns.
 "use client";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Heart, ExternalLink } from "lucide-react";
+import { Building2, ExternalLink, Heart, Home, Hospital, Phone, Pill as PillIcon, Stethoscope, type LucideIcon } from "lucide-react";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import {
   ModulePage,
@@ -55,6 +55,7 @@ import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import StaffingSection, { useStaffing } from "@/components/district/daily-services/StaffingSection";
 import { fitGrid, TapCard, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, TagList, matches, mapsUrl, telHref, useNow, usePlaceName } from "@/components/services-1/kit";
 import PageEnd from "@/components/services-1/PageEnd";
+import { IconChip } from "@/components/district/page-kit";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText, usePlaceText } from "@/i18n/client";
@@ -99,13 +100,13 @@ function isHealthPlace(o: Office): boolean {
   return HEALTH_RE.test(text) && !NOT_HEALTH_RE.test(text);
 }
 
-/** One emoji per kind of place. */
-function placeEmoji(o: Office): string {
+/** A plain Lucide marker for the kind of place (hospital, health centre, clinic, office). */
+function placeIcon(o: Office): LucideIcon {
   const text = `${o.type} ${o.name}`;
-  if (/hospital|medical college/i.test(text)) return "🏥";
-  if (/\bphc\b|\bchc\b|health cent|sub-?cent/i.test(text)) return "🩺";
-  if (/clinic|dispensary/i.test(text)) return "💊";
-  return "🏢";
+  if (/hospital|medical college/i.test(text)) return Hospital;
+  if (/\bphc\b|\bchc\b|health cent|sub-?cent/i.test(text)) return Stethoscope;
+  if (/clinic|dispensary/i.test(text)) return PillIcon;
+  return Building2;
 }
 
 /** Opening hours, Monday first, from the row's day fields. */
@@ -118,12 +119,12 @@ const WEEKDAY_INDEX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, 
 // Static health helplines for India — national numbers only.
 // `urgent` ones are the two big buttons under the answer.
 const HELPLINES = [
-  { id: "ambulance", number: "108", urgent: true, emoji: "🚑" },
-  { id: "emergency", number: "112", urgent: true, emoji: "🆘" },
-  { id: "icall", number: "9152987821", emoji: "💬" },
-  { id: "poison", number: "1800-116-117", emoji: "🧪" },
-  { id: "ayushman", number: "14555", emoji: "🪪" },
-  { id: "nhh", number: "1800-180-1104", emoji: "📞" },
+  { id: "ambulance", number: "108", urgent: true },
+  { id: "emergency", number: "112", urgent: true },
+  { id: "icall", number: "9152987821" },
+  { id: "poison", number: "1800-116-117" },
+  { id: "ayushman", number: "14555" },
+  { id: "nhh", number: "1800-180-1104" },
 ];
 
 /** A scheme card: `name` is the official name (not translated), `id` keys its description. */
@@ -131,23 +132,22 @@ interface HealthScheme {
   id: string;
   name: string;
   url: string | null;
-  emoji: string;
 }
 
 const NATIONAL_SCHEMES: HealthScheme[] = [
-  { id: "pmjay", name: "Ayushman Bharat PM-JAY", url: "https://pmjay.gov.in", emoji: "🛡️" },
-  { id: "jsy", name: "Janani Suraksha Yojana", url: null, emoji: "🤱" },
-  { id: "rbsk", name: "RBSK (Rashtriya Bal Swasthya Karyakram)", url: null, emoji: "🧒" },
+  { id: "pmjay", name: "Ayushman Bharat PM-JAY", url: "https://pmjay.gov.in" },
+  { id: "jsy", name: "Janani Suraksha Yojana", url: null },
+  { id: "rbsk", name: "RBSK (Rashtriya Bal Swasthya Karyakram)", url: null },
 ];
 
 const STATE_HEALTH_SCHEMES: Record<string, HealthScheme> = {
-  karnataka: { id: "karnataka", name: "Arogya Karnataka", url: "https://arogyakarnataka.gov.in", emoji: "🛡️" },
-  telangana: { id: "telangana", name: "Aarogyasri", url: "https://aarogyasri.telangana.gov.in", emoji: "🛡️" },
-  "tamil-nadu": { id: "tamil-nadu", name: "CMCHIS", url: null, emoji: "🛡️" },
-  delhi: { id: "delhi", name: "Delhi Arogya Kosh", url: null, emoji: "🛡️" },
-  maharashtra: { id: "maharashtra", name: "MJPJAY", url: null, emoji: "🛡️" },
-  "west-bengal": { id: "west-bengal", name: "Swasthya Sathi", url: null, emoji: "🛡️" },
-  "uttar-pradesh": { id: "uttar-pradesh", name: "Ayushman Bharat UP", url: null, emoji: "🛡️" },
+  karnataka: { id: "karnataka", name: "Arogya Karnataka", url: "https://arogyakarnataka.gov.in" },
+  telangana: { id: "telangana", name: "Aarogyasri", url: "https://aarogyasri.telangana.gov.in" },
+  "tamil-nadu": { id: "tamil-nadu", name: "CMCHIS", url: null },
+  delhi: { id: "delhi", name: "Delhi Arogya Kosh", url: null },
+  maharashtra: { id: "maharashtra", name: "MJPJAY", url: null },
+  "west-bengal": { id: "west-bengal", name: "Swasthya Sathi", url: null },
+  "uttar-pradesh": { id: "uttar-pradesh", name: "Ayushman Bharat UP", url: null },
 };
 
 /** The state's name for its secondary hospitals → message key. */
@@ -171,16 +171,8 @@ const STEP_BG = [
 /** Cards shown before "Show all". */
 const FIRST_SHOWN = 24;
 
-function EmojiChip({ emoji, size = 36 }: { emoji: string; size?: number }) {
-  return (
-    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: size, height: size, fontSize: Math.round(size / 2), borderRadius: Math.round(size / 3) }}>
-      {emoji}
-    </span>
-  );
-}
-
-/** A helpline as a big tel: card (44 px+ tall). */
-function HelplineCard({ emoji, number, name, ariaLabel, urgent }: { emoji: string; number: string; name: string; ariaLabel: string; urgent?: boolean }) {
+/** A helpline as a big tel: card (44 px+ tall); the phone icon says "tap to call". */
+function HelplineCard({ number, name, ariaLabel, urgent }: { number: string; name: string; ariaLabel: string; urgent?: boolean }) {
   return (
     <a
       href={telHref(number)}
@@ -200,7 +192,7 @@ function HelplineCard({ emoji, number, name, ariaLabel, urgent }: { emoji: strin
         color: "var(--ftp-text)",
       }}
     >
-      <EmojiChip emoji={emoji} size={urgent ? 44 : 36} />
+      <IconChip icon={Phone} size={urgent ? 44 : 36} />
       <span style={{ display: "block", minWidth: 0 }}>
         <span className="ftp-bignum" style={{ display: "block", fontSize: urgent ? 28 : 18, lineHeight: 1.1, color: urgent ? "var(--ftp-danger)" : "var(--hue-deep)" }}>
           {number}
@@ -260,10 +252,10 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
   const unitEn = config?.subDistrictUnit ?? "Taluk";
   const unit = tUnit.has(unitEn) ? tUnit(unitEn) : unitEn;
   const steps = [
-    { key: "subCentre", emoji: "🏡", title: t("care.subCentre"), desc: t("care.subCentreDesc") },
-    { key: "phc", emoji: "🩺", title: t("care.phc"), desc: t("care.phcDesc") },
-    { key: "sub", emoji: "🏨", title: subKey ? t(`care.sub.${subKey}`) : subLabelEn, desc: t("care.subDesc", { unit }) },
-    { key: "district", emoji: "🏥", title: t("care.district"), desc: t("care.districtDesc") },
+    { key: "subCentre", icon: Home, title: t("care.subCentre"), desc: t("care.subCentreDesc") },
+    { key: "phc", icon: Stethoscope, title: t("care.phc"), desc: t("care.phcDesc") },
+    { key: "sub", icon: Building2, title: subKey ? t(`care.sub.${subKey}`) : subLabelEn, desc: t("care.subDesc", { unit }) },
+    { key: "district", icon: Hospital, title: t("care.district"), desc: t("care.districtDesc") },
   ];
 
   const urgent = HELPLINES.filter((h) => h.urgent);
@@ -281,7 +273,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       />
 
       {/* 1. The answer in one sentence. */}
-      <Explainer emoji="🚑">
+      <Explainer>
         {places.length > 0
           ? t.rich("answer.hospitals", { count: places.length, n: f.number(places.length), district: districtName, b: bNum })
           : t.rich("answer.noHospitals", { b: bNum })}
@@ -292,7 +284,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       <div role="group" aria-label={t("emergency.aria")} style={fitGrid(220)}>
         {urgent.map((h) => {
           const name = t(`helplines.${h.id}`);
-          return <HelplineCard key={h.id} emoji={h.emoji} number={h.number} name={name} ariaLabel={t("helplines.call", { name, number: h.number })} urgent />;
+          return <HelplineCard key={h.id} number={h.number} name={name} ariaLabel={t("helplines.call", { name, number: h.number })} urgent />;
         })}
       </div>
 
@@ -301,22 +293,22 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       {staff.rows.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <StatStrip>
-            {places.length > 0 && <StatTile emoji="🏥" label={t("tiles.places")} value={f.number(places.length)} sub={t("tiles.placesSub")} />}
+            {places.length > 0 && <StatTile label={t("tiles.places")} value={f.number(places.length)} sub={t("tiles.placesSub")} />}
             {staff.rows.length > 0 && (
-              <StatTile emoji="✅" label={t("tiles.filled")} value={staff.filledPct} unit="%" sub={t("tiles.filledSub", { pct: pct(100 - staff.filledPct) })} asOf={staff.asOf} />
+              <StatTile label={t("tiles.filled")} value={staff.filledPct} unit="%" sub={t("tiles.filledSub", { pct: pct(100 - staff.filledPct) })} asOf={staff.asOf} />
             )}
             {staff.rows.length > 0 && (
-              <StatTile emoji="🧑‍⚕️" label={t("tiles.working")} value={f.number(staff.working)} sub={t("tiles.workingSub", { n: f.number(staff.sanctioned) })} asOf={staff.asOf} />
+              <StatTile label={t("tiles.working")} value={f.number(staff.working)} sub={t("tiles.workingSub", { n: f.number(staff.sanctioned) })} asOf={staff.asOf} />
             )}
             {staff.rows.length > 0 && (
-              <StatTile emoji="🪑" label={t("tiles.vacant")} value={f.number(staff.vacant)} sub={staff.shortage ? t("tiles.shortage") : undefined} asOf={staff.asOf} />
+              <StatTile label={t("tiles.vacant")} value={f.number(staff.vacant)} sub={staff.shortage ? t("tiles.shortage") : undefined} asOf={staff.asOf} />
             )}
           </StatStrip>
         </div>
       )}
 
       {/* 3. One picture: where to go for care, as a staircase. */}
-      <Section title={t("care.title")} emoji="🪜">
+      <Section title={t("care.title")}>
         <Card tinted padding={18}>
           <p className="ftp-body ftp-prose" style={{ margin: "0 0 16px", color: "var(--ftp-text-2)" }}>
             {t("care.hint")}
@@ -341,9 +333,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
                       ["--i" as string]: i,
                     }}
                   >
-                    <span className="ftp-emoji" style={{ fontSize: 30 }}>
-                      {s.emoji}
-                    </span>
+                    <s.icon size={28} strokeWidth={1.75} style={{ color: i === 3 ? "#fff" : "var(--hue-deep)" }} />
                   </div>
                 </div>
                 <div className="ftp-title" style={{ fontSize: 15, lineHeight: 1.4, fontWeight: 600, marginTop: 10 }}>
@@ -355,7 +345,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
           </ol>
           {/* Private hospitals sit beside the public ladder, not on it. */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 18, paddingTop: 14, borderTop: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))" }}>
-            <EmojiChip emoji="🏢" size={32} />
+            <IconChip icon={Building2} size={32} />
             <div style={{ minWidth: 0 }}>
               <div className="ftp-title" style={{ fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>{t("care.private")}</div>
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>{t("care.privateDesc")}</div>
@@ -365,12 +355,11 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Section>
 
       {/* 4. Hospitals and health centres; tap one for everything about it. */}
-      <Section title={t("list.title")} emoji="🏥">
+      <Section title={t("list.title")}>
         {officesLoading ? (
           <LoadingShell rows={3} />
         ) : places.length === 0 ? (
           <EmptyState
-            emoji="🏥"
             title={t("list.empty", { district: districtName })}
             body={t("list.emptyBody")}
             action={
@@ -410,7 +399,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
               </div>
             )}
             {listed.length === 0 ? (
-              <EmptyState emoji="🔎" title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
+              <EmptyState title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
             ) : (
               <>
                 <div className="ftp-grid">
@@ -420,7 +409,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
                     return (
                       <TapCard
                         key={p.id}
-                        emoji={placeEmoji(p)}
+                        icon={placeIcon(p)}
                         title={nm.text}
                         titleLang={nm.lang}
                         subtitle={p.type}
@@ -447,15 +436,14 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Section>
 
       {/* 5. Are the doctors' and nurses' posts filled? (nothing without rows) */}
-      <StaffingSection module="health" district={district} state={state} emoji="🩺" personEmoji="🧑‍⚕️" />
+      <StaffingSection module="health" district={district} state={state} />
 
       {/* 6. Health schemes — national + the state's own. */}
-      <Section title={t("schemes.title")} emoji="🛡️">
+      <Section title={t("schemes.title")}>
         <div className="ftp-grid">
           {schemes.map((s, i) => (
             <Card key={s.id} as="article" tinted={i === 0}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <EmojiChip emoji={s.emoji} size={36} />
                 <div style={{ minWidth: 0 }}>
                   <Pill>{s.tag}</Pill>
                   <h3 className="ftp-title" style={{ fontWeight: 600, marginTop: 6 }}>{s.name}</h3>
@@ -478,11 +466,11 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Section>
 
       {/* 7. More helplines — each card is a tel: link. */}
-      <Section title={t("helplines.title")} emoji="📞">
+      <Section title={t("helplines.title")}>
         <div style={fitGrid(220)}>
           {others.map((h) => {
             const name = t(`helplines.${h.id}`);
-            return <HelplineCard key={h.id} emoji={h.emoji} number={h.number} name={name} ariaLabel={t("helplines.call", { name, number: h.number })} />;
+            return <HelplineCard key={h.id} number={h.number} name={name} ariaLabel={t("helplines.call", { name, number: h.number })} />;
           })}
         </div>
       </Section>
@@ -498,7 +486,6 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
         open={open !== null}
         onClose={() => setOpenId(null)}
         hueClassName={hueClass("health")}
-        emoji={open ? placeEmoji(open) : "🏥"}
         title={open ? place(open.name, open.nameLocal).text : ""}
         titleLang={open ? place(open.name, open.nameLocal).lang : undefined}
         subtitle={open?.type}
@@ -506,15 +493,15 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
           open ? (
             <>
               {open.phone && (
-                <ActionLink href={telHref(open.phone)} emoji="📞" primary ariaLabel={t("sheet.callAria", { number: open.phone })}>
+                <ActionLink href={telHref(open.phone)} primary ariaLabel={t("sheet.callAria", { number: open.phone })}>
                   {t("sheet.call")}
                 </ActionLink>
               )}
-              <ActionLink href={mapsUrl(`${open.name}, ${open.address}`, open.latitude, open.longitude)} emoji="🗺️" primary={!open.phone} newTab>
+              <ActionLink href={mapsUrl(`${open.name}, ${open.address}`, open.latitude, open.longitude)} primary={!open.phone} newTab>
                 {t("sheet.directions")}
               </ActionLink>
               {open.website && (
-                <ActionLink href={open.website.startsWith("http") ? open.website : `https://${open.website}`} emoji="🌐" newTab>
+                <ActionLink href={open.website.startsWith("http") ? open.website : `https://${open.website}`} newTab>
                   {t("sheet.site")}
                 </ActionLink>
               )}
@@ -524,16 +511,15 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       >
         {open && (
           <>
-            <SheetNote emoji="🕒">
+            <SheetNote>
               {todayHours(open) ? t.rich("sheet.today", { hours: todayHours(open) ?? "", b: bNum }) : t("sheet.callFirst")}
             </SheetNote>
             <DetailList
               rows={[
-                { emoji: "🏷️", label: t("sheet.kind"), value: open.type },
-                { emoji: "🏛️", label: t("sheet.department"), value: open.department },
-                { emoji: "📍", label: t("sheet.address"), value: open.address },
+                { label: t("sheet.kind"), value: open.type },
+                { label: t("sheet.department"), value: open.department },
+                { label: t("sheet.address"), value: open.address },
                 {
-                  emoji: "📞",
                   label: t("sheet.phone"),
                   value: open.phone ? (
                     <a href={telHref(open.phone)} className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
@@ -542,7 +528,6 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
                   ) : null,
                 },
                 {
-                  emoji: "✉️",
                   label: t("sheet.email"),
                   value: open.email ? (
                     <a href={`mailto:${open.email}`} style={{ color: "var(--hue-deep)" }}>
@@ -551,24 +536,23 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
                   ) : null,
                 },
                 {
-                  emoji: "👤",
                   label: t("sheet.head"),
                   value: open.headName ? (open.headDesignation ? t("sheet.headValue", { name: open.headName, role: open.headDesignation }) : open.headName) : null,
                 },
-                { emoji: "🍽️", label: t("sheet.lunch"), value: open.lunchBreak },
-                { emoji: "🗓️", label: t("sheet.holidays"), value: open.holidays },
-                { emoji: "📝", label: t("sheet.notes"), value: open.notes },
+                { label: t("sheet.lunch"), value: open.lunchBreak },
+                { label: t("sheet.holidays"), value: open.holidays },
+                { label: t("sheet.notes"), value: open.notes },
               ]}
             />
             {(open.services?.length ?? 0) > 0 && (
               <>
-                <SheetHeading emoji="🩺">{t("sheet.services")}</SheetHeading>
+                <SheetHeading>{t("sheet.services")}</SheetHeading>
                 <TagList items={open.services ?? []} />
               </>
             )}
             {DAY_FIELDS.some((d) => open[d]) && (
               <>
-                <SheetHeading emoji="🕒">{t("sheet.hours")}</SheetHeading>
+                <SheetHeading>{t("sheet.hours")}</SheetHeading>
                 <DetailList
                   rows={DAY_FIELDS.map((d, i) => ({
                     label: i === todayIndex ? t("sheet.dayToday", { day: dayLong[i] }) : dayLong[i],

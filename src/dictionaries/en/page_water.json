@@ -1,8 +1,6 @@
 {
   "description": "How full the dams are, water flowing in and out, and canal release dates",
-  "summary": "This page shows how full the dams and reservoirs that serve this district are, how much water is flowing into and out of them, and when water is released into the canals. Readings come from {portal}; every card shows the date of its reading. Storage is shown as a share of each dam's full capacity, and in TMC ft (thousand million cubic feet) as the state portal publishes it.",
   "fallbackPortal": "the state water resources department",
-  "wrisName": "India-WRIS (Water Resources Information System)",
   "emptyTitle": "No dam or canal readings for {district} yet.",
   "emptyBody": "Dam levels, inflow, outflow and canal releases from {portal} and India-WRIS will show here once we start receiving them for this district.",
   "explainerTogether": "Together, the {n} dams that serve {district} hold about <b>{pct}</b> of the water they can store.",
@@ -78,15 +76,5 @@
   "share": "Dam levels in {district}: {list}",
   "shareEmpty": "Water and dam data for {district}",
   "shareItem": "{dam} {pct}",
-  "footer": {
-    "aboutTitle": "About this page",
-    "frequency": "Checked every 6 hours",
-    "notOfficial": "ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "csv": "Download CSV",
-    "whatsapp": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district"
-  }
+  "explainerOld": "These readings are from <b>{date}</b>, {n, plural, one {# day} other {# days}} ago; we could not find newer ones."
 }
