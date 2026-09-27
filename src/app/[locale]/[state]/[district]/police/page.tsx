@@ -21,11 +21,20 @@
 //    → police posts filled vs sanctioned → every crime figure with its source
 //    → AI insight → Share / Compare → news. v5: no emoji; sources, "not
 //    an official website" and the stale note come from the district shell.
+//    v5.1: each type of crime has its own crafted glyph and pastel colour
+//    (src/components/graphics: theft = a money bag, cyber = a phone with a
+//    warning, women's safety = a shield …) on the "cases by type" bars, the
+//    helplines and the full figure list; known NCRB type names are
+//    translated (page_police.crimeTypes), others stay as published.
 //
 //  Honesty: crime CHARTS use NCRB rows only (source mentions NCRB / Crime
 //  in India). Rows from a police department's own report are listed at the
 //  bottom with their source but never charted. The data API already drops
-//  rows taken from news articles. Words: src/dictionaries/<locale>/page_police.json.
+//  rows taken from news articles. Rows whose source says they are an
+//  ESTIMATE ("… (estimated)", "Estimated from …") are never shown as facts:
+//  they stay out of the tiles, the sentence, the picture and every chart,
+//  one quiet line says how many were left out, and the bottom list marks
+//  them "Estimate". Words: src/dictionaries/<locale>/page_police.json.
 "use client";
 
 import type React from "react";
@@ -33,7 +42,7 @@ import { use, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { FileText, Hash, Phone, Receipt, Shield, Siren, TrendingUp } from "lucide-react";
+import { FileText, Phone, Receipt, Shield, Siren, TrendingUp } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -48,8 +57,10 @@ import {
   LoadingShell,
   ErrorBlock,
   EmptyState,
+  Pill,
   SourcePill,
 } from "@/components/district/ui";
+import { CategoryGlyph, GlyphBarList, GlyphEmptyState, crimeGlyph, glyphPick, type GlyphName } from "@/components/graphics";
 import { ChartCard, ChartGradients, Explainer, HowItWorks, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { ThenNowRow } from "@/components/accountability/AccountabilityVisuals";
@@ -76,6 +87,8 @@ type Station = PoliceStation & { lat?: number | null; lng?: number | null };
 
 /** NCRB rows: "NCRB", "NCRB / ncrb.gov.in", "Crime in India · NCRB". */
 const NCRB_RE = /ncrb|crime in india/i;
+/** A row whose source says it is an estimate, not a published figure. */
+const ESTIMATE_RE = /estimat/i;
 /** The all-crimes row ("IPC Crimes Total", "IPC Crimes"), which already contains the other categories. */
 const TOTAL_RE = /\btotal\b|^ipc crimes?$/i;
 /** Cards shown before "Show all". */
@@ -86,12 +99,39 @@ const SEARCH_FROM = 12;
 const LAKH = 100_000;
 const NCRB = { label: "NCRB", href: "https://ncrb.gov.in" };
 
-/** National helplines (fixed numbers, not district data). */
-const HELPLINES = [
-  { key: "helpCyber", number: "1930" },
-  { key: "helpWomen", number: "1091" },
-  { key: "helpChild", number: "1098" },
-] as const;
+/** National helplines (fixed numbers, not district data), each with its glyph. */
+const HELPLINES: ReadonlyArray<{ key: "helpCyber" | "helpWomen" | "helpChild"; number: string; glyph: GlyphName }> = [
+  { key: "helpCyber", number: "1930", glyph: "cyber" },
+  { key: "helpWomen", number: "1091", glyph: "women" },
+  { key: "helpChild", number: "1098", glyph: "child" },
+];
+
+/**
+ * NCRB / police names of crime types we can translate (lower case → key in
+ * page_police.crimeTypes). Any other name is shown as published, in English.
+ */
+const CRIME_TYPE_KEY: Record<string, string> = {
+  "ipc crimes total": "total",
+  "total ipc crimes": "total",
+  "ipc crimes": "total",
+  "ipc crime": "total",
+  "crimes against women": "women",
+  "cyber crimes": "cyber",
+  "cyber crime": "cyber",
+  "property crimes": "property",
+  "property crime": "property",
+  theft: "theft",
+  "theft & burglary": "theftBurglary",
+  "theft and burglary": "theftBurglary",
+  burglary: "burglary",
+  "cheating & fraud": "cheating",
+  "cheating and fraud": "cheating",
+  robbery: "robbery",
+  murder: "murder",
+  "kidnapping & abduction": "kidnapping",
+  "kidnapping and abduction": "kidnapping",
+  "traffic violations": "traffic",
+};
 
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
@@ -112,14 +152,24 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   const [showAll, setShowAll] = useState(false);
 
   const num = (n: number) => f.number(n);
+  /** A crime type in the reader's language when we know it; `lang` says when it stayed English. */
+  const crimeName = (raw: string): { text: string; lang?: string } => {
+    const key = CRIME_TYPE_KEY[raw.trim().toLowerCase()];
+    return key ? { text: t(`crimeTypes.${key}`) } : { text: raw, lang: "en" };
+  };
   const lakh = (amount: number) => f.number(amount / LAKH, { maximumFractionDigits: 1 });
+  /** A value that is already in lakh (the traffic chart's unit). */
+  const inLakh = (v: number) => f.number(v, { maximumFractionDigits: 1 });
   const pct = (share: number) => f.number(share, { style: "percent", maximumFractionDigits: 0 });
 
   const stations = useMemo(() => (data?.data?.stations ?? []) as Station[], [data]);
   const crime = data?.data?.crime ?? [];
-  const traffic = data?.data?.traffic ?? [];
+  const allTraffic = data?.data?.traffic ?? [];
+  // Estimates are never shown as facts (see the header note).
+  const traffic = allTraffic.filter((tr) => !ESTIMATE_RE.test(tr.source ?? ""));
+  const estimatedCount = crime.filter((c) => ESTIMATE_RE.test(c.source)).length + (allTraffic.length - traffic.length);
   const lastUpdated = data?.meta?.lastUpdated ?? null;
-  const hasAnyData = stations.length > 0 || crime.length > 0 || traffic.length > 0;
+  const hasAnyData = stations.length > 0 || crime.length > 0 || allTraffic.length > 0;
 
   // ── Stations ────────────────────────────────────────────────────────
   const withPhone = stations.filter((s) => telHref(s.phone)).length;
@@ -130,7 +180,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   const shown = q || showAll ? matches : matches.slice(0, FIRST_CARDS);
 
   // ── Crime (NCRB only for anything drawn) ────────────────────────────
-  const ncrb = crime.filter((c) => NCRB_RE.test(c.source));
+  const ncrb = crime.filter((c) => NCRB_RE.test(c.source) && !ESTIMATE_RE.test(c.source));
   const years = [...new Set(ncrb.map((c) => c.year))].sort((a, b) => b - a);
   const latestYear = years[0] ?? null;
   const prevYear = years[1] ?? null;
@@ -146,7 +196,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   const latestTypes = ncrb.filter((c) => c.year === latestYear && !TOTAL_RE.test(c.category));
   const typeChart = [...latestTypes]
     .sort((a, b) => b.count - a.count)
-    .map((c) => ({ nameFull: c.category, name: c.category.length > 18 ? `${c.category.slice(0, 17)}…` : c.category, count: c.count }));
+    .map((c) => ({ nameFull: c.category, count: c.count }));
   const topType = typeChart[0];
 
   // Up or down by type: same category name in both years, earlier figure above zero.
@@ -175,7 +225,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   const trafficChart = [...traffic]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-12)
-    .map((tr) => ({ label: f.date(tr.date, { month: "short", year: "2-digit" }), amount: Math.round(tr.amount / 1000) }));
+    .map((tr) => ({ label: f.date(tr.date, { month: "short", year: "2-digit" }), amount: Math.round((tr.amount / LAKH) * 10) / 10 }));
   const topTrafficMonth = [...trafficChart].sort((a, b) => b.amount - a.amount)[0];
   const trafficSource = traffic.find((tr) => tr.source)?.source ?? null;
   const target = latestTraffic?.monthlyTarget ?? null;
@@ -201,6 +251,21 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
     explainParts.push(t("explainCrimeTypes", { year: String(latestYear) }));
   }
 
+  const call112Style: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 44,
+    padding: "0 16px",
+    borderRadius: 999,
+    background: "var(--ftp-surface)",
+    color: "var(--ftp-danger)",
+    fontSize: 15,
+    fontWeight: 700,
+    textDecoration: "none",
+    boxShadow: "0 8px 18px -10px rgba(0,0,0,0.45)",
+  };
+
   const howSteps = [
     { emoji: "", title: t("how1"), body: t("how1Body") },
     { emoji: "", title: t("how2"), body: t("how2Body") },
@@ -221,20 +286,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
     <a
       href="tel:112"
       aria-label={t("call112Aria")}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        minHeight: 44,
-        padding: "0 16px",
-        borderRadius: 999,
-        background: "#fff",
-        color: "var(--ftp-danger)",
-        fontSize: 15,
-        fontWeight: 700,
-        textDecoration: "none",
-        boxShadow: "0 8px 18px -10px rgba(0,0,0,0.45)",
-      }}
+      style={call112Style}
     >
       <Phone size={16} aria-hidden />
       {t("call112")}
@@ -260,7 +312,12 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
 
       {!isLoading && !error && !hasAnyData && (
         <>
-          <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+          <GlyphEmptyState
+            pick={glyphPick("shield")}
+            companions={[glyphPick("traffic"), glyphPick("women")]}
+            title={t("emptyTitle", { district: districtName })}
+            body={t("emptyBody")}
+          />
           <div style={{ marginTop: 20 }}>{howToReport(true)}</div>
         </>
       )}
@@ -307,6 +364,12 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
               />
             )}
           </StatStrip>
+
+          {estimatedCount > 0 && (
+            <p className="ftp-prose" style={{ margin: "12px 0 0", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+              {t("estimatesHidden", { n: estimatedCount })}
+            </p>
+          )}
 
           {/* ONE picture: NCRB total, last year vs this year. Without two
               NCRB years, the "how to report a crime" steps stand in. */}
@@ -407,7 +470,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                         alignItems: "center",
                         gap: 6,
                         minHeight: 44,
-                        padding: "0 12px",
+                        padding: "0 12px 0 8px",
                         borderRadius: 999,
                         border: "1px solid var(--ftp-border)",
                         background: "var(--ftp-surface)",
@@ -416,7 +479,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                         textDecoration: "none",
                       }}
                     >
-                      <Hash size={14} aria-hidden style={{ color: "var(--hue-deep)" }} />
+                      <CategoryGlyph glyph={h.glyph} size={22} />
                       <strong className="ftp-num">{h.number}</strong>
                       <span style={{ color: "var(--ftp-text-2)" }}>{t(h.key)}</span>
                     </a>
@@ -446,26 +509,19 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                 <ChartCard
                   title={t("crimeTitle", { year: String(latestYear) })}
                   units={totalNow !== null ? t("crimeUnitsTotal") : t("crimeUnits")}
-                  simple={topType ? t.rich("crimeSimple", { name: topType.nameFull, n: topType.count, count: num(topType.count), b: bold }) : null}
+                  simple={topType ? t.rich("crimeSimple", { name: crimeName(topType.nameFull).text, n: topType.count, count: num(topType.count), b: bold }) : null}
                   source={NCRB}
                   asOfPeriod={String(latestYear)}
-                  table={typeChart.map((r) => ({ label: r.nameFull, value: num(r.count) }))}
+                  table={typeChart.map((r) => ({ label: crimeName(r.nameFull).text, value: num(r.count) }))}
                 >
-                  <ResponsiveContainer width="100%" height={Math.max(180, typeChart.length * 40 + 40)}>
-                    <BarChart data={typeChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
-                      <ChartGradients />
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                      <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => num(Number(v))} />
-                      <YAxis type="category" dataKey="name" tick={CHART_AXIS} width={120} interval={0} />
-                      <Tooltip
-                        formatter={(v) => [num(Number(v)), t("tooltipCases")]}
-                        labelFormatter={(_, payload) => payload?.[0]?.payload?.nameFull ?? ""}
-                        contentStyle={chartTooltipStyle}
-                        cursor={{ fill: "var(--hue-tint)" }}
-                      />
-                      <Bar dataKey="count" name={t("tooltipCases")} fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {/* One row per type: its glyph and pastel colour, the name, the count and a bar. */}
+                  <GlyphBarList
+                    ariaLabel={t("crimeTypesAria", { year: String(latestYear) })}
+                    rows={typeChart.map((r) => {
+                      const name = crimeName(r.nameFull);
+                      return { key: r.nameFull, label: name.text, labelLang: name.lang, value: r.count, display: num(r.count), pick: crimeGlyph(r.nameFull) };
+                    })}
+                  />
                 </ChartCard>
               )}
 
@@ -481,7 +537,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                   source={NCRB}
                   asOfPeriod={t("yearsPeriod", { prev: String(prevYear), latest: String(latestYear) })}
                   table={trendRows.map((r) => ({
-                    label: r.category,
+                    label: crimeName(r.category).text,
                     value: t("trendTableValue", { prev: String(prevYear), then: num(r.then), latest: String(latestYear), now: num(r.now) }),
                   }))}
                 >
@@ -490,7 +546,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                       <ThenNowRow
                         key={r.category}
                         index={i}
-                        label={r.category}
+                        label={crimeName(r.category).text}
                         thenValue={r.then}
                         nowValue={r.now}
                         thenText={t("yearValue", { year: String(prevYear), value: num(r.then) })}
@@ -512,23 +568,23 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                     target && target > 0
                       ? t.rich("trafficSimpleTarget", { month: latestMonth, amount: lakh(latestTraffic.amount), target: lakh(target), b: bold })
                       : topTrafficMonth
-                        ? t.rich("trafficSimple", { month: topTrafficMonth.label, amount: num(topTrafficMonth.amount), b: bold })
+                        ? t.rich("trafficSimple", { month: topTrafficMonth.label, amount: inLakh(topTrafficMonth.amount), b: bold })
                         : null
                   }
                   legend={[{ label: t("legendCollected"), swatch: "var(--hue)" }]}
                   source={trafficSource ? { label: trafficSource } : undefined}
                   asOf={latestTraffic.date}
-                  table={trafficChart.map((r) => ({ label: r.label, value: t("thousandRupees", { amount: num(r.amount) }) }))}
+                  table={trafficChart.map((r) => ({ label: r.label, value: t("lakhRupees", { amount: inLakh(r.amount) }) }))}
                 >
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={trafficChart} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
                       <ChartGradients />
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
                       <XAxis dataKey="label" tick={CHART_AXIS} angle={-30} textAnchor="end" />
-                      <YAxis tick={CHART_AXIS} tickFormatter={(v) => num(Number(v))} width={44} />
+                      <YAxis tick={CHART_AXIS} tickFormatter={(v) => inLakh(Number(v))} width={44} />
                       <Tooltip
                         contentStyle={chartTooltipStyle}
-                        formatter={(v) => [t("thousandRupees", { amount: num(Number(v)) }), t("legendCollected")]}
+                        formatter={(v) => [t("lakhRupees", { amount: inLakh(Number(v)) }), t("legendCollected")]}
                         cursor={{ fill: "var(--hue-tint)" }}
                       />
                       <Bar dataKey="amount" name={t("legendCollected")} fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} />
@@ -561,19 +617,28 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                           {crime
                             .filter((c) => c.year === year)
-                            .map((c) => (
-                              <li key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 14, lineHeight: "20px" }}>
-                                <span style={{ minWidth: 0 }}>
-                                  <span lang="en">{c.category}</span>
-                                  <span style={{ display: "block", fontSize: 12, color: "var(--ftp-text-2)" }}>
-                                    {t("sourceLabel", { source: c.source })}
+                            .map((c) => {
+                              const name = crimeName(c.category);
+                              return (
+                                <li key={c.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, lineHeight: "20px" }}>
+                                  <CategoryGlyph category={c.category} domain="crime" size={20} style={{ marginTop: 1 }} />
+                                  <span style={{ minWidth: 0, flex: 1 }}>
+                                    <span lang={name.lang}>{name.text}</span>
+                                    {ESTIMATE_RE.test(c.source) && (
+                                      <Pill tone="warn" style={{ marginInlineStart: 8, verticalAlign: "middle" }}>
+                                        {t("estimateTag")}
+                                      </Pill>
+                                    )}
+                                    <span style={{ display: "block", fontSize: 12, color: "var(--ftp-text-2)" }}>
+                                      {t("sourceLabel", { source: c.source })}
+                                    </span>
                                   </span>
-                                </span>
-                                <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>
-                                  {num(c.count)}
-                                </span>
-                              </li>
-                            ))}
+                                  <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>
+                                    {num(c.count)}
+                                  </span>
+                                </li>
+                              );
+                            })}
                         </ul>
                       </Card>
                     ))}
