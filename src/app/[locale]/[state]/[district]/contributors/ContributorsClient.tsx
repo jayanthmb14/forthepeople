@@ -6,17 +6,60 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════════════════
+//  /[locale]/[state]/[district]/contributors — district supporters page
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Design v3 "Civic Ledger" (2026-09-27):
+//    • PageHeader + StatStrip (four honest counts, dated by the fetch time).
+//    • Each tier is a kit Section; contributors are Cards in a grid. The
+//      old auto-scrolling marquee is gone (v3 allows no decorative motion),
+//      so each section shows the first PREVIEW_COUNT people and a
+//      "View all" button opens the full, sorted list in a dialog.
+//    • Badge levels are Pills (tones from BADGE_TONE, shared with
+//      /contributors); amounts are mono; no emoji, no gradients, no shadows.
+//    • Prices in the "be the first" prompts come from TIER_CONFIG, the same
+//      config the checkout uses, and the module count from getPlatformFacts().
+//
+//  UNCHANGED: the query (endpoint, keys, refresh rate), the "just paid"
+//  auto-refresh, the tier filters, the modal contents and every support link.
+//
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Instagram, Linkedin, Github, Twitter, ExternalLink, X } from "lucide-react";
-import { BADGE_COLORS } from "@/lib/badge-level";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  Github,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Users,
+  X,
+} from "lucide-react";
 import { getContributorLabel } from "@/lib/contributor-label";
 import { formatExpiryLabel } from "@/lib/contribution-expiry";
 import { normalizeSocialLink } from "@/lib/social-link";
-import BadgeExplainer from "@/components/common/BadgeExplainer";
+import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+import { getPlatformFacts } from "@/lib/platform-facts";
+import BadgeExplainer, { BADGE_TONE } from "@/components/common/BadgeExplainer";
 import CorporateSponsorBanner from "@/components/common/CorporateSponsorBanner";
+import {
+  Card,
+  EmptyState,
+  LoadingShell,
+  PageHeader,
+  Pill,
+  Section,
+  StatStrip,
+  StatTile,
+  ToolbarButton,
+} from "@/components/district/ui";
+
+/** How many modules each district page carries (from the module registry). */
+const { modulesPerDistrict: MODULES_PER_DISTRICT } = getPlatformFacts();
 
 interface Contributor {
   id: string;
@@ -57,9 +100,19 @@ const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   website: ExternalLink,
 };
 
+/** Cards shown per section before "View all" (the old row also switched to "View all" above 6). */
+const PREVIEW_COUNT = 6;
+
+/** "₹99" style price for a tier, read from the checkout config. */
+function tierPrice(key: string): string {
+  const t = TIER_CONFIG[key];
+  return t ? `₹${t.amount.toLocaleString("en-IN")}` : "";
+}
+
+/** One supporter: initials circle, name (+ social link), tier label, badge Pill, tenure, amount. */
 function ContributorCard({ c }: { c: Contributor }) {
-  const badgeColors = c.badgeLevel ? BADGE_COLORS[c.badgeLevel] : null;
   const SocialIcon = c.socialPlatform ? SOCIAL_ICONS[c.socialPlatform] : null;
+  const safeLink = normalizeSocialLink(c.socialLink);
   const initials = c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const label = getContributorLabel(c.tier, c.districtName, c.stateName);
   const expiryLabel = c.isRecurring ? null : formatExpiryLabel(c.expiresAt);
@@ -69,94 +122,61 @@ function ContributorCard({ c }: { c: Contributor }) {
       : `${c.monthsActive}mo`
     : null;
 
-  const nameContent = (
-    <span style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{c.name}</span>
-  );
-
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: `1.5px solid ${badgeColors?.border ?? "#E8E8E4"}`,
-        borderRadius: 12,
-        padding: "14px 14px",
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
-        minWidth: 240,
-        width: 260,
-        flex: "0 0 auto",
-        scrollSnapAlign: "start",
-      }}
-    >
-      <div
+    <Card as="li" padding={14} style={{ display: "flex", alignItems: "flex-start", gap: 10, listStyle: "none" }}>
+      <span
+        aria-hidden
         style={{
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           borderRadius: "50%",
-          background: badgeColors?.bg ?? "#F5F5F0",
-          color: badgeColors?.text ?? "#6B6B6B",
+          background: "var(--ftp-surface-2)",
+          color: "var(--ftp-text-2)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: 13,
-          fontWeight: 700,
+          fontWeight: 500,
           flexShrink: 0,
-          border: badgeColors ? `2px solid ${badgeColors.border}` : "1px solid #E8E8E4",
         }}
       >
         {initials}
-      </div>
+      </span>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {normalizeSocialLink(c.socialLink) ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+          <span className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", overflowWrap: "anywhere" }}>{c.name}</span>
+          {safeLink && (
             <a
-              href={normalizeSocialLink(c.socialLink)!}
+              href={safeLink}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+              aria-label={`${c.name}'s profile`}
+              style={{ color: "var(--ftp-text-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28 }}
             >
-              {nameContent}
-              {SocialIcon && <SocialIcon size={13} color="#6B6B6B" />}
+              {SocialIcon ? <SocialIcon size={14} aria-hidden /> : <ExternalLink size={14} aria-hidden />}
             </a>
-          ) : (
-            nameContent
           )}
         </div>
-        <div style={{ fontSize: 11, color: "#6B6B6B", marginTop: 2, fontWeight: 500 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 10, color: "#9B9B9B", display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginTop: 3 }}>
+        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{label}</div>
+        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
           {c.badgeLevel && (
-            <span
-              style={{
-                fontSize: 9,
-                fontWeight: 700,
-                padding: "1px 5px",
-                borderRadius: 4,
-                background: badgeColors?.bg,
-                color: badgeColors?.text,
-                textTransform: "uppercase",
-              }}
-            >
+            <Pill tone={BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 20, textTransform: "capitalize" }}>
               {c.badgeLevel}
-            </span>
+            </Pill>
           )}
-          {tenure && <span>· {tenure}</span>}
-          {!c.isRecurring && c.amount && (
-            <span style={{ fontWeight: 700, color: "#2563EB", fontFamily: "var(--font-mono, monospace)" }}>
-              · ₹{c.amount.toLocaleString("en-IN")}
-            </span>
-          )}
+          {tenure && <span className="ftp-num">{tenure}</span>}
+          {!c.isRecurring && c.amount ? (
+            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>₹{c.amount.toLocaleString("en-IN")}</span>
+          ) : null}
         </div>
         {c.message && (
-          <div
+          <p
             title={c.message}
             style={{
-              fontSize: 11,
-              color: "#9B9B9B",
-              marginTop: 6,
-              fontStyle: "italic",
+              fontSize: 13,
+              lineHeight: "20px",
+              color: "var(--ftp-text-2)",
+              margin: "6px 0 0",
               overflow: "hidden",
               textOverflow: "ellipsis",
               display: "-webkit-box",
@@ -165,114 +185,79 @@ function ContributorCard({ c }: { c: Contributor }) {
             }}
           >
             &ldquo;{c.message}&rdquo;
-          </div>
+          </p>
         )}
         {expiryLabel && (
-          <div style={{ fontSize: 10, color: "#9B9B9B", marginTop: 5 }}>{expiryLabel}</div>
+          <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 4 }}>{expiryLabel}</div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 
-const INITIAL_VISIBLE = 30;
-const MAX_RENDERED = 60; // cap rendered cards so the loop track stays small
+/** Grid of contributor cards (one column on phones). */
+const LIST_GRID: React.CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))",
+  gap: 10,
+};
 
-function ScrollableRow({
-  contributors,
-  emptyState,
-}: {
-  contributors: Contributor[];
-  emptyState: React.ReactNode;
-}) {
-  const slice = useMemo(
-    () => contributors.slice(0, Math.min(INITIAL_VISIBLE, MAX_RENDERED)),
-    [contributors]
-  );
-  // Only auto-scroll when there are enough cards to need it (~4+ fills a row).
-  const shouldLoop = slice.length >= 4;
-  const track = shouldLoop ? [...slice, ...slice] : slice;
-
-  if (contributors.length === 0) {
-    return <div>{emptyState}</div>;
-  }
-
-  return (
-    <div
-      className="scroll-row-viewport"
-      style={{
-        overflow: "hidden",
-        position: "relative",
-      }}
-    >
-      <div
-        className={shouldLoop ? "scroll-row-track scroll-row-track--looping" : "scroll-row-track"}
-        style={{
-          display: "flex",
-          gap: 10,
-          width: shouldLoop ? "max-content" : undefined,
-          overflowX: shouldLoop ? "visible" : "auto",
-          scrollSnapType: shouldLoop ? undefined : "x mandatory",
-          paddingBottom: 6,
-          scrollbarWidth: "thin",
-        }}
-      >
-        {track.map((c, i) => (
-          <ContributorCard key={`${c.id}-${i}`} c={c} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionHeader({
+/**
+ * One tier section: H2 + count Pill + optional "View all" button, then a grid
+ * of the first PREVIEW_COUNT people (or an honest empty prompt).
+ */
+function TierSection({
   title,
-  count,
+  list,
+  loading,
   onViewAll,
+  empty,
 }: {
   title: string;
-  count: number;
+  list: Contributor[];
+  loading?: boolean;
   onViewAll?: () => void;
+  empty: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.2px", margin: 0 }}>
-        {title}
-      </h2>
-      {count > 0 && (
+    <Section
+      title={
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {title}
+          {list.length > 0 && (
+            <Pill tone="neutral">
+              <span className="ftp-num">{list.length.toLocaleString("en-IN")}</span>
+            </Pill>
+          )}
+        </span>
+      }
+      action={
         onViewAll ? (
-          <button
-            onClick={onViewAll}
-            title="Click to view all"
-            style={{
-              background: "none",
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 500,
-              color: "#2563EB",
-              textDecoration: "underline",
-              textDecorationStyle: "dotted",
-              marginLeft: 2,
-            }}
-          >
-            {count.toLocaleString("en-IN")}
-          </button>
-        ) : (
-          <span style={{ fontSize: 12, color: "#9B9B9B", fontWeight: 500 }}>
-            {count.toLocaleString("en-IN")}
-          </span>
-        )
+          <ToolbarButton onClick={onViewAll} ariaLabel={`View all ${list.length} ${title}`}>
+            View all
+          </ToolbarButton>
+        ) : undefined
+      }
+    >
+      {loading ? (
+        <LoadingShell rows={2} />
+      ) : list.length === 0 ? (
+        empty
+      ) : (
+        <ul style={LIST_GRID}>
+          {list.slice(0, PREVIEW_COUNT).map((c) => (
+            <ContributorCard key={c.id} c={c} />
+          ))}
+        </ul>
       )}
-    </div>
+    </Section>
   );
 }
 
-function SectionLoading() {
-  return <div style={{ padding: 20, textAlign: "center", color: "#9B9B9B", fontSize: 13 }}>Loading...</div>;
-}
-
+/** Full list for one tier in a dialog. Esc or the backdrop closes it. */
 function ViewAllModal({
   title,
   contributors,
@@ -301,7 +286,8 @@ function ViewAllModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.45)",
+        // Backdrop: the text colour at 45 % so it follows light and dark themes.
+        background: "color-mix(in srgb, var(--ftp-text) 45%, transparent)",
         zIndex: 80,
         display: "flex",
         alignItems: "center",
@@ -310,16 +296,18 @@ function ViewAllModal({
       }}
     >
       <div
-        className="viewall-modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="viewall-title"
         style={{
-          background: "#FFFFFF",
-          borderRadius: 14,
+          background: "var(--ftp-surface)",
+          border: "1px solid var(--ftp-border)",
+          borderRadius: "var(--ftp-radius-card)",
           width: "100%",
           maxWidth: 900,
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
         }}
       >
         <div
@@ -327,71 +315,60 @@ function ViewAllModal({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "16px 20px",
-            borderBottom: "1px solid #F0F0EC",
+            gap: 12,
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--ftp-border)",
           }}
         >
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>{title}</div>
-            <div style={{ fontSize: 12, color: "#9B9B9B", marginTop: 2 }}>
-              Sorted by amount (highest first)
-            </div>
+            <h2 id="viewall-title" className="ftp-title">{title}</h2>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>Sorted by amount (highest first)</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
             style={{
               background: "none",
               border: "none",
-              color: "#6B6B6B",
+              color: "var(--ftp-text-2)",
               cursor: "pointer",
-              padding: 6,
+              width: 44,
+              height: 44,
               display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
             }}
           >
-            <X size={20} />
+            <X size={20} aria-hidden />
           </button>
         </div>
-        <div
-          className="viewall-modal-grid"
-          style={{
-            padding: 20,
-            overflow: "auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: 10,
-          }}
-        >
+        <ul style={{ ...LIST_GRID, padding: 16, overflow: "auto" }}>
           {contributors.map((c) => (
             <ContributorCard key={c.id} c={c} />
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   );
 }
 
-function EmptyCTA({ text, href, accent }: { text: string; href: string; accent: string }) {
+/** Honest empty prompt for a tier with nobody in it yet, with its support link. */
+function EmptyTier({ title, cta, href }: { title: string; cta: string; href: string }) {
   return (
-    <Link
-      href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        padding: "22px 18px",
-        background: "#FAFAF8",
-        border: `2px dashed ${accent}`,
-        borderRadius: 12,
-        textDecoration: "none",
-        color: accent,
-        fontSize: 13,
-        fontWeight: 600,
-      }}
-    >
-      {text}
-    </Link>
+    <EmptyState
+      title={title}
+      action={
+        <Link
+          href={href}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-brand)", textDecoration: "none" }}
+        >
+          {cta}
+          <ArrowRight size={14} aria-hidden />
+        </Link>
+      }
+    />
   );
 }
 
@@ -408,6 +385,7 @@ export default function ContributorsClient({
   const queryClient = useQueryClient();
   const [showBanner, setShowBanner] = useState(justPaid);
 
+  // After a payment, refetch every 15 s for 3 minutes so the new name shows up.
   useEffect(() => {
     if (!justPaid) return;
     const interval = setInterval(() => {
@@ -423,7 +401,7 @@ export default function ContributorsClient({
 
   const refreshRate = justPaid ? 15_000 : 120_000;
 
-  const { data: districtData, isLoading: loadingDist } = useQuery<{ contributors: Contributor[]; total: number }>({
+  const { data: districtData, isLoading: loadingDist, dataUpdatedAt } = useQuery<{ contributors: Contributor[]; total: number }>({
     queryKey: ["contributors-district", districtSlug, stateSlug],
     queryFn: () => fetch(`/api/data/contributors?district=${districtSlug}&state=${stateSlug}&limit=500`).then((r) => r.json()),
     staleTime: refreshRate,
@@ -450,177 +428,134 @@ export default function ContributorsClient({
   const stateHref = `/${locale}/support?tier=state&state=${stateSlug}`;
   const patronHref = `/${locale}/support?tier=patron`;
 
+  // The counts are only as fresh as the last fetch, so we date them with it.
+  const fetchedAt = dataUpdatedAt > 0 ? new Date(dataUpdatedAt) : null;
+  const citizens =
+    population && population > 0
+      ? population >= 100_000
+        ? `${(population / 100_000).toFixed(1)} lakh citizens`
+        : `${population.toLocaleString("en-IN")} citizens`
+      : "every citizen";
+
   return (
-    <div style={{ padding: "24px 28px", maxWidth: 980 }}>
-      <style>{`
-        @keyframes ftp-row-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .scroll-row-track--looping {
-          animation: ftp-row-scroll 90s linear infinite;
-          will-change: transform;
-        }
-        .scroll-row-viewport:hover .scroll-row-track--looping {
-          animation-play-state: paused;
-        }
-        @media (max-width: 768px) {
-          .scroll-row-track--looping { animation-duration: 60s; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .scroll-row-track--looping {
-            animation: none;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-          }
-        }
-        @media (max-width: 600px) {
-          .viewall-modal-content {
-            max-width: 100% !important;
-            max-height: 100vh !important;
-            border-radius: 0 !important;
-            height: 100vh;
-          }
-          .viewall-modal-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 12, color: "#9B9B9B", marginBottom: 4 }}>
-          {stateName} → {districtName}
-        </div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.4px", margin: 0 }}>
-          {districtName} Contributors
-        </h1>
-        <p style={{ fontSize: 13, color: "#6B6B6B", marginTop: 4 }}>
-          People who keep {districtName}&apos;s data free and accessible to every citizen.
-        </p>
-      </div>
+    <div className="px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: "calc(var(--ftp-reading-max) + 48px)" }}>
+      <PageHeader
+        icon={Users}
+        accent="pink"
+        title={`${districtName} Contributors`}
+        description={`People who keep ${districtName}'s data free and accessible to every citizen.`}
+        backHref={`/${locale}/${stateSlug}/${districtSlug}`}
+        backLabel={`${stateName} · ${districtName}`}
+        freshness={fetchedAt ? { asOf: fetchedAt } : undefined}
+      />
 
       {showBanner && (
-        <div style={{
-          background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10,
-          padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <span style={{ fontSize: 20 }}>🎉</span>
+        <Card role="status" style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 24 }}>
+          <CheckCircle2 size={18} aria-hidden style={{ color: "var(--ftp-live)", flexShrink: 0, marginTop: 2 }} />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>Your contribution is being processed!</div>
-            <div style={{ fontSize: 12, color: "#16A34A" }}>It will appear here within a minute. This page auto-refreshes.</div>
+            <p className="ftp-title" style={{ color: "var(--ftp-live-text)" }}>Your contribution is being processed.</p>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+              It will appear here within a minute. This page refreshes itself every 15 seconds for the next 3 minutes.
+            </p>
           </div>
+        </Card>
+      )}
+
+      {!loadingDist && (
+        <div style={{ marginBottom: 24 }}>
+          <StatStrip cols={4}>
+            <StatTile label="District Champions" value={districtChampions.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile label="State Champions" value={stateChampions.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile label="India Patrons" value={indiaPatrons.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+            <StatTile label="One-time" value={oneTimers.length.toLocaleString("en-IN")} asOf={fetchedAt} />
+          </StatStrip>
         </div>
       )}
 
-      {/* Section 1: Corporate Sponsor Banner */}
+      {/* Corporate sponsor slot (component unchanged) */}
       <CorporateSponsorBanner districtName={districtName} population={population} />
 
       <BadgeExplainer />
 
-      {/* Section 2: District Champions */}
-      <div style={{ marginTop: 28, marginBottom: 28 }}>
-        <SectionHeader
-          title={`🏛️ ${districtName} Champions`}
-          count={districtChampions.length}
-          onViewAll={districtChampions.length > 6 ? () => setModalKey("district") : undefined}
-        />
-        {loadingDist ? (
-          <SectionLoading />
-        ) : (
-          <ScrollableRow
-            contributors={districtChampions}
-            emptyState={<EmptyCTA text={`Be the first ${districtName} Champion → from ₹99/mo`} href={supportHref} accent="#2563EB" />}
+      <TierSection
+        title={`${districtName} Champions`}
+        list={districtChampions}
+        loading={loadingDist}
+        onViewAll={districtChampions.length > PREVIEW_COUNT ? () => setModalKey("district") : undefined}
+        empty={
+          <EmptyTier
+            title={`No ${districtName} Champions yet.`}
+            cta={`Be the first, from ${tierPrice("district")}/month`}
+            href={supportHref}
           />
-        )}
-      </div>
+        }
+      />
 
-      {/* Section 3: State Champions */}
-      <div style={{ marginBottom: 28 }}>
-        <SectionHeader
-          title={`🇮🇳 ${stateName} Champions`}
-          count={stateChampions.length}
-          onViewAll={stateChampions.length > 6 ? () => setModalKey("state") : undefined}
-        />
-        {loadingDist ? (
-          <SectionLoading />
-        ) : (
-          <ScrollableRow
-            contributors={stateChampions}
-            emptyState={<EmptyCTA text={`Sponsor all of ${stateName} → from ₹999/mo`} href={stateHref} accent="#7C3AED" />}
+      <TierSection
+        title={`${stateName} Champions`}
+        list={stateChampions}
+        loading={loadingDist}
+        onViewAll={stateChampions.length > PREVIEW_COUNT ? () => setModalKey("state") : undefined}
+        empty={
+          <EmptyTier
+            title={`No ${stateName} Champions yet.`}
+            cta={`Sponsor all of ${stateName}, from ${tierPrice("state")}/month`}
+            href={stateHref}
           />
-        )}
-      </div>
+        }
+      />
 
-      {/* Section 4: India Patrons & Royal Contributors */}
-      <div style={{ marginBottom: 28 }}>
-        <SectionHeader
-          title="👑 India Patrons & Royal Contributors"
-          count={indiaPatrons.length}
-          onViewAll={indiaPatrons.length > 6 ? () => setModalKey("india") : undefined}
-        />
-        {loadingDist ? (
-          <SectionLoading />
-        ) : (
-          <ScrollableRow
-            contributors={indiaPatrons}
-            emptyState={<EmptyCTA text="Become an India Patron → from ₹9,999/mo" href={patronHref} accent="#DC2626" />}
+      <TierSection
+        title="India Patrons & Royal Contributors"
+        list={indiaPatrons}
+        loading={loadingDist}
+        onViewAll={indiaPatrons.length > PREVIEW_COUNT ? () => setModalKey("india") : undefined}
+        empty={
+          <EmptyTier
+            title="No India Patrons yet."
+            cta={`Become an India Patron, from ${tierPrice("patron")}/month`}
+            href={patronHref}
           />
-        )}
-      </div>
+        }
+      />
 
-      {/* Section 5: One-Time Supporters */}
       {oneTimers.length > 0 && (
-        <div style={{ marginBottom: 28 }}>
-          <SectionHeader
-            title="💝 One-Time Supporters"
-            count={oneTimers.length}
-            onViewAll={oneTimers.length > 6 ? () => setModalKey("onetime") : undefined}
-          />
-          <ScrollableRow
-            contributors={oneTimers}
-            emptyState={null}
-          />
-        </div>
+        <TierSection
+          title="One-Time Supporters"
+          list={oneTimers}
+          onViewAll={oneTimers.length > PREVIEW_COUNT ? () => setModalKey("onetime") : undefined}
+          empty={null}
+        />
       )}
 
-      {/* Section 6: Bottom CTA */}
-      <Link
-        href={supportHref}
-        style={{
-          display: "block",
-          background: "linear-gradient(135deg, #EFF6FF, #F0FDF4)",
-          border: "2px solid #BFDBFE",
-          borderRadius: 16,
-          padding: "24px 28px",
-          textDecoration: "none",
-          marginTop: 32,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 }}>
-          Support {districtName}&apos;s Data — from ₹99/mo
-        </div>
-        <div style={{ fontSize: 13, color: "#4B4B4B", lineHeight: 1.6, marginBottom: 14 }}>
-          Every rupee keeps {districtName}&apos;s 29 dashboards free for{" "}
-          {population && population > 0
-            ? population >= 100_000
-              ? `${(population / 100_000).toFixed(1)} lakh citizens`
-              : `${population.toLocaleString("en-IN")} citizens`
-            : "every citizen"}.
-        </div>
-        <div
+      {/* Closing call to action: a plain card with one primary button. */}
+      <Card style={{ marginTop: 32, textAlign: "center" }} padding={24}>
+        <h2 className="ftp-h2" style={{ marginBottom: 8 }}>
+          Support {districtName}&apos;s data, from <span className="ftp-num">{tierPrice("district")}</span>/month
+        </h2>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
+          Every rupee keeps {districtName}&apos;s <span className="ftp-num">{MODULES_PER_DISTRICT}</span> dashboards free for {citizens}.
+        </p>
+        <Link
+          href={supportHref}
           style={{
-            display: "inline-block",
-            padding: "10px 22px",
-            background: "#2563EB",
-            color: "#fff",
-            borderRadius: 10,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            minHeight: 44,
+            padding: "0 20px",
+            background: "var(--ftp-brand)",
+            color: "var(--ftp-surface)",
+            borderRadius: "var(--ftp-radius-tile)",
             fontSize: 13,
-            fontWeight: 600,
+            fontWeight: 500,
+            textDecoration: "none",
           }}
         >
-          Become a Champion →
-        </div>
-      </Link>
+          Become a Champion
+          <ArrowRight size={14} aria-hidden />
+        </Link>
+      </Card>
 
       {modalData && (
         <ViewAllModal
