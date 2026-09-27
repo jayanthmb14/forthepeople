@@ -5,12 +5,16 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Transport — Design v3 module page (CONCEPT-v3 §5)
+//  Transport — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Data: useTransport() → { buses, trains }. Only active bus routes are
 //  shown. Rows carry no timestamp, so the tiles state how often the
 //  source is refreshed (from getModuleSources) instead of a date.
+//
+//  Picture: one bus per listed route (or ten, scaled, when there are
+//  many), coloured for the routes run by the biggest operator. Built only
+//  from the routes on this page; with no bus routes it is not drawn.
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
@@ -31,23 +35,27 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
 import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-/** Mono route / train number tag (brand tint, not a filled block). */
+/** Up to this many routes, the picture shows one bus per route. */
+const ONE_BUS_EACH_MAX = 12;
+
+/** Route / train number tag in the page hue (tint, not a filled block). */
 function NumberTag({ children }: { children: React.ReactNode }) {
   return (
     <span
       className="ftp-num"
       style={{
-        fontSize: 11,
-        lineHeight: "16px",
-        padding: "2px 6px",
-        borderRadius: 4,
-        background: "var(--ftp-brand-tint)",
-        color: "var(--ftp-brand-deep)",
+        fontSize: 12,
+        lineHeight: "18px",
+        padding: "1px 8px",
+        borderRadius: 999,
+        background: "var(--hue-tint)",
+        color: "var(--hue-deep)",
       }}
     >
       {children}
@@ -59,7 +67,7 @@ function NumberTag({ children }: { children: React.ReactNode }) {
 function Meta({ icon: Icon, children }: { icon?: typeof Clock; children: React.ReactNode }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
-      {Icon && <Icon size={12} aria-hidden style={{ color: "var(--ftp-text-2)" }} />}
+      {Icon && <Icon size={12} aria-hidden style={{ color: "var(--hue)" }} />}
       {children}
     </span>
   );
@@ -78,6 +86,22 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
   const operators = Array.from(new Set(buses.map((b) => b.operator)));
   const filteredBuses = busFilter === "all" ? buses : buses.filter((b) => b.operator === busFilter);
   const refresh = `Source updates: ${getModuleSources("transport", state).frequency.toLowerCase()}`;
+
+  // The picture: which operator runs the most of the listed routes.
+  const routesByOperator = operators
+    .map((op) => ({ op, count: buses.filter((b) => b.operator === op).length }))
+    .sort((a, b) => b.count - a.count);
+  const topOperator = routesByOperator[0] ?? null;
+  const oneEach = buses.length <= ONE_BUS_EACH_MAX;
+  const busesTotal = oneEach ? buses.length : 10;
+  const busesLit = topOperator ? (oneEach ? topOperator.count : (topOperator.count / buses.length) * 10) : 0;
+  const busesLabel = !topOperator
+    ? ""
+    : operators.length === 1
+      ? `Every bus route listed here is run by ${topOperator.op}.`
+      : oneEach
+        ? `Each bus is one route. The ${topOperator.count} coloured ones are run by ${topOperator.op}.`
+        : `About ${Math.round(busesLit)} of every 10 bus routes listed here are run by ${topOperator.op}.`;
 
   const listStyle = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" as const, gap: 8 };
 
@@ -101,12 +125,32 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
       {!isLoading && (buses.length > 0 || trains.length > 0) && (
         <>
           <StatStrip cols={3}>
-            <StatTile label="Bus routes" value={buses.length} icon={Bus} sub={refresh} />
-            <StatTile label="Train services" value={trains.length} icon={Train} sub={refresh} />
-            <StatTile label="Operators" value={operators.length} sub={refresh} />
+            <StatTile emoji="🚌" label="Bus routes" value={buses.length} sub={refresh} />
+            <StatTile emoji="🚆" label="Train services" value={trains.length} sub={refresh} />
+            <StatTile emoji="🏢" label="Operators" value={operators.length} sub={refresh} />
           </StatStrip>
 
-          <Section title="Timetables">
+          {/* The picture: coloured buses are routes run by the biggest operator. */}
+          {topOperator && (
+            <Card tinted padding={18} style={{ marginTop: 16 }}>
+              <Explainer title="In simple words" emoji="🚏">
+                {operators.length === 1 ? (
+                  <>
+                    All <strong className="ftp-num">{buses.length}</strong> bus route{buses.length === 1 ? "" : "s"} listed for this district{" "}
+                    {buses.length === 1 ? "is" : "are"} run by <strong>{topOperator.op}</strong>.
+                  </>
+                ) : (
+                  <>
+                    <strong>{topOperator.op}</strong> runs <strong className="ftp-num">{topOperator.count}</strong> of the{" "}
+                    <strong className="ftp-num">{buses.length}</strong> bus routes listed for this district.
+                  </>
+                )}
+              </Explainer>
+              <Pictogram filled={busesLit} total={busesTotal} emoji="🚌" label={busesLabel} />
+            </Card>
+          )}
+
+          <Section title="Timetables" emoji="🕒">
             {/* Bus / train switch. */}
             <Chips
               label="Mode of transport"
@@ -131,13 +175,13 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                   </div>
                 )}
                 {filteredBuses.length === 0 ? (
-                  <EmptyState title="No active bus routes listed for this district yet." />
+                  <EmptyState emoji="🚌" title="No active bus routes listed for this district yet." />
                 ) : (
                   <ul style={listStyle}>
                     {filteredBuses.map((b) => (
                       <Card key={b.id} as="li" padding={14}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <Bus size={18} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
+                          <Bus size={18} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 2 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                               {b.routeNumber && <NumberTag>{b.routeNumber}</NumberTag>}
@@ -145,7 +189,7 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                             </div>
                             {b.via && <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>via {b.via}</div>}
                           </div>
-                          <div style={{ textAlign: "right", flexShrink: 0, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                          <div style={{ textAlign: "right", flexShrink: 0, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
                             <div>{b.operator}</div>
                             <div>{b.busType}</div>
                           </div>
@@ -154,7 +198,7 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                           {b.departureTime && <Meta icon={Clock}><span className="ftp-num">{b.departureTime}</span></Meta>}
                           {b.frequency && <Meta>{/^every\s/i.test(b.frequency) ? b.frequency : `Every ${b.frequency}`}</Meta>}
                           {b.duration && <Meta icon={Timer}>{b.duration}</Meta>}
-                          {b.fare ? <Meta><span className="ftp-num">₹{b.fare}</span></Meta> : null}
+                          {b.fare ? <Meta><span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{b.fare}</span></Meta> : null}
                         </div>
                       </Card>
                     ))}
@@ -166,23 +210,23 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
             {tab === "train" && (
               <div style={{ marginTop: 12 }}>
                 {trains.length === 0 ? (
-                  <EmptyState title="No train services listed for this district yet." />
+                  <EmptyState emoji="🚆" title="No train services listed for this district yet." />
                 ) : (
                   <ul style={listStyle}>
                     {trains.map((t) => (
                       <Card key={t.id} as="li" padding={14}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <Train size={18} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
+                          <Train size={18} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 2 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                               <NumberTag>{t.trainNumber}</NumberTag>
                               <span className="ftp-title">{t.trainName}</span>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-                              <MapPin size={11} aria-hidden />
+                              <MapPin size={12} aria-hidden />
                               {t.origin} → {t.destination}
                             </div>
-                            <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>Station: {t.stationName}</div>
+                            <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>Station: {t.stationName}</div>
                           </div>
                           <div className="ftp-num" style={{ textAlign: "right", flexShrink: 0, fontSize: 13, lineHeight: "20px" }}>
                             {t.arrivalTime && <div>Arr: {t.arrivalTime}</div>}
@@ -203,12 +247,12 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                                   className="ftp-num"
                                   style={{
                                     fontSize: 11,
-                                    lineHeight: "16px",
-                                    width: 20,
+                                    lineHeight: "20px",
+                                    width: 22,
                                     textAlign: "center",
-                                    borderRadius: 4,
-                                    background: runs ? "var(--ftp-brand-tint)" : "var(--ftp-surface-2)",
-                                    color: runs ? "var(--ftp-brand-deep)" : "var(--ftp-text-2)",
+                                    borderRadius: 7,
+                                    background: runs ? "var(--hue-tint)" : "var(--ftp-surface-2)",
+                                    color: runs ? "var(--hue-deep)" : "var(--ftp-text-2)",
                                     opacity: runs ? 1 : 0.6,
                                   }}
                                 >
