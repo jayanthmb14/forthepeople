@@ -63,6 +63,7 @@ import { useFormat, useModuleText } from "@/i18n/client";
 import {
   AlertCircle,
   ArrowDownRight,
+  ArrowLeft,
   ArrowUpRight,
   CircleHelp,
   Clock,
@@ -650,8 +651,10 @@ export function StaleNotice({
  * the module emoji (the one place, with the sidebar and the overview tile,
  * where an emoji is allowed), the H1 in the deep module hue, one line of
  * description, then the freshness pill, source pill and actions. About
- * 120 px tall on a phone. No gradient slab, no watermark, no group chip,
- * no back link (the sidebar and the phone module bar already do that).
+ * 120–150 px tall on a phone. No gradient slab, no watermark, no group chip.
+ * The back link is drawn only on nested pages (a tender inside Tenders, a
+ * taluk, admin): on a module's own page the sidebar and the phone module
+ * bar already lead back to the overview.
  *
  * @prop icon        Lucide icon for the module (used when there is no emoji).
  * @prop title       Page title (the ONE h1 on the page).
@@ -668,15 +671,17 @@ export function StaleNotice({
  * @prop source      { label, href? } — feeds a SourcePill (and the notice link).
  * @prop actions     Buttons on the right (CSV, Share, Compare) — see Toolbar.
  * @prop emoji       Emoji for the chip. Defaults to the module's registry emoji.
- * @prop backHref / backLabel / accent  Kept for old call sites; not drawn in v5.
+ * @prop backHref    Where the back link goes (nested pages only, see above).
+ * @prop backLabel   Text of the back link (default "Back to overview").
+ * @prop accent      Kept for old call sites; colours come from the page hue.
  */
 export function PageHeader({
   icon: Icon,
   title,
   titleLocal,
   description,
-  backHref: _backHref,
-  backLabel: _backLabel,
+  backHref,
+  backLabel,
   freshness,
   source,
   actions,
@@ -688,9 +693,8 @@ export function PageHeader({
   title: string;
   titleLocal?: string;
   description?: string;
-  /** v4 prop, kept for old call sites. v5 draws no back link (sidebar + phone module bar do it). */
+  /** Back link target; drawn only on nested pages (not on a module's own page). */
   backHref?: string;
-  /** v4 prop, kept for old call sites. */
   backLabel?: string;
   freshness?: { asOf?: string | Date | null; status?: FreshnessStatus; thresholdHours?: number; maxAgeDays?: number };
   source?: { label: string; href?: string };
@@ -702,12 +706,16 @@ export function PageHeader({
   children?: React.ReactNode;
 }) {
   void _accent;
-  void _backHref;
-  void _backLabel;
+  const t = useTranslations("kit");
   const mt = useModuleText();
   const pathname = usePathname();
   const slug = moduleFromPath(pathname);
   const meta = getModuleMeta(slug);
+  // /<locale>/<state>/<district>/<module> is a module's own page: the sidebar
+  // and the phone module bar already lead back, so no back link there.
+  const depth = (pathname ?? "").split("/").filter(Boolean).length;
+  const showBack = Boolean(backHref) && !(depth === 4 && slug !== "overview");
+  const back = !backLabel || backLabel === "Back to overview" || backLabel === "Back to Overview" ? t("backToOverview") : backLabel;
   const chipEmoji = emoji ?? meta?.emoji;
   // Pages that pass the registry's English title/description get the
   // translated one automatically; anything else is shown as passed.
@@ -733,6 +741,12 @@ export function PageHeader({
 
   return (
     <header className="ftp-page-header">
+      {showBack && backHref && (
+        <Link href={backHref} className="ftp-page-back">
+          <ArrowLeft size={14} aria-hidden />
+          {back}
+        </Link>
+      )}
       {/* Grid: chip + title on the first row; description and pills under
           the title (full width on phones, so they wrap less). */}
       <div className="ftp-page-band ftp-rise">

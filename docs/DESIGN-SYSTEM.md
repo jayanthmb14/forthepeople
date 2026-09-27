@@ -156,8 +156,9 @@ replace it with a Lucide icon or remove it.
 - **`PageHeader`** — a calm pastel band: white washing into the module tint,
   a small module emoji chip, the H1 in `--hue-deep`, one description line,
   then the freshness pill, source pill and actions. About 120–150 px on a
-  phone. No gradient slab, no watermark, no group chip, no back link (the
-  sidebar and the phone module bar do that; the props are kept and ignored).
+  phone. No gradient slab, no watermark, no group chip. The back link shows
+  only on nested pages (a tender inside Tenders, a taluk, admin); on a
+  module's own page the sidebar and the phone module bar already lead back.
   Pass `freshness={{ asOf, maxAgeDays }}` to get the stale notice (§6).
 - **`StaleNotice`** — the calm amber "this is old" line (§6).
 - **`StatTile`** / **`StatStrip`** — a white tile: small icon chip + label,

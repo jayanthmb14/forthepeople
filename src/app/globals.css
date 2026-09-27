@@ -1108,6 +1108,9 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
    title on row 1; description and pills under the title (full width on
    phones so they wrap less). About 120–150 px tall on a phone. */
 .ftp-page-header { margin-bottom: 20px; }
+.ftp-page-back { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; margin-bottom: 8px; font-size: 13px; line-height: 20px; color: var(--ftp-text-2); text-decoration: none; }
+.ftp-page-back:hover { color: var(--ftp-text); text-decoration: underline; }
+@media (max-width: 767px) { .ftp-page-back { min-height: 44px; margin-bottom: 0; } }
 .ftp-page-band {
   position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 14px;
   padding: 18px 20px; border-radius: var(--ftp-radius-card);
