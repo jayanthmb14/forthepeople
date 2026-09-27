@@ -1,8 +1,9 @@
 # CLAUDE.md — ForThePeople.in Project Instructions
 
 Rules and pointers only. No counts, prices, dates or "current state" here —
-those drift. For what the platform looks like today read `CHANGELOG.md` (what
-shipped, when) and `docs/ARCHITECTURE.md` (how it fits together).
+those drift. For what the platform looks like today read
+`docs/BLUEPRINT-UNIFIED.md` (the overview), `CHANGELOG.md` (what shipped, when)
+and `docs/ARCHITECTURE.md` (how it fits together).
 
 ## Project
 ForThePeople.in — free, open-source citizen transparency platform for Indian
@@ -10,10 +11,15 @@ districts. Built by Jayanth M B. Next.js App Router + TypeScript + Tailwind v4 +
 Prisma + Neon PostgreSQL + Upstash Redis, hosted on Vercel.
 
 ## Read first
-1. `docs/ARCHITECTURE.md` — routes, crons, data flow, auth, AI, where state lives.
-2. `CHANGELOG.md` — the top "Unreleased" entry is the live work-in-progress.
-3. `.env.example` — the ONLY list of environment variables the code reads.
-4. Module-specific docs in `docs/` only when the task touches that module.
+1. `docs/BLUEPRINT-UNIFIED.md` — the one-page overview: vision, who it is for,
+   modules, design, data honesty rules, crons, languages.
+2. `docs/ARCHITECTURE.md` — routes, crons, data flow, auth, AI, where state lives.
+3. For any UI work: `docs/DESIGN-SYSTEM.md` (v5 "Calm"), `docs/LAYOUT.md`,
+   `docs/MODULE-MAP.md`, `docs/I18N.md`.
+4. `CHANGELOG.md` — the top "Unreleased" entry is the live work-in-progress.
+5. `.env.example` — the ONLY list of environment variables the code reads.
+6. Module-specific docs in `docs/` only when the task touches that module.
+   `docs/archive/` is history only — never follow it.
 
 ## Database schema changes (CRITICAL)
 The build runs `prisma generate && next build` and NEVER mutates the database.
@@ -49,6 +55,20 @@ Prefer existing tables or Redis keys over new columns when a fix allows it.
 - NEVER run `npm audit fix`. Bump versions deliberately, one at a time.
 - NEVER commit `.env.local` or any real secret; never print secret values.
 - NEVER use `npm ci` in `Dockerfile.scraper` — `npm install --legacy-peer-deps`.
+- NEVER hard-code citizen-facing text — every new string ships in en + hi + kn
+  (`src/dictionaries/<locale>/page_<name>.json`, then `node scripts/gen-i18n-namespaces.mjs`).
+- Emoji only as module identity (sidebar item, module chip, overview tile); tokens
+  and hue variables only, no hex in components (`docs/DESIGN-SYSTEM.md`).
+- Every dataset shows its own date; old data says how old in words; undated data
+  says "date not published by the source". Sources are "government portals and
+  other reputed sources" — never claim "official only".
+- Never add a famous personality unless they were born in that district (`bornInDistrict`).
+- `NewsItem` has `title` (not `headline`); `ElectionResult` is one row per constituency (the winner).
+- Add `take: N` to `findMany` on high-cardinality tables (schools, elections, news).
+- recharts Tooltip `formatter`: take `(v)` and cast with `Number(v)`; never type it `(v: number)`.
+- Header/sidebar nav keeps `overflow: visible` (hidden clips the dropdowns).
+- No government emblems or seals; news is headline + summary + link only; at most
+  one request every 2–3 s per source domain.
 - Admin auth: signed, expiring, Redis-revocable sessions in `src/lib/admin-auth.ts`;
   `requireAdmin()` is the single gate for every admin route, page and action.
 - Cron auth: `Authorization: Bearer <CRON_SECRET>` (what Vercel Cron sends).
@@ -66,9 +86,12 @@ Prefer existing tables or Redis keys over new columns when a fix allows it.
 4. Commit with a conventional message. Push only when the owner says so.
 
 ## Where things are
-- `docs/ARCHITECTURE.md` — structure. `docs/BUG-TRACKER.md`, `docs/LIVE-STATE.md` — history.
+- `docs/BLUEPRINT-UNIFIED.md` — overview (section 16 is the full doc index).
+- `docs/ARCHITECTURE.md` — structure. `docs/RUNBOOKS/` — crons, AI models, admin auth.
+- `docs/DESIGN-SYSTEM.md`, `docs/LAYOUT.md`, `docs/MODULE-MAP.md`, `docs/I18N.md` — UI and text.
 - `docs/DISTRICT-EXPANSION-SKILL.md`, `docs/AI-NEWS-INTELLIGENCE-SKILL.md`,
   `docs/INDIAN-DISTRICT-HIERARCHY-SKILL.md`, `docs/SCALING-CHECKLIST.md` — task guides.
-- `docs/BLUEPRINT-UNIFIED.md` — historical master document; treat as archive.
-- `prompts/completed/` — prompts already run (reference only). `prompts/pending/` — queued.
+- `docs/BUG-TRACKER.md`, `docs/LIVE-STATE.md` — history. `docs/archive/` — frozen
+  documents (the March–June blueprint, old skills, completed prompts); do not follow.
+- `scripts/` — reusable ops scripts; `scripts/archive/` — provenance only, never run.
 - Private vault (owner only): accounts, grants, cost ledger, runbooks with secret NAMES only.

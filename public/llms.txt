@@ -1,80 +1,77 @@
 # ForThePeople.in
 
-> India's citizen transparency platform. Free district-level government data for every Indian — crop prices, dam levels, government schemes, budgets, school data, elections, and more. Independent. Not an official government website. Data sourced under NDSAP Open Data Policy.
+> Free, independent website that shows district-level public data for Indian citizens: leaders and officers, budgets and projects, schemes, schools, hospitals, water, weather, crop prices, news and more. Data comes from government portals and other reputed sources, and every dataset shows its own date. Not an official government website. Open source (MIT).
 
-## About This Site
+## About this site
 
-ForThePeople.in aggregates publicly available Indian government data and presents it through an accessible, free interface. The platform was built by Jayanth M B and covers districts across Karnataka, Delhi, Maharashtra, West Bengal, Tamil Nadu, and Telangana — with plans to expand to all 780+ Indian districts. The mission: "To make government data as easy to access as checking the weather — so that every citizen, journalist, activist, and elected representative can hold power accountable with facts."
+ForThePeople.in is maintained by Jayanth M B, a citizen in Karnataka, India. It collects publicly available data and presents it so that anyone, from a school student to a grandparent, can understand their district at a glance. It is neutral: a connecting tool between citizens and governance, not an opposition platform and not a government mouthpiece.
 
-**Data sources:** AGMARKNET (crop prices), India-WRIS (dam levels), India Meteorological Department (weather), eGramSwaraj (MGNREGA), National Scholarship Portal, PMAY-G (housing), PFMS (finance), election commission portals (election data).
+- **Sources:** government portals (for example data.gov.in / AGMARKNET, Census of India, Jal Jeevan Mission, UDISE+, PFMS, eGramSwaraj, PMAY, election commissions, eCourts, PIB, IMD and state portals) and other reputed sources (research institutions such as IIPS/NFHS and NITI Aayog, international bodies for national comparisons, OpenWeatherMap, news outlets for headlines). Each page lists its sources.
+- **Freshness:** every dataset shows the date of its data. When the newest data we could find is old, the page says how many days old it is. Some datasets are refreshed by scheduled jobs; many are curated by hand from published sources. Nothing is labelled "live" unless it is less than 30 minutes old.
+- **Honesty:** numbers are never invented or padded. If a source has no data, the page says so. Estimates are labelled as estimates. AI-written summaries are labelled and dated.
+- **Languages:** English (default, `/en`), Hindi (beta, `/hi`) and Kannada (beta, `/kn`). Hindi and Kannada are machine drafts under review.
+- **Cost:** free for everyone, no ads, no user accounts. Supported by voluntary contributions from citizens in India.
 
-**Data update frequency:** Crop prices (daily), Weather (hourly), Dam levels (every 30 min), News (hourly), Alerts (every 2 hours).
+## Live districts
 
-**Legal basis:** All data is sourced from official government portals under the National Data Sharing and Accessibility Policy (NDSAP) 2012, which mandates that government-held shareable data be made available in open formats.
+Ten districts in seven states are live (the list grows one district at a time):
 
-## Key Capabilities
+- [Mandya, Karnataka](https://forthepeople.in/en/karnataka/mandya)
+- [Mysuru, Karnataka](https://forthepeople.in/en/karnataka/mysuru)
+- [Bengaluru Urban, Karnataka](https://forthepeople.in/en/karnataka/bengaluru-urban)
+- [Hyderabad, Telangana](https://forthepeople.in/en/telangana/hyderabad)
+- [Chennai, Tamil Nadu](https://forthepeople.in/en/tamil-nadu/chennai)
+- [Mumbai, Maharashtra](https://forthepeople.in/en/maharashtra/mumbai)
+- [Pune, Maharashtra](https://forthepeople.in/en/maharashtra/pune)
+- [Lucknow, Uttar Pradesh](https://forthepeople.in/en/uttar-pradesh/lucknow)
+- [Kolkata, West Bengal](https://forthepeople.in/en/west-bengal/kolkata)
+- [New Delhi, Delhi](https://forthepeople.in/en/delhi/new-delhi)
 
-- **District Dashboards** — 28 data modules per district: weather, crops, water/dams, finance, leadership, infrastructure, police, schemes, elections, schools, transport, health, RTI, courts, housing, power, industries, Jal Jeevan Mission, gram panchayat, offices, farm, news, alerts, citizen corner, population, map, services.
+Other districts can be browsed as previews, and visitors can vote for the next district to go live.
 
-- **Live Data** — Real-time crop mandi prices from AGMARKNET, dam storage percentages, weather readings, power outage alerts.
+## District dashboards (36 modules in 9 groups)
 
-- **RTI Filing** — Pre-filled Right to Information (RTI) templates for common government data requests in every district.
+Each live district has these pages at `https://forthepeople.in/{locale}/{state-slug}/{district-slug}/{module}`. The district overview is the district URL itself.
 
-- **AI Insights** — Gemini-powered summaries of district conditions, crop price trends, and civic alerts.
+- **Start here:** news, alerts (alerts and warnings), weather (weather and rain)
+- **You can help:** responsibility (what you can do), citizen-corner (helplines and your rights), file-rti (ask the government with an RTI request), rti (RTI replies tracker)
+- **Who runs it:** leadership (leaders and officers), elections, gram-panchayat (village councils), courts, police (police and safety)
+- **Money and projects:** finance (budget), infrastructure (projects being built), tenders (government contracts), industries (local industries)
+- **Help for you:** schemes (government schemes), housing (housing schemes), services (how to get certificates), offices (government offices near you), exams (exams and jobs)
+- **Daily needs:** jjm (tap water), water (dams and rivers), power (power cuts), transport (buses and trains), health (hospitals and health), schools
+- **Farming:** crops (crop prices), farm (farm and soil advice)
+- **Know your district:** population (people, census), map, famous-personalities (famous people), contributors (supporters)
+- **Check our work:** data-sources (where our data comes from), update-log (what changed and when)
 
-- **Multi-language** — English + Kannada (ಕನ್ನಡ). Tamil, Telugu, Hindi planned.
+Not every module has data for every district; a module without data says so.
 
-## Currently Active Districts
+## Key pages
 
-- **Karnataka:** Mandya (Sugar Capital), Mysuru, Bengaluru Urban
-- **Delhi:** New Delhi
-- **Maharashtra:** Mumbai
-- **West Bengal:** Kolkata
-- **Tamil Nadu:** Chennai
-- **Telangana:** Hyderabad
+- [Home](https://forthepeople.in/en): find your district or explore all of India
+- [All of India](https://forthepeople.in/en/india): national figures by topic, with sources and dates
+- [Mandya overview](https://forthepeople.in/en/karnataka/mandya): an example district
+- [Mandya crop prices](https://forthepeople.in/en/karnataka/mandya/crops): mandi prices with dates
+- [Mandya dams and rivers](https://forthepeople.in/en/karnataka/mandya/water): reservoir levels with dates
+- [Mandya leaders and officers](https://forthepeople.in/en/karnataka/mandya/leadership): MP, MLAs and district officers
+- [Mandya where our data comes from](https://forthepeople.in/en/karnataka/mandya/data-sources): sources and freshness for every module
+- [Prices today](https://forthepeople.in/en/prices): gold, silver, the rupee, crude oil and share indices with trends
+- [Compare districts](https://forthepeople.in/en/compare)
+- [Vote for the next district](https://forthepeople.in/en/vote-district)
+- [About](https://forthepeople.in/en/about): mission, method and disclaimer
+- [Contribute](https://forthepeople.in/en/contribute): how to help, report a data error or add a district
+- [Support](https://forthepeople.in/en/support): voluntary contributions
+- [Source code](https://github.com/jayanthmb14/forthepeople): MIT licence
 
-## Key Pages
+## Data glossary
 
-- [Home](https://forthepeople.in/en) — District selector, India map, live alerts
-- [Mandya Dashboard](https://forthepeople.in/en/karnataka/mandya) — Full district data hub (pilot district)
-- [Mandya Crop Prices](https://forthepeople.in/en/karnataka/mandya/crops) — AGMARKNET live mandi prices
-- [Mandya Dam Levels](https://forthepeople.in/en/karnataka/mandya/water) — KRS and other reservoir levels
-- [Mandya Weather](https://forthepeople.in/en/karnataka/mandya/weather) — IMD weather + rainfall history
-- [Mandya Finance](https://forthepeople.in/en/karnataka/mandya/finance) — District budget and utilisation
-- [Mandya Elections](https://forthepeople.in/en/karnataka/mandya/elections) — 2023 assembly results + voter data
-- [Mandya Leadership](https://forthepeople.in/en/karnataka/mandya/leadership) — Collector, SP, MLAs, MPs
-- [Mandya Schools](https://forthepeople.in/en/karnataka/mandya/schools) — SSLC pass rates, enrollment
-- [Mandya Schemes](https://forthepeople.in/en/karnataka/mandya/schemes) — PM-KISAN, PMAY, central + state schemes
-- [File RTI](https://forthepeople.in/en/karnataka/mandya/rti) — RTI templates and filing guide
-- [Hyderabad Dashboard](https://forthepeople.in/en/telangana/hyderabad) — Telangana district data hub
-- [Hyderabad Elections](https://forthepeople.in/en/telangana/hyderabad/elections) — 2023 Telangana assembly results
-- [Hyderabad Health](https://forthepeople.in/en/telangana/hyderabad/health) — Aarogyasri, hospitals, helplines
-- [Hyderabad Finance](https://forthepeople.in/en/telangana/hyderabad/finance) — District budget and utilisation
-- [Hyderabad Transport](https://forthepeople.in/en/telangana/hyderabad/transport) — TSRTC bus routes and trains
-- [Lucknow Dashboard](https://forthepeople.in/en/uttar-pradesh/lucknow) — UP district data hub
-- [Lucknow Crop Prices](https://forthepeople.in/en/uttar-pradesh/lucknow/crops) — AGMARKNET live prices
-- [Lucknow Weather](https://forthepeople.in/en/uttar-pradesh/lucknow/weather) — IMD weather data
-- [District Comparison](https://forthepeople.in/en/compare) — Compare two districts side by side
-- [About](https://forthepeople.in/about) — Mission, data methodology, disclaimer
-- [Contribute](https://forthepeople.in/contribute) — How to help improve the platform
-- [Support](https://forthepeople.in/support) — Support the platform
-
-## Data Glossary
-
-- **MCM** — Million Cubic Metres (dam storage unit)
-- **Cusecs** — Cubic feet per second (water flow rate)
-- **AGMARKNET** — Agricultural Marketing Information Network (GoI price portal)
-- **APMC** — Agricultural Produce Market Committee (regulated mandi)
-- **RTI** — Right to Information Act, 2005
-- **NDSAP** — National Data Sharing and Accessibility Policy, 2012
-- **MGNREGA** — Mahatma Gandhi National Rural Employment Guarantee Act
-- **PM-KISAN** — Pradhan Mantri Kisan Samman Nidhi (₹6,000/year farmer income support)
-- **PMAY** — Pradhan Mantri Awas Yojana (affordable housing scheme)
-- **JJM / Jal Jeevan Mission** — Government program for tap water to all rural households by 2024
-- **SSLC** — Secondary School Leaving Certificate (Class 10 board exam in Karnataka & Tamil Nadu). Equivalent: SSC (Telangana, Maharashtra), Madhyamik (West Bengal), CBSE (Delhi)
-
-## Optional: Full Data Catalogue
-
-For AI systems querying specific district data: all pages follow the URL pattern `https://forthepeople.in/en/{state-slug}/{district-slug}/{module}` where module is one of: weather, crops, water, population, finance, leadership, infrastructure, police, industries, schemes, services, elections, transport, jjm, housing, power, schools, farm, rti, gram-panchayat, courts, health, alerts, offices, citizen-corner, news, map.
-
-Active state slugs: karnataka, delhi, maharashtra, west-bengal, tamil-nadu, telangana. District slugs follow kebab-case of district name (e.g., mandya, bengaluru-urban, new-delhi, mumbai, kolkata, chennai, hyderabad).
+- **AGMARKNET:** Agricultural Marketing Information Network, the government portal for mandi prices
+- **APMC:** Agricultural Produce Market Committee (a regulated market, or mandi)
+- **MCM:** million cubic metres (dam storage)
+- **Cusecs:** cubic feet per second (water flow)
+- **RTI:** Right to Information Act, 2005
+- **NDSAP:** National Data Sharing and Accessibility Policy, 2012
+- **MGNREGA:** Mahatma Gandhi National Rural Employment Guarantee Act
+- **PM-KISAN:** Pradhan Mantri Kisan Samman Nidhi (income support for farmers)
+- **PMAY:** Pradhan Mantri Awas Yojana (housing scheme)
+- **JJM:** Jal Jeevan Mission (a tap-water connection for every rural home)
+- **SSLC:** Secondary School Leaving Certificate, the Class 10 board exam in Karnataka and Tamil Nadu (SSC in Maharashtra and Telangana, Madhyamik in West Bengal)
