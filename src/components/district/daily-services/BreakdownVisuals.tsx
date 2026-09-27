@@ -142,7 +142,7 @@ export function HueDonut({
           <span style={{ fontSize: 11, lineHeight: 1.35, color: "var(--ftp-text-2)", marginTop: 2 }}>{centerLabel}</span>
         </div>
       </div>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, flex: "1 1 180px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, flex: "1 1 180px", maxWidth: 440, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {slices.map((item, i) => (
           <li key={item.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1.45 }}>
             <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, flexShrink: 0, background: item.color ?? SHADES[i % SHADES.length] }} />
