@@ -220,9 +220,6 @@ function PartyRing({ reps, asOf }: { reps: Leader[]; asOf: string | null }) {
       key: party || "__none",
       label: party || t("partyNone"),
       value,
-      marker: party ? (
-        <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: getPartyColor(party).border, flexShrink: 0 }} />
-      ) : undefined,
     }))
     .sort((a, b) => b.value - a.value);
   const parties = slices.filter((s) => s.key !== "__none").length;

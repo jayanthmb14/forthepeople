@@ -135,9 +135,26 @@ export function HueDonut({
           )}
         </div>
       </div>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, flex: "1 1 220px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-        {arcs.map((a) => (
-          <li key={a.key} style={{ display: "grid", gridTemplateColumns: "14px minmax(0, 1fr) auto", alignItems: "center", columnGap: 10 }}>
+      {/* Legend: swatch, label, count and share, with a thin bar of the
+          same share under each row (largest first, so it reads as a ranking). */}
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          flex: "1 1 240px",
+          maxWidth: 480,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        {arcs.map((a, i) => (
+          <li
+            key={a.key}
+            style={{ display: "grid", gridTemplateColumns: "14px minmax(0, 1fr) auto", alignItems: "center", columnGap: 10, rowGap: 4 }}
+          >
             <span aria-hidden style={{ width: 14, height: 14, borderRadius: 5, background: a.color }} />
             <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, fontSize: 13, lineHeight: "18px", color: "var(--ftp-text)" }}>
               {a.emoji && (
@@ -151,6 +168,29 @@ export function HueDonut({
             <span className="ftp-num" style={{ fontSize: 13, lineHeight: "18px", textAlign: "right", whiteSpace: "nowrap", color: "var(--hue-deep)" }}>
               {f.number(a.value)}{" "}
               <span style={{ color: "var(--ftp-text-2)" }}>({f.number(a.value / total, { style: "percent" })})</span>
+            </span>
+            <span
+              aria-hidden
+              style={{
+                gridColumn: "2 / 4",
+                display: "block",
+                height: 5,
+                borderRadius: "var(--ftp-radius-pill)",
+                background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))",
+                overflow: "hidden",
+              }}
+            >
+              <span
+                className="ftp-grow-x"
+                style={{
+                  display: "block",
+                  width: `${(a.value / total) * 100}%`,
+                  height: "100%",
+                  borderRadius: "var(--ftp-radius-pill)",
+                  background: a.color,
+                  ["--i" as string]: i,
+                }}
+              />
             </span>
           </li>
         ))}
