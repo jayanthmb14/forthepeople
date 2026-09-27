@@ -21,6 +21,7 @@ import {
   OPEN_METEO_SOURCE,
   OPENWEATHER_SOURCE,
   openMeteoUrl,
+  openWeatherCurrentUrl,
   parseOpenMeteo,
   parseOpenWeather,
   weatherProblems,
@@ -41,8 +42,9 @@ async function openMeteoNow(d: DistrictRef, deadlineMs: number): Promise<Weather
 async function openWeatherNow(d: DistrictRef, deadlineMs: number): Promise<WeatherSample> {
   const key = process.env.OPENWEATHER_API_KEY;
   if (!key) throw new Error("OPENWEATHER_API_KEY not set");
-  const city = weatherCityName(d.slug, d.name);
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},IN&appid=${key}&units=metric`;
+  // Same point as the collector (district HQ lat/lon); town name only without one.
+  const point = DISTRICT_CENTROIDS[`${d.stateSlug}/${d.slug}`];
+  const url = openWeatherCurrentUrl(point ?? { city: weatherCityName(d.slug, d.name) }, key);
   const s = parseOpenWeather(await fetchJson(url, { deadlineMs, timeoutMs: 10_000 }));
   if (!s) throw new Error("OpenWeather reply had no temperature");
   return s;

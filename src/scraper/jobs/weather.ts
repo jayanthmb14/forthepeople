@@ -10,6 +10,11 @@
 //   (The old "every 5 minutes" ran on a Railway node-cron container that
 //    expired in April 2026; Vercel Cron is the only scheduler now.)
 //
+// Sept 2026 (v5.2): OpenWeather is asked by the district HQ's lat/lon
+// (src/lib/geo/district-centroids.ts, the point the forecast route and
+// Open-Meteo use), not by town name — "q=Mandya,IN" gave a station whose
+// reading differed from Open-Meteo's by ~4 °C.
+//
 // Sept 2026 (v5):
 //  - Open-Meteo (no key) is tried when OpenWeather fails, has no key, or
 //    sends a reading that fails the range checks. Both parsers and the
@@ -26,6 +31,7 @@ import { weatherCityName } from "../lib/district-aliases";
 import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 import {
   openMeteoUrl,
+  openWeatherCurrentUrl,
   parseOpenMeteo,
   parseOpenWeather,
   weatherProblems,
@@ -35,10 +41,18 @@ import {
 const OWM_KEY = process.env.OPENWEATHER_API_KEY;
 const FETCH_TIMEOUT_MS = 8_000; // both APIs answer in < 1 s normally
 
+/** The district HQ point (same as the forecast route and Open-Meteo), or null. */
+function pointOf(ctx: JobContext) {
+  return DISTRICT_CENTROIDS[`${ctx.stateSlug}/${ctx.districtSlug}`] ?? null;
+}
+
 async function fromOpenWeather(ctx: JobContext): Promise<WeatherSample> {
   if (!OWM_KEY) throw new Error("OPENWEATHER_API_KEY not set");
-  const city = weatherCityName(ctx.districtSlug, ctx.districtName);
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},IN&appid=${OWM_KEY}&units=metric`;
+  // By lat/lon of the district HQ, so the reading matches Open-Meteo and the
+  // forecast; the town name only when the district has no point on file.
+  const point = pointOf(ctx);
+  const url = openWeatherCurrentUrl(point ?? { city: weatherCityName(ctx.districtSlug, ctx.districtName) }, OWM_KEY);
+  if (!point) ctx.log(`OpenWeather: no coordinates for ${ctx.stateSlug}/${ctx.districtSlug}; asking by town name`);
   const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`OpenWeather HTTP ${res.status}`);
   const sample = parseOpenWeather(await res.json());
@@ -47,7 +61,7 @@ async function fromOpenWeather(ctx: JobContext): Promise<WeatherSample> {
 }
 
 async function fromOpenMeteo(ctx: JobContext): Promise<WeatherSample> {
-  const point = DISTRICT_CENTROIDS[`${ctx.stateSlug}/${ctx.districtSlug}`];
+  const point = pointOf(ctx);
   if (!point) throw new Error(`no coordinates for ${ctx.stateSlug}/${ctx.districtSlug}`);
   const res = await fetch(openMeteoUrl(point.lat, point.lng), {
     headers: { "User-Agent": "ForThePeople.in (https://forthepeople.in)" },

@@ -10,12 +10,14 @@ import {
   OPEN_METEO_SOURCE,
   OPENWEATHER_SOURCE,
   openMeteoUrl,
+  openWeatherCurrentUrl,
   parseOpenMeteo,
   parseOpenWeather,
   weatherProblems,
   windDirection,
   wmoDescription,
 } from "@/scraper/lib/weather-sources";
+import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 
 const OPEN_METEO_MANDYA = {
   latitude: 12.54833,
@@ -119,5 +121,18 @@ describe("small helpers", () => {
     expect(wmoDescription(95)).toBe("thunderstorm");
     expect(wmoDescription(63)).toBe("moderate rain");
     expect(wmoDescription(1234)).toBeNull();
+  });
+});
+
+describe("openWeatherCurrentUrl", () => {
+  it("asks by the district HQ lat/lon (the forecast's point), not by town name", () => {
+    const p = DISTRICT_CENTROIDS["karnataka/mandya"];
+    const url = openWeatherCurrentUrl(p, "k");
+    expect(url).toContain("lat=12.524&lon=76.897");
+    expect(url).not.toContain("q=");
+    expect(url).toContain("units=metric");
+  });
+  it("falls back to the town name only without a point", () => {
+    expect(openWeatherCurrentUrl({ city: "Mandya" }, "k")).toContain("q=Mandya,IN");
   });
 });
