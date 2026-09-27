@@ -27,7 +27,8 @@ export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: ["DISTRICT", "
 
 /**
  * Monthly rainfall rows that the seed scripts generated with Math.random()
- * (prisma/seed.ts — Mandya; seed-bengaluru-data.ts; seed-delhi-data.ts),
+ * (prisma/seed.ts — Mandya; seed-bengaluru-data.ts; seed-delhi-data.ts) or
+ * typed by hand (seed-mysuru-data.ts, "IMD Mysuru" 2023–24),
  * labelled as KSNDMC / IMD. They are not measurements, so they are never
  * shown. Matched by the exact seed source labels AND the seeded years
  * (2020–2024), so a real collector writing current years is unaffected.
@@ -35,7 +36,7 @@ export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: ["DISTRICT", "
 export const NOT_SEEDED_RAINFALL = {
   NOT: {
     AND: [
-      { source: { in: ["Karnataka State Natural Disaster Monitoring Centre (KSNDMC)", "KSNDMC / IMD", "IMD Delhi"] } },
+      { source: { in: ["Karnataka State Natural Disaster Monitoring Centre (KSNDMC)", "KSNDMC / IMD", "IMD Delhi", "IMD Mysuru"] } },
       { year: { lte: 2024 } },
     ],
   },
