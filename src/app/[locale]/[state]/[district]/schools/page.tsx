@@ -5,36 +5,37 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Schools — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
+//  Schools — Layout v4.1 (docs/LAYOUT.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Data: useSchools() → schools with up to 3 years of board results each.
-//  UDISE+ is an annual dataset, so the headline tiles say which result
-//  year they reach instead of pretending to be current.
+//  The question: "Which schools are there, and how good are they?"
+//  The answer, in one sentence: "The 40 schools listed for Mandya have
+//  18,000 students and 700 teachers: about 26 students for each teacher.
+//  In 2024, about 8 of every 10 students passed their board exam."
 //
-//  Pictures (each drawn only when its numbers exist):
-//    1. ten graduation caps with the latest year's real pass share lit,
-//       and a "classroom" of one teacher beside the real number of
-//       students per teacher;
-//    2. a ring of the kinds of schools listed (Government, Aided,
-//       Private …), when there are two or more kinds;
-//    3. the pass rate by year (two or more years only), and a small ring
-//       with each school's latest pass rate on its card.
+//  Data: /api/data/schools → up to 200 schools, each with up to 3 years of
+//  board results. The API sends every column, so this page also reads
+//  the UDISE code, toilets / library / lab flags, the map point and the
+//  update date (the shared School type does not list them). UDISE+ is
+//  yearly, so the tiles say which result year they reach instead of a
+//  "fresh" date.
 //
-//  Text: every sentence comes from the "page_schools" messages; numbers
-//  go through useFormat(). School names, types, levels and exam names are
-//  data and stay as published.
+//  Page: header → the answer → 4 tiles → one picture (ten caps for the
+//  pass share + one teacher's class) → "Find a school" cards (tap → a
+//  sheet with results by year, facilities, students and teachers, the
+//  UDISE code, directions) → charts (kinds of schools, pass rate by year)
+//  → teachers' posts → AI insight → sources, news, share.
+//
+//  Text: page_schools (en/kn/hi). School names, types, levels and exam
+//  names are data and stay as published.
 "use client";
-import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
-import AIInsightCard from "@/components/common/AIInsightCard";
-import NoDataCard from "@/components/common/NoDataCard";
-import ModuleNews from "@/components/district/ModuleNews";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
 import { GraduationCap } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { useSchools } from "@/hooks/useRealtimeData";
+import { useDistrictData } from "@/hooks/useDistrictData";
 import {
+  ModulePage,
   PageHeader,
   Section,
   Card,
@@ -42,30 +43,71 @@ import {
   Pill,
   StatTile,
   StatStrip,
-  ProgressBar,
   LoadingShell,
   ErrorBlock,
+  EmptyState,
 } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
 import { ChartCard, ChartGradients, Explainer, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
+import AIInsightCard from "@/components/common/AIInsightCard";
+import NoDataCard from "@/components/common/NoDataCard";
+import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import StaffingSection from "@/components/district/daily-services/StaffingSection";
-import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
 import { HueDonut, MiniRing, topWithOther } from "@/components/district/daily-services/BreakdownVisuals";
-import { useDistrictName } from "@/components/district/daily-services/district-name";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
-import { useFormat, useModuleText } from "@/i18n/client";
+import { fitGrid, TapCard, CardBar, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, matches, mapsUrl, usePlaceName } from "@/components/services-1/kit";
+import PageEnd from "@/components/services-1/PageEnd";
+import { hueClass } from "@/lib/design/hues";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
 const UDISE = { label: "UDISE+", href: "https://udiseplus.gov.in" };
 
+/** One school as the API returns it (Prisma School + its latest results). */
+interface SchoolRow {
+  id: string;
+  name: string;
+  nameLocal?: string | null;
+  type: string;
+  level: string;
+  udiseCode?: string | null;
+  address?: string | null;
+  students?: number | null;
+  teachers?: number | null;
+  studentTeacherRatio?: number | null;
+  hasToilets?: boolean | null;
+  hasLibrary?: boolean | null;
+  hasLab?: boolean | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  updatedAt?: string | null;
+  results: Array<{
+    id: string;
+    year: number;
+    exam: string;
+    appeared: number;
+    passed: number;
+    passPercentage: number;
+    distinction?: number | null;
+    firstClass?: number | null;
+    source?: string | null;
+  }>;
+}
+
 /** The classroom picture draws at most this many students; the rest is a "+N". */
 const CLASS_SHOWN_MAX = 40;
+/** Cards shown before "Show all". */
+const FIRST_SHOWN = 24;
 
-/**
- * Student:teacher ratio → bar tone. Same bands as before:
- * ≤ 20 good, ≤ 30 watch, above 30 stretched.
- */
-function ratioTone(ratio: number): Tone {
-  return ratio <= 20 ? "live" : ratio <= 30 ? "warn" : "danger";
+/** Students per teacher → how it reads. ≤ 20 good, ≤ 30 all right, above 30 crowded. */
+function ratioBand(ratio: number): "good" | "ok" | "high" {
+  return ratio <= 20 ? "good" : ratio <= 30 ? "ok" : "high";
+}
+const BAND_TONE: Record<"good" | "ok" | "high", Tone> = { good: "live", ok: "warn", high: "danger" };
+
+/** Students per teacher for one school: the published ratio, else worked out from the two counts. */
+function ratioOf(s: SchoolRow): number | null {
+  if (s.students && s.teachers) return s.students / s.teachers;
+  return s.studentTeacherRatio && s.studentTeacherRatio > 0 ? s.studentTeacherRatio : null;
 }
 
 /**
@@ -108,25 +150,31 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
   const t = useTranslations("page_schools");
   const f = useFormat();
   const mt = useModuleText();
+  const place = usePlaceName();
   const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
-  const { data, isLoading, error } = useSchools(district, state);
-  const [filter, setFilter] = useState("all");
+  const { data, isLoading, error } = useDistrictData<SchoolRow[]>("schools", district, state);
+
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [limit, setLimit] = useState(FIRST_SHOWN);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const pct = (n: number, digits = 0) => f.number(n / 100, { style: "percent", maximumFractionDigits: digits });
   const b = (c: React.ReactNode) => <strong>{c}</strong>;
   const bNum = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
 
   const schools = data?.data ?? [];
-  const types = Array.from(new Set(schools.map((s) => s.type)));
-  const filtered = filter === "all" ? schools : schools.filter((s) => s.type === filter);
+  const types = Array.from(new Set(schools.map((s) => s.type).filter(Boolean)));
+  const levels = Array.from(new Set(schools.map((s) => s.level).filter(Boolean)));
 
   const totalStudents = schools.reduce((s, sc) => s + (sc.students ?? 0), 0);
   const totalTeachers = schools.reduce((s, sc) => s + (sc.teachers ?? 0), 0);
   const avgRatio = totalTeachers > 0 ? totalStudents / totalTeachers : 0;
-  const ratioText = t("ratioValue", { n: f.number(Math.round(avgRatio)) });
+  const hasRatio = totalTeachers > 0 && totalStudents > 0;
 
-  // Aggregate pass rates by year across all schools.
+  // Pass rates by year, all schools together.
   const passByYear: Record<number, { total: number; passed: number }> = {};
   schools.forEach((sc) => {
     sc.results.forEach((r) => {
@@ -136,23 +184,17 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
     });
   });
   const passChart = Object.entries(passByYear)
-    .sort(([a], [bY]) => Number(a) - Number(bY))
-    .map(([year, { total, passed }]) => ({
-      year,
-      passRate: total > 0 ? Math.round((passed / total) * 100) : 0,
-    }));
+    .sort(([a], [c]) => Number(a) - Number(c))
+    .map(([year, { total, passed }]) => ({ year, passRate: total > 0 ? Math.round((passed / total) * 100) : 0 }));
   const latestYear = passChart.length > 0 ? passChart[passChart.length - 1].year : null;
-  // Honest "as of" line for the headline tiles (annual data).
-  const tileSub = latestYear ? t("tileSub", { year: latestYear }) : t("tileSubNoYear");
-
-  // Picture 1: latest year's pass share, and students per teacher.
   const latestTotals = latestYear ? passByYear[Number(latestYear)] : null;
   const latestPassPct = latestTotals && latestTotals.total > 0 ? (latestTotals.passed / latestTotals.total) * 100 : null;
-  const hasRatio = totalTeachers > 0 && totalStudents > 0;
   const firstPoint = passChart[0];
   const lastPoint = passChart[passChart.length - 1];
+  // Honest "as of" line for the tiles (yearly data).
+  const tileSub = latestYear ? t("tileSub", { year: latestYear }) : t("tileSubNoYear");
 
-  // Picture 2: kinds of schools (types are data, shown as published).
+  // Kinds of schools (types are data, shown as published).
   const typeItems = topWithOther(
     types.map((type) => ({ key: type, label: type, value: schools.filter((s) => s.type === type).length })),
     4,
@@ -162,259 +204,372 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
   const topType = typeItems[0];
   const listFormat = new Intl.ListFormat(f.intl, { type: "conjunction" });
 
+  // The list.
+  const listed = schools
+    .filter((s) => typeFilter === "all" || s.type === typeFilter)
+    .filter((s) => levelFilter === "all" || s.level === levelFilter)
+    .filter((s) => matches(query, s.name, s.nameLocal, s.address, s.type, s.level, s.udiseCode));
+  const shown = listed.slice(0, limit);
+  const open = schools.find((s) => s.id === openId) ?? null;
+  const openRatio = open ? ratioOf(open) : null;
+  const yesNo = (v: boolean | null | undefined) => (v === true ? t("sheet.yes") : v === false ? t("sheet.no") : null);
+
   return (
     <ModulePage>
-      <PageHeader
-        icon={GraduationCap}
-        title={t("title")}
-        description={t("description")}
-        backHref={base}
-        accent={getModuleAccent("schools")}
-        source={UDISE}
-      />
+      <PageHeader icon={GraduationCap} title={mt.label("schools")} description={t("description")} backHref={base} source={UDISE} />
 
-      {/* Plain-language summary — also what search engines and AI crawlers read. */}
-      <ModuleSummary>{t("summary")}</ModuleSummary>
-
-      <AIInsightCard module="schools" district={district} />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && schools.length === 0 && <NoDataCard module="schools" district={district} state={state} />}
 
       {!isLoading && schools.length > 0 && (
         <>
+          {/* 1. The answer in one sentence. */}
+          <Explainer emoji="🎒">
+            {hasRatio
+              ? t.rich("answer.main", {
+                  count: schools.length,
+                  n: f.number(schools.length),
+                  district: districtName,
+                  students: f.number(totalStudents),
+                  teachers: f.number(totalTeachers),
+                  ratio: f.number(Math.round(avgRatio)),
+                  b: bNum,
+                })
+              : t.rich("answer.noRatio", { count: schools.length, n: f.number(schools.length), district: districtName, b: bNum })}
+            {latestPassPct !== null && latestYear && (
+              <> {t.rich("answer.pass", { year: latestYear, tenths: f.number(Math.round(Math.min(100, latestPassPct) / 10)), b: bNum })}</>
+            )}
+          </Explainer>
+
+          {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
             <StatTile emoji="🏫" label={t("tiles.schools")} value={f.number(schools.length)} sub={tileSub} />
             <StatTile emoji="🧒" label={t("tiles.students")} value={f.number(totalStudents)} sub={tileSub} />
             <StatTile emoji="🧑‍🏫" label={t("tiles.teachers")} value={f.number(totalTeachers)} sub={tileSub} />
-            <StatTile emoji="⚖️" label={t("tiles.ratio")} value={totalTeachers > 0 ? ratioText : "—"} sub={tileSub} />
+            <StatTile
+              emoji="⚖️"
+              label={t("tiles.ratio")}
+              value={hasRatio ? t("ratioValue", { n: f.number(Math.round(avgRatio)) }) : "—"}
+              sub={hasRatio ? t(`band.${ratioBand(avgRatio)}`) : tileSub}
+              countUp={false}
+            />
           </StatStrip>
 
-          {/* Picture 1: pass share as ten caps, and one teacher's class. */}
+          {/* 3. One picture: pass share as ten caps, and one teacher's class. */}
           {(latestPassPct !== null || hasRatio) && (
             <div className={latestPassPct !== null && hasRatio ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
               {latestPassPct !== null && latestTotals && latestYear ? (
                 <Card tinted padding={18}>
-                  <Explainer emoji="🎓">
-                    {t.rich("picture.pass", {
-                      year: latestYear,
-                      passed: f.number(latestTotals.passed),
-                      total: f.number(latestTotals.total),
-                      b: bNum,
-                    })}
-                  </Explainer>
+                  <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
+                    {t("picture.passTitle", { year: latestYear })}
+                  </p>
                   <Pictogram
                     filled={Math.min(100, latestPassPct) / 10}
                     emoji="🎓"
-                    label={t("picture.passPictogram", { n: Math.round(Math.min(100, latestPassPct) / 10), year: latestYear })}
+                    label={t("picture.pass", { year: latestYear, passed: f.number(latestTotals.passed), total: f.number(latestTotals.total) })}
                   />
                 </Card>
               ) : null}
               {hasRatio ? (
                 <Card tinted padding={18}>
-                  {latestPassPct === null && (
-                    <Explainer emoji="🍎">
-                      {t.rich("picture.people", { students: f.number(totalStudents), teachers: f.number(totalTeachers), b: bNum })}
-                    </Explainer>
-                  )}
+                  <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
+                    {t("picture.classTitle")}
+                  </p>
                   <ClassroomPicture ratio={avgRatio} />
                 </Card>
               ) : null}
             </div>
           )}
 
-          {/* Picture 2: kinds of schools, when there are two or more kinds. */}
-          {typeItems.length >= 2 && topType && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("types.title")}
-                emoji="🏫"
-                units={t("types.units")}
-                simple={t.rich("types.simple", {
-                  type: topType.label,
-                  count: f.number(topType.value),
-                  total: f.number(typedTotal),
-                  b,
-                })}
-                source={UDISE}
-                asOfPeriod={latestYear ?? undefined}
-                table={typeItems.map((i) => ({ label: i.label, value: f.number(i.value) }))}
-              >
-                <HueDonut
-                  items={typeItems}
-                  centerValue={f.number(typedTotal)}
-                  centerLabel={t("types.center", { count: typedTotal })}
-                  ariaLabel={t("types.aria", { list: listFormat.format(typeItems.map((i) => `${i.label} ${f.number(i.value)}`)) })}
-                />
-              </ChartCard>
-            </div>
-          )}
-
-          {/* Sanctioned vs. filled teaching posts (renders nothing without data). */}
-          <StaffingSection module="schools" district={district} state={state} emoji="🧑‍🏫" personEmoji="🧑‍🏫" />
-
-          {/* Pass rate chart — only with two or more years (never a chart from one point). */}
-          {passChart.length > 1 && firstPoint && lastPoint && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("chart.title")}
-                emoji="📈"
-                units={t("chart.units")}
-                simple={
-                  firstPoint.passRate === lastPoint.passRate
-                    ? t.rich("chart.same", { rate: pct(lastPoint.passRate), from: firstPoint.year, to: lastPoint.year, b })
-                    : t.rich(lastPoint.passRate > firstPoint.passRate ? "chart.up" : "chart.down", {
-                        start: pct(firstPoint.passRate),
-                        end: pct(lastPoint.passRate),
-                        from: firstPoint.year,
-                        to: lastPoint.year,
-                        b,
-                      })
-                }
-                legend={[{ label: t("chart.legend"), swatch: "linear-gradient(180deg, var(--hue), var(--hue-pop))" }]}
-                source={UDISE}
-                asOfPeriod={latestYear ?? undefined}
-                table={passChart.map((p) => ({ label: p.year, value: pct(p.passRate) }))}
-              >
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={passChart} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
-                    <ChartGradients />
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
-                    <XAxis dataKey="year" tick={CHART_AXIS} />
-                    <YAxis tick={CHART_AXIS} width={44} domain={[0, 100]} tickFormatter={(v) => pct(Number(v))} />
-                    <Tooltip
-                      contentStyle={chartTooltipStyle}
-                      cursor={{ fill: "var(--hue-tint)" }}
-                      formatter={(v) => [pct(Number(v)), t("chart.legend")]}
-                    />
-                    <Bar dataKey="passRate" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name={t("chart.legend")} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
-          )}
-
-          {/* School directory with a type filter. */}
-          <Section title={t("directory.title")} emoji="📚">
-            <div style={{ marginBottom: 12 }}>
-              <Chips
-                label={t("directory.typeAria")}
-                value={filter}
-                onChange={setFilter}
-                items={[
-                  { value: "all", label: t("directory.all"), count: schools.length },
-                  ...types.map((type) => ({ value: type, label: type, count: schools.filter((s) => s.type === type).length })),
-                ]}
+          {/* 4. Find a school; tap a card for everything about it. */}
+          <Section title={t("list.title")} emoji="🏫">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
+              <SearchBox
+                id="schools-search"
+                label={t("list.searchLabel")}
+                placeholder={t("list.searchPlaceholder")}
+                value={query}
+                onChange={(v) => {
+                  setQuery(v);
+                  setLimit(FIRST_SHOWN);
+                }}
               />
             </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-              {filtered.map((sc) => {
-                const latestResult = sc.results[0];
-                const ratio = sc.students && sc.teachers ? sc.students / sc.teachers : null;
-                return (
-                  <Card key={sc.id} as="article">
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
-                        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 17, borderRadius: 11 }}>
-                          🏫
-                        </span>
-                        <div style={{ minWidth: 0 }}>
-                          <h3 className="ftp-title" style={{ fontWeight: 600 }}>{sc.name}</h3>
-                          {sc.nameLocal && (
-                            <div lang="und" style={{ fontSize: 13, lineHeight: 1.55, color: "var(--hue-deep)" }}>
-                              {sc.nameLocal}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <Pill>{sc.type}</Pill>
-                    </div>
-                    <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("directory.level", { level: sc.level })}</div>
-                    {sc.address && <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", marginTop: 2 }}>{sc.address}</div>}
-
-                    {sc.students || sc.teachers ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-                        {sc.students ? (
-                          <div>
-                            <div className="ftp-label">{t("directory.students")}</div>
-                            <div className="ftp-num" style={{ fontSize: 16, lineHeight: "22px", color: "var(--hue-deep)" }}>
-                              {f.number(sc.students)}
-                            </div>
-                          </div>
-                        ) : null}
-                        {sc.teachers ? (
-                          <div>
-                            <div className="ftp-label">{t("directory.teachers")}</div>
-                            <div className="ftp-num" style={{ fontSize: 16, lineHeight: "22px", color: "var(--hue-deep)" }}>
-                              {f.number(sc.teachers)}
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    {ratio ? (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", marginBottom: 4 }}>
-                          <span>{t("directory.ratio")}</span>
-                          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
-                            {t("ratioValue", { n: f.number(Math.round(ratio)) })}
-                          </span>
-                        </div>
-                        <ProgressBar pct={Math.min(100, (ratio / 40) * 100)} tone={ratioTone(ratio)} />
-                      </div>
-                    ) : null}
-
-                    {latestResult && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--ftp-border)" }}>
-                        <MiniRing
-                          pct={latestResult.passPercentage}
-                          label={t("directory.passAria", {
-                            exam: latestResult.exam,
-                            year: String(latestResult.year),
-                            pct: pct(latestResult.passPercentage, 1),
-                          })}
-                        />
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
-                            {latestResult.exam} {latestResult.year}
-                          </div>
-                          <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text)" }}>
-                            <span className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
-                              {pct(latestResult.passPercentage, 1)}
-                            </span>{" "}
-                            {t("directory.pass")}
-                            <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontSize: 12, marginInlineStart: 8 }}>
-                              {t("directory.passCount", { passed: f.number(latestResult.passed), appeared: f.number(latestResult.appeared) })}
+            {types.length >= 2 && (
+              <div style={{ marginBottom: 10 }}>
+                <Chips
+                  label={t("list.typeAria")}
+                  value={typeFilter}
+                  onChange={(v) => {
+                    setTypeFilter(v);
+                    setLimit(FIRST_SHOWN);
+                  }}
+                  items={[
+                    { value: "all", label: t("list.allTypes"), count: schools.length },
+                    ...types.map((type) => ({ value: type, label: type, count: schools.filter((s) => s.type === type).length })),
+                  ]}
+                />
+              </div>
+            )}
+            {levels.length >= 2 && (
+              <div style={{ marginBottom: 12 }}>
+                <Chips
+                  label={t("list.levelAria")}
+                  value={levelFilter}
+                  onChange={(v) => {
+                    setLevelFilter(v);
+                    setLimit(FIRST_SHOWN);
+                  }}
+                  items={[{ value: "all", label: t("list.allLevels") }, ...levels.map((lv) => ({ value: lv, label: lv }))]}
+                />
+              </div>
+            )}
+            {listed.length === 0 ? (
+              <EmptyState emoji="🔎" title={t("list.noMatch", { query })} body={t("list.noMatchBody")} />
+            ) : (
+              <>
+                <div className="ftp-grid">
+                  {shown.map((sc) => {
+                    const nm = place(sc.name, sc.nameLocal);
+                    const latest = sc.results[0];
+                    const ratio = ratioOf(sc);
+                    return (
+                      <TapCard
+                        key={sc.id}
+                        emoji="🏫"
+                        title={nm.text}
+                        titleLang={nm.lang}
+                        subtitle={t("list.typeLevel", { type: sc.type, level: sc.level })}
+                        aside={
+                          latest ? (
+                            <MiniRing
+                              pct={latest.passPercentage}
+                              label={t("list.passAria", { exam: latest.exam, year: String(latest.year), pct: pct(latest.passPercentage, 1) })}
+                            />
+                          ) : undefined
+                        }
+                        hint={t("list.open")}
+                        onOpen={() => setOpenId(sc.id)}
+                      >
+                        <span style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {sc.students && sc.teachers ? (
+                            <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text)" }}>
+                              {t("list.people", { students: f.number(sc.students), teachers: f.number(sc.teachers) })}
                             </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
+                          ) : null}
+                          {ratio !== null && (
+                            <CardBar
+                              pct={Math.min(100, (ratio / 40) * 100)}
+                              color={ratioBand(ratio) === "high" ? "var(--ftp-danger)" : ratioBand(ratio) === "ok" ? "var(--ftp-warn)" : undefined}
+                              label={
+                                <>
+                                  <span>{t("list.ratio")}</span>
+                                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
+                                    {t("ratioValue", { n: f.number(Math.round(ratio)) })}
+                                  </span>
+                                </>
+                              }
+                            />
+                          )}
+                          {sc.address && <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", overflowWrap: "anywhere" }}>{sc.address}</span>}
+                        </span>
+                      </TapCard>
+                    );
+                  })}
+                </div>
+                <MoreButton shown={shown.length} total={listed.length} label={t("list.showAll", { n: f.number(listed.length) })} onClick={() => setLimit(listed.length)} />
+              </>
+            )}
           </Section>
+
+          {/* 5. Charts, two to a row on wide screens. */}
+          {((typeItems.length >= 2 && topType) || (passChart.length > 1 && firstPoint && lastPoint)) && (
+            <div style={fitGrid(340, 28)}>
+              {typeItems.length >= 2 && topType && (
+                <ChartCard
+                  title={t("types.title")}
+                  emoji="🏫"
+                  units={t("types.units")}
+                  simple={t.rich("types.simple", { type: topType.label, count: f.number(topType.value), total: f.number(typedTotal), b })}
+                  source={UDISE}
+                  asOfPeriod={latestYear ?? undefined}
+                  table={typeItems.map((i) => ({ label: i.label, value: f.number(i.value) }))}
+                >
+                  <HueDonut
+                    items={typeItems}
+                    centerValue={f.number(typedTotal)}
+                    centerLabel={t("types.center", { count: typedTotal })}
+                    ariaLabel={t("types.aria", { list: listFormat.format(typeItems.map((i) => `${i.label} ${f.number(i.value)}`)) })}
+                  />
+                </ChartCard>
+              )}
+              {/* Pass rate by year — only with two or more years (never a chart from one point). */}
+              {passChart.length > 1 && firstPoint && lastPoint && (
+                <ChartCard
+                  title={t("chart.title")}
+                  emoji="📈"
+                  units={t("chart.units")}
+                  simple={
+                    firstPoint.passRate === lastPoint.passRate
+                      ? t.rich("chart.same", { rate: pct(lastPoint.passRate), from: firstPoint.year, to: lastPoint.year, b })
+                      : t.rich(lastPoint.passRate > firstPoint.passRate ? "chart.up" : "chart.down", {
+                          start: pct(firstPoint.passRate),
+                          end: pct(lastPoint.passRate),
+                          from: firstPoint.year,
+                          to: lastPoint.year,
+                          b,
+                        })
+                  }
+                  legend={[{ label: t("chart.legend"), swatch: "linear-gradient(180deg, var(--hue), var(--hue-pop))" }]}
+                  source={UDISE}
+                  asOfPeriod={latestYear ?? undefined}
+                  table={passChart.map((p) => ({ label: p.year, value: pct(p.passRate) }))}
+                >
+                  <ResponsiveContainer width="100%" height={230}>
+                    <BarChart data={passChart} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
+                      <ChartGradients />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                      <XAxis dataKey="year" tick={CHART_AXIS} />
+                      <YAxis tick={CHART_AXIS} width={44} domain={[0, 100]} tickFormatter={(v) => pct(Number(v))} />
+                      <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: "var(--hue-tint)" }} formatter={(v) => [pct(Number(v)), t("chart.legend")]} />
+                      <Bar dataKey="passRate" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name={t("chart.legend")} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              )}
+            </div>
+          )}
+
+          {/* 6. Are the teachers' posts filled? (nothing without rows) */}
+          <StaffingSection module="schools" district={district} state={state} emoji="🧑‍🏫" personEmoji="🧑‍🏫" />
+
+          <div style={{ marginTop: 24 }}>
+            <AIInsightCard module="schools" district={district} />
+          </div>
         </>
       )}
 
-      <ModuleSources module="schools" state={state} />
-      <ModuleNews district={district} state={state} locale={locale} module="schools" />
-      <ModuleToolbar
+      <PageEnd
+        ns="page_schools"
+        module="schools"
         locale={locale}
+        state={state}
         district={district}
-        moduleSlug="schools"
-        moduleLabel={mt.label("schools")}
         shareText={
           schools.length === 0
-            ? t("share.noData", { district: districtName })
-            : totalTeachers > 0
-              ? t("share.withData", { district: districtName, n: f.number(schools.length), ratio: f.number(Math.round(avgRatio)) })
-              : t("share.withDataNoRatio", { district: districtName, n: f.number(schools.length) })
+            ? t("end.shareNoData", { district: districtName })
+            : hasRatio
+              ? t("end.shareWithData", { district: districtName, n: f.number(schools.length), ratio: f.number(Math.round(avgRatio)) })
+              : t("end.shareNoRatio", { district: districtName, n: f.number(schools.length) })
         }
       />
+
+      {/* The sheet: everything about one school. */}
+      <DetailSheet
+        open={open !== null}
+        onClose={() => setOpenId(null)}
+        hueClassName={hueClass("schools")}
+        emoji="🏫"
+        title={open ? place(open.name, open.nameLocal).text : ""}
+        titleLang={open ? place(open.name, open.nameLocal).lang : undefined}
+        subtitle={open ? t("list.typeLevel", { type: open.type, level: open.level }) : undefined}
+        footer={
+          open ? (
+            <>
+              <ActionLink href={mapsUrl([open.name, open.address].filter(Boolean).join(", "), open.latitude, open.longitude)} emoji="🗺️" primary newTab>
+                {t("sheet.directions")}
+              </ActionLink>
+              <ActionLink href={UDISE.href} emoji="🔗" newTab>
+                {t("sheet.udise")}
+              </ActionLink>
+            </>
+          ) : undefined
+        }
+      >
+        {open && (
+          <>
+            {openRatio !== null && open.students && open.teachers ? (
+              <SheetNote emoji="🧑‍🏫">
+                {t.rich("sheet.people", {
+                  students: f.number(open.students),
+                  teachers: f.number(open.teachers),
+                  ratio: f.number(Math.round(openRatio)),
+                  b: bNum,
+                })}{" "}
+                {t(`sheet.band.${ratioBand(openRatio)}`)}
+              </SheetNote>
+            ) : (
+              <SheetNote emoji="🏫">{t("sheet.noPeople")}</SheetNote>
+            )}
+
+            <SheetHeading emoji="🎓">{t("sheet.results")}</SheetHeading>
+            {open.results.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 14, color: "var(--ftp-text-2)" }}>{t("sheet.noResults")}</p>
+            ) : (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                {open.results.map((r) => (
+                  <li key={r.id}>
+                    <CardBar
+                      pct={r.passPercentage}
+                      label={
+                        <>
+                          <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{t("sheet.examYear", { exam: r.exam, year: String(r.year) })}</span>
+                          <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>
+                            {pct(r.passPercentage, 1)}
+                          </span>
+                        </>
+                      }
+                    />
+                    <span className="ftp-num" style={{ display: "block", marginTop: 4, fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+                      {t("sheet.passCount", { passed: f.number(r.passed), appeared: f.number(r.appeared) })}
+                      {r.distinction ? ` · ${t("sheet.distinction", { n: f.number(r.distinction) })}` : ""}
+                      {r.firstClass ? ` · ${t("sheet.firstClass", { n: f.number(r.firstClass) })}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {(open.hasToilets !== null && open.hasToilets !== undefined) ||
+            (open.hasLibrary !== null && open.hasLibrary !== undefined) ||
+            (open.hasLab !== null && open.hasLab !== undefined) ? (
+              <>
+                <SheetHeading emoji="🧰">{t("sheet.facilities")}</SheetHeading>
+                <DetailList
+                  rows={[
+                    { emoji: "🚻", label: t("sheet.toilets"), value: yesNo(open.hasToilets) },
+                    { emoji: "📚", label: t("sheet.library"), value: yesNo(open.hasLibrary) },
+                    { emoji: "🔬", label: t("sheet.lab"), value: yesNo(open.hasLab) },
+                  ]}
+                />
+              </>
+            ) : null}
+
+            <SheetHeading emoji="📋">{t("sheet.about")}</SheetHeading>
+            <DetailList
+              rows={[
+                { emoji: "🏷️", label: t("sheet.type"), value: open.type },
+                { emoji: "🎒", label: t("sheet.level"), value: open.level },
+                { emoji: "🧒", label: t("sheet.students"), value: open.students ? f.number(open.students) : null },
+                { emoji: "🧑‍🏫", label: t("sheet.teachers"), value: open.teachers ? f.number(open.teachers) : null },
+                {
+                  emoji: "⚖️",
+                  label: t("sheet.ratio"),
+                  value:
+                    openRatio !== null ? (
+                      <Pill tone={BAND_TONE[ratioBand(openRatio)]}>{t("ratioValue", { n: f.number(Math.round(openRatio)) })}</Pill>
+                    ) : null,
+                },
+                { emoji: "🆔", label: t("sheet.udiseCode"), value: open.udiseCode ? <span className="ftp-num">{open.udiseCode}</span> : null },
+                { emoji: "📍", label: t("sheet.address"), value: open.address },
+                { emoji: "🗓️", label: t("sheet.updated"), value: open.updatedAt ? f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
+              ]}
+            />
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("sheet.note")}</p>
+          </>
+        )}
+      </DetailSheet>
     </ModulePage>
   );
 }

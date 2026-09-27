@@ -1,6 +1,5 @@
 {
-  "title": "Transport",
-  "description": "Bus routes and train timetables for the district",
+  "description": "Which bus or train you can take, when it leaves, and what it costs",
   "refresh": "Source updates {freq}",
   "freq": {
     "monthly": "monthly",
@@ -10,17 +9,54 @@
     "quarterly": "every three months",
     "onPublish": "when the source publishes"
   },
+  "answer": {
+    "main": "<b>{busesN}</b> {buses, plural, one {bus route} other {bus routes}} and <b>{trainsN}</b> {trains, plural, one {train} other {trains}} are listed for {district}.",
+    "fare": "The lowest bus fare listed is <b>{fare}</b>."
+  },
   "tiles": {
     "buses": "Bus routes",
-    "trains": "Train services",
-    "operators": "Operators"
+    "trains": "Trains",
+    "operators": "Bus operators",
+    "fare": "Bus fares from",
+    "fareSub": "up to {max}"
   },
   "picture": {
-    "simpleOne": "All <b>{n}</b> {count, plural, one {bus route} other {bus routes}} listed for this district {count, plural, one {is} other {are}} run by <b>{op}</b>.",
-    "simpleMany": "<b>{op}</b> runs <b>{count}</b> of the <b>{total}</b> bus routes listed for this district.",
+    "title": "Who runs the buses",
     "busesOne": "Every bus route listed here is run by {op}.",
-    "busesEach": "Each bus is one route. The {count} coloured ones are run by {op}.",
+    "busesEach": "Each bus is one route. The {n} coloured {count, plural, one {one is} other {ones are}} run by {op}.",
     "busesScaled": "About {n} of every 10 bus routes listed here are run by {op}."
+  },
+  "list": {
+    "title": "Find a bus or train",
+    "searchLabel": "Where do you want to go?",
+    "searchPlaceholder": "Place, route number or train name",
+    "modeAria": "Bus or train",
+    "buses": "Buses",
+    "trains": "Trains",
+    "operatorAria": "Bus operator",
+    "all": "All",
+    "noMatch": "Nothing matches “{query}”",
+    "noMatchBody": "Try the name of a town or bus stand, or a route number.",
+    "emptyBuses": "No active bus routes listed for this district yet.",
+    "emptyTrains": "No trains listed for this district yet.",
+    "open": "See stops and times",
+    "showAll": "Show all {n}"
+  },
+  "route": "{from} → {to}",
+  "bus": {
+    "via": "via {via}",
+    "every": "Every {freq}",
+    "everyMin": "Every {n} min",
+    "hours": "{n} h",
+    "minutes": "{n} min",
+    "leaves": "Leaves {time}"
+  },
+  "train": {
+    "station": "At {name}",
+    "arr": "arrives {time}",
+    "dep": "leaves {time}",
+    "runsOn": "Runs on {days}",
+    "everyDay": "every day"
   },
   "types": {
     "title": "Kinds of buses",
@@ -37,26 +73,48 @@
     "simple": "<b>{most}</b> has the most trains ({max}) and <b>{least}</b> the fewest ({min}).",
     "aria": "Trains on each day: {list}."
   },
-  "timetables": "Timetables",
-  "modeAria": "Mode of transport",
-  "buses": "Buses",
-  "trains": "Trains",
-  "operatorAria": "Bus operator",
-  "all": "All",
-  "emptyBuses": "No active bus routes listed for this district yet.",
-  "emptyTrains": "No train services listed for this district yet.",
-  "bus": {
-    "via": "via {via}",
-    "every": "Every {freq}",
-    "everyMin": "Every {n} min",
-    "hours": "{n} h",
-    "minutes": "{n} min"
+  "sheet": {
+    "busNumber": "Route {n} · {op}",
+    "map": "{place} on the map",
+    "operatorSite": "{op} website",
+    "busLeaves": "This bus goes from <b>{from}</b> to <b>{to}</b>. It leaves at <b>{time}</b>.",
+    "busEvery": "This bus goes from <b>{from}</b> to <b>{to}</b>. It runs <b>{every}</b>.",
+    "busGoes": "This bus goes from <b>{from}</b> to <b>{to}</b>.",
+    "stops": "Stops on the way (as listed)",
+    "ends": "Where it goes",
+    "number": "Number",
+    "operator": "Run by",
+    "busType": "Kind of bus",
+    "leavesAt": "Leaves at",
+    "howOften": "How often",
+    "journey": "Journey time",
+    "fare": "Fare",
+    "checkNote": "Times and fares are as listed by the operator. Check with them before you travel.",
+    "trainNumber": "Train {n}",
+    "ntes": "Train running status (NTES)",
+    "trainStops": "This train stops at <b>{station}</b> {count, plural, =0 {(running days not given)} =7 {and runs <b>every day</b>} other {and runs on <b>{days}</b>}}.",
+    "fromTo": "From and to",
+    "station": "Station here",
+    "arrives": "Arrives",
+    "leaves": "Leaves",
+    "days": "Runs on"
   },
-  "train": {
-    "station": "Station: {name}",
-    "arr": "Arrives {time}",
-    "dep": "Leaves {time}",
-    "runsOn": "Runs on {days}"
-  },
-  "share": "Transport in {district}: {buses, plural, one {# bus route} other {# bus routes}}, {trains, plural, one {# train service} other {# train services}}"
+  "end": {
+    "share": "Buses and trains in {district}: {buses, plural, one {# bus route} other {# bus routes}}, {trains, plural, one {# train} other {# trains}}",
+    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
+    "actions": "Page actions",
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share this page on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "freq": {
+      "monthly": "Updated monthly",
+      "weekly": "Updated weekly",
+      "daily": "Updated daily",
+      "annual": "Updated once a year",
+      "quarterly": "Updated every three months",
+      "onPublish": "Updated when the source publishes"
+    }
+  }
 }

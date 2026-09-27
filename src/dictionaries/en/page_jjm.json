@@ -1,63 +1,100 @@
 {
-  "title": "Jal Jeevan Mission",
-  "description": "Tap water connections in the villages of this district",
+  "description": "Which homes have a tap at home, area by area, and whether the water is safe to drink",
   "urban": {
     "title": "Municipal water supply",
     "body": "Jal Jeevan Mission gives tap water connections to rural homes. {district} is an urban district, so its water supply is run by {board}.",
     "contact": "For water supply complaints and information, contact {board} or visit the {body} portal.",
     "fallbackBody": "municipal corporation"
   },
+  "answer": {
+    "main": "About <b>{tenths} of every 10</b> homes in {district} have a tap at home: <b>{taps}</b> of <b>{homes}</b> homes in the {count, plural, one {area} other {{areas} areas}} we track.",
+    "noHomes": "We track {count, plural, one {one area} other {{areas} areas}} here, but the number of homes has not been published yet.",
+    "allSafe": "Every area that was tested has water that is safe to drink.",
+    "someIssue": "{issue, plural, one {One area} other {{issueN} areas}} had a water quality problem in the latest test.",
+    "someSafe": "{safeN} of the {testedN} areas tested have water that is safe to drink."
+  },
   "tiles": {
-    "villages": "Villages tracked",
     "coverage": "Homes with a tap",
     "taps": "Tap connections",
-    "households": "Total homes",
-    "full": "Fully covered",
-    "fullSub": "villages with a tap in every home",
+    "tapsSub": "of {homes} homes",
+    "waiting": "Homes still waiting",
+    "waitingSub": "no tap at home yet",
     "tested": "Water tested",
-    "testedSub": "of villages"
+    "testedSub": "{tested} of {areas} areas"
   },
   "picture": {
-    "title": "Tap water across the district",
-    "simple": "In the {villages} {count, plural, one {village} other {villages}} we track, <b>{taps}</b> of <b>{homes}</b> homes have a tap connection at home.",
-    "homes": "About {n} of every 10 homes have a tap connection.",
-    "tank": "Homes with a tap connection"
+    "title": "Out of every 10 homes",
+    "homes": "About {n} of every 10 homes have a tap at home.",
+    "tank": "Homes with a tap at home"
+  },
+  "list": {
+    "title": "Find your area",
+    "searchLabel": "Type your village or area",
+    "searchPlaceholder": "Village or area name",
+    "sortAria": "Order of the list",
+    "sortLow": "Fewest taps first",
+    "sortHigh": "Most taps first",
+    "sortName": "A to Z",
+    "talukAria": "Taluk",
+    "all": "All",
+    "noMatch": "No area called “{query}” in our list",
+    "noMatchBody": "Check the spelling, or try the name of your taluk.",
+    "count": "{count, plural, one {One area} other {{n} areas}}",
+    "taluk": "In {taluk}",
+    "open": "See details",
+    "tapsOfHomes": "{taps} of {homes} homes",
+    "showAll": "Show all {n}",
+    "unknownArea": "Area without a name"
   },
   "quality": {
     "title": "Is the water safe?",
-    "units": "Villages by the result of their latest water test",
+    "units": "Areas by the result of their latest water test",
     "safe": "Safe to drink",
     "issue": "Quality problem",
     "other": "Tested, result not given",
     "untested": "Not tested yet",
-    "center": "{count, plural, one {village} other {villages}}",
+    "center": "{count, plural, one {area} other {areas}}",
     "aria": "Water test results: {safe} safe, {issue} with a quality problem, {other} without a result, {untested} not tested.",
-    "simpleIssue": "<b>{issue} of the {tested}</b> villages tested had a water quality problem in the latest test.",
-    "simpleAllSafe": "Every village that was tested, <b>{tested}</b> in all, had water that is safe to drink.",
-    "simpleSome": "<b>{safe} of the {tested}</b> villages tested had water that is safe to drink."
+    "simpleIssue": "<b>{issue} of the {tested}</b> areas tested had a water quality problem in the latest test.",
+    "simpleAllSafe": "Every area that was tested, <b>{tested}</b> in all, has water that is safe to drink.",
+    "simpleSome": "<b>{safe} of the {tested}</b> areas tested have water that is safe to drink."
   },
-  "chart": {
-    "titleTop": "The {n} best-covered villages",
-    "titleAll": "Tap coverage in each village",
-    "units": "Share of homes with a tap in each village. The dashed line is 100%, a tap in every home.",
-    "simpleAll": "{n, plural, one {<b>This village</b> has a tap in every home.} other {<b>All {shown}</b> villages here have a tap in every home.}}",
-    "simpleSome": "<b>{full} of these {shown}</b> {full, plural, one {village has} other {villages have}} a tap in every home.",
-    "simpleBest": "The best-covered village, <b>{name}</b>, has a tap in {pct} of homes.",
-    "legendTap": "Homes with a tap",
-    "legendFull": "Every home (100%)",
-    "tooltip": "Homes with a tap"
+  "waiting": {
+    "title": "Where homes are still waiting",
+    "units": "Share of homes with a tap, the areas with the fewest first",
+    "simple": "<b>{name}</b> has the fewest taps: only {pct} of homes have one."
   },
-  "table": {
-    "title": "Status of each village",
-    "caption": "Jal Jeevan Mission status of each village in {district}",
-    "village": "Village",
-    "taps": "Taps / homes",
-    "coverage": "Homes with a tap",
-    "quality": "Water quality",
-    "unknownVillage": "Unknown village"
+  "sheet": {
+    "full": "Every home here has a tap at home: <b>{homes}</b> homes.",
+    "some": "<b>{taps}</b> of <b>{homes}</b> homes here have a tap at home. <b>{waiting}</b> homes are still waiting.",
+    "homes": "Homes",
+    "taps": "Homes with a tap",
+    "waiting": "Homes still waiting",
+    "coverage": "Share with a tap",
+    "test": "Latest water test",
+    "testAsPublished": "Result as published: {result}",
+    "taluk": "Taluk",
+    "updated": "Updated on",
+    "sourceRow": "Source",
+    "source": "Check on eJalShakti"
   },
-  "share": {
-    "withData": "Jal Jeevan Mission in {district}: {pct} of homes have a tap connection",
-    "noData": "Water supply information for {district}"
+  "end": {
+    "shareWithData": "Tap water in {district}: {pct} of homes have a tap at home",
+    "shareNoData": "Tap water information for {district}",
+    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
+    "actions": "Page actions",
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share this page on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "freq": {
+      "monthly": "Updated monthly",
+      "weekly": "Updated weekly",
+      "daily": "Updated daily",
+      "annual": "Updated once a year",
+      "quarterly": "Updated every three months",
+      "onPublish": "Updated when the source publishes"
+    }
   }
 }
