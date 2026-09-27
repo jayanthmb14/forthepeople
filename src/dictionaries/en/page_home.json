@@ -90,5 +90,21 @@
     "title": "Live districts",
     "legendFresh": "new data in the last day",
     "legendOld": "older"
+  },
+  "prices": {
+    "title": "Prices today",
+    "more": "See all prices",
+    "move": "{abs} · {pct}",
+    "since": "since {date}",
+    "upSr": "Up {abs} ({pct}) since {date}.",
+    "downSr": "Down {abs} ({pct}) since {date}.",
+    "same": "No change from the day before",
+    "noChange": "Only one day's price so far",
+    "gold22": "22K {price}",
+    "old": "{days} days old — nothing newer found",
+    "srcIbja": "IBJA",
+    "srcYahoo": "Yahoo Finance",
+    "none": "Prices could not be loaded just now. The prices page may have them.",
+    "note": "Gold and silver from IBJA (India Bullion and Jewellers Association); shares, the dollar and crude oil from Yahoo Finance. Crop prices for each district are on its Crop prices page."
   }
 }

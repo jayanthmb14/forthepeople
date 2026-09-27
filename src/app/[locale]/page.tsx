@@ -131,7 +131,7 @@ export default async function HomePage({
 
       <IndiaGlance locale={locale} figures={glance} />
       <LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />
-      <PricesToday />
+      <PricesToday locale={locale} markets={markets} />
       <SupportLine locale={locale} />
     </main>
   );

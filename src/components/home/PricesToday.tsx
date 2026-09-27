@@ -5,162 +5,148 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  PricesToday — a calm "Prices today" row on the home page
+//  PricesToday — colourful price cards on the home page
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   Prices today                               See all prices and trends →
-//   Gold (24 carat)  Silver   Sensex    Nifty 50   US dollar
-//   ₹15,211 per gram …        81,234 ▲  …          ₹95.88
-//   Checked at 18:45 IST · Gold and silver from IBJA; …
+//   Prices today                                    See all prices →
+//   ┌ gold wash ─────────────┐ ┌ silver wash ───────────┐ ┌ blue wash ─┐
+//   │ (coin) Gold 24K        │ │ (bar) Silver           │ │ (chart)    │
+//   │ ₹15,211 /gram          │ │ ₹1,89,540 /kg          │ │ Sensex     │
+//   │ ▲ ₹133 · 0.88%         │ │ ▼ ₹1,020 · 0.54%       │ │ 81,234 …   │
+//   │ ╱╲╱‾‾╲╱ (30 days)      │ │ ╲╱╲__╱ (30 days)       │ │            │
+//   │ 22K ₹13,944 /gram      │ │ IBJA · 26 Sep          │ │            │
+//   │ IBJA · 26 Sep          │ └────────────────────────┘ └────────────┘
+//   └────────────────────────┘   … Nifty 50, US dollar, crude oil
 //
-//  Replaces the old ticker bar at the very top of the page. Data: GET
-//  /api/data/market-ticker, fetched once (no polling). Only five figures
-//  a citizen asks about are shown; fuel (a fixed number, not a live
-//  feed) and crypto are left to the prices page.
+//  Data: the same snapshot as the /prices page (home-data.ts →
+//  loadMarketFigures), rendered on the server. Honesty:
+//    - each card names its source (linked) and the day of the price;
+//    - the change is since the trading day before, and says which day;
+//    - a price older than a normal weekend or holiday gap gets the amber
+//      "N days old" line;
+//    - a price whose source failed is not shown; if none loaded, the
+//      section says so and still links to /prices.
 //
-//  Honesty rules:
-//    - If the API answered with its built-in fallback numbers
-//      (usingFallback), or with nothing we can show, the row is hidden.
-//      Old numbers are never shown as today's.
-//    - A change is shown only when the source gave one (the dollar rate
-//      from open.er-api has none, so it shows none).
-//    - The time is when we checked the sources, labelled as such.
-//
-"use client";
-
+//  Server component.
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { ArrowRight, Clock3 } from "lucide-react";
+import { Glyph, glyphFor } from "./HomeGlyphs";
+import { dayWords, money, pct, shortDay } from "./home-format";
+import type { MarketFigure } from "./home-types";
 import styles from "./home.module.css";
 
-interface TickerItem {
-  symbol: string;
-  label: string;
-  value: string;
-  change: string;
-  changePct: number;
-  direction: "up" | "down" | "flat";
-  unit: string;
-}
-interface TickerResponse {
-  items?: TickerItem[];
-  asOf?: string;
-  usingFallback?: boolean;
-}
+/** Cards on the home page, in this order (gold 22K rides on the gold card). */
+const CARDS = ["gold24", "silver", "sensex", "nifty", "usdInr", "crude"] as const;
+const UNIT_KEY = { gram: "ticker.perGram", kg: "ticker.perKg", barrel: "ticker.perBarrel" } as const;
 
-/** The figures shown here, in this order, with their label keys under "home". */
-const SHOWN: Record<string, string> = {
-  GOLD: "priceGold",
-  SILVER: "priceSilver",
-  SENSEX: "priceSensex",
-  NIFTY50: "priceNifty",
-  USD_INR: "priceUsd",
-};
-
-/** "/g" → "per gram" (message key), or null when no unit applies. */
-function unitKey(unit: string): string | null {
-  switch (unit.trim()) {
-    case "/g":
-      return "unitGram";
-    case "/10g":
-      return "unit10g";
-    case "/kg":
-      return "unitKg";
-    default:
-      return null;
-  }
+/** A 30-day trend line (and a soft area under it), scaled to its own range. */
+function Spark({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const w = 120;
+  const h = 32;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * w, h - 3 - ((v - min) / span) * (h - 6)] as const);
+  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${w} ${h} L0 ${h} Z`;
+  const [lx, ly] = pts[pts.length - 1];
+  return (
+    <svg className={styles.spark} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d={area} className={styles.sparkArea} />
+      <path d={line} className={styles.sparkLine} vectorEffect="non-scaling-stroke" />
+      <circle cx={lx} cy={ly} r={2.6} className={styles.sparkDot} />
+    </svg>
+  );
 }
 
-/** "14:05" in IST. */
-function istClock(iso: string | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" });
+function PriceCard({ m, gold22, locale }: { m: MarketFigure; gold22: MarketFigure | undefined; locale: string }) {
+  const t = useTranslations("page_home");
+  const kind = glyphFor(m.key);
+  const moved = m.change && m.change.direction !== "flat" ? m.change : null;
+  const abs = moved ? money(Math.abs(moved.abs), m.currency, m.decimals) : "";
+  return (
+    <li className={styles.priceCard} data-kind={kind}>
+      <div className={styles.priceHead}>
+        <span className={styles.priceArt}>
+          <Glyph kind={kind} size={30} />
+        </span>
+        <span className={styles.priceName}>{t(`ticker.${m.key}`)}</span>
+      </div>
+      <p className={styles.priceNow}>
+        <span className="ftp-num">{money(m.value, m.currency, m.decimals)}</span>
+        {m.unit && <span className={styles.priceUnitWord}>{t(UNIT_KEY[m.unit])}</span>}
+      </p>
+      {moved ? (
+        <p className={styles.priceMove} data-dir={moved.direction}>
+          <span aria-hidden>{moved.direction === "up" ? "▲" : "▼"}</span>
+          <span className="sr-only">
+            {t(moved.direction === "up" ? "prices.upSr" : "prices.downSr", { abs, pct: pct(moved.pct), date: shortDay(moved.prevDay, locale) })}
+          </span>
+          <span aria-hidden className="ftp-num">
+            {t("prices.move", { abs, pct: pct(moved.pct) })}
+          </span>
+          <span aria-hidden className={styles.priceSince}>
+            {t("prices.since", { date: shortDay(moved.prevDay, locale) })}
+          </span>
+        </p>
+      ) : (
+        <p className={styles.priceMove} data-dir="flat">
+          {m.change ? t("prices.same") : t("prices.noChange")}
+        </p>
+      )}
+      <Spark values={m.spark} />
+      {gold22 && (
+        <p className={styles.priceExtra}>
+          {t("prices.gold22", { price: money(gold22.value, gold22.currency, gold22.decimals) })}
+          <span className={styles.priceUnitWord}>{t("ticker.perGram")}</span>
+        </p>
+      )}
+      {m.old && (
+        <p className={styles.priceOld}>
+          <Clock3 size={13} aria-hidden />
+          {t("prices.old", { days: m.ageDays })}
+        </p>
+      )}
+      <p className={styles.priceSource}>
+        <a href={m.sourceUrl} target="_blank" rel="noopener noreferrer">
+          {m.source === "ibja" ? t("prices.srcIbja") : t("prices.srcYahoo")}
+        </a>
+        {" · "}
+        {dayWords(m.day, m.ageDays, locale)}
+      </p>
+    </li>
+  );
 }
 
-type State = { kind: "loading" } | { kind: "hidden" } | { kind: "ready"; items: TickerItem[]; asOf?: string };
-
-export default function PricesToday() {
-  const t = useTranslations("home");
-  const locale = useLocale();
-  const [state, setState] = useState<State>({ kind: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/data/market-ticker")
-      .then((r) => (r.ok ? (r.json() as Promise<TickerResponse>) : null))
-      .then((data) => {
-        if (cancelled) return;
-        const items = (data?.items ?? []).filter((it) => it && SHOWN[it.symbol] && it.value);
-        const ordered = Object.keys(SHOWN)
-          .map((sym) => items.find((it) => it.symbol === sym))
-          .filter((it): it is TickerItem => Boolean(it));
-        if (!data || data.usingFallback || ordered.length === 0) setState({ kind: "hidden" });
-        else setState({ kind: "ready", items: ordered, asOf: data.asOf });
-      })
-      .catch(() => {
-        if (!cancelled) setState({ kind: "hidden" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (state.kind === "hidden") return null;
-  const clock = state.kind === "ready" ? istClock(state.asOf) : null;
+export default function PricesToday({ locale, markets }: { locale: string; markets: MarketFigure[] }) {
+  const t = useTranslations("page_home");
+  const cards = CARDS.map((k) => markets.find((m) => m.key === k)).filter((m): m is MarketFigure => Boolean(m));
+  const gold22 = markets.find((m) => m.key === "gold22");
 
   return (
     <section aria-labelledby="home-prices" className={`ftp-container ${styles.section}`}>
       <div className={styles.sectionHeadRow}>
         <h2 id="home-prices" className={styles.h2}>
-          {t("pricesTitle")}
+          {t("prices.title")}
         </h2>
         <Link href={`/${locale}/prices`} className={styles.textLink}>
-          {t("pricesMore")}
+          {t("prices.more")}
           <ArrowRight size={16} aria-hidden />
         </Link>
       </div>
 
-      {state.kind === "loading" ? (
-        <ul className={styles.prices} aria-hidden>
-          {Object.keys(SHOWN).map((sym) => (
-            <li key={sym} className={`${styles.price} ${styles.priceLoading}`} />
+      {cards.length === 0 ? (
+        <p className={styles.sectionNote}>{t("prices.none")}</p>
+      ) : (
+        <ul className={styles.priceGrid}>
+          {cards.map((m) => (
+            <PriceCard key={m.key} m={m} gold22={m.key === "gold24" ? gold22 : undefined} locale={locale} />
           ))}
         </ul>
-      ) : (
-        <ul className={styles.prices}>
-          {state.items.map((it) => {
-            const unit = unitKey(it.unit);
-            const hasChange = it.direction !== "flat" && it.changePct !== 0 && Number.isFinite(it.changePct);
-            const pct = `${Math.abs(it.changePct).toFixed(2)}%`;
-            return (
-              <li key={it.symbol} className={styles.price}>
-                <span className={styles.priceLabel}>{t(SHOWN[it.symbol])}</span>
-                <span className={styles.priceValue}>
-                  <span className="ftp-num">{it.value}</span>
-                  {unit && <span className={styles.priceUnit}>{t(unit)}</span>}
-                </span>
-                {hasChange && (
-                  <span className={it.direction === "up" ? styles.priceUp : styles.priceDown}>
-                    <span aria-hidden>{it.direction === "up" ? "▲" : "▼"} </span>
-                    <span className="sr-only">{it.direction === "up" ? t("priceUp", { change: pct }) : t("priceDown", { change: pct })}</span>
-                    <span aria-hidden className="ftp-num">
-                      {pct}
-                    </span>
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
       )}
-
-      <p className={styles.sectionFoot}>
-        {clock && <>{t("pricesAsOf", { time: clock })} · </>}
-        {t("pricesNote")}
-      </p>
+      <p className={styles.sectionFoot}>{t("prices.note")}</p>
     </section>
   );
 }
