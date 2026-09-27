@@ -18,10 +18,20 @@ export interface Village {
   pincode?: string;
 }
 
+/**
+ * A place's name in other Indian languages, keyed by language code
+ * (docs/I18N.md §3B), e.g. { hi: "मंड्या" }. Optional: a page shows
+ * names[locale], else `nameLocal` when it is written in the page's language,
+ * else the English `name` (see placeName() in src/i18n/place-name.ts). Only
+ * spellings we are sure of are listed.
+ */
+export type PlaceNames = Partial<Record<string, string>>;
+
 export interface Taluk {
   slug: string;
   name: string;
   nameLocal: string;
+  names?: PlaceNames;
   tagline?: string;
   population?: number;
   area?: number; // sq km
@@ -38,6 +48,7 @@ export interface District {
   slug: string;
   name: string;
   nameLocal: string;
+  names?: PlaceNames;
   tagline?: string;
   taglineLocal?: string;
   active: boolean;
@@ -66,6 +77,7 @@ const MANDYA_DISTRICT: District = {
   slug: "mandya",
   name: "Mandya",
   nameLocal: "ಮಂಡ್ಯ",
+  names: { hi: "मंड्या" },
   tagline: "Sugar Capital of Karnataka",
   taglineLocal: "ಕರ್ನಾಟಕದ ಸಕ್ಕರೆ ನಗರ",
   active: true,
@@ -85,6 +97,7 @@ const MANDYA_DISTRICT: District = {
       slug: "mandya",
       name: "Mandya",
       nameLocal: "ಮಂಡ್ಯ",
+      names: { hi: "मंड्या" },
       tagline: "Sugar Capital of Karnataka",
       population: 516098,
       area: 727,
@@ -101,6 +114,7 @@ const MANDYA_DISTRICT: District = {
       slug: "maddur",
       name: "Maddur",
       nameLocal: "ಮದ್ದೂರು",
+      names: { hi: "मद्दूर" },
       tagline: "Gateway to Old Mysore",
       population: 290000,
       area: 686,
@@ -115,6 +129,7 @@ const MANDYA_DISTRICT: District = {
       slug: "malavalli",
       name: "Malavalli",
       nameLocal: "ಮಳವಳ್ಳಿ",
+      names: { hi: "मलवल्ली" },
       tagline: "Land of Temples & Tanks",
       population: 270000,
       area: 705,
@@ -129,6 +144,7 @@ const MANDYA_DISTRICT: District = {
       slug: "srirangapatna",
       name: "Srirangapatna",
       nameLocal: "ಶ್ರೀರಂಗಪಟ್ಟಣ",
+      names: { hi: "श्रीरंगपट्टण" },
       tagline: "Tipu Sultan's Island Fortress",
       population: 225000,
       area: 581,
@@ -143,6 +159,7 @@ const MANDYA_DISTRICT: District = {
       slug: "nagamangala",
       name: "Nagamangala",
       nameLocal: "ನಾಗಮಂಗಲ",
+      names: { hi: "नागमंगला" },
       tagline: "Heart of the Deccan Plateau",
       population: 220000,
       area: 791,
@@ -156,6 +173,7 @@ const MANDYA_DISTRICT: District = {
       slug: "kr-pete",
       name: "K R Pete",
       nameLocal: "ಕೆ.ಆರ್.ಪೇಟೆ",
+      names: { hi: "के.आर. पेट" },
       tagline: "Jewel of the Kaveri Basin",
       population: 235000,
       area: 727,
@@ -169,6 +187,7 @@ const MANDYA_DISTRICT: District = {
       slug: "pandavapura",
       name: "Pandavapura",
       nameLocal: "ಪಾಂಡವಪುರ",
+      names: { hi: "पांडवपुरा" },
       tagline: "Where the Pandavas Rested",
       population: 175000,
       area: 744,
@@ -186,6 +205,7 @@ const BENGALURU_URBAN_DISTRICT: District = {
   slug: "bengaluru-urban",
   name: "Bengaluru Urban",
   nameLocal: "ಬೆಂಗಳೂರು ನಗರ",
+  names: { hi: "बेंगलुरु शहरी" },
   tagline: "Silicon Valley of India",
   taglineLocal: "ಭಾರತದ ಸಿಲಿಕಾನ್ ಕಣಿವೆ",
   active: true,
@@ -206,6 +226,7 @@ const BENGALURU_URBAN_DISTRICT: District = {
       slug: "bengaluru-north",
       name: "Bengaluru North",
       nameLocal: "ಬೆಂಗಳೂರು ಉತ್ತರ",
+      names: { hi: "बेंगलुरु उत्तर" },
       tagline: "Gateway to the Airport",
       population: 3800000,
       area: 198,
@@ -222,6 +243,7 @@ const BENGALURU_URBAN_DISTRICT: District = {
       slug: "bengaluru-south",
       name: "Bengaluru South",
       nameLocal: "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ",
+      names: { hi: "बेंगलुरु दक्षिण" },
       tagline: "Heart of the Garden City",
       population: 4200000,
       area: 186,
@@ -238,6 +260,7 @@ const BENGALURU_URBAN_DISTRICT: District = {
       slug: "bengaluru-east",
       name: "Bengaluru East",
       nameLocal: "ಬೆಂಗಳೂರು ಪೂರ್ವ",
+      names: { hi: "बेंगलुरु पूर्व" },
       tagline: "IT Corridor Hub",
       population: 3100000,
       area: 194,
@@ -254,6 +277,7 @@ const BENGALURU_URBAN_DISTRICT: District = {
       slug: "anekal",
       name: "Anekal",
       nameLocal: "ಆನೇಕಲ್",
+      names: { hi: "आनेकल" },
       tagline: "Electronics City Gateway",
       population: 1665000,
       area: 163,
@@ -274,6 +298,7 @@ const MYSURU_DISTRICT: District = {
   slug: "mysuru",
   name: "Mysuru",
   nameLocal: "ಮೈಸೂರು",
+  names: { hi: "मैसूरु" },
   tagline: "City of Palaces",
   taglineLocal: "ಅರಮನೆಗಳ ನಗರ",
   active: true,
@@ -295,6 +320,7 @@ const MYSURU_DISTRICT: District = {
       slug: "mysuru-taluk",
       name: "Mysuru",
       nameLocal: "ಮೈಸೂರು",
+      names: { hi: "मैसूरु" },
       tagline: "Heritage Capital of Karnataka",
       population: 1800000,
       area: 1654,
@@ -311,6 +337,7 @@ const MYSURU_DISTRICT: District = {
       slug: "hunsur",
       name: "Hunsur",
       nameLocal: "ಹನ್ಸೂರು",
+      names: { hi: "हुनसूर" },
       tagline: "Coffee & Cardamom Country",
       population: 320000,
       area: 862,
@@ -327,6 +354,7 @@ const MYSURU_DISTRICT: District = {
       slug: "nanjangud",
       name: "Nanjangud",
       nameLocal: "ನಂಜನಗೂಡು",
+      names: { hi: "नंजनगूड" },
       tagline: "Temple Town on the Kapila",
       population: 325000,
       area: 936,
@@ -343,6 +371,7 @@ const MYSURU_DISTRICT: District = {
       slug: "t-narasipur",
       name: "T. Narasipur",
       nameLocal: "ತಿರುಮಕೂಡಲು ನರಸೀಪುರ",
+      names: { hi: "टी. नरसीपुर" },
       tagline: "Triveni Sangama — Three Rivers Meet",
       population: 260000,
       area: 1005,
@@ -359,6 +388,7 @@ const MYSURU_DISTRICT: District = {
       slug: "hd-kote",
       name: "H.D. Kote",
       nameLocal: "ಎಚ್.ಡಿ. ಕೋಟೆ",
+      names: { hi: "एच.डी. कोटे" },
       tagline: "Gateway to Nagarahole",
       population: 220000,
       area: 2374,
@@ -375,6 +405,7 @@ const MYSURU_DISTRICT: District = {
       slug: "periyapatna",
       name: "Periyapatna",
       nameLocal: "ಪಿರಿಯಾಪಟ್ಟಣ",
+      names: { hi: "पिरियापट्टण" },
       tagline: "Land of Turmeric and Pepper",
       population: 210000,
       area: 782,
@@ -391,6 +422,7 @@ const MYSURU_DISTRICT: District = {
       slug: "kr-nagar",
       name: "K.R. Nagar",
       nameLocal: "ಕೃಷ್ಣರಾಜನಗರ",
+      names: { hi: "के.आर. नगर" },
       tagline: "Cauvery Heartland",
       population: 215000,
       area: 1079,
@@ -550,6 +582,7 @@ const MUMBAI_DISTRICT: District = {
       slug: "western-suburbs",
       name: "Western Suburbs",
       nameLocal: "पश्चिम उपनगर",
+      names: { hi: "पश्चिमी उपनगर" },
       tagline: "Bollywood & Business Hub",
       population: 3800000,
       area: 155,
@@ -566,6 +599,7 @@ const MUMBAI_DISTRICT: District = {
       slug: "eastern-suburbs",
       name: "Eastern Suburbs",
       nameLocal: "पूर्व उपनगर",
+      names: { hi: "पूर्वी उपनगर" },
       tagline: "Industrial & Residential Belt",
       population: 3200000,
       area: 140,
@@ -615,6 +649,7 @@ const CHENNAI_DISTRICT: District = {
   slug: "chennai",
   name: "Chennai",
   nameLocal: "சென்னை",
+  names: { hi: "चेन्नई" },
   tagline: "Gateway to South India",
   taglineLocal: "தென்னிந்தியாவின் நுழைவாயில்",
   active: true,
@@ -635,6 +670,7 @@ const CHENNAI_DISTRICT: District = {
       slug: "chennai-north",
       name: "Chennai North",
       nameLocal: "வடக்கு சென்னை",
+      names: { hi: "उत्तरी चेन्नई" },
       tagline: "Historic Port & Trade Hub",
       population: 2100000,
       area: 110,
@@ -651,6 +687,7 @@ const CHENNAI_DISTRICT: District = {
       slug: "chennai-south",
       name: "Chennai South",
       nameLocal: "தெற்கு சென்னை",
+      names: { hi: "दक्षिणी चेन्नई" },
       tagline: "Cultural & IT Corridor",
       population: 2300000,
       area: 130,
@@ -667,6 +704,7 @@ const CHENNAI_DISTRICT: District = {
       slug: "chennai-central",
       name: "Chennai Central",
       nameLocal: "மத்திய சென்னை",
+      names: { hi: "मध्य चेन्नई" },
       tagline: "Heart of the City",
       population: 1500000,
       area: 86,
@@ -682,6 +720,7 @@ const CHENNAI_DISTRICT: District = {
       slug: "chennai-west",
       name: "Chennai West",
       nameLocal: "மேற்கு சென்னை",
+      names: { hi: "पश्चिमी चेन्नई" },
       tagline: "Industrial & Manufacturing Zone",
       population: 1188000,
       area: 100,
@@ -701,6 +740,7 @@ const KOLKATA_DISTRICT: District = {
   slug: "kolkata",
   name: "Kolkata",
   nameLocal: "কলকাতা",
+  names: { hi: "कोलकाता" },
   tagline: "Cultural Capital of India",
   taglineLocal: "ভারতের সংস্কৃতি রাজধানী",
   active: true,
@@ -720,6 +760,7 @@ const KOLKATA_DISTRICT: District = {
       slug: "kolkata-north",
       name: "North Kolkata",
       nameLocal: "উত্তর কলকাতা",
+      names: { hi: "उत्तर कोलकाता" },
       tagline: "Heritage & Literature Hub",
       population: 1200000,
       area: 55,
@@ -736,6 +777,7 @@ const KOLKATA_DISTRICT: District = {
       slug: "kolkata-south",
       name: "South Kolkata",
       nameLocal: "দক্ষিণ কলকাতা",
+      names: { hi: "दक्षिण कोलकाता" },
       tagline: "Modern & Residential Hub",
       population: 1400000,
       area: 60,
@@ -752,6 +794,7 @@ const KOLKATA_DISTRICT: District = {
       slug: "kolkata-central",
       name: "Central Kolkata",
       nameLocal: "মধ্য কলকাতা",
+      names: { hi: "मध्य कोलकाता" },
       tagline: "Commercial & Business Centre",
       population: 900000,
       area: 40,
@@ -767,6 +810,7 @@ const KOLKATA_DISTRICT: District = {
       slug: "kolkata-east",
       name: "East Kolkata",
       nameLocal: "পূর্ব কলকাতা",
+      names: { hi: "पूर्व कोलकाता" },
       tagline: "Wetlands & IT Corridor",
       population: 996694,
       area: 50,
@@ -868,6 +912,7 @@ const HYDERABAD_DISTRICT: District = {
   slug: "hyderabad",
   name: "Hyderabad",
   nameLocal: "హైదరాబాద్",
+  names: { hi: "हैदराबाद" },
   tagline: "City of Pearls",
   taglineLocal: "ముత్యాల నగరం",
   active: true,
@@ -886,7 +931,7 @@ const HYDERABAD_DISTRICT: District = {
   sexRatio: 954,
   taluks: [
     {
-      slug: "charminar", name: "Charminar", nameLocal: "చార్మినార్",
+      slug: "charminar", name: "Charminar", nameLocal: "చార్మినార్", names: { hi: "चारमीनार" },
       tagline: "Icon of Hyderabad", population: 260000, area: 8, villageCount: 0,
       villages: [
         { slug: "charminar-area", name: "Charminar", nameLocal: "చార్మినార్", population: 85000, pincode: "500002" },
@@ -896,7 +941,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "secunderabad", name: "Secunderabad", nameLocal: "సికింద్రాబాద్",
+      slug: "secunderabad", name: "Secunderabad", nameLocal: "సికింద్రాబాద్", names: { hi: "सिकंदराबाद" },
       tagline: "Twin City", population: 305000, area: 15, villageCount: 0,
       villages: [
         { slug: "secunderabad-junction", name: "Secunderabad Junction", nameLocal: "సికింద్రాబాద్ జంక్షన్", population: 95000, pincode: "500003" },
@@ -906,7 +951,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "nampally", name: "Nampally", nameLocal: "నాంపల్లి",
+      slug: "nampally", name: "Nampally", nameLocal: "నాంపల్లి", names: { hi: "नामपल्ली" },
       tagline: "Administrative Center", population: 245000, area: 11, villageCount: 0,
       villages: [
         { slug: "abids", name: "Abids", nameLocal: "అబిడ్స్", population: 65000, pincode: "500001" },
@@ -916,7 +961,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "khairatabad", name: "Khairatabad", nameLocal: "ఖైరతాబాద్",
+      slug: "khairatabad", name: "Khairatabad", nameLocal: "ఖైరతాబాద్", names: { hi: "खैरताबाद" },
       tagline: "Legislative District", population: 210000, area: 9, villageCount: 0,
       villages: [
         { slug: "secretariat", name: "Secretariat", nameLocal: "సచివాలయం", population: 45000, pincode: "500004" },
@@ -926,7 +971,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "amberpet", name: "Amberpet", nameLocal: "అంబర్‌పేట్",
+      slug: "amberpet", name: "Amberpet", nameLocal: "అంబర్‌పేట్", names: { hi: "अंबरपेट" },
       tagline: "Heart of Central Hyderabad", population: 320000, area: 12, villageCount: 0,
       villages: [
         { slug: "amberpet-centre", name: "Amberpet", nameLocal: "అంబర్‌పేట్", population: 100000, pincode: "500013" },
@@ -936,7 +981,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "asifnagar", name: "Asifnagar", nameLocal: "ఆసిఫ్‌నగర్",
+      slug: "asifnagar", name: "Asifnagar", nameLocal: "ఆసిఫ్‌నగర్", names: { hi: "आसिफ़नगर" },
       tagline: "Old City Gateway", population: 280000, area: 15, villageCount: 0,
       villages: [
         { slug: "mehdipatnam", name: "Mehdipatnam", nameLocal: "మెహదీపట్నం", population: 95000, pincode: "500028" },
@@ -945,7 +990,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "bahadurpura", name: "Bahadurpura", nameLocal: "బహదూర్‌పురా",
+      slug: "bahadurpura", name: "Bahadurpura", nameLocal: "బహదూర్‌పురా", names: { hi: "बहादुरपुरा" },
       tagline: "Historic Old City", population: 468000, area: 22, villageCount: 0,
       villages: [
         { slug: "falaknuma", name: "Falaknuma", nameLocal: "ఫలక్‌నుమా", population: 120000, pincode: "500053" },
@@ -955,7 +1000,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "bandlaguda", name: "Bandlaguda", nameLocal: "బండ్లగూడ",
+      slug: "bandlaguda", name: "Bandlaguda", nameLocal: "బండ్లగూడ", names: { hi: "बंडलागुडा" },
       tagline: "Southern Growth Corridor", population: 350000, area: 30, villageCount: 0,
       villages: [
         { slug: "bandlaguda-centre", name: "Bandlaguda", nameLocal: "బండ్లగూడ", population: 120000, pincode: "500005" },
@@ -964,7 +1009,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "golkonda", name: "Golkonda", nameLocal: "గోల్కొండ",
+      slug: "golkonda", name: "Golkonda", nameLocal: "గోల్కొండ", names: { hi: "गोलकोंडा" },
       tagline: "Fort of Diamonds", population: 310000, area: 20, villageCount: 0,
       villages: [
         { slug: "golkonda-fort", name: "Golkonda Fort", nameLocal: "గోల్కొండ కోట", population: 80000, pincode: "500008" },
@@ -973,7 +1018,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "himayatnagar", name: "Himayatnagar", nameLocal: "హిమాయత్‌నగర్",
+      slug: "himayatnagar", name: "Himayatnagar", nameLocal: "హిమాయత్‌నగర్", names: { hi: "हिमायतनगर" },
       tagline: "Commercial Hub", population: 220000, area: 10, villageCount: 0,
       villages: [
         { slug: "himayatnagar-centre", name: "Himayatnagar", nameLocal: "హిమాయత్‌నగర్", population: 75000, pincode: "500029" },
@@ -982,7 +1027,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "musheerabad", name: "Musheerabad", nameLocal: "ముషీరాబాద్",
+      slug: "musheerabad", name: "Musheerabad", nameLocal: "ముషీరాబాద్", names: { hi: "मुशीराबाद" },
       tagline: "Cultural Crossroads", population: 295000, area: 14, villageCount: 0,
       villages: [
         { slug: "musheerabad-centre", name: "Musheerabad", nameLocal: "ముషీరాబాద్", population: 90000, pincode: "500048" },
@@ -991,7 +1036,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "saidabad", name: "Saidabad", nameLocal: "సాయిదాబాద్",
+      slug: "saidabad", name: "Saidabad", nameLocal: "సాయిదాబాద్", names: { hi: "सईदाबाद" },
       tagline: "Musi River Banks", population: 275000, area: 16, villageCount: 0,
       villages: [
         { slug: "saidabad-centre", name: "Saidabad", nameLocal: "సాయిదాబాద్", population: 90000, pincode: "500059" },
@@ -1000,7 +1045,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "ameerpet", name: "Ameerpet", nameLocal: "అమీర్‌పేట్",
+      slug: "ameerpet", name: "Ameerpet", nameLocal: "అమీర్‌పేట్", names: { hi: "अमीरपेट" },
       tagline: "Coaching Hub of India", population: 59000, area: 4, villageCount: 0,
       villages: [
         { slug: "ameerpet-centre", name: "Ameerpet", nameLocal: "అమీర్‌పేట్", population: 30000, pincode: "500016" },
@@ -1008,7 +1053,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "tirumalagiri", name: "Tirumalagiri", nameLocal: "తిరుమలగిరి",
+      slug: "tirumalagiri", name: "Tirumalagiri", nameLocal: "తిరుమలగిరి", names: { hi: "तिरुमलगिरी" },
       tagline: "Cantonment Heritage", population: 180000, area: 12, villageCount: 0,
       villages: [
         { slug: "tirumalagiri-centre", name: "Tirumalagiri", nameLocal: "తిరుమలగిరి", population: 60000, pincode: "500015" },
@@ -1017,7 +1062,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "maredpally", name: "Maredpally", nameLocal: "మారేడ్‌పల్లి",
+      slug: "maredpally", name: "Maredpally", nameLocal: "మారేడ్‌పల్లి", names: { hi: "मारेडपल्ली" },
       tagline: "Secunderabad Core", population: 195000, area: 10, villageCount: 0,
       villages: [
         { slug: "maredpally-centre", name: "Maredpally", nameLocal: "మారేడ్‌పల్లి", population: 70000, pincode: "500026" },
@@ -1026,7 +1071,7 @@ const HYDERABAD_DISTRICT: District = {
       ],
     },
     {
-      slug: "shaikpet", name: "Shaikpet", nameLocal: "షైక్‌పేట్",
+      slug: "shaikpet", name: "Shaikpet", nameLocal: "షైక్‌పేట్", names: { hi: "शैकपेट" },
       tagline: "HITEC City Gateway", population: 230000, area: 18, villageCount: 0,
       villages: [
         { slug: "shaikpet-centre", name: "Shaikpet", nameLocal: "షైక్‌పేట్", population: 75000, pincode: "500008" },
@@ -1130,15 +1175,15 @@ export const INDIA_STATES: State[] = [
           { slug: "haveli", name: "Haveli", nameLocal: "हवेली" },
           { slug: "pune-city", name: "Pune City", nameLocal: "पुणे शहर" },
           { slug: "khed", name: "Khed", nameLocal: "खेड" },
-          { slug: "maval", name: "Maval", nameLocal: "मावळ" },
-          { slug: "mulshi", name: "Mulshi", nameLocal: "मुळशी" },
+          { slug: "maval", name: "Maval", nameLocal: "मावळ", names: { hi: "मावल" } },
+          { slug: "mulshi", name: "Mulshi", nameLocal: "मुळशी", names: { hi: "मुलशी" } },
           { slug: "bhor", name: "Bhor", nameLocal: "भोर" },
           { slug: "velhe", name: "Velhe", nameLocal: "वेल्हे" },
           { slug: "junnar", name: "Junnar", nameLocal: "जुन्नर" },
           { slug: "ambegaon", name: "Ambegaon", nameLocal: "आंबेगाव" },
           { slug: "shirur", name: "Shirur", nameLocal: "शिरूर" },
           { slug: "daund", name: "Daund", nameLocal: "दौंड" },
-          { slug: "indapur", name: "Indapur", nameLocal: "इंदापूर" },
+          { slug: "indapur", name: "Indapur", nameLocal: "इंदापूर", names: { hi: "इंदापुर" } },
           { slug: "baramati", name: "Baramati", nameLocal: "बारामती" },
           { slug: "purandar", name: "Purandar", nameLocal: "पुरंदर" },
         ],
