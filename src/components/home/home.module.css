@@ -418,6 +418,107 @@
   .inlineLink { min-height: 44px; }
 }
 
+/* ───────────────────────── Latest data ───────────────────────── */
+
+.bandRest {
+  padding-top: 16px;
+}
+.latestGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (max-width: 1023px) {
+  .latestGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .latestGrid { grid-template-columns: minmax(0, 1fr); }
+}
+.latestCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+}
+.latestTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ftp-text-2);
+}
+.latestIcon {
+  color: var(--ftp-brand);
+  flex-shrink: 0;
+}
+.latestTitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+.latestTitleLink:hover {
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+}
+/* Makes the whole card clickable through the title link, without
+   nesting the SourcePill link inside another link. */
+.latestCard {
+  position: relative;
+}
+.latestTitleLink::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ftp-radius-card);
+}
+.latestMeta {
+  position: relative; /* sits above the stretched title link */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.latestHeadline {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--ftp-text);
+  overflow-wrap: anywhere;
+}
+.latestSupport {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+  overflow-wrap: anywhere;
+}
+.latestSkeleton {
+  height: 44px;
+  border-radius: var(--ftp-radius-tile);
+}
+.latestNone {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+.latestNone a {
+  color: var(--ftp-brand-deep);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .button,
   .districtRow { transition: none; }

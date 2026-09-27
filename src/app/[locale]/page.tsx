@@ -34,7 +34,7 @@ import YourDistrictBand from "@/components/home/YourDistrictBand";
 import HomeHero from "@/components/home/HomeHero";
 import IndiaMapCard from "@/components/home/IndiaMapCard";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
-import LiveDataShowcase from "@/components/home/redesign-v2/LiveDataShowcase";
+import LatestData from "@/components/home/LatestData";
 import HowItWorks from "@/components/home/redesign-v2/HowItWorks";
 import CommunitySection from "@/components/home/redesign-v2/CommunitySection";
 import SupportBanner from "@/components/home/redesign-v2/SupportBanner";
@@ -175,7 +175,7 @@ export default async function HomePage({
 
         {/* 6. The rest of the page */}
         <div className={`${styles.band} ${styles.bandRest}`}>
-          <LiveDataShowcase locale={locale} districts={activeDistricts} />
+          <LatestData locale={locale} districts={activeDistricts} />
           <HowItWorks />
           <CommunitySection locale={locale} />
           <SupportBanner locale={locale} />
