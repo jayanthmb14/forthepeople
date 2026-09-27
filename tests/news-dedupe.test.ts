@@ -3,7 +3,7 @@
  * © 2026 Jayanth M B. MIT License.
  */
 import { describe, expect, it } from "vitest";
-import { dedupeStories } from "@/lib/news-dedupe";
+import { dedupeStories, findCanonicalStory, planTitleDuplicates, titleKey } from "@/lib/news-dedupe";
 
 const n = (title: string, publishedAt: string) => ({ title, publishedAt });
 
@@ -45,5 +45,34 @@ describe("dedupeStories (real Mandya headlines, Sept 2026)", () => {
       ["mandya"],
     );
     expect(out).toHaveLength(3); // the two tanker reports are one story
+  });
+});
+
+describe("ingest-time checks (src/scraper/jobs/news.ts)", () => {
+  it("titleKey ignores punctuation the same way for stored and incoming titles", () => {
+    expect(titleKey("Karnataka: Lokayukta raids in Mandya, Kalaburagi over assets")).toBe(
+      titleKey("Karnataka Lokayukta raids — Mandya / Kalaburagi over assets"),
+    );
+    expect(titleKey("Karnataka: Lokayukta raids in Mandya")).toBe("karnataka lokayukta raids mandya");
+  });
+
+  it("findCanonicalStory points a reworded copy at the earliest original within 24 h", () => {
+    const stored = [
+      { id: "a", title: "Karnataka: Lokayukta raids in Mandya, Kalaburagi over alleged disproportionate assets cases", publishedAt: "2026-09-22T05:33Z", duplicateOf: null },
+      { id: "b", title: "Karnataka Lokayukta raids Mandya, Kalaburagi over assets claims", publishedAt: "2026-09-22T05:40Z", duplicateOf: "a" },
+      { id: "c", title: "Mandya: KRS dam water level rises", publishedAt: "2026-09-22T06:00Z", duplicateOf: null },
+    ];
+    expect(findCanonicalStory("India News | Karnataka: Lokayukta Raids in Mandya, Kalaburagi over Alleged Disproportionate Assets Cases", "2026-09-22T07:00Z", stored, ["mandya"])).toBe("a");
+    expect(findCanonicalStory("Karnataka: Lokayukta raids in Mandya, Kalaburagi over alleged disproportionate assets cases", "2026-09-25T07:00Z", stored, ["mandya"])).toBeNull();
+    expect(findCanonicalStory("Heavy rain lashes Mysuru", "2026-09-22T07:00Z", stored, ["mandya"])).toBeNull();
+  });
+
+  it("planTitleDuplicates keeps the original (fetched first), not the latest copy", () => {
+    const plan = planTitleDuplicates([
+      { id: "new", title: "Mandya: KRS dam water level rises to 120 ft", fetchedAt: "2026-09-23T00:00Z" },
+      { id: "old", title: "Mandya — KRS dam water level rises to 120 ft", fetchedAt: "2026-09-22T00:00Z" },
+      { id: "x", title: "Short", fetchedAt: "2026-09-22T00:00Z" },
+    ]);
+    expect(plan).toEqual([{ keepId: "old", removeIds: ["new"] }]);
   });
 });

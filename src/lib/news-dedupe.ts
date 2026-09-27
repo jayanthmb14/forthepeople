@@ -61,3 +61,75 @@ export function dedupeStories<T extends { title: string; publishedAt: Date | str
   }
   return kept.map((k) => k.row);
 }
+
+// ── Ingest-time checks (src/scraper/jobs/news.ts) ────────────
+// Sept 2026: the ingest checks compared a punctuation-free key with the
+// stored title through SQL `contains`, so "Karnataka: Lokayukta raids …"
+// never matched "karnataka lokayukta raids …" — every re-worded or
+// re-punctuated copy of a story was stored again. The stored titles are
+// now keyed the same way in memory.
+
+/** The first five words of 4+ letters, punctuation as spaces: the "same headline, other URL" key. */
+export function titleKey(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3)
+    .slice(0, 5)
+    .join(" ");
+}
+
+export interface StoredStory {
+  id: string;
+  title: string;
+  publishedAt: Date | string;
+  duplicateOf: string | null;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The earliest stored original (not itself a copy) of the same story
+ * published within 24 h of this one, or null. Used to set NewsItem.duplicateOf.
+ */
+export function findCanonicalStory(
+  title: string,
+  publishedAt: Date | string,
+  stored: readonly StoredStory[],
+  drop: string[] = [],
+): string | null {
+  const tokens = headlineTokens(title, drop);
+  const at = new Date(publishedAt).getTime();
+  let best: { id: string; at: number } | null = null;
+  for (const s of stored) {
+    if (s.duplicateOf) continue;
+    const sAt = new Date(s.publishedAt).getTime();
+    if (Math.abs(sAt - at) > DAY_MS) continue;
+    if (!sameStory(tokens, headlineTokens(s.title, drop))) continue;
+    if (!best || sAt < best.at) best = { id: s.id, at: sAt };
+  }
+  return best?.id ?? null;
+}
+
+/**
+ * Stored rows sharing a normalised 50-character title prefix: the original
+ * (fetched first) stays, the later copies go. Pure; the cron deletes them.
+ */
+export function planTitleDuplicates<T extends { id: string; title: string; fetchedAt: Date | string }>(
+  rows: readonly T[],
+): Array<{ keepId: string; removeIds: string[] }> {
+  const groups = new Map<string, T[]>();
+  for (const r of rows) {
+    const key = r.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().slice(0, 50);
+    if (key.length < 15) continue;
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+  const out: Array<{ keepId: string; removeIds: string[] }> = [];
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    const sorted = [...g].sort((a, b) => new Date(a.fetchedAt).getTime() - new Date(b.fetchedAt).getTime() || a.id.localeCompare(b.id));
+    out.push({ keepId: sorted[0].id, removeIds: sorted.slice(1).map((r) => r.id) });
+  }
+  return out;
+}
