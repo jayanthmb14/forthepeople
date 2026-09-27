@@ -48,6 +48,7 @@ import { ShareDonut, TopBarList, type DonutSlice } from "@/components/money/visu
 import { useMoney } from "@/components/money/useMoney";
 import { useModuleText } from "@/i18n/client";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { useDistrictName } from "@/i18n/client";
 
 interface AccessResponse {
   tendersActive: boolean;
@@ -99,6 +100,9 @@ export default function TendersPage({
   params: Promise<{ locale: string; state: string; district: string }>;
 }) {
   const { locale, state: stateSlug, district: districtSlug } = use(params);
+  // Local-script name on a matching-language page (ಮಂಡ್ಯ on /kn/). Called
+  // before any early return (rules of hooks).
+  const localDistrictName = useDistrictName(stateSlug, districtSlug);
   const t = useTranslations("page_tenders");
   const tm = useTranslations("page_money");
   const mt = useModuleText();
@@ -172,7 +176,7 @@ export default function TendersPage({
   }
 
   const tendersBase = `/${locale}/${stateSlug}/${districtSlug}/tenders`;
-  const districtName = listQuery.data?.districtName ?? stats.data?.districtName ?? "";
+  const districtName = localDistrictName;
 
   // ── The pictures + chart, from the stats API only ─────────────────────
   const live = stats.data?.live;

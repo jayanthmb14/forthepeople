@@ -26,7 +26,6 @@
 
 import React from "react";
 import { useFormat } from "@/i18n/client";
-import { getDistrict } from "@/lib/constants/districts";
 import { scriptLang } from "@/lib/utils/script-lang";
 
 /** Slice colours in order: neighbours always differ in lightness. */
@@ -39,17 +38,8 @@ export const HUE_SHADES = [
   "color-mix(in srgb, var(--hue-pop) 35%, #fff)",
 ];
 
-/**
- * The district's name for use inside sentences: the local-script name
- * when it is in the reader's language (ಮಂಡ್ಯ on /kn), else the English
- * registry name, else the slug in title case.
- */
-export function useDistrictName(state: string, district: string): string {
-  const { locale } = useFormat();
-  const d = getDistrict(state, district);
-  if (!d) return district.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return d.nameLocal && scriptLang(d.nameLocal) === locale ? d.nameLocal : d.name;
-}
+// The district name for sentences: one shared implementation.
+export { useDistrictName } from "@/i18n/client";
 
 /**
  * Pick which of a (name, local-script name) pair leads, for a data name

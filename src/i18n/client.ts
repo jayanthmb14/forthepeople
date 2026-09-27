@@ -13,7 +13,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { intlLocale } from "./languages";
 import { SIDEBAR_MODULES, tierFromPriority, type TierLabel } from "@/lib/constants/sidebar-modules";
-import { INDIA_STATES } from "@/lib/constants/districts";
+import { INDIA_STATES, getDistrict } from "@/lib/constants/districts";
+import { scriptLang } from "@/lib/utils/script-lang";
 
 const TIER_KEY: Record<TierLabel, string> = {
   "Civic duty": "civic",
@@ -92,4 +93,19 @@ export function usePlaceText() {
       return tLabel.has(text) ? tLabel(text) : text;
     },
   };
+}
+
+/**
+ * A district's name for use inside sentences, in the reader's language
+ * (docs/I18N.md §3B): the local-script name when it is written in the page
+ * language (ಮಂಡ್ಯ on /kn/), else the English registry name, else `fallback`
+ * (e.g. a name from an API), else the slug in title case — a sentence never
+ * shows "bengaluru-urban". The one shared copy; module pages import it from
+ * here.
+ */
+export function useDistrictName(stateSlug: string, districtSlug: string, fallback?: string | null): string {
+  const locale = useLocale();
+  const d = getDistrict(stateSlug, districtSlug);
+  if (d?.nameLocal && d.nameLocal !== d.name && scriptLang(d.nameLocal) === locale) return d.nameLocal;
+  return d?.name ?? (fallback || districtSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
 }
