@@ -12,7 +12,7 @@ import HueScope from "@/components/district/HueScope";
 import Sidebar from "@/components/layout/Sidebar";
 import RelatedModules from "@/components/layout/RelatedModules";
 import DistrictBar from "@/components/district/shell/DistrictBar";
-import FeedbackFloatingButton from "@/components/common/FeedbackFloatingButton";
+import { ShellBottom, ShellTop } from "@/components/district/shell/ShellSlots";
 import "./district-shell.css";
 import { getDistrict, getState } from "@/lib/constants/districts";
 import { generateDistrictMetadata, localName } from "@/lib/seo";
@@ -97,21 +97,26 @@ export default async function DistrictLayout({
         {/* Sidebar — laptops and PCs (≥ 1024 px) only */}
         <Sidebar locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
-        {/* Main content, then "See also" links to the modules people mix
-            up with this one (registry `related`; nothing on the overview). */}
+        {/* Main content (v5):
+              ShellTop     — stale-data notice for the open module
+              the page
+              See also     — modules people mix up with this one
+              ShellBottom  — "Check this data" (#verify) with the one
+                             "Report a mistake" button (it replaces the
+                             floating "Report issue" pill)
+            The overview places its own glance row and verification panel. */}
         <main
           className="ftp-dshell-main"
           style={{ flex: 1, minWidth: 0 }}
           role="main"
           aria-label={ts("mainAria", { district: localName(locale, districtData!) })}
         >
+          <ShellTop stateSlug={stateSlug} districtSlug={districtSlug} />
           {children}
           <RelatedModules locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
+          <ShellBottom stateSlug={stateSlug} districtSlug={districtSlug} />
         </main>
       </HueScope>
-
-      {/* Floating feedback button — bottom-right on all district pages */}
-      <FeedbackFloatingButton stateSlug={stateSlug} districtSlug={districtSlug} />
     </div>
   );
 }

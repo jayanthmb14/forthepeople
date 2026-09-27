@@ -58,6 +58,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_tenders",
   "page_transport",
   "page_update-log",
+  "page_verify",
   "page_village",
   "page_vote",
   "page_water",
