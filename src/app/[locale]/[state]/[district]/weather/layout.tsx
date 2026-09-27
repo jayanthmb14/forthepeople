@@ -11,8 +11,8 @@ import { generateModuleMetadata, generateModuleJsonLd } from "@/lib/seo";
 type Params = Promise<{ locale: string; state: string; district: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { state, district } = await params;
-  return generateModuleMetadata("weather", state, district);
+  const { locale, state, district } = await params;
+  return generateModuleMetadata("weather", state, district, locale);
 }
 
 export default async function WeatherLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string; state: string; district: string }> }) {

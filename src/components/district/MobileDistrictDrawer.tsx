@@ -2,17 +2,21 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * MobileDistrictDrawer — the "All modules" bottom sheet on phones
- * (Design v3, CONCEPT-v3 §6).
+ * MobileDistrictDrawer — the "All modules" bottom sheet on phones and
+ * tablets (below 1024 px, where there is no sidebar).
  *
- * Slides up from the bottom (no animation — Design v3 has no decorative
- * motion) and lists every district module in the same 5 groups as the
- * desktop left rail: Civic duty · Money & resources · Daily services ·
- * Accountability · Community & people. Each row is 44 px tall with a
- * 16 px Lucide icon; the current module gets the brand tint.
+ * Lists every district module in the same nine groups as the sidebar
+ * (docs/MODULE-MAP.md): 🏠 Start here · 🙋 You can help · 👥 Who runs it ·
+ * 💰 Money & projects · 🤲 Help for you · 🚰 Daily needs · 🌾 Farming ·
+ * 📚 Know your district · 🔍 Check our work. Each group is headed by its
+ * emoji and translated name; each row is 44 px tall with the module emoji
+ * in its own hue and the translated name. The current module gets its hue.
  *
- * Driven by SIDEBAR_MODULES via getTieredModules() — adding a module to
- * the registry adds it here automatically. The component name is kept
+ * Phone: one column. Tablet: the rows flow into 2–3 columns inside a
+ * group, so the whole list fits without long scrolling.
+ *
+ * Driven by the registry (getGroupedModules) — adding a module to
+ * SIDEBAR_MODULES adds it here automatically. The component name is kept
  * from v2 (it used to be a left drawer) so imports keep working.
  */
 
@@ -24,8 +28,9 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { getTieredModules } from "@/lib/constants/sidebar-modules";
+import { getGroupedModules } from "@/lib/constants/sidebar-modules";
 import { hueClass } from "@/lib/design/hues";
+import { useModuleGroupName } from "@/components/layout/useModuleGroups";
 
 interface Props {
   open: boolean;
@@ -38,7 +43,7 @@ interface Props {
   activeSlug?: string;
 }
 
-const TIERS = getTieredModules();
+const GROUPS = getGroupedModules();
 
 export function MobileDistrictDrawer({
   open,
@@ -51,6 +56,7 @@ export function MobileDistrictDrawer({
 }: Props) {
   const ts = useTranslations("sidebar");
   const mt = useModuleText();
+  const groupName = useModuleGroupName();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   // Lock page scroll while the sheet is open.
@@ -88,7 +94,7 @@ export function MobileDistrictDrawer({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={`${districtName}: all modules`}
+      aria-label={ts("allModulesFor", { district: districtName })}
       style={{
         position: "fixed",
         inset: 0,
@@ -102,24 +108,30 @@ export function MobileDistrictDrawer({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxHeight: "80vh",
+          maxHeight: "85vh",
           display: "flex",
           flexDirection: "column",
           background: "var(--ftp-surface)",
           borderTop: "1px solid var(--ftp-border)",
-          borderRadius: "var(--ftp-radius-card) var(--ftp-radius-card) 0 0",
+          borderRadius: "20px 20px 0 0",
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,.35)",
           paddingBottom: "max(12px, env(safe-area-inset-bottom))",
         }}
       >
+        {/* Grab handle, so the sheet reads as a sheet */}
+        <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+          <span style={{ width: 40, height: 4, borderRadius: 999, background: "var(--ftp-border-strong)" }} />
+        </div>
+
         {/* Sheet header */}
         <div
           style={{
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-            padding: "8px 8px 8px 16px", borderBottom: "1px solid var(--ftp-border)",
+            padding: "4px 8px 8px 16px", borderBottom: "1px solid var(--ftp-border)",
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <p className="ftp-label">All modules</p>
+            <p className="ftp-label">{ts("allModules")}</p>
             <p className="ftp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{districtName}</p>
           </div>
           <button
@@ -130,7 +142,7 @@ export function MobileDistrictDrawer({
             style={{
               width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
               border: "none", background: "transparent", color: "var(--ftp-text)", cursor: "pointer",
-              borderRadius: "var(--ftp-radius-tile)",
+              borderRadius: "var(--ftp-radius-tile)", flexShrink: 0,
             }}
           >
             <X size={20} aria-hidden />
@@ -138,45 +150,66 @@ export function MobileDistrictDrawer({
         </div>
 
         {/* Groups */}
-        <nav aria-label={ts("modules")} style={{ overflowY: "auto", padding: "4px 0 8px" }}>
-          {TIERS.map((tier) => (
-            <section key={tier.label} aria-label={mt.group(tier.label)}>
-              <h2 className="ftp-label" style={{ padding: "12px 16px 4px" }}>{mt.group(tier.label)}</h2>
-              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                {tier.modules.map((m) => {
-                  const href = m.slug === "overview" ? base : `${base}/${m.slug}`;
-                  const isActive = m.slug === current;
-                  return (
-                    <li key={m.slug}>
-                      <Link
-                        href={href}
-                        onClick={onClose}
-                        aria-current={isActive ? "page" : undefined}
-                        data-active={isActive ? "true" : undefined}
-                        className="ftp-rail-item"
-                        style={{
-                          display: "flex", alignItems: "center", gap: 12,
-                          minHeight: 44, padding: "0 16px", textDecoration: "none",
-                          fontSize: 13, lineHeight: "20px", fontWeight: 500,
-                          background: isActive ? "var(--ftp-brand-tint)" : "transparent",
-                          color: isActive ? "var(--ftp-brand-deep)" : "var(--ftp-text)",
-                        }}
-                      >
-                        <span
-                          aria-hidden
-                          className={`ftp-emoji ${hueClass(m.slug)}`}
-                          style={{ width: 28, height: 28, borderRadius: 9, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: "var(--hue-tint)" }}
+        <nav aria-label={ts("modules")} style={{ overflowY: "auto", padding: "4px 8px 8px" }}>
+          {GROUPS.map((group) => {
+            const name = groupName(group.key);
+            return (
+              <section key={group.key} aria-labelledby={`ftp-drawer-group-${group.key}`}>
+                <h2
+                  id={`ftp-drawer-group-${group.key}`}
+                  className="ftp-label"
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 8px 6px" }}
+                >
+                  <span aria-hidden className="ftp-emoji" style={{ fontSize: 14 }}>
+                    {group.emoji}
+                  </span>
+                  <span>{name}</span>
+                </h2>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    margin: 0,
+                    padding: 0,
+                    display: "grid",
+                    gap: 2,
+                    gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
+                  }}
+                >
+                  {group.modules.map((m) => {
+                    const href = m.slug === "overview" ? base : `${base}/${m.slug}`;
+                    const isActive = m.slug === current;
+                    return (
+                      <li key={m.slug} className={hueClass(m.slug)}>
+                        <Link
+                          href={href}
+                          onClick={onClose}
+                          aria-current={isActive ? "page" : undefined}
+                          data-active={isActive ? "true" : undefined}
+                          className="ftp-rail-item"
+                          style={{
+                            display: "flex", alignItems: "center", gap: 12,
+                            minHeight: 44, padding: "6px 8px", textDecoration: "none",
+                            borderRadius: 12,
+                            fontSize: 14, lineHeight: "20px", fontWeight: 500,
+                            color: "var(--ftp-text)",
+                          }}
                         >
-                          {m.emoji}
-                        </span>
-                        <span>{mt.label(m.slug)}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
+                          <span
+                            aria-hidden
+                            className="ftp-emoji"
+                            style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "var(--hue-tint)" }}
+                          >
+                            {m.emoji}
+                          </span>
+                          <span style={{ minWidth: 0 }}>{mt.label(m.slug)}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
         </nav>
       </div>
     </div>,

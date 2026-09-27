@@ -8,10 +8,15 @@
 //  Sidebar — the desktop left rail on district pages (CONCEPT-v3 §6)
 // ═══════════════════════════════════════════════════════════════════════
 //
+//  • Shown from 1024 px (Tailwind `lg:`). Below that, district pages use
+//    the 44 px module bar + "All modules" drawer (MobileDistrictChrome), so
+//    a tablet gets its full width for content (docs/LAYOUT.md).
 //  • 240 px wide, sticky under the 56 px header. Collapses to 56 px icons
 //    with native title tooltips.
-//  • Five groups (from sidebar-modules.ts) with 11 px uppercase labels.
-//  • Items are 36 px tall with the module emoji in a hue-tinted chip
+//  • Nine groups from the registry (docs/MODULE-MAP.md), each headed by its
+//    emoji and translated name (`moduleGroups.<key>`).
+//  • Items are at least 36 px tall (long names wrap, never cut off) with
+//    the module emoji in a hue-tinted chip
 //    (Design v4). Active = the module's hue tint + a 3 px hue bar.
 //  • A 6 px freshness dot on modules that have a live feed (weather,
 //    crops, water, news), fed by useFreshness — one request per district,
@@ -36,7 +41,8 @@ import {
 } from "lucide-react";
 import { hueClass } from "@/lib/design/hues";
 import type { LucideIcon } from "lucide-react";
-import { SIDEBAR_MODULES, getTieredModules, getOrderedSlugs } from "@/lib/constants/sidebar-modules";
+import { SIDEBAR_MODULES, getGroupedModules, getOrderedSlugs } from "@/lib/constants/sidebar-modules";
+import { useModuleGroupName } from "./useModuleGroups";
 import { useFreshness, MODULE_TO_FRESHNESS_KEY } from "@/hooks/useFreshness";
 import type { FreshnessStatus } from "@/hooks/useFreshness";
 
@@ -46,10 +52,11 @@ interface SidebarProps {
   districtSlug: string;
 }
 
-// Groups + flat order are derived from the priority field in
-// sidebar-modules.ts — no hardcoded slug lists live in this file.
-const SIDEBAR_GROUPS = getTieredModules().map((g) => ({
-  label: g.label,
+// Groups + flat order come from the registry (sidebar-modules.ts) — no
+// hardcoded slug lists live in this file.
+const SIDEBAR_GROUPS = getGroupedModules().map((g) => ({
+  key: g.key,
+  emoji: g.emoji,
   slugs: g.modules.map((m) => m.slug),
 }));
 
@@ -110,18 +117,22 @@ function rowStyle(collapsed: boolean, active: boolean, color?: string): CSSPrope
     alignItems: "center",
     justifyContent: collapsed ? "center" : "flex-start",
     gap: 10,
-    height: ITEM_HEIGHT,
+    // Collapsed: a fixed 36 px icon row. Expanded: at least 36 px, and a
+    // long name ("Ask the government (RTI)", or longer in Kannada) wraps
+    // onto a second line instead of being cut off (docs/I18N.md §4).
+    height: collapsed ? ITEM_HEIGHT : undefined,
+    minHeight: ITEM_HEIGHT,
     margin: "0 8px",
-    padding: collapsed ? 0 : "0 10px",
+    padding: collapsed ? 0 : "6px 10px",
     borderRadius: "var(--ftp-radius-tile)",
     textDecoration: "none",
     background: active ? "var(--ftp-brand-tint)" : "transparent",
     color: active ? "var(--ftp-brand)" : (color ?? "var(--ftp-text-2)"),
     fontFamily: "var(--ftp-font-sans)",
     fontSize: 13,
-    lineHeight: "20px",
+    lineHeight: "18px",
     fontWeight: active ? 500 : 400,
-    whiteSpace: "nowrap",
+    whiteSpace: collapsed ? "nowrap" : "normal",
     overflow: "hidden",
   };
 }
@@ -142,7 +153,7 @@ function UtilityLink({
   return (
     <Link href={href} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} className="ftp-rail-item" style={rowStyle(collapsed, false, color)}>
       <Icon size={ICON_SIZE} aria-hidden style={{ flexShrink: 0 }} />
-      {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>}
+      {!collapsed && <span style={{ flex: 1, minWidth: 0 }}>{label}</span>}
     </Link>
   );
 }
@@ -150,6 +161,7 @@ function UtilityLink({
 export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProps) {
   const ts = useTranslations("sidebar");
   const mt = useModuleText();
+  const groupName = useModuleGroupName();
   const pathname = usePathname();
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
   const freshness = useFreshness(stateSlug, districtSlug);
@@ -171,10 +183,10 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
     const fresh = hasFeed ? freshness.forModule(slug) : null;
     const dotTitle = hasFeed
       ? fresh?.age
-        ? `Data ${fresh.age}`
+        ? ts("dataAge", { age: fresh.age })
         : freshness.loading
-          ? "Checking data age"
-          : "Data age unknown"
+          ? ts("checkingAge")
+          : ts("ageUnknown")
       : undefined;
 
     return (
@@ -207,7 +219,7 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         >
           {mod.emoji}
         </span>
-        {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{mt.label(slug)}</span>}
+        {!collapsed && <span style={{ flex: 1, minWidth: 0 }}>{mt.label(slug)}</span>}
         {hasFeed && (
           <span
             aria-hidden
@@ -246,7 +258,7 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         scrollbarWidth: "thin",
         scrollbarColor: "var(--ftp-border) transparent",
       }}
-      className="hidden md:block"
+      className="hidden lg:block"
     >
       {/* Collapse / expand toggle */}
       <div
@@ -288,9 +300,16 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
           <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>{ALL_SLUGS.map(renderModule)}</div>
         ) : (
           SIDEBAR_GROUPS.map((group) => (
-            <div key={group.label}>
-              <div className="ftp-label" style={{ padding: "14px 18px 4px" }}>
-                {mt.group(group.label)}
+            <div key={group.key} role="group" aria-labelledby={`ftp-rail-group-${group.key}`}>
+              <div
+                id={`ftp-rail-group-${group.key}`}
+                className="ftp-label"
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 18px 4px" }}
+              >
+                <span aria-hidden className="ftp-emoji" style={{ fontSize: 13 }}>
+                  {group.emoji}
+                </span>
+                <span>{groupName(group.key)}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{group.slugs.map(renderModule)}</div>
             </div>

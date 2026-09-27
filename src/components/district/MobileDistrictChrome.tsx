@@ -2,19 +2,20 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * MobileDistrictChrome — phone-only module bar for district pages
- * (Design v3, CONCEPT-v3 §6).
+ * MobileDistrictChrome — the module bar for district pages on phones and
+ * tablets (below 1024 px).
  *
  *   ┌──────────────────────────────────────────────┐
- *   │ [icon] Crop Prices              All modules ▾ │   44 px, under the header
+ *   │ [🌾] Crop prices                All modules ▾ │   44 px, under the header
  *   └──────────────────────────────────────────────┘
  *
  * Tapping "All modules" opens MobileDistrictDrawer (a bottom sheet with
- * the 5 module groups). It also still listens for the window event
- * `ftp:open-modules-drawer`, which HeaderBar's mobile menu dispatches,
- * so that entry point keeps working.
+ * the nine module groups). It also still listens for the window event
+ * `ftp:open-modules-drawer`, so other entry points can open it.
  *
- * Hidden at ≥ 768 px (Tailwind `md:hidden`) — desktop has the left rail.
+ * Hidden at ≥ 1024 px (Tailwind `lg:hidden`) — laptops and PCs have the
+ * sidebar. Tablets (640–1023) used to get the sidebar from 768 px, which
+ * left ~500 px for the page; they now get this bar and the full width.
  */
 
 "use client";
@@ -68,7 +69,7 @@ export function MobileDistrictChrome({
     <>
       <nav
         aria-label={ts("currentModule")}
-        className="md:hidden"
+        className="lg:hidden"
         style={{
           display: "flex",
           alignItems: "center",

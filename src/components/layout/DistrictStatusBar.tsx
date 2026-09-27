@@ -29,7 +29,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useFormat, usePlaceText } from "@/i18n/client";
+import { useDistrictName, useFormat, usePlaceText } from "@/i18n/client";
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useFreshness } from "@/hooks/useFreshness";
@@ -116,6 +116,8 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
   const parts = pathname?.split("/").filter(Boolean) ?? [];
   const slug = districtSlug ?? parts[2] ?? "";
   const stateKey = stateSlug ?? parts[1] ?? "";
+  // ಮಂಡ್ಯ on /kn, Mandya on /en (the local-script name when it matches the page language).
+  const shownDistrict = useDistrictName(stateKey, slug, districtName);
 
   // IST clock, ticks every second.
   useEffect(() => {
@@ -204,7 +206,7 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
       {/* District · State (truncates first on narrow phones) */}
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
         <span className="ftp-emoji" aria-hidden style={{ marginRight: 4 }}>📍</span>
-        <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{districtName}</span>
+        <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{shownDistrict}</span>
         {stateName && <span>, {place.state(stateName, stateName)}</span>}
       </span>
 
@@ -229,7 +231,7 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
         type="button"
         className="ftp-fresh-btn"
         title={title}
-        aria-label={`Data freshness: ${text}`}
+        aria-label={t("freshnessAria", { status: text })}
         aria-expanded={open}
         aria-controls={popoverId}
         onMouseEnter={() => setOpen(true)}

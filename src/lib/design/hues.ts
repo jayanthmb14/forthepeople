@@ -39,18 +39,26 @@ export const HUE_HEX: Record<Hue, { hue: string; deep: string; pop: string; tint
 
 /** Module slug → hue. Anything not listed (overview, unknown) is brand blue. */
 export const MODULE_HUE: Record<string, Hue> = {
-  // Civic duty
-  responsibility: "green", overview: "blue", leadership: "indigo", elections: "violet", "citizen-corner": "pink",
-  // Money & resources
-  finance: "amber", infrastructure: "orange", tenders: "indigo", industries: "slate", schemes: "violet",
-  crops: "green", farm: "lime", water: "cyan", "gram-panchayat": "teal",
-  // Daily services
-  jjm: "sky", power: "yellow", transport: "indigo", health: "rose", schools: "violet", housing: "orange",
-  services: "teal", offices: "slate", weather: "sky", alerts: "rose",
-  // Accountability
-  police: "blue", courts: "violet", "file-rti": "amber", rti: "indigo", "data-sources": "slate", "update-log": "slate",
-  // Community & people
-  news: "blue", exams: "violet", contributors: "pink", "famous-personalities": "amber", population: "teal", map: "green",
+  // Grouped as in the sidebar (docs/MODULE-MAP.md). Pairs that link to each
+  // other ("See also") have different hues so the two tiles look different.
+  // 🏠 Start here
+  overview: "blue", news: "blue", alerts: "rose", weather: "sky",
+  // 🙋 You can help
+  responsibility: "green", "citizen-corner": "pink", "file-rti": "amber", rti: "indigo",
+  // 👥 Who runs it
+  leadership: "indigo", elections: "violet", "gram-panchayat": "teal", courts: "violet", police: "blue",
+  // 💰 Money & projects
+  finance: "amber", infrastructure: "orange", tenders: "indigo", industries: "slate",
+  // 🤲 Help for you
+  schemes: "violet", housing: "orange", services: "teal", offices: "slate", exams: "violet",
+  // 🚰 Daily needs
+  jjm: "sky", water: "cyan", power: "yellow", transport: "indigo", health: "rose", schools: "violet",
+  // 🌾 Farming
+  crops: "green", farm: "lime",
+  // 📚 Know your district
+  population: "teal", map: "green", "famous-personalities": "amber", contributors: "pink",
+  // 🔍 Check our work
+  "data-sources": "slate", "update-log": "slate",
 };
 
 export function getModuleHue(slug: string | null | undefined): Hue {
