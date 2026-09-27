@@ -17,17 +17,24 @@
 // back to the opener on close, Escape and the backdrop close it, the page
 // behind does not scroll. Motion is off under prefers-reduced-motion.
 //
+// Design v5 "Calm": the header chip and the row labels show small
+// monochrome Lucide icons, never emoji. Pass `icon={User}` / a row `icon`;
+// old call sites that pass `emoji="👤"` get the matching icon
+// (src/lib/design/emoji-icons.ts) or nothing.
+//
 //   const [open, setOpen] = useState<Leader | null>(null);
 //   <button onClick={() => setOpen(leader)}>…</button>
-//   <DetailSheet open={!!open} onClose={() => setOpen(null)} title={open?.name} emoji="👤">
-//     <DetailList rows={[{ emoji: "🏛️", label: t("role"), value: open.role }]} />
+//   <DetailSheet open={!!open} onClose={() => setOpen(null)} title={open?.name} icon={User}>
+//     <DetailList rows={[{ icon: Landmark, label: t("role"), value: open.role }]} />
 //   </DetailSheet>
 "use client";
 
 import React, { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { KitIcon, emojiIcon } from "@/lib/design/emoji-icons";
 
 export function DetailSheet({
   open,
@@ -35,6 +42,7 @@ export function DetailSheet({
   title,
   subtitle,
   emoji,
+  icon,
   media,
   hueClassName,
   titleLang,
@@ -46,8 +54,10 @@ export function DetailSheet({
   title: React.ReactNode;
   /** One plain line under the title ("MLA for Mandya since 2023"). */
   subtitle?: React.ReactNode;
-  /** One emoji for the header chip (ignored when `media` is given). */
+  /** v4 prop: mapped to its Lucide icon for the header chip, never drawn as an emoji. */
   emoji?: string;
+  /** Lucide icon for the header chip (ignored when `media` is given). */
+  icon?: LucideIcon;
   /** A photo or illustration instead of the emoji chip. */
   media?: React.ReactNode;
   /** e.g. "ftp-hue-violet" to colour the panel in a module hue. */
@@ -101,6 +111,7 @@ export function DetailSheet({
   }, [open, onClose]);
 
   if (!open || typeof document === "undefined") return null;
+  const chipIcon = icon ?? emojiIcon(emoji);
 
   return createPortal(
     <div className={`ftp-sheet-root ${hueClassName ?? ""}`}>
@@ -108,9 +119,9 @@ export function DetailSheet({
       <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="ftp-sheet">
         <div className="ftp-sheet-grip" aria-hidden />
         <header className="ftp-sheet-head">
-          {media ?? (emoji ? <span className="ftp-sheet-emoji ftp-emoji" aria-hidden>{emoji}</span> : null)}
+          {media ?? (chipIcon ? <span className="ftp-sheet-emoji" aria-hidden><KitIcon icon={chipIcon} size={20} /></span> : null)}
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h2 id={titleId} data-sheet-title tabIndex={-1} lang={titleLang} className="ftp-display ftp-sheet-title">
+            <h2 id={titleId} data-sheet-title tabIndex={-1} lang={titleLang} className="ftp-sheet-title">
               {title}
             </h2>
             {subtitle && <p className="ftp-sheet-sub">{subtitle}</p>}
@@ -127,25 +138,31 @@ export function DetailSheet({
   );
 }
 
-/** Label / value rows for a DetailSheet ("🏛️ Role — MLA, Mandya"). Rows with no value are skipped. */
+/**
+ * Label / value rows for a DetailSheet ("Role — MLA, Mandya"). Rows with no
+ * value are skipped. v5: a row's `icon` (or its old `emoji`, mapped to an
+ * icon) is drawn as a small monochrome icon; list rows never show emoji.
+ */
 export function DetailList({
   rows,
 }: {
-  rows: { emoji?: string; label: React.ReactNode; value: React.ReactNode | null | undefined; lang?: string }[];
+  rows: { icon?: LucideIcon; emoji?: string; label: React.ReactNode; value: React.ReactNode | null | undefined; lang?: string }[];
 }) {
   const shown = rows.filter((r) => r.value !== null && r.value !== undefined && r.value !== "");
   if (shown.length === 0) return null;
   return (
     <dl className="ftp-detail-list">
-      {shown.map((r, i) => (
-        <div key={i} className="ftp-detail-row">
-          <dt>
-            {r.emoji && <span className="ftp-emoji" aria-hidden>{r.emoji} </span>}
-            {r.label}
-          </dt>
-          <dd lang={r.lang}>{r.value}</dd>
-        </div>
-      ))}
+      {shown.map((r, i) => {
+        return (
+          <div key={i} className="ftp-detail-row">
+            <dt>
+              <KitIcon icon={r.icon} emoji={r.emoji} size={14} />
+              <span>{r.label}</span>
+            </dt>
+            <dd lang={r.lang}>{r.value}</dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }

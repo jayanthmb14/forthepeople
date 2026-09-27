@@ -31,6 +31,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_industries",
   "page_infrastructure",
   "page_jjm",
+  "page_kit",
   "page_leadership",
   "page_locked",
   "page_map",

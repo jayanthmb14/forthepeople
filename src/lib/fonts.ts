@@ -34,8 +34,10 @@ export const plusJakarta = localFont({
   fallback: ["system-ui", "-apple-system", "Segoe UI", "sans-serif"],
 });
 
-// Display face (Design v4) — headings and big numbers. Variable weight
-// 200–800 with optical sizing. Licence: SIL OFL 1.1.
+// Design v5 "Calm": Plus Jakarta Sans (above) is the face for everything —
+// text, headings, numbers. Bricolage Grotesque is used for ONE thing only:
+// the H1 of a page (`--ftp-font-h1`, `.ftp-h1`, `.ftp-page-title`). Variable
+// weight 200–800 with optical sizing. Licence: SIL OFL 1.1.
 export const bricolage = localFont({
   variable: "--font-bricolage",
   display: "swap",
@@ -46,6 +48,8 @@ export const bricolage = localFont({
   fallback: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
 });
 
+// JetBrains Mono: code-like text only (admin tools, IDs). Citizen-facing
+// numbers use Plus Jakarta with tabular figures (`.ftp-num`).
 export const jetBrains = localFont({
   variable: "--font-jetbrains",
   display: "swap",

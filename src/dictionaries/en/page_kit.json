@@ -1,0 +1,22 @@
+{
+  "staleTitle": "This data is {days, plural, one {# day} other {# days}} old.",
+  "staleBody": "The newest data we have is from {date}. We could not find newer data.",
+  "staleSource": "Check the source",
+  "unknownDate": "Date not published by the source.",
+  "aiSummary": "AI summary",
+  "confidence": "{n}% confidence",
+  "written": "Written",
+  "readMore": "Read more",
+  "showLess": "Show less",
+  "sourceN": "Source {n}",
+  "sentiment": {
+    "positive": "Positive",
+    "negative": "Negative",
+    "neutral": "Neutral"
+  },
+  "cached": "Cached",
+  "refresh": "Refresh data",
+  "noDataYet": "No data yet for this district.",
+  "pageActions": "Page actions",
+  "healthScore": "District health score"
+}

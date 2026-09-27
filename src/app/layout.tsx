@@ -201,7 +201,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={fontVariableClasses}
-      // The home-page intro sets data-intro on <html> before hydration.
+      // [locale]/layout.tsx sets lang/dir on <html> before hydration.
       suppressHydrationWarning
     >
       <head>

@@ -5,12 +5,27 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  District UI kit — Design v4 "Rang" (colour, depth, motion)
-//  v4 in one breath: every accent reads --hue / --hue-deep / --hue-pop /
-//  --hue-tint (set per module by HueScope), cards have soft depth and lift
-//  on hover, headings and big numbers use the display face, numbers count
-//  up once when they scroll into view, and reduced-motion turns it all off.
-//  The v3 notes below still hold for dates, sources and honesty.
+//  District UI kit — Design v5 "Calm" (docs/DESIGN-SYSTEM.md)
+//  v5 in one breath: a soft blue-white page, white cards with a thin cool
+//  border and a soft shadow, the module hue as pastel IDENTITY only (tint
+//  backgrounds, deep tone for small icons and numbers), Plus Jakarta for
+//  everything (Bricolage only for the page H1), subtle motion.
+//
+//  EMOJI RULE (v5): emoji appear ONLY as module identity — the sidebar
+//  item, the PageHeader chip and the overview tile. Kit components that
+//  used to draw an emoji (StatTile, Section, Explainer, ChartCard,
+//  EmptyState, Pictogram, HowItWorks, DetailSheet, DetailList,
+//  CountdownBar) still ACCEPT an `emoji` prop so no page breaks, but they
+//  draw a small monochrome Lucide icon for it instead (src/lib/design/
+//  emoji-icons.ts), or nothing when there is no calm equivalent. Headings
+//  (Section, ChartCard) draw nothing. Pass `icon={SomeLucideIcon}` to pick
+//  the icon yourself.
+//
+//  HONESTY (v5): every dataset shows its own date. When data is older than
+//  it should be, show <StaleNotice> ("This data is 160 days old … we could
+//  not find newer data"); when the source publishes no date, show
+//  <StaleNotice unknown>. PageHeader does both when given
+//  `freshness.maxAgeDays`.
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  HOW TO READ THIS FILE
@@ -21,10 +36,10 @@
 //
 //    • Colours come from CSS variables (`var(--ftp-…)`) declared in
 //      src/app/globals.css. There is NO hex colour anywhere in this file.
-//    • No shadows, no gradients, no emoji. Icons are Lucide, 16/18/20 px.
-//    • Three radii only: 12 px (card), 8 px (tile), 999 px (pill).
-//    • Text is Plus Jakarta Sans 400/500 (600 only for a page H1).
-//      Numbers are always JetBrains Mono 500 with tabular figures.
+//    • Soft shadows only (--ftp-shadow-1/2); no saturated gradients; emoji
+//      only as module identity (see above). Icons are Lucide, 14–20 px.
+//    • Three radii: 14 px (card), 12 px (tile, chip, button), 999 px (pill).
+//    • Text is Plus Jakarta Sans; numbers use tabular figures.
 //    • Every number that can go stale carries a date ("as of …") or a
 //      FreshnessPill. Nothing says "Live" unless the data is < 30 min old.
 //
@@ -41,6 +56,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getModuleMeta, moduleFromPath } from "@/lib/design/hues";
+import { KitIcon, emojiIcon } from "@/lib/design/emoji-icons";
 import { scriptLang } from "@/lib/utils/script-lang";
 import { useTranslations } from "next-intl";
 import { useFormat, useModuleText } from "@/i18n/client";
@@ -49,7 +65,10 @@ import {
   ArrowDownRight,
   ArrowLeft,
   ArrowUpRight,
+  CircleHelp,
+  Clock,
   ExternalLink,
+  Inbox,
   Minus,
   RefreshCw,
   Sparkles,
@@ -464,11 +483,6 @@ export function AsOfPeriod({ period, prefix = "As of" }: { period: string; prefi
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  PageHeader
-// ─────────────────────────────────────────────────────────────────────
-
-
-// ─────────────────────────────────────────────────────────────────────
 //  CountUp — a number that counts up once when 30 % of it is visible
 // ─────────────────────────────────────────────────────────────────────
 
@@ -546,26 +560,10 @@ export function CountUp({ value }: { value: string | number }) {
   );
 }
 
-/**
- * PageHeader — the top of every module page. Replaces ModuleHeader.
- *
- * Layout: back link → [40 px tinted icon] [H1 22/28 + local-script name]
- *                     [description 13/20] … right: FreshnessPill · SourcePill · actions
- *
- * @prop icon        Lucide icon for the module.
- * @prop title       Page title (the ONE h1 on the page).
- * @prop titleLocal  Local-script name from the dictionary (never machine-translated).
- * @prop description One short line of context.
- * @prop backHref    Where the back link goes (usually the district overview).
- * @prop backLabel   Text of the back link (default "Back to overview").
- * @prop freshness   { asOf, status?, thresholdHours? } — feeds a FreshnessPill.
- *                   thresholdHours = how many hours still count as "fresh"
- *                   (green) for this module; default 24. A weekly feed
- *                   might pass 168 so it is not amber on day two.
- * @prop source      { label, href? } — feeds a SourcePill.
- * @prop actions     Buttons on the right (CSV, Share, Compare) — see Toolbar.
- * @prop accent      Module accent for the icon tint (see ModuleAccent).
- */
+// ─────────────────────────────────────────────────────────────────────
+//  ModulePage · StaleNotice · PageHeader
+// ─────────────────────────────────────────────────────────────────────
+
 /**
  * The frame every module page sits in. Width and padding per device:
  *   phone (< 640)      full width, 16 px sides
@@ -579,6 +577,104 @@ export function ModulePage({ children, className }: { children: React.ReactNode;
   return <div className={`module-page ftp-module-page${className ? ` ${className}` : ""}`}>{children}</div>;
 }
 
+/** Whole days between a date and now (never negative). */
+function daysSince(d: Date, now: Date = new Date()): number {
+  return Math.max(0, Math.floor((now.getTime() - d.getTime()) / 86_400_000));
+}
+
+/**
+ * StaleNotice — the calm amber line that says, in plain words, that the data
+ * on this page is old and that we looked for newer data and found none.
+ *
+ *   <StaleNotice asOf="2026-04-20" source={{ label: "IMD", href }} />
+ *     → "This data is 160 days old. The newest data we have is from
+ *        20 Apr 2026. We could not find newer data. Check the source ↗"
+ *   <StaleNotice unknown />
+ *     → "Date not published by the source."  (neutral grey-blue, not amber)
+ *
+ * Never red, never a banner across the page: it sits under the page title
+ * (PageHeader renders it for you with `freshness.maxAgeDays`) or above a
+ * card whose dataset is late. Renders nothing when `asOf` is missing and
+ * `unknown` is not set.
+ *
+ * @prop asOf     Date of the newest data we have.
+ * @prop unknown  The source publishes no date at all.
+ * @prop source   Optional { label, href } — adds "Check the source" link.
+ */
+export function StaleNotice({
+  asOf,
+  unknown,
+  source,
+  className,
+}: {
+  asOf?: string | Date | null;
+  unknown?: boolean;
+  source?: { label: string; href?: string };
+  className?: string;
+}) {
+  const tp = useTranslations("page_kit");
+  const f = useFormat();
+  const cls = ["ftp-stale", className].filter(Boolean).join(" ");
+  if (unknown) {
+    return (
+      <p role="note" className={cls} data-kind="unknown" style={{ margin: 0 }}>
+        <CircleHelp size={16} aria-hidden />
+        <span>{tp("unknownDate")}</span>
+      </p>
+    );
+  }
+  const d = toDate(asOf);
+  if (!d) return null;
+  const date = d.toLocaleDateString(f.intl, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  return (
+    <p role="note" className={cls} data-kind="stale" style={{ margin: 0 }}>
+      <Clock size={16} aria-hidden />
+      <span suppressHydrationWarning>
+        <strong>{tp("staleTitle", { days: daysSince(d) })}</strong> {tp("staleBody", { date })}
+        {source?.href && (
+          <>
+            {" "}
+            <a href={source.href} target="_blank" rel="noopener noreferrer" title={source.label}>
+              {tp("staleSource")}
+            </a>
+          </>
+        )}
+      </span>
+    </p>
+  );
+}
+
+/**
+ * PageHeader — the top of every module page (v5 "Calm").
+ *
+ * A calm pastel band: white washing into the module tint, a small chip with
+ * the module emoji (the one place, with the sidebar and the overview tile,
+ * where an emoji is allowed), the H1 in the deep module hue, one line of
+ * description, then the freshness pill, source pill and actions. About
+ * 120–150 px tall on a phone. No gradient slab, no watermark, no group chip.
+ * The back link is drawn only on nested pages (a tender inside Tenders, a
+ * taluk, admin): on a module's own page the sidebar and the phone module
+ * bar already lead back to the overview.
+ *
+ * @prop icon        Lucide icon for the module (used when there is no emoji).
+ * @prop title       Page title (the ONE h1 on the page).
+ * @prop titleLocal  Local-script name from the dictionary (never machine-translated).
+ * @prop description One short line of context.
+ * @prop freshness   { asOf, status?, thresholdHours?, maxAgeDays? } — feeds a
+ *                   FreshnessPill. thresholdHours = hours that still count as
+ *                   "fresh" (green); default 24. `maxAgeDays` turns on the
+ *                   StaleNotice: when the data is older than that many days
+ *                   the calm amber notice appears under the band; when
+ *                   `asOf` is explicitly `null` (loaded, but the source
+ *                   gives no date) it says "Date not published by the source".
+ *                   `undefined` (still loading) shows nothing.
+ * @prop source      { label, href? } — feeds a SourcePill (and the notice link).
+ * @prop actions     Buttons on the right (CSV, Share, Compare) — see Toolbar.
+ * @prop emoji       Emoji for the chip. Defaults to the module's registry emoji.
+ * @prop backHref    Where the back link goes (nested pages only, see above).
+ * @prop backLabel   Text of the back link (default "Back to overview").
+ * @prop accent      Kept for old call sites; colours come from the page hue.
+ */
 export function PageHeader({
   icon: Icon,
   title,
@@ -597,14 +693,15 @@ export function PageHeader({
   title: string;
   titleLocal?: string;
   description?: string;
+  /** Back link target; drawn only on nested pages (not on a module's own page). */
   backHref?: string;
   backLabel?: string;
-  freshness?: { asOf?: string | Date | null; status?: FreshnessStatus; thresholdHours?: number };
+  freshness?: { asOf?: string | Date | null; status?: FreshnessStatus; thresholdHours?: number; maxAgeDays?: number };
   source?: { label: string; href?: string };
   actions?: React.ReactNode;
-  /** v3 prop, kept for old call sites. v4 colours come from the page hue. */
+  /** v3 prop, kept for old call sites. Colours come from the page hue. */
   accent?: ModuleAccent;
-  /** Emoji for the header tile. Defaults to the module's registry emoji. */
+  /** Emoji for the header chip. Defaults to the module's registry emoji. */
   emoji?: string;
   children?: React.ReactNode;
 }) {
@@ -614,9 +711,12 @@ export function PageHeader({
   const pathname = usePathname();
   const slug = moduleFromPath(pathname);
   const meta = getModuleMeta(slug);
-  const tileEmoji = emoji ?? meta?.emoji;
-  const group = meta ? mt.groupOf(slug) : null;
-  const back = !backLabel || backLabel === "Back to overview" ? t("backToOverview") : backLabel;
+  // /<locale>/<state>/<district>/<module> is a module's own page: the sidebar
+  // and the phone module bar already lead back, so no back link there.
+  const depth = (pathname ?? "").split("/").filter(Boolean).length;
+  const showBack = Boolean(backHref) && !(depth === 4 && slug !== "overview");
+  const back = !backLabel || backLabel === "Back to overview" || backLabel === "Back to Overview" ? t("backToOverview") : backLabel;
+  const chipEmoji = emoji ?? meta?.emoji;
   // Pages that pass the registry's English title/description get the
   // translated one automatically; anything else is shown as passed.
   const shownTitle = meta && title === meta.label ? mt.label(slug) : title;
@@ -624,107 +724,47 @@ export function PageHeader({
   // The regional-language name is hidden when it already IS the title
   // (e.g. the Kannada UI on a Karnataka page).
   const shownLocal = titleLocal && titleLocal !== shownTitle ? titleLocal : undefined;
-  const hasMeta = Boolean(freshness || source || actions || children);
+  const hasMeta = Boolean(freshness?.asOf || source || actions || children);
+
+  // Stale / unknown-date notice (only when the page opts in with maxAgeDays).
+  let notice: React.ReactNode = null;
+  if (freshness?.maxAgeDays !== undefined) {
+    if (freshness.asOf === null) {
+      notice = <StaleNotice unknown className="ftp-page-stale" />;
+    } else {
+      const d = toDate(freshness.asOf);
+      if (d && daysSince(d) > freshness.maxAgeDays) {
+        notice = <StaleNotice asOf={d} source={source} className="ftp-page-stale" />;
+      }
+    }
+  }
+
   return (
-    <header style={{ marginBottom: 24 }}>
-      {backHref && (
-        <Link
-          href={backHref}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            lineHeight: "20px",
-            color: "var(--ftp-text-2)",
-            textDecoration: "none",
-            marginBottom: 12,
-          }}
-        >
+    <header className="ftp-page-header">
+      {showBack && backHref && (
+        <Link href={backHref} className="ftp-page-back">
           <ArrowLeft size={14} aria-hidden />
           {back}
         </Link>
       )}
-      {/* The band: the module's hue as a diagonal gradient, a big emoji
-          tile, a faint watermark of the module icon, white type. */}
-      <div
-        className="ftp-rise ftp-band"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          borderRadius: 22,
-          padding: "clamp(18px, 3vw, 28px)",
-          background:
-            "radial-gradient(420px 220px at 88% 0%, rgba(255,255,255,0.22), transparent 70%), linear-gradient(135deg, var(--hue) 0%, var(--hue-deep) 100%)",
-          color: "#fff",
-          boxShadow: "0 22px 44px -26px color-mix(in srgb, var(--hue) 85%, transparent)",
-        }}
-      >
-        <Icon
-          aria-hidden
-          size={200}
-          strokeWidth={1.25}
-          style={{ position: "absolute", right: -28, bottom: -52, opacity: 0.13, transform: "rotate(-12deg)", color: "#fff" }}
-        />
-        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-          <div
-            aria-hidden
-            className="ftp-pop"
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 18,
-              background: "rgba(255,255,255,0.18)",
-              border: "1px solid rgba(255,255,255,0.32)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              backdropFilter: "blur(6px)",
-              ["--i" as string]: 2,
-            }}
-          >
-            {tileEmoji ? <span className="ftp-emoji" style={{ fontSize: 32 }}>{tileEmoji}</span> : <Icon size={28} />}
-          </div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            {group && (
-              <span
-                style={{
-                  display: "inline-block",
-                  margin: "0 0 8px",
-                  padding: "2px 10px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.16)",
-                  border: "1px solid rgba(255,255,255,0.28)",
-                  fontSize: 12,
-                  lineHeight: "18px",
-                  fontWeight: 600,
-                }}
-              >
-                {group}
-              </span>
-            )}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-              <h1
-                className="ftp-display"
-                style={{ fontSize: "clamp(26px, 3.4vw, 34px)", lineHeight: 1.1, fontWeight: 700, color: "#fff", margin: 0, textWrap: "balance" }}
-              >
-                {shownTitle}
-              </h1>
-              {shownLocal && (
-                <span lang={scriptLang(shownLocal)} style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
-                  {shownLocal}
-                </span>
-              )}
-            </div>
-            {shownDesc && (
-              <p style={{ fontSize: 14, lineHeight: "21px", margin: "6px 0 0", opacity: 0.92, maxWidth: 680 }}>{shownDesc}</p>
-            )}
-          </div>
+      {/* Grid: chip + title on the first row; description and pills under
+          the title (full width on phones, so they wrap less). */}
+      <div className="ftp-page-band ftp-rise">
+        <span aria-hidden className="ftp-page-chip">
+          {chipEmoji ? <span className="ftp-emoji">{chipEmoji}</span> : <Icon size={20} />}
+        </span>
+        <div className="ftp-page-titlerow">
+          <h1 className="ftp-page-title">{shownTitle}</h1>
+          {shownLocal && (
+            <span lang={scriptLang(shownLocal)} className="ftp-page-local">
+              {shownLocal}
+            </span>
+          )}
         </div>
+        {shownDesc && <p className="ftp-page-desc">{shownDesc}</p>}
         {hasMeta && (
-          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
-            {freshness && (
+          <div className="ftp-page-meta">
+            {freshness?.asOf && (
               <FreshnessPill asOf={freshness.asOf} status={freshness.status} thresholdHours={freshness.thresholdHours} />
             )}
             {source && <SourcePill label={source.label} href={source.href} />}
@@ -733,6 +773,7 @@ export function PageHeader({
           </div>
         )}
       </div>
+      {notice}
     </header>
   );
 }
@@ -742,12 +783,15 @@ export function PageHeader({
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * StatTile — one big honest number.
+ * StatTile — one big honest number on a white tile.
  *
- *   LABEL (11 px uppercase)          ← optional 13 px icon on the left
- *   1,94,428  unit                   ← mono 28/32 (24 on phone)
- *   sub line · trend arrow           ← 13 px text-2
- *   As of 12 Sep · SourcePill        ← only when provided
+ *   [icon] Label (12 px, sentence case)   ← optional small Lucide icon chip
+ *   1,94,428  unit                        ← 28/34 tabular, deep module hue (24 on phone)
+ *   sub line · trend arrow                ← 13 px text-2
+ *   As of 12 Sep · SourcePill             ← only when provided
+ *
+ * v5: `emoji` is still accepted but draws the matching monochrome Lucide
+ * icon (src/lib/design/emoji-icons.ts), or nothing — never the emoji.
  *
  * @prop label   Short name of the figure.
  * @prop value   The number (already formatted) or a string like "—".
@@ -781,7 +825,7 @@ export function StatTile({
   asOfPeriod?: string;
   trend?: "up" | "down" | "neutral";
   icon?: LucideIcon;
-  /** Emoji in a tinted chip beside the label (v4). Wins over `icon`. */
+  /** v4 prop. v5 draws the matching Lucide icon instead (or nothing); `icon` wins. */
   emoji?: string;
   source?: { label: string; href?: string };
   /** Count the number up when it scrolls into view (default true). */
@@ -789,29 +833,26 @@ export function StatTile({
 }) {
   const tk = useTranslations("kit");
   const TrendIcon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : trend === "neutral" ? Minus : null;
+  const labelIcon = Icon ?? emojiIcon(emoji);
   return (
     <div
       style={{
-        // Tinted KPI tile (vault note 48): accent 7 % → white at 135°,
-        // border in the accent at ~22 %, number in the deep accent.
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 8%, #fff) 0%, #fff 72%)",
-        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+        // v5: a plain white tile; the module hue shows only in the small
+        // icon chip and the number.
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-tile)",
         boxShadow: "var(--ftp-shadow-1)",
         padding: "14px 16px",
         minWidth: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        {emoji ? (
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 28, height: 28, fontSize: 16, borderRadius: 9 }}>
-            {emoji}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        {labelIcon && (
+          <span className="ftp-icon-chip" aria-hidden style={{ width: 26, height: 26, borderRadius: 8 }}>
+            <KitIcon icon={labelIcon} size={14} />
           </span>
-        ) : Icon ? (
-          <span className="ftp-icon-chip" aria-hidden style={{ width: 28, height: 28, borderRadius: 9 }}>
-            <Icon size={15} />
-          </span>
-        ) : null}
+        )}
         <span style={LABEL}>{label}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
@@ -824,7 +865,7 @@ export function StatTile({
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
           {TrendIcon && (
             <>
-              <TrendIcon size={14} aria-hidden style={{ color: "var(--hue)" }} />
+              <TrendIcon size={14} aria-hidden style={{ color: "var(--hue-deep)" }} />
               <span className="sr-only">{trend === "up" ? tk("goingUp") : trend === "down" ? tk("goingDown") : tk("noChange")}</span>
             </>
           )}
@@ -883,20 +924,16 @@ export function SectionHeader({
   titleLocal?: string;
   action?: React.ReactNode;
   as?: "h2" | "h3";
-  /** v4: an emoji before the heading, e.g. "🌧️". */
+  /** v4 prop, kept for old call sites. v5 headings carry no emoji and no icon. */
   emoji?: string;
 }) {
+  void emoji;
   const Tag = as;
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "28px 0 14px", flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {emoji && (
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-            {emoji}
-          </span>
-        )}
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "28px 0 12px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
         <Tag className="ftp-h2" style={{ margin: 0 }}>{title}</Tag>
-        {titleLocal && <span lang={scriptLang(titleLocal)} style={{ fontSize: 22, lineHeight: "28px", color: "var(--hue-deep)" }}>{titleLocal}</span>}
+        {titleLocal && <span lang={scriptLang(titleLocal)} style={{ fontSize: 18, lineHeight: "24px", fontWeight: 600, color: "var(--hue-deep)" }}>{titleLocal}</span>}
       </div>
       {action && <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{action}</div>}
     </div>
@@ -923,22 +960,23 @@ export function Section({
   titleLocal?: string;
   action?: React.ReactNode;
   id?: string;
-  /** v4: an emoji chip before the heading. */
+  /** v4 prop, kept for old call sites. v5 headings carry no emoji (not drawn). */
   emoji?: string;
   children?: React.ReactNode;
 }) {
+  void emoji;
   return (
     <section id={id}>
-      <SectionHeader title={title} titleLocal={titleLocal} action={action} emoji={emoji} />
+      <SectionHeader title={title} titleLocal={titleLocal} action={action} />
       {children}
     </section>
   );
 }
 
 /**
- * Card — a surface with a 1 px border and 12 px radius. No shadow.
- * When `href` is given it becomes a link and its border darkens on hover
- * (150 ms). That hover is the only motion a card is allowed.
+ * Card — a white surface with a 1 px cool border, 14 px radius and a soft
+ * shadow. When `href` is given it becomes a link: on hover it lifts 1 px and
+ * its border takes the module hue. `tinted` gives a flat pastel wash.
  *
  * @prop padding  Inner padding in px (default 16).
  * @prop as       HTML tag when not a link ("div" | "article" | "section" | "li").
@@ -959,12 +997,12 @@ export function Card({
   href?: string;
   style?: React.CSSProperties;
   className?: string;
-  /** v4: a soft wash of the page hue (7 % → white) with a hue border. */
+  /** A flat pastel wash of the page hue with a soft hue border. */
   tinted?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "style" | "className">) {
   const base: React.CSSProperties = {
-    background: tinted ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)" : "var(--ftp-surface)",
-    border: tinted ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))" : "1px solid var(--ftp-border)",
+    background: tinted ? "color-mix(in srgb, var(--hue-tint) 65%, var(--ftp-surface))" : "var(--ftp-surface)",
+    border: tinted ? "1px solid color-mix(in srgb, var(--hue) 16%, var(--ftp-border))" : "1px solid var(--ftp-border)",
     borderRadius: "var(--ftp-radius-card)",
     boxShadow: "var(--ftp-shadow-1)",
     padding,
@@ -1070,7 +1108,7 @@ export function DataTable({
                     padding: pad,
                     textAlign: right ? "right" : "left",
                     background: "var(--hue-tint)",
-                    borderBottom: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
+                    borderBottom: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
                     width: col.width,
                   }}
                 >
@@ -1082,7 +1120,7 @@ export function DataTable({
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="ftp-dt-row" style={{ background: i % 2 === 1 ? "color-mix(in srgb, var(--hue-tint) 45%, #fff)" : "transparent" }}>
+            <tr key={i} className="ftp-dt-row" style={{ background: i % 2 === 1 ? "color-mix(in srgb, var(--hue-tint) 40%, var(--ftp-surface))" : "transparent" }}>
               {columns.map((col) => {
                 const num = col.numeric || col.mono;
                 const right = col.align === "right" || num;
@@ -1116,7 +1154,7 @@ export function DataTable({
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * ProgressBar — a 6 px track with a flat fill and a mono value.
+ * ProgressBar — a 6 px pastel track with a flat fill and a tabular value.
  *
  * @prop value / max  Fill = value ÷ max. Or pass `pct` directly (0–100).
  * @prop label        Text on the left of the value.
@@ -1143,12 +1181,12 @@ export function ProgressBar({
 }) {
   const raw = pctProp !== undefined ? pctProp : max > 0 ? ((value ?? 0) / max) * 100 : 0;
   const pct = Math.max(0, Math.min(100, Math.round(raw)));
-  // v4: the default ("brand") fill is the page hue as a soft gradient;
-  // semantic tones (live / warn / danger) stay solid.
+  // v5: the default ("brand") fill is the page hue, flat; semantic tones
+  // (live / warn / danger) stay solid in their own colour.
   const fill =
     color ??
     (tone === "brand"
-      ? "linear-gradient(90deg, var(--hue-pop), var(--hue))"
+      ? "var(--hue)"
       : tone in TONE_SOLID
         ? TONE_SOLID[tone as Tone]
         : accentColor(tone as ModuleAccent));
@@ -1166,7 +1204,7 @@ export function ProgressBar({
         aria-valuemax={100}
         aria-valuenow={pct}
         aria-label={label ?? `${pct}%`}
-        style={{ background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
+        style={{ background: "color-mix(in srgb, var(--hue-pop) 35%, var(--ftp-surface-2))", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
       >
         <div className="ftp-grow-x" style={{ background: fill, height: "100%", width: `${pct}%`, borderRadius: "var(--ftp-radius-pill)" }} />
       </div>
@@ -1187,7 +1225,7 @@ export function KpiRing({
   score,
   grade,
   size = 64,
-  label = "District health score",
+  label: labelProp,
 }: {
   score: number;
   grade: string;
@@ -1195,6 +1233,8 @@ export function KpiRing({
   label?: string;
 }) {
   const tKit = useTranslations("kit");
+  const tp = useTranslations("page_kit");
+  const label = labelProp ?? tp("healthScore");
   const stroke = Math.max(5, Math.round(size / 11));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -1305,33 +1345,38 @@ export function ErrorBlock({ message, onRetry }: { message?: string; onRetry?: (
  * @prop title   The honest sentence.
  * @prop body    Optional second line (what is being done about it).
  * @prop action  Optional link or button.
+ * @prop icon    Lucide icon for the chip (default Inbox).
+ * @prop emoji   v4 prop: mapped to its Lucide icon (never drawn as an emoji).
  */
 export function EmptyState({
   title,
   body,
   action,
-  emoji = "🗂️",
+  icon,
+  emoji,
 }: {
   title: string;
   body?: string;
   action?: React.ReactNode;
-  /** v4: a friendly emoji in a tinted circle (never a sad face). */
+  icon?: LucideIcon;
+  /** v4 prop. v5 draws the matching Lucide icon (default Inbox), never the emoji. */
   emoji?: string;
 }) {
+  const chipIcon = icon ?? emojiIcon(emoji) ?? Inbox;
   return (
     <div
       style={{
         display: "flex",
         alignItems: "flex-start",
         gap: 14,
-        padding: "20px",
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 5%, #fff) 0%, #fff 70%)",
-        border: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+        padding: "18px 20px",
+        background: "color-mix(in srgb, var(--hue-tint) 45%, var(--ftp-surface))",
+        border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
       }}
     >
-      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
-        {emoji}
+      <span className="ftp-icon-chip" aria-hidden style={{ width: 40, height: 40, borderRadius: 12, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)" }}>
+        <KitIcon icon={chipIcon} size={18} />
       </span>
       <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 15, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)", margin: 0 }}>{title}</p>
@@ -1355,8 +1400,9 @@ export interface ChipItem {
 }
 
 /**
- * Chips — a row of filter chips (32 px tall, 44 px on phones). The active
- * chip uses the brand tint; the rest are bordered surface pills.
+ * Chips — a row of filter chips (34 px tall, 44 px on phones, 12 px radius).
+ * The active chip is pastel: the module tint, deep-hue text and a hue
+ * border. The rest are white with a thin border (tint on hover).
  *
  * @prop items     [{ value, label, count? }]
  * @prop value     Currently selected value.
@@ -1391,23 +1437,23 @@ export function Chips({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
+              minHeight: 34,
               padding: "0 12px",
-              borderRadius: "var(--ftp-radius-pill)",
+              borderRadius: "var(--ftp-radius-tile)",
               border: `1px solid ${active ? "var(--hue)" : "var(--ftp-border)"}`,
-              background: active ? "var(--hue)" : "var(--ftp-surface)",
-              color: active ? "#fff" : "var(--ftp-text)",
-              boxShadow: active ? "0 6px 14px -8px color-mix(in srgb, var(--hue) 80%, transparent)" : "none",
+              background: active ? "var(--hue-tint)" : "var(--ftp-surface)",
+              color: active ? "var(--hue-deep)" : "var(--ftp-text)",
               transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
               fontFamily: "var(--ftp-font-sans)",
               fontSize: 13,
               lineHeight: "20px",
-              fontWeight: 500,
+              fontWeight: active ? 650 : 500,
               cursor: "pointer",
             }}
           >
             {item.label}
             {item.count !== undefined && (
-              <span className="ftp-num" style={{ fontSize: 12, color: active ? "#fff" : "var(--ftp-text-2)" }}>
+              <span className="ftp-num" style={{ fontSize: 12, color: active ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>
                 {item.count}
               </span>
             )}
@@ -1453,7 +1499,7 @@ export function ToolbarButton({
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    height: 32,
+    height: 34,
     padding: "0 12px",
     borderRadius: "var(--ftp-radius-tile)",
     border: "1px solid var(--ftp-border)",
@@ -1496,10 +1542,11 @@ export function ToolbarButton({
 }
 
 /**
- * PrimaryButton — the ONE loud button on a screen ("Open my district",
- * "Support this project"). Filled brand blue with `--ftp-surface` text,
- * radius 8, 40 px tall on desktop and 44 px on phones (`.ftp-btn`).
- * Hover darkens to `--ftp-brand-deep` (150 ms, `.ftp-btn-primary`).
+ * PrimaryButton — the ONE main button on a screen ("Explore all of India",
+ * "Open my district"). Filled brand blue with white text (5.2 : 1),
+ * radius 12, 40 px tall on desktop and 44 px on phones (`.ftp-btn`).
+ * Hover darkens to `--ftp-brand-deep` (`.ftp-btn-brand` in globals.css —
+ * the fill lives in the class, not inline, so the hover can win).
  *
  * Renders a Next.js <Link> when `href` is given, a real <button> otherwise.
  * Use ToolbarButton for everything secondary; keep one PrimaryButton per view.
@@ -1543,19 +1590,16 @@ export function PrimaryButton({
     height: 40,
     padding: "0 16px",
     borderRadius: "var(--ftp-radius-tile)",
-    border: "1px solid var(--ftp-brand)",
-    background: "var(--ftp-brand)",
-    color: "var(--ftp-surface)",
     fontFamily: "var(--ftp-font-sans)",
     fontSize: 14,
     lineHeight: "20px",
-    fontWeight: 500,
+    fontWeight: 600,
     textDecoration: "none",
     whiteSpace: "nowrap",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
   };
-  const className = "ftp-btn ftp-btn-primary";
+  const className = "ftp-btn ftp-btn-brand";
   const inner = (
     <>
       {Icon && <Icon size={16} aria-hidden />}
@@ -1587,9 +1631,10 @@ export function PrimaryButton({
  * Toolbar — a quiet row for CSV / Share / Compare buttons (ToolbarButton).
  * Put it at the end of a module page, after the SourcesFooter.
  */
-export function Toolbar({ children, label = "Page actions" }: { children: React.ReactNode; label?: string }) {
+export function Toolbar({ children, label }: { children: React.ReactNode; label?: string }) {
+  const tp = useTranslations("page_kit");
   return (
-    <div role="toolbar" aria-label={label} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "24px 0 0" }}>
+    <div role="toolbar" aria-label={label ?? tp("pageActions")} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "24px 0 0" }}>
       {children}
     </div>
   );
@@ -1731,6 +1776,7 @@ export function AIInsightBanner({
   sourceUrls?: string[];
   createdAt?: string;
 }) {
+  const tp = useTranslations("page_kit");
   const [expanded, setExpanded] = React.useState(false);
   const tone: Tone = sentiment === "positive" ? "live" : sentiment === "negative" ? "danger" : "neutral";
   const confidencePct = Math.round(confidence * 100);
@@ -1757,12 +1803,12 @@ export function AIInsightBanner({
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-            <span style={LABEL}>AI summary</span>
-            <Pill tone={tone}>{sentiment}</Pill>
-            <span className="ftp-num" style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{confidencePct}% confidence</span>
+            <span style={LABEL}>{tp("aiSummary")}</span>
+            <Pill tone={tone}>{tp(`sentiment.${sentiment}`)}</Pill>
+            <span className="ftp-num" style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{tp("confidence", { n: confidencePct })}</span>
             {created && (
               <span style={{ marginLeft: "auto" }}>
-                <AsOfText asOf={created} prefix="Written" />
+                <AsOfText asOf={created} prefix={tp("written")} />
               </span>
             )}
           </div>
@@ -1788,12 +1834,12 @@ export function AIInsightBanner({
               aria-expanded={expanded}
               style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-brand)", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--ftp-font-sans)" }}
             >
-              {expanded ? "Show less" : "Read more"}
+              {expanded ? tp("showLess") : tp("readMore")}
             </button>
             {expanded && sourceUrls && sourceUrls.length > 0 && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {sourceUrls.slice(0, 3).map((url, i) => (
-                  <SourcePill key={i} label={`Source ${i + 1}`} href={url} />
+                  <SourcePill key={i} label={tp("sourceN", { n: i + 1 })} href={url} />
                 ))}
               </div>
             )}
@@ -1816,11 +1862,12 @@ export function SeverityBadge({ severity }: { severity: string }) {
 
 /** CacheBadge — tiny "Cached" marker shown when a response came from cache. */
 export function CacheBadge({ fromCache }: { fromCache?: boolean }) {
+  const tp = useTranslations("page_kit");
   if (!fromCache) return null;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
       <RefreshCw size={11} aria-hidden />
-      Cached
+      {tp("cached")}
     </span>
   );
 }
@@ -1831,6 +1878,7 @@ export function CacheBadge({ fromCache }: { fromCache?: boolean }) {
  * @prop onRefetch  If given, renders a 24 px "Refresh" icon button.
  */
 export function LastUpdated({ updatedAt, onRefetch }: { updatedAt?: string | null; onRefetch?: () => void }) {
+  const tp = useTranslations("page_kit");
   if (!updatedAt) return null;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1839,8 +1887,8 @@ export function LastUpdated({ updatedAt, onRefetch }: { updatedAt?: string | nul
         <button
           type="button"
           onClick={onRefetch}
-          aria-label="Refresh data"
-          title="Refresh data"
+          aria-label={tp("refresh")}
+          title={tp("refresh")}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -1946,11 +1994,11 @@ export function SectionLabel({ children, action }: { children: React.ReactNode; 
 }
 
 /**
- * EmptyBlock (v2) → EmptyState. The v2 `icon` (an emoji string) is dropped.
+ * EmptyBlock (v2) → EmptyState. The v2 `icon` (an emoji string) is mapped to
+ * its Lucide icon like every other kit emoji (v5).
  */
 export function EmptyBlock({
   message,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   icon,
   body,
   action,
@@ -1960,7 +2008,8 @@ export function EmptyBlock({
   body?: string;
   action?: React.ReactNode;
 }) {
-  return <EmptyState title={message ?? "No data yet for this district."} body={body} action={action} />;
+  const tp = useTranslations("page_kit");
+  return <EmptyState title={message ?? tp("noDataYet")} body={body} action={action} emoji={icon} />;
 }
 
 /**
