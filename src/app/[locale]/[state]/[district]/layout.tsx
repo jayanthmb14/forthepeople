@@ -7,41 +7,26 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import { getTranslations } from "next-intl/server";
 import HueScope from "@/components/district/HueScope";
 import Sidebar from "@/components/layout/Sidebar";
+import RelatedModules from "@/components/layout/RelatedModules";
 import DistrictStatusBar from "@/components/layout/DistrictStatusBar";
 import { MobileBreadcrumbStrip } from "@/components/district/MobileBreadcrumbStrip";
 import { MobileDistrictChrome } from "@/components/district/MobileDistrictChrome";
 import FeedbackFloatingButton from "@/components/common/FeedbackFloatingButton";
 import { getDistrict, getState } from "@/lib/constants/districts";
+import { generateDistrictMetadata, localName } from "@/lib/seo";
 
 type Params = Promise<{ locale: string; state: string; district: string }>;
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
+// The district overview's title and description, in the page's language.
+// Module pages and taluk pages override it from their own layouts.
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { state: stateSlug, district: districtSlug } = await params;
-  const stateData = getState(stateSlug);
-  const districtData = getDistrict(stateSlug, districtSlug);
-
-  if (!districtData || !stateData) return {};
-
-  const title = `${districtData.name} District — Government Data Dashboard`;
-  const description = `Live government data for ${districtData.name} district, ${stateData.name}${districtData.tagline ? ` — ${districtData.tagline}` : ""}. Crop prices, water levels, schemes, budget, and more.`;
-
-  const canonicalUrl = `${BASE_URL}/en/${stateSlug}/${districtSlug}`;
-  return {
-    title,
-    description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      url: canonicalUrl,
-    },
-    twitter: { card: "summary_large_image", title, description },
-  };
+  const { locale, state: stateSlug, district: districtSlug } = await params;
+  return generateDistrictMetadata(stateSlug, districtSlug, locale);
 }
 
 export default async function DistrictLayout({
@@ -57,6 +42,7 @@ export default async function DistrictLayout({
   const stateData = getState(stateSlug);
   const districtData = getDistrict(stateSlug, districtSlug);
   if (!districtData) notFound();
+  const ts = await getTranslations({ locale, namespace: "sidebar" });
 
   // JSON-LD structured data
   const districtUrl = `${BASE_URL}/en/${stateSlug}/${districtSlug}`;
@@ -96,11 +82,11 @@ export default async function DistrictLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
-      {/* Mobile-only chrome: the 44 px module bar under the header
-          ("current module · All modules") plus the bottom sheet that lists
-          the 5 module groups. It also listens for the
-          'ftp:open-modules-drawer' window event dispatched by HeaderBar's
-          mobile menu. Hidden on desktop (the left rail takes over). */}
+      {/* Phone + tablet chrome (below 1024 px): the 44 px module bar under
+          the header ("current module · All modules") plus the bottom sheet
+          that lists the nine module groups. It also listens for the
+          'ftp:open-modules-drawer' window event. Hidden from 1024 px, where
+          the sidebar takes over (docs/LAYOUT.md). */}
       <MobileDistrictChrome
         locale={locale}
         stateSlug={stateSlug}
@@ -129,16 +115,18 @@ export default async function DistrictLayout({
           minHeight: "calc(100vh - 56px - 32px - 28px)", // viewport - header - status bar - disclaimer
         }}
       >
-        {/* Sidebar — desktop only */}
+        {/* Sidebar — laptops and PCs (≥ 1024 px) only */}
         <Sidebar locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
-        {/* Main content */}
+        {/* Main content, then "See also" links to the modules people mix
+            up with this one (registry `related`; nothing on the overview). */}
         <main
           style={{ flex: 1, minWidth: 0 }}
           role="main"
-          aria-label={`${districtData!.name} district data`}
+          aria-label={ts("mainAria", { district: localName(locale, districtData!) })}
         >
           {children}
+          <RelatedModules locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
         </main>
       </HueScope>
 

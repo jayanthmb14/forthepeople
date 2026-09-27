@@ -93,7 +93,8 @@
     "checkingAge": "डेटा कितना पुराना है, जाँच रहे हैं",
     "ageUnknown": "डेटा कितना पुराना है, पता नहीं",
     "seeAlso": "यह भी देखें",
-    "compareDistrict": "दूसरे जिले से तुलना करें"
+    "compareDistrict": "दूसरे जिले से तुलना करें",
+    "mainAria": "{district} जिले का डेटा"
   },
   "breadcrumb": {
     "noDistricts": "कोई जिला सूची में नहीं है"

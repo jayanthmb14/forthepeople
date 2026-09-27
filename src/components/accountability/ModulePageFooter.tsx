@@ -12,10 +12,14 @@
 //  module page ends the same way:
 //
 //    1. SourcesFooter  — the list of official sources (from getModuleSources)
-//    2. the "not an official government website" line (legal text, kept
-//       word for word from the old DataSourceBanner)
+//    2. the "not an official government website" line (the site-wide
+//       `site.disclaimer` text, translated)
 //    3. Toolbar        — Share + Compare with another district (+ CSV when
 //       the page passes one in through `actions`)
+//
+//  The "See also" links (registry `related`) are NOT rendered here: the
+//  district layout adds them under every module page (RelatedModules), so
+//  pages that do not use this footer get them too and nothing shows twice.
 //
 //  Used only by the police, courts, rti, file-rti, gram-panchayat,
 //  update-log, data-sources and tenders pages. Everything here is built
@@ -61,6 +65,8 @@ export default function ModulePageFooter({
   showCompare?: boolean;
 }) {
   const t = useTranslations("pageFooter");
+  const ts = useTranslations("sidebar");
+  const tSite = useTranslations("site");
   // Registry sources (names only) + how often each one refreshes.
   const info = getModuleSources(moduleSlug, state);
   const sources: SourceEntry[] = [
@@ -92,9 +98,8 @@ export default function ModulePageFooter({
   return (
     <>
       <SourcesFooter sources={sources} />
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 12 }}>
-        ForThePeople.in is NOT an official government website. Data aggregated from publicly available government
-        portals under India&apos;s Open Data Policy (NDSAP).
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 12, lineHeight: "18px", marginTop: 12 }}>
+        {tSite("disclaimer")}
       </p>
       {children}
       <Toolbar>
@@ -104,7 +109,7 @@ export default function ModulePageFooter({
         </ToolbarButton>
         {showCompare && (
           <ToolbarButton icon={GitCompare} href={compareHref}>
-            Compare with another district
+            {ts("compareDistrict")}
           </ToolbarButton>
         )}
       </Toolbar>

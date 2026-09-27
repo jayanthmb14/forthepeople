@@ -577,7 +577,8 @@
     "checkingAge": "Checking how old the data is",
     "ageUnknown": "Data age not known",
     "seeAlso": "See also",
-    "compareDistrict": "Compare with another district"
+    "compareDistrict": "Compare with another district",
+    "mainAria": "{district} district data"
   },
   "health": {
     "governance": "Governance",
