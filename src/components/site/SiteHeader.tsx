@@ -15,8 +15,10 @@
 //    • the emoji is passed in, and there is no module group chip —
 //      PageHeader reads the module from the URL, and these pages have none
 //      (on /en/about it would wrongly say "Civic duty");
-//    • no hooks and no "use client", so a server page can pass a Lucide
-//      icon component as `icon` (a client component could not receive it).
+//    • no "use client", so a server page can pass a Lucide icon component
+//      as `icon` (a client component could not receive it). Its only hook
+//      is next-intl's useTranslations, which works on the server and the
+//      client alike.
 //
 //  Colour comes from whatever hue class wraps the page (`ftp-hue-<name>`).
 //
@@ -29,8 +31,10 @@
 //   └───────────────────────────────────────────────────────────────┘
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { scriptLang } from "@/lib/utils/script-lang";
 
 export default function SiteHeader({
   emoji,
@@ -40,7 +44,7 @@ export default function SiteHeader({
   chip,
   icon: Icon,
   backHref,
-  backLabel = "Back to ForThePeople.in",
+  backLabel,
   children,
 }: {
   /** One emoji for the tile beside the title. */
@@ -56,10 +60,12 @@ export default function SiteHeader({
   /** Faint watermark icon in the corner. */
   icon?: LucideIcon;
   backHref?: string;
+  /** Defaults to the translated "Back to ForThePeople.in". */
   backLabel?: string;
   /** Pills or links in a row under the description. */
   children?: React.ReactNode;
 }) {
+  const t = useTranslations("page_site");
   return (
     <header style={{ marginBottom: 24 }}>
       {backHref && (
@@ -78,7 +84,7 @@ export default function SiteHeader({
           }}
         >
           <ArrowLeft size={14} aria-hidden />
-          {backLabel}
+          {backLabel ?? t("backHome")}
         </Link>
       )}
       <div
@@ -149,7 +155,7 @@ export default function SiteHeader({
                 {title}
               </h1>
               {titleLocal && (
-                <span lang="und" style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
+                <span lang={scriptLang(titleLocal) ?? "und"} style={{ fontSize: "clamp(18px, 2.2vw, 22px)", lineHeight: 1.2, fontWeight: 500, opacity: 0.85 }}>
                   {titleLocal}
                 </span>
               )}

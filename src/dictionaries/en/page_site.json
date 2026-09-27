@@ -1,0 +1,16 @@
+{
+  "backHome": "Back to ForThePeople.in",
+  "seeAlso": "See also",
+  "lastUpdated": "Last updated: {date}",
+  "legalEnglishNote": "The official version of the legal text on this page is in English.",
+  "tier": {
+    "founder": "Royal Contributor",
+    "patron": "India Patron",
+    "state": "{place} Champion",
+    "stateAny": "State Champion",
+    "district": "{place} Champion",
+    "districtAny": "District Champion",
+    "chai": "Chai Supporter",
+    "supporter": "Supporter"
+  }
+}
