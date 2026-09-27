@@ -245,9 +245,11 @@ export default function RootLayout({
           />
         )}
         {children}
+        {/* Service worker on real hosts only. On localhost it cached the
+            offline page, which then showed whenever the local server stopped. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); }); }`,
+            __html: `if ('serviceWorker' in navigator) { var h = location.hostname; if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local')) { navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }); } else { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js'); }); } }`,
           }}
         />
               </body>
