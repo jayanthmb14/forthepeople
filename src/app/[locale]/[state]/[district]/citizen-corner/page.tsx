@@ -5,16 +5,18 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Citizen Corner — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+//  Citizen Corner — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  PageHeader → AI summary → StatStrip → three tabs (AI tips · Helplines ·
-//  Your rights) → SourcesFooter → Toolbar (Share, Compare).
+//  PageHeader → AI summary → StatStrip of emoji tiles → the picture ("In
+//  simple words" about this week's tips with a pictogram of the urgent
+//  ones, beside a big tap-to-call 112 card) → three tabs (AI tips ·
+//  Helplines · Your rights) → SourcesFooter → Toolbar (Share, Compare).
 //
 //  Tips come from /api/ai/citizen-tips (generated weekly). Each tip card
-//  shows a Lucide icon for its category, a category Pill and an urgency
-//  Pill — no emoji, no coloured side stripe. Helplines are real tel: links
-//  with 44 px+ touch targets.
+//  shows a Lucide icon for its category in a hue chip, a category Pill and
+//  an urgency Pill (semantic colours). Helplines are real tel: links with
+//  44 px+ touch targets.
 //
 "use client";
 import { use, useState, useEffect } from "react";
@@ -29,6 +31,7 @@ import {
   SourcesFooter, Toolbar, ToolbarButton,
 } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
 import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
@@ -37,7 +40,7 @@ import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 // Urgency → label + Pill tone (colour appears only as the pill's text/dot).
-const URGENCY_LABEL: Record<string, string> = { now: "Do Now", soon: "This Month", general: "Good to Know" };
+const URGENCY_LABEL: Record<string, string> = { now: "Do now", soon: "This month", general: "Good to know" };
 const URGENCY_TONE: Record<string, Tone> = { now: "danger", soon: "warn", general: "neutral" };
 
 // Tip category → Lucide icon (replaces the emoji the AI returns in `icon`).
@@ -61,6 +64,9 @@ const HELPLINES: { name: string; number: string; icon: LucideIcon }[] = [
   { name: "PM KISAN Helpline", number: "155261", icon: Wheat },
 ];
 
+/** The one number for any emergency — shown big in the picture row. */
+const EMERGENCY = HELPLINES.find((h) => h.number === "112");
+
 function getRights(stateSlug: string): { right: string; desc: string; icon: LucideIcon }[] {
   const sc = getStateConfig(stateSlug);
   const isUrban = sc ? !sc.gramPanchayatApplicable : false;
@@ -78,7 +84,7 @@ function getRights(stateSlug: string): { right: string; desc: string; icon: Luci
 
 interface CitizenTip {
   category: string;
-  /** Emoji from the AI pipeline — kept in the data, not rendered (v3: no emoji in chrome). */
+  /** Emoji from the AI pipeline — kept in the data; cards show a Lucide icon per category. */
   icon: string;
   title: string;
   description: string;
@@ -87,27 +93,22 @@ interface CitizenTip {
 
 type Tab = "ai-tips" | "helplines" | "rights";
 
-/** 36 px icon square on the neutral surface-2 tint (quieter than the PageHeader icon). */
+/** 36 px icon chip in the page hue (tint background, hue icon). */
 function IconSquare({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <span
-      aria-hidden
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: "var(--ftp-radius-tile)",
-        background: "var(--ftp-surface-2)",
-        color: "var(--ftp-text-2)",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
+    <span aria-hidden className="ftp-icon-chip" style={{ width: 36, height: 36, borderRadius: 11 }}>
       <Icon size={18} />
     </span>
   );
 }
+
+/** Soft hue wash used by the helpline tiles and the 112 card (same as Card tinted). */
+const TINTED_SURFACE: React.CSSProperties = {
+  background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)",
+  border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+  borderRadius: "var(--ftp-radius-card)",
+  boxShadow: "var(--ftp-shadow-1)",
+};
 
 /** Share button: the phone's share sheet when available, else copy the link. */
 function SharePageButton() {
@@ -121,6 +122,38 @@ function SharePageButton() {
     }
   }
   return <ToolbarButton icon={Share2} onClick={share}>{copied ? "Link copied" : "Share"}</ToolbarButton>;
+}
+
+/** The big tap-to-call card for 112 (right half of the picture row). */
+function EmergencyCallCard({ helpline }: { helpline: { name: string; number: string } }) {
+  return (
+    <a
+      href={`tel:${helpline.number}`}
+      className="ftp-card-link"
+      aria-label={`Call ${helpline.name}: ${helpline.number}`}
+      style={{
+        ...TINTED_SURFACE,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        padding: 18,
+        textAlign: "center",
+        textDecoration: "none",
+        color: "var(--ftp-text)",
+      }}
+    >
+      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 56, height: 56, fontSize: 28, borderRadius: 18 }}>
+        🚨
+      </span>
+      <span className="ftp-bignum" style={{ fontSize: 48, lineHeight: 1, color: "var(--hue-deep)", marginTop: 4 }}>
+        {helpline.number}
+      </span>
+      <span style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600 }}>{helpline.name}</span>
+      <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>One number for any emergency. Tap to call.</span>
+    </a>
+  );
 }
 
 export default function CitizenCornerPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -150,12 +183,15 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
   }, [district, state]);
 
   const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
-    { id: "ai-tips", label: "AI Tips", icon: Sparkles },
+    { id: "ai-tips", label: "AI tips", icon: Sparkles },
     { id: "helplines", label: "Helplines", icon: Phone },
-    { id: "rights", label: "Your Rights", icon: Scale },
+    { id: "rights", label: "Your rights", icon: Scale },
   ];
 
   const tipsPeriod = tipsMonth && tipsYear ? `${MONTHS[tipsMonth - 1]} ${tipsYear}` : null;
+  const nowCount = tips.filter((t) => t.urgency === "now").length;
+  // Pictogram: one symbol per tip when there are few; otherwise out of 10.
+  const perTip = tips.length <= 12;
 
   return (
     <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
@@ -171,19 +207,61 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
 
       <StatStrip cols={3}>
         <StatTile
+          emoji="💡"
           label="Civic tips"
           value={tipsLoading ? "—" : tips.length}
           sub={tipsPeriod ? `For ${tipsPeriod}` : "Generated weekly"}
         />
         <StatTile
+          emoji="⏰"
           label="Do now"
-          value={tipsLoading ? "—" : tips.filter((t) => t.urgency === "now").length}
+          value={tipsLoading ? "—" : nowCount}
           sub="Urgent tips"
         />
-        <StatTile label="Helplines" value={HELPLINES.length} sub="Tap a number to call" />
+        <StatTile emoji="📞" label="Helplines" value={HELPLINES.length} sub="Tap a number to call" />
       </StatStrip>
 
-      {/* Tab switcher — real tabs, 44 px tall, brand underline on the active one */}
+      {/* The picture: this week's tips in one plain sentence with the urgent
+          ones lit as alarm clocks, beside a big tap-to-call 112. Drawn after
+          the tips have loaded so the row does not jump. */}
+      {!tipsLoading && (
+        tips.length > 0 ? (
+          <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+            <Card tinted padding={18}>
+              <Explainer title="In simple words" emoji="💡">
+                {tipsPeriod ? <>For {tipsPeriod}, there</> : "There"} {tips.length === 1 ? "is" : "are"}{" "}
+                <strong className="ftp-num">{tips.length}</strong> civic {tips.length === 1 ? "tip" : "tips"} for your district.
+                {nowCount > 0 && (
+                  <>
+                    {" "}<strong className="ftp-num">{nowCount}</strong> of them {nowCount === 1 ? "is something" : "are things"} to do now.
+                  </>
+                )}
+              </Explainer>
+              {nowCount > 0 && (
+                <Pictogram
+                  total={perTip ? tips.length : 10}
+                  filled={perTip ? nowCount : (nowCount / tips.length) * 10}
+                  emoji="⏰"
+                  label={
+                    perTip
+                      ? `${nowCount} of these ${tips.length} tips are marked "Do now".`
+                      : `About ${Math.round((nowCount / tips.length) * 10)} of every 10 tips are marked "Do now".`
+                  }
+                />
+              )}
+            </Card>
+            {EMERGENCY && <EmergencyCallCard helpline={EMERGENCY} />}
+          </div>
+        ) : (
+          EMERGENCY && (
+            <div style={{ marginTop: 16, maxWidth: 360 }}>
+              <EmergencyCallCard helpline={EMERGENCY} />
+            </div>
+          )
+        )
+      )}
+
+      {/* Tab switcher — real tabs, 44 px tall, hue underline on the active one */}
       <div
         role="tablist"
         aria-label="Citizen Corner sections"
@@ -205,13 +283,14 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
                 minHeight: 44,
                 padding: "0 14px",
                 fontFamily: "var(--ftp-font-sans)",
-                fontSize: 13,
-                fontWeight: 500,
+                fontSize: 14,
+                fontWeight: active ? 600 : 500,
                 cursor: "pointer",
-                background: "transparent",
+                background: active ? "color-mix(in srgb, var(--hue-tint) 70%, transparent)" : "transparent",
                 border: "none",
-                borderBottom: active ? "2px solid var(--ftp-brand)" : "2px solid transparent",
-                color: active ? "var(--ftp-brand-deep)" : "var(--ftp-text-2)",
+                borderRadius: "10px 10px 0 0",
+                borderBottom: active ? "3px solid var(--hue)" : "3px solid transparent",
+                color: active ? "var(--hue-deep)" : "var(--ftp-text-2)",
                 marginBottom: -1,
                 whiteSpace: "nowrap",
               }}
@@ -230,7 +309,8 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
 
           {!tipsLoading && tips.length === 0 && (
             <EmptyState
-              title="Citizen Tips generate weekly"
+              emoji="💡"
+              title="Citizen tips are generated every week"
               body={
                 nextRefreshDays != null
                   ? `Next tips will be available in ${nextRefreshDays === 1 ? "1 day" : nextRefreshDays + " days"}.`
@@ -251,7 +331,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
                 {tips.map((tip, i) => (
-                  <Card key={i} as="article">
+                  <Card key={i} as="article" tinted={tip.urgency === "now"}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
                       <IconSquare icon={CAT_ICONS[tip.category] ?? Lightbulb} />
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -261,7 +341,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
                             {URGENCY_LABEL[tip.urgency] ?? tip.urgency}
                           </Pill>
                         </div>
-                        <h3 className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>{tip.title}</h3>
+                        <h3 className="ftp-title" style={{ fontSize: 15, lineHeight: "21px", fontWeight: 600 }}>{tip.title}</h3>
                       </div>
                     </div>
                     <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{tip.description}</p>
@@ -270,7 +350,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
               </div>
 
               <p style={{ marginTop: 16, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                Powered by Gemini 2.5 Flash · Tips are AI-generated and should be verified with official sources.
+                Tips are AI-generated and should be verified with official sources.
               </p>
             </>
           )}
@@ -280,7 +360,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       {/* ── Helplines ───────────────────────────────────── */}
       {tab === "helplines" && (
         <div role="tabpanel" aria-label="Helplines">
-          <Section title="Emergency & important helplines">
+          <Section title="Emergency & important helplines" emoji="☎️">
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(160px, 100%), 1fr))", gap: 8 }}>
               {HELPLINES.map((h) => (
                 <li key={h.number}>
@@ -289,15 +369,17 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
                     className="ftp-card-link"
                     aria-label={`Call ${h.name}: ${h.number}`}
                     style={{
+                      ...TINTED_SURFACE,
                       display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", minHeight: 56,
-                      background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)",
-                      borderRadius: "var(--ftp-radius-card)", textDecoration: "none",
+                      textDecoration: "none",
                     }}
                   >
-                    <h.icon size={18} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+                    <span aria-hidden className="ftp-icon-chip" style={{ width: 32, height: 32, borderRadius: 10 }}>
+                      <h.icon size={16} />
+                    </span>
                     <div style={{ minWidth: 0 }}>
-                      <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>{h.number}</div>
-                      <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
+                      <div className="ftp-num" style={{ fontSize: 16, lineHeight: "22px", color: "var(--hue-deep)" }}>{h.number}</div>
+                      <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
                     </div>
                   </a>
                 </li>
@@ -310,12 +392,12 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       {/* ── Rights ──────────────────────────────────────── */}
       {tab === "rights" && (
         <div role="tabpanel" aria-label="Your Rights">
-          <Section title="Know your rights">
+          <Section title="Know your rights" emoji="⚖️">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", gap: 12 }}>
               {getRights(state).map((r) => (
                 <Card key={r.right}>
                   <IconSquare icon={r.icon} />
-                  <h3 className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", margin: "10px 0 4px" }}>{r.right}</h3>
+                  <h3 className="ftp-title" style={{ fontSize: 15, lineHeight: "21px", fontWeight: 600, margin: "10px 0 4px" }}>{r.right}</h3>
                   <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{r.desc}</p>
                 </Card>
               ))}
