@@ -25,6 +25,11 @@ export interface ApiMeta {
 export interface ApiResponse<T> {
   data: T;
   meta: ApiMeta;
+  /**
+   * A collector's checked district snapshot, for modules that have one
+   * (schools → UDISE+ totals, panchayats → MGNREGA). Pages narrow the type.
+   */
+  snapshot?: unknown;
 }
 
 async function fetchDistrictData<T>(

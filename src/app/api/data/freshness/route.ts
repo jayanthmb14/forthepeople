@@ -41,6 +41,8 @@ import {
 import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapshot";
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
+import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
+import { VERIFIED_PANCHAYAT } from "@/lib/data-filters";
 
 export const runtime = "nodejs";
 
@@ -86,7 +88,6 @@ interface Row {
   rti_year: number | null; rti_rows: number;
   leaders_date: Date | null; leaders_rows: number;
   elections_year: number | null; elections_rows: number;
-  gp_date: Date | null; gp_rows: number;
   courts_source: string | null; courts_rows: number;
   crime_year: number | null; crime_rows: number;
   traffic_date: Date | null; traffic_checked: Date | null; traffic_rows: number;
@@ -141,8 +142,6 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT count(*) FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE 'http%'))::int AS leaders_rows,
       (SELECT max(x.year) FROM "ElectionResult" x WHERE x."districtId" = d.id) AS elections_year,
       (SELECT count(*) FROM "ElectionResult" x WHERE x."districtId" = d.id)::int AS elections_rows,
-      (SELECT max(x."updatedAt") FROM "GramPanchayat" x WHERE x."districtId" = d.id) AS gp_date,
-      (SELECT count(*) FROM "GramPanchayat" x WHERE x."districtId" = d.id)::int AS gp_rows,
       (SELECT max(x.source) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE}) AS courts_source,
       (SELECT count(*) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE})::int AS courts_rows,
       (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%') AS crime_year,
@@ -253,8 +252,19 @@ function courtsReadAt(snapshotFetchedAt: string | null, newestSource: string | n
   return day ? new Date(`${day}T23:59:59+05:30`) : null;
 }
 
+/** Facts that do not come from the SQL row: collectors' snapshots (Redis) and filtered counts. */
+interface Extra {
+  courtsDate: Date | null;
+  /** GramPanchayat rows a page may show (VERIFIED_PANCHAYAT) and their newest update. */
+  gp: { rows: number; date: Date | null };
+  /** MGNREGA snapshot: the source's "as on" day, and when we read it. */
+  nrega: { date: Date; checked: Date } | null;
+  /** UDISE+ snapshot: when we read it. */
+  udiseAt: Date | null;
+}
+
 /** SQL row → the raw facts per dataset key (DATASETS in src/lib/freshness.ts). */
-function rawFacts(r: Row, courtsDate: Date | null): Record<string, Raw> {
+function rawFacts(r: Row, x: Extra): Record<string, Raw> {
   const year = (y: number | null): Raw["date"] => yearEndDate(y);
   return {
     news: { rows: r.news_rows, date: r.news_date, checked: r.news_checked },
@@ -265,8 +275,10 @@ function rawFacts(r: Row, courtsDate: Date | null): Record<string, Raw> {
     rti: { rows: r.rti_rows, date: year(r.rti_year), period: r.rti_year ? String(r.rti_year) : null, periodKind: "year" },
     leaders: { rows: r.leaders_rows, date: r.leaders_date, checked: r.leaders_date },
     elections: { rows: r.elections_rows, date: year(r.elections_year), period: r.elections_year ? String(r.elections_year) : null, periodKind: "year" },
-    panchayats: { rows: r.gp_rows, date: r.gp_date, checked: r.gp_date },
-    courts: { rows: r.courts_rows, date: courtsDate, checked: courtsDate },
+    panchayats: x.nrega
+      ? { rows: x.gp.rows + 1, date: x.nrega.date, checked: x.nrega.checked }
+      : { rows: x.gp.rows, date: x.gp.date, checked: x.gp.date },
+    courts: { rows: r.courts_rows, date: x.courtsDate, checked: x.courtsDate },
     crime: { rows: r.crime_rows, date: year(r.crime_year), period: r.crime_year ? String(r.crime_year) : null, periodKind: "year" },
     traffic: { rows: r.traffic_rows, date: r.traffic_date, checked: r.traffic_checked },
     stations: { rows: r.stations_rows },
@@ -300,7 +312,9 @@ function rawFacts(r: Row, courtsDate: Date | null): Record<string, Raw> {
     buses: { rows: r.buses_rows },
     trains: { rows: r.trains_rows },
     health: { rows: r.health_rows, date: r.health_date, checked: r.health_date },
-    schools: { rows: r.schools_rows, date: r.schools_date, checked: r.schools_date },
+    schools: x.udiseAt
+      ? { rows: r.schools_rows + 1, date: x.udiseAt, checked: x.udiseAt }
+      : { rows: r.schools_rows, date: r.schools_date, checked: r.schools_date },
     mandi: { rows: r.crops_rows, date: r.crops_date, checked: r.crops_checked },
     advice: { rows: r.agri_rows, date: r.agri_date, checked: r.agri_checked },
     soil: { rows: r.soil_rows, date: r.soil_date, checked: r.soil_date },
@@ -319,8 +333,8 @@ function rawFacts(r: Row, courtsDate: Date | null): Record<string, Raw> {
 
 const iso = (d: Date | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 
-function buildDatasets(r: Row, now: Date, courtsDate: Date | null): DatasetFreshness[] {
-  const facts = rawFacts(r, courtsDate);
+function buildDatasets(r: Row, now: Date, extra: Extra): DatasetFreshness[] {
+  const facts = rawFacts(r, extra);
   return DATASETS.map(({ key, module }) => {
     const f = facts[key] ?? { rows: 0 };
     const rule = ruleFor(key);
@@ -372,11 +386,23 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const courtsSnapshot = await readCourtsSnapshot(districtSlug);
+  const [courtsSnapshot, udise, nrega, gp] = await Promise.all([
+    readCourtsSnapshot(districtSlug),
+    readDistrictSnapshot("udise", districtSlug),
+    readDistrictSnapshot("mgnrega", districtSlug),
+    prisma.gramPanchayat.aggregate({ where: { districtId: district.id, ...VERIFIED_PANCHAYAT }, _count: { _all: true }, _max: { updatedAt: true } }),
+  ]);
   const courtsDate = courtsReadAt(courtsSnapshot?.fetchedAt ?? null, row.courts_source);
   // A snapshot without CourtStat rows (the row write failed) still counts.
   if (courtsSnapshot && row.courts_rows === 0) row.courts_rows = courtsSnapshot.units.length;
-  const datasets = buildDatasets(row, now, courtsDate);
+  const datasets = buildDatasets(row, now, {
+    courtsDate,
+    gp: { rows: gp._count._all, date: gp._max.updatedAt },
+    nrega: nrega
+      ? { date: new Date(nrega.asOf ? `${nrega.asOf}T12:00:00+05:30` : nrega.fetchedAt), checked: new Date(nrega.fetchedAt) }
+      : null,
+    udiseAt: udise ? new Date(udise.fetchedAt) : null,
+  });
 
   const ageMin = (date: Date | null | undefined): number | null =>
     date ? (now.getTime() - new Date(date).getTime()) / 60000 : null;

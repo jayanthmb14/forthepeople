@@ -25,7 +25,7 @@
 //                 collected for the district
 //
 import { prisma } from "@/lib/db";
-import { LOCAL_INFRA } from "@/lib/data-filters";
+import { LOCAL_INFRA, VERIFIED_PANCHAYAT_SOURCES } from "@/lib/data-filters";
 import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { getPlatformFacts } from "@/lib/platform-facts";
@@ -175,7 +175,7 @@ async function loadNewestPerDistrict(ids: string[]): Promise<Map<string, string>
  * price, project, office, leader, story… held for a LIVE district. The
  * same filters as the pages apply, so nothing is counted that a page would
  * hide (news-written leader / crime / power rows; estimated crime rows;
- * hand-seeded court and tap-water rows; state-wide projects).
+ * hand-seeded court, tap-water and village-council rows; state-wide projects).
  * Seeded demo tables (rainfall history, traffic fines, sugar factories) are
  * not counted at all.
  */
@@ -191,7 +191,8 @@ const COUNTED_TABLES: Array<{ table: string; extra?: string }> = [
   { table: "LocalAlert" },
   { table: "Leader", extra: `(x."source" IS NULL OR x."source" NOT LIKE 'http%')` },
   { table: "ElectionResult" },
-  { table: "GramPanchayat" },
+  // None shown until a checked source writes them (VERIFIED_PANCHAYAT); the seeded rows are hidden.
+  { table: "GramPanchayat", extra: VERIFIED_PANCHAYAT_SOURCES.length ? `x."source" IN (${VERIFIED_PANCHAYAT_SOURCES.map(sqlText).join(", ")})` : "FALSE" },
   // Only rows the NJDG collector wrote (NJDG_COURTSTAT); hand seeds are hidden.
   { table: "CourtStat", extra: `x."source" LIKE ${sqlText(`${COURTSTAT_SOURCE_PREFIX}%`)}` },
   { table: "PoliceStation" },

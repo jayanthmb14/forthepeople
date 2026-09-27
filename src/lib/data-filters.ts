@@ -85,3 +85,16 @@ export const SHOWN_TRAFFIC = {
   source: { not: null },
   NOT: { source: { startsWith: "estimat", mode: "insensitive" as const } },
 };
+
+/**
+ * GramPanchayat.source labels written by a collector whose figures were
+ * checked against the official source. None yet: the 8 rows in the table
+ * were typed into the seed scripts with round numbers (and labelled
+ * "MGNREGA / nrega.nic.in" or "ELCIA"), and no open source publishes
+ * figures per panchayat. So no GramPanchayat row is shown or counted; the
+ * village-council page shows the district's MGNREGA figures from the
+ * NREGA collector instead (readDistrictSnapshot("mgnrega", slug)). Add a
+ * collector's exact source label here once one writes checked rows.
+ */
+export const VERIFIED_PANCHAYAT_SOURCES: string[] = [];
+export const VERIFIED_PANCHAYAT = { source: { in: VERIFIED_PANCHAYAT_SOURCES } };

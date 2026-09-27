@@ -2,16 +2,21 @@
   "description": "Which schools are near you, how many teachers they have, and how their students did in board exams",
   "tileSub": "UDISE+, results up to {year}",
   "tileSubNoYear": "UDISE+ yearly data",
+  "tileSubUdise": "UDISE+, school year {year}",
   "answer": {
     "main": "The <b>{n}</b> {count, plural, one {school} other {schools}} listed for {district} have <b>{students}</b> students and <b>{teachers}</b> teachers: about <b>{ratio}</b> students for each teacher.",
     "noRatio": "<b>{n}</b> {count, plural, one {school is} other {schools are}} listed for {district}.",
-    "pass": "In {year}, about <b>{tenths} of every 10</b> students passed their board exam."
+    "pass": "In {year}, about <b>{tenths} of every 10</b> students passed their board exam.",
+    "udise": "{district} has <b>{n}</b> schools with <b>{students}</b> students and <b>{teachers}</b> teachers (UDISE+, school year {year}): about <b>{ratio}</b> students for each teacher.",
+    "udiseNoRatio": "{district} has <b>{n}</b> schools (UDISE+, school year {year}).",
+    "passListed": "In {year}, about <b>{tenths} of every 10</b> students in the schools listed below passed their board exam."
   },
   "tiles": {
     "schools": "Schools listed",
     "students": "Students",
     "teachers": "Teachers",
-    "ratio": "Students per teacher"
+    "ratio": "Students per teacher",
+    "schoolsUdise": "Schools"
   },
   "ratioValue": "{n}:1",
   "band": {
@@ -23,7 +28,9 @@
     "passTitle": "Board exam, {year}",
     "pass": "Each cap is one in ten students. In {year}, {passed} of the {total} students who sat the exam passed.",
     "classTitle": "One teacher's class",
-    "classroom": "{kids, plural, one {One teacher for every student in the schools listed.} other {One teacher for every {n} students in the schools listed.}}"
+    "classroom": "{kids, plural, one {One teacher for every student in the schools listed.} other {One teacher for every {n} students in the schools listed.}}",
+    "classroomDistrict": "{kids, plural, one {One teacher for every student in the district's schools.} other {One teacher for every {n} students in the district's schools.}}",
+    "passTitleListed": "Board exam, {year} (schools listed)"
   },
   "list": {
     "title": "Find a school",
@@ -40,7 +47,8 @@
     "open": "Results, teachers and facilities",
     "people": "{students} students · {teachers} teachers",
     "ratio": "Students per teacher",
-    "showAll": "Show all {n}"
+    "showAll": "Show all {n}",
+    "udiseNote": "We list {n} of the district's {total} schools by name so far. The figures above count every school."
   },
   "types": {
     "title": "Kinds of schools",
