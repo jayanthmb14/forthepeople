@@ -19,11 +19,17 @@
 // On top of that this route keeps a 250 s overall budget: if the remaining
 // districts would not fit, it stops cleanly and reports partial: true
 // instead of being killed mid-write.
+//
+// Sept 2026 (v5): the job gets the budget's deadline so it never starts a
+// request it cannot finish; the district order rotates daily so a budget
+// cut-off does not always hit the same districts; and when data.gov.in is
+// down for the first two districts in a row the run stops early instead
+// of spending four minutes on timeouts.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { scrapeCrops } from "@/scraper/jobs/crops";
+import { collectCrops } from "@/scraper/jobs/crops";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
@@ -44,11 +50,17 @@ export async function GET(request: Request) {
 
   const runStart = await cronStarted(CRON_NAME);
 
-  const activeDistricts = await prisma.district.findMany({
+  const sorted = await prisma.district.findMany({
     where: { active: true },
     select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
     orderBy: { name: "asc" },
   });
+  // Rotate the starting district by day so a budget cut-off moves around.
+  const shift = sorted.length > 0 ? Math.floor(runStart / 86_400_000) % sorted.length : 0;
+  const activeDistricts = [...sorted.slice(shift), ...sorted.slice(0, shift)];
+  const deadlineMs = runStart + TIME_BUDGET_MS;
+  let sourceDownStreak = 0;
+  let sourceDownStop = false;
 
   const results: Array<{
     district: string;
@@ -89,11 +101,19 @@ export async function GET(request: Request) {
 
     const districtStart = Date.now();
     try {
-      const result = await scrapeCrops(ctx);
+      const result = await collectCrops(ctx, { deadlineMs });
       const durationMs = Date.now() - districtStart;
       results.push({ district: row.slug, success: result.success, newCount: result.recordsNew, durationMs, error: result.error });
       // Print what the job told us — these used to be silently dropped.
       console.log(`[scrape-crops/${row.slug}] ${durationMs}ms, ${result.recordsNew} new | ${logs.join(" | ")}`);
+
+      // Circuit breaker: data.gov.in down for the first two districts → stop.
+      sourceDownStreak = result.sourceDown ? sourceDownStreak + 1 : 0;
+      if (sourceDownStreak >= 2 && results.every((r) => !r.success)) {
+        sourceDownStop = true;
+        console.warn(`[scrape-crops] data.gov.in is not answering; stopping after ${results.length} district(s)`);
+        break;
+      }
     } catch (err) {
       Sentry.captureException(err);
       const msg = err instanceof Error ? err.message : String(err);
@@ -105,7 +125,9 @@ export async function GET(request: Request) {
 
   const totalNew = results.reduce((s, r) => s + r.newCount, 0);
   const failures = results.filter((r) => !r.success).map((r) => ({ district: r.district, error: r.error }));
-  const outcome = runOutcome({ attempted: results.length, failed: failures.length, budgetExhausted: partial });
+  const outcome = sourceDownStop
+    ? "error"
+    : runOutcome({ attempted: results.length, failed: failures.length, budgetExhausted: partial });
   const allFailed = outcome === "error";
 
   await cronFinished(CRON_NAME, runStart, {
@@ -113,11 +135,15 @@ export async function GET(request: Request) {
     count: totalNew,
     failures,
     attempted: results.length,
+    error: sourceDownStop
+      ? `data.gov.in AGMARKNET not answering (${failures[0]?.error ?? "no answer"}); stopped after ${results.length} of ${activeDistricts.length} districts`
+      : undefined,
   });
 
   return NextResponse.json({
     ok: !allFailed,
     partial,
+    sourceDown: sourceDownStop,
     districts: results.length,
     totalNewRecords: totalNew,
     durationMs: Date.now() - runStart,

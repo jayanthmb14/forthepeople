@@ -8,132 +8,161 @@
 // Job: Crop Prices — AGMARKNET via data.gov.in API
 // Schedule: daily 03:30 UTC via /api/cron/scrape-crops (vercel.json)
 //
-// Sept 2026 performance fix: the data.gov.in fetch now times out at 20 s,
-// and instead of one findFirst + one create per record (up to ~2,000
-// sequential round-trips to Neon), we load the district's existing keys
-// with ONE findMany and insert everything new with ONE createMany.
+// Sept 2026 performance fix: the data.gov.in fetch times out at 20 s, and
+// instead of one findFirst + one create per record we load the district's
+// existing keys with ONE findMany and insert everything new with ONE
+// createMany.
+//
+// Sept 2026 (v5):
+//  - District spellings: AGMARKNET still uses "Bangalore", "Mysore" …; the
+//    job tries each alias from src/scraper/lib/district-aliases.ts in
+//    order (next one only when the previous answered with 0 records) and
+//    logs which one matched.
+//  - One retry after 2 s on a gateway error (429/5xx) or a network error.
+//    A 20 s timeout is NOT retried: a hung API will not answer in the next
+//    20 s either, and the run has a time budget.
+//  - Every record passes the price checks in src/scraper/lib/agmarknet.ts
+//    (no zero prices, min ≤ modal ≤ max, nothing absurd); rejects are
+//    counted, never "fixed".
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
 import { logUpdate } from "@/lib/update-log";
+import { agmarknetDistrictNames } from "../lib/district-aliases";
+import { isRetryableStatus, toCropRow, type AgmarkRecord } from "../lib/agmarknet";
 
 const API_KEY = process.env.DATA_GOV_API_KEY;
 const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070";
+const FETCH_TIMEOUT_MS = 20_000;
+const RETRY_DELAY_MS = 2_000;
+export const CROPS_SOURCE = "AGMARKNET / data.gov.in";
 
-// Override map for districts where AGMARKNET name differs from district name
-const AGMARKNET_DISTRICT_OVERRIDE: Record<string, string> = {
-  "bengaluru-urban": "Bangalore",
-  "mysuru":          "Mysore",
-  "new-delhi":       "Delhi",
-  "central-delhi":   "Delhi",
-  "north-delhi":     "Delhi",
-  "north-west-delhi":"Delhi",
-  "north-east-delhi":"Delhi",
-  "east-delhi":      "Delhi",
-  "south-delhi":     "Delhi",
-  "south-west-delhi":"Delhi",
-  "south-east-delhi":"Delhi",
-  "west-delhi":      "Delhi",
-  "shahdara":        "Delhi",
-  "mumbai":          "Mumbai",
-  "kolkata":         "Kolkata",
-  "chennai":         "Chennai",
-  "pune":            "Pune",
-};
-
-interface AgmarkRecord {
-  commodity: string;
-  variety: string;
-  district: string;
-  market: string;
-  min_price: number | string;
-  max_price: number | string;
-  modal_price: number | string;
-  arrival_date: string;
-  grade?: string;
-  state?: string;
+export interface CropsCollectOptions {
+  /** Epoch ms after which no new request is started (the cron's time budget). */
+  deadlineMs?: number;
 }
 
-export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
+export interface CropsCollectResult extends ScraperResult {
+  /** AGMARKNET district name that returned records, if any. */
+  matchedName?: string;
+  /** Records dropped by the price checks. */
+  rejected?: number;
+  /** True when data.gov.in itself failed (timeout / gateway error), not "no data". */
+  sourceDown?: boolean;
+}
+
+class SourceError extends Error {}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** One data.gov.in request with one retry on a gateway or network error. */
+async function fetchRecords(url: string, deadlineMs: number | undefined): Promise<AgmarkRecord[]> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    if (deadlineMs && Date.now() + FETCH_TIMEOUT_MS > deadlineMs) {
+      throw new SourceError("time budget left is too short for another request");
+    }
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (res.ok) {
+        const json = (await res.json()) as { records?: AgmarkRecord[] };
+        return Array.isArray(json.records) ? json.records : [];
+      }
+      if (attempt === 1 && isRetryableStatus(res.status)) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      throw new SourceError(`HTTP ${res.status}`);
+    } catch (err) {
+      if (err instanceof SourceError) throw err;
+      const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+      if (!isTimeout && attempt === 1) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      throw new SourceError(isTimeout ? `no answer in ${FETCH_TIMEOUT_MS / 1000} s` : err instanceof Error ? err.message : String(err));
+    }
+  }
+  throw new SourceError("no answer");
+}
+
+export async function collectCrops(ctx: JobContext, opts: CropsCollectOptions = {}): Promise<CropsCollectResult> {
   if (!API_KEY) {
     ctx.log("DATA_GOV_API_KEY not set — skipping");
     return { success: false, recordsNew: 0, recordsUpdated: 0, error: "No API key" };
   }
 
+  const state = ctx.stateName || ctx.stateSlug.charAt(0).toUpperCase() + ctx.stateSlug.slice(1);
+  const names = agmarknetDistrictNames(ctx.districtSlug, ctx.districtName);
+
+  // ── Step 1: find the spelling AGMARKNET uses for this district ──
+  let records: AgmarkRecord[] = [];
+  let matchedName: string | undefined;
   try {
-    const state = ctx.stateName ?? (ctx.stateSlug.charAt(0).toUpperCase() + ctx.stateSlug.slice(1));
-    const district = AGMARKNET_DISTRICT_OVERRIDE[ctx.districtSlug] ?? ctx.districtName ?? ctx.districtSlug;
-    const url = `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&limit=100`;
+    for (const name of names) {
+      const url =
+        `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json` +
+        `&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(name)}&limit=100`;
+      const started = Date.now();
+      const got = await fetchRecords(url, opts.deadlineMs);
+      ctx.log(`"${name}": ${got.length} records in ${Date.now() - started}ms`);
+      if (got.length > 0) {
+        records = got;
+        matchedName = name;
+        break;
+      }
+    }
+  } catch (err) {
+    const msg = `data.gov.in: ${err instanceof Error ? err.message : String(err)}`;
+    ctx.log(msg);
+    return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg, sourceDown: true };
+  }
 
-    // data.gov.in sometimes hangs for minutes; a hard 20 s cap keeps one
-    // slow district from eating the whole cron budget.
-    const fetchStart = Date.now();
-    const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    const records: AgmarkRecord[] = json.records ?? [];
-    ctx.log(`fetched ${records.length} records in ${Date.now() - fetchStart}ms`);
+  if (!matchedName) {
+    // The source answered but has no mandi under any of our spellings.
+    ctx.log(`no AGMARKNET records under ${names.map((n) => `"${n}"`).join(", ")}`);
+    return { success: true, recordsNew: 0, recordsUpdated: 0, rejected: 0 };
+  }
 
-    // ── Step 1: ONE query for the keys we already have ──
-    // CropPrice has no unique index (schema is frozen), so we dedupe in
-    // memory: the identity of a row is (commodity, market, date).
+  try {
+    // ── Step 2: ONE query for the keys we already have ──
+    // CropPrice has no unique index, so we dedupe in memory: the identity
+    // of a row is (commodity, market, date).
     const existingRows = await prisma.cropPrice.findMany({
       where: { districtId: ctx.districtId },
       select: { commodity: true, market: true, date: true },
     });
     const seen = new Set(existingRows.map((e) => `${e.commodity}|${e.market}|${e.date.toISOString()}`));
 
-    // ── Step 2: build the list of rows that are genuinely new ──
+    // ── Step 3: check every record; keep the new, sane ones ──
     const fetchedAt = new Date();
-    const toInsert: Array<{
-      districtId: string;
-      commodity: string;
-      variety: string | null;
-      market: string;
-      minPrice: number;
-      maxPrice: number;
-      modalPrice: number;
-      date: Date;
-      source: string;
-      fetchedAt: Date;
-    }> = [];
-
+    const now = Date.now();
+    const rejectedBy = new Map<string, number>();
+    const toInsert = [];
     for (const r of records) {
-      // API now uses lowercase fields + numeric prices (changed 2026-03)
-      const dateStr = r.arrival_date;
-      if (!dateStr || !r.commodity || !r.market) continue;
-      const [dd, mm, yyyy] = dateStr.split("/");
-      const date = new Date(`${yyyy}-${mm}-${dd}`);
-      if (isNaN(date.getTime())) continue;
-
-      const key = `${r.commodity}|${r.market}|${date.toISOString()}`;
+      const checked = toCropRow(r, now);
+      if ("reason" in checked) {
+        rejectedBy.set(checked.reason, (rejectedBy.get(checked.reason) ?? 0) + 1);
+        continue;
+      }
+      const row = checked.row;
+      const key = `${row.commodity}|${row.market}|${row.date.toISOString()}`;
       if (seen.has(key)) continue; // already in DB, or duplicate within this batch
       seen.add(key);
-
-      toInsert.push({
-        districtId: ctx.districtId,
-        commodity: r.commodity,
-        variety: r.variety || null,
-        market: r.market,
-        minPrice: Number(r.min_price) || 0,
-        maxPrice: Number(r.max_price) || 0,
-        modalPrice: Number(r.modal_price) || 0,
-        date,
-        source: "AGMARKNET / data.gov.in",
-        fetchedAt,
-      });
+      toInsert.push({ districtId: ctx.districtId, ...row, source: CROPS_SOURCE, fetchedAt });
+    }
+    const rejected = Array.from(rejectedBy.values()).reduce((a, b) => a + b, 0);
+    if (rejected > 0) {
+      ctx.log(`rejected ${rejected}: ${Array.from(rejectedBy, ([why, n]) => `${n}× ${why}`).join(", ")}`);
     }
 
-    // ── Step 3: ONE insert for all of them ──
-    // skipDuplicates is a no-op without a unique index but is harmless and
-    // becomes useful the day one is added to the schema.
+    // ── Step 4: ONE insert for all of them ──
     let newCount = 0;
     if (toInsert.length > 0) {
       const created = await prisma.cropPrice.createMany({ data: toInsert, skipDuplicates: true });
       newCount = created.count;
     }
 
-    // Keep only last 100 records
+    // Keep only the last 100 records per district.
     const old = await prisma.cropPrice.findMany({
       where: { districtId: ctx.districtId },
       orderBy: { date: "desc" },
@@ -144,7 +173,7 @@ export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
       await prisma.cropPrice.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
     }
 
-    const summary = `Crop prices: ${newCount} new records from ${records.length} fetched`;
+    const summary = `Crop prices: ${newCount} new records from ${records.length} fetched ("${matchedName}")`;
     ctx.log(summary);
 
     if (newCount > 0) {
@@ -159,14 +188,20 @@ export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
         moduleName: "crops",
         description: summary,
         recordCount: newCount,
-        details: { fetched: records.length, inserted: newCount },
+        details: { fetched: records.length, inserted: newCount, rejected, agmarknetDistrict: matchedName },
       });
     }
 
-    return { success: true, recordsNew: newCount, recordsUpdated: 0 };
+    return { success: true, recordsNew: newCount, recordsUpdated: 0, matchedName, rejected };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     ctx.log(`Error: ${msg}`);
     return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };
   }
+}
+
+/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
+export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
+  const { success, recordsNew, recordsUpdated, error } = await collectCrops(ctx);
+  return { success, recordsNew, recordsUpdated, error };
 }
