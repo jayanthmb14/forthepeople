@@ -4,32 +4,33 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Tender Apply Guide — module template.
-// Quick client-side filter (MSE / Startup / DSC) over the district's live
-// tenders, a row of counts (open / kept for MSEs / open to startups) when
-// the whole live list fits in one request, plus three reference cards
-// (DSC, EMD, checklist). The filter logic and all guidance are unchanged;
-// words live in "page_tenders". Layout is one column on phones, list +
-// side cards on wider screens.
+// Tender Apply Guide — "Which open tenders can my business bid for?"
+// Recipe (docs/LAYOUT.md): ModulePage → PageHeader → one-line disclaimer →
+// a row of counts (open / kept for MSEs / open to startups, only when the
+// whole live list fits in one request) → "tell us about yourself"
+// checkboxes → matching tenders as tappable cards (tap = the tender's
+// DetailSheet) beside three reference cards (DSC, EMD, checklist) on wide
+// screens, stacked on phones. The filter runs in the browser; answers never
+// leave it. Words live in "page_tenders".
 
 "use client";
 
 import type React from "react";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
-import { PageHeader, Section, Card, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
+import { ModulePage, PageHeader, Section, Card, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
-import TenderCard, { type TenderCardData } from "@/components/tenders/TenderCard";
 import ModulePageFooter from "@/components/accountability/ModulePageFooter";
 import { IconCountRow } from "@/components/money/visuals";
 import { useMoney } from "@/components/money/useMoney";
-import { useModuleText } from "@/i18n/client";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { TenderSheet, TenderTapCard } from "@/components/money/TenderSheet";
+import type { TenderListRow } from "@/components/money/tender-types";
+import { useDistrictName, useModuleText } from "@/i18n/client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
-type ListResp = { tenders: TenderCardData[]; total: number; districtName: string };
+type ListResp = { tenders: TenderListRow[]; total: number; districtName: string };
 
 const num = (c: React.ReactNode) => <span className="ftp-num">{c}</span>;
 
@@ -38,7 +39,11 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
   const t = useTranslations("page_tenders");
   const mt = useModuleText();
   const m = useMoney();
+  const districtName = useDistrictName(stateSlug, districtSlug);
   const [profile, setProfile] = useState({ isMse: false, isStartup: false, hasDsc: false });
+  const [openId, setOpenId] = useState<string | null>(null);
+  // Stable, so the open sheet does not re-run its focus effect on every render.
+  const closeSheet = useCallback(() => setOpenId(null), []);
 
   const { data, isLoading, error } = useQuery<ListResp>({
     queryKey: ["tenders-live", districtSlug],
@@ -56,20 +61,20 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
     if (!profile.isMse && !profile.isStartup) return true;
     return x.mseReserved || x.startupExempt;
   });
+  const open = openId ? all.find((x) => x.id === openId) ?? null : null;
   // The count row is only honest when we hold the whole live list.
   const complete = data ? all.length >= data.total : false;
 
   return (
     <ModuleErrorBoundary moduleName={mt.label("tenders")}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
+      <ModulePage>
         <PageHeader
           icon={ShieldCheck}
           emoji="🧭"
           title={t("apply.title")}
-          description={data?.districtName ? t("apply.descriptionIn", { district: data.districtName }) : t("apply.description")}
+          description={t("apply.descriptionIn", { district: districtName })}
           backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
           backLabel={t("backToTenders")}
-          accent={getModuleAccent("tenders")}
         />
         <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
@@ -86,32 +91,40 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
           </div>
         )}
 
-        {/* Main list + reference cards. auto-fit → one column on phones. */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 24, alignItems: "start" }}>
-          <div style={{ gridColumn: "span 2", minWidth: 0 }} className="ftp-apply-main">
+        {/* Main list + reference cards: side by side when there is room, stacked on phones. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+          <div style={{ flex: "2 1 520px", minWidth: 0 }}>
             <Card tinted padding={14} style={{ marginBottom: 16 }}>
               <div className="ftp-title" style={{ marginBottom: 6 }}>{t("apply.filterTitle")}</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                <label style={checkboxLabel}><input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} style={{ accentColor: "var(--hue)" }} /> {t("wizard.isMse")}</label>
-                <label style={checkboxLabel}><input type="checkbox" checked={profile.isStartup} onChange={(e) => setProfile((p) => ({ ...p, isStartup: e.target.checked }))} style={{ accentColor: "var(--hue)" }} /> {t("apply.startup")}</label>
-                <label style={checkboxLabel}><input type="checkbox" checked={profile.hasDsc} onChange={(e) => setProfile((p) => ({ ...p, hasDsc: e.target.checked }))} style={{ accentColor: "var(--hue)" }} /> {t("wizard.hasDsc")}</label>
+              <div style={{ display: "flex", flexWrap: "wrap", columnGap: 16 }}>
+                <label style={checkboxLabel}>
+                  <input type="checkbox" checked={profile.isMse} onChange={(e) => setProfile((p) => ({ ...p, isMse: e.target.checked }))} style={checkbox} /> {t("wizard.isMse")}
+                </label>
+                <label style={checkboxLabel}>
+                  <input type="checkbox" checked={profile.isStartup} onChange={(e) => setProfile((p) => ({ ...p, isStartup: e.target.checked }))} style={checkbox} /> {t("apply.startup")}
+                </label>
+                <label style={checkboxLabel}>
+                  <input type="checkbox" checked={profile.hasDsc} onChange={(e) => setProfile((p) => ({ ...p, hasDsc: e.target.checked }))} style={checkbox} /> {t("wizard.hasDsc")}
+                </label>
               </div>
             </Card>
 
             <Section emoji="🎯" title={t.rich("apply.matches", { n: filtered.length, num })}>
               {isLoading && <LoadingShell rows={3} />}
               {error && <ErrorBlock message={t("list.error")} />}
-              {!isLoading && !error && filtered.length === 0 && (
-                <EmptyState emoji="🔍" title={t("apply.empty")} />
+              {!isLoading && !error && filtered.length === 0 && <EmptyState emoji="🔍" title={t("apply.empty")} />}
+              {filtered.length > 0 && (
+                <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "280px" } as React.CSSProperties}>
+                  {filtered.map((x) => (
+                    <TenderTapCard key={x.id} tender={x} onOpen={() => setOpenId(x.id)} />
+                  ))}
+                </div>
               )}
-              <div style={{ display: "grid", gap: 12 }}>
-                {filtered.map((x) => <TenderCard key={x.id} tender={x} districtSlug={districtSlug} stateSlug={stateSlug} locale={locale} />)}
-              </div>
             </Section>
           </div>
 
           {/* Reference cards */}
-          <aside style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+          <aside style={{ flex: "1 1 280px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
             <SidebarCard emoji="🔏" title={t("apply.dsc.title")}>
               <ul style={listStyle}>
                 <li>{t("apply.dsc.l1")}</li>
@@ -138,9 +151,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
                 <li>{t("apply.checklist.l5")}</li>
               </ul>
             </SidebarCard>
-            <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0, padding: "0 4px" }}>
-              {t("apply.notLegalAdvice")}
-            </p>
+            <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0, padding: "0 4px" }}>{t("apply.notLegalAdvice")}</p>
           </aside>
         </div>
 
@@ -149,9 +160,9 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
         </div>
 
         <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} showCompare={false} />
-      </div>
-      {/* On phones the main column must not span two (non-existent) columns. */}
-      <style>{`@media (max-width: 767px) { .ftp-apply-main { grid-column: auto !important; } }`}</style>
+
+        <TenderSheet tender={open} onClose={closeSheet} districtSlug={districtSlug} stateSlug={stateSlug} locale={locale} />
+      </ModulePage>
     </ModuleErrorBoundary>
   );
 }
@@ -159,7 +170,7 @@ export default function ApplyGuidePage({ params }: { params: Promise<{ locale: s
 /** A small reference card with an emoji chip and a sentence-case title. */
 function SidebarCard({ title, emoji, children }: { title: string; emoji: string; children: React.ReactNode }) {
   return (
-    <Card padding={12}>
+    <Card padding={14}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>{emoji}</span>
         <span style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{title}</span>
@@ -169,7 +180,8 @@ function SidebarCard({ title, emoji, children }: { title: string; emoji: string;
   );
 }
 
-const listStyle: React.CSSProperties = { margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: "22px", color: "var(--ftp-text)" };
+const listStyle: React.CSSProperties = { margin: 0, paddingInlineStart: 16, fontSize: 13, lineHeight: "22px", color: "var(--ftp-text)" };
 
 /** Checkbox + label, 44 px tall so it is easy to tap. */
-const checkboxLabel: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, color: "var(--ftp-text)", cursor: "pointer" };
+const checkboxLabel: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, minHeight: 44, fontSize: 13, color: "var(--ftp-text)", cursor: "pointer" };
+const checkbox: React.CSSProperties = { accentColor: "var(--hue)", width: 18, height: 18 };

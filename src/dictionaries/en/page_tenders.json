@@ -33,7 +33,9 @@
     "closesIn": "Closes in",
     "published": "{n, plural, =0 {Published today} one {Published <num>#</num> day ago} other {Published <num>#</num> days ago}}",
     "corrigenda": "{n, plural, one {<num>#</num> corrigendum} other {<num>#</num> corrigenda}}",
-    "flags": "{n, plural, one {<num>#</num> flag} other {<num>#</num> flags}}"
+    "flags": "{n, plural, one {<num>#</num> flag} other {<num>#</num> flags}}",
+    "openAria": "{title}: show details",
+    "more": "See details"
   },
   "flag": {
     "SINGLE_BIDDER": "Single bidder",
@@ -187,23 +189,18 @@
   "header": {
     "title": "Government Tenders",
     "titleIn": "Government Tenders in {district}",
-    "description": "Live tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide.",
+    "description": "Open tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide.",
     "newest": "Newest tender published"
   },
   "tiles": {
-    "live": "Live tenders",
-    "value": "Total live value",
+    "live": "Open tenders",
+    "value": "Value of open tenders",
     "closing48": "Closing in 48h",
-    "mse": "MSE-reserved",
-    "mseSub": "Kept for micro and small firms",
-    "startup": "Startup-eligible",
     "flagged": "Flagged",
     "flaggedSub": "Factual indicators, not allegations"
   },
   "explainer": {
-    "plain": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids. <num>{closing}</num> of them close within two days.",
     "plainIn": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids in {district}. <num>{closing}</num> of them close within two days.",
-    "withValue": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids, with a combined listed value of <num>{value}</num>. <num>{closing}</num> of them close within two days.",
     "withValueIn": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids in {district}, with a combined listed value of <num>{value}</num>. <num>{closing}</num> of them close within two days."
   },
   "pictogram": "About {n} of every 10 open tenders are reserved for micro and small businesses (MSE).",
@@ -239,10 +236,10 @@
     "error": "Couldn't load tenders. Please try again in a moment.",
     "empty": "No tenders match your filters.",
     "emptyLive": "Try switching tabs or loosening filters. Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
-    "emptyOther": "Try the Live tab for current opportunities."
+    "emptyOther": "Try the Open now tab for current opportunities."
   },
   "tabs": {
-    "LIVE": "Live",
+    "LIVE": "Open now",
     "CLOSING_SOON": "Closing in 48h",
     "AWARDED": "Recently awarded",
     "ARCHIVE": "Archive"
@@ -312,21 +309,17 @@
     "fullNote": "Written by AI ({model}) on <num>{time}</num>. Check it against the NIT PDF before bidding.",
     "canApply": "Can I apply?",
     "corrigendaTitle": "Corrigenda",
-    "corrigendaCaption": "Corrigenda issued for this tender",
-    "corrigendaIssued": "Issued (IST)",
-    "corrigendaChange": "Change",
-    "corrigendaSummary": "Summary",
     "awardTitle": "Award of contract",
     "winner": "Winner:",
     "awarded": "Awarded amount:",
     "ofEstimate": "Of estimate:",
     "awardedOn": "Awarded <num>{date}</num>",
     "documents": "Documents",
-    "noticeSource": "{portal}: this tender's notice"
+    "noticeSource": "{portal}: this tender's notice",
+    "explainer": "{authority} is asking firms to bid for this work{hasValue, select, yes {, worth about <b>{value}</b>} other {}}. {closed, select, yes {Bids closed on <b>{date}</b>.} other {Bids close on <b>{date}</b>.}}"
   },
   "apply": {
     "title": "Apply guide",
-    "description": "Find tenders you qualify for in your district. Fully client-side matching — your answers never leave your browser.",
     "descriptionIn": "Find tenders you qualify for in {district}. Fully client-side matching — your answers never leave your browser.",
     "countsAria": "Open tenders at a glance",
     "countOpen": "open tenders",
@@ -335,7 +328,7 @@
     "filterTitle": "Quick filter: tell us about yourself",
     "startup": "DPIIT Startup recognition",
     "matches": "{n, plural, one {<num>#</num> tender matches} other {<num>#</num> tenders match}}",
-    "empty": "No live tenders match your filters right now. Try toggling filters, or check back later.",
+    "empty": "No open tenders match your filters right now. Try toggling filters, or check back later.",
     "dsc": {
       "title": "Get your DSC",
       "l1": "Class-3 required for KPPP/CPPP/IREPS",
@@ -363,8 +356,7 @@
   },
   "transparency": {
     "title": "Factual indicators",
-    "description": "Data-derived observations on live and recent tenders in this district. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
-    "descriptionIn": "Data-derived observations on live and recent tenders in {district}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
+    "descriptionIn": "Data-derived observations on open and recent tenders in {district}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.",
     "loadError": "Couldn't load flag data.",
     "emptyTitle": "No flagged tenders in {district} right now.",
     "emptyBody": "Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
@@ -372,7 +364,8 @@
     "chartUnits": "Number of tenders carrying each indicator",
     "chartSimple": "The most common is <b>{name}</b>, on {n, plural, one {# tender} other {# tenders}}.",
     "count": "{n, plural, one {# tender} other {# tenders}}",
-    "methodology": "How this is worked out"
+    "methodology": "How this is worked out",
+    "explainer": "<b>{n}</b> of the {total} tenders checked in {district} carry at least one factual indicator. An indicator compares a tender with a public rule; it is not an accusation."
   },
   "legalPage": {
     "title": "Tenders: legal and usage disclaimer",
@@ -381,5 +374,26 @@
     "general": "General (all of India)",
     "stateSpecific": "Specific to {state}",
     "grievance": "<s>Takedown or grievance?</s> Email <mail>{email}</mail>. We reply within 7 working days, as the IT Rules 2021 require."
+  },
+  "explainerTap": "Tap a tender to see the money, the dates, who can apply and the documents.",
+  "sheet": {
+    "timeLeft": "Time left to bid",
+    "lastDate": "Last date to bid: {date}",
+    "publishedOn": "Published {date}",
+    "value": "Estimated value",
+    "emd": "EMD (bid security)",
+    "fee": "Tender fee",
+    "buyer": "Buyer",
+    "category": "Category",
+    "place": "Place",
+    "preBid": "Pre-bid meeting",
+    "corrigenda": "Changes issued",
+    "portal": "Source portal",
+    "winner": "Winner",
+    "awarded": "Awarded amount",
+    "ofEstimate": "Share of the estimate",
+    "awardedOn": "Awarded on",
+    "openPage": "Open full tender page",
+    "checkPortal": "Before you bid, read the full notice on the source portal. ForThePeople.in only shows what the portal published."
   }
 }

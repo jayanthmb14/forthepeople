@@ -18,8 +18,9 @@
     "dataPending": "Data pending",
     "pending": "Pending"
   },
-  "allocationOnly": "Allocation data is available. Expenditure tracking from PFMS/state treasury will be updated as data becomes available.",
-  "explainer": "Out of every <b>₹100</b> given to this district in FY {year}, about <b>₹{pct}</b> was spent. The rest is still unspent or has lapsed.",
+  "explainer": "Out of every <b>₹100</b> given to {district} in FY {year}, about <b>₹{pct}</b> was spent. The rest is still unspent or has lapsed.",
+  "explainerAllocOnly": "{district} was given <b>{amount}</b> in FY {year}. How much of it was spent is not published yet.",
+  "explainerTap": "Tap a department to see where its money went.",
   "pictogram": "About {n} of every 10 coins given were spent.",
   "gauge": {
     "label": "Budget used",
@@ -43,20 +44,39 @@
     "spent": "Spent",
     "row": "{spent} of {given}"
   },
-  "lapsed": {
-    "title": "Money that was never spent",
-    "amount": "{amount} lapsed",
-    "bar": "{year}: {amount} allocated"
+  "depts": {
+    "title": "Departments and their money",
+    "yearAria": "Pick a financial year",
+    "showAria": "Show all departments or only those with lapsed money",
+    "all": "All departments",
+    "lapsedOnly": "Money lapsed",
+    "more": "See details",
+    "cardAria": "{name}: show details",
+    "given": "Given",
+    "spent": "Spent",
+    "lapsed": "{amount} lapsed",
+    "notSpentYet": "Spending not published yet",
+    "noMatch": "No departments match this choice.",
+    "empty": "No department allocations published for this district yet."
   },
-  "table": {
-    "title": "Department allocations",
-    "caption": "Department budget allocations by fiscal year, in crore rupees",
-    "empty": "No department allocations published for this district yet.",
-    "fy": "FY",
-    "department": "Department",
-    "allocated": "Allocated (Cr)",
-    "spent": "Spent (Cr)",
-    "lapsed": "Lapsed (Cr)"
+  "sheet": {
+    "story": "{dept} was given {given} in FY {year} and spent {spent}.",
+    "storyNoSpend": "{dept} was given {given} in FY {year}. Spending is not published yet.",
+    "storyLabel": "In simple words",
+    "fy": "Financial year",
+    "category": "Category",
+    "scheme": "Scheme",
+    "allocated": "Given (allocated)",
+    "released": "Released",
+    "spent": "Spent",
+    "lapsed": "Lapsed (not spent)",
+    "used": "Share spent",
+    "period": "Period",
+    "quarter": "Quarter {n}",
+    "remarks": "Notes",
+    "source": "Source",
+    "asOf": "As of",
+    "openSource": "Open source"
   },
   "revenue": {
     "title": "Revenue collected each month",
