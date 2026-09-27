@@ -14,6 +14,7 @@ import { Scale } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import SiteHeader from "@/components/site/SiteHeader";
 import { intlLocale } from "@/i18n/languages";
+import { formatDate } from "@/i18n/format-date";
 
 type Props = {
   title: string;
@@ -30,7 +31,7 @@ export default function LegalPageHeader({ title, lastUpdated, backHref, emoji = 
   const parsed = new Date(`${lastUpdated}T00:00:00+05:30`);
   const date = Number.isNaN(parsed.getTime())
     ? lastUpdated
-    : parsed.toLocaleDateString(intlLocale(locale), { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+    : formatDate(parsed, intlLocale(locale), { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
   return (
     <div style={{ marginBottom: 8 }}>
       <SiteHeader

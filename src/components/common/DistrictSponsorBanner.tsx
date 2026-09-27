@@ -41,7 +41,7 @@ import { useTranslations } from "next-intl";
 import { HandHeart } from "lucide-react";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { Card } from "@/components/district/ui";
-import { useFormat } from "@/i18n/client";
+import { useDistrictName, useFormat, usePlaceText } from "@/i18n/client";
 import SupporterChip from "@/components/support/SupporterChip";
 import { isFoundingBuilder, placeSupporters, type PlacedRow } from "@/components/support/placement";
 
@@ -131,11 +131,14 @@ export default function DistrictSponsorBanner({
     refetchInterval: 120_000,
   });
 
+  const place = usePlaceText();
   const rows = placeSupporters(data?.contributors ?? []);
   const total = rows.india.named.length + rows.india.anonymous + rows.state.named.length + rows.state.anonymous + rows.district.named.length + rows.district.anonymous;
 
-  const dName = districtName ?? district;
-  const sName = stateName ?? state;
+  // Names in the reader's language: "मंड्या का साथ दें", "ಮಂಡ್ಯ ಜಿಲ್ಲೆಗೆ ಬೆಂಬಲ ನೀಡಿ"
+  // (English "Mandya" inside a Hindi/Kannada sentence: Sept 2026 audit).
+  const dName = useDistrictName(state, district, districtName);
+  const sName = place.state(state, stateName ?? state);
   const viewAllHref = `/${locale}/${state}/${district}/contributors`;
   const supportHref = `/${locale}/support?tier=district&state=${state}&district=${district}`;
 

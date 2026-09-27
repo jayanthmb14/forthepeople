@@ -21,9 +21,9 @@
     "budget": "मिला बजट",
     "oldYear": "पुराना साल",
     "about": "लगभग {date}",
-    "inDays": "{n, plural, =0 {आज} one {# दिन में} other {# दिन में}}",
-    "inMonths": "{n, plural, one {# महीने में} other {# महीनों में}}",
-    "inYears": "{n, plural, one {लगभग # साल में} other {लगभग # साल में}}",
+    "inDays": "{n, plural, =0 {आज} =1 {# दिन में} other {# दिन में}}",
+    "inMonths": "{n, plural, =1 {# महीने में} other {# महीनों में}}",
+    "inYears": "{n, plural, =1 {लगभग # साल में} other {लगभग # साल में}}",
     "gradeSub": "100 में से {score} · {date}"
   },
   "cards": {
@@ -38,8 +38,8 @@
     "projects": {
       "building": "{n} बन रही हैं",
       "delayed": "इनमें से {n} देर से",
-      "done": "{n} पूरी हुईं",
-      "barAria": "{building} बन रही हैं, इनमें से {delayed} देर से, {done} पूरी हुईं"
+      "done": "{n} पूरी",
+      "barAria": "{building} बन रही हैं, इनमें से {delayed} देर से, {done} पूरी"
     }
   },
   "verify": {
@@ -50,7 +50,7 @@
       "unchecked": "अभी दोबारा नहीं जाँचा"
     },
     "text": {
-      "verified": "{n, plural, one {# स्रोत इस डेटा से सहमत है} other {# स्रोत इस डेटा पर सहमत हैं}}।",
+      "verified": "{n, plural, =1 {# स्रोत इस डेटा से सहमत है} other {# स्रोत इस डेटा पर सहमत हैं}}।",
       "verifiedGeneric": "हमने इसे दूसरे स्रोत से मिलाया और दोनों एक जैसे हैं।",
       "single-source": "इसे सिर्फ़ एक स्रोत प्रकाशित करता है, इसलिए अभी मिलाने के लिए कुछ नहीं है।",
       "disagreement": "हमारे स्रोत इस डेटा पर सहमत नहीं हैं। इस्तेमाल से पहले कृपया आधिकारिक स्रोत देखें।",

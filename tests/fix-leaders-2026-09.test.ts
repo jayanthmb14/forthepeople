@@ -115,6 +115,25 @@ describe("computeWrites (planner, no DB)", () => {
     expect(writes[0].data.roleLocal).toBeNull();
     expect(writes[0].data.role).toBe("MLA, Govindraj Nagar");
   });
+
+  it("drops a verified row's local role that names another office (Sept 2026 language audit)", () => {
+    const mys = { id: "d-mys", slug: "mysuru", name: "Mysuru" };
+    const op = PLAN.find((o) => o.kind === "update" && o.id === "cmnakakte00010mxnp6z9488x")!; // Siddaramaiah, MLA Varuna
+    const row: LeaderRow = { ...base, districtId: mys.id, id: "cmnakakte00010mxnp6z9488x", name: "Siddaramaiah", role: "MLA, Varuna", roleLocal: "ವಿಧಾನಸಭಾ ಸದಸ್ಯ (ಮುಖ್ಯಮಂತ್ರಿ)" };
+    const { writes } = computeWrites([op], [mys], [row]);
+    expect(writes[0].data.roleLocal).toBeNull();
+    // A local role that still fits is kept.
+    const ok = computeWrites([op], [mys], [{ ...row, roleLocal: "ವಿಧಾನಸಭಾ ಸದಸ್ಯ" }]);
+    expect("roleLocal" in (ok.writes[0]?.data ?? {})).toBe(false);
+  });
+
+  it("clears the local-script name when the English name is corrected", () => {
+    const op = PLAN.find((o) => o.kind === "update" && o.id === "cmmv9n835000fubxnznikgoc2")!; // N. Chaluvarayaswamy
+    const row: LeaderRow = { ...base, id: "cmmv9n835000fubxnznikgoc2", name: "N. Chauvarayaswamy", nameLocal: "ಎನ್. ಚೌವರಾಯಸ್ವಾಮಿ", role: "MLA, Nagamangala" };
+    const { writes } = computeWrites([op], [district], [row]);
+    expect(writes[0].data.name).toBe("N. Chaluvarayaswamy");
+    expect(writes[0].data.nameLocal).toBeNull();
+  });
 });
 
 describe("normalizeName", () => {

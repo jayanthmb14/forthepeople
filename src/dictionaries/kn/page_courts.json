@@ -68,7 +68,7 @@
   "courtsTitle": "ಈ ಜಿಲ್ಲೆಯ ನ್ಯಾಯಾಲಯಗಳು",
   "courtsHint": "ಒಂದು ನ್ಯಾಯಾಲಯದ ಎಲ್ಲ ಅಂಕಿಅಂಶಗಳನ್ನು ನೋಡಲು ಮತ್ತು NJDG ಯಲ್ಲಿ ತೆರೆಯಲು ಅದನ್ನು ಒತ್ತಿರಿ.",
   "courtsOneHint": "NJDG {district} ಜಿಲ್ಲೆಯ ಎಲ್ಲ ಜಿಲ್ಲಾ ಮತ್ತು ತಾಲ್ಲೂಕು ನ್ಯಾಯಾಲಯಗಳನ್ನು ಒಟ್ಟಾಗಿ ಎಣಿಸುತ್ತದೆ.",
-  "cardWaiting": "{n, plural, one {{count} ಪ್ರಕರಣ ಬಾಕಿ} other {{count} ಪ್ರಕರಣಗಳು ಬಾಕಿ}}",
+  "cardWaiting": "{n, plural, =1 {{count} ಪ್ರಕರಣ ಬಾಕಿ} other {{count} ಪ್ರಕರಣಗಳು ಬಾಕಿ}}",
   "cardOld": "10 ವರ್ಷಕ್ಕೂ ಹಳೆಯವು {count}",
   "cardPace": "{year}ರಲ್ಲಿ ಪ್ರತಿ 10 ಹೊಸವಕ್ಕೆ {n} ವಿಲೇವಾರಿ",
   "cardSoFar": "{year} ಇಲ್ಲಿಯವರೆಗೆ: {filed} ಹೊಸವು, {disposed} ವಿಲೇವಾರಿ",

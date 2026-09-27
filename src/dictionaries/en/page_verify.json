@@ -46,6 +46,7 @@
     "onChange": "When it changes"
   },
   "periodFy": "FY {period}",
+  "periodCensus": "Census {year}",
   "noDate": "Not published",
   "none": "—",
   "checkYourself": "Check it yourself",

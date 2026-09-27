@@ -43,7 +43,7 @@
     "state": "ಇಡೀ {state}: ರಾಜ್ಯ ಸರ್ಕಾರ ನಡೆಸುತ್ತದೆ.",
     "local": "{district}: ಸ್ಥಳೀಯ ಸಂಸ್ಥೆ ನಡೆಸುತ್ತದೆ.",
     "unknown": "ಇದು ಎಲ್ಲಿ ಜಾರಿಯಲ್ಲಿದೆ ಎಂದು ಮೂಲ ತಿಳಿಸಿಲ್ಲ.",
-    "alsoListed": "ForThePeople.in ನಲ್ಲಿ {n, plural, one {ಇನ್ನೊಂದು # ಜಿಲ್ಲೆಗೂ} other {ಇನ್ನೂ # ಜಿಲ್ಲೆಗಳಿಗೂ}} ಪಟ್ಟಿಯಾಗಿದೆ:",
+    "alsoListed": "ForThePeople.in ನಲ್ಲಿ {n, plural, =1 {ಇನ್ನೊಂದು # ಜಿಲ್ಲೆಗೂ} other {ಇನ್ನೂ # ಜಿಲ್ಲೆಗಳಿಗೂ}} ಪಟ್ಟಿಯಾಗಿದೆ:",
     "place": "{district} ({state})"
   },
   "list": {
@@ -85,7 +85,7 @@
   },
   "get": {
     "health": "{amount} ಆರೋಗ್ಯ ರಕ್ಷೆ",
-    "housing": "ಮನೆ ಕಟ್ಟಲು ಅಥವಾ ಕೊಳ್ಳಲು {amount}",
+    "housing": "ಪಕ್ಕಾ ಮನೆಗಾಗಿ {amount}",
     "education": "ಓದಿಗೆ {amount}",
     "farm": "ರೈತರಿಗೆ {amount}",
     "women": "ಮಹಿಳೆಯರು ಮತ್ತು ಕುಟುಂಬಗಳಿಗೆ {amount}",

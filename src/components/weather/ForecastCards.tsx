@@ -174,7 +174,7 @@ export function NowCard({
             {t("tiles.wind")}{" "}
             <strong>
               {w.kmh(view.windKmh)}
-              {view.windDir ? ` ${view.windDir}` : ""}
+              {view.windDir ? ` ${w.dir(view.windDir)}` : ""}
             </strong>
           </li>
         )}

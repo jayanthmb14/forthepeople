@@ -15,6 +15,7 @@ import { intlLocale, NUMBER_LOCALE } from "./languages";
 import { SIDEBAR_MODULES, MODULE_GROUPS, getModuleGroup } from "@/lib/constants/sidebar-modules";
 import { INDIA_STATES, getDistrict } from "@/lib/constants/districts";
 import { placeName } from "./place-name";
+import { formatDate } from "./format-date";
 
 
 /** Locale-aware number and date formatting (IST for dates). */
@@ -25,8 +26,9 @@ export function useFormat() {
     locale,
     intl,
     number: (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleString(NUMBER_LOCALE, opts),
+    /** Kannada is written day first with full month names (format-date.ts). */
     date: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) =>
-      new Date(d).toLocaleDateString(intl, { timeZone: "Asia/Kolkata", ...opts }),
+      formatDate(d, intl, { timeZone: "Asia/Kolkata", ...opts }),
     time: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) =>
       new Date(d).toLocaleTimeString(intl, { timeZone: "Asia/Kolkata", ...opts }),
     /** "5 hours ago" / "5 ಗಂಟೆಗಳ ಹಿಂದೆ" (Intl.RelativeTimeFormat); older than a week → "12 Sep". */
@@ -38,7 +40,7 @@ export function useFormat() {
       if (Math.abs(diffH) < 24) return rtf.format(diffH, "hour");
       const diffD = Math.round(diffH / 24);
       if (Math.abs(diffD) < 7) return rtf.format(diffD, "day");
-      return new Date(d).toLocaleDateString(intl, { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+      return formatDate(d, intl, { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
     },
   };
 }

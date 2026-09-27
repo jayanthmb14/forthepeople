@@ -6,7 +6,7 @@
   "summary": {
     "current": "{n} ताज़ा",
     "reference": "{n} संदर्भ",
-    "late": "{n} पुराने",
+    "late": "{n, plural, =1 {# पुराना} other {# पुराने}}",
     "unknown": "{n} बिना तारीख़",
     "missing": "{n} अभी नहीं जुटाए"
   },
@@ -22,7 +22,7 @@
   },
   "status": {
     "current": "समय पर",
-    "late": "{n, plural, one {# दिन} other {# दिन}} देर से",
+    "late": "{n, plural, =1 {# दिन} other {# दिन}} देर से",
     "unknown": "तारीख़ प्रकाशित नहीं",
     "not_collected": "यहाँ नहीं जुटाया जाता",
     "reference": "संदर्भ"
@@ -46,6 +46,7 @@
     "onChange": "जब बदले"
   },
   "periodFy": "वित्त वर्ष {period}",
+  "periodCensus": "जनगणना {year}",
   "noDate": "प्रकाशित नहीं",
   "none": "—",
   "checkYourself": "खुद जाँचें",

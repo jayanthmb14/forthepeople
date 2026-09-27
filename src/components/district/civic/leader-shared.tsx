@@ -11,7 +11,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { useTranslations } from "next-intl";
-import { Building, Building2, Landmark, Map as MapIcon, Users, Vote } from "lucide-react";
+import { Building, Building2, Landmark, Map as MapIcon, Scale, Users, Vote } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getRoleDescriptionId, getRoleDescriptionIdForText } from "@/lib/constants/role-descriptions";
@@ -20,15 +20,16 @@ import { localRoleFits } from "@/lib/government-checks";
 
 export type T = ReturnType<typeof useTranslations>;
 
-/** One small line icon per level of government (drawn in the page hue). */
-export const TIER_ICON: Record<number, LucideIcon> = { 1: Landmark, 2: MapIcon, 3: Building2, 4: Vote, 5: Building };
+/** One small line icon per level of government (drawn in the page hue); 6 = the courts (src/lib/civic/leader-level.ts). */
+export const TIER_ICON: Record<number, LucideIcon> = { 1: Landmark, 2: MapIcon, 3: Building2, 4: Vote, 5: Building, 6: Scale };
 
 /**
  * Top-to-bottom order for the "who is above whom" picture and the lists:
  * country → state → the MP and MLAs you vote for → district officers →
- * city and departments. Unknown levels follow in number order.
+ * city and departments, then the courts (listed apart). Unknown levels
+ * follow in number order.
  */
-export const LEVEL_ORDER = [1, 2, 4, 3, 5];
+export const LEVEL_ORDER = [1, 2, 4, 3, 5, 6];
 export function orderTiers(tiers: number[]): number[] {
   const known = LEVEL_ORDER.filter((t) => tiers.includes(t));
   const rest = tiers.filter((t) => !LEVEL_ORDER.includes(t)).sort((a, b) => a - b);

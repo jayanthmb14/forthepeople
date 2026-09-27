@@ -77,9 +77,9 @@
   "publishersSimple": "ಅತಿ ಹೆಚ್ಚು ಸುದ್ದಿ ಪ್ರಕಟಿಸಿದ್ದು <b>{name}</b>: {total} ಸುದ್ದಿಗಳಲ್ಲಿ {n}.",
   "publishersAria": "ಸುದ್ದಿಗಳನ್ನು ಪ್ರಕಾಶಕರ ಪ್ರಕಾರ ವಿಭಾಗಿಸಿದ ವೃತ್ತ. ಅತಿ ಹೆಚ್ಚು ಪ್ರಕಟಿಸಿದ್ದು {name}: {total} ಸುದ್ದಿಗಳಲ್ಲಿ {n}.",
   "otherPublishers": "ಇತರ ಪ್ರಕಾಶಕರು",
-  "storiesWord": "{n, plural, other {ಸುದ್ದಿಗಳು}}",
+  "storiesWord": "{n, plural, =1 {ಸುದ್ದಿ} other {ಸುದ್ದಿಗಳು}}",
   "daysTitle": "ಸುದ್ದಿಗಳು ಬಂದ ದಿನಗಳು",
   "daysUnits": "ದಿನಕ್ಕೆ ಸುದ್ದಿಗಳು, ಕಳೆದ {n} ದಿನಗಳು",
-  "daysSimple": "ಅತಿ ಹೆಚ್ಚು ಸುದ್ದಿ ಬಂದ ದಿನ <b>{day}</b>: {n, plural, other {{count} ಸುದ್ದಿಗಳು}}.",
+  "daysSimple": "ಅತಿ ಹೆಚ್ಚು ಸುದ್ದಿ ಬಂದ ದಿನ <b>{day}</b>: {n, plural, =1 {{count} ಸುದ್ದಿ} other {{count} ಸುದ್ದಿಗಳು}}.",
   "daysAria": "ಕಳೆದ {n} ದಿನಗಳಲ್ಲಿ ಪ್ರತಿ ದಿನಕ್ಕೆ ಒಂದು ಪಟ್ಟಿ, ಒಟ್ಟು {total} ಸುದ್ದಿಗಳು."
 }

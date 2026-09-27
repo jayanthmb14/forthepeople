@@ -42,7 +42,7 @@
     "news": "सामान्य",
     "exams": "परीक्षाएँ और नौकरियाँ"
   },
-  "simple": "अभी सूची में {district} के बारे में <b>{count}</b> {count, plural, one {ख़बर है} other {ख़बरें हैं}}। ज़्यादातर <b>{topic}</b> पर हैं ({topicCount, plural, one {# ख़बर} other {# ख़बरें}})। सबसे नई ख़बर: {newest}।",
+  "simple": "अभी सूची में {district} के बारे में <b>{count}</b> {count, plural, =1 {ख़बर है} other {ख़बरें हैं}}। ज़्यादातर <b>{topic}</b> पर हैं ({topicCount, plural, =1 {# ख़बर} other {# ख़बरें}})। सबसे नई ख़बर: {newest}।",
   "statArticles": "ख़बरें",
   "statArticlesSub": "अभी सूची में",
   "statTopics": "विषय",
@@ -77,9 +77,9 @@
   "publishersSimple": "सबसे ज़्यादा ख़बरें <b>{name}</b> ने दीं: {total} में से {n}।",
   "publishersAria": "सूची की ख़बरों का घेरा, प्रकाशक के अनुसार बँटा हुआ। सबसे ज़्यादा {name} ने दीं: {total} में से {n}।",
   "otherPublishers": "दूसरे प्रकाशक",
-  "storiesWord": "{n, plural, one {ख़बर} other {ख़बरें}}",
+  "storiesWord": "{n, plural, =1 {ख़बर} other {ख़बरें}}",
   "daysTitle": "ख़बरें कब आईं",
   "daysUnits": "हर दिन की ख़बरें, पिछले {n} दिन",
-  "daysSimple": "सबसे ज़्यादा ख़बरें <b>{day}</b> को आईं: {n, plural, one {{count} ख़बर} other {{count} ख़बरें}}।",
+  "daysSimple": "सबसे ज़्यादा ख़बरें <b>{day}</b> को आईं: {n, plural, =1 {{count} ख़बर} other {{count} ख़बरें}}।",
   "daysAria": "पिछले {n} दिनों में हर दिन के लिए एक पट्टी, कुल {total} ख़बरें।"
 }

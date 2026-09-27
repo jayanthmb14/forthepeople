@@ -119,6 +119,24 @@ export function isWithinMinutes(
   return nowMs - ms < minutes * 60_000;
 }
 
+/**
+ * Whole calendar days from a date to today, both read as India (IST) dates:
+ * 22 Jun → 28 Sep is 98 whatever the hour. For "N days ago" text, so the
+ * district overview and the home price ticker give the same count (Sept
+ * 2026 audit: the overview floored elapsed hours and said 97). Null when
+ * unknown.
+ */
+export function calendarDaysAgoIST(
+  date: string | Date | null | undefined,
+  nowMs: number = Date.now(),
+): number | null {
+  const ms = toMs(date);
+  if (ms === null) return null;
+  const IST = 5.5 * 3_600_000;
+  const day = (x: number) => Math.floor((x + IST) / 86_400_000);
+  return Math.max(0, day(nowMs) - day(ms));
+}
+
 /** Age in whole days (null when unknown). Handy for "under 30 days" filters. */
 export function ageInDays(
   date: string | Date | null | undefined,

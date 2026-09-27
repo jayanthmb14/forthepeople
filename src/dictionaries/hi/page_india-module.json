@@ -50,7 +50,7 @@
   "news": {
     "title": "{module} से जुड़ी ख़बरें",
     "emptyTitle": "{module} के बारे में अभी कोई ख़बर नहीं है।",
-    "emptyBody": "अभी हम ज़िलों की ख़बरें जुटाते हैं; राष्ट्रीय ख़बरें अभी जुड़ी नहीं हैं।",
+    "emptyBody": "अभी हम जिलों की ख़बरें जुटाते हैं; राष्ट्रीय ख़बरें अभी जुड़ी नहीं हैं।",
     "india": "भारत"
   },
   "next": {
@@ -337,7 +337,7 @@
       "satellites_launched_count": "छोड़े गए उपग्रह"
     },
     "science-rd": {
-      "rd_pct_gdp": "अनुसंधान पर ख़र्च, जीडीपी का हिस्सा"
+      "rd_pct_gdp": "अनुसंधान पर खर्च, जीडीपी का हिस्सा"
     },
     "trade-overview": {
       "exports_annual_lakh_cr": "एक साल में माल निर्यात"
@@ -382,13 +382,13 @@
     "sources": "स्रोत",
     "changeYear": "{year} से {pct} {dir, select, up {बढ़ा} down {घटा} other {का बदलाव}}",
     "changePrior": "पिछली गिनती से {pct} {dir, select, up {बढ़ा} down {घटा} other {का बदलाव}}",
-    "points": "{n, plural, one {अब तक # गिनती} other {अब तक # गिनतियाँ}}",
+    "points": "{n, plural, =1 {अब तक # गिनती} other {अब तक # गिनतियाँ}}",
     "topTitle": "सबसे आगे के 5 राज्य",
     "methodTitle": "गिनती कैसे होती है",
     "viewPdf": "स्रोत की पीडीएफ़ खोलें",
     "cadenceLine": "{refresh}, {type}",
     "differ": "क्या स्रोतों में अंतर है?",
-    "differYes": "{n, plural, one {# स्रोत में अंतर है} other {# स्रोतों में अंतर है}}",
+    "differYes": "{n, plural, =1 {# स्रोत में अंतर है} other {# स्रोतों में अंतर है}}",
     "differNo": "कोई अंतर नहीं मिला",
     "updateLog": "अपडेट का रिकॉर्ड",
     "continue": "और देखें",

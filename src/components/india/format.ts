@@ -15,6 +15,7 @@
  */
 
 import { intlLocale, NUMBER_LOCALE } from "@/i18n/languages";
+import { formatDate } from "@/i18n/format-date";
 import type { Tr } from "./i18n";
 
 export function fmtNumber(
@@ -35,14 +36,14 @@ export function fmtFixed(locale: string, n: number, d: number): string {
   return fmtNumber(locale, n, { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 
-/** Full dates use dateStyle "medium": "26 Jan 1950" / "ಜನ 26, 1950" (the
- *  day/month/year option set drops the space after the comma in Kannada). */
+/** Full dates use dateStyle "medium": "26 Jan 1950" / "26 ಜನವರಿ 1950"
+ *  (Kannada is written day first, src/i18n/format-date.ts). */
 export function fmtDate(
   locale: string,
   d: Date | string | number,
   opts: Intl.DateTimeFormatOptions = { dateStyle: "medium" },
 ): string {
-  return new Date(d).toLocaleDateString(intlLocale(locale), { timeZone: "Asia/Kolkata", ...opts });
+  return formatDate(d, intlLocale(locale), { timeZone: "Asia/Kolkata", ...opts });
 }
 
 /** "3 days ago" / "3 ದಿನಗಳ ಹಿಂದೆ"; older than ~11 months → "Apr 2023". */

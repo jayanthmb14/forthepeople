@@ -29,6 +29,7 @@ import { getPartyColor } from "@/lib/constants/party-colors";
 import { scriptLang } from "@/lib/utils/script-lang";
 import type { LeaderNewsPayload } from "@/app/api/data/leader-news/route";
 import { LeaderAvatar, isPlaceholderName, leaderProvenance, roleDescription, roleText, tierMeta } from "./leader-shared";
+import { ladderTier } from "@/lib/civic/leader-level";
 
 /** Affidavits of every candidate who stood for election (ECI). */
 const AFFIDAVIT_URL = "https://affidavit.eci.gov.in/";
@@ -104,7 +105,7 @@ export function LeaderSheet({
   const l = leader;
   const extra = data?.data ?? null;
   const fmtDate = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
-  const meta = tierMeta(l.tier, t);
+  const meta = tierMeta(ladderTier(l), t);
   const role = roleText(l, f.locale, extra?.roleLocal);
   const nameLocal = l.nameLocal ?? extra?.nameLocal ?? null;
   const phone = l.phone ?? extra?.contact.phone ?? null;

@@ -85,7 +85,7 @@
   },
   "get": {
     "health": "Health cover of {amount}",
-    "housing": "{amount} to help build or buy a home",
+    "housing": "{amount} towards a pucca house",
     "education": "{amount} to help with studies",
     "farm": "{amount} for farmers",
     "women": "{amount} for women and families",

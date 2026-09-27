@@ -33,22 +33,22 @@
     "voteAbout": "{type}, ಸುಮಾರು {date}",
     "grade": "ವರದಿ ಪತ್ರ",
     "gradeValue": "{grade} ({date})",
-    "alerts": "{n, plural, one {ಈಗ # ಎಚ್ಚರಿಕೆ} other {ಈಗ # ಎಚ್ಚರಿಕೆಗಳು}}",
+    "alerts": "{n, plural, =1 {ಈಗ # ಎಚ್ಚರಿಕೆ} other {ಈಗ # ಎಚ್ಚರಿಕೆಗಳು}}",
     "lakh": "{n} ಲಕ್ಷ",
     "crore": "{n} ಕೋಟಿ",
     "fy": "ಆರ್ಥಿಕ ವರ್ಷ {fy}",
     "loading": "ಮುಖ್ಯ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ"
   },
   "notice": {
-    "lateDays": "ಈ ಮಾಹಿತಿ {n, plural, one {# ದಿನ} other {# ದಿನಗಳಷ್ಟು}} ಹಳೆಯದು.",
-    "lateHours": "ಈ ಮಾಹಿತಿ {n, plural, one {# ಗಂಟೆ} other {# ಗಂಟೆಗಳಷ್ಟು}} ಹಳೆಯದು.",
+    "lateDays": "ಈ ಮಾಹಿತಿ {n, plural, =1 {# ದಿನ} other {# ದಿನಗಳಷ್ಟು}} ಹಳೆಯದು.",
+    "lateHours": "ಈ ಮಾಹಿತಿ {n, plural, =1 {# ಗಂಟೆ} other {# ಗಂಟೆಗಳಷ್ಟು}} ಹಳೆಯದು.",
     "latePeriod": "ಈ ಮಾಹಿತಿ {period} ಕ್ಕೆ ಸೇರಿದ್ದು.",
     "newestDate": "ನಮ್ಮಲ್ಲಿರುವ ಇತ್ತೀಚಿನ ಮಾಹಿತಿ {date} ರದ್ದು. ಮೂಲ: {source}.",
     "newestPeriod": "ಇದು ನಮ್ಮಲ್ಲಿರುವ ಇತ್ತೀಚಿನದು. ಮೂಲ: {source}.",
     "notFound": "ಇದಕ್ಕಿಂತ ಹೊಸ ಮಾಹಿತಿ ನಮಗೆ ಸಿಗಲಿಲ್ಲ.",
     "unknownTitle": "ಮೂಲವು ದಿನಾಂಕವನ್ನು ಪ್ರಕಟಿಸಿಲ್ಲ.",
     "unknownBody": "ಈ ಮಾಹಿತಿ ಎಷ್ಟು ಹಳೆಯದು ಎಂದು ನಮಗೆ ಹೇಳಲಾಗುತ್ತಿಲ್ಲ.",
-    "notCollected": "{district} ಗಾಗಿ ನಾವು ಈ ಮಾಹಿತಿಯನ್ನು ಇನ್ನೂ ಸಂಗ್ರಹಿಸುತ್ತಿಲ್ಲ.",
+    "notCollected": "{district} ಜಿಲ್ಲೆಗಾಗಿ ನಾವು ಈ ಮಾಹಿತಿಯನ್ನು ಇನ್ನೂ ಸಂಗ್ರಹಿಸುತ್ತಿಲ್ಲ.",
     "howWeCheck": "ನಾವು ಹೇಗೆ ಪರಿಶೀಲಿಸುತ್ತೇವೆ",
     "estimate": "ಇಲ್ಲಿನ ಕೆಲವು ಅಂಕಿಅಂಶಗಳು ಅಂದಾಜುಗಳು, ಅಧಿಕೃತ ಎಣಿಕೆಯಲ್ಲ."
   },
@@ -57,6 +57,6 @@
     "comingSoonAria": "{name}: ಈ ಜಿಲ್ಲೆಗೆ ಶೀಘ್ರದಲ್ಲೇ",
     "late": "ಮಾಹಿತಿ ಹಳೆಯದಾಗಿದೆ",
     "allTopics": "ಎಲ್ಲಾ ವಿಷಯಗಳು",
-    "allTopicsFor": "{district} ನ ಎಲ್ಲಾ ವಿಷಯಗಳು"
+    "allTopicsFor": "{district} ಜಿಲ್ಲೆಯ ಎಲ್ಲಾ ವಿಷಯಗಳು"
   }
 }

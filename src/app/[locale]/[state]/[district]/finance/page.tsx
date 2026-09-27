@@ -101,7 +101,13 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const collections = revenueData?.data?.collections ?? [];
 
   const latestYear = entries.length > 0 ? entries[0].fiscalYear : allocations[0]?.fiscalYear ?? null;
-  const latestEntries = entries.filter((e) => e.fiscalYear === latestYear);
+  // Sector names are stored in English; a common one is shown in the reader's
+  // language (page_finance.sectorNames), else as stored. Sept 2026 audit:
+  // "सबसे बड़ा हिस्सा Roads & Infrastructure को गया".
+  const sectorName = (sector: string) => (t.has(`sectorNames.${sector}`) ? t(`sectorNames.${sector}`) : sector);
+  const latestEntries = entries
+    .filter((e) => e.fiscalYear === latestYear)
+    .map((e) => ({ ...e, sector: sectorName(e.sector) }));
   const latestAllocations = allocations.filter((a) => a.fiscalYear === latestYear);
   // Totals come from the sector rows; a district with only department rows uses those.
   const totalsFrom = latestEntries.length > 0 ? latestEntries : latestAllocations;

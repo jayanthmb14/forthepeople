@@ -4,9 +4,9 @@
   "title": "अगले जिले के लिए वोट करें",
   "description": "{n} जिले वोटिंग सूची में हैं। आपका वोट तय करता है कि अगला कौन-सा लाइव होगा।",
   "backHome": "होम पेज पर वापस जाएँ",
-  "simple": "लोगों ने अब तक <b>{voted, plural, one {# जिले} other {# जिलों}}</b> के लिए <b>{total, plural, one {# वोट} other {# वोट}}</b> दिए हैं। <b>{leader}</b> <b>{votes, plural, one {# वोट} other {# वोटों}}</b> के साथ सबसे आगे है।",
+  "simple": "लोगों ने अब तक <b>{voted, plural, =1 {# जिले} other {# जिलों}}</b> के लिए <b>{total, plural, =1 {# वोट} other {# वोट}}</b> दिए हैं। <b>{leader}</b> <b>{votes, plural, =1 {# वोट} other {# वोटों}}</b> के साथ सबसे आगे है।",
   "topLabel": "सबसे ज़्यादा माँगे गए जिले",
-  "votes": "{n, plural, one {# वोट} other {# वोट}}",
+  "votes": "{n, plural, =1 {# वोट} other {# वोट}}",
   "statesTitle": "राज्यवार वोट",
   "statesUnits": "सभी वोटों में हिस्सा",
   "statesSimple": "सबसे ज़्यादा वोट <b>{state}</b> से हैं: सभी वोटों का लगभग {pct}%।",
@@ -37,12 +37,12 @@
   "sortAlpha": "क्रम: नाम (A से Z)",
   "emptyTitle": "कोई मिलता-जुलता जिला नहीं मिला।",
   "emptyBody": "कोई दूसरा नाम या राज्य चुनकर देखें।",
-  "voteAria": "{district}, {state} को वोट दें। अब तक {n, plural, one {# वोट} other {# वोट}}।",
+  "voteAria": "{district}, {state} को वोट दें। अब तक {n, plural, =1 {# वोट} other {# वोट}}।",
   "vote": "वोट करें",
   "errRate": "थोड़ा रुकें, और एक मिनट बाद फिर कोशिश करें।",
   "errGeneric": "आपका वोट सेव नहीं हो सका। फिर से कोशिश करें।",
   "pagesAria": "पेज",
   "prev": "पिछला",
   "next": "अगला",
-  "pageOf": "पेज {page} / {pages}, कुल {n, plural, one {# जिला} other {# जिले}}"
+  "pageOf": "पेज {page} / {pages}, कुल {n, plural, =1 {# जिला} other {# जिले}}"
 }

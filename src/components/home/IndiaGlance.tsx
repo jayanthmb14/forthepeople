@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Landmark, Languages, Map as MapIcon, Ruler } from "lucide-react";
 import { intlLocale } from "@/i18n/languages";
+import { formatDate } from "@/i18n/format-date";
 import CountUp from "./CountUp";
 import type { IndiaFigure } from "./home-types";
 import styles from "./home.module.css";
@@ -44,7 +45,7 @@ const LOOK: Record<IndiaFigure["id"], { hue: string; icon: React.ReactNode }> = 
 export default function IndiaGlance({ locale, figures }: { locale: string; figures: IndiaFigure[] }) {
   const t = useTranslations("page_home");
   const date = (iso: string) =>
-    new Date(iso).toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+    formatDate(iso, intlLocale(locale), { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 
   const value = (f: IndiaFigure) => {
     switch (f.id) {

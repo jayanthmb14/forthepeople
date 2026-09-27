@@ -119,6 +119,41 @@ script is a dry run until the owner runs it with `--confirm`.
   are gone; the crops and public-district APIs use `shownCropPrices()`, the homepage preview's
   top-crops list `SHOWN_CROP_PRICE`.
 
+### Fixed — Hindi and Kannada text audit findings (branch `v54/fix-language`, 2026-09-28)
+Rule: verified or hidden; each error fixed where the text or code produced it. Not deployed; the
+data script is a dry run until the owner runs it with `--confirm`.
+- **Stale local text**: the leaders APIs serve a Hindi/Kannada role only while it names the same
+  offices as the checked English role (`src/lib/local-text.ts`; Siddaramaiah is no longer
+  'MLA (Chief Minister)' on /kn, ministers keep their ministries); the leaders and records fix
+  scripts clear a local-script copy when the English name or role changes;
+  `scripts/fix-audit-2026-09-language.ts` fixes five rows (Siddaramaiah, N. Chaluvarayaswamy,
+  H.D. Kumaraswamy, Shobha Karandlaje, the NH-275 expressway).
+- **Leadership**: judges are listed under a separate "Courts" level, not "City and departments",
+  and are left out of the "levels of government" counts.
+- **Kannada grammar and dates**: no case ending glued to a place name ('ಮಂಡ್ಯನ' → '{district}
+  ಜಿಲ್ಲೆಯ …', 62 strings, guarded by a test); dates read '27 ಸೆಪ್ಟೆಂಬರ್ 2026'
+  (`src/i18n/format-date.ts`); Kannada names for the seven non-Karnataka districts.
+- **Plurals**: hi/kn singular uses '=1' (CLDR 'one' also matches 0: '0 खुला टेंडर'); dropped
+  singulars restored ('1 ವ್ಯಕ್ತಿ', '2 में से 1 बाँध में').
+- **Wording**: 'lapsed' is money that went back unspent (kn said 'unused'); meta descriptions no
+  longer claim every number is official; religion list says A–Z and sorts in the reader's
+  language; PMAY-G benefit no longer says 'buy'; the report card's measures are translated and the
+  score is not called a 'health' score in hi/kn; support banner, election body, census period,
+  wind directions and budget sectors in the reader's language; one Hindi spelling (जिला, खर्च,
+  आँकड़े, 'यह पेज शेयर करें'); mandi 'N days ago' counts IST calendar days.
+- **Left for after the merge** (lines other fix branches also edit): kn `page_verify.introOverview`
+  ('{district} ನ' → '{district} ಜಿಲ್ಲೆಯ'), hi/kn `page_verify.summary.late`, and the nine plural and
+  four spelling lines listed in `tests/i18n-language.test.ts`.
+
+### Merged — `v54/fix-language` into `v54/merge-rest` (2026-09-28)
+- The lines left for the merge are done: kn `page_verify.introOverview` → '{district} ಜಿಲ್ಲೆಯ …';
+  hi/kn `page_verify.summary.late` is a plural ('1 पुराना' / '1 ಹಳೆಯದು'); the nine plural lines
+  use '=1'; the four spelling lines use जिला (one was already clean after the national
+  merge). `tests/i18n-language.test.ts` has nothing pending.
+- Text the other Sept 2026 branches added now follows the same rules: '=1' in `page_crops`
+  `tileMarketsSub` and `page_jjm` `answer.mainHundred` (hi/kn); जिला (not ज़िला) in seven Hindi
+  lines of `page_citizen-corner`, `page_courts`, `page_crops`, `page_india`, `page_jjm`, `page_leadership`.
+
 ### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
 Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed
 or applied to the database yet.

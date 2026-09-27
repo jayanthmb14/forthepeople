@@ -53,8 +53,9 @@ async function main() {
     {
       name: "Siddaramaiah",
       nameLocal: "ಸಿದ್ದರಾಮಯ್ಯ",
-      role: "Member of Legislative Assembly (Chief Minister, Karnataka)",
-      roleLocal: "ವಿಧಾನಸಭಾ ಸದಸ್ಯ (ಮುಖ್ಯಮಂತ್ರಿ)",
+      // Chief Minister until 28 May 2026 (D. K. Shivakumar since 3 June 2026).
+      role: "Member of Legislative Assembly",
+      roleLocal: "ವಿಧಾನಸಭಾ ಸದಸ್ಯ",
       party: "INC",
       constituency: "Varuna",
       since: "2023",

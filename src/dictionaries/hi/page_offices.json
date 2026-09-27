@@ -2,7 +2,7 @@
   "description": "हर सरकारी कार्यालय कहाँ है, अभी खुला है या नहीं, और फ़ोन कैसे करें या वहाँ कैसे पहुँचें",
   "range": "{open} – {close}",
   "usualHours": "{from}–{to}, {hours}",
-  "answer": "इस सूची में {district} के {offices, plural, one {<b>#</b> सरकारी कार्यालय} other {<b>#</b> सरकारी कार्यालय}} हैं, {departments, plural, one {# विभाग में} other {# विभागों में}}।",
+  "answer": "इस सूची में {district} के {offices, plural, =1 {<b>#</b> सरकारी कार्यालय} other {<b>#</b> सरकारी कार्यालय}} हैं, {departments, plural, =1 {# विभाग में} other {# विभागों में}}।",
   "now": {
     "open": "भारत में अभी {day}, {time} है: ज़्यादातर कार्यालय आम तौर पर अभी <b>खुले</b> रहते हैं ({hours})।",
     "closed": "भारत में अभी {day}, {time} है: ज़्यादातर कार्यालय आम तौर पर अभी <b>बंद</b> रहते हैं। वे आम तौर पर {hours} खुलते हैं।",

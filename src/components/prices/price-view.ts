@@ -20,6 +20,7 @@ import {
 } from "@/lib/markets/compute";
 import type { PriceItem, PriceSeries } from "@/lib/markets/prices";
 import { NUMBER_LOCALE, intlLocale } from "@/i18n/languages";
+import { dateFormatter } from "@/i18n/format-date";
 import type { PriceCardView } from "./PriceCard";
 
 type Values = Record<string, string | number>;
@@ -33,8 +34,9 @@ export function makePriceViewBuilder(t: PricesT, locale: string, nowMs: number =
     new Intl.NumberFormat(NUMBER_LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   const pctFmt = new Intl.NumberFormat(NUMBER_LOCALE, { maximumFractionDigits: 1, minimumFractionDigits: 1 });
   // Trading days are plain "YYYY-MM-DD": format them in UTC so they never shift.
-  const dayShort = new Intl.DateTimeFormat(intl, { day: "numeric", month: "short", timeZone: "UTC" });
-  const dayLong = new Intl.DateTimeFormat(intl, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  // Kannada is written day first ("27 ಸೆಪ್ಟೆಂಬರ್ 2026"), src/i18n/format-date.ts.
+  const dayShort = dateFormatter(intl, { day: "numeric", month: "short", timeZone: "UTC" });
+  const dayLong = dateFormatter(intl, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   const timeIST = new Intl.DateTimeFormat(intl, { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
   const asDate = (d: string) => new Date(`${d}T00:00:00Z`);
   const today = todayIST(nowMs);
@@ -111,7 +113,7 @@ export function makePriceViewBuilder(t: PricesT, locale: string, nowMs: number =
     } else if (series.asOf) {
       const when = new Date(series.asOf);
       asOf = t("asOfDateTime", {
-        date: new Intl.DateTimeFormat(intl, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(when),
+        date: dateFormatter(intl, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(when),
         time: timeIST.format(when),
       });
     } else {

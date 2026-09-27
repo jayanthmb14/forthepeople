@@ -37,6 +37,7 @@ import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY, VERIFIED_SUGAR_SEASON } fr
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
+import { shownRoleLocal } from "@/lib/local-text";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 import { dedupeStories } from "@/lib/news-dedupe";
 import { leaderOfficePhone } from "@/lib/government-checks";
@@ -203,6 +204,9 @@ async function fetchModule(
         // A helpline short code ("100") is never one person's office phone.
         phone: leaderOfficePhone(r.phone),
         lastVerifiedAt: r.lastVerifiedAt ? r.lastVerifiedAt.toISOString() : null,
+        // A hand-written Hindi/Kannada role is served only while it names the
+        // same offices as the checked English role (src/lib/local-text.ts).
+        roleLocal: shownRoleLocal(r.role, r.roleLocal),
       }));
       return { data, meta };
     }

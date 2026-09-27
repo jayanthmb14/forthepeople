@@ -55,8 +55,10 @@ import { HueDonut } from "@/components/district/civic/HueDonut";
 import { LeaderLadder } from "@/components/district/civic/LeaderLadder";
 import { LeaderSheet } from "@/components/district/civic/LeaderSheet";
 import { LeaderAvatar, isPlaceholderName, orderTiers, roleText, tierMeta } from "@/components/district/civic/leader-shared";
+import { COURTS_TIER, ladderTier } from "@/lib/civic/leader-level";
 import { daysUntil, findActiveElection, findNextElection, type ElectionEvent } from "@/components/district/ElectionSection";
 import { getPartyColor } from "@/lib/constants/party-colors";
+import { usePlaceText } from "@/i18n/client";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { scriptLang } from "@/lib/utils/script-lang";
@@ -234,6 +236,17 @@ function PartyRing({ reps, asOf }: { reps: Leader[]; asOf: string | null }) {
 function NextElectionCard({ event, href }: { event: ElectionEvent; href: string }) {
   const t = useTranslations("page_leadership");
   const f = useFormat();
+  const place = usePlaceText();
+  // The stored label is English ("Karnataka Vidhan Sabha"); other languages
+  // name the body from its type ("ಕರ್ನಾಟಕ ವಿಧಾನಸಭೆ").
+  const body =
+    f.locale === "en"
+      ? event.label
+      : event.type === "STATE_ASSEMBLY" && event.state
+        ? t("next.assembly", { state: place.state(event.state) })
+        : event.type === "LOK_SABHA"
+          ? t("next.lokSabha")
+          : event.label;
   const target = event.pollingDate ?? event.nextExpected;
   if (!target) return null;
   const days = daysUntil(target) ?? 0;
@@ -250,7 +263,7 @@ function NextElectionCard({ event, href }: { event: ElectionEvent; href: string 
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>{t("next.title")}</span>
             <span style={{ display: "block", fontSize: 15, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
-              {event.label} · <span className="ftp-num">{when}</span>
+              {body} · <span className="ftp-num">{when}</span>
             </span>
             <span style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("next.link")}</span>
           </span>
@@ -287,11 +300,16 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
     .filter((l) => !ROLE_WORDS.test(l.name.trim()) || (l.name.includes(" ") && l.name.split(/\s+/).length > 2))
     .filter((l, i, arr) => arr.findIndex((x) => x.name.toLowerCase() === l.name.toLowerCase() && x.tier === l.tier) === i);
 
+  // A judge is listed with the courts whatever tier the record carries.
   const byTier = people.reduce((acc: Record<number, Leader[]>, l) => {
-    (acc[l.tier] ??= []).push(l);
+    (acc[ladderTier(l)] ??= []).push(l);
     return acc;
   }, {});
   const tiers = orderTiers(Object.keys(byTier).map(Number));
+  // The courts are listed, but they are not a level of government: the
+  // picture and the "levels" counts leave them out.
+  const govTiers = tiers.filter((x) => x !== COURTS_TIER);
+  const govPeople = people.length - (byTier[COURTS_TIER]?.length ?? 0);
   for (const tier of tiers) byTier[tier].sort((a, b) => rank(a.role) - rank(b.role) || a.name.localeCompare(b.name));
 
   // Freshness = the most recent "last verified" date across everyone listed.
@@ -318,7 +336,7 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
     downloadCsv(
       `${district}-leadership.csv`,
       people.map((l) => ({
-        level: tierMeta(l.tier, t).label,
+        level: tierMeta(ladderTier(l), t).label,
         name: l.name,
         role: l.role,
         party: l.party ?? "",
@@ -341,7 +359,7 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
 
       {people.length > 0 && (
         <Explainer>
-          {t.rich("simple", { n: people.length, levels: tiers.length, name: districtName, b })}
+          {t.rich("simple", { n: govPeople, levels: govTiers.length, name: districtName, b })}
           {electedCount > 0 && <> {t.rich("simpleElected", { n: electedCount, b })}</>}
           {officerCount > 0 && <> {t.rich("simpleOfficers", { n: officerCount, b })}</>}
         </Explainer>
@@ -374,13 +392,13 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
             <StatTile icon={Users} label={t("tilePeople")} value={f.number(people.length)} asOf={asOf} />
             <StatTile icon={Vote} label={t("tileElected")} value={f.number(electedCount)} sub={t("tileElectedSub")} />
             <StatTile icon={Building2} label={t("tileOfficers")} value={f.number(officerCount)} sub={t("tileOfficersSub")} />
-            <StatTile icon={Layers} label={t("tileLevels")} value={f.number(tiers.length)} sub={t("tileLevelsSub")} />
+            <StatTile icon={Layers} label={t("tileLevels")} value={f.number(govTiers.length)} sub={t("tileLevelsSub")} />
           </StatStrip>
 
           {/* The picture: who is above whom. Names in it open the same sheet as the cards. */}
           <div style={{ marginTop: 16 }}>
             <Card padding={18}>
-              <LeaderLadder tiers={tiers} byTier={byTier} onPick={setSelected} onJump={jumpTo} />
+              <LeaderLadder tiers={govTiers} byTier={byTier} onPick={setSelected} onJump={jumpTo} />
             </Card>
           </div>
         </>

@@ -143,6 +143,14 @@ async function main() {
         console.log(`    ${field}: ${show(current)} → ${show(planned)}`);
         data[field] = toDbValue(field, planned);
       }
+      // A renamed row keeps no local-script name written for the old English
+      // name unless this fix sets one (Sept 2026 language audit: the Mandya
+      // NH-275 row, renamed to the six-lane Bengaluru–Mysuru Expressway, kept
+      // "NH-275 ನಾಲ್ಕು ಪಥ ಅಗಲೀಕರಣ", "four-lane widening").
+      if ("name" in data && row.nameLocal != null && !("nameLocal" in f.set!)) {
+        console.log(`    nameLocal: ${show(row.nameLocal)} → null (written for the old name)`);
+        data.nameLocal = null;
+      }
       if (drift) {
         console.log("  → a field changed since the check — whole fix skipped; review by hand");
         tally(f.table).drift++;

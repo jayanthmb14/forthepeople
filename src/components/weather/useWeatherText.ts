@@ -27,6 +27,8 @@ export function useWeatherText() {
   const pct = (v: number | null | undefined) => (v === null || v === undefined ? dash : f.number(v / 100, { style: "percent", maximumFractionDigits: 0 }));
   const mm = (v: number | null | undefined) => (v === null || v === undefined ? dash : t("mm", { v: f.number(v, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }));
   const kmh = (v: number | null | undefined) => (v === null || v === undefined ? dash : `${f.number(Math.round(v))} ${t("kmh")}`);
+  /** Compass point in the reader's language ("WSW" → "ಪಶ್ಚಿಮ-ನೈಋತ್ಯ"); unknown text as given. */
+  const dir = (d: string) => (t.has(`compass.${d}`) ? t(`compass.${d}`) : d);
 
   const kindLabel = (kind: WeatherKind, night = false) =>
     night && (kind === "clear" || kind === "mostlyClear" || kind === "partly") ? t(`forecast.kindNight.${kind}`) : t(`forecast.kind.${kind}`);
@@ -60,7 +62,7 @@ export function useWeatherText() {
 
   const sourceOf = (key: ForecastSourceKey) => FORECAST_SOURCES[key];
 
-  return { t, f, dash, deg, degExact, pct, mm, kmh, kindLabel, dayName, dateShort, dateLong, time, when, band, uv, sourceOf };
+  return { t, f, dash, deg, degExact, pct, mm, kmh, dir, kindLabel, dayName, dateShort, dateLong, time, when, band, uv, sourceOf };
 }
 
 export type WeatherText = ReturnType<typeof useWeatherText>;

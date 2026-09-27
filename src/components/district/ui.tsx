@@ -60,6 +60,7 @@ import { KitIcon, emojiIcon } from "@/lib/design/emoji-icons";
 import { scriptLang } from "@/lib/utils/script-lang";
 import { useTranslations } from "next-intl";
 import { useFormat, useModuleText } from "@/i18n/client";
+import { formatDate } from "@/i18n/format-date";
 import {
   AlertCircle,
   ArrowDownRight,
@@ -156,7 +157,7 @@ function toDate(value: string | Date | null | undefined): Date | null {
 /** "12 Sep" or "12 Sep 2025" when the year differs from today. `intl` picks the language. */
 function shortDate(d: Date, intl = "en-IN"): string {
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString(intl, {
+  return formatDate(d, intl, {
     day: "numeric",
     month: "short",
     ...(sameYear ? {} : { year: "numeric" }),
@@ -625,7 +626,7 @@ export function StaleNotice({
   }
   const d = toDate(asOf);
   if (!d) return null;
-  const date = d.toLocaleDateString(f.intl, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  const date = formatDate(d, f.intl, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
   return (
     <p role="note" className={cls} data-kind="stale" style={{ margin: 0 }}>
       <Clock size={16} aria-hidden />
