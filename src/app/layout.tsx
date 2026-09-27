@@ -4,6 +4,7 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+import { ROUTED_LOCALES } from "@/i18n/languages";
 import type { Metadata } from "next";
 import { fontVariableClasses } from "@/lib/fonts";
 import Script from "next/script";
@@ -92,7 +93,7 @@ const webAppLd = {
   "dateCreated": "2026-03-17",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
-  "inLanguage": ["en", "kn"],
+  "inLanguage": ROUTED_LOCALES,
   "author": {
     "@type": "Person",
     "name": "Jayanth M B",
@@ -133,7 +134,7 @@ const websiteLd = {
   "name": "ForThePeople.in",
   "url": BASE_URL,
   "description": "India's citizen transparency platform. Access district-level government data free of cost.",
-  "inLanguage": ["en", "kn"],
+  "inLanguage": ROUTED_LOCALES,
   "potentialAction": {
     "@type": "SearchAction",
     "target": {

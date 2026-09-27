@@ -24,6 +24,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { setRequestLocale } from "next-intl/server";
+import { languageAlternates } from "@/i18n/seo";
 import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
 
 import MarketTicker from "@/components/home/MarketTicker";
@@ -71,14 +72,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const url = `${BASE_URL}/${locale}`;
   return {
-    alternates: {
-      canonical: url,
-      languages: {
-        en: `${BASE_URL}/en`,
-        kn: `${BASE_URL}/kn`,
-        "x-default": `${BASE_URL}/en`,
-      },
-    },
+    alternates: languageAlternates("", locale),
     openGraph: { url },
   };
 }
