@@ -272,7 +272,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                         </Pill>
                         <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
                           Today: <span className="ftp-num">{status.today ?? "closed"}</span>
-                          {o.lunchBreak ? <> · lunch <span className="ftp-num">{o.lunchBreak}</span></> : null} (IST)
+                          {status.today && o.lunchBreak ? <> · lunch <span className="ftp-num">{o.lunchBreak}</span></> : null} (IST)
                         </span>
                       </div>
                     )}
