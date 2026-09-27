@@ -31,12 +31,12 @@ import { weatherEmoji } from "@/components/district/visuals";
 import { getDistrictIcon } from "@/components/district/icons";
 import { DISTRICT_META } from "@/lib/data/district-meta";
 import { getDistrictHue } from "@/lib/design/hues";
-import { scriptLang } from "@/lib/utils/script-lang";
 import { getDistrict } from "@/lib/constants/districts";
-import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
+import { ageInDays } from "@/lib/utils/timeAgo";
 import { usePreview, useTopVotes } from "./home-data";
 import { useTranslations } from "next-intl";
 import { useFormat, usePlaceText } from "@/i18n/client";
+import { placeNamePair } from "@/i18n/place-name";
 import styles from "./home.module.css";
 
 /** A district counts as "NEW" for this many days after it goes live. */
@@ -54,6 +54,7 @@ export interface HomeDistrict {
 
 export default function LiveDistrictsCard({ locale, districts }: { locale: string; districts: HomeDistrict[] }) {
   const t = useTranslations("home");
+  const tp = useTranslations("popup");
   const f = useFormat();
   const place = usePlaceText();
   const preview = usePreview();
@@ -81,7 +82,9 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
         <h2 id="home-live-districts" className="ftp-h2">
           {t("liveDistricts")}
         </h2>
-        <Pill tone="live" dot pulse>
+        {/* A count of districts, not a data feed: no pulsing dot (the kit
+            keeps the pulse for data under 30 minutes old). */}
+        <Pill tone="live" dot>
           {t("liveCount", { n: sorted.length })}
         </Pill>
         <span className={styles.gridHeadNote}>{t("newestFirst")}</span>
@@ -102,14 +105,14 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
           const isNew = age !== null && age <= NEW_BADGE_DAYS;
           const weather = preview[d.slug]?.weather ?? null;
           const temp = weather?.temp ?? null;
-          const tempAsOf = asOfLabel(weather?.recordedAt ?? null, { prefix: "Weather as of" });
+          const tempAsOf = weather?.recordedAt
+            ? tp("weatherAsOf", { date: f.date(weather.recordedAt, { day: "numeric", month: "short" }) })
+            : "";
           const Icon = getDistrictIcon(d.slug);
           const hue = getDistrictHue(d.slug);
-          // In a UI language that matches the district's own script, lead
-          // with the local name (ಮಂಡ್ಯ on /kn) and show English beside it.
-          const localFirst = Boolean(local && scriptLang(local) === locale);
-          const primary = localFirst ? (local as string) : d.name;
-          const secondary = localFirst ? d.name : local;
+          // The name in the page language leads (मंड्या on /hi, ಮಂಡ್ಯ on /kn)
+          // with English beside it; on /en the local script sits beside.
+          const names = placeNamePair({ name: d.name, nameLocal: local, names: getDistrict(d.stateSlug, d.slug)?.names }, locale);
           return (
             <li key={d.slug} className={`ftp-hue-${hue} ftp-rise`} style={{ ["--i" as string]: i }}>
               <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.districtTile} ftp-card-link`}>
@@ -127,10 +130,10 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
                   )}
                 </span>
                 <span className={styles.districtTileName}>
-                  <span lang={localFirst ? scriptLang(primary) : undefined}>{primary}</span>
-                  {secondary && (
-                    <span lang={localFirst ? "en" : scriptLang(secondary)} className={styles.districtTileLocal}>
-                      {secondary}
+                  <span lang={names.primaryLang}>{names.primary}</span>
+                  {names.secondary && (
+                    <span lang={names.secondaryLang} className={styles.districtTileLocal}>
+                      {names.secondary}
                     </span>
                   )}
                 </span>

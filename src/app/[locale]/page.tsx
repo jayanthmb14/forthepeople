@@ -23,8 +23,9 @@
 
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { languageAlternates } from "@/i18n/seo";
+import { routing } from "@/i18n/routing";
 import { getPlatformFacts } from "@/lib/platform-facts";
 
 import MarketTicker from "@/components/home/MarketTicker";
@@ -71,6 +72,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const url = `${BASE_URL}/${locale}`;
+  // English keeps the root layout's title and description (unchanged SEO).
+  // Other languages get them from their messages (docs/I18N.md §5), e.g.
+  // "ForThePeople.in — आपका जिला। आपका डेटा। आपका अधिकार।" on /hi.
+  if (locale !== routing.defaultLocale) {
+    const ts = await getTranslations({ locale, namespace: "site" });
+    const ti = await getTranslations({ locale, namespace: "intro" });
+    const title = `${ts("name")} — ${ts("tagline")}`;
+    const description = ti("sub");
+    return {
+      title: { absolute: title },
+      description,
+      alternates: languageAlternates("", locale),
+      openGraph: { url, title, description },
+    };
+  }
   return {
     alternates: languageAlternates("", locale),
     openGraph: { url },

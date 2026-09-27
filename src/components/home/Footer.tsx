@@ -27,6 +27,7 @@ import { useTranslations } from "next-intl";
 import { Github, Instagram, Users } from "lucide-react";
 import { timeAgoLabel, type TimeAgoResult } from "@/lib/utils/timeAgo";
 import { formatIST } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
 import styles from "./chrome.module.css";
 
 export interface FooterProps {
@@ -35,6 +36,9 @@ export interface FooterProps {
 
 export default function Footer({ locale }: FooterProps) {
   const t = useTranslations("footer2");
+  const th = useTranslations("header");
+  const tp = useTranslations("page_home");
+  const f = useFormat();
   const [updated, setUpdated] = useState<TimeAgoResult & { at: string | null }>({
     label: "—",
     isStale: true,
@@ -91,7 +95,7 @@ export default function Footer({ locale }: FooterProps) {
     <footer role="contentinfo" className={styles.footerV4}>
       <div className={`ftp-container ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
-          <Link href={`/${locale}`} className={styles.footerLogo} aria-label="ForThePeople.in home" translate="no">
+          <Link href={`/${locale}`} className={styles.footerLogo} aria-label={th("home")} translate="no">
             <span className={styles.logoTile} aria-hidden>
               <Users size={17} strokeWidth={2.4} />
             </span>
@@ -104,7 +108,7 @@ export default function Footer({ locale }: FooterProps) {
               href="https://www.instagram.com/forthepeople_in/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="ForThePeople on Instagram"
+              aria-label={tp("onInstagram")}
               className={styles.footerIcon}
             >
               <Instagram size={18} aria-hidden />
@@ -113,14 +117,14 @@ export default function Footer({ locale }: FooterProps) {
               href="https://github.com/jayanthmb14/forthepeople"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="ForThePeople on GitHub"
+              aria-label={tp("onGithub")}
               className={styles.footerIcon}
             >
               <Github size={18} aria-hidden />
             </a>
           </div>
         </div>
-        <nav aria-label="Footer" className={styles.footerCols}>
+        <nav aria-label={tp("footerNav")} className={styles.footerCols}>
           {groups.map((g) => (
             <div key={g.title}>
               <h2 className={styles.footerColTitle}>{g.title}</h2>
@@ -140,8 +144,12 @@ export default function Footer({ locale }: FooterProps) {
           {t("builtBy")} <span className="ftp-emoji" aria-hidden>🇮🇳</span>
         </span>
         <span>{t("article")}</span>
-        {updated.label !== "—" && (
-          <span title={updated.at ? formatIST(updated.at) ?? undefined : undefined}>{t("refreshed", { ago: updated.label })}</span>
+        {/* The age in the page language ("5 घंटे पहले"); same honest rule
+            as timeAgoLabel: the real age, never "Live". */}
+        {updated.label !== "—" && updated.at && (
+          <span title={formatIST(updated.at, f.intl) ?? undefined} suppressHydrationWarning>
+            {t("refreshed", { ago: f.ago(updated.at) })}
+          </span>
         )}
       </div>
     </footer>

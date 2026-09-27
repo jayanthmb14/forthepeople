@@ -18,9 +18,10 @@ import styles from "./home.module.css";
 
 export default function SupportLine({ locale }: { locale: string }) {
   const t = useTranslations("home");
+  const tf = useTranslations("footer2");
   return (
     <div className="ftp-container">
-      <aside className={styles.supportLine} aria-label="Support ForThePeople.in">
+      <aside className={styles.supportLine} aria-label={tf("supportProject")}>
         <span className={`${styles.supportEmoji} ftp-emoji`} aria-hidden>
           🪔
         </span>

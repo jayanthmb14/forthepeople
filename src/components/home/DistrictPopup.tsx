@@ -23,8 +23,8 @@ import { ArrowRight, X } from "lucide-react";
 import { DISTRICT_ICONS } from "@/components/district/icons";
 import { getDistrict } from "@/lib/constants/districts";
 import { getDistrictHue } from "@/lib/design/hues";
-import { scriptLang } from "@/lib/utils/script-lang";
 import { usePlaceText, useFormat } from "@/i18n/client";
+import { districtNameIn, placeNamePair } from "@/i18n/place-name";
 
 export interface PopupDistrict {
   slug: string;
@@ -66,9 +66,11 @@ export default function DistrictPopup({
   }, [onClose]);
 
   const reg = district ? getDistrict(district.stateSlug, district.slug) : undefined;
-  const local = reg?.nameLocal && reg.nameLocal !== district?.name ? reg.nameLocal : null;
-  const localFirst = Boolean(local && scriptLang(local) === locale);
-  const title = district ? (localFirst ? (local as string) : district.name) : stateOnly ? place.state(stateOnly.slug, stateOnly.name) : "";
+  // The name in the page language leads (मंड्या on /hi), English beside it.
+  const pair = district
+    ? placeNamePair({ name: district.name, nameLocal: reg?.nameLocal, names: reg?.names }, locale)
+    : null;
+  const title = pair ? pair.primary : stateOnly ? place.state(stateOnly.slug, stateOnly.name) : "";
   const stateLabel = district ? place.state(district.stateSlug, district.stateName) : "";
   const Icon = district ? DISTRICT_ICONS[district.slug] : undefined;
   const hue = district ? getDistrictHue(district.slug) : "blue";
@@ -91,10 +93,10 @@ export default function DistrictPopup({
           <div style={{ minWidth: 0 }}>
             <p className="ftp-popup-eyebrow">{district?.active ? t("youAreIn") : t("youAreInNotLive")}</p>
             <h2 id="ftp-popup-title" ref={headingRef} tabIndex={-1} className="ftp-popup-title">
-              <span lang={localFirst ? scriptLang(title) : undefined}>{title}</span>
-              {district && local && (
-                <span className="ftp-popup-local" lang={localFirst ? "en" : scriptLang(local)}>
-                  {localFirst ? district.name : local}
+              <span lang={pair?.primaryLang}>{title}</span>
+              {pair?.secondary && (
+                <span className="ftp-popup-local" lang={pair.secondaryLang}>
+                  {pair.secondary}
                 </span>
               )}
             </h2>
@@ -125,7 +127,7 @@ export default function DistrictPopup({
               )}
               {nearestLive && (
                 <Link href={`/${locale}/${nearestLive.stateSlug}/${nearestLive.slug}`} className="ftp-popup-secondary">
-                  {t("nearest", { name: nearestLive.name, km: nearestLive.km })}
+                  {t("nearest", { name: districtNameIn(locale, nearestLive), km: nearestLive.km })}
                 </Link>
               )}
             </div>

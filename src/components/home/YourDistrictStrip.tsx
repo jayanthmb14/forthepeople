@@ -46,6 +46,8 @@ import type { DistrictCandidate, GeoFeatureCollection, NearestResult } from "@/l
 import { buildCandidates } from "@/lib/geo/district-centroids";
 import { useMyDistrict } from "@/hooks/useMyDistrict";
 import type { MyDistrict } from "@/hooks/useMyDistrict";
+import { useFormat, usePlaceText } from "@/i18n/client";
+import { districtNameIn } from "@/i18n/place-name";
 import DistrictPopup from "./DistrictPopup";
 import styles from "./home.module.css";
 import { geoToRegistrySlug, stateGeoUrl } from "@/lib/geo/aliases";
@@ -185,13 +187,14 @@ async function resolvePosition(lat: number, lng: number): Promise<Status> {
   return { kind: "found-coming", district: null, stateName: state.name, stateSlug, nearestLive };
 }
 
-function formatCount(n: number): string {
-  return n.toLocaleString("en-IN");
-}
-
 export default function YourDistrictStrip({ locale, votes, extras, variant = "strip" }: YourDistrictStripProps) {
   const t = useTranslations("locate");
+  const f = useFormat();
+  const place = usePlaceText();
   const privacy = t("privacy");
+  // Names in the page language: मंड्या / कर्नाटक on /hi (registry + "states").
+  const dn = (d: { slug: string; stateSlug: string; name: string }) => districtNameIn(locale, d);
+  const sn = (slug: string, name: string) => place.state(slug, name);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // The "Your district" card pops up once a location has been resolved.
   const [popupOpen, setPopupOpen] = useState(false);
@@ -242,11 +245,11 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
         return (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }} aria-live="polite">
             <span style={textStyle}>
-              {t.rich("youAreIn", { district: d.name, state: d.stateName, b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
+              {t.rich("youAreIn", { district: dn(d), state: sn(d.stateSlug, d.stateName), b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
             </span>
             {extras && <span style={mutedStyle}>{extras(d)}</span>}
             <ToolbarButton href={`/${locale}/${d.stateSlug}/${d.slug}`} icon={ArrowRight}>
-              {t("open", { name: d.name })}
+              {t("open", { name: dn(d) })}
             </ToolbarButton>
           </span>
         );
@@ -260,26 +263,28 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
             <span style={textStyle}>
               {d ? (
                 <>
-                  {t.rich("notLive", { district: d.name, state: d.stateName, b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
-                  {count !== undefined && <> {t("asked", { count: formatCount(count) })}</>}
+                  {t.rich("notLive", { district: dn(d), state: sn(d.stateSlug, d.stateName), b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
+                  {count !== undefined && <> {t("asked", { count: f.number(count) })}</>}
                 </>
               ) : (
                 <>
-                  {t.rich("stateOnly", { state: status.stateName, b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
+                  {t.rich("stateOnly", { state: sn(status.stateSlug, status.stateName), b: (c) => <strong style={{ fontWeight: 600 }}>{c}</strong> })}
                 </>
               )}
             </span>
             {d && (
               <ToolbarButton href={`/${locale}/vote-district?d=${d.slug}`} icon={ArrowRight}>
-                {t("voteFor", { name: d.name })}
+                {t("voteFor", { name: dn(d) })}
               </ToolbarButton>
             )}
             {live && (
               <a
                 href={`/${locale}/${live.candidate.stateSlug}/${live.candidate.slug}`}
-                style={{ ...mutedStyle, color: "var(--ftp-brand)", textDecoration: "none", whiteSpace: "nowrap" }}
+                // Wraps (no nowrap): the Hindi/Kannada sentence is longer than
+                // a 320 px row. 44 px tall for touch.
+                style={{ ...mutedStyle, color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 44 }}
               >
-                {t("nearest", { name: live.candidate.name, km: Math.round(live.distanceKm) })}
+                {t("nearest", { name: dn(live.candidate), km: Math.round(live.distanceKm) })}
               </a>
             )}
           </span>
@@ -356,7 +361,7 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
         <div className={styles.heroLocateStatus} aria-live="polite">
           {my.district && status.kind === "idle" && (
             <Pill tone="brand" icon={MapPin} title={privacy}>
-              {t("myDistrict", { name: my.district.name })}
+              {t("myDistrict", { name: dn(my.district) })}
             </Pill>
           )}
           {renderStatus()}
@@ -370,7 +375,7 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
             nearestLive={
               status.kind === "found-coming" && status.nearestLive
                 ? {
-                    name: status.nearestLive.candidate.name,
+                    name: dn(status.nearestLive.candidate),
                     slug: status.nearestLive.candidate.slug,
                     stateSlug: status.nearestLive.candidate.stateSlug,
                     km: Math.round(status.nearestLive.distanceKm),
@@ -397,7 +402,7 @@ export default function YourDistrictStrip({ locale, votes, extras, variant = "st
         <div className={styles.stripStatus}>
           {my.district && status.kind === "idle" && (
             <Pill tone="brand" icon={MapPin} title={privacy}>
-              {t("myDistrict", { name: my.district.name })}
+              {t("myDistrict", { name: dn(my.district) })}
             </Pill>
           )}
           {renderStatus()}

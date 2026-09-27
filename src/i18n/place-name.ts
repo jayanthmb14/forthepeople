@@ -13,6 +13,7 @@
 //
 // useDistrictName() (src/i18n/client.ts) is the hook form for districts.
 import { scriptLang } from "@/lib/utils/script-lang";
+import { getDistrict } from "@/lib/constants/districts";
 import type { PlaceNames } from "@/lib/constants/districts";
 
 export interface NamedPlace {
@@ -56,6 +57,16 @@ export function placeNamePair(p: NamedPlace, locale: string): PlaceNamePair {
     secondary: local,
     secondaryLang: local ? scriptLang(local) : undefined,
   };
+}
+
+/**
+ * A district's name in the page language from the registry, for places
+ * that only carry { slug, stateSlug, name } (a saved "my district", a
+ * location result). Falls back to the given English name.
+ */
+export function districtNameIn(locale: string, d: { slug: string; stateSlug: string; name: string }): string {
+  const reg = getDistrict(d.stateSlug, d.slug);
+  return reg ? placeName(reg, locale) : d.name;
 }
 
 /** Every spelling of a place (English, local script, names[*]), lower-cased, for search. */

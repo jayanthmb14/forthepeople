@@ -35,6 +35,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFormat } from "@/i18n/client";
+import { placeName } from "@/i18n/place-name";
+import { getDistrict } from "@/lib/constants/districts";
 import { ArrowRight, Landmark, Newspaper, Wallet, Wheat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AsOfText, Chips, Section, SourcePill } from "@/components/district/ui";
@@ -101,10 +103,14 @@ const MODULE_CHROME: Record<ModuleKey, { icon: LucideIcon; emoji: string; hue: s
 export default function LatestData({ locale, districts }: LatestDataProps) {
   const th = useTranslations("home");
   const tl = useTranslations("latest");
+  const tm = useTranslations("page_home");
   const { intl } = useFormat();
   const [activeSlug, setActiveSlug] = useState<string>(districts[0]?.slug ?? "");
   const [byDistrict, setByDistrict] = useState<Record<string, DistrictCards>>({});
   const active = districts.find((d) => d.slug === activeSlug) ?? districts[0];
+  // District names in the page language (मंड्या on /hi), from the registry.
+  const nameOf = (d: ActiveDistrict) =>
+    placeName({ name: d.name, nameLocal: d.nameLocal, names: getDistrict(d.stateSlug, d.slug)?.names }, locale);
 
   // Fetch the 4 modules for the selected district (once per district).
   useEffect(() => {
@@ -137,7 +143,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
         crops: summarizeCrops(crops, now, tl, intl),
         schemes: summarizeSchemes(schemes, tl, intl),
         news: summarizeNews(news, now, tl),
-        budget: summarizeBudget(budget, tl, intl),
+        budget: summarizeBudget(budget, tl, tm, intl),
       };
       const cards = MODULE_ORDER.map((k) => built[k]).filter((c): c is ModuleCard => c !== null);
       setByDistrict((prev) => ({ ...prev, [slug]: { loading: false, cards } }));
@@ -147,7 +153,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
     return () => {
       cancelled = true;
     };
-  }, [active, byDistrict, tl, intl]);
+  }, [active, byDistrict, tl, tm, intl]);
 
   const state = useMemo<DistrictCards>(() => {
     if (!active) return LOADING;
@@ -157,24 +163,29 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
   if (!active) return null;
 
   const districtPageBase = `/${locale}/${active.stateSlug}/${active.slug}`;
+  const activeName = nameOf(active);
+  // The district's own-script name beside the heading, unless the heading
+  // already uses it (ಮಂಡ್ಯ on /kn, मुंबई on /hi).
+  const activeLocal =
+    active.nameLocal && active.nameLocal !== active.name && active.nameLocal !== activeName ? active.nameLocal : undefined;
 
   return (
     <div className="ftp-container">
       <Section
         id="latest-data"
-        title={th("latestFor", { name: active.name })}
+        title={th("latestFor", { name: activeName })}
         emoji="⚡"
-        titleLocal={active.nameLocal && active.nameLocal !== active.name ? active.nameLocal : undefined}
+        titleLocal={activeLocal}
         action={
           <Link href={districtPageBase} className={styles.inlineLink}>
-            View full district
+            {th("viewDistrict")}
             <ArrowRight size={14} aria-hidden />
           </Link>
         }
       >
         <Chips
           label={th("chooseDistrict")}
-          items={districts.map((d) => ({ value: d.slug, label: d.name }))}
+          items={districts.map((d) => ({ value: d.slug, label: nameOf(d) }))}
           value={active.slug}
           onChange={setActiveSlug}
         />
@@ -182,7 +193,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
         {!state.loading && state.cards.length === 0 ? (
           <p className={styles.latestNone}>
             {tl.rich("nothingNew", {
-              name: active.name,
+              name: activeName,
               days: MAX_AGE_DAYS,
               link: (c) => <Link href={districtPageBase}>{c}</Link>,
             })}
@@ -371,15 +382,20 @@ interface BudgetEntry { sector?: string; allocated?: number; spent?: number; fis
 
 // Reference data: a budget belongs to a fiscal year, not to a day. No
 // freshness gate; the card is labelled with its FY instead.
-function summarizeBudget(raw: unknown, t: T, intl: string): ModuleCard | null {
+function summarizeBudget(raw: unknown, t: T, tm: T, intl: string): ModuleCard | null {
   const entries = (raw as { data?: { entries?: BudgetEntry[] } } | null)?.data?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return null;
   const newestAt = newestOf(entries.map((e) => e.fetchedAt));
   if (!newestAt) return null;
-  // Budget values are stored in Rupees (CLAUDE.md) — format to Cr / L here.
+  // Budget values are stored in Rupees (CLAUDE.md) — format to crore / lakh
+  // here, with the unit word in the page language ("₹12.3 करोड़").
   const oneDp = (n: number) => n.toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 });
   const fmt = (n: number) =>
-    n >= 10_000_000 ? `₹${oneDp(n / 10_000_000)} Cr` : n >= 100_000 ? `₹${oneDp(n / 100_000)} L` : inr(n);
+    n >= 10_000_000
+      ? tm("amountCrore", { n: oneDp(n / 10_000_000) })
+      : n >= 100_000
+        ? tm("amountLakh", { n: oneDp(n / 100_000) })
+        : inr(n);
   const year = entries[0]?.fiscalYear;
   const rows = year ? entries.filter((e) => e.fiscalYear === year) : entries;
   const alloc = rows.reduce((s, e) => s + (e.allocated ?? 0), 0);
