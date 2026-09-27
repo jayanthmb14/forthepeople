@@ -41,18 +41,19 @@ export function normalizeStatus(s: string | null | undefined): string {
   return MAP[cleaned] ?? cleaned;
 }
 
-// Design v3: each status maps to a kit Pill tone (colours live in the
-// --ftp-* tokens, never as hex here).
-export const STATUS_STYLE: Record<string, { tone: Tone; label: string }> = {
-  PROPOSED:           { tone: "neutral",  label: "Proposed" },
-  APPROVED:           { tone: "brand",    label: "Approved" },
-  TENDER_ISSUED:      { tone: "features", label: "Tender Issued" },
-  UNDER_CONSTRUCTION: { tone: "warn",     label: "Under Construction" },
-  ON_TRACK:           { tone: "live",     label: "On Track" },
-  DELAYED:            { tone: "danger",   label: "Delayed" },
-  STALLED:            { tone: "danger",   label: "Stalled" },
-  COMPLETED:          { tone: "live",     label: "Completed" },
-  CANCELLED:          { tone: "neutral",  label: "Cancelled" },
+// Each status maps to a kit Pill tone (colours live in the --ftp-* tokens,
+// never as hex here) and a message key: the label a reader sees is
+// page_infrastructure.status.<key>, in their language.
+export const STATUS_STYLE: Record<string, { tone: Tone; key: string }> = {
+  PROPOSED:           { tone: "neutral",  key: "proposed" },
+  APPROVED:           { tone: "brand",    key: "approved" },
+  TENDER_ISSUED:      { tone: "features", key: "tenderIssued" },
+  UNDER_CONSTRUCTION: { tone: "warn",     key: "underConstruction" },
+  ON_TRACK:           { tone: "live",     key: "onTrack" },
+  DELAYED:            { tone: "danger",   key: "delayed" },
+  STALLED:            { tone: "danger",   key: "stalled" },
+  COMPLETED:          { tone: "live",     key: "completed" },
+  CANCELLED:          { tone: "neutral",  key: "cancelled" },
 };
 
 /** Solid token colour for a tone — used for 6–8 px timeline dots. */
@@ -135,6 +136,27 @@ export const CATEGORY_ICON: Record<string, LucideCmp> = {
   Other:             HardHat,
 };
 
+/** Canonical category (normalizeCategory) → message key page_infrastructure.cat.<key>. */
+export const CATEGORY_KEY: Record<string, string> = {
+  Roads: "roads", Metro: "metro", Rail: "rail", Bridge: "bridge", Flyover: "flyover",
+  Water: "water", Sewage: "sewage", Housing: "housing", Power: "power", Hospital: "hospital",
+  Education: "education", "Sports & Stadium": "sports", Airport: "airport", Port: "port",
+  "Parks & Lakes": "parks", Traffic: "traffic", Environment: "environment", Industry: "industry",
+  Telecom: "telecom", Other: "other",
+};
+
+/** One emoji per canonical category, for the v4 pictures and chips. */
+export const CATEGORY_EMOJI: Record<string, string> = {
+  Roads: "🛣️", Metro: "🚇", Rail: "🚆", Bridge: "🌉", Flyover: "🌉", Water: "💧", Sewage: "🚰",
+  Housing: "🏘️", Power: "⚡", Hospital: "🏥", Education: "🎓", "Sports & Stadium": "🏟️",
+  Airport: "✈️", Port: "⚓", "Parks & Lakes": "🌳", Traffic: "🚦", Environment: "🌿",
+  Industry: "🏭", Telecom: "📡", Other: "🏗️",
+};
+
+export function categoryEmoji(raw: string | null | undefined): string {
+  return CATEGORY_EMOJI[normalizeCategory(raw)] ?? "🏗️";
+}
+
 export function categoryIcon(raw: string | null | undefined): LucideCmp {
   return CATEGORY_ICON[normalizeCategory(raw)] ?? HardHat;
 }
@@ -152,50 +174,15 @@ export function CategoryIcon({ category, size = 18 }: { category: string | null 
   } as { size: number; style: React.CSSProperties });
 }
 
-export const UPDATE_TYPE_LABEL: Record<string, string> = {
-  ANNOUNCEMENT: "Announcement", APPROVAL: "Approval", TENDER: "Tender",
-  CONSTRUCTION_START: "Construction Start", BUDGET_INCREASE: "Budget Increase",
-  BUDGET_DECREASE: "Budget Decrease", DELAY: "Delay", STALL: "Stall",
-  PROGRESS_UPDATE: "Progress Update", CONTROVERSY: "Concern Raised",
-  COMPLETION: "Completion", CANCELLATION: "Cancellation",
-  PHASE_COMPLETE: "Phase Complete", INAUGURATION: "Inauguration",
-  REVIEW: "Review", SEED: "Initial Record", ADMIN_EDIT: "Admin Edit",
-};
+/** Timeline update types that have a translated label (page_infrastructure.update.<TYPE>). */
+export const UPDATE_TYPES = [
+  "ANNOUNCEMENT", "APPROVAL", "TENDER", "CONSTRUCTION_START", "BUDGET_INCREASE", "BUDGET_DECREASE",
+  "DELAY", "STALL", "PROGRESS_UPDATE", "CONTROVERSY", "COMPLETION", "CANCELLATION",
+  "PHASE_COMPLETE", "INAUGURATION", "REVIEW", "SEED", "ADMIN_EDIT",
+] as const;
 
-// ═══════════════════════════════════════════════════════════
-// Format helpers
-// ═══════════════════════════════════════════════════════════
-
-export function formatINR(rupees: number | null | undefined): string {
-  if (rupees == null) return "—";
-  if (rupees >= 1_00_00_00_00_000) return `₹${(rupees / 1_00_00_00_00_000).toFixed(2)} Lakh Cr`;
-  if (rupees >= 10_00_00_000) return `₹${(rupees / 10_00_00_000).toFixed(0)} Cr`;
-  if (rupees >= 1_00_000) return `₹${(rupees / 1_00_000).toFixed(0)} Lakh`;
-  return `₹${rupees.toLocaleString("en-IN")}`;
-}
-
-export function formatMonthYear(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try { return new Date(iso).toLocaleDateString("en-IN", { month: "short", year: "numeric" }); } catch { return "—"; }
-}
-
-export function formatFullDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try { return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }); } catch { return "—"; }
-}
-
-export function relativeTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const diff = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(diff)) return "—";
-  const m = Math.floor(diff / 60_000);
-  if (m < 60) return `${Math.max(1, m)}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return formatMonthYear(iso);
-}
+// Formatting (rupees, dates, "5 hours ago") lives in useInfraText()
+// (./infra-i18n.ts) so it follows the reader's language.
 
 /** Quiet text style for "not yet known" placeholders. */
 export const AWAIT_STYLE: React.CSSProperties = { color: "var(--ftp-text-2)" };
@@ -226,11 +213,6 @@ export function truncate(text: string | null | undefined, max: number): string |
   const base = lastSpace > max * 0.6 ? sliced.slice(0, lastSpace) : sliced;
   return base + "…";
 }
-
-export const ANNOUNCER_TOOLTIP =
-  "This attribution is based on news reports. It indicates who publicly announced this project, not who is responsible for its current status.";
-export const PARTY_TOOLTIP =
-  "Party affiliation shown as reported in news media at the time of announcement. Shown for transparency, not as political endorsement.";
 
 // Sub-judice / court-order detection. We only badge a card when the
 // project's own text references a judicial proceeding — never inferred

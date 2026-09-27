@@ -3,8 +3,9 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — one entry in a project's news timeline.
- * Design v3: a 1 px rail with a small flat dot in the update's tone, the
- * type as a kit Pill, Lucide icons for the facts row, dates in mono.
+ * A 1 px rail with a small flat dot in the update's tone, the type as a
+ * kit Pill, Lucide icons for the facts row, dates in the reader's
+ * language. Headlines and summaries stay as the news source wrote them.
  */
 
 "use client";
@@ -12,7 +13,8 @@
 import { BarChart3, CheckCircle2, CornerDownRight, ExternalLink, IndianRupee, User } from "lucide-react";
 import type { InfraUpdate } from "@/hooks/useRealtimeData";
 import { Pill } from "@/components/district/ui";
-import { TONE_SOLID, UPDATE_TYPE_LABEL, formatFullDate, formatINR, statusStyle, updateTone } from "./infra-utils";
+import { TONE_SOLID, updateTone } from "./infra-utils";
+import { useInfraText } from "./infra-i18n";
 
 /** One fact in the row under the headline: small icon + text. */
 function FactItem({ icon: Icon, children }: { icon: typeof User; children: React.ReactNode }) {
@@ -25,7 +27,7 @@ function FactItem({ icon: Icon, children }: { icon: typeof User; children: React
 }
 
 export default function TimelineEntry({ u }: { u: InfraUpdate }) {
-  const type = UPDATE_TYPE_LABEL[u.updateType] ?? u.updateType;
+  const { t, fullDate, inr, updateType, status } = useInfraText();
   const tone = updateTone(u.updateType);
 
   return (
@@ -38,14 +40,14 @@ export default function TimelineEntry({ u }: { u: InfraUpdate }) {
         }}
       />
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-        <span className="ftp-num" style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{formatFullDate(u.date)}</span>
-        <Pill tone={tone}>{type}</Pill>
+        <span className="ftp-num" style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{fullDate(u.date)}</span>
+        <Pill tone={tone}>{updateType(u.updateType)}</Pill>
         {u.verified && (
           <span
-            title="Verified by the news-extraction AI verifier"
+            title={t("timeline.verifiedHint")}
             style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-live-text)" }}
           >
-            <CheckCircle2 size={12} aria-hidden /> verified
+            <CheckCircle2 size={12} aria-hidden /> {t("timeline.verified")}
           </span>
         )}
       </div>
@@ -56,20 +58,20 @@ export default function TimelineEntry({ u }: { u: InfraUpdate }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         {u.personName && (
           <FactItem icon={User}>
-            {u.personName}{u.personRole ? ` — ${u.personRole}` : ""}{u.personParty ? ` (${u.personParty})` : ""}
+            {u.personName}{u.personRole ? `, ${u.personRole}` : ""}{u.personParty ? ` (${u.personParty})` : ""}
           </FactItem>
         )}
         {u.progressPct != null && (
           <FactItem icon={BarChart3}>
-            <span className="ftp-num">{u.progressPct}%</span> complete
+            {t("timeline.complete", { pct: u.progressPct })}
           </FactItem>
         )}
         {u.budgetChange != null && (
           <FactItem icon={IndianRupee}>
-            <span className="ftp-num">{formatINR(u.budgetChange)}</span>
+            <span className="ftp-num">{inr(u.budgetChange)}</span>
           </FactItem>
         )}
-        {u.statusChange && <FactItem icon={CornerDownRight}>{statusStyle(u.statusChange).label}</FactItem>}
+        {u.statusChange && <FactItem icon={CornerDownRight}>{status(u.statusChange)}</FactItem>}
       </div>
       {u.newsUrl && u.newsUrl !== "admin-panel" && (
         <a
@@ -77,13 +79,13 @@ export default function TimelineEntry({ u }: { u: InfraUpdate }) {
           target="_blank" rel="noopener noreferrer"
           style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none" }}
         >
-          {u.newsSource ?? "Source"}{u.newsTitle ? `: ${u.newsTitle.slice(0, 80)}${u.newsTitle.length > 80 ? "…" : ""}` : ""}
+          {u.newsSource ?? t("timeline.source")}{u.newsTitle ? `: ${u.newsTitle.slice(0, 80)}${u.newsTitle.length > 80 ? "…" : ""}` : ""}
           <ExternalLink size={12} aria-hidden />
         </a>
       )}
       {u.newsUrl === "admin-panel" && (
         <div style={{ marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-features)" }}>
-          Source: Admin edit (manual update)
+          {t("timeline.adminEdit")}
         </div>
       )}
     </div>

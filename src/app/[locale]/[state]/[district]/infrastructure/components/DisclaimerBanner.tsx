@@ -3,27 +3,26 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — data transparency notice at the top of the page.
- * Design v3: a plain Card; the only colour is the warn-coloured icon.
+ * A plain Card; the only colour is the warn-coloured icon. It is the one
+ * notice at the top of the page (the old second "ModuleDisclaimer" said the
+ * same thing and was removed).
  */
 
 "use client";
 
 import { Info } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/district/ui";
 
 export default function DisclaimerBanner() {
+  const t = useTranslations("page_infrastructure");
   return (
     <div role="note" style={{ marginBottom: 20 }}>
       <Card padding={14}>
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <Info size={16} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 2 }} />
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
-            <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>Data transparency notice:</span>{" "}
-            Infrastructure project data on this page is aggregated from publicly available news
-            articles and government press releases. ForThePeople.in does not independently
-            verify construction progress or budget figures. Each data point is linked to its
-            source article. For official project status, contact the executing agency directly.
-            This is not an official government tracker.
+            {t.rich("notice", { b: (c) => <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{c}</span> })}
           </p>
         </div>
       </Card>

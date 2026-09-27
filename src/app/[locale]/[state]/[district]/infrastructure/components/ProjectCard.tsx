@@ -4,11 +4,12 @@
  *
  * Infrastructure Tracker — one project card (status, people, budget, dates,
  * progress, latest news). Design v4: kit Card + Pill + ProgressBar, the
- * category icon in a chip of the module hue, a hue progress bar and a
+ * category emoji in a chip of the module hue, a hue progress bar and a
  * hue "View timeline" link. Semantic colour (warn / danger / live) stays
  * as text or a dot for status. Facts sit side by side as small items
  * instead of "·"-joined strings. All the honesty lines (news-derived
- * status, single source, "as of" dates) stay.
+ * status, single source, "as of" dates) stay, in the reader's language
+ * (page_infrastructure); project names and news text stay as published.
  */
 
 "use client";
@@ -20,9 +21,10 @@ import {
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { Card, Pill, ProgressBar } from "@/components/district/ui";
 import {
-  statusStyle, CategoryIcon, normalizeCategory, normalizeStatus, isDelayed, isCancelled,
-  hasCourtMention, formatFullDate, formatINR, formatMonthYear, relativeTime, truncate,
+  statusStyle, categoryEmoji, normalizeStatus, isDelayed, isCancelled,
+  hasCourtMention, truncate,
 } from "./infra-utils";
+import { useInfraText } from "./infra-i18n";
 import PeopleRow from "./PeopleRow";
 import TimelineModal from "./TimelineModal";
 
@@ -33,27 +35,30 @@ const ICON_ROW: React.CSSProperties = { display: "flex", alignItems: "flex-start
 /** Facts that sit side by side and wrap (dates, footer). */
 const FACTS: React.CSSProperties = { display: "inline-flex", flexWrap: "wrap", alignItems: "center", columnGap: 12, rowGap: 2 };
 
+const numText = (c: React.ReactNode) => <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{c}</span>;
+const numPlain = (c: React.ReactNode) => <span className="ftp-num">{c}</span>;
+const agencyText = (c: React.ReactNode) => <span style={{ color: "var(--ftp-text)" }}>{c}</span>;
+
 export default function ProjectCard({ p }: { p: InfraProject }) {
+  const { t, m, category, status, scope, inr, monthYear, fullDate, ago } = useInfraText();
   const [open, setOpen] = useState(false);
   const ss = statusStyle(p.status);
-  const normalCategory = normalizeCategory(p.category);
   const updates = p.updates ?? [];
   const latest = updates[0];
   const progress = p.progressPct ?? 0;
   const hasBudgetOverrun = p.costOverrun != null && p.costOverrun !== 0;
   const verifiedCount = p.verificationCount ?? 0;
   const lastTs = p.lastNewsAt ?? null;
-  const sourceLabel = lastTs ? "News" : "Seed data";
   const showDelayIcon = isDelayed(p) && normalizeStatus(p.status) !== "COMPLETED";
 
   return (
     <Card as="article" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {/* Header: name + short description + category·agency line + status badge */}
+      {/* Header: name + short description + category / agency + status badge */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 6 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 className="ftp-title" style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="ftp-icon-chip" aria-hidden style={{ width: 30, height: 30, borderRadius: 10 }}>
-              <CategoryIcon category={p.category} size={16} />
+            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, fontSize: 17 }}>
+              {categoryEmoji(p.category)}
             </span>
             <span style={{ minWidth: 0 }}>{p.name}</span>
           </h3>
@@ -77,18 +82,18 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
                 background: "var(--hue-tint)", color: "var(--hue-deep)",
               }}
             >
-              {normalCategory}
+              {category(p.category)}
             </span>
             {p.executingAgency && <span>{p.executingAgency}</span>}
             {p.scope && p.scope !== "DISTRICT" && (
               <span style={{ padding: "1px 8px", borderRadius: "var(--ftp-radius-pill)", border: "1px solid var(--ftp-border)" }}>
-                {p.scope}
+                {scope(p.scope)}
               </span>
             )}
           </div>
         </div>
         <Pill tone={ss.tone} dot icon={showDelayIcon ? AlertTriangle : undefined}>
-          {ss.label}
+          {status(p.status)}
         </Pill>
       </div>
 
@@ -98,12 +103,8 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           before a court so we don't appear to take sides. */}
       {hasCourtMention(p) && (
         <div style={{ marginBottom: 8 }}>
-          <Pill
-            tone="warn"
-            icon={Scale}
-            title="This project is referenced in court proceedings. ForThePeople.in reports the fact, not a judgment on the matter."
-          >
-            Subject to court proceedings
+          <Pill tone="warn" icon={Scale} title={t("card.courtHint")}>
+            {t("card.court")}
           </Pill>
         </div>
       )}
@@ -120,15 +121,15 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           if (!completionDate) return null;
           return (
             <div style={{ ...NOTE, color: "var(--ftp-live-text)", marginBottom: 6 }}>
-              Completion reported in news media on <span className="ftp-num">{formatFullDate(completionDate)}</span>.
+              {t.rich("card.completedOn", { date: fullDate(completionDate), n: numPlain })}
             </div>
           );
         }
         if (!["STALLED", "CANCELLED", "DELAYED"].includes(s)) return null;
         return (
           <div style={{ ...NOTE, marginBottom: 6 }}>
-            Status derived from news reports.
-            {p.executingAgency ? <> Contact <span style={{ color: "var(--ftp-text)" }}>{p.executingAgency}</span> for official status.</> : null}
+            {t("card.statusFromNews")}
+            {p.executingAgency ? <> {t.rich("card.contactAgency", { agency: p.executingAgency, a: agencyText })}</> : null}
           </div>
         );
       })()}
@@ -142,27 +143,28 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           <IndianRupee size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 3 }} />
           {(p.originalBudget != null || p.budget != null) ? (
             <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-              <span className="ftp-num">{formatINR(p.originalBudget ?? p.budget)}</span>
+              <span className="ftp-num">{inr(p.originalBudget ?? p.budget)}</span>
               {p.revisedBudget != null && p.revisedBudget !== p.originalBudget && (
                 <>
-                  <span style={{ color: "var(--ftp-text-2)" }}>→</span>
-                  <span className="ftp-num">{formatINR(p.revisedBudget)}</span>
+                  <span aria-hidden style={{ color: "var(--ftp-text-2)" }}>→</span>
+                  <span className="sr-only">{t("card.revisedTo")}</span>
+                  <span className="ftp-num">{inr(p.revisedBudget)}</span>
                 </>
               )}
               {hasBudgetOverrun && p.costOverrun != null && (
                 <span className="ftp-num" style={{ fontSize: 11, color: p.costOverrun > 0 ? "var(--ftp-warn)" : "var(--ftp-live-text)" }}>
-                  ({p.costOverrun > 0 ? "+" : ""}{formatINR(Math.abs(p.costOverrun))}
-                  {p.costOverrunPct != null ? ` / ${p.costOverrun > 0 ? "+" : ""}${p.costOverrunPct.toFixed(0)}%` : ""})
+                  ({p.costOverrun > 0 ? "+" : "−"}{inr(Math.abs(p.costOverrun))}
+                  {p.costOverrunPct != null ? ` / ${p.costOverrun > 0 ? "+" : ""}${m.num(p.costOverrunPct)}%` : ""})
                 </span>
               )}
             </span>
           ) : (
-            <span style={{ color: "var(--ftp-text-2)" }}>Budget not disclosed</span>
+            <span style={{ color: "var(--ftp-text-2)" }}>{t("card.budgetUnknown")}</span>
           )}
         </div>
         {(p.originalBudget != null || p.budget != null) && (
           <div style={{ ...NOTE, marginTop: 2, paddingLeft: 20 }}>
-            As reported in news media
+            {t("card.asReported")}
           </div>
         )}
       </div>
@@ -177,35 +179,39 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
         <span>
           {(() => {
             const started = p.actualStartDate ?? p.startDate ?? null;
-            const fallbackLabel =
-              p.tenderDate ? "Tender issued"
-              : p.approvedDate ? "Approved"
-              : p.announcedDate ? "Announced"
+            const fallbackKey =
+              p.tenderDate ? "tenderIssued"
+              : p.approvedDate ? "approved"
+              : p.announcedDate ? "announced"
               : null;
-            const fallbackDate =
-              p.tenderDate ?? p.approvedDate ?? p.announcedDate ?? null;
-            const anchorLabel = started ? "Started" : fallbackLabel;
+            const fallbackDate = p.tenderDate ?? p.approvedDate ?? p.announcedDate ?? null;
+            const anchorKey = started ? "started" : fallbackKey;
             const anchorDate = started ?? fallbackDate;
+            const expected = p.originalEndDate ?? p.expectedEnd;
             const haveAnything =
-              anchorDate || p.originalEndDate || p.expectedEnd || p.revisedEndDate ||
-              (isCancelled(p) && p.cancelledDate);
+              anchorDate || expected || p.revisedEndDate || (isCancelled(p) && p.cancelledDate);
             if (!haveAnything) {
-              return <>Timeline not announced</>;
+              return <>{t("card.noTimeline")}</>;
             }
             return (
               <span style={FACTS}>
                 <span>
-                  {anchorLabel ?? "Not started"}
-                  {anchorDate ? <>: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatMonthYear(anchorDate)}</span></> : ""}
+                  {anchorKey && anchorDate
+                    ? t.rich(`card.date.${anchorKey}`, { date: monthYear(anchorDate), n: numText })
+                    : t("card.notStarted")}
                 </span>
-                {(p.originalEndDate ?? p.expectedEnd) && (
-                  <span>Expected: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatMonthYear(p.originalEndDate ?? p.expectedEnd)}</span></span>
+                {expected && (
+                  <span>{t.rich("card.date.expected", { date: monthYear(expected), n: numText })}</span>
                 )}
                 {p.revisedEndDate && (
-                  <span style={{ color: "var(--ftp-warn)" }}>Revised: <span className="ftp-num">{formatMonthYear(p.revisedEndDate)}</span>{p.delayMonths ? ` (+${p.delayMonths}mo)` : ""}</span>
+                  <span style={{ color: "var(--ftp-warn)" }}>
+                    {p.delayMonths
+                      ? t.rich("card.date.revisedLate", { date: monthYear(p.revisedEndDate), months: p.delayMonths, n: numPlain })
+                      : t.rich("card.date.revised", { date: monthYear(p.revisedEndDate), n: numPlain })}
+                  </span>
                 )}
                 {isCancelled(p) && p.cancelledDate && (
-                  <span style={{ color: "var(--ftp-danger)" }}>Cancelled: <span className="ftp-num">{formatMonthYear(p.cancelledDate)}</span></span>
+                  <span style={{ color: "var(--ftp-danger)" }}>{t.rich("card.date.cancelled", { date: monthYear(p.cancelledDate), n: numPlain })}</span>
                 )}
               </span>
             );
@@ -221,18 +227,17 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
       {!isCancelled(p) && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginBottom: 4 }}>
-            <span>Progress</span>
+            <span>{t("card.progress")}</span>
             <span className="ftp-num" style={{ color: progress > 0 ? "var(--ftp-text)" : "var(--ftp-text-2)" }}>
-              {progress > 0 ? `${progress}%` : "Not started"}
+              {progress > 0 ? `${m.num(progress)}%` : t("card.notStarted")}
             </span>
           </div>
           <ProgressBar pct={progress} tone="brand" />
           {progress > 0 && (
             <div style={{ ...NOTE, marginTop: 4 }}>
               {lastTs
-                ? <>Progress as of <span className="ftp-num">{formatFullDate(lastTs)}</span></>
-                : <>Progress is approximate. Last verified: <span className="ftp-num">{formatFullDate(p.lastVerifiedAt)}</span></>
-              }
+                ? t.rich("card.progressAsOf", { date: fullDate(lastTs), n: numPlain })
+                : t.rich("card.progressApprox", { date: fullDate(p.lastVerifiedAt), n: numPlain })}
             </div>
           )}
         </div>
@@ -244,11 +249,11 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
       {verifiedCount <= 1 && (
         <div style={{ ...NOTE, ...ICON_ROW, gap: 4, color: verifiedCount === 0 ? "var(--ftp-text-2)" : "var(--ftp-warn)", marginBottom: 8 }}>
           {verifiedCount === 0 ? (
-            "Not yet cross-verified by news sources"
+            t("card.notVerified")
           ) : (
             <>
               <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-              Single source, awaiting additional verification
+              {t("card.singleSource")}
             </>
           )}
         </div>
@@ -257,7 +262,7 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
       {/* Cancellation reason — danger text, no tinted box */}
       {isCancelled(p) && p.cancellationReason && (
         <div className="ftp-body" style={{ color: "var(--ftp-text)", marginBottom: 6 }}>
-          <span style={{ fontWeight: 500, color: "var(--ftp-danger)" }}>Cancellation reason:</span> {p.cancellationReason}
+          <span style={{ fontWeight: 500, color: "var(--ftp-danger)" }}>{t("card.cancelReason")}</span> {p.cancellationReason}
         </div>
       )}
 
@@ -278,12 +283,10 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
                 title={latest.headline}
               >
                 {truncate(latest.headline, 60)}
-                {latest.newsSource && <span style={{ color: "var(--ftp-text-2)" }}> ({latest.newsSource}, {formatFullDate(latest.date)})</span>}
+                {latest.newsSource && <span style={{ color: "var(--ftp-text-2)" }}> ({latest.newsSource}, {fullDate(latest.date)})</span>}
               </a>
             ) : (
-              <span style={{ color: "var(--ftp-text-2)" }}>
-                No news coverage yet. This updates as articles are published.
-              </span>
+              <span style={{ color: "var(--ftp-text-2)" }}>{t("card.noNews")}</span>
             )}
           </div>
         );
@@ -298,12 +301,13 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
         }}
       >
         <span style={FACTS}>
-          <span>Last updated: {lastTs ? relativeTime(lastTs) : "—"}</span>
-          <span>Source: {sourceLabel}</span>
+          <span suppressHydrationWarning>{t("card.lastUpdated", { when: lastTs ? ago(lastTs) : "—" })}</span>
+          <span>{t(lastTs ? "card.sourceNews" : "card.sourceSeed")}</span>
           {verifiedCount > 0 && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <CheckCircle2 size={12} aria-label="Verified sources" style={{ color: "var(--ftp-live-text)" }} />
-              <span className="ftp-num">{verifiedCount}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }} title={t("card.verifiedSources")}>
+              <CheckCircle2 size={12} aria-hidden style={{ color: "var(--ftp-live-text)" }} />
+              <span className="ftp-num">{m.num(verifiedCount)}</span>
+              <span className="sr-only">{t("card.verifiedSources")}</span>
             </span>
           )}
         </span>
@@ -320,7 +324,7 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           }}
           aria-haspopup="dialog"
         >
-          View timeline{updates.length > 0 ? ` (${updates.length})` : ""}
+          {updates.length > 0 ? t("card.viewTimelineN", { n: updates.length }) : t("card.viewTimeline")}
         </button>
       </div>
 
