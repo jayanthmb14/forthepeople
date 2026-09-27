@@ -9,12 +9,17 @@
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Used by the /[locale]/prices page (server component), /api/data/prices
-//  and /api/data/market-ticker. One snapshot = every series with ~6 months
-//  of daily values, fetched in parallel and cached in Redis:
-//    • 15 min while Indian markets are open (Mon–Fri 09:15–15:30 IST),
-//    • 60 min otherwise,
-//    • 5 min when some series failed (so they are retried soon),
-//    • not at all when every source failed.
+//  and /api/data/market-ticker. One snapshot = every series with ~4 months
+//  of daily values, fetched in parallel. Two ways to cache it:
+//    • API routes: a Redis snapshot, kept
+//        – 15 min while Indian markets are open (Mon–Fri 09:15–15:30 IST),
+//        – 60 min otherwise,
+//        – 5 min when some series failed (so they are retried soon),
+//        – not at all when every source failed.
+//    • The /prices page: `getPricesSnapshot({ revalidate: 900 })` skips
+//      Redis (its client fetches with no-store, which would make the page
+//      dynamic) and lets each upstream fetch sit in Next's data cache, so the
+//      page stays statically generated and is rebuilt at most every 15 min.
 //
 //  No history is stored in the database: both upstreams return their own
 //  history on every call, so nothing needs a cron or a backfill.
@@ -25,7 +30,7 @@
 
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { scaleSeries, type PricePoint } from "./compute";
-import { fetchIbjaSeries, fetchYahooSeries, IBJA_URL, yahooQuoteUrl } from "./sources";
+import { fetchIbjaSeries, fetchYahooSeries, IBJA_URL, yahooQuoteUrl, type FetchCacheOptions } from "./sources";
 
 export type PriceKey = "gold24" | "gold22" | "silver" | "usdInr" | "crude" | "sensex" | "nifty" | "bankNifty";
 export type PriceGroup = "metals" | "money" | "shares";
@@ -87,11 +92,11 @@ function trim(points: PricePoint[], keep = 110): PricePoint[] {
   return points.length > keep ? points.slice(points.length - keep) : points;
 }
 
-async function fetchSnapshot(): Promise<PricesSnapshot> {
+async function fetchSnapshot(opts?: FetchCacheOptions): Promise<PricesSnapshot> {
   const yahooItems = PRICE_ITEMS.filter((i) => i.source === "yahoo" && i.symbol);
   const [ibjaR, ...yahooR] = await Promise.allSettled([
-    fetchIbjaSeries(),
-    ...yahooItems.map((i) => fetchYahooSeries(i.symbol as string, "6mo")),
+    fetchIbjaSeries(opts),
+    ...yahooItems.map((i) => fetchYahooSeries(i.symbol as string, "6mo", opts)),
   ]);
 
   const series: Partial<Record<PriceKey, PriceSeries>> = {};
@@ -119,9 +124,11 @@ async function fetchSnapshot(): Promise<PricesSnapshot> {
 
 /**
  * The cached snapshot, or a fresh one. Never throws; a series whose source
- * failed is simply missing from `series`.
+ * failed is simply missing from `series`. Pass `{ revalidate }` from a page
+ * to use Next's data cache instead of Redis (see the note at the top).
  */
-export async function getPricesSnapshot(): Promise<PricesSnapshot> {
+export async function getPricesSnapshot(opts?: FetchCacheOptions): Promise<PricesSnapshot> {
+  if (opts?.revalidate) return fetchSnapshot(opts);
   const cached = await cacheGet<PricesSnapshot>(CACHE_KEY);
   if (cached && cached.series) return cached;
 

@@ -22,6 +22,12 @@
 //
 //  Every call has its own timeout. A failed call returns null: the caller
 //  shows the empty state, never an invented value.
+//
+//  Caching: by default nothing is cached here (`cache: "no-store"`; the
+//  callers keep a Redis snapshot). A server-rendered page passes
+//  `revalidate` instead, so the fetch goes through Next's data cache and the
+//  page can stay statically generated (ISR) — a no-store fetch would make
+//  the whole route dynamic.
 
 import { parseIbjaHtml, parseYahooChart, type IbjaSeries, type YahooSeries } from "./compute";
 
@@ -39,18 +45,27 @@ export function yahooQuoteUrl(symbol: string): string {
   return `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}/`;
 }
 
+export interface FetchCacheOptions {
+  /** Seconds to keep the response in Next's data cache; omit for no-store. */
+  revalidate?: number;
+}
+
+function cacheInit(opts?: FetchCacheOptions): RequestInit {
+  return opts?.revalidate ? ({ next: { revalidate: opts.revalidate } } as RequestInit) : { cache: "no-store" };
+}
+
 /**
  * Daily closes for one Yahoo symbol. `range` is Yahoo's own ("5d", "1mo",
  * "6mo", "1y"); the /prices page asks for 6 months so a full 3-month window
  * and its starting point are always inside the answer.
  */
-export async function fetchYahooSeries(symbol: string, range = "6mo"): Promise<YahooSeries | null> {
+export async function fetchYahooSeries(symbol: string, range = "6mo", opts?: FetchCacheOptions): Promise<YahooSeries | null> {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${encodeURIComponent(range)}`;
   for (const host of ["query1", "query2"]) {
     try {
       const res = await fetch(`https://${host}.finance.yahoo.com${path}`, {
         headers: YAHOO_HEADERS,
-        cache: "no-store",
+        ...cacheInit(opts),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (!res.ok) continue; // 429 / 5xx → try the other host once
@@ -64,14 +79,14 @@ export async function fetchYahooSeries(symbol: string, range = "6mo"): Promise<Y
 }
 
 /** IBJA gold 24K, gold 22K and silver history from the IBJA home page. */
-export async function fetchIbjaSeries(): Promise<IbjaSeries | null> {
+export async function fetchIbjaSeries(opts?: FetchCacheOptions): Promise<IbjaSeries | null> {
   try {
     const res = await fetch(IBJA_URL, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; ForThePeople.in/1.0; +https://forthepeople.in)",
         Accept: "text/html,application/xhtml+xml",
       },
-      cache: "no-store",
+      ...cacheInit(opts),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) return null;

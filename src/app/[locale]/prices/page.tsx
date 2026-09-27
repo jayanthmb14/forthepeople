@@ -24,9 +24,9 @@
 //  why petrol and diesel are not shown, that this is not advice, and the
 //  All-India supporters line (after the data, never above it).
 //
-//  Server component, no client JavaScript: the data comes from the cached
-//  snapshot in src/lib/markets/prices.ts and the page is re-rendered at most
-//  every 15 minutes (ISR). A price whose source failed shows "We could not
+//  Server component, no client JavaScript except the supporters line: the
+//  data comes from src/lib/markets/prices.ts through Next's data cache, and
+//  the page is re-generated at most every 15 minutes (ISR). A price whose source failed shows "We could not
 //  get this price just now" — never an old or invented number.
 //
 //  Text: "page_prices" messages. Numbers use Indian grouping (en-IN) in
@@ -71,7 +71,8 @@ export default async function PricesPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "page_prices" });
-  const snap = await getPricesSnapshot();
+  // Next's data cache, not Redis, so this page stays statically generated.
+  const snap = await getPricesSnapshot({ revalidate: 900 });
   const build = makePriceViewBuilder(t, locale);
   const anyData = Object.keys(snap.series).length > 0;
   const b = (c: React.ReactNode) => <strong style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{c}</strong>;
