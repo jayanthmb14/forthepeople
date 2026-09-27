@@ -3,6 +3,7 @@
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_about",
   "page_compare",
+  "page_contribute",
   "page_site",
   "page_state",
   "page_taluk",
