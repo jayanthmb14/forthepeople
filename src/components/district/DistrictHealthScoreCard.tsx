@@ -87,10 +87,14 @@ export function useHealthScore(districtSlug: string) {
 /**
  * Small grade block for the identity card: KpiRing + "Health score 54/100"
  * + trend arrow. Renders nothing while loading or when there is no score.
+ *
+ * @prop compact  Ring only, no link (for use inside a card that is already
+ *                a link, e.g. the state page's district cards).
  */
-export function HealthScoreRing({ districtSlug, size = 64 }: { districtSlug: string; size?: number }) {
+export function HealthScoreRing({ districtSlug, size = 64, compact = false }: { districtSlug: string; size?: number; compact?: boolean }) {
   const { data } = useHealthScore(districtSlug);
   if (!data) return null;
+  if (compact) return <KpiRing score={data.overallScore} grade={data.grade} size={size} />;
   const TrendIcon =
     data.trend === "improving" ? ArrowUpRight : data.trend === "declining" ? ArrowDownRight : data.trend === "stable" ? Minus : null;
   return (
