@@ -27,7 +27,7 @@ function MapSkeleton() {
     <div
       className="ftp-skeleton"
       style={{
-        height: 320,
+        height: "100%",
         borderRadius: "var(--ftp-radius-tile)",
         display: "flex",
         alignItems: "center",
@@ -47,20 +47,16 @@ interface StateMapSectionProps {
 
 export default function StateMapSection({ locale, stateSlug, activeDistrictSlugs }: StateMapSectionProps) {
   return (
-    <div
-      style={{
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
-        borderRadius: "var(--ftp-radius-card)",
-        overflow: "hidden",
-        height: "100%",
-        maxHeight: 400,
-      }}
-    >
+    // No border or background here: the page wraps this in a kit <Card>.
+    // The map frame has a fixed, width-aware height and the SVG fits inside
+    // it, so the whole state is always visible. (It used to take the full
+    // content width at its natural aspect ratio and was clipped at 400 px,
+    // which hid the southern districts.)
+    <div>
       <div style={{ padding: "10px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
         <span className="ftp-label">Click a district to explore</span>
       </div>
-      <div style={{ height: "calc(100% - 32px)", overflow: "hidden" }}>
+      <div style={{ height: "clamp(300px, 55vw, 460px)", padding: "8px 16px" }}>
         {stateSlug === "karnataka" ? (
           <KarnatakaMap locale={locale} activeDistricts={new Set(activeDistrictSlugs)} />
         ) : (

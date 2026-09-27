@@ -9,7 +9,7 @@
 // ═══════════════════════════════════════════════════════════
 //
 //  1. Header: state name + local-script name, chips (live / coming counts).
-//  2. StatStrip: live districts, coming, and the Census 2011 population
+//  2. StatStrip: live districts, coming, and population (Census 2011 rows)
 //     and area covered by the live districts (summed from the registry —
 //     we do not have state-wide census figures in the registry, so we only
 //     show what we can add up honestly, and label it that way).
@@ -72,6 +72,32 @@ async function getGoLiveDates(stateSlug: string): Promise<Map<string, Date>> {
   }
 }
 
+/**
+ * Census 2011 population per live district, from the sourced
+ * DemographicProfile rows. The static registry mixes census counts with
+ * later estimates, so it cannot be labelled "Census 2011". Empty map when
+ * the database is unreachable.
+ */
+async function getCensusPopulation(stateSlug: string): Promise<Map<string, number>> {
+  try {
+    const rows = await prisma.demographicProfile.findMany({
+      where: {
+        dataset: "Census 2011",
+        district: { active: true, state: { slug: stateSlug } },
+        totalPopulation: { not: null },
+      },
+      select: { totalPopulation: true, district: { select: { slug: true } } },
+    });
+    return new Map(
+      rows
+        .filter((r) => r.district && r.totalPopulation)
+        .map((r) => [r.district!.slug, r.totalPopulation as number]),
+    );
+  } catch {
+    return new Map();
+  }
+}
+
 export default async function StatePage({ params }: Props) {
   const { locale, state: stateSlug } = await params;
   const stateData = getState(stateSlug);
@@ -81,8 +107,14 @@ export default async function StatePage({ params }: Props) {
   const coming = stateData.districts.filter((d) => !d.active);
   const subUnitLabel = getStateConfig(stateSlug)?.subDistrictUnitPlural ?? "Taluks";
 
-  // Census 2011 totals across the LIVE districts only (what we can add up).
-  const livePopulation = live.reduce((s, d) => s + (d.population ?? 0), 0);
+  // Totals across the LIVE districts only (what we can add up). Population
+  // uses the sourced Census 2011 rows when EVERY live district has one;
+  // otherwise it falls back to the registry and says "estimate".
+  const censusPop = await getCensusPopulation(stateSlug);
+  const allCensus = live.length > 0 && live.every((d) => censusPop.has(d.slug));
+  const popOf = (d: { slug: string; population?: number }) =>
+    allCensus ? censusPop.get(d.slug) ?? 0 : d.population ?? 0;
+  const livePopulation = live.reduce((s, d) => s + popOf(d), 0);
   const liveArea = live.reduce((s, d) => s + (d.area ?? 0), 0);
 
   const goLive = await getGoLiveDates(stateSlug);
@@ -154,8 +186,10 @@ export default async function StatePage({ params }: Props) {
           </StatStrip>
           {(livePopulation > 0 || liveArea > 0) && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-              <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>Population and area as of Census 2011</span>
-              <SourcePill label="Census of India" href="https://censusindia.gov.in/" />
+              <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                {allCensus ? "Population as of Census 2011" : "Population: latest available estimate"}
+              </span>
+              {allCensus && <SourcePill label="Census of India" href="https://censusindia.gov.in/" />}
             </div>
           )}
         </div>
@@ -196,7 +230,7 @@ export default async function StatePage({ params }: Props) {
                       <div>
                         <dt className="ftp-label">Population</dt>
                         <dd className="ftp-num" style={{ margin: 0, fontSize: 15, color: "var(--ftp-text)" }}>
-                          {d.population ? d.population.toLocaleString("en-IN") : "—"}
+                          {popOf(d) > 0 ? popOf(d).toLocaleString("en-IN") : "—"}
                         </dd>
                       </div>
                       <div>
@@ -243,7 +277,7 @@ export default async function StatePage({ params }: Props) {
 
         {/* ═══ 4a. Map ═══ */}
         <Section title="Map">
-          <Card padding={0} style={{ maxHeight: 420, overflow: "hidden" }}>
+          <Card padding={0} style={{ overflow: "hidden" }}>
             <StateMapSection locale={locale} stateSlug={stateSlug} activeDistrictSlugs={live.map((d) => d.slug)} />
           </Card>
         </Section>

@@ -94,7 +94,9 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
         projectionConfig={{ center: center as [number, number], scale }}
         width={500}
         height={450}
-        style={{ width: "100%", height: "auto", maxHeight: "100%", display: "block" }}
+        // Fill the frame; the SVG viewBox keeps the aspect ratio and centres
+        // the state (default preserveAspectRatio "xMidYMid meet").
+        style={{ width: "100%", height: "100%", display: "block" }}
       >
         <ZoomableGroup>
           <Geographies geography={geoData}>

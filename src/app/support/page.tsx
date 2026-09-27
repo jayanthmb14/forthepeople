@@ -44,6 +44,7 @@ import { Card, Pill, ProgressBar, Section, StatStrip, StatTile } from "@/compone
 import { TIER_CONFIG, TIER_ORDER } from "@/lib/constants/razorpay-plans";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import SupporterQuotes from "@/components/support/SupporterQuotes";
+import styles from "./support.module.css";
 import { prisma } from "@/lib/db";
 import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem, type SupportPageContent } from "@/lib/support-defaults";
 
@@ -213,13 +214,7 @@ export default async function SupportPage() {
 
         {/* ── Tier cards ─────────────────────────────────────────────── */}
         <Section title="Choose your contribution" id="tiers">
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))",
-              gap: 16,
-            }}
-          >
+          <div className={styles.tierGrid}>
             {TIER_ORDER.map((key) => {
               const tier = TIER_CONFIG[key];
               const isCustom = key === "custom";
@@ -227,7 +222,7 @@ export default async function SupportPage() {
                 <Card
                   key={key}
                   as="article"
-                  padding={20}
+                  padding={16}
                   aria-label={tier.name}
                   style={{
                     display: "flex",

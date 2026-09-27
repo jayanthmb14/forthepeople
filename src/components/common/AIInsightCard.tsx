@@ -74,6 +74,11 @@ function formatInsightTiming(generatedAt: string, expiresAt?: string | null) {
   return { lastUpdated, nextRefresh, isStale };
 }
 
+/** After this many days an analysis is folded away by default: the figures
+ *  on the page may have moved on, and an old paragraph shown in full above
+ *  newer numbers reads as current. */
+const OLD_INSIGHT_DAYS = 45;
+
 interface AIInsightCardProps {
   module: string;
   district: string;
@@ -94,6 +99,7 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
   const requestKey = `${module}|${district}`;
   const [result, setResult] = useState<{ key: string; insight: ModuleInsight | null } | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [showOld, setShowOld] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +132,34 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
 
   const cfg = SEVERITY_CONFIG[insight.severity] ?? SEVERITY_CONFIG.watch;
   const timing = insight.generatedAt ? formatInsightTiming(insight.generatedAt, insight.expiresAt) : null;
+  const generatedMs = insight.generatedAt ? new Date(insight.generatedAt).getTime() : NaN;
+  // eslint-disable-next-line react-hooks/purity -- age is a render-time read, like the "N days ago" label above
+  const ageDays = Number.isFinite(generatedMs) ? (Date.now() - generatedMs) / 86_400_000 : 0;
+  const isOld = ageDays > OLD_INSIGHT_DAYS;
+
+  if (isOld && !showOld) {
+    const on = new Date(generatedMs).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+    return (
+      <Card as="section" aria-label="AI analysis" padding={14} style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <Sparkles size={14} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
+          <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }} suppressHydrationWarning>
+            An AI analysis from {on} is available. It may not match the figures on this page.
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowOld(true)}
+            style={{
+              marginLeft: "auto", minHeight: 44, padding: 0, border: "none", background: "transparent",
+              color: "var(--ftp-brand)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--ftp-font-sans)",
+            }}
+          >
+            Show it
+          </button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card as="section" aria-label="AI analysis" style={{ marginBottom: 20 }}>
@@ -184,7 +218,7 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
         }}
       >
         <span>
-          Source-verified by {insight.aiProvider === "anthropic" ? "Claude AI" : "Gemini AI"}
+          Written by {insight.aiProvider === "anthropic" ? "Claude AI" : "Gemini AI"}
           {insight.aiModel ? ` (${insight.aiModel})` : ""} · ForThePeople.in
         </span>
         {timing && (

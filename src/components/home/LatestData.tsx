@@ -17,9 +17,12 @@
 //    - Every summariser reads the REAL response shape of /api/data/<module>:
 //      `{ data: [...] }` for crops / schemes / news and
 //      `{ data: { entries, allocations } }` for budget.
-//    - FRESHNESS GATE: a card renders only when its newest row is at most
-//      MAX_AGE_DAYS (30) old. Stale, empty or failed modules render NOTHING.
-//      If no module qualifies, one honest sentence is shown instead.
+//    - FRESHNESS GATE (crops, news): a card renders only when its newest row
+//      is at most MAX_AGE_DAYS (30) old. Stale, empty or failed modules
+//      render NOTHING. If no module qualifies, one honest sentence is shown.
+//    - REFERENCE MODULES (schemes, budget) change once a year, so the 30-day
+//      gate would hide them for eleven months. They skip the gate and carry
+//      their period instead of a date: "For FY 2024-25", "Updated Mar 2026".
 //    - Crops are deduped by commodity (newest modal price wins).
 //    - Budget values are stored in whole rupees and formatted to Cr / L here.
 //
@@ -65,6 +68,9 @@ interface ModuleCard {
   support: string;
   /** ISO timestamp of the newest row — drives the "As of" stamp. */
   newestAt: string;
+  /** Reference data (schemes, budget): the period the figure belongs to,
+   *  shown instead of a date, e.g. { prefix: "For", label: "FY 2024-25" }. */
+  period?: { prefix: string; label: string };
   /** Module page under the district. */
   path: string;
   /** Where the figure comes from (SourcePill). */
@@ -120,9 +126,9 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
       const now = Date.now();
       const built: Record<ModuleKey, ModuleCard | null> = {
         crops: summarizeCrops(crops, now),
-        schemes: summarizeSchemes(schemes, now),
+        schemes: summarizeSchemes(schemes),
         news: summarizeNews(news, now),
-        budget: summarizeBudget(budget, now),
+        budget: summarizeBudget(budget),
       };
       const cards = MODULE_ORDER.map((k) => built[k]).filter((c): c is ModuleCard => c !== null);
       setByDistrict((prev) => ({ ...prev, [slug]: { loading: false, cards } }));
@@ -148,7 +154,7 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
       <Section
         id="latest-data"
         title={`Latest data — ${active.name}`}
-        titleLocal={active.nameLocal ?? undefined}
+        titleLocal={active.nameLocal && active.nameLocal !== active.name ? active.nameLocal : undefined}
         action={
           <Link href={districtPageBase} className={styles.inlineLink}>
             View full district
@@ -169,7 +175,11 @@ export default function LatestData({ locale, districts }: LatestDataProps) {
             the <Link href={districtPageBase}>full district page</Link>.
           </p>
         ) : (
-          <div className={styles.latestGrid} aria-busy={state.loading}>
+          <div
+            className={styles.latestGrid}
+            data-count={state.loading ? MODULE_ORDER.length : state.cards.length}
+            aria-busy={state.loading}
+          >
             {state.loading
               ? MODULE_ORDER.map((k) => <LoadingCard key={k} moduleKey={k} />)
               : state.cards.map((c) => <DataCard key={c.key} card={c} href={`${districtPageBase}/${c.path}`} />)}
@@ -215,7 +225,7 @@ function DataCard({ card, href }: { card: ModuleCard; href: string }) {
       <p className={`${styles.latestHeadline} ${card.key === "news" ? "" : "ftp-num"}`}>{card.headline}</p>
       {card.support && <p className={styles.latestSupport}>{card.support}</p>}
       <div className={styles.latestMeta}>
-        <AsOfText asOf={card.newestAt} />
+        <AsOfText asOf={card.newestAt} period={card.period?.label} prefix={card.period?.prefix ?? "As of"} />
         <SourcePill label={card.source.label} href={card.source.href} />
       </div>
     </article>
@@ -225,8 +235,9 @@ function DataCard({ card, href }: { card: ModuleCard; href: string }) {
 // ── Summarisers ─────────────────────────────────────────────
 // Each reads the REAL response shape of /api/data/<module> (see
 // src/app/api/data/[module]/route.ts) and returns a card, or null when the
-// request failed, the module is empty, or its newest row is older than
-// MAX_AGE_DAYS. Null means "render nothing" — never an empty-state card.
+// request failed, the module is empty, or (crops, news only) its newest row
+// is older than MAX_AGE_DAYS. Null means "render nothing" — never an
+// empty-state card.
 
 /** ISO string of the newest timestamp in a list, or null. */
 function newestOf(values: Array<string | null | undefined>): string | null {
@@ -244,6 +255,10 @@ function isFresh(iso: string | null, nowMs: number): iso is string {
   const days = ageInDays(iso, nowMs);
   return days !== null && days <= MAX_AGE_DAYS;
 }
+
+/** "Mar 2026" from an ISO timestamp. */
+const monthYear = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-IN", { month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 const clip = (t: string, max: number) => (t.length > max ? t.slice(0, max - 1) + "…" : t);
@@ -288,13 +303,15 @@ function summarizeCrops(raw: unknown, nowMs: number): ModuleCard | null {
 
 interface SchemeRow { name?: string; nameLocal?: string; category?: string; updatedAt?: string; active?: boolean }
 
-function summarizeSchemes(raw: unknown, nowMs: number): ModuleCard | null {
+// Reference data: no freshness gate. The card says when the list was last
+// updated ("Updated Mar 2026") so an old list never passes as new.
+function summarizeSchemes(raw: unknown): ModuleCard | null {
   const list = (raw as { data?: SchemeRow[] } | null)?.data;
   if (!Array.isArray(list) || list.length === 0) return null;
   const activeRows = list.filter((s) => s.active !== false);
   if (activeRows.length === 0) return null;
   const newestAt = newestOf(activeRows.map((s) => s.updatedAt));
-  if (!isFresh(newestAt, nowMs)) return null;
+  if (!newestAt) return null;
   const names = activeRows.map((s) => s.name).filter((n): n is string => !!n);
   const total = activeRows.length;
   return {
@@ -304,6 +321,7 @@ function summarizeSchemes(raw: unknown, nowMs: number): ModuleCard | null {
     headline: `${total} active scheme${total === 1 ? "" : "s"}`,
     support: names.slice(0, 2).map((n) => clip(n, 40)).join(" · "),
     newestAt,
+    period: { prefix: "Updated", label: monthYear(newestAt) },
     source: { label: "MyScheme", href: "https://www.myscheme.gov.in" },
   };
 }
@@ -335,14 +353,17 @@ function summarizeNews(raw: unknown, nowMs: number): ModuleCard | null {
 
 interface BudgetEntry { sector?: string; allocated?: number; spent?: number; fiscalYear?: string; fetchedAt?: string }
 
-function summarizeBudget(raw: unknown, nowMs: number): ModuleCard | null {
+// Reference data: a budget belongs to a fiscal year, not to a day. No
+// freshness gate; the card is labelled with its FY instead.
+function summarizeBudget(raw: unknown): ModuleCard | null {
   const entries = (raw as { data?: { entries?: BudgetEntry[] } } | null)?.data?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return null;
   const newestAt = newestOf(entries.map((e) => e.fetchedAt));
-  if (!isFresh(newestAt, nowMs)) return null;
+  if (!newestAt) return null;
   // Budget values are stored in Rupees (CLAUDE.md) — format to Cr / L here.
+  const oneDp = (n: number) => n.toLocaleString("en-IN", { maximumFractionDigits: 1 });
   const fmt = (n: number) =>
-    n >= 10_000_000 ? `₹${(n / 10_000_000).toFixed(1)} Cr` : n >= 100_000 ? `₹${(n / 100_000).toFixed(1)} L` : inr(n);
+    n >= 10_000_000 ? `₹${oneDp(n / 10_000_000)} Cr` : n >= 100_000 ? `₹${oneDp(n / 100_000)} L` : inr(n);
   const year = entries[0]?.fiscalYear;
   const rows = year ? entries.filter((e) => e.fiscalYear === year) : entries;
   const alloc = rows.reduce((s, e) => s + (e.allocated ?? 0), 0);
@@ -353,10 +374,9 @@ function summarizeBudget(raw: unknown, nowMs: number): ModuleCard | null {
     title: MODULE_CHROME.budget.title,
     path: MODULE_CHROME.budget.path,
     headline: `${fmt(alloc)} allocated`,
-    support: [`${fmt(spent)} spent`, year ? `FY ${year}` : null, `${rows.length} sector${rows.length === 1 ? "" : "s"}`]
-      .filter(Boolean)
-      .join(" · "),
+    support: [`${fmt(spent)} spent`, `${rows.length} sector${rows.length === 1 ? "" : "s"}`].join(" · "),
     newestAt,
+    period: year ? { prefix: "For", label: `FY ${year}` } : { prefix: "Updated", label: monthYear(newestAt) },
     source: { label: "PFMS", href: "https://pfms.nic.in" },
   };
 }

@@ -114,7 +114,9 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const revenueAsOf = latestFetchedAt(collections as Array<{ fetchedAt?: string | null }>);
 
   const budgetChart = latestEntries.map((e) => ({
-    sector: e.sector.length > 12 ? e.sector.slice(0, 12) + "…" : e.sector,
+    // Full name for the tooltip; a shorter one for the axis.
+    sectorFull: e.sector,
+    sector: e.sector.length > 22 ? e.sector.slice(0, 21) + "…" : e.sector,
     allocated: Math.round(e.allocated / CRORE),
     spent: Math.round(e.spent / CRORE),
     utilPct: e.allocated > 0 ? Math.round((e.spent / e.allocated) * 100) : 0,
@@ -211,10 +213,10 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
         <>
           <div style={{ marginBottom: 8 }}>
             <StatStrip cols={4}>
-              <StatTile icon={PiggyBank} label="Total Budget" value={(totalAllocated / CRORE).toFixed(0)} unit="₹ Cr" sub={fyLabel} asOf={asOf} />
+              <StatTile icon={PiggyBank} label="Total Budget" value={Math.round(totalAllocated / CRORE).toLocaleString("en-IN")} unit="₹ Cr" sub={fyLabel} asOf={asOf} />
               <StatTile
                 label="Spent"
-                value={totalSpent === 0 && totalAllocated > 0 ? "Data pending" : (totalSpent / CRORE).toFixed(0)}
+                value={totalSpent === 0 && totalAllocated > 0 ? "Data pending" : Math.round(totalSpent / CRORE).toLocaleString("en-IN")}
                 unit={totalSpent === 0 && totalAllocated > 0 ? undefined : "₹ Cr"}
                 sub={fyLabel}
                 asOf={asOf}
@@ -228,7 +230,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
               />
               <StatTile
                 label="Lapsed Funds"
-                value={totalSpent === 0 && totalLapsed === 0 ? "—" : (totalLapsed / CRORE).toFixed(1)}
+                value={totalSpent === 0 && totalLapsed === 0 ? "—" : (totalLapsed / CRORE).toLocaleString("en-IN", { maximumFractionDigits: 1 })}
                 unit={totalSpent === 0 && totalLapsed === 0 ? undefined : "₹ Cr"}
                 sub="Funds not utilised"
                 trend="down"
@@ -248,12 +250,30 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
             <div style={{ marginTop: 24 }}>
               <Section title={`${latestYear} — Sector Budget vs Spent (₹ Cr)`}>
                 <Card>
-                  <ResponsiveContainer width="100%" height={240}>
-                    <BarChart data={budgetChart} margin={{ top: 5, right: 10, bottom: 50, left: 0 }} layout="vertical">
+                  {/* Legend: grey = allocated, brand blue = spent. */}
+                  <div style={{ display: "flex", gap: 16, marginBottom: 8, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, background: "var(--ftp-border-strong)" }} />
+                      Allocated
+                    </span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, background: "var(--ftp-brand)" }} />
+                      Spent
+                    </span>
+                  </div>
+                  {/* Height follows the number of sectors (44 px each) so every
+                      sector gets a readable label instead of every other one. */}
+                  <ResponsiveContainer width="100%" height={Math.max(200, budgetChart.length * 44 + 40)}>
+                    <BarChart data={budgetChart} margin={{ top: 5, right: 16, bottom: 8, left: 0 }} layout="vertical" barGap={2}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                      <XAxis type="number" tick={AXIS_TICK} tickFormatter={(v) => `₹${v}Cr`} />
-                      <YAxis type="category" dataKey="sector" tick={AXIS_TICK} width={90} />
-                      <Tooltip formatter={(v) => [`₹${Number(v)}Cr`, ""]} contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--ftp-surface-2)" }} />
+                      <XAxis type="number" tick={AXIS_TICK} tickFormatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`} />
+                      <YAxis type="category" dataKey="sector" tick={AXIS_TICK} width={150} interval={0} />
+                      <Tooltip
+                        formatter={(v, name) => [`₹${Number(v).toLocaleString("en-IN")} Cr`, name]}
+                        labelFormatter={(_, payload) => payload?.[0]?.payload?.sectorFull ?? ""}
+                        contentStyle={TOOLTIP_STYLE}
+                        cursor={{ fill: "var(--ftp-surface-2)" }}
+                      />
                       <Bar dataKey="allocated" fill="var(--ftp-border-strong)" radius={[0, 4, 4, 0]} name="Allocated" />
                       <Bar dataKey="spent" fill="var(--ftp-brand)" radius={[0, 4, 4, 0]} name="Spent" />
                     </BarChart>

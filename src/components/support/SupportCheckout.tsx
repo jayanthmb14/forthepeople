@@ -683,17 +683,18 @@ export default function SupportCheckout({ tier }: Props) {
           style={{ ...STEPPER_BTN, cursor: atMin ? "not-allowed" : "pointer", opacity: atMin ? 0.5 : 1 }}>
           <Minus size={16} aria-hidden />
         </button>
-        <div style={{ ...INPUT, display: "flex", alignItems: "center", flex: 1, padding: "0 10px", minWidth: 0 }}>
+        {/* The "/mo" hint lives on the card and the button, not in here:
+            inside the box it squeezed 5-digit amounts until they clipped. */}
+        <div style={{ ...INPUT, display: "flex", alignItems: "center", flex: 1, padding: "0 8px", minWidth: 0 }}>
           <span className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-text-2)", marginRight: 4 }}>₹</span>
           <input
             type="number" min={tier.minAmount} max={tier.maxAmount} step={tier.step} value={amountStr}
             aria-label={`Amount in rupees for ${tier.label}`}
             onChange={(e) => setAmountStr(e.target.value)}
             onBlur={handleAmountBlur}
-            className="ftp-num"
+            className="ftp-num ftp-no-spin"
             style={{ flex: 1, border: "none", background: "transparent", fontSize: 16, color: "var(--ftp-text)", outline: "none", minWidth: 0, height: 42 }}
           />
-          {tier.isMonthly && <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>/mo</span>}
         </div>
         <button
           type="button"

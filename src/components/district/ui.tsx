@@ -334,7 +334,9 @@ export function SourcePill({ label, href }: { label: string; href?: string }) {
     lineHeight: "16px",
     textDecoration: "none",
     whiteSpace: "nowrap",
-    ...MONO,
+    // Source names are words ("Census of India", "Deccan Herald"), not
+    // figures, so they use the text face. Mono spaced them too widely.
+    fontWeight: 500,
   };
   // The text itself: one line, cut with an ellipsis when there is no room.
   const text = (

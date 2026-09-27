@@ -862,3 +862,16 @@ body.ftp-india-tinted {
     transition: none !important;
   }
 }
+
+/* Number inputs that sit between their own −/+ buttons (support amount
+   stepper): hide the browser spinner, which duplicated the buttons and
+   ate the width a 5-digit amount needs. */
+.ftp-no-spin::-webkit-inner-spin-button,
+.ftp-no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ftp-no-spin {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

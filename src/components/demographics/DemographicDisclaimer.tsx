@@ -47,7 +47,7 @@ export default function DemographicDisclaimer({
       title: "About this module",
       body: (
         <p>
-          ForThePeople.in is a civic transparency initiative of PKJMB Media Pvt Ltd.
+          ForThePeople.in is an independent civic transparency initiative by Jayanth M B.
           Demographic indicators shown here are reproduced in aggregate form from publicly
           released datasets of the Government of India — principally Census of India 2011
           (Office of the Registrar General &amp; Census Commissioner), National Family

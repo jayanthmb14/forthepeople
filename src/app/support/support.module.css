@@ -1,0 +1,17 @@
+/* Contribution tiers. There are five tiers, so the column count is chosen
+   to avoid one card alone on a row: 5 across on wide screens, 3 + 2 on
+   laptops and tablets, 2-up on large phones, then a single column. */
+.tierGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1199px) {
+  .tierGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .tierGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 519px) {
+  .tierGrid { grid-template-columns: minmax(0, 1fr); }
+}

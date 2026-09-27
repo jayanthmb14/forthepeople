@@ -160,7 +160,7 @@ function getNoDataMessage(
     },
     population: {
       title: "Population data being compiled",
-      body: `Census 2011 population data and 2026 estimates for ${districtName} are being compiled. The next Census is expected in 2031.`,
+      body: `Census 2011 population data and 2026 estimates for ${districtName} are being compiled. Census 2027 is under way; its figures will be added after the official release.`,
     },
   };
 

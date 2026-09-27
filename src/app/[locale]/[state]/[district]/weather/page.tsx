@@ -170,14 +170,14 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
               { key: "humidity", label: "Humidity %", numeric: true },
               { key: "rain", label: "Rain mm", numeric: true },
             ]}
-            rows={readings.slice(0, 12).map((r) => {
+            rows={distinctReadings(readings).slice(0, 12).map((r) => {
               const stale = !isWithinMinutes(r.recordedAt, STALE_ROW_MINUTES);
               const muted = mutedIf(stale);
               return {
-                time: stale ? (
-                  <AsOfText asOf={r.recordedAt} />
-                ) : (
-                  <span suppressHydrationWarning>
+                // Date AND time on every row: readings arrive every few
+                // minutes, so a date alone made rows look like duplicates.
+                time: (
+                  <span suppressHydrationWarning style={stale ? { ...muted, fontSize: 13 } : undefined}>
                     {new Date(r.recordedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}
                   </span>
                 ),
@@ -289,4 +289,22 @@ export default function WeatherPage({ params }: { params: Promise<{ locale: stri
       <WeatherPageInner params={params} />
     </ModuleErrorBoundary>
   );
+}
+
+/**
+ * The feed is polled every few minutes but the upstream observation changes
+ * less often, so consecutive rows often repeat the same numbers. Keep only
+ * the newest row of each run of identical readings (input is newest first).
+ */
+function distinctReadings<T extends { temperature?: number | null; humidity?: number | null; conditions?: string | null; rainfall?: number | null }>(
+  rows: T[],
+): T[] {
+  const out: T[] = [];
+  let prevKey: string | null = null;
+  for (const r of rows) {
+    const key = `${r.temperature}|${r.humidity}|${r.conditions}|${r.rainfall}`;
+    if (key !== prevKey) out.push(r);
+    prevKey = key;
+  }
+  return out;
 }

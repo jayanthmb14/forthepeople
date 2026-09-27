@@ -18,7 +18,7 @@
 //   │ Mandya  ಮಂಡ್ಯ   (H1 36/40 600 + local script 22)  health    │
 //   │ [Sugar Capital] [Kaveri Basin] …   (tagline chips)          │
 //   │ ┌Population┐┌Area┐┌Literacy┐┌Taluks┐   (StatStrip)          │
-//   │ As of Census 2011 · [Census of India]                       │
+//   │ As of Census 2011 · [Census of India]  (or "estimate")      │
 //   │ {children — e.g. the freshness row}                         │
 //   └────────────────────────────────────────────────────────────┘
 //
@@ -39,6 +39,12 @@ export interface DistrictIdentityCardProps {
   population?: number | null;
   area?: number | null;
   literacy?: number | null;
+  /** Where the population / area / literacy numbers come from, e.g.
+   *  "Census 2011". Leave empty when the figures are registry estimates —
+   *  the card then says so instead of claiming a census year. */
+  statsAsOf?: string | null;
+  /** Link for the source pill next to `statsAsOf`. */
+  statsSource?: { label: string; href: string } | null;
   /** Number of taluks / tehsils / mandals… */
   subUnitCount?: number | null;
   /** Plural label for the sub-district unit ("Taluks", "Tehsils", …). */
@@ -60,6 +66,8 @@ export default function DistrictIdentityCard({
   population,
   area,
   literacy,
+  statsAsOf,
+  statsSource,
   subUnitCount,
   subUnitLabel = "Taluks",
   healthSlug,
@@ -90,8 +98,9 @@ export default function DistrictIdentityCard({
         {aside ?? (healthSlug ? <HealthScoreRing districtSlug={healthSlug} /> : null)}
       </div>
 
-      {/* Census numbers. They do not change day to day, but they ARE from
-          the 2011 Census, so the card says so right under them. */}
+      {/* Headline numbers. The caption names where they come from: the
+          census row from the database when there is one, otherwise it says
+          the figure is an estimate. Never claim a census year we don't have. */}
       <div style={{ marginTop: 20 }}>
         <StatStrip cols={4}>
           <StatTile label="Population" value={population ? population.toLocaleString("en-IN") : "—"} />
@@ -100,8 +109,10 @@ export default function DistrictIdentityCard({
           <StatTile label={subUnitLabel} value={subUnitCount ?? "—"} />
         </StatStrip>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-          <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>As of Census 2011</span>
-          <SourcePill label="Census of India" href="https://censusindia.gov.in/" />
+          <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+            {statsAsOf ? `As of ${statsAsOf}` : "Latest available estimate"}
+          </span>
+          {statsSource && <SourcePill label={statsSource.label} href={statsSource.href} />}
         </div>
       </div>
 

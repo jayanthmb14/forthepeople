@@ -35,6 +35,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import {
   useOverview, useCropPrices, useWeather, useAlerts, useBudget, useNews, useExams,
+  usePopulationProfile,
 } from "@/hooks/useRealtimeData";
 import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
@@ -203,6 +204,19 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const { data: newsData, isLoading: newsLoading } = useNews(districtSlug, stateSlug);
   const { data: examsData, isLoading: examsLoading } = useExams(districtSlug, stateSlug);
   const fresh = useFreshness(stateSlug, districtSlug);
+  const { data: censusData } = usePopulationProfile(districtSlug, stateSlug);
+
+  // Identity-card numbers: use the sourced census row from the database when
+  // it exists. The registry figures are a mix of census counts and later
+  // estimates, so they are shown without a census label.
+  const census = censusData?.data ?? null;
+  const cardPopulation = census?.totalPopulation ?? districtData.population;
+  const cardLiteracy = census?.literacyTotal ?? districtData.literacy;
+  const cardArea = census?.areaSqKm ?? districtData.area;
+  const cardStatsAsOf = census?.totalPopulation ? census.dataset : null;
+  const cardStatsSource = census?.totalPopulation && census.sourceUrl
+    ? { label: "Census of India", href: census.sourceUrl }
+    : null;
 
   // Taluk count: prefer the live DB list, fall back to the registry.
   const dbTalukCount = overview?.data?.taluks?.length;
@@ -249,9 +263,11 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         stateName={stateName}
         tagline={districtData.tagline}
         badges={districtData.badges}
-        population={districtData.population}
-        area={districtData.area}
-        literacy={districtData.literacy}
+        population={cardPopulation}
+        area={cardArea}
+        literacy={cardLiteracy}
+        statsAsOf={cardStatsAsOf}
+        statsSource={cardStatsSource}
         subUnitCount={displayedTalukCount}
         subUnitLabel={subUnitPlural}
         healthSlug={districtSlug}

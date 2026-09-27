@@ -27,7 +27,9 @@ export default function KarnatakaMap({ locale, activeDistricts }: KarnatakaMapPr
         projectionConfig={{ center: [76.5, 15.3], scale: 3200 }}
         width={500}
         height={450}
-        style={{ width: "100%", height: "auto", maxHeight: "100%", display: "block" }}
+        // Fill the frame; the SVG viewBox keeps the aspect ratio and centres
+        // the state (default preserveAspectRatio "xMidYMid meet").
+        style={{ width: "100%", height: "100%", display: "block" }}
       >
         <Geographies geography="/geo/karnataka-districts.json">
           {({ geographies }: { geographies: Array<{ rsmKey: string; properties: Record<string, string | boolean> }> }) =>

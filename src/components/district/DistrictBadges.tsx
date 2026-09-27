@@ -88,7 +88,10 @@ interface Props {
  * with its Lucide icon. Renders nothing when there is nothing to show.
  */
 export default function DistrictBadges({ badges, tagline, tone = "neutral" }: Props) {
-  const list = badges ?? [];
+  // Drop a badge that just repeats the tagline (Mandya's registry has
+  // "Sugar Capital of Karnataka" as both), so the chip row never doubles up.
+  const norm = (t: string) => t.trim().toLowerCase();
+  const list = (badges ?? []).filter((b) => !tagline || norm(b.label) !== norm(tagline));
   if (!tagline && list.length === 0) return null;
 
   return (

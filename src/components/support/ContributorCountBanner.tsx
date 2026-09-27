@@ -20,13 +20,13 @@ export default function ContributorCountBanner() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/data/contributors?limit=1")
+    // Same source and count as the contributor wall below and the home
+    // page "Backed by N" line, so the page never shows two different totals.
+    fetch("/api/payment/contributors?limit=1")
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
-        const subs = typeof d?.subscribersTotal === "number" ? d.subscribersTotal : 0;
-        const oneTime = typeof d?.oneTimeTotal === "number" ? d.oneTimeTotal : 0;
-        setTotal(subs + oneTime);
+        setTotal(typeof d?.count === "number" ? d.count : 0);
       })
       .catch(() => {
         if (!cancelled) setTotal(0);

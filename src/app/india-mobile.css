@@ -67,6 +67,11 @@
 
   .ftp-right-rail-dots {
     display: flex;
+    /* The dots are the 4th child of each section's .layout, and the
+       per-section reveal CSS hides every .layout child (opacity 0) but
+       only fades children 1-3 back in. Without this the carousel
+       indicator never showed on phones. */
+    opacity: 1 !important;
   }
 
   /* Step 25 commit 2: section watermarks fade out on mobile.

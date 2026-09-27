@@ -32,6 +32,7 @@ import { useMemo } from "react";
 import { ArrowRight } from "lucide-react";
 import { Pill } from "@/components/district/ui";
 import { DISTRICT_META } from "@/lib/data/district-meta";
+import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
 import { usePreview, useTopVotes } from "./home-data";
 import styles from "./home.module.css";
@@ -81,7 +82,13 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
       <ul className={styles.districtsList}>
         {sorted.map((d) => {
           const meta = DISTRICT_META[d.slug];
-          const local = d.nameLocal ?? meta?.nativeScript ?? null;
+          // A local name equal to the English one (e.g. "Pune" stored in the
+          // nameLocal column) adds nothing; fall through to the registry script.
+          const dbLocal = d.nameLocal && d.nameLocal !== d.name ? d.nameLocal : null;
+          const registryLocal = getDistrict(d.stateSlug, d.slug)?.nameLocal;
+          const regLocal = registryLocal && registryLocal !== d.name ? registryLocal : null;
+          const metaLocal = meta?.nativeScript && meta.nativeScript !== d.name ? meta.nativeScript : null;
+          const local = dbLocal ?? regLocal ?? metaLocal;
           const tagline = d.tagline ?? meta?.tagline ?? null;
           const age = ageInDays(d.goLiveDate);
           const isNew = age !== null && age <= NEW_BADGE_DAYS;

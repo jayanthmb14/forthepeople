@@ -88,6 +88,27 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 - Homepage map re-centred so all of India, including the south and the islands, is visible.
 - `scripts/fix-district-local-names.ts`: dry-run fixer for districts whose local-script name is
   just the English name (Pune → पुणे). Run with `--confirm` against prod, then bust caches.
+- 2026-09-27 review pass (local production build, every page captured at 1440 px and 390 px):
+  - District card, state page: population now comes from the sourced Census 2011 rows in the
+    database. The registry mixed census counts with later estimates but was labelled "Census
+    2011"; figures without a census row now say "Latest available estimate".
+  - Homepage "Latest data": schemes and budget are yearly reference data, so they skip the
+    30-day freshness gate and carry their period ("Updated Mar 2026", "For FY 2025-26"). The
+    grid sizes itself to the number of cards; rupee figures are digit-grouped.
+  - Local names that just repeat the English name are hidden; Pune shows पुणे from the registry.
+  - Tagline chips: a badge that repeats the tagline is dropped. Source pills use the text face.
+  - Finance: the sector chart labels every sector, sizes to its data and has a legend; headline
+    figures are digit-grouped.
+  - Weather: repeated 5-minute readings collapse into one row; every row shows date and time.
+  - State map: the SVG fits a fixed-height frame, so the whole state (and its live districts) is
+    visible instead of being cropped at 400 px.
+  - India page: the phone carousel dots were stuck at opacity 0; now visible.
+  - AI analysis older than 45 days is folded behind "An AI analysis from <date> is available. It
+    may not match the figures on this page." Credit line reads "Written by", not "Source-verified by".
+  - Support: one supporter count everywhere (the banner used a different total); five tiers laid
+    out 5 / 3+2 / 2 / 1 with no lone card; the amount box fits five digits.
+  - Copy: "next Census is expected in 2031" → Census 2027 is under way; the demographics
+    disclaimer no longer names the company.
 
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked
@@ -141,6 +162,10 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   `CRON_SECRET`, `ADMIN_SESSION_SECRET`, `VOTE_IP_SALT`, `RAZORPAY_WEBHOOK_SECRET` are all set.
 - GitHub: set the required status checks to `Type-check & Build`, `Lint` and `Unit tests`; drop the
   1-approval rule on this solo repo; label 4–6 issues `good-first-issue` / `help-wanted`.
+- Admin → Support page: clear the "bio text" field (or edit it). The saved text names the
+  company and hard-codes "9 districts … 29 live dashboards"; the built-in default is clean and
+  computes counts live.
+- After deploy, regenerate AI insights (admin) so the analyses match current figures.
 - Funding: validate `https://forthepeople.in/funding.json` at floss.fund after deploy, reconcile
   the plan amounts with invoices, then submit.
 
