@@ -18,7 +18,6 @@ import "@/app/india-mobile.css";
 import { IndiaHero } from "@/components/india/sections/IndiaHero";
 import { IndiaKpiStrip } from "@/components/india/sections/IndiaKpiStrip";
 import { IndiaInTheWorldCard } from "@/components/india/sections/IndiaInTheWorldCard";
-import { SuperCategoryPreviewBand } from "@/components/india/sections/SuperCategoryPreviewBand";
 import { IndiaAtGlanceSection } from "@/components/india/sections/IndiaAtGlance";
 import { KnowAboutIndiaSection } from "@/components/india/sections/KnowAboutIndia";
 import { LivingStandardsSection } from "@/components/india/sections/LivingStandards";
@@ -35,11 +34,7 @@ import { ScrollColorShift } from "@/components/india/primitives/ScrollColorShift
 import { LotusVineGarlandDivider } from "@/components/india/primitives/LotusVineGarlandDivider";
 import { SectionDivider } from "@/components/india/primitives/SectionDivider";
 import { LiveStrip } from "@/components/india/sections/LiveStrip";
-import {
-  getOrderedSuperCategories,
-  getModulesForSuperCategory,
-} from "@/lib/india/india-super-categories";
-import { INDIA_MODULES } from "@/lib/india/india-modules";
+import { getOrderedSuperCategories } from "@/lib/india/india-super-categories";
 import enDict from "@/dictionaries/en.json";
 import knDict from "@/dictionaries/kn.json";
 
@@ -78,19 +73,6 @@ export default async function IndiaRoute({
   const { locale } = await params;
   const superCategories = getOrderedSuperCategories();
 
-  // Map super-category slug → ScrollColorShift tint id (file 48 §Section 2.2).
-  const TINT_BY_SC: Record<string, string> = {
-    "macro-snapshot": "macro",
-    "know-india": "know",
-    "living-standards": "living",
-    "wildlife-forests": "wildlife",
-    "agriculture-livestock": "agriculture",
-    "natural-resources-energy": "natural",
-    infrastructure: "infra",
-    governance: "governance",
-    innovation: "innovation",
-    culture: "culture",
-  };
   const dict = locale === "kn" ? knDict : enDict;
   const indiaDict = (
     dict as {
@@ -195,16 +177,9 @@ export default async function IndiaRoute({
               // Step 13: culture — rose palette, STATIC 5-row directory.
               band = <CultureSection locale={locale} />;
             } else {
-              band = (
-                <div data-tint-id={TINT_BY_SC[sc.slug] ?? sc.slug}>
-                  <SuperCategoryPreviewBand
-                    superCategory={sc}
-                    modules={getModulesForSuperCategory(sc.slug, INDIA_MODULES)}
-                    bandIndex={i}
-                    locale={locale}
-                  />
-                </div>
-              );
+              // Every registered super-category has its own band above; a
+              // new one shows nothing until its band is built.
+              band = null;
             }
             return (
               <React.Fragment key={sc.slug}>

@@ -46,6 +46,25 @@ export function indiaCategoryHue(category: IndiaModuleCategory): string {
   return hueClass(CATEGORY_HUE[category] ?? "blue");
 }
 
+/** v4 hue closest to each super-category's band colour (section-accents). */
+const SUPER_CATEGORY_HUE: Record<string, Hue> = {
+  "macro-snapshot": "blue",
+  "know-india": "indigo",
+  "living-standards": "teal",
+  "wildlife-forests": "green",
+  "agriculture-livestock": "amber",
+  "natural-resources-energy": "cyan",
+  infrastructure: "slate",
+  governance: "violet",
+  innovation: "orange",
+  culture: "pink",
+};
+
+/** className that scopes the v4 hue variables for a super-category page. */
+export function indiaSuperCategoryHue(slug: string): string {
+  return hueClass(SUPER_CATEGORY_HUE[slug] ?? "blue");
+}
+
 export function IndiaSectionTitle({
   emoji,
   children,

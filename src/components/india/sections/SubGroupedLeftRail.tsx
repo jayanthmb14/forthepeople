@@ -1,117 +1,107 @@
 /**
- * SubGroupedLeftRail — left navigation rail for /en/india/category/<slug>.
+ * SubGroupedLeftRail — left navigation rail for /[locale]/india/category/<slug>.
  *
- * File 45 §4 Level 2. Reads getModulesGroupedBySubGroup, renders ALL CAPS
- * sub-group labels with thin underline separators. Modules without
- * sub-groups render flat (super-cats with <8 modules per file 40).
+ * File 45 §4 Level 2. Modules grouped by their registry sub-group (shown
+ * translated, sentence case); modules without one render flat. The count
+ * line comes from the page (`summary`), computed once from the same module
+ * list as the hero ring and the footer note, so the three always agree.
+ *
+ * Works as a server component (sync; useTranslations is allowed there).
  */
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { IndiaModuleDef } from "@/lib/india/india-modules";
 import { getModulesGroupedBySubGroup } from "@/lib/india/india-super-categories";
-import { IndiaSuperCategoryAccents, type IndiaAccentColorKey } from "@/lib/india/design-tokens";
+import { INDIA_NS, indiaText } from "../i18n";
 
 export interface SubGroupedLeftRailProps {
   superCategorySlug: string;
   modules: IndiaModuleDef[];
-  accentColor: IndiaAccentColorKey;
   locale: string;
+  /** "10 modules, 4 live, 6 coming soon" — already translated. */
+  summary: string;
+  ariaLabel: string;
   activeModuleSlug?: string;
   className?: string;
-}
-
-/** Registry sub-group keys are upper case ("JUSTICE"); show them in sentence case. */
-function sentenceCase(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
 export function SubGroupedLeftRail({
   superCategorySlug,
   modules,
-  accentColor,
   locale,
+  summary,
+  ariaLabel,
   activeModuleSlug,
   className,
 }: SubGroupedLeftRailProps) {
-  const accent = IndiaSuperCategoryAccents[accentColor];
+  const t = useTranslations(INDIA_NS);
+  const ti = useTranslations("india");
+  const x = indiaText(t, ti);
   const groups = getModulesGroupedBySubGroup(superCategorySlug, modules);
-  const liveCount = modules.filter((m) => m.status === "live").length;
-  const soonCount = modules.filter(
-    (m) => m.status === "coming_soon" || m.status === "planned",
-  ).length;
 
   return (
-    <aside
+    <nav
+      aria-label={ariaLabel}
       className={className}
       style={{
-        background: "var(--color-surface)",
-        border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: "var(--border-radius-lg)",
-        padding: "16px 18px",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
+        padding: "16px 14px",
       }}
     >
-      <div
-        style={{
-          fontSize: "12px",
-          color: "var(--color-text-secondary)",
-          marginBottom: "12px",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {modules.length} modules, {liveCount} live, {soonCount} soon
-      </div>
+      <p style={{ fontSize: 13, color: "var(--ftp-text-2)", margin: "0 0 12px 4px", fontVariantNumeric: "tabular-nums" }}>{summary}</p>
 
       {Array.from(groups.entries()).map(([groupLabel, mods]) => (
-        <div key={groupLabel} style={{ marginBottom: "16px" }}>
+        <div key={groupLabel} style={{ marginBottom: 14 }}>
           {groupLabel !== "UNGROUPED" && (
             <div
               style={{
-                fontSize: "12px",
-                color: accent.hex,
-                fontWeight: 600,
-                paddingBottom: "4px",
-                borderBottom: "0.5px solid var(--color-border-tertiary)",
-                marginBottom: "6px",
+                fontSize: 12,
+                color: "var(--hue-deep)",
+                fontWeight: 700,
+                padding: "0 4px 4px",
+                borderBottom: "1px solid var(--ftp-border)",
+                marginBottom: 6,
               }}
             >
-              {sentenceCase(groupLabel)}
+              {x.subGroup(groupLabel)}
             </div>
           )}
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {mods.map((m) => {
               const isActive = m.slug === activeModuleSlug;
+              const soon = m.status === "coming_soon" || m.status === "planned";
               return (
                 <li key={m.slug}>
                   <Link
                     href={`/${locale}/india/${m.slug}`}
+                    aria-current={isActive ? "page" : undefined}
+                    className="ftp-dt-row"
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "8px",
-                      padding: "5px 6px",
-                      fontSize: "13px",
-                      color: isActive ? accent.hex : "var(--color-text-primary)",
-                      background: isActive ? accent.bg : "transparent",
-                      borderRadius: "6px",
+                      gap: 8,
+                      padding: "6px 6px",
+                      minHeight: 36,
+                      fontSize: 13,
+                      color: isActive ? "var(--hue-deep)" : "var(--ftp-text)",
+                      background: isActive ? "var(--hue-tint)" : "transparent",
+                      borderRadius: 8,
                       textDecoration: "none",
-                      fontWeight: isActive ? 500 : 400,
+                      fontWeight: isActive ? 600 : 400,
                     }}
                   >
-                    <span aria-hidden>{m.icon}</span>
-                    <span style={{ flex: 1 }}>{m.title}</span>
-                    {(m.status === "coming_soon" || m.status === "planned") && (
-                      <span
-                        style={{
-                          fontSize: "10px",
-                          background: "#FAEEDA",
-                          color: "#854F0B",
-                          padding: "1px 5px",
-                          borderRadius: "3px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        Soon
+                    <span className="ftp-emoji" aria-hidden>
+                      {m.icon}
+                    </span>
+                    <span style={{ flex: 1 }}>{x.moduleTitle(m)}</span>
+                    {soon && (
+                      <span style={{ fontSize: 11, background: "#FAEEDA", color: "#854F0B", padding: "1px 7px", borderRadius: 999, fontWeight: 600 }}>
+                        {t("status.soon")}
                       </span>
                     )}
                   </Link>
@@ -121,7 +111,7 @@ export function SubGroupedLeftRail({
           </ul>
         </div>
       ))}
-    </aside>
+    </nav>
   );
 }
 

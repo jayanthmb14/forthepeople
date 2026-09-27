@@ -1,163 +1,101 @@
 /**
- * ModulePreviewCard — module preview tile per Mockup 1 v2.
+ * ModulePreviewCard — one module on the super-category page grid.
  *
- * Used inside SuperCategoryPreviewBand on /en/india AND inside the
- * Level-2 super-category page grid. File 45 §4.
+ * Emoji chip, translated title and tagline, a Live / Soon pill, and the
+ * module's headline figure when IndiaIndicator has one (with its label and
+ * date). Before Sep 2026 the card printed the registry's placeholder
+ * `mockValue` as if it were a real number; with no published row the card
+ * now says so instead.
  *
- * Phase 4 placeholder: sparkline is a static polyline. Real data lives
- * in IndiaIndicator + IndiaTimeSeries; Phase 5 wires them in.
+ * Server-safe; strings arrive translated from the page.
  */
 
 import * as React from "react";
 import Link from "next/link";
-import type { IndiaModuleDef } from "@/lib/india/india-modules";
-import {
-  IndiaSuperCategoryAccents,
-  type IndiaAccentColorKey,
-} from "@/lib/india/design-tokens";
+
+export interface ModulePreviewFigure {
+  value: string;
+  unit?: string;
+  /** "Tigers in the wild, as of 9 Apr 2023" — already translated. */
+  caption: string;
+}
 
 export interface ModulePreviewCardProps {
-  module: IndiaModuleDef;
-  accentColor: IndiaAccentColorKey;
-  locale: string;
-  className?: string;
+  href: string;
+  emoji: string;
+  title: string;
+  tagline: string;
+  isLive: boolean;
+  statusLabel: string;
+  figure?: ModulePreviewFigure;
+  noFigureLabel: string;
 }
-
-function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
-  if (status === "live") {
-    return (
-      <span
-        style={{
-          fontSize: "11px",
-          background: "#E1F5EE",
-          color: "#16A34A",
-          padding: "1px 6px",
-          borderRadius: "3px",
-          fontWeight: 600,
-        }}
-      >
-        Live
-      </span>
-    );
-  }
-  return (
-    <span
-      style={{
-        fontSize: "11px",
-        background: "#FAEEDA",
-        color: "#854F0B",
-        padding: "1px 6px",
-        borderRadius: "3px",
-        fontWeight: 600,
-      }}
-    >
-      Soon
-    </span>
-  );
-}
-
-// Design v4 (2026-09-27): the PlaceholderSparkline that drew the same
-// hand-typed rising line on every card was removed. It looked like a trend
-// but carried no data (v4 honesty rule: only draw a picture when real data
-// supports it). A real sparkline can return once IndiaTimeSeries rows exist.
 
 export function ModulePreviewCard({
-  module,
-  accentColor,
-  locale,
-  className,
+  href,
+  emoji,
+  title,
+  tagline,
+  isLive,
+  statusLabel,
+  figure,
+  noFigureLabel,
 }: ModulePreviewCardProps) {
-  const accent = IndiaSuperCategoryAccents[accentColor];
-  const headlineValue =
-    module.headlineMetric?.mockValue !== undefined
-      ? module.headlineMetric.mockValue
-      : "—";
-  const headlineUnit = module.headlineMetric?.mockUnit ?? "";
-
   return (
     <Link
-      href={`/${locale}/india/${module.slug}`}
-      className={className}
+      href={href}
+      className="ftp-card-link"
       style={{
-        display: "block",
-        position: "relative",
-        background: "var(--color-surface)",
-        border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: "var(--border-radius-lg)",
-        padding: "16px 18px 14px 22px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        height: "100%",
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)",
+        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+        borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
+        padding: "16px 18px",
         textDecoration: "none",
-        color: "inherit",
-        transition: "border-color 150ms",
+        color: "var(--ftp-text)",
       }}
     >
-      {/* 3px accent stripe */}
-      <span
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: "3px",
-          background: accent.hex,
-          borderTopLeftRadius: "var(--border-radius-lg)",
-          borderBottomLeftRadius: "var(--border-radius-lg)",
-        }}
-      />
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "8px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "16px" }}>{module.icon}</span>
-          <span className="ftp-display" style={{ fontSize: "15px", fontWeight: 600 }}>{module.title}</span>
-        </div>
-        <StatusPill status={module.status} />
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          gap: "6px",
-          marginBottom: "6px",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 21, borderRadius: 13 }}>
+          {emoji}
+        </span>
+        <span className="ftp-display" style={{ flex: 1, fontSize: 16, fontWeight: 650, lineHeight: 1.3 }}>
+          {title}
+        </span>
         <span
           style={{
-            fontFamily: "var(--ftp-font-display)",
-            fontVariantNumeric: "tabular-nums lining-nums",
-            letterSpacing: "-0.02em",
-            fontSize: "24px",
-            fontWeight: 650,
-            lineHeight: 1.1,
-            color: accent.text,
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "2px 8px",
+            borderRadius: 999,
+            background: isLive ? "#E9F6EE" : "#FAEEDA",
+            color: isLive ? "#14532D" : "#854F0B",
+            whiteSpace: "nowrap",
           }}
         >
-          {headlineValue}
+          {statusLabel}
         </span>
-        {headlineUnit && (
-          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>
-            {headlineUnit}
-          </span>
-        )}
       </div>
 
-      <p
-        style={{
-          fontSize: "12px",
-          color: "var(--color-text-secondary)",
-          margin: "8px 0 0",
-          lineHeight: 1.5,
-        }}
-      >
-        {module.tagline}
-      </p>
+      {figure ? (
+        <div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+            <span className="ftp-bignum" style={{ fontSize: 26, lineHeight: 1.1, color: "var(--hue-deep)" }}>
+              {figure.value}
+            </span>
+            {figure.unit ? <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ftp-text-2)" }}>{figure.unit}</span> : null}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--ftp-text-2)", marginTop: 2 }}>{figure.caption}</div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 12, color: "var(--ftp-text-2)", fontStyle: "italic" }}>{noFigureLabel}</div>
+      )}
+
+      <p style={{ fontSize: 13, color: "var(--ftp-text-2)", margin: 0, lineHeight: 1.5 }}>{tagline}</p>
     </Link>
   );
 }

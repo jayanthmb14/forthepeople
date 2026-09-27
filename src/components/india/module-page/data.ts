@@ -227,6 +227,20 @@ export interface IndicatorGroups {
 const META_KEY = /^(data_year|estimate_year|isfr_year|isfr_edition)$|^unesco_.+_year$/;
 
 /**
+ * The one figure that best stands for a module on a card: the registry's
+ * headline metric when the table has it, otherwise the first measuring row
+ * (not a rank or a year). Undefined when the module has no rows.
+ */
+export function pickHeadline(headlineKey: string | undefined, rows: IndicatorRow[]): IndicatorRow | undefined {
+  const tiles = groupIndicators(rows).tiles;
+  return (
+    tiles.find((r) => r.metricKey === headlineKey) ??
+    tiles.find((r) => r.unit !== "rank" && r.unit !== "year") ??
+    tiles[0]
+  );
+}
+
+/**
  * Published "now" rows paired with a published goal row of the same unit
  * (both come from IndiaIndicator). Drawn as "how close to the goal".
  */
