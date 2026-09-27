@@ -12,11 +12,12 @@
  * lands in the corresponding section. Adding a district just means seeding
  * leaders with the right tier numbers.
  *
- * Design v3 "Civic Ledger" (CONCEPT-v3 §5): PageHeader → notes → StatStrip
- * → one Section per tier → elections → SourcesFooter → ModuleNews →
- * Toolbar. Party colour appears only as a 6 px dot inside a neutral pill;
- * cards carry no coloured stripes or shadows. All copy and data logic are
- * unchanged from v2.
+ * Design v4 "Rang" (docs/DESIGN-SYSTEM.md): PageHeader → notes → StatStrip
+ * of emoji tiles → the picture ("In simple words" + how many people sit at
+ * each level, as bars that grow in) → one emoji Section per tier →
+ * elections (in the elections hue) → SourcesFooter → ModuleNews → Toolbar.
+ * Accents read the page hue (--hue …); party colour still appears only as a
+ * 6 px dot inside a neutral pill. Data logic is unchanged from v2.
  */
 
 "use client";
@@ -24,10 +25,9 @@ import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { use, useState } from "react";
 import Image from "next/image";
 import {
-  Users, Phone, Mail, Info, Flag, Landmark, Building2, Vote, Briefcase,
+  Users, Phone, Mail, Info,
   AlertTriangle, ChevronDown, ChevronRight, MapPin, Download, Share2, ArrowLeftRight,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useLeaders, useAIInsight } from "@/hooks/useRealtimeData";
 import type { Leader } from "@/hooks/useRealtimeData";
 import {
@@ -45,10 +45,12 @@ import {
   Toolbar,
   ToolbarButton,
 } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleDisclaimer from "@/components/common/ModuleDisclaimer";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { hueClass } from "@/lib/design/hues";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import { getRoleDescription } from "@/lib/constants/role-descriptions";
 import ElectionSection, { findActiveElection, type ElectionEvent } from "@/components/district/ElectionSection";
@@ -65,18 +67,20 @@ const SOURCE_URLS: Record<string, string> = {
 
 interface TierMeta {
   label: string;
-  Icon: LucideIcon;
+  /** Short name for the levels picture ("Country", "State", …). */
+  short: string;
+  emoji: string;
   hint: string;
 }
 const TIER_META: Record<number, TierMeta> = {
-  1: { label: "National Leadership", Icon: Flag, hint: "Heads of state and government" },
-  2: { label: "State Leadership", Icon: Landmark, hint: "Governor, Chief Minister and key state ministers" },
-  3: { label: "District Administration", Icon: Building2, hint: "IAS / IPS officers running the district day-to-day" },
-  4: { label: "Elected Representatives", Icon: Vote, hint: "MP and MLAs elected by citizens of this district" },
-  5: { label: "Municipal & Department Heads", Icon: Briefcase, hint: "Mayor, municipal commissioner and department officers" },
+  1: { label: "National leadership", short: "Country", emoji: "🏛️", hint: "Heads of state and government" },
+  2: { label: "State leadership", short: "State", emoji: "🗺️", hint: "Governor, Chief Minister and key state ministers" },
+  3: { label: "District administration", short: "District officers", emoji: "🏢", hint: "IAS / IPS officers running the district day-to-day" },
+  4: { label: "Elected representatives", short: "MP and MLAs", emoji: "🗳️", hint: "MP and MLAs elected by citizens of this district" },
+  5: { label: "Municipal and department heads", short: "City and departments", emoji: "🏙️", hint: "Mayor, municipal commissioner and department officers" },
 };
 function tierMeta(t: number): TierMeta {
-  return TIER_META[t] ?? { label: `Tier ${t}`, Icon: Users, hint: "" };
+  return TIER_META[t] ?? { label: `Tier ${t}`, short: `Tier ${t}`, emoji: "👥", hint: "" };
 }
 
 function formatVerifiedDate(iso: string | null | undefined): string | null {
@@ -87,10 +91,10 @@ function formatVerifiedDate(iso: string | null | undefined): string | null {
 function leaderProvenance(l: { source?: string | null; lastVerifiedAt?: string | null }): string {
   const verified = formatVerifiedDate(l.lastVerifiedAt);
   const src = (l.source ?? "").toLowerCase();
-  if (src.startsWith("http")) return verified ? `Updated from news · Last verified: ${verified}` : "Updated from news";
-  if (src.includes("manual-research")) return verified ? `Manually researched · Last verified: ${verified}` : "Manually researched";
+  if (src.startsWith("http")) return verified ? `Updated from news. Last verified: ${verified}` : "Updated from news";
+  if (src.includes("manual-research")) return verified ? `Manually researched. Last verified: ${verified}` : "Manually researched";
   if (src.includes("seed") || src === "" || src === "manual" || !src) {
-    return verified ? `Added from seed data · Last verified: ${verified}` : "Added from seed data";
+    return verified ? `Added from seed data. Last verified: ${verified}` : "Added from seed data";
   }
   return verified ? `Last verified: ${verified}` : "Verification pending";
 }
@@ -109,6 +113,77 @@ function downloadCsv(filename: string, rows: Array<Record<string, string | numbe
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Phone and email links: a hue pill, 32 px tall (44 px on phones via ftp-chip). */
+const CONTACT_LINK: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "0 12px",
+  borderRadius: "var(--ftp-radius-pill)",
+  background: "var(--hue-tint)",
+  border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
+  color: "var(--hue-deep)",
+  fontSize: 13,
+  lineHeight: "20px",
+  fontWeight: 500,
+  textDecoration: "none",
+};
+
+/**
+ * The page's picture: one bar per level of government, as long as the
+ * number of people listed at that level (longest = most people). Bars grow
+ * in once; the numbers are the same counts as the sections below.
+ */
+function LevelsPicture({ tiers, counts }: { tiers: number[]; counts: Record<number, number> }) {
+  const max = Math.max(1, ...tiers.map((t) => counts[t] ?? 0));
+  const summary = tiers.map((t) => `${tierMeta(t).short}: ${counts[t] ?? 0}`).join(", ");
+  return (
+    <figure style={{ margin: 0 }}>
+      <div role="img" aria-label={`People listed at each level. ${summary}.`} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {tiers.map((t, i) => {
+          const m = tierMeta(t);
+          const n = counts[t] ?? 0;
+          return (
+            <div
+              key={t}
+              aria-hidden
+              style={{ display: "grid", gridTemplateColumns: "26px minmax(0, 9.5em) minmax(40px, 1fr) 2.5em", alignItems: "center", gap: 10 }}
+            >
+              <span className="ftp-emoji" style={{ fontSize: 20, textAlign: "center" }}>{m.emoji}</span>
+              <span style={{ fontSize: 13, lineHeight: "18px", color: "var(--ftp-text)" }}>{m.short}</span>
+              <span
+                style={{
+                  display: "block",
+                  height: 12,
+                  borderRadius: "var(--ftp-radius-pill)",
+                  background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))",
+                  overflow: "hidden",
+                }}
+              >
+                <span
+                  className="ftp-grow-x"
+                  style={{
+                    display: "block",
+                    width: `${(n / max) * 100}%`,
+                    height: "100%",
+                    borderRadius: "var(--ftp-radius-pill)",
+                    background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
+                    ["--i" as string]: i,
+                  }}
+                />
+              </span>
+              <span className="ftp-num" style={{ fontSize: 15, color: "var(--hue-deep)", textAlign: "right" }}>{n}</span>
+            </div>
+          );
+        })}
+      </div>
+      <figcaption style={{ marginTop: 10, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+        How many people are listed at each level, from the whole country at the top to your town at the bottom.
+      </figcaption>
+    </figure>
+  );
 }
 
 function RoleDescription({ text }: { text: string }) {
@@ -152,7 +227,7 @@ function LeaderAvatar({ name, photoUrl }: { name: string; photoUrl?: string | nu
 
   const ring: React.CSSProperties = {
     width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
-    overflow: "hidden", border: "1px solid var(--ftp-border)",
+    overflow: "hidden", border: "2px solid color-mix(in srgb, var(--hue) 28%, #fff)",
   };
   if (photoUrl && !imgError) {
     return (
@@ -170,9 +245,9 @@ function LeaderAvatar({ name, photoUrl }: { name: string; photoUrl?: string | nu
       aria-hidden
       style={{
         ...ring,
-        background: "var(--ftp-surface-2)",
+        background: "var(--hue-tint)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 18, fontWeight: 500, color: "var(--ftp-text-2)",
+        fontFamily: "var(--ftp-font-display)", fontSize: 18, fontWeight: 650, color: "var(--hue-deep)",
       }}
     >
       {initials}
@@ -231,14 +306,14 @@ function LeaderCard({ l, inElectionPeriod }: { l: Leader; inElectionPeriod?: boo
       </div>
 
       {(l.phone || l.email) && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", paddingTop: 8, borderTop: "1px solid var(--ftp-border)" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 10, borderTop: "1px solid var(--ftp-border)" }}>
           {l.phone && (
-            <a href={`tel:${l.phone}`} className="ftp-chip" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}>
+            <a href={`tel:${l.phone}`} className="ftp-chip" style={CONTACT_LINK}>
               <Phone size={14} aria-hidden /> <span className="ftp-num">{l.phone}</span>
             </a>
           )}
           {l.email && (
-            <a href={`mailto:${l.email}`} className="ftp-chip" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}>
+            <a href={`mailto:${l.email}`} className="ftp-chip" style={CONTACT_LINK}>
               <Mail size={14} aria-hidden /> Email
             </a>
           )}
@@ -254,17 +329,9 @@ function LeaderCard({ l, inElectionPeriod }: { l: Leader; inElectionPeriod?: boo
 
 function TierSection({ tier, leaders, inElectionPeriod }: { tier: number; leaders: Leader[]; inElectionPeriod?: boolean }) {
   const meta = tierMeta(tier);
-  const TierIcon = meta.Icon;
   return (
-    <div style={{ marginTop: 24 }}>
-      <Section
-        title={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <TierIcon size={18} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
-            {meta.label}
-          </span>
-        }
-      >
+    <div style={{ marginTop: 8 }}>
+      <Section title={meta.label} emoji={meta.emoji}>
         {meta.hint && (
           <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-4px 0 12px" }}>{meta.hint}</p>
         )}
@@ -425,7 +492,7 @@ function LeadershipPageInner({
             <div className="ftp-body" style={{ display: "flex", alignItems: "flex-start", gap: 10, color: "var(--ftp-text)" }}>
               <AlertTriangle size={16} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} />
               <span>
-                <span style={{ fontWeight: 500, color: "var(--ftp-danger)" }}>ELECTION PERIOD:</span>{" "}
+                <span style={{ fontWeight: 600, color: "var(--ftp-danger)" }}>Election period:</span>{" "}
                 This district is currently in an active election period ({liveElection.label}).
                 Leadership positions and party affiliations may change following the election results
                 {liveElection.resultDate ? ` on ${new Date(liveElection.resultDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}` : ""}.
@@ -441,6 +508,7 @@ function LeadershipPageInner({
       {error && <ErrorBlock />}
       {!isLoading && !error && leaders.length === 0 && (
         <EmptyState
+          emoji="👥"
           title="No leadership data yet"
           body="Data on elected representatives and officials for this district will be updated soon."
         />
@@ -448,29 +516,61 @@ function LeadershipPageInner({
 
       {deduped.length > 0 && (
         <StatStrip cols={3}>
-          <StatTile label="People listed" value={deduped.length} asOf={asOf} />
-          <StatTile label="Elected representatives" value={byTier[4]?.length ?? 0} sub="MP and MLAs" asOf={asOf} />
-          <StatTile label="District officers" value={byTier[3]?.length ?? 0} sub="IAS / IPS" asOf={asOf} />
+          <StatTile emoji="👥" label="People listed" value={deduped.length} asOf={asOf} />
+          <StatTile emoji="🗳️" label="Elected representatives" value={byTier[4]?.length ?? 0} sub="MP and MLAs" asOf={asOf} />
+          <StatTile emoji="🏢" label="District officers" value={byTier[3]?.length ?? 0} sub="IAS / IPS" asOf={asOf} />
         </StatStrip>
+      )}
+
+      {/* The picture: one plain sentence with the real counts, and a bar
+          per level (drawn only when there are at least two levels). */}
+      {deduped.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <Card tinted padding={18}>
+            <Explainer title="In simple words" emoji="🧭">
+              <strong className="ftp-num">{deduped.length}</strong> people are listed here, at{" "}
+              <strong className="ftp-num">{tiers.length}</strong> {tiers.length === 1 ? "level" : "levels"} of government.
+              {(byTier[4]?.length ?? 0) > 0 && (
+                <>
+                  {" "}<strong className="ftp-num">{byTier[4].length}</strong> of them are the MP and MLAs that voters of this district elected.
+                </>
+              )}
+              {(byTier[3]?.length ?? 0) > 0 && (
+                <>
+                  {" "}<strong className="ftp-num">{byTier[3].length}</strong> are officers who run the district day to day.
+                </>
+              )}
+            </Explainer>
+            {tiers.length > 1 && (
+              <LevelsPicture
+                tiers={tiers}
+                counts={Object.fromEntries(tiers.map((t) => [t, byTier[t].length]))}
+              />
+            )}
+          </Card>
+        </div>
       )}
 
       {tiers.map((t) => (
         <TierSection key={t} tier={t} leaders={byTier[t]} inElectionPeriod={inElectionPeriod} />
       ))}
 
-      <ElectionSection stateSlug={state} />
+      {/* Election dates wear the Elections module's own hue. */}
+      <div className={hueClass("elections")}>
+        <ElectionSection stateSlug={state} />
+      </div>
 
       {leaders.length > 0 && (
         <div role="note" style={{ marginTop: 28 }}>
           <Card>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
-              <span style={{ fontWeight: 500, color: "var(--ftp-text)" }}>Note on political affiliations:</span>{" "}
+              <span style={{ fontWeight: 600, color: "var(--hue-deep)" }}>Note on political affiliations:</span>{" "}
               Political party affiliations shown are as last reported and may not reflect current affiliations due to party
               changes, cabinet reshuffles, or elections. Government officers (IAS, IPS) carry no party. ForThePeople.in does
               not endorse or oppose any political party or individual.
             </p>
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 12 }}>
-              <span style={{ fontWeight: 500, color: "var(--ftp-text)" }}>On bureaucrat names:</span>{" "}
+              <span style={{ fontWeight: 600, color: "var(--hue-deep)" }}>On bureaucrat names:</span>{" "}
               IAS/IPS officer names change with transfers and may not reflect the most recent postings. Verify current
               district officers at the official district website.
             </p>
