@@ -972,13 +972,13 @@ state-only or differ by state.
 | Responsibility text, Karnataka ×3 | "Karnataka Lokayukta: 1064 (toll-free)" | Lokayukta site + office line 080-22257013 (1064 was the ACB's number; the ACB was dissolved in 2022 and the Lokayukta site does not list 1064) | [lokayukta.karnataka.gov.in](https://lokayukta.karnataka.gov.in/) |
 | Responsibility text, New Delhi | "Delhi Lokayukta or Anti-Corruption Branch: 1064" | Anti-Corruption Branch (Directorate of Vigilance) via vigilance.delhi.gov.in — Delhi never used 1064 (its 1031 line was dropped in 2015) | [vigilance.delhi.gov.in — ACB](https://vigilance.delhi.gov.in/vigilance/anti-corruption-branch) |
 
-Strings changed in en + hi + kn (`page_citizen-corner.json`:
-`helplines.road`, `helplines.corruption.name`, `helplines.consumer.when`).
-
 | Police "100" (Citizen Corner) | 100 | **Removed — hidden: unverifiable.** 112 (ERSS) is the police emergency number now (in Karnataka "Namma 112"); 100 could not be confirmed on an official page. The 112 card covers police. | [KSP directory](https://ksp.karnataka.gov.in/ksp_contact/en): "ERSS – Emergency Response Support System – 112" |
 | Health page "National Health Helpline" | 1800-180-1104 | **Removed — hidden: unverifiable** (the old National Health Portal line; not found on any official page read) | — |
 | 112, 101, 108 | — | confirmed | KSP directory lists "ERSS … 112", "Fire & Emergency Services … 101", "108 Control Room (Ambulance)" |
 | iCall (health page) | 9152987821 | confirmed (TISS service, not government) | [icallhelpline.org](https://icallhelpline.org/) |
+
+Strings changed in en + hi + kn (`page_citizen-corner.json`:
+`helplines.road`, `helplines.corruption.name`, `helplines.consumer.when`).
 
 **Not re-verified, kept (standard national numbers that do not look wrong):**
 1098 Childline, 14567 Elderline (the MoSJE site did not resolve), 155261
@@ -987,6 +987,7 @@ connection), 1800-116-117 (AIIMS poison centre). Tele-MANAS **14416**
 (national mental-health line) is missing and could be added once confirmed.
 The unused strings `helplines.police` (page_citizen-corner) and `nhh`
 (page_health) can be deleted later.
+
 - West Bengal: wbhealth.gov.in runs the free "102" ambulance; whether 108
   also works statewide was not confirmed, so 108 still shows there.
 - Responsibility text: UP "Anti-Corruption Organisation: 0522-2217440",
