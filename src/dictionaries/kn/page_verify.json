@@ -21,7 +21,7 @@
   },
   "status": {
     "current": "ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿದೆ",
-    "late": "{n, plural, one {# ದಿನ} other {# ದಿನ}} ತಡ",
+    "late": "{n, plural, =1 {# ದಿನ} other {# ದಿನ}} ತಡ",
     "unknown": "ದಿನಾಂಕ ಪ್ರಕಟವಾಗಿಲ್ಲ",
     "not_collected": "ಇಲ್ಲಿ ಸಂಗ್ರಹಿಸುವುದಿಲ್ಲ",
     "reference": "ಉಲ್ಲೇಖ"

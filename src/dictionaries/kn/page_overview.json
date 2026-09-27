@@ -71,9 +71,9 @@
     "newsMeta": "{publisher} · {date}",
     "opensNewTab": "(ಹೊಸ ಟ್ಯಾಬ್‌ನಲ್ಲಿ ತೆರೆಯುತ್ತದೆ)",
     "weatherNow": "ಹವಾಮಾನ: {temp}°C, {conditions} ({when})",
-    "weatherOld": "ಹವಾಮಾನ: ಕೊನೆಯ ದಾಖಲೆ {date} ರದ್ದು, {n, plural, one {# ದಿನ} other {# ದಿನಗಳ}} ಹಿಂದೆ. ಇದಕ್ಕಿಂತ ಹೊಸದು ಸಿಗಲಿಲ್ಲ.",
+    "weatherOld": "ಹವಾಮಾನ: ಕೊನೆಯ ದಾಖಲೆ {date} ರದ್ದು, {n, plural, =1 {# ದಿನ} other {# ದಿನಗಳ}} ಹಿಂದೆ. ಇದಕ್ಕಿಂತ ಹೊಸದು ಸಿಗಲಿಲ್ಲ.",
     "mandiNow": "ಮಂಡಿ: {commodity} ₹{price}/ಕೆಜಿ, {market} ({date})",
-    "mandiOld": "ಮಂಡಿ ಬೆಲೆ: ಕೊನೆಯ ನವೀಕರಣ {date} ರದ್ದು, {n, plural, one {# ದಿನ} other {# ದಿನಗಳ}} ಹಿಂದೆ. ಹೊಸ ಬೆಲೆಗಳು ಸಿಗಲಿಲ್ಲ.",
+    "mandiOld": "ಮಂಡಿ ಬೆಲೆ: ಕೊನೆಯ ನವೀಕರಣ {date} ರದ್ದು, {n, plural, =1 {# ದಿನ} other {# ದಿನಗಳ}} ಹಿಂದೆ. ಹೊಸ ಬೆಲೆಗಳು ಸಿಗಲಿಲ್ಲ.",
     "examNext": "ಮುಂದಿನ ಪರೀಕ್ಷೆ: {title}, {date}",
     "examApply": "ಅರ್ಜಿ ಸಲ್ಲಿಸಲು ಕೊನೆಯ ದಿನ: {title}, {date}",
     "alertLead": "ಅಧಿಕೃತ ಎಚ್ಚರಿಕೆ",
@@ -108,11 +108,11 @@
     "tracking": "ಗಮನಿಸಲಾಗುತ್ತಿದೆ",
     "pending": "ನವೀಕರಣ ಬಾಕಿ",
     "viewAll": "ಎಲ್ಲವನ್ನೂ ನೋಡಿ",
-    "open": "{n, plural, one {ತೆರೆದ ಟೆಂಡರ್} other {ತೆರೆದ ಟೆಂಡರ್‌ಗಳು}}",
+    "open": "{n, plural, =1 {ತೆರೆದ ಟೆಂಡರ್} other {ತೆರೆದ ಟೆಂಡರ್‌ಗಳು}}",
     "closing": "{n} 48 ಗಂಟೆಗಳಲ್ಲಿ ಮುಕ್ತಾಯ",
     "next": "ಮುಂದಿನ ಕೊನೆಯ ದಿನಾಂಕ: {title}",
     "today": "ಇಂದು",
-    "days": "{n, plural, one {# ದಿನ} other {# ದಿನ}}",
+    "days": "{n, plural, =1 {# ದಿನ} other {# ದಿನ}}",
     "notChecked": "ಇನ್ನೂ ಪರಿಶೀಲಿಸಿಲ್ಲ"
   }
 }

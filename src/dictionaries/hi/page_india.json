@@ -99,8 +99,8 @@
     "search": "विषय खोजें",
     "searchAny": "कोई भी विषय खोजें: अर्थव्यवस्था, बाघ, स्वास्थ्य",
     "noMatch": "“{q}” से कोई विषय मेल नहीं खाता।",
-    "count": "{n, plural, one {# विषय} other {# विषय}}",
-    "summary": "{total, plural, one {# विषय} other {# विषय}}, {live} चालू, {soon} जल्द आ रहे हैं"
+    "count": "{n, plural, =1 {# विषय} other {# विषय}}",
+    "summary": "{total, plural, =1 {# विषय} other {# विषय}}, {live} चालू, {soon} जल्द आ रहे हैं"
   },
   "report": {
     "open": "ग़लती बताएँ",
@@ -603,9 +603,9 @@
     "sectionOf": "भाग {n}, कुल {total}",
     "modules": "विषय",
     "liveOf": "{total} में से {live} चालू",
-    "countModules": "{n, plural, one {# विषय} other {# विषय}}",
+    "countModules": "{n, plural, =1 {# विषय} other {# विषय}}",
     "allPlanned": "सभी योजना में",
-    "inDevelopment": "{n, plural, one {# विषय तैयार हो रहा है} other {# विषय तैयार हो रहे हैं}}",
+    "inDevelopment": "{n, plural, =1 {# विषय तैयार हो रहा है} other {# विषय तैयार हो रहे हैं}}",
     "browseAll": "सभी {n} देखें",
     "featured": "ख़ास",
     "liveModule": "चालू विषय",

@@ -1,5 +1,5 @@
 {
-  "staleTitle": "यह डेटा {days, plural, one {# दिन} other {# दिन}} पुराना है।",
+  "staleTitle": "यह डेटा {days, plural, =1 {# दिन} other {# दिन}} पुराना है।",
   "staleBody": "हमारे पास सबसे नया डेटा {date} का है। हमें इससे नया डेटा नहीं मिला।",
   "staleSource": "स्रोत देखें",
   "unknownDate": "स्रोत ने तारीख़ प्रकाशित नहीं की है।",

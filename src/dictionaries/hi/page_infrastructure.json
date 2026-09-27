@@ -75,7 +75,7 @@
     "cancelReason": "रद्द होने का कारण:",
     "more": "विवरण देखें",
     "cardAria": "{name}: विवरण दिखाएँ",
-    "late": "{months, plural, one {# महीना} other {# महीने}} देर",
+    "late": "{months, plural, =1 {# महीना} other {# महीने}} देर",
     "sourcesAgree": "{n} स्रोत सहमत"
   },
   "timeline": {
@@ -94,7 +94,7 @@
     "title": "परियोजना का विश्लेषण",
     "citizens": "नागरिकों के लिए",
     "accountability": "जवाबदेही के लिए",
-    "sources": "स्रोत: {n, plural, one {# समाचार लेख} other {# समाचार लेख}}।",
+    "sources": "स्रोत: {n, plural, =1 {# समाचार लेख} other {# समाचार लेख}}।",
     "byModel": "{model} ने लिखा।",
     "byAi": "AI ने लिखा, दिए गए स्रोतों से मिलान किया गया।"
   },
@@ -129,7 +129,7 @@
     "cancelled": "रद्द होने की तारीख़",
     "people": "कौन जुड़ा है",
     "contractor": "ठेकेदार",
-    "updates": "{n, plural, =0 {ख़बरें} one {# ख़बर, नई पहले} other {# ख़बरें, नई पहले}}",
+    "updates": "{n, plural, =0 {ख़बरें} =1 {# ख़बर, नई पहले} other {# ख़बरें, नई पहले}}",
     "sources": "स्रोत लेख"
   },
   "v5": {
@@ -160,7 +160,7 @@
       "other": "अन्य"
     },
     "point": {
-      "deadlinePassed": "तय तारीख़ {months, plural, one {# महीना} other {# महीने}} पहले निकल चुकी है",
+      "deadlinePassed": "तय तारीख़ {months, plural, =1 {# महीना} other {# महीने}} पहले निकल चुकी है",
       "budgetUp": "बजट {pct}% बढ़ाया गया",
       "budgetDown": "बजट {pct}% घटाया गया",
       "noNews": "{days} दिनों से कोई ख़बर नहीं",
@@ -175,9 +175,9 @@
     "card": {
       "noDescription": "अभी कोई विवरण प्रकाशित नहीं हुआ।",
       "where": "कहाँ: {place}",
-      "lastUpdate": "आख़िरी अपडेट {n, plural, =0 {आज} one {# दिन पहले} other {# दिन पहले}}",
+      "lastUpdate": "आख़िरी अपडेट {n, plural, =0 {आज} =1 {# दिन पहले} other {# दिन पहले}}",
       "noUpdateDate": "अपडेट की तारीख़ पता नहीं",
-      "sources": "{n, plural, =0 {स्रोत का लिंक नहीं} one {# स्रोत} other {# स्रोत}}",
+      "sources": "{n, plural, =0 {स्रोत का लिंक नहीं} =1 {# स्रोत} other {# स्रोत}}",
       "budget": "बजट {amount}",
       "budgetUnknown": "बजट प्रकाशित नहीं",
       "due": "पूरा होना है: {date}",
@@ -192,17 +192,17 @@
       "lateSub": "तय तारीख़ निकल गई, या काम रुका",
       "completed": "पूरी हुईं",
       "budget": "घोषित राशि",
-      "budgetSub": "बजट वाली {n, plural, one {# परियोजना} other {# परियोजनाएँ}}"
+      "budgetSub": "बजट वाली {n, plural, =1 {# परियोजना} other {# परियोजनाएँ}}"
     },
-    "explainer": "हम {district} की <num>{total}</num> {total, plural, one {परियोजना} other {परियोजनाओं}} पर नज़र रखते हैं: <num>{building}</num> निर्माणाधीन, <num>{planned}</num> घोषित या मंज़ूर और <num>{done}</num> पूरी हो चुकी हैं।",
-    "explainerLate": "<num>{late}</num> देरी में हैं या रुकी हुई हैं।",
+    "explainer": "हम {district} की <num>{total}</num> {total, plural, =1 {परियोजना} other {परियोजनाओं}} पर नज़र रखते हैं: <num>{building}</num> निर्माणाधीन, <num>{planned}</num> घोषित या मंज़ूर और <num>{done}</num> पूरी हो चुकी हैं।",
+    "explainerLate": "<num>{late}</num> {late, plural, =1 {देरी में है या रुकी हुई है।} other {देरी में हैं या रुकी हुई हैं।}}",
     "explainerQuiet": "<num>{quiet}</num> के बारे में तीन महीने या उससे ज़्यादा समय से कोई ख़बर नहीं है।",
     "stages": {
       "title": "परियोजनाएँ किस हाल में हैं",
       "aria": "चरण के अनुसार परियोजनाएँ: {list}",
       "item": "{n} {label}"
     },
-    "hidden": "यहाँ नहीं गिना गया: {n, plural, one {# ख़बर जो निर्माण परियोजना नहीं है} other {# ख़बरें जो निर्माण परियोजनाएँ नहीं हैं}} (जैसे किसी सड़क का नाम बदलना)।",
+    "hidden": "यहाँ नहीं गिना गया: {n, plural, =1 {# ख़बर जो निर्माण परियोजना नहीं है} other {# ख़बरें जो निर्माण परियोजनाएँ नहीं हैं}} (जैसे किसी सड़क का नाम बदलना)।",
     "sortStage": "पहले निर्माणाधीन",
     "pointsTitle": "हमारी टिप्पणियाँ",
     "pointsHint": "ये ForThePeople.in ने ऊपर दी गई तारीख़ों, बजट और स्रोतों से निकाली हैं। ये कोई फ़ैसला नहीं हैं।",

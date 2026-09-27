@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { parse } from "@formatjs/icu-messageformat-parser";
 import { INDIA_STATES } from "../src/lib/constants/districts";
 import { placeName } from "../src/i18n/place-name";
 import { scriptLang } from "../src/lib/utils/script-lang";
@@ -52,5 +53,46 @@ describe("Kannada names for the live districts", () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+});
+
+describe("Hindi and Kannada plurals", () => {
+  // CLDR's "one" category in Hindi and Kannada covers 0 as well as 1
+  // (Intl.PluralRules("hi").select(0) === "one"), so "one {# खुला टेंडर}"
+  // printed "0 खुला टेंडर". Use "=1 {…}" for the singular.
+  // Left for the merge: these lines were also edited on other Sept 2026
+  // fix branches; convert them to "=1" after merging.
+  const MERGE_PENDING = new Set([
+    "hi/page_about.json:coverage",
+    "hi/page_about.json:glanceSimple",
+    "hi/page_citizen-corner.json:emptyNext",
+    "hi/page_crops.json:answer",
+    "hi/page_jjm.json:answer.main",
+    "hi/page_jjm.json:answer.noHomes",
+    "kn/page_crops.json:answer",
+    "kn/page_jjm.json:answer.main",
+    "kn/page_jjm.json:answer.noHomes",
+  ]);
+  for (const locale of ["hi", "kn"]) {
+    it(`${locale}: no plural uses the 'one' selector (it also catches 0)`, () => {
+      const bad = strings(locale)
+        .filter(([k, v]) => /plural,/.test(v) && /(?<![=\w])one \{/.test(v) && !MERGE_PENDING.has(k))
+        .map(([k]) => k);
+      expect(bad).toEqual([]);
+    });
+  }
+
+  it("every en/hi/kn message is valid ICU", () => {
+    const bad: string[] = [];
+    for (const locale of ["en", "hi", "kn"]) {
+      for (const [k, v] of strings(locale)) {
+        try {
+          parse(v);
+        } catch (e) {
+          bad.push(`${k}: ${(e as Error).message}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });

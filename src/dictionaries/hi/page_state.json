@@ -20,8 +20,8 @@
   "tileArea": "शामिल क्षेत्रफल",
   "unitKm2": "वर्ग कि.मी.",
   "simpleNone": "{state} के <b>{total}</b> जिलों में से अभी कोई भी लाइव नहीं है। जिन जिलों को सबसे ज़्यादा वोट मिलते हैं, वे पहले लाइव होते हैं।",
-  "simpleSome": "{state} के <b>{total}</b> जिलों में से <b>{live}</b> ForThePeople.in पर लाइव {live, plural, one {है} other {हैं}}। बाकी <b>{coming}</b> जिले वोटों का इंतज़ार कर रहे हैं।",
-  "pictoOneEach": "{state} के {total} जिलों में से {live} लाइव {live, plural, one {है} other {हैं}}।",
+  "simpleSome": "{state} के <b>{total}</b> जिलों में से <b>{live}</b> ForThePeople.in पर लाइव {live, plural, =1 {है} other {हैं}}। बाकी <b>{coming}</b> जिले वोटों का इंतज़ार कर रहे हैं।",
+  "pictoOneEach": "{state} के {total} जिलों में से {live} लाइव {live, plural, =1 {है} other {हैं}}।",
   "pictoOutOf10": "{state} में हर 10 में से लगभग {n} जिले लाइव हैं।",
   "pictoTitle": "{state} के जिले",
   "pictoUnits": "हर जिले का एक निशान। रंगीन निशान वाले जिले लाइव हैं।",
@@ -50,7 +50,7 @@
   "voteEmptyTitle": "{state} में अभी तक किसी ने किसी जिले की माँग नहीं की है।",
   "voteEmptyBody": "कोई भी जिला खोलें जो अभी लाइव नहीं है और ‘वोट करें’ पर टैप करें। सबसे ज़्यादा माँगे गए जिले पहले लाइव होते हैं।",
   "voteAllStates": "सभी राज्यों की माँगें देखें",
-  "votes": "{n, plural, one {<num>#</num> वोट} other {<num>#</num> वोट}}",
+  "votes": "{n, plural, =1 {<num>#</num> वोट} other {<num>#</num> वोट}}",
   "voteListAria": "{state} के सबसे ज़्यादा माँगे गए जिले",
   "backedBy": "सहयोग देने वाले",
   "viewAll": "सब देखें",
@@ -61,5 +61,5 @@
   "more": "+{n} और",
   "sponsorState": "{amount} प्रति माह में {state} को प्रायोजित करें",
   "sponsorTitle": "{name}, {label}",
-  "sponsorTitleMonths": "{name}, {label}, {months, plural, one {# महीना} other {# महीने}}"
+  "sponsorTitleMonths": "{name}, {label}, {months, plural, =1 {# महीना} other {# महीने}}"
 }

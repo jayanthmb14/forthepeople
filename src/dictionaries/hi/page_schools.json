@@ -4,8 +4,8 @@
   "tileSubNoYear": "UDISE+ सालाना डेटा",
   "tileSubUdise": "UDISE+, शैक्षणिक वर्ष {year}",
   "answer": {
-    "main": "{district} के लिए सूची के <b>{n}</b> {count, plural, one {स्कूल} other {स्कूलों}} में <b>{students}</b> छात्र और <b>{teachers}</b> शिक्षक हैं: हर शिक्षक पर लगभग <b>{ratio}</b> छात्र।",
-    "noRatio": "{district} के लिए <b>{n}</b> {count, plural, one {स्कूल सूची में है} other {स्कूल सूची में हैं}}।",
+    "main": "{district} के लिए सूची के <b>{n}</b> {count, plural, =1 {स्कूल} other {स्कूलों}} में <b>{students}</b> छात्र और <b>{teachers}</b> शिक्षक हैं: हर शिक्षक पर लगभग <b>{ratio}</b> छात्र।",
+    "noRatio": "{district} के लिए <b>{n}</b> {count, plural, =1 {स्कूल सूची में है} other {स्कूल सूची में हैं}}।",
     "pass": "{year} में हर 10 में से लगभग <b>{tenths}</b> छात्र बोर्ड परीक्षा में पास हुए।",
     "udise": "{district} में <b>{n}</b> स्कूल हैं, जिनमें <b>{students}</b> छात्र और <b>{teachers}</b> शिक्षक हैं (UDISE+, शैक्षणिक वर्ष {year}): हर शिक्षक पर लगभग <b>{ratio}</b> छात्र।",
     "udiseNoRatio": "{district} में <b>{n}</b> स्कूल हैं (UDISE+, शैक्षणिक वर्ष {year})।",
@@ -28,8 +28,8 @@
     "passTitle": "बोर्ड परीक्षा, {year}",
     "pass": "हर टोपी दस में से एक छात्र है। {year} में परीक्षा देने वाले {total} छात्रों में से {passed} पास हुए।",
     "classTitle": "एक शिक्षक की कक्षा",
-    "classroom": "{kids, plural, one {सूची के स्कूलों में हर छात्र पर एक शिक्षक है।} other {सूची के स्कूलों में हर {n} छात्रों पर एक शिक्षक है।}}",
-    "classroomDistrict": "{kids, plural, one {ज़िले के स्कूलों में हर छात्र पर एक शिक्षक।} other {ज़िले के स्कूलों में हर {n} छात्रों पर एक शिक्षक।}}",
+    "classroom": "{kids, plural, =1 {सूची के स्कूलों में हर छात्र पर एक शिक्षक है।} other {सूची के स्कूलों में हर {n} छात्रों पर एक शिक्षक है।}}",
+    "classroomDistrict": "{kids, plural, =1 {ज़िले के स्कूलों में हर छात्र पर एक शिक्षक।} other {ज़िले के स्कूलों में हर {n} छात्रों पर एक शिक्षक।}}",
     "passTitleListed": "बोर्ड परीक्षा, {year} (दिए गए स्कूल)"
   },
   "list": {
@@ -54,7 +54,7 @@
     "title": "स्कूलों के प्रकार",
     "units": "प्रकार के हिसाब से सूची के स्कूल",
     "simple": "<b>{type}</b> स्कूल सबसे ज़्यादा हैं: {total} में से {count}।",
-    "center": "{count, plural, one {स्कूल} other {स्कूल}}",
+    "center": "{count, plural, =1 {स्कूल} other {स्कूल}}",
     "aria": "प्रकार के हिसाब से स्कूल: {list}।",
     "other": "दूसरे प्रकार"
   },

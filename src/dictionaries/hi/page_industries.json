@@ -136,14 +136,14 @@
     "pending": "बाकी"
   },
   "local": {
-    "explainer": "{district} की <num>{total}</num> {total, plural, one {जगह} other {जगहें}} यहाँ दी गई हैं। सबसे ज़्यादा <b>{name}</b> हैं ({n})।",
-    "explainerJobs": "जिन {places, plural, one {# जगह} other {# जगहों}} ने संख्या बताई है, वहाँ लगभग <num>{people}</num> लोग काम करते हैं।",
+    "explainer": "{district} की <num>{total}</num> {total, plural, =1 {जगह} other {जगहें}} यहाँ दी गई हैं। सबसे ज़्यादा <b>{name}</b> हैं ({n})।",
+    "explainerJobs": "जिन {places, plural, =1 {# जगह} other {# जगहों}} ने संख्या बताई है, वहाँ लगभग <num>{people}</num> लोग काम करते हैं।",
     "explainerTap": "किसी भी जगह की पूरी जानकारी देखने के लिए उस पर टैप करें।",
     "tiles": {
       "listed": "सूची में जगहें",
       "kinds": "जगहों के प्रकार",
       "jobs": "काम करने वाले लोग",
-      "reportedBy": "{n, plural, one {# जगह ने बताया} other {# जगहों ने बताया}}"
+      "reportedBy": "{n, plural, =1 {# जगह ने बताया} other {# जगहों ने बताया}}"
     },
     "kindsAria": "इस पेज पर जगहों के प्रकार",
     "listTitle": "जगहें ({n})",

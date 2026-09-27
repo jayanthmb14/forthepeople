@@ -50,7 +50,7 @@
   "voteEmptyTitle": "{state}: ಇನ್ನೂ ಯಾರೂ ಯಾವುದೇ ಜಿಲ್ಲೆಯನ್ನು ಕೇಳಿಲ್ಲ.",
   "voteEmptyBody": "ಲೈವ್ ಆಗದ ಯಾವುದೇ ಜಿಲ್ಲೆಯನ್ನು ತೆರೆದು ‘ಮತ ಹಾಕಿ’ ಒತ್ತಿ. ಹೆಚ್ಚು ಬೇಡಿಕೆಯ ಜಿಲ್ಲೆಗಳು ಮೊದಲು ಲೈವ್ ಆಗುತ್ತವೆ.",
   "voteAllStates": "ಎಲ್ಲಾ ರಾಜ್ಯಗಳ ಬೇಡಿಕೆಗಳನ್ನು ನೋಡಿ",
-  "votes": "{n, plural, one {<num>#</num> ಮತ} other {<num>#</num> ಮತಗಳು}}",
+  "votes": "{n, plural, =1 {<num>#</num> ಮತ} other {<num>#</num> ಮತಗಳು}}",
   "voteListAria": "{state}: ಹೆಚ್ಚು ಬೇಡಿಕೆಯ ಜಿಲ್ಲೆಗಳು",
   "backedBy": "ಬೆಂಬಲಿಸುತ್ತಿರುವವರು",
   "viewAll": "ಎಲ್ಲವನ್ನೂ ನೋಡಿ",
@@ -61,5 +61,5 @@
   "more": "+{n} ಇನ್ನಷ್ಟು",
   "sponsorState": "{state} ಪ್ರಾಯೋಜಿಸಿ, ತಿಂಗಳಿಗೆ {amount}",
   "sponsorTitle": "{name}, {label}",
-  "sponsorTitleMonths": "{name}, {label}, {months, plural, one {# ತಿಂಗಳು} other {# ತಿಂಗಳು}}"
+  "sponsorTitleMonths": "{name}, {label}, {months, plural, =1 {# ತಿಂಗಳು} other {# ತಿಂಗಳು}}"
 }

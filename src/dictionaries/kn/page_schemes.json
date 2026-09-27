@@ -43,7 +43,7 @@
     "state": "ಇಡೀ {state}: ರಾಜ್ಯ ಸರ್ಕಾರ ನಡೆಸುತ್ತದೆ.",
     "local": "{district}: ಸ್ಥಳೀಯ ಸಂಸ್ಥೆ ನಡೆಸುತ್ತದೆ.",
     "unknown": "ಇದು ಎಲ್ಲಿ ಜಾರಿಯಲ್ಲಿದೆ ಎಂದು ಮೂಲ ತಿಳಿಸಿಲ್ಲ.",
-    "alsoListed": "ForThePeople.in ನಲ್ಲಿ {n, plural, one {ಇನ್ನೊಂದು # ಜಿಲ್ಲೆಗೂ} other {ಇನ್ನೂ # ಜಿಲ್ಲೆಗಳಿಗೂ}} ಪಟ್ಟಿಯಾಗಿದೆ:",
+    "alsoListed": "ForThePeople.in ನಲ್ಲಿ {n, plural, =1 {ಇನ್ನೊಂದು # ಜಿಲ್ಲೆಗೂ} other {ಇನ್ನೂ # ಜಿಲ್ಲೆಗಳಿಗೂ}} ಪಟ್ಟಿಯಾಗಿದೆ:",
     "place": "{district} ({state})"
   },
   "list": {

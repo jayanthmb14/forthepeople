@@ -14,7 +14,7 @@
   "callAria": "{name} को कॉल करें: {number}",
   "kindsTitle": "{n} हेल्पलाइन, एक बार दबाकर कॉल",
   "kindsLead": "ये किस लिए हैं। नंबर देखने के लिए कोई समूह दबाएँ।",
-  "kindsAria": "{label}: {n, plural, one {# हेल्पलाइन} other {# हेल्पलाइन}}",
+  "kindsAria": "{label}: {n, plural, =1 {# हेल्पलाइन} other {# हेल्पलाइन}}",
   "kinds": {
     "emergency": "आपात स्थितियाँ",
     "care": "महिलाएँ, बच्चे और बुजुर्ग",
@@ -52,7 +52,7 @@
   "topicsTop": "सबसे ज्यादा सुझाव <b>{topic}</b> पर हैं: {total} में से {n}।",
   "topicsTied": "{count} विषयों पर सबसे ज्यादा, {n}-{n} सुझाव हैं।",
   "topicsEven": "हर विषय पर बराबर सुझाव हैं: {n}-{n}।",
-  "topicsCenter": "{n, plural, one {सुझाव} other {सुझाव}}",
+  "topicsCenter": "{n, plural, =1 {सुझाव} other {सुझाव}}",
   "topicsAria": "विषय के हिसाब से सुझावों का गोल चार्ट। {summary}",
   "topicsOther": "दूसरे विषय",
   "tipsNote": "ये सुझाव AI ने लिखे हैं। कुछ करने से पहले आधिकारिक स्रोतों से जाँच लें।",

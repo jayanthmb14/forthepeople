@@ -21,7 +21,7 @@
   },
   "status": {
     "current": "समय पर",
-    "late": "{n, plural, one {# दिन} other {# दिन}} देर से",
+    "late": "{n, plural, =1 {# दिन} other {# दिन}} देर से",
     "unknown": "तारीख़ प्रकाशित नहीं",
     "not_collected": "यहाँ नहीं जुटाया जाता",
     "reference": "संदर्भ"

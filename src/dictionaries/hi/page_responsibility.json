@@ -7,9 +7,9 @@
   "tileNews": "2 हफ्तों की खबरें",
   "tileNewsSub": "{n} ऐसी बातों पर जिनमें आप मदद कर सकते हैं",
   "tileTopTopic": "सबसे बड़ा मुद्दा",
-  "tileTopTopicSub": "{n} खबरें",
+  "tileTopTopicSub": "{n, plural, =1 {# ख़बर} other {# ख़बरें}}",
   "tileActions": "आप क्या कर सकते हैं",
-  "tileActionsSub": "{areas} क्षेत्रों में",
+  "tileActionsSub": "{areas, plural, =1 {# क्षेत्र में} other {# क्षेत्रों में}}",
   "tileContacts": "किसे बताएँ",
   "tileContactsSub": "जिन कामों के साथ संपर्क दिया है",
   "tileAreas": "क्षेत्र",
@@ -26,7 +26,7 @@
   "newsNone": "पिछले 2 हफ्तों में {name} की कोई खबर किसी विषय से नहीं मिली, इसलिए नीचे की सूची सामान्य क्रम में है।",
   "newsError": "अभी ताजा खबरें नहीं पढ़ पाए, इसलिए नीचे की सूची सामान्य क्रम में है।",
   "card": {
-    "whyNow": "पिछले 2 हफ्तों में {topic} पर {n, plural, one {# खबर} other {# खबरें}}",
+    "whyNow": "पिछले 2 हफ्तों में {topic} पर {n, plural, =1 {# खबर} other {# खबरें}}",
     "latest": "सबसे नई:",
     "open": "क्या करें",
     "details": "पूरी जानकारी"
@@ -34,7 +34,7 @@
   "sheet": {
     "stepsTitle": "आप क्या कर सकते हैं",
     "whyTitle": "यह यहाँ क्यों है",
-    "why": "पिछले 14 दिनों में {name} में {topic} पर {n, plural, one {# खबर} other {# खबरें}} आईं। सबसे नई नीचे हैं।",
+    "why": "पिछले 14 दिनों में {name} में {topic} पर {n, plural, =1 {# खबर} other {# खबरें}} आईं। सबसे नई नीचे हैं।",
     "newsTitle": "खबरें",
     "openStory": "{source}, {date}। खबर नए टैब में खुलेगी।",
     "call": "{number} पर कॉल करें",
@@ -176,7 +176,7 @@
   "chipsLabel": "किसी एक क्षेत्र के काम दिखाएँ",
   "all": "सभी",
   "area": {
-    "count": "{n, plural, one {# काम} other {# काम}}",
+    "count": "{n, plural, =1 {# काम} other {# काम}}",
     "open": "सभी देखें"
   },
   "chartTitle": "हर क्षेत्र में काम",
@@ -185,7 +185,7 @@
   "chartTied": "{count} क्षेत्रों में सबसे ज्यादा, {n}-{n} काम हैं।",
   "chartEven": "हर क्षेत्र में बराबर काम हैं: {n}-{n}।",
   "chartAria": "क्षेत्र के हिसाब से कामों का गोल चार्ट। {summary}",
-  "chartCenter": "{n, plural, one {काम} other {काम}}",
+  "chartCenter": "{n, plural, =1 {काम} other {काम}}",
   "otherAreas": "दूसरे क्षेत्र",
   "footSpecific": "ये काम सरकारी पेजों, आधिकारिक रिपोर्टों और स्थानीय ख़बरों से खोजकर लिखे गए हैं। हर काम कहाँ से आया, यह देखने के लिए कार्ड दबाएँ।",
   "projectionLead": "अगर नागरिक और सरकार मिलकर काम करें, तो 2030 तक {name} यहाँ पहुँच सकता है:",

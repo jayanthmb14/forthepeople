@@ -68,7 +68,7 @@
   "courtsTitle": "इस ज़िले की अदालतें",
   "courtsHint": "किसी अदालत के सभी आँकड़े देखने और उसे NJDG पर खोलने के लिए उस पर टैप करें।",
   "courtsOneHint": "NJDG {district} की सभी ज़िला और तालुका अदालतों को एक साथ गिनता है।",
-  "cardWaiting": "{n, plural, one {{count} मामला लंबित} other {{count} मामले लंबित}}",
+  "cardWaiting": "{n, plural, =1 {{count} मामला लंबित} other {{count} मामले लंबित}}",
   "cardOld": "{count} मामले 10 साल से ज़्यादा पुराने",
   "cardPace": "{year} में हर 10 नए पर {n} निपटाए",
   "cardSoFar": "{year} अब तक: {filed} नए, {disposed} निपटाए",

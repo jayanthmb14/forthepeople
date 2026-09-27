@@ -71,9 +71,9 @@
     "newsMeta": "{publisher} · {date}",
     "opensNewTab": "(नए टैब में खुलता है)",
     "weatherNow": "मौसम: {temp}°C, {conditions} ({when})",
-    "weatherOld": "मौसम: आख़िरी रीडिंग {date} की है, {n, plural, one {# दिन} other {# दिन}} पहले की। इससे नई नहीं मिली।",
+    "weatherOld": "मौसम: आख़िरी रीडिंग {date} की है, {n, plural, =1 {# दिन} other {# दिन}} पहले की। इससे नई नहीं मिली।",
     "mandiNow": "मंडी: {commodity} ₹{price}/किलो, {market} ({date})",
-    "mandiOld": "मंडी भाव: आख़िरी अपडेट {date} का है, {n, plural, one {# दिन} other {# दिन}} पहले का। नए भाव नहीं मिले।",
+    "mandiOld": "मंडी भाव: आख़िरी अपडेट {date} का है, {n, plural, =1 {# दिन} other {# दिन}} पहले का। नए भाव नहीं मिले।",
     "examNext": "अगली परीक्षा: {title}, {date}",
     "examApply": "आवेदन की आख़िरी तारीख़: {title}, {date}",
     "alertLead": "आधिकारिक चेतावनी",
@@ -108,11 +108,11 @@
     "tracking": "निगरानी जारी",
     "pending": "अपडेट बाकी",
     "viewAll": "सब देखें",
-    "open": "{n, plural, one {खुला टेंडर} other {खुले टेंडर}}",
+    "open": "{n, plural, =1 {खुला टेंडर} other {खुले टेंडर}}",
     "closing": "{n} अगले 48 घंटों में बंद",
     "next": "अगली आख़िरी तारीख़: {title}",
     "today": "आज",
-    "days": "{n, plural, one {# दिन} other {# दिन}}",
+    "days": "{n, plural, =1 {# दिन} other {# दिन}}",
     "notChecked": "अभी जाँच नहीं हुई"
   }
 }

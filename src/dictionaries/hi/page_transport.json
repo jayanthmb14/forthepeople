@@ -10,7 +10,7 @@
     "onPublish": "प्रकाशित होने पर"
   },
   "answer": {
-    "main": "{district} के लिए <b>{busesN}</b> {buses, plural, one {बस रूट} other {बस रूट}} और <b>{trainsN}</b> {trains, plural, one {ट्रेन} other {ट्रेनें}} सूची में हैं।",
+    "main": "{district} के लिए <b>{busesN}</b> {buses, plural, =1 {बस रूट} other {बस रूट}} और <b>{trainsN}</b> {trains, plural, =1 {ट्रेन} other {ट्रेनें}} सूची में हैं।",
     "fare": "सूची में सबसे कम बस किराया <b>{fare}</b> है।"
   },
   "tiles": {
@@ -23,7 +23,7 @@
   "picture": {
     "title": "बसें कौन चलाता है",
     "busesOne": "यहां सूची के सभी बस रूट {op} चलाता है।",
-    "busesEach": "हर बस एक रूट है। रंगीन {n} {count, plural, one {बस} other {बसें}} {op} चलाता है।",
+    "busesEach": "हर बस एक रूट है। रंगीन {n} {count, plural, =1 {बस} other {बसें}} {op} चलाता है।",
     "busesScaled": "यहां सूची के हर 10 में से लगभग {n} बस रूट {op} चलाता है।"
   },
   "list": {
@@ -62,14 +62,14 @@
     "title": "बसों के प्रकार",
     "units": "बस के प्रकार के हिसाब से सूची के रूट",
     "simple": "सूची के {total} रूटों में से {count} पर <b>{type}</b> बसें चलती हैं।",
-    "center": "{count, plural, one {रूट} other {रूट}}",
+    "center": "{count, plural, =1 {रूट} other {रूट}}",
     "aria": "बस के प्रकार के हिसाब से रूट: {list}।",
     "other": "दूसरे प्रकार"
   },
   "days": {
     "title": "हफ़्ते के हर दिन की ट्रेनें",
     "units": "हर दिन चलने वाली सूची की ट्रेनें",
-    "simpleSame": "हफ़्ते के हर दिन {n} {count, plural, one {ट्रेन चलती है} other {ट्रेनें चलती हैं}}।",
+    "simpleSame": "हफ़्ते के हर दिन {n} {count, plural, =1 {ट्रेन चलती है} other {ट्रेनें चलती हैं}}।",
     "simple": "<b>{most}</b> को सबसे ज़्यादा ट्रेनें ({max}) और <b>{least}</b> को सबसे कम ({min}) चलती हैं।",
     "aria": "हर दिन की ट्रेनें: {list}।"
   },
@@ -100,6 +100,6 @@
     "days": "चलने के दिन"
   },
   "end": {
-    "share": "{district} में बस और ट्रेन: {buses} बस रूट, {trains} ट्रेनें"
+    "share": "{district} में बस और ट्रेन: {buses, plural, =1 {# बस रूट} other {# बस रूट}}, {trains, plural, =1 {# ट्रेन} other {# ट्रेनें}}"
   }
 }

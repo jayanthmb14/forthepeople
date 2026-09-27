@@ -3,7 +3,7 @@
     "aria": "बन रही परियोजनाएँ, एक नज़र में",
     "title": "बन रही परियोजनाएँ",
     "viewAll": "सब देखें",
-    "projects": "{n, plural, one {# परियोजना} other {# परियोजनाएँ}}",
+    "projects": "{n, plural, =1 {# परियोजना} other {# परियोजनाएँ}}",
     "active": "{n} चालू",
     "completed": "{n} पूरी",
     "delayed": "{n} में देरी",

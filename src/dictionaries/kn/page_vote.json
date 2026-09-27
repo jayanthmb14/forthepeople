@@ -4,9 +4,9 @@
   "title": "ಮುಂದಿನ ಜಿಲ್ಲೆಗೆ ಮತ ಹಾಕಿ",
   "description": "{n} ಜಿಲ್ಲೆಗಳು ಕಾಯುತ್ತಿವೆ. ಮುಂದೆ ಯಾವ ಜಿಲ್ಲೆ ಲೈವ್ ಆಗಬೇಕು ಎಂದು ನಿಮ್ಮ ಮತ ನಿರ್ಧರಿಸುತ್ತದೆ.",
   "backHome": "ಮುಖಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ",
-  "simple": "ಇಲ್ಲಿಯವರೆಗೆ ಜನರು <b>{voted, plural, other {# ಜಿಲ್ಲೆಗಳಿಗೆ}}</b> <b>{total, plural, other {# ಮತಗಳನ್ನು}}</b> ಹಾಕಿದ್ದಾರೆ. <b>{leader}</b> ಮುಂಚೂಣಿಯಲ್ಲಿದೆ: <b>{votes, plural, one {# ಮತ} other {# ಮತಗಳು}}</b>.",
+  "simple": "ಇಲ್ಲಿಯವರೆಗೆ ಜನರು <b>{voted, plural, other {# ಜಿಲ್ಲೆಗಳಿಗೆ}}</b> <b>{total, plural, other {# ಮತಗಳನ್ನು}}</b> ಹಾಕಿದ್ದಾರೆ. <b>{leader}</b> ಮುಂಚೂಣಿಯಲ್ಲಿದೆ: <b>{votes, plural, =1 {# ಮತ} other {# ಮತಗಳು}}</b>.",
   "topLabel": "ಹೆಚ್ಚು ಬೇಡಿಕೆಯ ಜಿಲ್ಲೆಗಳು",
-  "votes": "{n, plural, one {# ಮತ} other {# ಮತಗಳು}}",
+  "votes": "{n, plural, =1 {# ಮತ} other {# ಮತಗಳು}}",
   "statesTitle": "ರಾಜ್ಯವಾರು ಮತಗಳು",
   "statesUnits": "ಒಟ್ಟು ಮತಗಳಲ್ಲಿ ಪಾಲು",
   "statesSimple": "ಅತಿ ಹೆಚ್ಚು ಮತಗಳು <b>{state}</b> ರಾಜ್ಯದಿಂದ: ಒಟ್ಟು ಮತಗಳಲ್ಲಿ ಸುಮಾರು {pct}%.",
@@ -37,12 +37,12 @@
   "sortAlpha": "ವಿಂಗಡಣೆ: ಅಕ್ಷರಾನುಕ್ರಮ",
   "emptyTitle": "ಹೊಂದುವ ಜಿಲ್ಲೆಗಳಿಲ್ಲ.",
   "emptyBody": "ಬೇರೆ ಹುಡುಕಾಟ ಅಥವಾ ರಾಜ್ಯ ಆಯ್ಕೆ ಮಾಡಿ ನೋಡಿ.",
-  "voteAria": "ಮತ ಹಾಕಿ: {district}, {state}. ಇಲ್ಲಿಯವರೆಗೆ {n, plural, one {# ಮತ} other {# ಮತಗಳು}}.",
+  "voteAria": "ಮತ ಹಾಕಿ: {district}, {state}. ಇಲ್ಲಿಯವರೆಗೆ {n, plural, =1 {# ಮತ} other {# ಮತಗಳು}}.",
   "vote": "ಮತ ಹಾಕಿ",
   "errRate": "ಸ್ವಲ್ಪ ನಿಧಾನ, ಒಂದು ನಿಮಿಷದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "errGeneric": "ನಿಮ್ಮ ಮತ ಉಳಿಸಲು ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "pagesAria": "ಪುಟಗಳು",
   "prev": "ಹಿಂದಿನದು",
   "next": "ಮುಂದಿನದು",
-  "pageOf": "ಪುಟ {page} / {pages}, ಒಟ್ಟು {n, plural, one {# ಜಿಲ್ಲೆ} other {# ಜಿಲ್ಲೆಗಳು}}"
+  "pageOf": "ಪುಟ {page} / {pages}, ಒಟ್ಟು {n, plural, =1 {# ಜಿಲ್ಲೆ} other {# ಜಿಲ್ಲೆಗಳು}}"
 }

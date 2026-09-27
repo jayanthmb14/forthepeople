@@ -32,15 +32,15 @@
     "voteAbout": "{type}, ಸುಮಾರು {date}",
     "grade": "ವರದಿ ಪತ್ರ",
     "gradeValue": "{grade} ({date})",
-    "alerts": "{n, plural, one {ಈಗ # ಎಚ್ಚರಿಕೆ} other {ಈಗ # ಎಚ್ಚರಿಕೆಗಳು}}",
+    "alerts": "{n, plural, =1 {ಈಗ # ಎಚ್ಚರಿಕೆ} other {ಈಗ # ಎಚ್ಚರಿಕೆಗಳು}}",
     "lakh": "{n} ಲಕ್ಷ",
     "crore": "{n} ಕೋಟಿ",
     "fy": "ಆರ್ಥಿಕ ವರ್ಷ {fy}",
     "loading": "ಮುಖ್ಯ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ"
   },
   "notice": {
-    "lateDays": "ಈ ಮಾಹಿತಿ {n, plural, one {# ದಿನ} other {# ದಿನಗಳಷ್ಟು}} ಹಳೆಯದು.",
-    "lateHours": "ಈ ಮಾಹಿತಿ {n, plural, one {# ಗಂಟೆ} other {# ಗಂಟೆಗಳಷ್ಟು}} ಹಳೆಯದು.",
+    "lateDays": "ಈ ಮಾಹಿತಿ {n, plural, =1 {# ದಿನ} other {# ದಿನಗಳಷ್ಟು}} ಹಳೆಯದು.",
+    "lateHours": "ಈ ಮಾಹಿತಿ {n, plural, =1 {# ಗಂಟೆ} other {# ಗಂಟೆಗಳಷ್ಟು}} ಹಳೆಯದು.",
     "latePeriod": "ಈ ಮಾಹಿತಿ {period} ಕ್ಕೆ ಸೇರಿದ್ದು.",
     "newestDate": "ನಮ್ಮಲ್ಲಿರುವ ಇತ್ತೀಚಿನ ಮಾಹಿತಿ {date} ರದ್ದು. ಮೂಲ: {source}.",
     "newestPeriod": "ಇದು ನಮ್ಮಲ್ಲಿರುವ ಇತ್ತೀಚಿನದು. ಮೂಲ: {source}.",

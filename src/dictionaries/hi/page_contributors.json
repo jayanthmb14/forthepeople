@@ -10,7 +10,7 @@
   "statState": "राज्य चैंपियन",
   "statIndia": "भारत संरक्षक",
   "statOneTime": "एक बार देने वाले",
-  "simple": "<b>{count}</b> {n, plural, one {व्यक्ति} other {लोग}} {name} की जानकारी मुफ़्त रखने में मदद करते हैं, और इनमें से <b>{monthlyCount}</b> हर महीने देते हैं।",
+  "simple": "<b>{count}</b> {n, plural, =1 {व्यक्ति} other {लोग}} {name} की जानकारी मुफ़्त रखने में मदद करते हैं, और इनमें से <b>{monthlyCount}</b> हर महीने देते हैं।",
   "monthlyPicto": "हर 10 सहयोगियों में से लगभग {n} हर महीने देते हैं।",
   "tenureTitle": "मासिक सहयोगी कितने समय से साथ हैं",
   "tenureUnits": "मासिक सहयोगी, अब तक के सहयोग के महीनों के अनुसार",
@@ -24,7 +24,7 @@
     "gold": "1 से 2 साल",
     "platinum": "2 साल या उससे ज़्यादा"
   },
-  "supportersWord": "{n, plural, one {सहयोगी} other {सहयोगी}}",
+  "supportersWord": "{n, plural, =1 {सहयोगी} other {सहयोगी}}",
   "sourceOwn": "ForThePeople.in के सहयोग रिकॉर्ड",
   "badge": {
     "bronze": "कांस्य",
@@ -63,7 +63,7 @@
   "tenureYM": "{y} साल {m} महीने",
   "tenureM": "{m} महीने",
   "expired": "अवधि ख़त्म",
-  "expiresIn": "{n, plural, one {# दिन में अवधि ख़त्म} other {# दिनों में अवधि ख़त्म}}",
+  "expiresIn": "{n, plural, =1 {# दिन में अवधि ख़त्म} other {# दिनों में अवधि ख़त्म}}",
   "activeUntil": "{date} तक",
   "ctaTitle": "{name} की जानकारी का साथ दें, <n>{price}</n> प्रति माह से",
   "ctaBody": "हर रुपया {name} के <n>{modules}</n> डैशबोर्ड {citizens} के लिए मुफ़्त रखता है।",

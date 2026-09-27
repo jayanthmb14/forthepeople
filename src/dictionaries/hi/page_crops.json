@@ -9,7 +9,7 @@
   "tileMarketsSub": "जो भाव भेज रही हैं",
   "tileUp": "भाव बढ़े",
   "tileDown": "भाव घटे",
-  "tileMovesSub": "{n, plural, one {# फसल में से} other {# फसलों में से}}, पिछले बाज़ार दिन से",
+  "tileMovesSub": "{n, plural, =1 {# फसल में से} other {# फसलों में से}}, पिछले बाज़ार दिन से",
   "tileLatest": "ताज़ा भाव",
   "pictureTitle": "पिछले बाज़ार दिन से",
   "pictureSub": "हर फसल का आम भाव, उसी मंडी के पिछले बाज़ार दिन के भाव से मिलाकर।",
@@ -31,7 +31,7 @@
   "cardMore": "{date} से {amount} ज़्यादा",
   "cardLess": "{date} से {amount} कम",
   "cardSame": "{date} जितना ही",
-  "moreMarkets": "+{n, plural, one {# और मंडी} other {# और मंडियाँ}}",
+  "moreMarkets": "+{n, plural, =1 {# और मंडी} other {# और मंडियाँ}}",
   "details": "पूरी जानकारी देखें",
   "detailsFor": "पूरी जानकारी देखें: {name}",
   "sheetSub": "{date} को {market} मंडी में आम भाव",
@@ -89,6 +89,6 @@
   "csvMin": "न्यूनतम भाव (₹/क्विंटल)",
   "csvModal": "आम भाव (₹/क्विंटल)",
   "csvMax": "अधिकतम भाव (₹/क्विंटल)",
-  "answerOld": "यह <b>{n, plural, one {# दिन} other {# दिन}} पहले</b> की बात है; हमें इससे नए भाव नहीं मिले।",
+  "answerOld": "यह <b>{n, plural, =1 {# दिन} other {# दिन}} पहले</b> की बात है; हमें इससे नए भाव नहीं मिले।",
   "csvButton": "भाव डाउनलोड करें (CSV)"
 }

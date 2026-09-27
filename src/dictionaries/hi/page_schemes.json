@@ -15,7 +15,7 @@
     "categories": "मदद के प्रकार",
     "biggest": "सबसे बड़ा लाभ"
   },
-  "explainer": "{district} के लिए यहाँ <num>{total}</num> सरकारी {total, plural, one {योजना} other {योजनाएँ}} दी गई हैं। {withLink, plural, =0 {अभी किसी का ऑनलाइन आवेदन फ़ॉर्म दर्ज नहीं है।} other {<num>{withLink}</num> के लिए ऑनलाइन आवेदन किया जा सकता है।}}",
+  "explainer": "{district} के लिए यहाँ <num>{total}</num> सरकारी {total, plural, =1 {योजना} other {योजनाएँ}} दी गई हैं। {withLink, plural, =0 {अभी किसी का ऑनलाइन आवेदन फ़ॉर्म दर्ज नहीं है।} other {<num>{withLink}</num> के लिए ऑनलाइन आवेदन किया जा सकता है।}}",
   "explainerTap": "आपको क्या मिलेगा, किसे मिलेगा और आवेदन कैसे करें, यह देखने के लिए किसी भी योजना पर टैप करें।",
   "how": {
     "title": "योजना आप तक कैसे पहुँचती है",
@@ -43,7 +43,7 @@
     "state": "पूरा {state}: राज्य सरकार चलाती है।",
     "local": "{district}: स्थानीय निकाय चलाता है।",
     "unknown": "स्रोत ने नहीं बताया है कि यह कहाँ लागू है।",
-    "alsoListed": "ForThePeople.in पर यह {n, plural, one {# और जिले} other {# और जिलों}} के लिए भी दी गई है:",
+    "alsoListed": "ForThePeople.in पर यह {n, plural, =1 {# और जिले} other {# और जिलों}} के लिए भी दी गई है:",
     "place": "{district} ({state})"
   },
   "list": {
