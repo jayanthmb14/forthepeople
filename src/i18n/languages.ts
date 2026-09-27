@@ -42,7 +42,7 @@ export interface Language {
 export const LANGUAGES: readonly Language[] = [
   { code: "en",  english: "English",   native: "English",    script: "Latin",       dir: "ltr", intl: "en-IN",  status: "live" },
   { code: "kn",  english: "Kannada",   native: "ಕನ್ನಡ",       script: "Kannada",     dir: "ltr", intl: "kn-IN",  status: "beta" },
-  { code: "hi",  english: "Hindi",     native: "हिन्दी",        script: "Devanagari",  dir: "ltr", intl: "hi-IN",  status: "planned" },
+  { code: "hi",  english: "Hindi",     native: "हिन्दी",        script: "Devanagari",  dir: "ltr", intl: "hi-IN",  status: "beta" },
   { code: "ta",  english: "Tamil",     native: "தமிழ்",        script: "Tamil",       dir: "ltr", intl: "ta-IN",  status: "planned" },
   { code: "te",  english: "Telugu",    native: "తెలుగు",       script: "Telugu",      dir: "ltr", intl: "te-IN",  status: "planned" },
   { code: "mr",  english: "Marathi",   native: "मराठी",        script: "Devanagari",  dir: "ltr", intl: "mr-IN",  status: "planned" },
