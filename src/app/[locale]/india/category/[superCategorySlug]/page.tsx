@@ -224,7 +224,7 @@ export default async function IndiaSuperCategoryPage({ params }: PageProps) {
         {groups.map(([groupLabel, mods], i) => (
           <Section
             key={groupLabel}
-            title={onlyUngrouped || groupLabel === "UNGROUPED" ? t("grid.title") : x.subGroup(groupLabel)}
+            title={onlyUngrouped ? t("grid.title") : groupLabel === "UNGROUPED" ? t("grid.other") : x.subGroup(groupLabel)}
             emoji={i === 0 ? superCategory.icon : undefined}
             action={
               i === 0 ? <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{t("grid.tapHint")}</span> : undefined

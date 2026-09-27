@@ -21,6 +21,7 @@
   },
   "grid": {
     "title": "All modules",
+    "other": "More modules",
     "tapHint": "Tap a card to see its figures",
     "details": "Details: {module}",
     "openShort": "Open page",
