@@ -136,6 +136,7 @@
     "asReported": "ಸುದ್ದಿ ಮಾಧ್ಯಮಗಳು ವರದಿ ಮಾಡಿದಂತೆ",
     "noTimeline": "ಕಾಲಮಿತಿ ಘೋಷಣೆಯಾಗಿಲ್ಲ",
     "notStarted": "ಆರಂಭವಾಗಿಲ್ಲ",
+    "finished": "ಮುಗಿದಿದೆ",
     "date": {
       "started": "ಆರಂಭ: <n>{date}</n>",
       "tenderIssued": "ಟೆಂಡರ್ ಕರೆದದ್ದು: <n>{date}</n>",

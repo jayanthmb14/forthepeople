@@ -131,12 +131,14 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
   const td = data.tender;
 
   const place = td.locationTaluk ? `${td.locationTaluk}, ${td.locationDistrict}` : td.locationDistrict;
-  const shareText = t("detail.shareText", {
-    title: td.title,
-    value: m.short(td.estimatedValueInr),
-    date: shortDate(td.bidSubmissionEnd),
-    url: `${location.origin}/${locale}/${stateSlug}/${districtSlug}/tenders/${td.id}`,
-  });
+  // Built on click (window.location only exists in the browser).
+  const shareText = () =>
+    t("detail.shareText", {
+      title: td.title,
+      value: m.short(td.estimatedValueInr),
+      date: shortDate(td.bidSubmissionEnd),
+      url: `${window.location.origin}/${locale}/${stateSlug}/${districtSlug}/tenders/${td.id}`,
+    });
   const status = statusOf(td.status);
   const urgency = heroUrgency(td.bidSubmissionEnd);
 
@@ -172,7 +174,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
           <a href={td.sourceUrl} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={linkBtn}>
             <ExternalLink size={14} aria-hidden /> {t("detail.viewSource")}
           </a>
-          <button type="button" onClick={() => navigator.share ? navigator.share({ title: td.title, text: shareText }) : navigator.clipboard.writeText(shareText)} className="ftp-btn-secondary" style={linkBtn}>
+          <button type="button" onClick={() => navigator.share ? navigator.share({ title: td.title, text: shareText() }) : navigator.clipboard.writeText(shareText())} className="ftp-btn-secondary" style={linkBtn}>
             <Share2 size={14} aria-hidden /> {t("detail.share")}
           </button>
           {/* TODO: Replace with DPDP-compliant email collection + double

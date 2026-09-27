@@ -108,8 +108,8 @@ function industryEmoji(p: { category?: string | null; type?: string | null }): s
   if (/pharma|biotech|health/.test(c)) return "🧪";
   if (/financ|bank|exchange/.test(c)) return "🏦";
   if (/market|commercial|retail|trade/.test(c)) return "🛍️";
-  if (/heritage|handicraft|silk|craft/.test(c)) return "🧵";
-  if (/touris|palace|temple/.test(c)) return "🏰";
+  if (/handicraft|silk|craft|textile|weav/.test(c)) return "🧵";
+  if (/heritage|touris|palace|temple|fort/.test(c)) return "🏛️";
   if (/port|logistic/.test(c)) return "⚓";
   if (/auto|vehicle/.test(c)) return "🚗";
   if (/sugar/.test(c)) return "🍬";

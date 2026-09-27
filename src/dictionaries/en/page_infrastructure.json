@@ -136,6 +136,7 @@
     "asReported": "As reported in news media",
     "noTimeline": "Timeline not announced",
     "notStarted": "Not started",
+    "finished": "Finished",
     "date": {
       "started": "Started: <n>{date}</n>",
       "tenderIssued": "Tender issued: <n>{date}</n>",

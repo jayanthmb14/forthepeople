@@ -50,6 +50,7 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
   const verifiedCount = p.verificationCount ?? 0;
   const lastTs = p.lastNewsAt ?? null;
   const showDelayIcon = isDelayed(p) && normalizeStatus(p.status) !== "COMPLETED";
+  const finished = normalizeStatus(p.status) === "COMPLETED";
 
   return (
     <Card as="article" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -224,15 +225,17 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           Freshness line below the bar makes it clear when the
           percentage was last reflected in news. Without it, a stale
           seed-data figure could be misread as a current measurement. */}
+      {/* A project reported as completed but with no progress figure reads
+          "Finished" with a full bar (the status says so), never "Not started". */}
       {!isCancelled(p) && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginBottom: 4 }}>
             <span>{t("card.progress")}</span>
-            <span className="ftp-num" style={{ color: progress > 0 ? "var(--ftp-text)" : "var(--ftp-text-2)" }}>
-              {progress > 0 ? `${m.num(progress)}%` : t("card.notStarted")}
+            <span className="ftp-num" style={{ color: progress > 0 || finished ? "var(--ftp-text)" : "var(--ftp-text-2)" }}>
+              {progress > 0 ? `${m.num(progress)}%` : finished ? t("card.finished") : t("card.notStarted")}
             </span>
           </div>
-          <ProgressBar pct={progress} tone="brand" />
+          <ProgressBar pct={progress > 0 ? progress : finished ? 100 : 0} tone="brand" />
           {progress > 0 && (
             <div style={{ ...NOTE, marginTop: 4 }}>
               {lastTs

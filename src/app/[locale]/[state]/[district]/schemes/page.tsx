@@ -105,7 +105,6 @@ const num = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
 function SchemesPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const t = useTranslations("page_schemes");
-  const mt = useModuleText();
   const f = useFormat();
   const m = useMoney();
   const st = useSourceText();
@@ -170,7 +169,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
     .sort((a, b) => (b.beneficiaryCount ?? 0) - (a.beneficiaryCount ?? 0));
 
   const src = getModuleSources("schemes", state);
-  const title = mt.label("schemes");
+  const title = t("title");
   // Local-script title: the module name in the state's language (Kannada
   // only for now). PageHeader hides it when it is already the title.
   const titleLocal = state === "karnataka" ? knDict.moduleNames.schemes : undefined;
