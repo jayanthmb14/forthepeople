@@ -60,6 +60,10 @@ export function BreadcrumbBottomSheet({ title, items, onClose }: Props) {
 
   return createPortal(
     <div
+      // data-ftp-sheet lets DistrictBreadcrumb's click-outside handler ignore
+      // taps inside this portal (otherwise the mousedown closes the sheet
+      // before the link's click fires, and navigation is cancelled).
+      data-ftp-sheet=""
       onClick={onClose}
       role="dialog"
       aria-modal="true"

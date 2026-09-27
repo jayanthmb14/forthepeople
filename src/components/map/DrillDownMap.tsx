@@ -66,7 +66,11 @@ export default function DrillDownMap({ locale }: DrillDownMapProps) {
     <div style={{ position: "relative", width: "100%", height: "100%", minHeight: 420, background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-tile)" }}>
       <ComposableMap
         projection="geoMercator"
-        projectionConfig={{ center: [82.5, 23.0], scale: 900 }}
+        // Centre and scale chosen so mainland India plus the Andaman & Nicobar
+        // Islands fill ~86% of the 800 × 900 viewBox (Mercator bounds
+        // 68.1–97.4°E, 6.7–37.1°N). The old scale (900) left ~40% empty,
+        // which is why the homepage used to add a CSS zoom that cropped it.
+        projectionConfig={{ center: [82.75, 22.7], scale: 1350 }}
         width={800}
         height={900}
         style={{ width: "100%", height: "100%" }}

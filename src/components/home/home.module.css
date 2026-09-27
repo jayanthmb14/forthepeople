@@ -259,8 +259,6 @@
   display: block;
   width: 100%;
   height: 100%;
-  transform: scale(1.18);
-  transform-origin: center;
 }
 /* DrillDownMap's own legend is its last child; ours replaces it. */
 .mapCanvas > div > div:last-child {

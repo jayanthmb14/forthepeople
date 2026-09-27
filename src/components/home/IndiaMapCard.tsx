@@ -8,15 +8,12 @@
 //  IndiaMapCard — the clickable India map on the home page (cols 1–7)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Wraps the existing DrillDownMap (src/components/map/DrillDownMap.tsx,
-//  unchanged) in a quiet v3 frame: surface-2 background, 1 px border,
-//  12 px radius, no glow, no zoom-on-hover.
-//
-//  DrillDownMap still paints its own colours inline. Until it reads the
-//  tokens itself (see handoff notes), home.module.css re-colours its
-//  states through the classes it already sets on each <path>:
-//    .ftp-geo-active → --ftp-map-live,  .ftp-geo-locked → --ftp-map-locked
-//  and hides its built-in legend so the token legend below is the only one.
+//  Wraps DrillDownMap (src/components/map/DrillDownMap.tsx) in a quiet v3
+//  frame: surface-2 background, 1 px border, 12 px radius, no glow, no
+//  zoom-on-hover. DrillDownMap colours states through mapTheme
+//  (--ftp-map-live / --ftp-map-locked) and fits India to its own viewBox.
+//  home.module.css only flattens its inline frame and hides its built-in
+//  legend, so the token legend below is the only one.
 //
 "use client";
 

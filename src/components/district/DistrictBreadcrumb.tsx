@@ -126,7 +126,7 @@ export default function DistrictBreadcrumb({
       // the mousedown on a sheet item would close the sheet via setOpenMenu(null)
       // BEFORE the click event fires, cancelling the Link navigation.
       const target = e.target as HTMLElement | null;
-      if (target?.closest(".ftp-m-sheet-backdrop")) return;
+      if (target?.closest("[data-ftp-sheet]")) return;
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setOpenMenu(null);
       }

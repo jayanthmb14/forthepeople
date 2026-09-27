@@ -72,6 +72,23 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   sources entry.
 - Old homepage components (`src/components/home/redesign-v2/*`) deleted.
 
+- Finishing pass: kit gains PrimaryButton, 44 px buttons on phones, "As of Census 2011"-style period
+  labels and a freshness threshold on PageHeader; the disclaimer is one line (phones: one truncated
+  line + "More"); district contributors, elections, the idea form, the feedback button, error and
+  offline screens restyled; dead CSS and unused emoji/colour data removed.
+- Offices "Open now" now uses Indian Standard Time and the same hours the page shows (it used the
+  visitor's own clock and different hours). Each office card shows Open / Lunch break / Closed.
+- Tenders copy no longer promises refresh intervals that no scheduled job delivers.
+- Infrastructure analysis card no longer hard-codes an AI model name.
+- India live strip counts come from the module and source registries (no placeholder numbers).
+- The compare page honours `?module=` from every module page's Compare button.
+- All-India Patron copy computes "N districts. M dashboards." (was a stale 22,620).
+- Phones: tapping a district or state in the breadcrumb bottom sheet navigates again (the sheet was
+  closing on touch-down before the link could fire).
+- Homepage map re-centred so all of India, including the south and the islands, is visible.
+- `scripts/fix-district-local-names.ts`: dry-run fixer for districts whose local-script name is
+  just the English name (Pune → पुणे). Run with `--confirm` against prod, then bust caches.
+
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked
   `.v1/.v2/.v3` snapshot files and the permanently redirected `india-detail` page.
