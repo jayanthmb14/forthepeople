@@ -1,0 +1,370 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * ReportButton.module.css — the site-wide "Report a problem" button and its
+ * form (Design v5.1 "Warm Calm"). Tokens only. The button is a small white
+ * pill with a warm amber flag on PCs and tablets, and a 44 px round flag on
+ * phones, so it never hides much of the page. The form is a bottom sheet
+ * on phones and a centred card from 640 px.
+ */
+
+/* ── The button ── */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  /* Under the header menus (60), sheets (90) and pop-ups (70). */
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ftp-surface) 94%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  box-shadow: var(--ftp-shadow-2);
+  cursor: pointer;
+  animation: fabIn 320ms var(--ftp-ease-out, ease-out) both;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+.fab:hover {
+  border-color: var(--ftp-warn-border);
+  background: var(--ftp-warn-tint);
+  transform: translateY(-1px);
+}
+.fab:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 3px;
+}
+@keyframes fabIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.glyph {
+  flex-shrink: 0;
+  display: block;
+}
+.pole {
+  fill: none;
+  stroke: var(--ftp-text-2);
+  stroke-linecap: round;
+}
+.flag {
+  fill: color-mix(in srgb, var(--ftp-warn) 78%, var(--ftp-surface));
+}
+.base {
+  fill: var(--ftp-text-2);
+}
+
+@media (max-width: 639px) {
+  .fab {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .fabText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+@media print {
+  .fab {
+    display: none;
+  }
+}
+
+/* ── The form ── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ftp-text) 45%, transparent);
+}
+.card {
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 16px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid var(--ftp-border);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  text-align: start;
+  animation: cardUp 200ms var(--ftp-ease-out, ease-out);
+}
+@keyframes cardUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (min-width: 640px) {
+  .backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+  .card {
+    max-width: 520px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--ftp-border);
+    border-radius: 20px;
+  }
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.headGlyph {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--ftp-warn-tint);
+}
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.x {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: -8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.x:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+}
+.x:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+.intro {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ftp-text-2);
+}
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ftp-brand-tint);
+  font-size: 13px;
+  line-height: 19px;
+}
+.aboutLabel {
+  font-weight: 600;
+  color: var(--ftp-brand-deep);
+}
+.aboutPage {
+  font-weight: 700;
+  color: var(--ftp-text);
+  overflow-wrap: anywhere;
+}
+.aboutUrl {
+  color: var(--ftp-text-2);
+  font-family: var(--ftp-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.label {
+  display: block;
+  margin-top: 14px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text);
+}
+.kinds {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.kindRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.kind {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 999px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kind[data-on="true"] {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+}
+.kind:has(.radio:focus-visible) {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.radio {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: inherit;
+  font-size: 16px; /* 16 px keeps iOS Safari from zooming in */
+  line-height: 22px;
+  resize: vertical;
+}
+.field:focus {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 1px;
+  border-color: var(--ftp-brand);
+}
+.hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.hint[data-error="true"] {
+  color: var(--ftp-danger);
+}
+.privacy {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--ftp-surface-2);
+}
+.btn[data-primary="true"] {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand);
+  color: var(--ftp-surface);
+}
+.btn[data-primary="true"]:hover {
+  background: var(--ftp-brand-deep);
+}
+.btn:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  color: var(--ftp-live-text);
+}
+.done p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ftp-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .card {
+    animation: none;
+    transition: none;
+  }
+  .fab:hover {
+    transform: none;
+  }
+}

@@ -392,7 +392,32 @@
     "liveChipAria": "{name}, {state}",
     "voteCardTitle": "Your district not here yet?",
     "voteCardBody": "Vote for it. Votes help decide which district opens next.",
-    "voteCardCta": "Vote"
+    "voteCardCta": "Vote",
+    "report": {
+      "button": "Report a problem",
+      "buttonAria": "Report a problem with this page",
+      "title": "Report a problem",
+      "intro": "Tell us what is wrong on this page. We read every report.",
+      "aboutLabel": "About this page",
+      "kind": "What kind of problem?",
+      "kinds": {
+        "wrong_data": "Wrong or old data",
+        "bug": "Something does not work",
+        "other": "Something else"
+      },
+      "what": "What is wrong?",
+      "whatHint": "For example: which number, date or name is wrong, and what it should be.",
+      "tooShort": "Please write a few more words.",
+      "email": "Your email (only if you want a reply)",
+      "privacy": "We keep the page address, what you write and basic technical details (browser and network address) to stop spam. Your email is used only to reply.",
+      "send": "Send report",
+      "sending": "Sending…",
+      "cancel": "Cancel",
+      "close": "Close",
+      "thanks": "Thank you. Your report has reached us.",
+      "failed": "It could not be sent. Please try again in a minute.",
+      "busy": "Too many reports from this network in the last hour. Please try again later."
+    }
   },
   "status": {
     "dataBehind": "Data behind",
