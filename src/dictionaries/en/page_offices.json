@@ -1,0 +1,64 @@
+{
+  "description": "Where government offices are, who heads them, how to reach them and what they handle",
+  "summary": "A directory of government offices in {district}: where each office is, which department it belongs to, who heads it, how to reach it, and which services it handles. Opening hours are shown in Indian Standard Time.",
+  "hours": "{days}, {open} to {close}",
+  "hoursIst": "{days}, {open} to {close} IST",
+  "dayRange": "{from}–{to}",
+  "tiles": {
+    "offices": "Offices",
+    "departments": "Departments",
+    "status": "Right now",
+    "open": "Open",
+    "closed": "Closed"
+  },
+  "refresh": {
+    "Quarterly": "Directory is updated every quarter",
+    "Monthly": "Directory is updated every month",
+    "Weekly": "Directory is updated every week",
+    "Daily": "Directory is updated every day",
+    "other": "Directory updates: {freq}"
+  },
+  "explainerOpen": "Right now, offices are <b>open</b>. They usually open <b>{hours}</b>, India time.",
+  "explainerClosed": "Right now, offices are <b>closed</b>. They usually open <b>{hours}</b>, India time.",
+  "ownHours": "Some offices keep their own hours, shown on their cards.",
+  "week": {
+    "aria": "Offices open {days}. Today is {today}.",
+    "caption": "Coloured days are open days. The ringed day is today (India time)."
+  },
+  "dept": {
+    "title": "Offices by department",
+    "units": "Number of offices in each department",
+    "simple": "<b>{dept}</b> has the most offices: {n} of {total}."
+  },
+  "reach": {
+    "title": "How you can reach them",
+    "units": "Offices that list each way to contact them",
+    "simple": "<b>{n}</b> of {total} offices list a phone number.",
+    "simpleNoPhone": "None of the {total} offices lists a phone number yet.",
+    "phone": "Phone",
+    "email": "Email",
+    "website": "Website",
+    "count": "{n} of {total}",
+    "ringAria": "{what}: {n} of {total} offices"
+  },
+  "list": {
+    "title": "Office directory",
+    "searchLabel": "Search offices",
+    "searchPlaceholder": "Search by office or department",
+    "chipsLabel": "Department",
+    "all": "All",
+    "noMatch": "No offices match your search.",
+    "noMatchBody": "Try a different name or department.",
+    "openNow": "Open now",
+    "lunch": "Lunch break",
+    "closedNow": "Closed now",
+    "today": "Today {hours} (IST)",
+    "todayLunch": "Today {hours}, lunch {lunch} (IST)",
+    "todayClosed": "Closed today",
+    "head": "Head: {name}",
+    "website": "Website",
+    "services": "Services",
+    "more": "+{n} more"
+  },
+  "share": "Government offices in {district}: {offices, plural, one {# office} other {# offices}} across {departments, plural, one {# department} other {# departments}}"
+}
