@@ -4,26 +4,41 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Police & Traffic module page — Design v4 "Rang" module recipe (see the
-// finance page):
-//   PageHeader → plain summary → AI summary → StatStrip of emoji tiles
-//   (only figures we actually have) → picture (traffic fines vs the monthly
-//   target, only when the target is on file) → staffing → station directory
-//   (with a count row of what the directory holds) → crime + "up or down
-//   since last year" + traffic ChartCards → crime table → honest EmptyState
-//   when nothing is loaded → sources + Share/Compare → news.
-// Data comes from usePolice() (stations, NCRB crime rows, traffic challans).
-// Every word on the page comes from src/dictionaries/<locale>/page_police.json.
-
+// ═══════════════════════════════════════════════════════════════════════
+//  Police & safety — docs/LAYOUT.md page recipe
+// ═══════════════════════════════════════════════════════════════════════
+//  The question: "Who keeps my district safe, how do I reach them, and is
+//  crime going up or down?"
+//
+//    PageHeader (with a tap-to-call 112 button)
+//    → Explainer: the answer in one or two sentences, from real data
+//    → up to 4 StatTiles (stations, NCRB cases, change, traffic fines)
+//    → ONE picture: NCRB total cases, last year vs this year; when NCRB
+//      has no two years, the "how to report a crime" steps take its place
+//    → station cards; tapping one opens a DetailSheet (officer, phone,
+//      email, address; Call / Directions / Email)
+//    → charts (NCRB only): cases by type, up or down by type, traffic fines
+//    → police posts filled vs sanctioned → every crime figure with its source
+//    → sources, news, Share / Compare
+//
+//  Honesty: crime CHARTS use NCRB rows only (source mentions NCRB / Crime
+//  in India). Rows from a police department's own report are listed at the
+//  bottom with their source but never charted. The data API already drops
+//  rows taken from news articles. Words: src/dictionaries/<locale>/page_police.json.
 "use client";
+
 import type React from "react";
-import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
-import { use } from "react";
+import { use, useMemo, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Shield, Phone, MapPin } from "lucide-react";
-import { usePolice } from "@/hooks/useRealtimeData";
+import { Shield } from "lucide-react";
+import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
+import AIInsightCard from "@/components/common/AIInsightCard";
+import ModuleNews from "@/components/district/ModuleNews";
+import { usePolice, type PoliceStation } from "@/hooks/useRealtimeData";
 import {
+  ModulePage,
   PageHeader,
   StatStrip,
   StatTile,
@@ -32,26 +47,52 @@ import {
   LoadingShell,
   ErrorBlock,
   EmptyState,
-  DataTable,
+  SourcePill,
 } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
-import { CountChips, ThenNowRow } from "@/components/accountability/AccountabilityVisuals";
-import AIInsightCard from "@/components/common/AIInsightCard";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
-import StaffingWidget from "@/components/district/StaffingWidget";
-import ModuleNews from "@/components/district/ModuleNews";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
-import { getDistrict } from "@/lib/constants/districts";
-import { useFormat, useModuleText } from "@/i18n/client";
+import { ChartCard, ChartGradients, Explainer, HowItWorks, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
+import { ThenNowRow } from "@/components/accountability/AccountabilityVisuals";
+import {
+  AccountabilityFooter,
+  CardChip,
+  CardList,
+  ChartRow,
+  ListSearch,
+  SheetAction,
+  SheetNote,
+  ShowAllButton,
+  TapCard,
+  ThenNowPicture,
+  mapsHref,
+  telHref,
+} from "@/components/accountability/AccountabilityKit";
+import PoliceStaffing from "@/components/accountability/PoliceStaffing";
+import { hueClass } from "@/lib/design/hues";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { scriptLang } from "@/lib/utils/script-lang";
 
-/** Page wrapper: the container (24 px sides, 16 on phones) at reading width. */
-const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
+/** Stations as stored: the API also sends the map point when we have it. */
+type Station = PoliceStation & { lat?: number | null; lng?: number | null };
 
-/** 1 lakh = 100,000 rupees. Traffic amounts are stored in rupees. */
+/** NCRB rows: "NCRB", "NCRB / ncrb.gov.in", "Crime in India · NCRB". */
+const NCRB_RE = /ncrb|crime in india/i;
+/** The all-crimes row ("IPC Crimes Total", "IPC Crimes"), which already contains the other categories. */
+const TOTAL_RE = /\btotal\b|^ipc crimes?$/i;
+/** Cards shown before "Show all". */
+const FIRST_CARDS = 12;
+/** Search appears when the list is longer than this. */
+const SEARCH_FROM = 12;
+/** 1 lakh = 1,00,000 rupees. Traffic amounts are stored in rupees. */
 const LAKH = 100_000;
+const NCRB = { label: "NCRB", href: "https://ncrb.gov.in" };
 
-/** Bold text inside translated sentences (t.rich "<b>…</b>"). */
+/** National helplines (fixed numbers, not district data). */
+const HELPLINES = [
+  { key: "helpCyber", number: "1930", emoji: "💻" },
+  { key: "helpWomen", number: "1091", emoji: "👩" },
+  { key: "helpChild", number: "1098", emoji: "🧒" },
+] as const;
+
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
 function PolicePageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -59,60 +100,59 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   const t = useTranslations("page_police");
   const f = useFormat();
   const mt = useModuleText();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
-  const districtInfo = getDistrict(state, district);
-  // In sentences, use the district's local name when the page is in its language.
-  const districtName =
-    districtInfo?.nameLocal && scriptLang(districtInfo.nameLocal) === locale
-      ? districtInfo.nameLocal
-      : districtInfo?.name ?? district.replace(/-/g, " ");
+  const hue = hueClass("police");
   const { data, isLoading, error } = usePolice(district, state);
+  const [open, setOpen] = useState<Station | null>(null);
+  const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
-  /** "12.3" lakh, one decimal, Indian grouping. */
-  const lakh = (amount: number) => f.number(amount / LAKH, { maximumFractionDigits: 1 });
   const num = (n: number) => f.number(n);
+  const lakh = (amount: number) => f.number(amount / LAKH, { maximumFractionDigits: 1 });
+  const pct = (share: number) => f.number(share, { style: "percent", maximumFractionDigits: 0 });
 
-  const stations = data?.data?.stations ?? [];
+  const stations = useMemo(() => (data?.data?.stations ?? []) as Station[], [data]);
   const crime = data?.data?.crime ?? [];
   const traffic = data?.data?.traffic ?? [];
   const lastUpdated = data?.meta?.lastUpdated ?? null;
   const hasAnyData = stations.length > 0 || crime.length > 0 || traffic.length > 0;
 
-  const totalCrimes = crime.reduce((s, c) => s + c.count, 0);
-  const totalTraffic = traffic.reduce((s, tr) => s + tr.amount, 0);
-  // How many stat tiles will show (2 minimum so a lone tile is not stretched).
-  const tileCols = Math.max(2, [stations.length > 0, totalCrimes > 0, totalTraffic > 0].filter(Boolean).length) as 2 | 3;
-  // Newest traffic month — the "as of" date for the revenue tile.
-  const latestTrafficDate = traffic.reduce<string | null>(
-    (latest, tr) => (!latest || new Date(tr.date) > new Date(latest) ? tr.date : latest),
-    null,
-  );
+  // ── Stations ────────────────────────────────────────────────────────
+  const withPhone = stations.filter((s) => telHref(s.phone)).length;
+  const q = query.trim().toLowerCase();
+  const matches = q
+    ? stations.filter((s) => [s.name, s.nameLocal, s.address, s.sho].some((v) => v?.toLowerCase().includes(q)))
+    : stations;
+  const shown = q || showAll ? matches : matches.slice(0, FIRST_CARDS);
 
-  // Crime by category (latest year)
-  const years = [...new Set(crime.map((c) => c.year))].sort((a, b) => b - a);
-  const latestYear = years[0] ?? 0;
+  // ── Crime (NCRB only for anything drawn) ────────────────────────────
+  const ncrb = crime.filter((c) => NCRB_RE.test(c.source));
+  const years = [...new Set(ncrb.map((c) => c.year))].sort((a, b) => b - a);
+  const latestYear = years[0] ?? null;
   const prevYear = years[1] ?? null;
-  const latestCrime = crime.filter((c) => c.year === latestYear);
-  const crimeChart = latestCrime.map((c) => ({
-    // Full name for the tooltip and table; a shorter one for the axis.
-    nameFull: c.category,
-    name: c.category.length > 22 ? c.category.slice(0, 21) + "…" : c.category,
-    count: c.count,
-  }));
-  // NCRB rows often include a "… total" category that already contains the
-  // others, so the chart says so instead of implying the bars add up.
-  const hasTotalRow = latestCrime.some((c) => /total/i.test(c.category));
-  const topCrime = [...crimeChart].sort((a, b) => b.count - a.count)[0];
+  const totalFor = (year: number | null) =>
+    year === null ? null : (ncrb.find((c) => c.year === year && TOTAL_RE.test(c.category))?.count ?? null);
+  const totalNow = totalFor(latestYear);
+  const totalPrev = totalFor(prevYear);
+  const hasChange = totalNow !== null && totalPrev !== null && totalPrev > 0;
+  const change = hasChange ? (totalNow - totalPrev) / totalPrev : 0;
+  const changeText = !hasChange || totalNow === totalPrev ? t("pictureSame") : change > 0 ? t("pictureMore", { pct: pct(change) }) : t("pictureFewer", { pct: pct(-change) });
 
-  // Up or down since the previous year on file: only categories recorded
-  // under the same name in both years, and only when the earlier figure is
-  // above zero (a change from zero has no honest percentage).
+  // Types of crime in the newest NCRB year, without the all-crimes row.
+  const latestTypes = ncrb.filter((c) => c.year === latestYear && !TOTAL_RE.test(c.category));
+  const typeChart = [...latestTypes]
+    .sort((a, b) => b.count - a.count)
+    .map((c) => ({ nameFull: c.category, name: c.category.length > 18 ? `${c.category.slice(0, 17)}…` : c.category, count: c.count }));
+  const topType = typeChart[0];
+
+  // Up or down by type: same category name in both years, earlier figure above zero.
   const trendRows =
     prevYear === null
       ? []
-      : latestCrime
+      : latestTypes
           .map((c) => {
-            const before = crime.find((p) => p.year === prevYear && p.category === c.category);
+            const before = ncrb.find((p) => p.year === prevYear && p.category === c.category);
             return before && before.count > 0 ? { category: c.category, then: before.count, now: c.count } : null;
           })
           .filter((r): r is { category: string; then: number; now: number } => r !== null)
@@ -120,329 +160,505 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
           .slice(0, 6);
   const trendMax = Math.max(1, ...trendRows.flatMap((r) => [r.then, r.now]));
   const trendUp = trendRows.filter((r) => r.now > r.then).length;
-  const changeText = (then: number, now: number) => {
-    if (now === then) return t("trendSame");
-    const pct = f.number(Math.abs(now - then) / then, { style: "percent", maximumFractionDigits: 0 });
-    return now > then ? t("trendUp", { pct }) : t("trendDown", { pct });
-  };
+  const rowChange = (then: number, now: number) =>
+    now === then ? t("trendSame") : now > then ? t("trendUp", { pct: pct((now - then) / then) }) : t("trendDown", { pct: pct((then - now) / then) });
 
-  // Traffic monthly
-  const trafficChart = traffic
-    .slice(0, 12)
-    .map((tr) => ({
-      label: f.date(tr.date, { month: "short", year: "2-digit" }),
-      amount: Math.round(tr.amount / 1000),
-      challans: tr.challans ?? 0,
-    }))
-    .reverse();
+  // ── Traffic fines ───────────────────────────────────────────────────
+  const latestTraffic = traffic.reduce<(typeof traffic)[number] | null>(
+    (latest, tr) => (!latest || new Date(tr.date) > new Date(latest.date) ? tr : latest),
+    null,
+  );
+  const latestMonth = latestTraffic ? f.date(latestTraffic.date, { month: "long", year: "numeric" }) : "";
+  const trafficChart = [...traffic]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-12)
+    .map((tr) => ({ label: f.date(tr.date, { month: "short", year: "2-digit" }), amount: Math.round(tr.amount / 1000) }));
   const topTrafficMonth = [...trafficChart].sort((a, b) => b.amount - a.amount)[0];
   const trafficSource = traffic.find((tr) => tr.source)?.source ?? null;
+  const target = latestTraffic?.monthlyTarget ?? null;
 
-  // The picture: the newest month's fines against its monthly target —
-  // only when the target is on file, never an assumed one.
-  const latestTraffic = latestTrafficDate ? traffic.find((tr) => tr.date === latestTrafficDate) : undefined;
-  const target = latestTraffic?.monthlyTarget ?? 0;
-  const targetPct = latestTraffic && target > 0 ? (latestTraffic.amount / target) * 100 : null;
-  const latestMonthLabel = latestTraffic ? f.date(latestTraffic.date, { month: "long", year: "numeric" }) : "";
+  // ── The one-sentence answer ─────────────────────────────────────────
+  const explainParts: React.ReactNode[] = [];
+  if (stations.length > 0) {
+    explainParts.push(t.rich("explainStations", { n: stations.length, district: districtName, b: bold }));
+    if (withPhone > 0) explainParts.push(t("explainPhones", { phones: withPhone }));
+  }
+  if (latestYear !== null && totalNow !== null) {
+    const vals = { count: num(totalNow), year: String(latestYear), prev: String(prevYear ?? ""), pct: pct(Math.abs(change)), b: bold };
+    explainParts.push(
+      !hasChange
+        ? t.rich("explainCrimeOne", vals)
+        : totalNow > (totalPrev ?? 0)
+          ? t.rich("explainCrimeUp", vals)
+          : totalNow < (totalPrev ?? 0)
+            ? t.rich("explainCrimeDown", vals)
+            : t.rich("explainCrimeSame", vals),
+    );
+  } else if (latestYear !== null && latestTypes.length > 0) {
+    explainParts.push(t("explainCrimeTypes", { year: String(latestYear) }));
+  }
 
-  // What the station directory holds — a count row, only for fields we have.
-  const withPhone = stations.filter((s) => s.phone).length;
-  const withSho = stations.filter((s) => s.sho).length;
-  const withAddress = stations.filter((s) => s.address).length;
-  const directoryChips = [
-    { key: "stations", emoji: "🚓", value: num(stations.length), label: t("chipStations", { n: stations.length }) },
-    withPhone > 0 && { key: "phone", emoji: "📞", value: t("nOfTotal", { n: num(withPhone), total: num(stations.length) }), label: t("chipPhone") },
-    withSho > 0 && { key: "sho", emoji: "👮", value: t("nOfTotal", { n: num(withSho), total: num(stations.length) }), label: t("chipSho") },
-    withAddress > 0 && { key: "address", emoji: "📍", value: t("nOfTotal", { n: num(withAddress), total: num(stations.length) }), label: t("chipAddress") },
-  ].filter((c): c is { key: string; emoji: string; value: string; label: string } => Boolean(c));
+  const howSteps = [
+    { emoji: "🆘", title: t("how1"), body: t("how1Body") },
+    { emoji: "🚓", title: t("how2"), body: t("how2Body") },
+    { emoji: "📝", title: t("how3"), body: t("how3Body") },
+    { emoji: "📨", title: t("how4"), body: t("how4Body") },
+  ];
+  const howToReport = (
+    <Card tinted padding={18}>
+      <HowItWorks title={t("howTitle")} steps={howSteps} />
+      <div style={{ marginTop: 12 }}>
+        <SourcePill label={t("howSource")} />
+      </div>
+    </Card>
+  );
+
+  const call112 = (
+    <a
+      href="tel:112"
+      aria-label={t("call112Aria")}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minHeight: 44,
+        padding: "0 16px",
+        borderRadius: 999,
+        background: "#fff",
+        color: "var(--ftp-danger)",
+        fontSize: 15,
+        fontWeight: 700,
+        textDecoration: "none",
+        boxShadow: "0 8px 18px -10px rgba(0,0,0,0.45)",
+      }}
+    >
+      <span className="ftp-emoji" aria-hidden>
+        🆘
+      </span>
+      {t("call112")}
+    </a>
+  );
+
+  const openTel = open ? telHref(open.phone) : null;
 
   return (
-    <div className="ftp-container" style={PAGE_STYLE}>
+    <ModulePage>
       <PageHeader
         icon={Shield}
         title={mt.label("police")}
         description={mt.description("police")}
         backHref={base}
-        accent={getModuleAccent("police")}
         freshness={lastUpdated ? { asOf: lastUpdated } : undefined}
-        source={{ label: "NCRB", href: "https://ncrb.gov.in" }}
-      />
+        source={ncrb.length > 0 ? NCRB : undefined}
+      >
+        {call112}
+      </PageHeader>
 
-      {/* Plain summary for readers and search engines. */}
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
-        {t("summary", { district: districtName })}
-      </p>
-
-      <AIInsightCard module="police" district={district} />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
       {!isLoading && !error && !hasAnyData && (
-        <EmptyState emoji="👮" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
-      )}
-
-      {/* Only figures we actually have — never a fake zero. */}
-      {!isLoading && hasAnyData && (
-        <StatStrip cols={tileCols}>
-          {stations.length > 0 && <StatTile emoji="🚓" label={t("tileStations")} value={num(stations.length)} sub={t("tileStationsSub")} />}
-          {totalCrimes > 0 && (
-            <StatTile emoji="📁" label={t("tileCrimes")} value={num(totalCrimes)} sub={t("tileCrimesSub", { year: String(latestYear) })} />
-          )}
-          {totalTraffic > 0 && (
-            <StatTile
-              emoji="🧾"
-              label={t("tileTraffic")}
-              value={`₹${lakh(totalTraffic)}`}
-              unit={t("lakhUnit")}
-              sub={t("tileTrafficSub")}
-              asOf={latestTrafficDate}
-            />
-          )}
-        </StatStrip>
-      )}
-
-      {/* The picture: fines collected in the newest month against that
-          month's target. Same numbers as the traffic chart below. */}
-      {!isLoading && latestTraffic && targetPct !== null && (
-        <div className={targetPct <= 100 ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
-          <Card tinted padding={18}>
-            <Explainer emoji="🚦">
-              {targetPct >= 100
-                ? t.rich("explainMet", { month: latestMonthLabel, amount: lakh(latestTraffic.amount), target: lakh(target), b: bold })
-                : t.rich("explainPart", {
-                    month: latestMonthLabel,
-                    amount: lakh(latestTraffic.amount),
-                    target: lakh(target),
-                    pct: num(Math.round(targetPct)),
-                    b: bold,
-                  })}
-            </Explainer>
-            <Pictogram
-              filled={Math.min(10, targetPct / 10)}
-              emoji="🪙"
-              label={
-                targetPct >= 100
-                  ? t("pictoMet", { month: latestMonthLabel })
-                  : t("pictoPart", { n: num(Math.round(targetPct / 10)), month: latestMonthLabel })
-              }
-            />
-          </Card>
-          {/* The dial stops at 100, so it only shows when the target was not passed. */}
-          {targetPct <= 100 && (
-            <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Gauge value={targetPct} label={t("gaugeLabel")} caption={t("gaugeCaption", { month: latestMonthLabel })} />
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Sanctioned vs. filled staffing widget (renders nothing without data). */}
-      {!isLoading && (
-        <StaffingWidget module="police" roleLabel={t("staffRole")} district={district} state={state} accentColor="var(--hue)" />
+        <>
+          <EmptyState emoji="👮" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+          <div style={{ marginTop: 20 }}>{howToReport}</div>
+        </>
       )}
 
       {!isLoading && hasAnyData && (
         <>
-          {/* Station directory */}
+          {explainParts.length > 0 && (
+            <Explainer emoji="🚓">
+              {explainParts.map((part, i) => (
+                <span key={i}>
+                  {i > 0 ? " " : ""}
+                  {part}
+                </span>
+              ))}
+            </Explainer>
+          )}
+
+          {/* Only figures we actually have — never a fake zero. */}
+          <StatStrip>
+            {stations.length > 0 && (
+              <StatTile emoji="🚓" label={t("tileStations")} value={num(stations.length)} sub={t("tileStationsSub", { phones: num(withPhone) })} />
+            )}
+            {totalNow !== null && latestYear !== null && (
+              <StatTile emoji="📁" label={t("tileCases")} value={num(totalNow)} sub={t("tileCasesSub", { year: String(latestYear) })} />
+            )}
+            {hasChange && latestYear !== null && prevYear !== null && (
+              <StatTile
+                emoji="📈"
+                label={t("tileChange")}
+                value={f.number(change, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" })}
+                sub={t("tileChangeSub", { prev: String(prevYear), year: String(latestYear) })}
+                trend={change > 0 ? "up" : change < 0 ? "down" : "neutral"}
+                countUp={false}
+              />
+            )}
+            {latestTraffic && (
+              <StatTile
+                emoji="🧾"
+                label={t("tileTraffic")}
+                value={`₹${lakh(latestTraffic.amount)}`}
+                unit={t("lakhUnit")}
+                sub={t("tileTrafficSub", { month: latestMonth })}
+                asOf={latestTraffic.date}
+              />
+            )}
+          </StatStrip>
+
+          {/* ONE picture: NCRB total, last year vs this year. Without two
+              NCRB years, the "how to report a crime" steps stand in. */}
+          <div style={{ marginTop: 16 }}>
+            {hasChange && latestYear !== null && prevYear !== null && totalNow !== null && totalPrev !== null ? (
+              <Card tinted padding={18}>
+                <h2 className="ftp-display" style={{ margin: "0 0 14px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+                  {t("pictureTitle", { prev: String(prevYear), year: String(latestYear) })}
+                </h2>
+                <ThenNowPicture
+                  emoji="📁"
+                  thenLabel={String(prevYear)}
+                  nowLabel={String(latestYear)}
+                  thenValue={totalPrev}
+                  nowValue={totalNow}
+                  thenText={num(totalPrev)}
+                  nowText={num(totalNow)}
+                  changeText={changeText}
+                  ariaLabel={t("pictureAria", { prevCount: num(totalPrev), prev: String(prevYear), count: num(totalNow), year: String(latestYear) })}
+                />
+                <p className="ftp-prose" style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>
+                  {t("pictureNote")}
+                </p>
+                <div style={{ marginTop: 10 }}>
+                  <SourcePill label={NCRB.label} href={NCRB.href} />
+                </div>
+              </Card>
+            ) : (
+              howToReport
+            )}
+          </div>
+
+          <AIInsightCard module="police" district={district} />
+
+          {/* The station list: tap a card, see everything. */}
           {stations.length > 0 && (
             <Section title={t("stationsTitle")} emoji="🚓">
-              <div style={{ marginBottom: 12 }}>
-                <CountChips items={directoryChips} ariaLabel={t("chipsAria")} />
-              </div>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: 0,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))",
-                  gap: 12,
-                }}
-              >
-                {stations.map((s) => (
-                  <Card as="li" key={s.id} padding={14}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 16, borderRadius: 10 }}>
-                        🚓
-                      </span>
-                      <div style={{ minWidth: 0 }}>
-                        <h3 className="ftp-title">{s.name}</h3>
-                        {s.nameLocal && s.nameLocal !== s.name && (
-                          <p lang={scriptLang(s.nameLocal)} style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>
-                            {s.nameLocal}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {s.sho && <div className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{t("sho", { name: s.sho })}</div>}
-                    {s.address && (
-                      <div className="ftp-body" style={{ display: "flex", gap: 4, color: "var(--ftp-text-2)", marginTop: 4 }}>
-                        <MapPin size={12} aria-hidden style={{ flexShrink: 0, marginTop: 4 }} />
-                        {s.address}
-                      </div>
-                    )}
-                    {s.phone && (
-                      <a
-                        href={`tel:${s.phone}`}
-                        className="ftp-num"
-                        aria-label={t("callStation", { name: s.name, phone: s.phone })}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, color: "var(--hue-deep)", textDecoration: "none" }}
+              <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)" }}>
+                {t("stationsHint")}
+              </p>
+              {stations.length > SEARCH_FROM && (
+                <ListSearch value={query} onChange={setQuery} label={t("searchLabel")} placeholder={t("searchPlaceholder")} />
+              )}
+              {matches.length === 0 ? (
+                <EmptyState emoji="🔎" title={t("noMatch", { q: query.trim() })} />
+              ) : (
+                <CardList label={t("stationsTitle")}>
+                  {shown.map((s) => {
+                    const local = s.nameLocal && s.nameLocal !== s.name ? s.nameLocal : null;
+                    return (
+                      <TapCard
+                        key={s.id}
+                        emoji="🚓"
+                        title={s.name}
+                        titleLang="en"
+                        sub={local ? <span lang={scriptLang(local)}>{local}</span> : s.address ?? undefined}
+                        onOpen={() => setOpen(s)}
                       >
-                        <Phone size={12} aria-hidden /> {s.phone}
-                      </a>
-                    )}
-                  </Card>
-                ))}
-              </ul>
+                        {s.phone ? (
+                          <CardChip emoji="📞">
+                            <span className="ftp-num">{s.phone}</span>
+                          </CardChip>
+                        ) : (
+                          <CardChip emoji="📵">{t("noPhone")}</CardChip>
+                        )}
+                        {s.sho && <CardChip emoji="👮">{t("chipSho", { name: s.sho })}</CardChip>}
+                      </TapCard>
+                    );
+                  })}
+                </CardList>
+              )}
+              {!q && matches.length > FIRST_CARDS && (
+                <ShowAllButton expanded={showAll} total={matches.length} onToggle={() => setShowAll((x) => !x)} />
+              )}
+
+              {/* More national helplines, one tap each. */}
+              <Card padding={14} style={{ marginTop: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span className="ftp-label">{t("helplinesTitle")}</span>
+                  {HELPLINES.map((h) => (
+                    <a
+                      key={h.number}
+                      href={`tel:${h.number}`}
+                      aria-label={t("helpCallAria", { name: t(h.key), number: h.number })}
+                      className="ftp-btn-secondary"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        minHeight: 44,
+                        padding: "0 12px",
+                        borderRadius: 999,
+                        border: "1px solid var(--ftp-border)",
+                        background: "var(--ftp-surface)",
+                        color: "var(--ftp-text)",
+                        fontSize: 13,
+                        textDecoration: "none",
+                      }}
+                    >
+                      <span className="ftp-emoji" aria-hidden>
+                        {h.emoji}
+                      </span>
+                      <strong className="ftp-num">{h.number}</strong>
+                      <span style={{ color: "var(--ftp-text-2)" }}>{t(h.key)}</span>
+                    </a>
+                  ))}
+                  <Link
+                    href={`${base}/citizen-corner`}
+                    style={{ display: "inline-flex", alignItems: "center", minHeight: 44, fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
+                  >
+                    {t("helpMore")} →
+                  </Link>
+                </div>
+              </Card>
             </Section>
           )}
 
-          {/* Crime chart — needs at least two categories to compare. */}
-          {crimeChart.length > 1 && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("crimeTitle", { year: String(latestYear) })}
-                emoji="🚨"
-                units={hasTotalRow ? t("crimeUnitsTotal") : t("crimeUnits")}
-                simple={
-                  topCrime
-                    ? t.rich("crimeSimple", { name: topCrime.nameFull, n: topCrime.count, count: num(topCrime.count), b: bold })
-                    : null
-                }
-                legend={[{ label: t("legendCases"), swatch: "var(--hue)" }]}
-                source={{ label: "NCRB", href: "https://ncrb.gov.in" }}
-                asOf={lastUpdated}
-                asOfPeriod={String(latestYear)}
-                table={crimeChart.map((r) => ({ label: r.nameFull, value: num(r.count) }))}
-              >
-                {/* 40 px per category so every label is readable. */}
-                <ResponsiveContainer width="100%" height={Math.max(180, crimeChart.length * 40 + 40)}>
-                  <BarChart data={crimeChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
-                    <ChartGradients />
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
-                    <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => num(Number(v))} />
-                    <YAxis type="category" dataKey="name" tick={CHART_AXIS} width={150} interval={0} />
-                    <Tooltip
-                      formatter={(v) => [num(Number(v)), t("tooltipCases")]}
-                      labelFormatter={(_, payload) => payload?.[0]?.payload?.nameFull ?? ""}
-                      contentStyle={chartTooltipStyle}
-                      cursor={{ fill: "var(--hue-tint)" }}
-                    />
-                    <Bar dataKey="count" name={t("tooltipCases")} fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
+          {/* The steps live here when the picture slot showed the NCRB change. */}
+          {hasChange && (
+            <Section title={t("howTitle")} emoji="📝">
+              {howToReport}
+            </Section>
           )}
 
-          {/* Up or down since the previous year: the same categories in both
-              years, a grey bar for then and a coloured bar for now. */}
-          {prevYear !== null && trendRows.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("trendTitle", { prev: String(prevYear), latest: String(latestYear) })}
-                emoji="📈"
-                units={t("trendUnits", { prev: String(prevYear) })}
-                simple={t.rich("trendSimple", {
-                  up: trendUp,
-                  n: trendRows.length,
-                  prev: String(prevYear),
-                  latest: String(latestYear),
-                  b: bold,
-                })}
-                legend={[
-                  { label: String(prevYear), swatch: "#D8D5CB" },
-                  { label: String(latestYear), swatch: "var(--hue)" },
-                ]}
-                source={{ label: "NCRB", href: "https://ncrb.gov.in" }}
-                asOfPeriod={t("yearsPeriod", { prev: String(prevYear), latest: String(latestYear) })}
-                table={trendRows.map((r) => ({
-                  label: r.category,
-                  value: t("trendTableValue", { prev: String(prevYear), then: num(r.then), latest: String(latestYear), now: num(r.now) }),
-                }))}
-              >
-                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                  {trendRows.map((r, i) => (
-                    <ThenNowRow
-                      key={r.category}
-                      index={i}
-                      label={r.category}
-                      thenValue={r.then}
-                      nowValue={r.now}
-                      thenText={t("yearValue", { year: String(prevYear), value: num(r.then) })}
-                      nowText={t("yearValue", { year: String(latestYear), value: num(r.now) })}
-                      changeText={changeText(r.then, r.now)}
-                      direction={r.now > r.then ? "up" : r.now < r.then ? "down" : "same"}
-                      max={trendMax}
-                    />
-                  ))}
-                </ul>
-              </ChartCard>
-            </div>
+          {/* Charts: NCRB rows only; traffic fines from the traffic police. */}
+          {(typeChart.length > 1 || trendRows.length > 0 || trafficChart.length > 1) && (
+            <ChartRow>
+              {typeChart.length > 1 && latestYear !== null && (
+                <ChartCard
+                  title={t("crimeTitle", { year: String(latestYear) })}
+                  emoji="🚨"
+                  units={totalNow !== null ? t("crimeUnitsTotal") : t("crimeUnits")}
+                  simple={topType ? t.rich("crimeSimple", { name: topType.nameFull, n: topType.count, count: num(topType.count), b: bold }) : null}
+                  source={NCRB}
+                  asOfPeriod={String(latestYear)}
+                  table={typeChart.map((r) => ({ label: r.nameFull, value: num(r.count) }))}
+                >
+                  <ResponsiveContainer width="100%" height={Math.max(180, typeChart.length * 40 + 40)}>
+                    <BarChart data={typeChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
+                      <ChartGradients />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
+                      <XAxis type="number" tick={CHART_AXIS} tickFormatter={(v) => num(Number(v))} />
+                      <YAxis type="category" dataKey="name" tick={CHART_AXIS} width={120} interval={0} />
+                      <Tooltip
+                        formatter={(v) => [num(Number(v)), t("tooltipCases")]}
+                        labelFormatter={(_, payload) => payload?.[0]?.payload?.nameFull ?? ""}
+                        contentStyle={chartTooltipStyle}
+                        cursor={{ fill: "var(--hue-tint)" }}
+                      />
+                      <Bar dataKey="count" name={t("tooltipCases")} fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              )}
+
+              {prevYear !== null && latestYear !== null && trendRows.length > 0 && (
+                <ChartCard
+                  title={t("trendTitle", { prev: String(prevYear) })}
+                  emoji="📈"
+                  units={t("trendUnits", { prev: String(prevYear) })}
+                  simple={t.rich("trendSimple", { up: trendUp, n: trendRows.length, prev: String(prevYear), latest: String(latestYear), b: bold })}
+                  legend={[
+                    { label: String(prevYear), swatch: "#D8D5CB" },
+                    { label: String(latestYear), swatch: "var(--hue)" },
+                  ]}
+                  source={NCRB}
+                  asOfPeriod={t("yearsPeriod", { prev: String(prevYear), latest: String(latestYear) })}
+                  table={trendRows.map((r) => ({
+                    label: r.category,
+                    value: t("trendTableValue", { prev: String(prevYear), then: num(r.then), latest: String(latestYear), now: num(r.now) }),
+                  }))}
+                >
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {trendRows.map((r, i) => (
+                      <ThenNowRow
+                        key={r.category}
+                        index={i}
+                        label={r.category}
+                        thenValue={r.then}
+                        nowValue={r.now}
+                        thenText={t("yearValue", { year: String(prevYear), value: num(r.then) })}
+                        nowText={t("yearValue", { year: String(latestYear), value: num(r.now) })}
+                        changeText={rowChange(r.then, r.now)}
+                        direction={r.now > r.then ? "up" : r.now < r.then ? "down" : "same"}
+                        max={trendMax}
+                      />
+                    ))}
+                  </ul>
+                </ChartCard>
+              )}
+
+              {trafficChart.length > 1 && latestTraffic && (
+                <ChartCard
+                  title={t("trafficTitle")}
+                  emoji="🧾"
+                  units={t("trafficUnits")}
+                  simple={
+                    target && target > 0
+                      ? t.rich("trafficSimpleTarget", { month: latestMonth, amount: lakh(latestTraffic.amount), target: lakh(target), b: bold })
+                      : topTrafficMonth
+                        ? t.rich("trafficSimple", { month: topTrafficMonth.label, amount: num(topTrafficMonth.amount), b: bold })
+                        : null
+                  }
+                  legend={[{ label: t("legendCollected"), swatch: "var(--hue)" }]}
+                  source={trafficSource ? { label: trafficSource } : undefined}
+                  asOf={latestTraffic.date}
+                  table={trafficChart.map((r) => ({ label: r.label, value: t("thousandRupees", { amount: num(r.amount) }) }))}
+                >
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={trafficChart} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
+                      <ChartGradients />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                      <XAxis dataKey="label" tick={CHART_AXIS} angle={-30} textAnchor="end" />
+                      <YAxis tick={CHART_AXIS} tickFormatter={(v) => num(Number(v))} width={44} />
+                      <Tooltip
+                        contentStyle={chartTooltipStyle}
+                        formatter={(v) => [t("thousandRupees", { amount: num(Number(v)) }), t("legendCollected")]}
+                        cursor={{ fill: "var(--hue-tint)" }}
+                      />
+                      <Bar dataKey="amount" name={t("legendCollected")} fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              )}
+            </ChartRow>
           )}
 
-          {/* Traffic revenue chart — needs at least two months. */}
-          {trafficChart.length > 1 && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("trafficTitle")}
-                emoji="🧾"
-                units={t("trafficUnits")}
-                simple={
-                  topTrafficMonth
-                    ? t.rich("trafficSimple", { month: topTrafficMonth.label, amount: num(topTrafficMonth.amount), b: bold })
-                    : null
-                }
-                legend={[{ label: t("legendCollected"), swatch: "var(--hue)" }]}
-                source={trafficSource ? { label: trafficSource } : undefined}
-                asOf={latestTrafficDate}
-                table={trafficChart.map((r) => ({ label: r.label, value: t("thousandRupees", { amount: num(r.amount) }) }))}
-              >
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={trafficChart} margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
-                    <ChartGradients />
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
-                    <XAxis dataKey="label" tick={CHART_AXIS} angle={-30} textAnchor="end" />
-                    <YAxis tick={CHART_AXIS} tickFormatter={(v) => num(Number(v))} />
-                    <Tooltip
-                      contentStyle={chartTooltipStyle}
-                      formatter={(v) => [t("thousandRupees", { amount: num(Number(v)) }), t("legendCollected")]}
-                      cursor={{ fill: "var(--hue-tint)" }}
-                    />
-                    <Bar dataKey="amount" name={t("legendCollected")} fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
-          )}
+          <PoliceStaffing district={district} state={state} />
 
-          {/* Crime stats table */}
+          {/* Every crime row we hold, grouped by year, each with its source. */}
           {crime.length > 0 && (
-            <Section title={t("tableTitle")} emoji="📋">
-              <DataTable
-                caption={t("tableCaption")}
-                columns={[
-                  { key: "year", label: t("colYear"), mono: true, align: "left" },
-                  { key: "cat", label: t("colCategory") },
-                  { key: "count", label: t("colCount"), numeric: true },
-                ]}
-                rows={crime.map((c) => ({ year: c.year, cat: c.category, count: num(c.count) }))}
-              />
+            <Section title={t("allFiguresTitle")} emoji="📋">
+              <details>
+                <summary
+                  style={{ cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }}
+                >
+                  {t("allFiguresSummary", { n: crime.length })}
+                </summary>
+                <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px", marginTop: 12 } as React.CSSProperties}>
+                  {[...new Set(crime.map((c) => c.year))]
+                    .sort((a, b) => b - a)
+                    .map((year) => (
+                      <Card key={year} padding={14}>
+                        <h3 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>
+                          {year}
+                        </h3>
+                        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                          {crime
+                            .filter((c) => c.year === year)
+                            .map((c) => (
+                              <li key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 14, lineHeight: "20px" }}>
+                                <span style={{ minWidth: 0 }}>
+                                  <span lang="en">{c.category}</span>
+                                  <span style={{ display: "block", fontSize: 12, color: "var(--ftp-text-2)" }}>
+                                    {t("sourceLabel", { source: c.source })}
+                                  </span>
+                                </span>
+                                <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>
+                                  {num(c.count)}
+                                </span>
+                              </li>
+                            ))}
+                        </ul>
+                      </Card>
+                    ))}
+                </div>
+              </details>
             </Section>
           )}
         </>
       )}
 
-      <ModulePageFooter
-        moduleSlug="police"
-        locale={locale}
-        state={state}
-        district={district}
-        sourceUrls={{ "NCRB (National Crime Records Bureau)": "https://ncrb.gov.in", "data.gov.in": "https://data.gov.in" }}
+      <div style={{ marginTop: 28 }}>
+        <AccountabilityFooter
+          moduleSlug="police"
+          locale={locale}
+          state={state}
+          district={district}
+          sourceUrls={{ "NCRB (National Crime Records Bureau)": "https://ncrb.gov.in", "data.gov.in": "https://data.gov.in" }}
+        >
+          <ModuleNews district={district} state={state} locale={locale} module="police" />
+        </AccountabilityFooter>
+      </div>
+
+      {/* Everything about one station, without leaving the page. */}
+      <DetailSheet
+        open={open !== null}
+        onClose={() => setOpen(null)}
+        title={open?.name ?? ""}
+        titleLang="en"
+        subtitle={
+          open?.nameLocal && open.nameLocal !== open.name ? (
+            <span lang={scriptLang(open.nameLocal)}>{open.nameLocal}</span>
+          ) : (
+            t("stationSub", { district: districtName })
+          )
+        }
+        emoji="🚓"
+        hueClassName={hue}
+        footer={
+          open ? (
+            <>
+              {openTel && (
+                <SheetAction href={openTel} emoji="📞" ariaLabel={t("callAria", { name: open.name, phone: open.phone ?? "" })}>
+                  {t("call")}
+                </SheetAction>
+              )}
+              <SheetAction
+                href={mapsHref({ lat: open.lat, lng: open.lng, query: [open.name, open.address ?? districtName].join(", ") })}
+                emoji="🗺️"
+                quiet={Boolean(openTel)}
+                external
+              >
+                {t("directions")}
+              </SheetAction>
+              {open.email && (
+                <SheetAction href={`mailto:${open.email}`} emoji="✉️" quiet>
+                  {t("email")}
+                </SheetAction>
+              )}
+            </>
+          ) : null
+        }
       >
-        <ModuleNews district={district} state={state} locale={locale} module="police" />
-      </ModulePageFooter>
-    </div>
+        {open && (
+          <>
+            <DetailList
+              rows={[
+                { emoji: "👮", label: t("rowSho"), value: open.sho, lang: "en" },
+                {
+                  emoji: "📞",
+                  label: t("rowPhone"),
+                  value: open.phone ? (
+                    openTel ? (
+                      <a href={openTel} className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>
+                        {open.phone}
+                      </a>
+                    ) : (
+                      <span className="ftp-num">{open.phone}</span>
+                    )
+                  ) : (
+                    t("noPhone")
+                  ),
+                },
+                { emoji: "✉️", label: t("rowEmail"), value: open.email ? <a href={`mailto:${open.email}`}>{open.email}</a> : null },
+                { emoji: "📍", label: t("rowAddress"), value: open.address, lang: "en" },
+              ]}
+            />
+            <SheetNote emoji="⚠️">{t("sheetNote")}</SheetNote>
+          </>
+        )}
+      </DetailSheet>
+    </ModulePage>
   );
 }
 
