@@ -5,16 +5,17 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  My Responsibility — module page (Design v3 "Civic Ledger", CONCEPT-v3 §5)
+//  My Responsibility — module page (Design v4 "Rang", docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //  Two data paths, unchanged from v2:
 //    1. District-specific actions from /api/data/responsibility (researched
 //       per district, each with "report to" contacts and a source note).
 //    2. Otherwise the generic guide from getResponsibilityContent().
-//  Presentation only: PageHeader → intro → StatStrip → one Section per
-//  group → SourcesFooter → Toolbar. The emoji and tinted colours that the
-//  content files carry for each group are no longer drawn — groups are
-//  plain Sections with Cards, per the "no emoji in chrome" rule.
+//  Presentation: PageHeader → intro → StatStrip of emoji tiles → the
+//  picture (an "In simple words" line, plus a pictogram of how many actions
+//  come with someone to report to) → one emoji Section per group →
+//  SourcesFooter → Toolbar. Section emoji come from the research data
+//  (`sectionIcon`) when present, else from the group's title.
 "use client";
 
 import { use, useState } from "react";
@@ -31,6 +32,7 @@ import {
   Toolbar,
   ToolbarButton,
 } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
 import { getResponsibilityContent } from "@/lib/constants/responsibility-content";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
@@ -76,13 +78,48 @@ function downloadCsv(filename: string, rows: Array<Record<string, string | numbe
   URL.revokeObjectURL(url);
 }
 
-/** Link style for "Visit portal" and phone numbers — 44 px tall on phones via ftp-chip. */
+/**
+ * Emoji for a group of actions, picked from its title. Used for the generic
+ * guide (which carries no emoji) and when a researched section has none.
+ * Order matters: "Flooding & Drainage" must match floods before water.
+ */
+const GROUP_EMOJI: Array<[RegExp, string]> = [
+  [/can become|years/i, "🌟"],
+  [/clean|waste/i, "🧹"],
+  [/flood|drain|waterlog|disaster/i, "🌊"],
+  [/water|river/i, "💧"],
+  [/air|pollution/i, "🌫️"],
+  [/traffic|road|transport|commute/i, "🚦"],
+  [/wildlife/i, "🐘"],
+  [/lake|coast/i, "🏞️"],
+  [/environment|green/i, "🌳"],
+  [/agri|farm|land/i, "🌾"],
+  [/heritage|culture|tourism/i, "🏛️"],
+  [/housing|infrastructure/i, "🏗️"],
+  [/health|education/i, "🏥"],
+  [/tech/i, "💻"],
+  [/civic|democra|engagement/i, "🗳️"],
+];
+function groupEmoji(title: string, fromData?: string | null): string {
+  const given = fromData?.trim();
+  if (given) return given;
+  return GROUP_EMOJI.find(([re]) => re.test(title))?.[1] ?? "🌱";
+}
+
+/** "Visit portal" and phone links: a hue pill, 32 px tall (44 px on phones via ftp-chip). */
 const CONTACT_LINK: React.CSSProperties = {
-  color: "var(--ftp-brand)",
-  textDecoration: "none",
   display: "inline-flex",
   alignItems: "center",
-  gap: 4,
+  gap: 6,
+  padding: "0 12px",
+  borderRadius: "var(--ftp-radius-pill)",
+  background: "var(--hue-tint)",
+  border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
+  color: "var(--hue-deep)",
+  fontSize: 13,
+  lineHeight: "20px",
+  fontWeight: 500,
+  textDecoration: "none",
 };
 
 export default function ResponsibilityPage({
@@ -147,6 +184,16 @@ export default function ResponsibilityPage({
 
   const genericItemCount = genericContent.sections.reduce((n, s) => n + s.items.length, 0);
 
+  // For the picture: the generic guide's "can become" section is a vision,
+  // not a list of actions, so it is left out of the "things you can do" count.
+  const genericActionSections = genericContent.sections.filter((s) => !s.isProjection);
+  const genericActionCount = genericActionSections.reduce((n, s) => n + s.items.length, 0);
+
+  // For the picture: how many researched actions name someone to report to.
+  const specificItems = districtSpecific ? districtSpecific.sections.flatMap((s) => s.items) : [];
+  const withContact = specificItems.filter((item) => item.reportTo?.name).length;
+  const contactShare = specificItems.length > 0 ? withContact / specificItems.length : 0;
+
   return (
     <div className="module-page" style={{ padding: 24, maxWidth: "var(--ftp-reading-max)" }}>
       <PageHeader
@@ -164,7 +211,7 @@ export default function ResponsibilityPage({
 
       {/* Intro — shared for both branches. Plain body text. */}
       <p className="ftp-body" style={{ fontSize: 15, lineHeight: "22px", marginBottom: 20 }}>
-        <span style={{ fontWeight: 500 }}>This is YOUR district.</span> Government alone cannot fix everything.
+        <span style={{ fontWeight: 600, color: "var(--hue-deep)" }}>This is YOUR district.</span> Government alone cannot fix everything.
         As citizens, we have real power — and real responsibility. Small actions by many
         people create big change. Here&apos;s what you can do today.
       </p>
@@ -178,8 +225,8 @@ export default function ResponsibilityPage({
               <span>
                 Helplines and portal URLs are sourced from official government pages. Please verify
                 before calling for emergencies — in a life-threatening situation, always dial{" "}
-                <a href="tel:112" className="ftp-num" style={{ color: "var(--ftp-brand)" }}>112</a> (India unified
-                emergency) or <a href="tel:108" className="ftp-num" style={{ color: "var(--ftp-brand)" }}>108</a>{" "}
+                <a href="tel:112" className="ftp-num" style={{ color: "var(--hue-deep)" }}>112</a> (India unified
+                emergency) or <a href="tel:108" className="ftp-num" style={{ color: "var(--hue-deep)" }}>108</a>{" "}
                 (ambulance).
               </span>
             </p>
@@ -193,16 +240,42 @@ export default function ResponsibilityPage({
       {!isLoading && districtSpecific && (
         <>
           <StatStrip cols={2}>
-            <StatTile label="Actions" value={districtSpecific.itemCount} sub={`Specific to ${districtSpecific.districtName}`} />
-            <StatTile label="Areas" value={districtSpecific.sections.length} sub="Groups of actions" />
+            <StatTile emoji="✅" label="Actions" value={districtSpecific.itemCount} sub={`Specific to ${districtSpecific.districtName}`} />
+            <StatTile emoji="🗂️" label="Areas" value={districtSpecific.sections.length} sub="Groups of actions" />
           </StatStrip>
 
+          {/* The picture: one plain sentence with the real counts, and ten
+              megaphones lit for the share of actions that name someone to
+              report to. Same numbers as the tiles above. */}
+          {specificItems.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <Card tinted padding={18}>
+                <Explainer title="In simple words" emoji="🙋">
+                  There are <strong className="ftp-num">{districtSpecific.itemCount}</strong> things you can do for{" "}
+                  {districtSpecific.districtName}, in <strong className="ftp-num">{districtSpecific.sections.length}</strong> areas.
+                  {withContact > 0 && (
+                    <>
+                      {" "}For <strong className="ftp-num">{withContact}</strong> of them, we also tell you who to report to.
+                    </>
+                  )}
+                </Explainer>
+                {withContact > 0 && (
+                  <Pictogram
+                    filled={contactShare * 10}
+                    emoji="📣"
+                    label={`About ${Math.round(contactShare * 10)} of every 10 actions come with someone you can report to.`}
+                  />
+                )}
+              </Card>
+            </div>
+          )}
+
           {districtSpecific.sections.map((section) => (
-            <div key={section.section} style={{ marginTop: 24 }}>
-              <Section title={section.section}>
+            <div key={section.section} style={{ marginTop: 8 }}>
+              <Section title={section.section} emoji={groupEmoji(section.section, section.icon)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {section.items.map((item, idx) => (
-                    <Card key={idx} as="article" padding={14}>
+                    <Card key={idx} as="article" padding={16}>
                       <h3 className="ftp-title">{item.action}</h3>
                       <p className="ftp-body" style={{ margin: "6px 0 0", color: "var(--ftp-text-2)" }}>
                         {item.whyRelevant}
@@ -212,17 +285,19 @@ export default function ResponsibilityPage({
                         <div
                           style={{
                             marginTop: 12,
-                            paddingTop: 10,
-                            borderTop: "1px solid var(--ftp-border)",
+                            padding: "10px 12px",
+                            borderRadius: "var(--ftp-radius-tile)",
+                            background: "color-mix(in srgb, var(--hue-tint) 60%, #fff)",
                             display: "flex",
                             flexWrap: "wrap",
                             alignItems: "center",
+                            gap: 8,
                             columnGap: 12,
                             fontSize: 13,
                             lineHeight: "20px",
                           }}
                         >
-                          <span style={{ fontWeight: 500, color: "var(--ftp-text-2)" }}>Report to:</span>
+                          <span style={{ fontWeight: 600, color: "var(--hue-deep)" }}>Report to:</span>
                           <span style={{ color: "var(--ftp-text)" }}>{item.reportTo.name}</span>
                           {item.reportTo.url && (
                             <a href={item.reportTo.url} target="_blank" rel="noopener noreferrer" className="ftp-chip" style={CONTACT_LINK}>
@@ -230,7 +305,7 @@ export default function ResponsibilityPage({
                             </a>
                           )}
                           {item.reportTo.phone && (
-                            <a href={`tel:${item.reportTo.phone}`} className="ftp-chip" style={{ ...CONTACT_LINK, fontWeight: 500 }}>
+                            <a href={`tel:${item.reportTo.phone}`} className="ftp-chip" style={CONTACT_LINK}>
                               <Phone size={14} aria-hidden />
                               <span className="ftp-num">{item.reportTo.phone}</span>
                             </a>
@@ -264,32 +339,58 @@ export default function ResponsibilityPage({
       {!isLoading && !districtSpecific && (
         <>
           <StatStrip cols={2}>
-            <StatTile label="Suggestions" value={genericItemCount} sub="General guidance" />
-            <StatTile label="Areas" value={genericContent.sections.length} sub="Groups of actions" />
+            <StatTile emoji="💡" label="Suggestions" value={genericItemCount} sub="General guidance" />
+            <StatTile emoji="🗂️" label="Areas" value={genericContent.sections.length} sub="Groups of actions" />
           </StatStrip>
 
+          {/* The picture for the generic guide is the plain sentence only:
+              there is no per-action data to draw a pictogram from. */}
+          {genericActionCount > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <Explainer title="In simple words" emoji="🙋">
+                Here are <strong className="ftp-num">{genericActionCount}</strong> simple things you can do for{" "}
+                {genericContent.districtName}, grouped into <strong className="ftp-num">{genericActionSections.length}</strong> areas.
+                Pick one and start today.
+              </Explainer>
+            </div>
+          )}
+
           {genericContent.sections.map((section) => (
-            <div key={section.title} style={{ marginTop: 24 }}>
-              <Section title={section.title}>
-                <Card>
+            <div key={section.title} style={{ marginTop: 8 }}>
+              <Section title={section.title} emoji={groupEmoji(section.title)}>
+                <Card tinted={section.isProjection}>
                   {section.isProjection ? (
-                    <p className="ftp-body" style={{ marginBottom: 8, color: "var(--ftp-text-2)" }}>
+                    <p className="ftp-body" style={{ marginBottom: 10, color: "var(--ftp-text-2)" }}>
                       If citizens and government work together, here&apos;s where{" "}
                       {genericContent.districtName} can be by 2030:
                     </p>
                   ) : null}
                   <ul
                     style={{
+                      listStyle: "none",
                       margin: 0,
-                      paddingLeft: 20,
+                      padding: 0,
                       display: "flex",
                       flexDirection: "column",
                       gap: 10,
                     }}
                   >
                     {section.items.map((item, i) => (
-                      <li key={i} className="ftp-body">
-                        {item}
+                      <li key={i} className="ftp-body" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                        {/* A dot in the page hue instead of the browser bullet. */}
+                        <span
+                          aria-hidden
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: "var(--hue)",
+                            boxShadow: "0 0 0 3px var(--hue-tint)",
+                            flexShrink: 0,
+                            marginTop: 6,
+                          }}
+                        />
+                        <span>{item}</span>
                       </li>
                     ))}
                   </ul>

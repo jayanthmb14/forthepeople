@@ -10,10 +10,11 @@
  *   ≤ 2 years         → brand    "Upcoming"
  *   otherwise / none  → neutral  "Scheduled"
  *
- * Design v3 (2026-09-27): kit Section + Card + Pill, Lucide icons instead of
- * emoji, dates / days / seats in mono, multi-phase polling as a DataTable.
- * The old pulsing glow on imminent elections is gone (v3 allows no pulse
- * except the live-data dot). Data fetching and the date maths are unchanged.
+ * Design v4 "Rang": an emoji Section, Cards whose icons and accents read
+ * the page hue (--hue …; the leadership page wraps this in the elections
+ * hue), upcoming elections on a tinted Card, dates / days / seats as
+ * tabular figures, multi-phase polling as a DataTable. No pulsing glow on
+ * imminent elections. Data fetching and the date maths are unchanged.
  *
  * Includes a footer disclaimer clarifying that ForThePeople.in is not
  * affiliated with the ECI or any political party (text unchanged).
@@ -78,7 +79,7 @@ function daysFromToday(iso: string | null): number | null {
 function Row({ icon: Icon, label, children }: { icon: typeof Vote; label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
-      <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 3 }} />
+      <Icon size={14} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
       <span>
         <span style={{ color: "var(--ftp-text-2)" }}>{label}: </span>
         {children}
@@ -98,14 +99,16 @@ function ElectionCard({ e }: { e: ElectionEvent }) {
   return (
     <Card
       as="article"
+      // Upcoming elections get the soft hue wash; completed ones stay plain.
+      tinted={!isPast}
       // A multi-phase election needs room for its table, so it spans the full row.
       style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: phases ? "1 / -1" : undefined }}
     >
       <div>
         <Pill tone={tone.tone}>{tone.label}</Pill>
       </div>
-      <h3 className="ftp-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <Vote size={16} aria-hidden style={{ color: "var(--accent-purple-700)", flexShrink: 0 }} />
+      <h3 className="ftp-title" style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+        <Vote size={16} aria-hidden style={{ color: "var(--hue)", flexShrink: 0 }} />
         {e.label}
       </h3>
 
@@ -114,8 +117,9 @@ function ElectionCard({ e }: { e: ElectionEvent }) {
           <span className="ftp-num">{formatFullDate(e.pollingDate)}</span>
           {days != null && !isPast ? (
             <span style={{ color: "var(--ftp-text-2)" }}>
-              {" · "}
+              {" ("}
               {days === 0 ? "today" : <><span className="ftp-num">{days}</span> day{days === 1 ? "" : "s"} away</>}
+              {")"}
             </span>
           ) : null}
         </Row>
@@ -155,10 +159,10 @@ function ElectionCard({ e }: { e: ElectionEvent }) {
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-        <Landmark size={12} aria-hidden style={{ flexShrink: 0 }} />
+        <Landmark size={12} aria-hidden style={{ flexShrink: 0, color: "var(--hue)" }} />
         <span>
-          {e.totalSeats ? <><span className="ftp-num">{e.totalSeats}</span> seats · </> : ""}
           {e.body}
+          {e.totalSeats ? <>, <span className="ftp-num">{e.totalSeats}</span> seats</> : ""}
         </span>
       </div>
       {e.note && (
@@ -197,14 +201,15 @@ export default function ElectionSection({ stateSlug }: { stateSlug: string }) {
   const events = data.data;
   return (
     <div style={{ marginTop: 32, marginBottom: 24 }}>
-      <Section title="Elections" action={<SourcePill label="ECI" href="https://eci.gov.in" />}>
+      <Section title="Elections" emoji="🗳️" action={<SourcePill label="ECI" href="https://eci.gov.in" />}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
           {events.map((e) => <ElectionCard key={e.id} e={e} />)}
         </div>
         <p
           role="note"
           style={{
-            background: "var(--ftp-surface-2)",
+            background: "color-mix(in srgb, var(--hue-tint) 70%, #fff)",
+            border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
             borderRadius: "var(--ftp-radius-tile)",
             padding: 14,
             margin: "16px 0 0",
@@ -217,7 +222,7 @@ export default function ElectionSection({ stateSlug }: { stateSlug: string }) {
           ForThePeople.in is an independent citizen transparency platform and is not affiliated with,
           endorsed by, or acting on behalf of the Election Commission of India or any political party.
           This is not an official election information portal. For official election information, visit{" "}
-          <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ftp-brand)" }}>eci.gov.in</a>{" "}
+          <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)" }}>eci.gov.in</a>{" "}
           or contact your local District Election Officer.
         </p>
       </Section>
