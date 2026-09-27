@@ -7,11 +7,12 @@
 "use client";
 
 // Contributor count row on /support — "N people already backing …" with a
-// link to the leaderboard. Design v3: a plain Card, Lucide icon, mono number.
+// link to the leaderboard. Design v4: a tinted Card in the page hue, an
+// emoji chip, the number in the deep hue. While loading it says so (never
+// a fake 0).
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Users } from "lucide-react";
 import { Card } from "@/components/district/ui";
 
 export default function ContributorCountBanner() {
@@ -36,14 +37,17 @@ export default function ContributorCountBanner() {
 
   return (
     <Card
+      tinted
       padding={12}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 8 }}
     >
-      <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", paddingLeft: 4 }}>
-        <Users size={16} aria-hidden style={{ color: "var(--ftp-support)", flexShrink: 0 }} />
+      <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, lineHeight: "20px", color: "var(--ftp-text)" }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
+          🙌
+        </span>
         {total && total > 0 ? (
           <span>
-            <span className="ftp-num">{total.toLocaleString("en-IN")}</span> people already backing India&apos;s data revolution
+            <span className="ftp-num" style={{ color: "var(--hue-deep)", fontSize: 16 }}>{total.toLocaleString("en-IN")}</span> people already backing India&apos;s data revolution
           </span>
         ) : total === 0 ? (
           <span>Be the first to back India&apos;s data revolution</span>
@@ -59,14 +63,14 @@ export default function ContributorCountBanner() {
           gap: 4,
           minHeight: 44,
           padding: "0 4px",
-          fontSize: 13,
-          fontWeight: 500,
-          color: "var(--ftp-brand)",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--hue-deep)",
           textDecoration: "none",
           whiteSpace: "nowrap",
         }}
       >
-        View leaderboard <ArrowRight size={14} aria-hidden />
+        View leaderboard
       </Link>
     </Card>
   );

@@ -7,7 +7,8 @@
 "use client";
 
 // Up to three supporter messages on /support. Renders nothing when no
-// supporter has left a public message. Design v3: Cards + a tier Pill.
+// supporter has left a public message. Design v4: tinted Cards in the page
+// hue with a big quote mark, and a tier Pill.
 // The quotes themselves are user-written, shown exactly as submitted.
 
 import { useState, useEffect } from "react";
@@ -39,17 +40,20 @@ export default function SupporterQuotes() {
   if (quotes.length === 0) return null;
 
   return (
-    <Section title="What supporters say">
+    <Section title="What supporters say" emoji="💬">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 220px), 1fr))", gap: 12 }}>
         {quotes.map((q, i) => {
           const tierConf = TIER_CONFIG[q.tier];
           return (
-            <Card key={i} as="article" padding={16} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Card key={i} as="article" tinted padding={16} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span aria-hidden className="ftp-display" style={{ fontSize: 40, lineHeight: "28px", color: "var(--hue-pop)", fontWeight: 700 }}>
+                &ldquo;
+              </span>
               <blockquote style={{ margin: 0, fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
-                &ldquo;{q.message}&rdquo;
+                {q.message}
               </blockquote>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
-                <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>— {q.name}</span>
+                <span className="ftp-body" style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{q.name}</span>
                 <Pill tone="support">{tierConf?.name ?? q.tier}</Pill>
               </div>
             </Card>
