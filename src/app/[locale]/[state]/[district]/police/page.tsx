@@ -206,9 +206,10 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
     { emoji: "📝", title: t("how3"), body: t("how3Body") },
     { emoji: "📨", title: t("how4"), body: t("how4Body") },
   ];
-  const howToReport = (
+  // The steps carry their own title where no Section heading sits above them.
+  const howToReport = (withTitle: boolean) => (
     <Card tinted padding={18}>
-      <HowItWorks title={t("howTitle")} steps={howSteps} />
+      <HowItWorks title={withTitle ? t("howTitle") : undefined} steps={howSteps} />
       <div style={{ marginTop: 12 }}>
         <SourcePill label={t("howSource")} />
       </div>
@@ -262,7 +263,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
       {!isLoading && !error && !hasAnyData && (
         <>
           <EmptyState emoji="👮" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
-          <div style={{ marginTop: 20 }}>{howToReport}</div>
+          <div style={{ marginTop: 20 }}>{howToReport(true)}</div>
         </>
       )}
 
@@ -349,7 +350,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
                 </Card>
               </div>
             ) : (
-              howToReport
+              howToReport(true)
             )}
           </div>
 
@@ -441,7 +442,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
           {/* The steps live here when the picture slot showed the NCRB change. */}
           {hasChange && (
             <Section title={t("howTitle")} emoji="📝">
-              {howToReport}
+              {howToReport(false)}
             </Section>
           )}
 
