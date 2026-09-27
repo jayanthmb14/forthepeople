@@ -62,3 +62,44 @@ rows.
   reproduction (995, 70.40%, 17.08%). Not changed here (outside this pass);
   worth re-reading from the PCA file.
 - Pre-1991 rows (Chennai, Mumbai 1951–1981) were not re-checked.
+
+---
+
+## 4. Helplines (code, not database)
+
+Helplines are constants in `src/components/district/civic/CitizenParts.tsx`
+(Citizen Corner), `src/app/[locale]/[state]/[district]/police/page.tsx`
+(police page) and `src/app/[locale]/[state]/[district]/health/page.tsx`
+(health page), plus a few lines of "My Responsibility" text in
+`src/lib/constants/responsibility-content.ts`. No database table holds
+them (searched ResponsibilityItem, CitizenTip, ServiceGuide, GovOffice).
+Citizen Corner now asks `getHelplines(state)` so a number can be
+state-only or differ by state.
+
+| Helpline | Was | Now | Source |
+|---|---|---|---|
+| Women helpline | 1091 (a police women's line in only some states) | **181** — national 24x7 Women Helpline (MWCD, Mission Shakti), links to 112/ERSS and One Stop Centres. Also on the police page. | [wcd.gov.in — Women Helpline 181](https://wcd.gov.in/offerings/women--helpline--scheme) |
+| "Road accident" 1073 | Shown as a national number | **Removed.** 1073 is a city traffic-police line (Kolkata Traffic Police's one-stop helpline; Amritsar), not national. Replaced by **1033 "Highway emergency"** — NHAI's 24x7 toll-free national-highway helpline (ambulance, patrol, crane) | PIB, NHAI "Dial 1033" (release 2265867): [pib.gov.in](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2265867&reg=3&lang=2); Kolkata 1073: PTI via [thehawk.in](https://www.thehawk.in/news/india/kolkata-traffic-police-asks-citizens-to-use-its-one-stop-traffic-helpline-1073-for-all-complaints-emergencies) |
+| Anti-corruption 1064 | Shown as national | **State-only: Telangana and Maharashtra**, where the state Anti-Corruption Bureau publishes 1064. Hidden elsewhere. | [acb.telangana.gov.in](https://acb.telangana.gov.in/Home/ReportCorruption) ("Toll-Free Number: 1064"); [acb.maharashtra.gov.in](https://acb.maharashtra.gov.in/) ("Toll Free Number 1064") |
+| Consumer helpline | 1800-11-4000 | **1915** (8 am–8 pm; WhatsApp 8800001915) | [consumerhelpline.gov.in](https://consumerhelpline.gov.in/) |
+| Ambulance | 108 everywhere | 108, but **102 in Delhi** (Delhi's government ambulance is CATS, 102) | [cats.delhi.gov.in/faqs](https://cats.delhi.gov.in/faqs); NHM: "35 States/UTs … Dial 108 or 102" [nhm.gov.in](https://nhm.gov.in/index1.php?lang=1&level=2&sublinkid=1217&lid=189) |
+| Cyber fraud | 1930 | unchanged — confirmed | [i4c.mha.gov.in](https://i4c.mha.gov.in/) ("Report a Cybercrime on 1930") |
+| Responsibility text, Karnataka ×3 | "Karnataka Lokayukta: 1064 (toll-free)" | Lokayukta site + office line 080-22257013 (1064 was the ACB's number; the ACB was dissolved in 2022 and the Lokayukta site does not list 1064) | [lokayukta.karnataka.gov.in](https://lokayukta.karnataka.gov.in/) |
+| Responsibility text, New Delhi | "Delhi Lokayukta or Anti-Corruption Branch: 1064" | Anti-Corruption Branch (Directorate of Vigilance) via vigilance.delhi.gov.in — Delhi never used 1064 (its 1031 line was dropped in 2015) | [vigilance.delhi.gov.in — ACB](https://vigilance.delhi.gov.in/vigilance/anti-corruption-branch) |
+
+Strings changed in en + hi + kn (`page_citizen-corner.json`:
+`helplines.road`, `helplines.corruption.name`, `helplines.consumer.when`).
+
+**Not re-verified (left as they are):**
+- 112 (112.gov.in refused the connection), 100, 101 — standard national numbers.
+- 14567 Elderline (the MoSJE site did not resolve), 1098 Childline, 155261
+  PM-KISAN (portal is script-rendered; number not visible to the checker).
+- Health page: 14555 (PM-JAY; pmjay.gov.in refused the connection),
+  1800-180-1104, 1800-116-117 (poison centre), 9152987821 (iCall, TISS — not
+  a government line). Tele-MANAS **14416** (national mental-health line) is
+  missing and could be added.
+- West Bengal: wbhealth.gov.in runs the free "102" ambulance; whether 108
+  also works statewide was not confirmed, so 108 still shows there.
+- Responsibility text: UP "Anti-Corruption Organisation: 0522-2217440",
+  Hyderabad SHE Teams WhatsApp 9490617444, and the civic numbers (311, 1916,
+  1913, 1969, 1800-111-555 …) were not checked.

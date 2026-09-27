@@ -86,10 +86,14 @@ const SEARCH_FROM = 12;
 const LAKH = 100_000;
 const NCRB = { label: "NCRB", href: "https://ncrb.gov.in" };
 
-/** National helplines (fixed numbers, not district data). */
+/**
+ * National helplines (fixed numbers, not district data). Women: 181 is the
+ * national Women Helpline (MWCD); 1091 is only a police line in some states.
+ * Checked 27 Sep 2026 — docs/DATA-FIXES-2026-09.md.
+ */
 const HELPLINES = [
   { key: "helpCyber", number: "1930" },
-  { key: "helpWomen", number: "1091" },
+  { key: "helpWomen", number: "181" },
   { key: "helpChild", number: "1098" },
 ] as const;
 
