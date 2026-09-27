@@ -66,9 +66,11 @@ export async function POST() {
   });
   results.staleAutoAlertsDeleted = oldAlerts;
 
-  // 5. Clear NewsActionQueue (will be repopulated from fresh news)
+  // 5. Clear NewsActionQueue (will be repopulated from fresh news). Review
+  // items raised by the verification cron (dataType "verify-leaders" and
+  // any other "verify-*") are NOT news: they wait for an admin, so they stay.
   const { count: queueCleared } = await prisma.newsActionQueue.deleteMany({
-    where: { status: { in: ["pending", "skipped"] } },
+    where: { status: { in: ["pending", "skipped"] }, NOT: { dataType: { startsWith: "verify-" } } },
   });
   results.newsActionQueueCleared = queueCleared;
 
