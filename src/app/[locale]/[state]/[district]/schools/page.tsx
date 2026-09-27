@@ -194,7 +194,6 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
           {/* Sanctioned vs. filled teaching posts (renders nothing without data). */}
           <StaffingSection
             module="schools"
-            roleLabel="Teaching staff"
             district={district}
             state={state}
             emoji="🧑‍🏫"

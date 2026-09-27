@@ -1,0 +1,59 @@
+{
+  "title": "Health",
+  "description": "Emergency helplines, hospitals and health schemes",
+  "helplines": {
+    "title": "Emergency helplines",
+    "call": "Call {name}: {number}",
+    "emergency": "National emergency",
+    "ambulance": "Ambulance",
+    "icall": "iCALL (mental health)",
+    "poison": "Poison help (AIIMS)",
+    "ayushman": "Ayushman Bharat",
+    "nhh": "National health helpline"
+  },
+  "schemes": {
+    "title": "Government health schemes",
+    "central": "Central scheme",
+    "stateScheme": "{state} scheme",
+    "site": "Official website",
+    "desc": {
+      "pmjay": "Health cover of ₹5 lakh per family each year",
+      "jsy": "Cash help for mothers who give birth in a hospital",
+      "rbsk": "Free health check-ups and treatment for children",
+      "karnataka": "Karnataka's health assurance scheme for its residents",
+      "telangana": "Health cover of ₹5 lakh for BPL families, covering 2,500+ procedures at 1,100+ empanelled hospitals",
+      "tamil-nadu": "Chief Minister's Comprehensive Health Insurance Scheme, with cashless treatment up to ₹5 lakh",
+      "delhi": "Money for the treatment of serious illness for Delhi residents",
+      "maharashtra": "Mahatma Jyotiba Phule Jan Arogya Yojana, with cashless treatment for BPL families",
+      "west-bengal": "Health cover for every family in West Bengal, ₹5 lakh per family",
+      "uttar-pradesh": "Health cover for BPL families in UP, ₹5 lakh per family, with extra state cover"
+    }
+  },
+  "care": {
+    "title": "Where to go for care",
+    "hint": "Start at the centre nearest you. Each step up treats more serious illness and can send you to the next.",
+    "subCentre": "Sub-health centres",
+    "subCentreDesc": "Basic care close to home, at village level",
+    "phc": "Primary health centres (PHC)",
+    "phcDesc": "A doctor for common illness; one centre serves about 30,000 people",
+    "subDesc": "Bigger hospitals for more serious illness, at {unit} level",
+    "district": "District hospital",
+    "districtDesc": "The main government hospital, with emergency care and specialist doctors",
+    "private": "Private hospitals",
+    "privateDesc": "Some are empanelled under Ayushman Bharat PM-JAY for cashless treatment",
+    "sub": {
+      "taluk": "Taluk hospitals",
+      "area": "Area hospitals",
+      "zonal": "Zonal hospitals",
+      "subDistrict": "Sub-district hospitals",
+      "block": "Block hospitals",
+      "chc": "Community health centres"
+    }
+  },
+  "nhm": {
+    "title": "Find the nearest hospital",
+    "body": "See hospitals on the National Health Mission portal",
+    "button": "NHM portal"
+  },
+  "share": "Health helplines and schemes for {district}: Emergency 112, Ambulance 108"
+}

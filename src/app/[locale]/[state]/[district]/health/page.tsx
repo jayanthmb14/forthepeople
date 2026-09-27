@@ -13,77 +13,87 @@
 //  carry their own "as of" date. Phone numbers are real tel: links with
 //  44 px tap targets on phones.
 //
-//  Picture: the staffing section draws ten health workers with the filled
-//  share lit, plus a dial, from the real sanctioned and working counts.
-//  With no staffing rows nothing is drawn (the rest is reference text).
+//  Pictures:
+//    1. the staffing section draws ten health workers with the filled
+//       share lit, a dial, and the roles with the most empty posts, from
+//       the real sanctioned and working counts (nothing without rows);
+//    2. "Where to go for care": the public health system as a staircase,
+//       from the village sub-centre up to the district hospital. It is a
+//       diagram of how referral works, with no numbers in it.
+//
+//  Text: every sentence comes from the "page_health" messages. Scheme and
+//  helpline names that are proper nouns (Ayushman Bharat, iCALL) stay as
+//  they are.
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { getStateConfig } from "@/lib/constants/state-config";
 import ModuleNews from "@/components/district/ModuleNews";
 import { use } from "react";
+import { useTranslations } from "next-intl";
 import { Heart, ExternalLink } from "lucide-react";
-import { PageHeader, Section, Card, ToolbarButton } from "@/components/district/ui";
+import { PageHeader, Section, Card, Pill, ToolbarButton } from "@/components/district/ui";
 import StaffingSection from "@/components/district/daily-services/StaffingSection";
 import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { useDistrictName } from "@/components/district/daily-services/district-name";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { useModuleText, usePlaceText } from "@/i18n/client";
 
 // Static health helplines for India — national numbers only.
 // `urgent` marks the life-safety numbers, shown in the danger colour.
 const HELPLINES = [
-  { name: "National Emergency", number: "112", urgent: true, emoji: "🆘" },
-  { name: "Ambulance", number: "108", urgent: true, emoji: "🚑" },
-  { name: "iCALL (Mental Health)", number: "9152987821", emoji: "💬" },
-  { name: "Anti-Poison (AIIMS)", number: "1800-116-117", emoji: "🧪" },
-  { name: "Ayushman Bharat", number: "14555", emoji: "🪪" },
-  { name: "National Health Helpline", number: "1800-180-1104", emoji: "📞" },
+  { id: "emergency", number: "112", urgent: true, emoji: "🆘" },
+  { id: "ambulance", number: "108", urgent: true, emoji: "🚑" },
+  { id: "icall", number: "9152987821", emoji: "💬" },
+  { id: "poison", number: "1800-116-117", emoji: "🧪" },
+  { id: "ayushman", number: "14555", emoji: "🪪" },
+  { id: "nhh", number: "1800-180-1104", emoji: "📞" },
 ];
 
-// State-specific health schemes — always show national + state schemes
-const STATE_HEALTH_SCHEMES: Record<string, Array<{ name: string; desc: string; url: string | null }>> = {
-  karnataka: [
-    { name: "Arogya Karnataka", desc: "State health assurance scheme for Karnataka residents", url: "https://arogyakarnataka.gov.in" },
-  ],
-  telangana: [
-    { name: "Aarogyasri", desc: "₹5 lakh health coverage for BPL families, covering 2,500+ procedures at 1,100+ empanelled hospitals", url: "https://aarogyasri.telangana.gov.in" },
-  ],
-  "tamil-nadu": [
-    { name: "CMCHIS", desc: "Chief Minister's Comprehensive Health Insurance Scheme — cashless treatment up to ₹5 lakh", url: null },
-  ],
-  delhi: [
-    { name: "Delhi Arogya Kosh", desc: "Financial assistance for treatment of serious illnesses for Delhi residents", url: null },
-  ],
-  maharashtra: [
-    { name: "MJPJAY", desc: "Mahatma Jyotiba Phule Jan Arogya Yojana — cashless treatment for BPL families", url: null },
-  ],
-  "west-bengal": [
-    { name: "Swasthya Sathi", desc: "Universal health coverage for all families in West Bengal — ₹5 lakh per family", url: null },
-  ],
-  "uttar-pradesh": [
-    { name: "Ayushman Bharat UP", desc: "Health coverage for BPL families in UP — ₹5 lakh per family, extended state coverage", url: null },
-  ],
-};
-
-const NATIONAL_SCHEMES = [
-  { name: "Ayushman Bharat PM-JAY", desc: "₹5 lakh health coverage per family per year", url: "https://pmjay.gov.in" },
-  { name: "Janani Suraksha Yojana", desc: "Cash incentive for institutional deliveries", url: null },
-  { name: "RBSK", desc: "Rashtriya Bal Swasthya Karyakram for children", url: null },
-];
-
-function getHospitalTypes(stateSlug: string) {
-  const config = getStateConfig(stateSlug);
-  const healthSubLabel = config?.healthSubLabel ?? "Taluk Hospitals";
-  const subUnit = config?.subDistrictUnit ?? "Taluk";
-  return [
-    { type: "Government District Hospital", emoji: "🏥", description: "Primary referral hospital with emergency, OPD, and specialty services" },
-    { type: healthSubLabel, emoji: "🏨", description: `Secondary care hospitals at ${subUnit.toLowerCase()} level` },
-    { type: "PHC (Primary Health Centres)", emoji: "🩺", description: "Primary care centers covering ~30,000 population" },
-    { type: "Sub-Health Centres", emoji: "🏡", description: "Basic health services at village level" },
-    { type: "Private Hospitals", emoji: "🏢", description: "Empanelled under Ayushman Bharat Yojana" },
-  ];
+/** A scheme card: `name` is the official name (not translated), `id` keys its description. */
+interface HealthScheme {
+  id: string;
+  name: string;
+  url: string | null;
 }
 
-/** Small emoji chip used on helpline cards and facility rows. */
+// National schemes — shown in every district.
+const NATIONAL_SCHEMES: HealthScheme[] = [
+  { id: "pmjay", name: "Ayushman Bharat PM-JAY", url: "https://pmjay.gov.in" },
+  { id: "jsy", name: "Janani Suraksha Yojana", url: null },
+  { id: "rbsk", name: "RBSK (Rashtriya Bal Swasthya Karyakram)", url: null },
+];
+
+// State schemes — keyed by state slug; the description key is the slug.
+const STATE_HEALTH_SCHEMES: Record<string, HealthScheme> = {
+  karnataka: { id: "karnataka", name: "Arogya Karnataka", url: "https://arogyakarnataka.gov.in" },
+  telangana: { id: "telangana", name: "Aarogyasri", url: "https://aarogyasri.telangana.gov.in" },
+  "tamil-nadu": { id: "tamil-nadu", name: "CMCHIS", url: null },
+  delhi: { id: "delhi", name: "Delhi Arogya Kosh", url: null },
+  maharashtra: { id: "maharashtra", name: "MJPJAY", url: null },
+  "west-bengal": { id: "west-bengal", name: "Swasthya Sathi", url: null },
+  "uttar-pradesh": { id: "uttar-pradesh", name: "Ayushman Bharat UP", url: null },
+};
+
+/** The state's name for its secondary hospitals → message key. */
+const SUB_HOSPITAL_KEY: Record<string, string> = {
+  "Taluk Hospitals": "taluk",
+  "Area Hospitals": "area",
+  "Zonal Hospitals": "zonal",
+  "Sub-District Hospitals": "subDistrict",
+  "Block Hospitals": "block",
+  "Community Health Centres": "chc",
+};
+
+/** Step colours for the care staircase, lightest (village) to deepest (district). */
+const STEP_BG = [
+  "var(--hue-tint)",
+  "color-mix(in srgb, var(--hue-pop) 55%, #fff)",
+  "var(--hue-pop)",
+  "linear-gradient(160deg, var(--hue) 0%, var(--hue-deep) 100%)",
+];
+
+/** Small emoji chip used on helpline cards and scheme cards. */
 function EmojiChip({ emoji, size = 36 }: { emoji: string; size?: number }) {
   return (
     <span
@@ -98,15 +108,39 @@ function EmojiChip({ emoji, size = 36 }: { emoji: string; size?: number }) {
 
 function HealthPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
+  const t = useTranslations("page_health");
+  const tUnit = useTranslations("subUnitOne");
+  const mt = useModuleText();
+  const place = usePlaceText();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
-  const schemes = [...NATIONAL_SCHEMES, ...(STATE_HEALTH_SCHEMES[state] ?? [])];
+
+  const stateScheme = STATE_HEALTH_SCHEMES[state];
+  const schemes = [
+    ...NATIONAL_SCHEMES.map((s) => ({ ...s, tag: t("schemes.central") })),
+    ...(stateScheme ? [{ ...stateScheme, tag: t("schemes.stateScheme", { state: place.state(state) }) }] : []),
+  ];
+
+  // The care staircase: village → district, with the state's own name
+  // for the middle hospitals and for its sub-district unit.
+  const config = getStateConfig(state);
+  const subLabelEn = config?.healthSubLabel ?? "Taluk Hospitals";
+  const subKey = SUB_HOSPITAL_KEY[subLabelEn];
+  const unitEn = config?.subDistrictUnit ?? "Taluk";
+  const unit = tUnit.has(unitEn) ? tUnit(unitEn) : unitEn;
+  const steps = [
+    { key: "subCentre", emoji: "🏡", title: t("care.subCentre"), desc: t("care.subCentreDesc") },
+    { key: "phc", emoji: "🩺", title: t("care.phc"), desc: t("care.phcDesc") },
+    { key: "sub", emoji: "🏨", title: subKey ? t(`care.sub.${subKey}`) : subLabelEn, desc: t("care.subDesc", { unit }) },
+    { key: "district", emoji: "🏥", title: t("care.district"), desc: t("care.districtDesc") },
+  ];
 
   return (
     <ModulePage>
       <PageHeader
         icon={Heart}
-        title="Health"
-        description="Emergency helplines, hospitals, and health schemes"
+        title={t("title")}
+        description={t("description")}
         backHref={base}
         accent={getModuleAccent("health")}
       />
@@ -115,94 +149,142 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
 
       {/* Sanctioned vs. filled staffing, with the page's picture
           (renders nothing when there is no data). */}
-      <StaffingSection
-        module="health"
-        roleLabel="Healthcare staff"
-        district={district}
-        state={state}
-        emoji="🩺"
-        personEmoji="🧑‍⚕️"
-        picture
-      />
+      <StaffingSection module="health" district={district} state={state} emoji="🩺" personEmoji="🧑‍⚕️" picture />
 
       {/* Emergency helplines — each card is a tel: link. */}
-      <Section title="Emergency helplines" emoji="🚑">
+      <Section title={t("helplines.title")} emoji="🚑">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-          {HELPLINES.map((h) => (
-            <a
-              key={h.name}
-              href={`tel:${h.number}`}
-              className="ftp-card-link"
-              aria-label={`Call ${h.name}: ${h.number}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                minHeight: 44,
-                padding: "12px 14px",
-                background: h.urgent
-                  ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 8%, #fff) 0%, #fff 72%)"
-                  : "var(--ftp-surface)",
-                border: h.urgent
-                  ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))"
-                  : "1px solid var(--ftp-border)",
-                borderRadius: "var(--ftp-radius-card)",
-                boxShadow: "var(--ftp-shadow-1)",
-                textDecoration: "none",
-              }}
-            >
-              <EmojiChip emoji={h.emoji} />
-              <div style={{ minWidth: 0 }}>
-                <div className="ftp-num" style={{ fontSize: 18, lineHeight: "24px", color: h.urgent ? "var(--ftp-danger)" : "var(--hue-deep)" }}>
-                  {h.number}
+          {HELPLINES.map((h) => {
+            const name = t(`helplines.${h.id}`);
+            return (
+              <a
+                key={h.id}
+                href={`tel:${h.number}`}
+                className="ftp-card-link"
+                aria-label={t("helplines.call", { name, number: h.number })}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  minHeight: 44,
+                  padding: "12px 14px",
+                  background: h.urgent
+                    ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 8%, #fff) 0%, #fff 72%)"
+                    : "var(--ftp-surface)",
+                  border: h.urgent
+                    ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))"
+                    : "1px solid var(--ftp-border)",
+                  borderRadius: "var(--ftp-radius-card)",
+                  boxShadow: "var(--ftp-shadow-1)",
+                  textDecoration: "none",
+                }}
+              >
+                <EmojiChip emoji={h.emoji} />
+                <div style={{ minWidth: 0 }}>
+                  <div className="ftp-num" style={{ fontSize: 18, lineHeight: "24px", color: h.urgent ? "var(--ftp-danger)" : "var(--hue-deep)" }}>
+                    {h.number}
+                  </div>
+                  <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>{name}</div>
                 </div>
-                <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
-              </div>
-            </a>
-          ))}
+              </a>
+            );
+          })}
         </div>
+      </Section>
+
+      {/* Where to go for care: the public health system as a staircase. */}
+      <Section title={t("care.title")} emoji="🪜">
+        <Card tinted padding={18}>
+          <p className="ftp-body" style={{ margin: "0 0 16px", color: "var(--ftp-text-2)", maxWidth: 680 }}>
+            {t("care.hint")}
+          </p>
+          <ol
+            style={{
+              listStyle: "none",
+              margin: 0,
+              padding: 0,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+              gap: 14,
+            }}
+          >
+            {steps.map((s, i) => (
+              <li key={s.key} style={{ minWidth: 0 }}>
+                {/* Every step sits on the same floor; each one is taller. */}
+                <div aria-hidden style={{ height: 150, display: "flex", alignItems: "flex-end" }}>
+                  <div
+                    className="ftp-grow-y"
+                    style={{
+                      width: "100%",
+                      height: 66 + i * 28,
+                      borderRadius: "18px 18px 6px 6px",
+                      background: STEP_BG[i],
+                      border: i === 0 ? "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))" : "none",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "center",
+                      paddingTop: 14,
+                      ["--i" as string]: i,
+                    }}
+                  >
+                    <span className="ftp-emoji" style={{ fontSize: 30 }}>
+                      {s.emoji}
+                    </span>
+                  </div>
+                </div>
+                <div className="ftp-title" style={{ fontSize: 15, lineHeight: 1.4, fontWeight: 600, marginTop: 10 }}>
+                  {s.title}
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ftp-text-2)", marginTop: 2 }}>{s.desc}</div>
+              </li>
+            ))}
+          </ol>
+          {/* Private hospitals sit beside the public ladder, not on it. */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              marginTop: 18,
+              paddingTop: 14,
+              borderTop: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+            }}
+          >
+            <EmojiChip emoji="🏢" size={32} />
+            <div style={{ minWidth: 0 }}>
+              <div className="ftp-title" style={{ fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>{t("care.private")}</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>{t("care.privateDesc")}</div>
+            </div>
+          </div>
+        </Card>
       </Section>
 
       {/* Health schemes — national + state-specific. */}
-      <Section title="Government health schemes" emoji="🛡️">
+      <Section title={t("schemes.title")} emoji="🛡️">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-          {schemes.map((s) => (
-            <Card key={s.name} as="article">
-              <h3 className="ftp-title" style={{ fontWeight: 600 }}>{s.name}</h3>
-              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 0" }}>{s.desc}</p>
-              {s.url && (
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, marginTop: 8, fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
-                >
-                  Learn more <ExternalLink size={12} aria-hidden />
-                </a>
-              )}
+          {schemes.map((s, i) => (
+            <Card key={s.id} as="article" tinted={i === 0}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <EmojiChip emoji={s.id === "jsy" ? "🤱" : s.id === "rbsk" ? "🧒" : "🛡️"} size={36} />
+                <div style={{ minWidth: 0 }}>
+                  <Pill>{s.tag}</Pill>
+                  <h3 className="ftp-title" style={{ fontWeight: 600, marginTop: 6 }}>{s.name}</h3>
+                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 0" }}>{t(`schemes.desc.${s.id}`)}</p>
+                  {s.url && (
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, marginTop: 8, fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
+                    >
+                      {t("schemes.site")} <ExternalLink size={12} aria-hidden />
+                    </a>
+                  )}
+                </div>
+              </div>
             </Card>
           ))}
         </div>
-      </Section>
-
-      {/* The kinds of facilities a district has (reference). */}
-      <Section title="Healthcare infrastructure" emoji="🏥">
-        <Card padding={0}>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {getHospitalTypes(state).map((h, i) => (
-              <li
-                key={h.type}
-                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}
-              >
-                <EmojiChip emoji={h.emoji} size={32} />
-                <div style={{ minWidth: 0 }}>
-                  <div className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600 }}>{h.type}</div>
-                  <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{h.description}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
       </Section>
 
       {/* Find a hospital on the NHM portal. */}
@@ -210,12 +292,12 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
         <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
           <EmojiChip emoji="📍" />
           <div style={{ minWidth: 0 }}>
-            <div className="ftp-title" style={{ fontWeight: 600 }}>Find the nearest hospital</div>
-            <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>View hospitals on the NHM portal</div>
+            <div className="ftp-title" style={{ fontWeight: 600 }}>{t("nhm.title")}</div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("nhm.body")}</div>
           </div>
         </div>
         <ToolbarButton icon={ExternalLink} href="https://nhm.gov.in" external>
-          NHM portal
+          {t("nhm.button")}
         </ToolbarButton>
       </Card>
 
@@ -225,16 +307,17 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
         locale={locale}
         district={district}
         moduleSlug="health"
-        moduleLabel="Health"
-        shareText={`Health helplines and schemes for ${district}: Emergency 112, Ambulance 108`}
+        moduleLabel={mt.label("health")}
+        shareText={t("share", { district: districtName })}
       />
     </ModulePage>
   );
 }
 
 export default function HealthPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
+  const mt = useModuleText();
   return (
-    <ModuleErrorBoundary moduleName="Health">
+    <ModuleErrorBoundary moduleName={mt.label("health")}>
       <HealthPageInner params={params} />
     </ModuleErrorBoundary>
   );
