@@ -3,40 +3,43 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * Session 13 v8 — final composition (Phase M).
+ * Home page — Design v3 "Civic Ledger" (CONCEPT-v3 §5 "Home").
  *
- * Composition:
- *   1. FinancialTicker     — Market Open/Closed pill + scrolling marquee + Updated
- *   2. StatsBar            — dashboard-style 5-tile grid (no LIVE prefix)
- *   3. HeroSection         — map LEFT 60% / text + districts RIGHT 40%
- *                            (districts list lives inline; LiveDistrictsList retired)
- *   4. LiveDataShowcase    — district chip tabs + 4 module cards
- *   5. HowItWorks          — 4-step gradient-circle explainer
- *   6. ContributorsStrip   — tiered colored marquee (Founder/All-India/State/District)
- *   7. VoteFeaturesCTA     — purple gradient card with top 3 features
+ * The disclaimer line, header and footer come from [locale]/layout.tsx.
+ * This page renders, top to bottom (desktop):
  *
- * /vote-district is the dedicated locked-districts route — linked from
- * HeaderBar district autocomplete and from VoteFeaturesCTA.
+ *   1. MarketTicker        — 32 px markets line, "As of HH:MM IST"
+ *   2. YourDistrictStrip   — "Find my district" row (via YourDistrictBand)
+ *   3. HomeHero            — the page's ONE <h1>, one sentence, two buttons
+ *   4. Stats               — 4 StatTiles (registry + /api/data/homepage-stats)
+ *   5. Map (cols 1–7) + LiveDistrictsCard (cols 8–12)
+ *   6. The rest            — Latest data, How it works, Built with citizens,
+ *                            support line
  *
- * StatsBar pulls real values via the cached /api/data/homepage-stats endpoint
- * (5-min cache, SSR-safe). DASHBOARDS_PER_DISTRICT and TOTAL_INDIA_DISTRICTS
- * come from src/lib/constants.ts so the numbers stay in one place.
+ * On phones the order becomes: hero · strip · district list · map · stats ·
+ * rest (CSS `order` in home.module.css — the HTML order stays logical for
+ * screen readers and search engines).
+ *
+ * Numbers: district counts come from the DB / registry (never typed by
+ * hand); the data-point total carries an "As of" date from the newest
+ * record. If homepage-stats is unreachable the total shows "—", never 0.
  */
 
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import {
-  DASHBOARDS_PER_DISTRICT,
-  TOTAL_INDIA_DISTRICTS,
-} from "@/lib/constants";
+import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
+import { StatStrip, StatTile } from "@/components/district/ui";
 
-import FinancialTicker from "@/components/home/redesign-v2/FinancialTicker";
-import StatsBar from "@/components/home/redesign-v2/LiveActivityRibbon";
-import HeroSection from "@/components/home/redesign-v2/HeroSection";
-import LiveDataShowcase from "@/components/home/redesign-v2/LiveDataShowcase";
-import HowItWorks from "@/components/home/redesign-v2/HowItWorks";
-import CommunitySection from "@/components/home/redesign-v2/CommunitySection";
-import SupportBanner from "@/components/home/redesign-v2/SupportBanner";
+import MarketTicker from "@/components/home/MarketTicker";
+import YourDistrictBand from "@/components/home/YourDistrictBand";
+import HomeHero from "@/components/home/HomeHero";
+import IndiaMapCard from "@/components/home/IndiaMapCard";
+import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
+import LatestData from "@/components/home/LatestData";
+import HowItWorks from "@/components/home/HowItWorks";
+import BuiltWithCitizens from "@/components/home/BuiltWithCitizens";
+import SupportLine from "@/components/home/SupportLine";
+import styles from "@/components/home/home.module.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -46,6 +49,7 @@ interface HomepageStats {
   mostRecentAt: string | null;
 }
 
+/** Cached (5 min) platform totals. Null when the endpoint is unreachable. */
 async function fetchHomepageStats(): Promise<HomepageStats | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/data/homepage-stats`, {
@@ -117,38 +121,67 @@ export default async function HomePage({
     goLiveDate: d.goLiveDate ? d.goLiveDate.toISOString() : null,
   }));
 
-  // Stats fed into StatsBar — fall back to derivable values if the
-  // homepage-stats endpoint is unreachable (cache miss + DB hiccup).
-  const activeCount = statsFromApi?.activeDistricts ?? activeRows.length;
-  const totalDataPoints = statsFromApi?.totalDataPoints ?? 0;
+  // Totals: DB / registry first, homepage-stats for what only it knows.
+  const facts = getPlatformFacts();
+  const activeCount = statsFromApi?.activeDistricts || activeRows.length;
+  const comingDistricts = Math.max(0, facts.totalIndiaDistricts - activeCount);
+  const totalDataPoints = statsFromApi && statsFromApi.totalDataPoints > 0 ? statsFromApi.totalDataPoints : null;
   const mostRecentAt = statsFromApi?.mostRecentAt ?? null;
-  const comingDistricts = Math.max(0, TOTAL_INDIA_DISTRICTS - activeCount);
 
   return (
-    <>
-      {/* Visually hidden h1 — the visible headline lives inside HeroSection
-          (h2 there, since this h1 is the SEO/page-identity anchor). */}
-      <h1 className="sr-only">
-        ForThePeople.in — India&apos;s Citizen Transparency Platform.
-        District-level government data: crop prices, dam levels, schemes,
-        budget, and more.
-      </h1>
+    <main role="main">
+      <MarketTicker />
 
-      <main role="main">
-        <FinancialTicker />
-        <StatsBar
-          activeDistricts={activeCount}
-          dashboardsPerDistrict={DASHBOARDS_PER_DISTRICT}
-          totalDataPoints={totalDataPoints}
-          comingDistricts={comingDistricts}
-          mostRecentAt={mostRecentAt}
-        />
-        <HeroSection locale={locale} districts={activeDistricts} />
-        <LiveDataShowcase locale={locale} districts={activeDistricts} />
-        <HowItWorks />
-        <CommunitySection locale={locale} />
-        <SupportBanner locale={locale} />
-      </main>
-    </>
+      <div className={styles.flow}>
+        {/* 2. Your district — locate, remember, open or vote */}
+        <div className={`${styles.band} ${styles.bandStrip}`}>
+          <YourDistrictBand locale={locale} />
+        </div>
+
+        {/* 3. Hero — the one <h1> on the page */}
+        <div className={`${styles.band} ${styles.bandHero}`}>
+          <div className="ftp-container">
+            <HomeHero locale={locale} coveragePhrase={getCoveragePhrase()} />
+          </div>
+        </div>
+
+        {/* 4. Four honest numbers (no captions, no count-up) */}
+        <div className={`${styles.band} ${styles.bandStats}`}>
+          <div className="ftp-container">
+            <h2 className="sr-only">Platform in numbers</h2>
+            <StatStrip cols={4}>
+              <StatTile label="Districts live" value={activeCount.toLocaleString("en-IN")} />
+              <StatTile label="Dashboards per district" value={facts.modulesPerDistrict.toLocaleString("en-IN")} />
+              <StatTile
+                label="Data points tracked"
+                value={totalDataPoints !== null ? totalDataPoints.toLocaleString("en-IN") : "—"}
+                asOf={totalDataPoints !== null ? mostRecentAt : null}
+              />
+              <StatTile label="Districts coming" value={comingDistricts.toLocaleString("en-IN")} />
+            </StatStrip>
+          </div>
+        </div>
+
+        {/* 5. Map (cols 1–7) + live districts (cols 8–12) */}
+        <div className={`${styles.band} ${styles.bandMap}`}>
+          <div className={`ftp-container ftp-grid-12 ${styles.mapGrid}`}>
+            <div className={styles.mapCol}>
+              <IndiaMapCard locale={locale} />
+            </div>
+            <div className={styles.listCol}>
+              <LiveDistrictsCard locale={locale} districts={activeDistricts} />
+            </div>
+          </div>
+        </div>
+
+        {/* 6. The rest of the page */}
+        <div className={`${styles.band} ${styles.bandRest}`}>
+          <LatestData locale={locale} districts={activeDistricts} />
+          <HowItWorks />
+          <BuiltWithCitizens locale={locale} />
+          <SupportLine locale={locale} />
+        </div>
+      </div>
+    </main>
   );
 }

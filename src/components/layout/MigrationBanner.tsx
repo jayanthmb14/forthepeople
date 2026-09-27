@@ -20,6 +20,8 @@
 
 "use client";
 import { useEffect, useState } from "react";
+import { AlertOctagon, AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type Announcement = {
   enabled: boolean;
@@ -35,10 +37,12 @@ type Announcement = {
   autoHideAfter: string | null;
 };
 
-const VARIANT_STYLE: Record<string, { header: string; ring: string; badge: string }> = {
-  critical: { header: "#991B1B", ring: "#FECACA", badge: "🚧" },
-  warning:  { header: "#B45309", ring: "#FED7AA", badge: "⚠️" },
-  info:     { header: "#1D4ED8", ring: "#BFDBFE", badge: "ℹ️" },
+// Design v3: each variant maps to a token pair (tinted background + dark
+// text) and a Lucide icon. No hex colours, no emoji, no shadows.
+const VARIANT_STYLE: Record<string, { text: string; tint: string; Icon: LucideIcon }> = {
+  critical: { text: "var(--ftp-danger)", tint: "var(--ftp-danger-tint)", Icon: AlertOctagon },
+  warning:  { text: "var(--ftp-warn)",   tint: "var(--ftp-warn-tint)",   Icon: AlertTriangle },
+  info:     { text: "var(--ftp-brand-deep)", tint: "var(--ftp-brand-tint)", Icon: Info },
 };
 
 /**
@@ -100,49 +104,55 @@ export default function MigrationBanner() {
 
   // ── Banner mode: thin dismissible strip ───────────────────────────────
   if (ann.displayMode === "banner") {
+    const BannerIcon = style.Icon;
     return (
       <div
         role="alert"
         style={{
-          background: style.header,
-          borderBottom: `1px solid ${style.ring}`,
-          color: "#FEF2F2",
-          padding: "10px 16px",
+          background: style.tint,
+          borderBottom: "1px solid var(--ftp-border)",
+          color: "var(--ftp-text)",
           fontSize: 13,
-          lineHeight: 1.55,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
+          lineHeight: "20px",
         }}
       >
-        <span style={{ flexShrink: 0, fontSize: 16 }} aria-hidden>{style.badge}</span>
-        <span style={{ flex: 1 }}>
-          <strong>{ann.title}.</strong>{" "}
-          {paragraphs[0]}
-          {ann.highlightText ? ` — ${ann.highlightText}` : ""}
-        </span>
-        <button
-          onClick={acknowledge}
-          aria-label="Dismiss notice"
-          style={{
-            flexShrink: 0,
-            background: "transparent",
-            border: "1px solid rgba(254, 242, 242, 0.4)",
-            color: "#FEF2F2",
-            borderRadius: 6,
-            padding: "3px 10px",
-            fontSize: 12,
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+        <div
+          className="ftp-container"
+          style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 40, paddingTop: 6, paddingBottom: 6 }}
         >
-          Dismiss
-        </button>
+          <BannerIcon size={16} aria-hidden style={{ flexShrink: 0, color: style.text }} />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontWeight: 500 }}>{ann.title}.</span>{" "}
+            {paragraphs[0]}
+            {ann.highlightText ? ` — ${ann.highlightText}` : ""}
+          </span>
+          <button
+            onClick={acknowledge}
+            aria-label="Dismiss notice"
+            title="Dismiss"
+            style={{
+              flexShrink: 0,
+              width: 44,
+              height: 44,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent",
+              border: 0,
+              borderRadius: "var(--ftp-radius-tile)",
+              color: "var(--ftp-text-2)",
+              cursor: "pointer",
+            }}
+          >
+            <X size={16} aria-hidden />
+          </button>
+        </div>
       </div>
     );
   }
 
   // ── Modal mode: centered splash ───────────────────────────────────────
+  const ModalIcon = style.Icon;
   return (
     <div
       role="dialog"
@@ -156,59 +166,82 @@ export default function MigrationBanner() {
         alignItems: "center",
         justifyContent: "center",
         padding: 16,
-        background: "rgba(15, 23, 42, 0.78)",
-        backdropFilter: "blur(3px)",
-        WebkitBackdropFilter: "blur(3px)",
+        // Dim the page with the text colour at 60 % (a token, not a hex).
+        background: "color-mix(in srgb, var(--ftp-text) 60%, transparent)",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: 520,
-          background: "#FFFFFF",
-          borderRadius: 14,
-          overflow: "hidden",
-          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.35)",
-          border: `1px solid ${style.ring}`,
+          maxHeight: "calc(100vh - 32px)",
+          overflowY: "auto",
+          background: "var(--ftp-surface)",
+          borderRadius: "var(--ftp-radius-card)",
+          border: "1px solid var(--ftp-border-strong)",
         }}
       >
-        <div style={{ background: style.header, color: "#FEF2F2", padding: "14px 22px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 20 }} aria-hidden>{style.badge}</span>
-          <strong id="site-announcement-title" style={{ fontSize: 15, letterSpacing: "0.02em" }}>{ann.title}</strong>
+        <div
+          style={{
+            background: style.tint,
+            color: style.text,
+            padding: "14px 20px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            borderBottom: "1px solid var(--ftp-border)",
+          }}
+        >
+          <ModalIcon size={20} aria-hidden style={{ flexShrink: 0 }} />
+          <h2 id="site-announcement-title" className="ftp-title" style={{ color: "var(--ftp-text)" }}>
+            {ann.title}
+          </h2>
         </div>
-
-        <div style={{ padding: "20px 22px 8px", fontSize: 14, color: "#0F172A", lineHeight: 1.65 }}>
+        <div style={{ padding: "20px 20px 8px", fontSize: 14, color: "var(--ftp-text)", lineHeight: "22px" }}>
           {paragraphs.map((p, i) => (
             <p key={i} style={{ margin: i === 0 ? "0 0 12px" : "12px 0" }}>{p}</p>
           ))}
           {ann.bullets.length > 0 && (
-            <ul style={{ margin: "0 0 14px", paddingLeft: 20, color: "#334155" }}>
+            <ul style={{ margin: "0 0 14px", paddingLeft: 20, color: "var(--ftp-text-2)" }}>
               {ann.bullets.map((b, i) => <li key={i}>{b}</li>)}
             </ul>
           )}
           {ann.highlightText && (
-            <div style={{ padding: "10px 14px", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, color: "#166534", fontSize: 13, margin: "0 0 4px" }}>
-              ✅ {ann.highlightText}
-            </div>
+            <p
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "10px 12px",
+                background: "var(--ftp-live-tint)",
+                borderRadius: "var(--ftp-radius-tile)",
+                color: "var(--ftp-live-text)",
+                fontSize: 13,
+                lineHeight: "20px",
+                margin: "0 0 4px",
+              }}
+            >
+              <CheckCircle2 size={16} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+              {ann.highlightText}
+            </p>
           )}
           {ann.footerNote && (
-            <p style={{ margin: "14px 0 0", fontSize: 12, color: "#64748B" }}>{ann.footerNote}</p>
+            <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{ann.footerNote}</p>
           )}
         </div>
-
-        <div style={{ padding: "14px 22px 18px", display: "flex", justifyContent: "flex-end", gap: 10 }}>
+        <div style={{ padding: "12px 20px 20px", display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button
             onClick={acknowledge}
             style={{
-              background: "#0F172A",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 22px",
-              fontSize: 13,
-              fontWeight: 600,
+              minHeight: 44,
+              background: "var(--ftp-brand)",
+              color: "var(--ftp-surface)",
+              border: "1px solid var(--ftp-brand)",
+              borderRadius: "var(--ftp-radius-tile)",
+              padding: "0 20px",
+              fontSize: 14,
+              fontWeight: 500,
               cursor: "pointer",
-              letterSpacing: "0.02em",
             }}
           >
             {ann.ctaButtonText}
