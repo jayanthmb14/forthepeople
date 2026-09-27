@@ -12,6 +12,8 @@
 
 import { prisma } from "@/lib/db";
 import { INDIA_DESIGN } from "@/lib/india/india-design";
+import { EmptyState } from "@/components/district/ui";
+import { IndiaSectionTitle } from "./v4";
 
 interface Props {
   newsKeywords: string[];
@@ -73,21 +75,12 @@ export default async function ModuleNewsStrip({ newsKeywords, moduleTitle }: Pro
         }}
       >
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <SectionLabel>News on {moduleTitle}</SectionLabel>
-          <div
-            style={{
-              padding: "14px 16px",
-              fontSize: 13,
-              color: INDIA_DESIGN.textMuted,
-              fontStyle: "italic",
-              background: INDIA_DESIGN.bgCard,
-              border: `1px dashed ${INDIA_DESIGN.border}`,
-              borderRadius: 10,
-            }}
-          >
-            No matching news yet. We&apos;re indexing district-tagged news;
-            national news ingestion lands in a future session.
-          </div>
+          <IndiaSectionTitle emoji="📰">News on {moduleTitle}</IndiaSectionTitle>
+          <EmptyState
+            emoji="📰"
+            title={`No news matched ${moduleTitle} yet.`}
+            body="We index district-tagged news today; national news is not connected yet."
+          />
         </div>
       </section>
     );
@@ -102,7 +95,7 @@ export default async function ModuleNewsStrip({ newsKeywords, moduleTitle }: Pro
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <SectionLabel>News on {moduleTitle}</SectionLabel>
+        <IndiaSectionTitle emoji="📰">News on {moduleTitle}</IndiaSectionTitle>
         <div
           style={{
             display: "grid",
@@ -149,7 +142,7 @@ export default async function ModuleNewsStrip({ newsKeywords, moduleTitle }: Pro
                 <span>·</span>
                 <span>{n.publisher ?? n.source}</span>
                 <span>·</span>
-                <span style={{ fontFamily: INDIA_DESIGN.fontMono }}>
+                <span className="ftp-num" style={{ fontWeight: 500 }}>
                   {n.publishedAt.toLocaleDateString("en-IN", {
                     day: "numeric",
                     month: "short",
@@ -164,19 +157,3 @@ export default async function ModuleNewsStrip({ newsKeywords, moduleTitle }: Pro
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        color: INDIA_DESIGN.textFaint,
-        marginBottom: 10,
-      }}
-    >
-      {children}
-    </div>
-  );
-}

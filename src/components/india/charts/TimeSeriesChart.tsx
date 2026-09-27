@@ -96,7 +96,7 @@ export async function TimeSeriesChart({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
-        <h3 style={{ fontSize: "14px", fontWeight: 500, margin: 0 }}>{title}</h3>
+        <h3 className="ftp-display" style={{ fontSize: "16px", fontWeight: 600, margin: 0 }}>{title}</h3>
         {unit && (
           <span style={{ fontSize: "11px", color: "var(--color-text-tertiary)" }}>{unit}</span>
         )}
@@ -116,14 +116,16 @@ export async function TimeSeriesChart({
         ))}
 
         {/* Y-axis labels (min, mid, max) */}
+        {/* gridYs runs bottom → top (frac 0, 0.5, 1), so the minimum sits on
+            gridYs[0] and the maximum on gridYs[2]. */}
         <text x="6" y={gridYs[0] + 4} fontSize="9" fill="var(--color-text-tertiary)">
-          {maxV.toLocaleString("en-IN")}
+          {minV.toLocaleString("en-IN")}
         </text>
         <text x="6" y={gridYs[1] + 4} fontSize="9" fill="var(--color-text-tertiary)">
           {Math.round((minV + maxV) / 2).toLocaleString("en-IN")}
         </text>
         <text x="6" y={gridYs[2] + 4} fontSize="9" fill="var(--color-text-tertiary)">
-          {minV.toLocaleString("en-IN")}
+          {maxV.toLocaleString("en-IN")}
         </text>
 
         <polyline

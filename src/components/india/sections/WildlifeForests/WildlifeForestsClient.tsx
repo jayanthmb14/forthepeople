@@ -244,7 +244,7 @@ function TopForestStatesCard({ data }: { data: WildlifeForestsData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Top Forest States</span>
+        <span className={styles.rightCardTitle}>Top forest states</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🌿
         </span>
@@ -318,7 +318,7 @@ function BiodiversityCard({ data }: { data: WildlifeForestsData }) {
         ))}
       </div>
       <a href="#" className={styles.rightCardLink}>
-        Full census →
+        Full census
       </a>
     </div>
   );
@@ -369,9 +369,7 @@ export function WildlifeForestsClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {INDIA_SUPER_CATEGORIES.length}
+              Section {data.superCategory.displayOrder} of {INDIA_SUPER_CATEGORIES.length}
             </div>
             <h2
               id="wildlife-forests-title"
@@ -408,9 +406,6 @@ export function WildlifeForestsClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -431,12 +426,12 @@ export function WildlifeForestsClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -505,7 +500,7 @@ export function WildlifeForestsClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>

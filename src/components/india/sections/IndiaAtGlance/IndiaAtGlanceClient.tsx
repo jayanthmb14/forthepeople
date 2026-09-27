@@ -227,7 +227,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -331,7 +331,7 @@ function WorldRankCard({ data }: { data: MacroSnapshotData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>India&apos;s World Rank</span>
+        <span className={styles.rightCardTitle}>India&apos;s world rank</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🌐
         </span>
@@ -358,18 +358,24 @@ function WorldRankCard({ data }: { data: MacroSnapshotData }) {
         })}
       </div>
       <a href="#" className={styles.rightCardLink}>
-        View all {WORLD_RANK_TOTAL_COUNT} ranks →
+        View all {WORLD_RANK_TOTAL_COUNT} ranks
       </a>
     </div>
   );
 }
 
-function LatestUpdatesCard({ updates }: { updates: LatestUpdate[] }) {
+function LatestUpdatesCard({
+  updates,
+  locale,
+}: {
+  updates: LatestUpdate[];
+  locale: string;
+}) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
         <span className={styles.rightCardTitle}>Latest updates</span>
-        <span className={styles.rightCardLiveBadge}>live</span>
+        <span className={styles.rightCardLiveBadge}>Recent</span>
       </div>
       <div className={styles.rightCardList}>
         {updates.map((u, i) => (
@@ -384,9 +390,12 @@ function LatestUpdatesCard({ updates }: { updates: LatestUpdate[] }) {
           </div>
         ))}
       </div>
-      <a href="#" className={styles.rightCardLink}>
-        Live data feed →
-      </a>
+      {/* Was a dead "#" link labelled "Live data feed": the rows are
+          dated releases, not a live feed, and the full dated log already
+          exists at /india/updates. */}
+      <Link href={`/${locale}/india/updates`} className={styles.rightCardLink}>
+        All updates
+      </Link>
     </div>
   );
 }
@@ -432,9 +441,7 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {INDIA_SUPER_CATEGORIES.length}
+              Section {data.superCategory.displayOrder} of {INDIA_SUPER_CATEGORIES.length}
             </div>
             <h2
               id="india-at-a-glance-title"
@@ -486,9 +493,6 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -509,12 +513,12 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -580,7 +584,7 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
                 href={`/${locale}/india/${featuredModuleSlug}`}
                 className={styles.openModuleLink}
               >
-                Open module →
+                Open module
               </Link>
             </div>
           </div>
@@ -588,7 +592,7 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
           {/* RIGHT — World Rank + Latest Updates */}
           <div className={styles.rightColumn} data-ftp-right-rail="1">
             <WorldRankCard data={data} />
-            <LatestUpdatesCard updates={data.latestUpdates} />
+            <LatestUpdatesCard updates={data.latestUpdates} locale={locale} />
           </div>
           <SectionRightRailDots count={2} accent="#0C447C" />
         </div>

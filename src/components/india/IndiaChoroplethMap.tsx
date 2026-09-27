@@ -273,7 +273,8 @@ export default function IndiaChoroplethMap({
           <div style={{ fontWeight: 600 }}>{tooltip.name}</div>
           <div
             style={{
-              fontFamily: INDIA_DESIGN.fontMono,
+              fontFamily: "var(--ftp-font-sans)",
+              fontVariantNumeric: "tabular-nums",
               color: "#9CA3AF",
               display: "flex",
               gap: 8,

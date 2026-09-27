@@ -149,7 +149,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -238,7 +238,7 @@ function TopPowerStatesCard({ data }: { data: NaturalResourcesEnergyData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Top Power States</span>
+        <span className={styles.rightCardTitle}>Top power states</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⚡
         </span>
@@ -288,7 +288,7 @@ function EnergyMixCard({ data }: { data: NaturalResourcesEnergyData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Energy Mix</span>
+        <span className={styles.rightCardTitle}>Energy mix</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🔌
         </span>
@@ -346,9 +346,7 @@ export function NaturalResourcesEnergyClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {data.totalSuperCategories}
+              Section {data.superCategory.displayOrder} of {data.totalSuperCategories}
             </div>
             <h2
               id="natural-resources-energy-title"
@@ -398,9 +396,6 @@ export function NaturalResourcesEnergyClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -421,12 +416,12 @@ export function NaturalResourcesEnergyClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -494,7 +489,7 @@ export function NaturalResourcesEnergyClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>

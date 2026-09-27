@@ -28,14 +28,12 @@ function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
     return (
       <span
         style={{
-          fontSize: "9px",
+          fontSize: "11px",
           background: "#E1F5EE",
           color: "#16A34A",
           padding: "1px 6px",
           borderRadius: "3px",
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-          fontWeight: 500,
+          fontWeight: 600,
         }}
       >
         Live
@@ -45,14 +43,12 @@ function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
   return (
     <span
       style={{
-        fontSize: "9px",
+        fontSize: "11px",
         background: "#FAEEDA",
         color: "#854F0B",
         padding: "1px 6px",
         borderRadius: "3px",
-        letterSpacing: "0.05em",
-        textTransform: "uppercase",
-        fontWeight: 500,
+        fontWeight: 600,
       }}
     >
       Soon
@@ -60,26 +56,10 @@ function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
   );
 }
 
-function PlaceholderSparkline({ accentHex }: { accentHex: string }) {
-  // Simple 7-point polyline placeholder, replaced in Phase 5.
-  return (
-    <svg viewBox="0 0 200 40" width="100%" height="32" aria-hidden>
-      <polyline
-        points="0,30 30,26 60,28 90,18 120,22 150,12 200,8"
-        fill="none"
-        stroke={accentHex}
-        strokeOpacity="0.85"
-        strokeWidth="1.4"
-      />
-      <polyline
-        points="0,30 30,26 60,28 90,18 120,22 150,12 200,8 200,40 0,40"
-        fill={accentHex}
-        fillOpacity="0.10"
-        stroke="none"
-      />
-    </svg>
-  );
-}
+// Design v4 (2026-09-27): the PlaceholderSparkline that drew the same
+// hand-typed rising line on every card was removed. It looked like a trend
+// but carried no data (v4 honesty rule: only draw a picture when real data
+// supports it). A real sparkline can return once IndiaTimeSeries rows exist.
 
 export function ModulePreviewCard({
   module,
@@ -135,7 +115,7 @@ export function ModulePreviewCard({
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "16px" }}>{module.icon}</span>
-          <span style={{ fontSize: "14px", fontWeight: 500 }}>{module.title}</span>
+          <span className="ftp-display" style={{ fontSize: "15px", fontWeight: 600 }}>{module.title}</span>
         </div>
         <StatusPill status={module.status} />
       </div>
@@ -150,9 +130,11 @@ export function ModulePreviewCard({
       >
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "22px",
-            fontWeight: 500,
+            fontFamily: "var(--ftp-font-display)",
+            fontVariantNumeric: "tabular-nums lining-nums",
+            letterSpacing: "-0.02em",
+            fontSize: "24px",
+            fontWeight: 650,
             lineHeight: 1.1,
             color: accent.text,
           }}
@@ -165,8 +147,6 @@ export function ModulePreviewCard({
           </span>
         )}
       </div>
-
-      <PlaceholderSparkline accentHex={accent.hex} />
 
       <p
         style={{

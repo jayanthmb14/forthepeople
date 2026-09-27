@@ -49,27 +49,26 @@ export async function RelevantNewsSection({
       <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "12px" }}>
         <h2
           style={{
-            fontFamily: "var(--font-jakarta)",
-            fontSize: "18px",
-            fontWeight: 500,
+            fontFamily: "var(--ftp-font-display)",
+            fontSize: "20px",
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
             margin: 0,
           }}
         >
-          📰 Relevant News
+          📰 Relevant news
         </h2>
         <span
           style={{
-            fontSize: "9px",
+            fontSize: "11px",
             background: "rgba(60, 52, 137, 0.10)",
             color: "#3C3489",
             padding: "1px 6px",
             borderRadius: "3px",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
-          AI Summaries
+          AI summaries
         </span>
       </div>
 
@@ -113,7 +112,7 @@ export async function RelevantNewsSection({
               rel="noopener noreferrer"
               style={{ fontSize: "12px", color: "var(--color-text-info)", fontWeight: 500 }}
             >
-              Read original at {domainOf(n.sourceUrl)} →
+              Read original at {domainOf(n.sourceUrl)}
             </a>
           </li>
         ))}

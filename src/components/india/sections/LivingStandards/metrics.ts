@@ -77,7 +77,7 @@ export const FEATURED_HEADLINE_LABEL = "yrs life exp";
 export const FEATURED_DESCRIPTION =
   "Indicators tracked from NFHS-5 and Sample Registration System.";
 
-export const FEATURED_RIGHT_CALLOUT_LABEL = "TARGET";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Target";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "NHP 2030";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "health-overview",
@@ -110,7 +110,7 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "life exp",
+    label: "Life exp",
     primary: { moduleSlug: "health-overview", metricKey: "life_expectancy_years" },
     primaryFormat: "decimal_1",
     subStat: "yrs · SRS",
@@ -122,7 +122,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     subStat: "per 1k births",
   },
   {
-    label: "doctors",
+    label: "Doctors",
     primary: { moduleSlug: "health-overview", metricKey: "doctors_per_1000" },
     primaryFormat: "decimal_2",
     subStat: "per 1k · WHO 1.0",

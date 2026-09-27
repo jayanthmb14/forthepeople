@@ -65,10 +65,9 @@ function StatusPill({ status }: { status: IndiaModuleDef["status"] }) {
   return (
     <span
       style={{
-        fontSize: "8.5px",
-        letterSpacing: "0.05em",
-        textTransform: "uppercase",
-        fontWeight: 500,
+        fontSize: "10px",
+        lineHeight: "14px",
+        fontWeight: 600,
         padding: "1px 5px",
         borderRadius: "3px",
         background: isLive ? "#E1F5EE" : "#FAEEDA",
@@ -361,10 +360,11 @@ export function ModuleSelectorDropdown({
                           flexShrink: 0,
                         }}
                       />
-                      {/* Plain section number — mono, accent-colored, bold */}
+                      {/* Plain section number — accent-coloured, bold, tabular */}
                       <span
                         style={{
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--ftp-font-sans)",
+                          fontVariantNumeric: "tabular-nums",
                           fontSize: "11px",
                           fontWeight: 600,
                           color: accentHex,
@@ -378,8 +378,9 @@ export function ModuleSelectorDropdown({
                       <span style={{ flex: 1 }}>{sc.title}</span>
                       <span
                         style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "10px",
+                          fontFamily: "var(--ftp-font-sans)",
+                          fontVariantNumeric: "tabular-nums",
+                          fontSize: "11px",
                           color: "var(--color-text-tertiary)",
                           background: "var(--color-background-secondary)",
                           padding: "1px 7px",

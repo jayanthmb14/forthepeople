@@ -107,7 +107,8 @@ export const INDIA_DESIGN = {
   amberStrip: "#FEF3C7",
   amberStripBorder: "#FDE68A",
   fontMono: "var(--font-mono, ui-monospace, monospace)",
-  fontDisplay: "var(--font-plus-jakarta, system-ui, sans-serif)",
+  // Design v4: headings and big numbers use the display face (Bricolage).
+  fontDisplay: "var(--ftp-font-display)",
   sectionMaxWidth: 1200,
   cardRadius: 14,
   headerOffsetPx: 56, // sticky nav sits this far below header

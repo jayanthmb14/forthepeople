@@ -26,6 +26,7 @@ import {
   getIndiaCategories,
 } from "@/lib/india/india-modules";
 import { CATEGORY_ACCENT } from "@/lib/india/india-design";
+import { EmptyState as KitEmptyState } from "@/components/district/ui";
 
 interface UpdateRow {
   id: string;
@@ -238,8 +239,9 @@ function Chip({
       role="tab"
       aria-selected={active}
       onClick={onClick}
+      className="ftp-chip"
       style={{
-        background: active ? INDIA_DESIGN.accentBlue : INDIA_DESIGN.bgCard,
+        background: active ? "var(--hue)" : INDIA_DESIGN.bgCard,
         color: active ? "#FFFFFF" : INDIA_DESIGN.textSecondary,
         border: active
           ? "none"
@@ -335,8 +337,8 @@ function UpdateLogRow({
             <span style={{ color: INDIA_DESIGN.textSecondary }}>{row.metricLabel}</span>
             <span style={{ color: INDIA_DESIGN.textMuted }}>{" → "}</span>
             <span
+              className="ftp-num"
               style={{
-                fontFamily: INDIA_DESIGN.fontMono,
                 fontWeight: 700,
                 color: INDIA_DESIGN.textPrimary,
               }}
@@ -451,28 +453,10 @@ function UpdateLogRow({
 
 function EmptyState() {
   return (
-    <div
-      style={{
-        background: INDIA_DESIGN.bgCard,
-        border: `1px dashed ${INDIA_DESIGN.border}`,
-        borderRadius: 12,
-        padding: "32px 24px",
-        textAlign: "center",
-        fontSize: 13,
-        color: INDIA_DESIGN.textMuted,
-        lineHeight: 1.6,
-      }}
-    >
-      <div style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">
-        ⏳
-      </div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: INDIA_DESIGN.textPrimary }}>
-        No updates yet — first sync pending
-      </div>
-      <p style={{ margin: "8px 0 0", maxWidth: 460, marginInline: "auto" }}>
-        Once data starts flowing in from the official portals, every value
-        change will appear here with its source link and reporting date.
-      </p>
-    </div>
+    <KitEmptyState
+      emoji="⏳"
+      title="No updates yet. The first sync is still pending."
+      body="Once data starts flowing in from the official portals, every value change will appear here with its source link and reporting date."
+    />
   );
 }

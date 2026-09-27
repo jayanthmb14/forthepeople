@@ -112,23 +112,23 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "articles",
+    label: "Articles",
     primary: { moduleSlug: "know-india-constitution", metricKey: "articles_count" },
     primaryFormat: "with_suffix",
     primarySuffix: "+",
   },
   {
-    label: "schedules",
+    label: "Schedules",
     primary: { moduleSlug: "know-india-constitution", metricKey: "schedules_count" },
     primaryFormat: "count",
   },
   {
-    label: "parts",
+    label: "Parts",
     primary: { moduleSlug: "know-india-constitution", metricKey: "parts_count" },
     primaryFormat: "count",
   },
   {
-    label: "adopted",
+    label: "Adopted",
     primary: { moduleSlug: "know-india-constitution", metricKey: "adopted_year" },
     primaryFormat: "year_to_date_string",
   },

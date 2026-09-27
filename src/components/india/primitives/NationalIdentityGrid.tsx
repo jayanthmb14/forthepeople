@@ -63,10 +63,10 @@ export function NationalIdentityGrid() {
           >
             <div
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "9px",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
+                fontFamily: "var(--ftp-font-sans)",
+                fontSize: "10.5px",
+                lineHeight: "14px",
+                fontWeight: 600,
                 color: "#885410",
                 marginBottom: "2px",
               }}

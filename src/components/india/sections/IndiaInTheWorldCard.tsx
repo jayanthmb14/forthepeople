@@ -142,8 +142,9 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
         style={{
           color: "#16A34A",
           fontWeight: 500,
-          fontFamily: "var(--font-mono)",
-          fontSize: "10px",
+          fontFamily: "var(--ftp-font-sans)",
+          fontVariantNumeric: "tabular-nums",
+          fontSize: "11px",
         }}
       >
         ↑ from #{movement.from}
@@ -156,8 +157,9 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
         style={{
           color: "#A32D2D",
           fontWeight: 500,
-          fontFamily: "var(--font-mono)",
-          fontSize: "10px",
+          fontFamily: "var(--ftp-font-sans)",
+          fontVariantNumeric: "tabular-nums",
+          fontSize: "11px",
         }}
       >
         ↓ from #{movement.from}
@@ -172,14 +174,12 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
           background: "rgba(83, 74, 183, 0.10)",
           padding: "1px 6px",
           borderRadius: "999px",
-          fontSize: "9px",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          fontWeight: 500,
-          fontFamily: "var(--font-mono)",
+          fontSize: "11px",
+          fontWeight: 600,
+          fontFamily: "var(--ftp-font-sans)",
         }}
       >
-        new
+        New
       </span>
     );
   }
@@ -187,8 +187,8 @@ function TrendNode({ movement }: { movement: Ranking["movement"] }) {
     <span
       style={{
         color: "var(--color-text-tertiary)",
-        fontFamily: "var(--font-mono)",
-        fontSize: "10px",
+        fontFamily: "var(--ftp-font-sans)",
+        fontSize: "11px",
       }}
     >
       — stable
@@ -227,8 +227,9 @@ function RankRow({ ranking }: { ranking: Ranking }) {
         <span
           style={{
             position: "absolute",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 500,
+            fontFamily: "var(--ftp-font-display)",
+            fontVariantNumeric: "tabular-nums lining-nums",
+            fontWeight: 700,
             fontSize: "13px",
             zIndex: 2,
             top: "50%",
@@ -254,21 +255,22 @@ function RankRow({ ranking }: { ranking: Ranking }) {
                   fontWeight: 400,
                 }}
               >
-                · {ranking.annotation}
+                {ranking.annotation}
               </span>
             )}
           </span>
         </div>
         <div
           style={{
-            fontSize: "10px",
+            fontSize: "11px",
+            lineHeight: "15px",
             color: "var(--color-text-tertiary)",
             marginTop: "2px",
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.02em",
+            fontFamily: "var(--ftp-font-sans)",
+            fontVariantNumeric: "tabular-nums",
           }}
         >
-          {ranking.source} · {ranking.year}
+          {ranking.source}, {ranking.year}
         </div>
       </div>
       <div style={{ textAlign: "right" }}>
@@ -288,7 +290,7 @@ export function IndiaInTheWorldCard() {
   const footerCount = expanded
     ? `All ${total} ranks shown`
     : `${collapsedCount} of ${total} ranks shown`;
-  const toggleLabel = expanded ? "Show fewer ›" : "View all rankings ›";
+  const toggleLabel = expanded ? "Show fewer" : "View all rankings";
 
   return (
     <section
@@ -311,16 +313,18 @@ export function IndiaInTheWorldCard() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
+          flexWrap: "wrap",
+          gap: "2px 12px",
           marginBottom: "4px",
         }}
       >
         <h2
           style={{
-            fontFamily: "var(--font-jakarta)",
-            fontSize: "22px",
-            fontWeight: 500,
+            fontFamily: "var(--ftp-font-display)",
+            fontSize: "24px",
+            fontWeight: 600,
             margin: 0,
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
           }}
         >
           India in the world

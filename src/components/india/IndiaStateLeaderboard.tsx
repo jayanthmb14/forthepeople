@@ -72,14 +72,12 @@ export default function IndiaStateLeaderboard({
       >
         <span
           style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: INDIA_DESIGN.textFaint,
+            fontSize: 12,
+            fontWeight: 600,
+            color: INDIA_DESIGN.textMuted,
           }}
         >
-          State Leaderboard
+          State leaderboard
         </span>
         <div style={{ display: "inline-flex", gap: 4 }}>
           {(["top", "bottom"] as const).map((mode) => (
@@ -130,7 +128,8 @@ export default function IndiaStateLeaderboard({
                   fontSize: 11,
                   fontWeight: 700,
                   color: INDIA_DESIGN.textMuted,
-                  fontFamily: INDIA_DESIGN.fontMono,
+                  fontFamily: "var(--ftp-font-sans)",
+                  fontVariantNumeric: "tabular-nums",
                   width: 22,
                 }}
               >
@@ -143,7 +142,7 @@ export default function IndiaStateLeaderboard({
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  fontFamily: INDIA_DESIGN.fontMono,
+                  fontFamily: "var(--ftp-font-sans)",
                   fontVariantNumeric: "tabular-nums",
                   color: INDIA_DESIGN.textPrimary,
                 }}

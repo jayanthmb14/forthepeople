@@ -164,7 +164,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -242,7 +242,7 @@ function StateLeadersCard({ data }: { data: LivingStandardsData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>State Leaders</span>
+        <span className={styles.rightCardTitle}>State leaders</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⊕
         </span>
@@ -257,7 +257,7 @@ function StateLeadersCard({ data }: { data: LivingStandardsData }) {
         ))}
       </div>
       <a href="#" className={styles.rightCardLink}>
-        All state ranks →
+        All state ranks
       </a>
     </div>
   );
@@ -294,7 +294,7 @@ function SchemeCoverageCard({ data }: { data: LivingStandardsData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Scheme Coverage</span>
+        <span className={styles.rightCardTitle}>Scheme coverage</span>
         <span className={styles.rightCardIcon} aria-hidden>
           ⚕
         </span>
@@ -305,7 +305,7 @@ function SchemeCoverageCard({ data }: { data: LivingStandardsData }) {
         ))}
       </div>
       <a href="#" className={styles.rightCardLink}>
-        All schemes →
+        All schemes
       </a>
     </div>
   );
@@ -356,9 +356,7 @@ export function LivingStandardsClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {INDIA_SUPER_CATEGORIES.length}
+              Section {data.superCategory.displayOrder} of {INDIA_SUPER_CATEGORIES.length}
             </div>
             <h2
               id="living-standards-title"
@@ -408,9 +406,6 @@ export function LivingStandardsClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -431,12 +426,12 @@ export function LivingStandardsClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -504,7 +499,7 @@ export function LivingStandardsClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>

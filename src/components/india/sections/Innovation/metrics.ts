@@ -82,7 +82,7 @@ export const INN_DIRECTORY: DirectoryRow[] = [
 export const FEATURED_HEADLINE_LABEL = "DPIIT-recognised";
 export const FEATURED_DESCRIPTION =
   "India's startup ecosystem from the Startup India dashboard.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "UNICORNS";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Unicorns";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "as of 2024";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "science-startups",
@@ -121,7 +121,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "lakh · 2024" },
   },
   {
-    label: "unicorns",
+    label: "Unicorns",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "science-startups", metricKey: "unicorns_count" },
@@ -130,12 +130,12 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "DPIIT list" },
   },
   {
-    label: "top sector",
+    label: "Top sector",
     primary: { kind: "static", value: "IT" },
     sub: { kind: "static", text: "Software · Services" },
   },
   {
-    label: "source",
+    label: "Source",
     primary: { kind: "static", value: "DPIIT" },
     sub: { kind: "static", text: "Startup India" },
   },
@@ -158,7 +158,7 @@ export const TOP_STARTUP_HUBS: TopStartupHubEntry[] = [
   { rank: 5, state: "Telangana",  city: "Hyderabad",   valueRef: { moduleSlug: "science-startups", metricKey: "top_state_tg_startups_thousand" } },
 ];
 
-export const TOP_STARTUP_HUBS_FOOTER_LABEL = "All startup hubs →";
+export const TOP_STARTUP_HUBS_FOOTER_LABEL = "All startup hubs";
 
 // ── DIGITAL STACK right card ──
 
@@ -196,7 +196,7 @@ export const DIGITAL_STACK: DigitalStackEntry[] = [
   },
 ];
 
-export const DIGITAL_STACK_FOOTER_LABEL = "Digital stack →";
+export const DIGITAL_STACK_FOOTER_LABEL = "Digital stack";
 
 // ── Timing constants (kept here so the .tsx is value-free) ──
 export const HERO_ANIMATION_DURATION_MS = 1500;

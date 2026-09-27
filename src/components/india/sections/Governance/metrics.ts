@@ -105,7 +105,7 @@ export const GOV_DIRECTORY: DirectoryRow[] = [
 export const FEATURED_HEADLINE_LABEL = "civil police";
 export const FEATURED_DESCRIPTION =
   "BPRD's annual snapshot of India's police organizations.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "TARGET";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Target";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "UN recommendation";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "justice-police",
@@ -136,7 +136,7 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "civil police",
+    label: "Civil police",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "justice-police", metricKey: "civil_police_total_lakh" },
@@ -145,7 +145,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "lakh · BPRD" },
   },
   {
-    label: "pending cases",
+    label: "Pending cases",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "justice-pendency", metricKey: "total_pending_crore_cases" },
@@ -154,7 +154,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "cr · NJDG" },
   },
   {
-    label: "defence",
+    label: "Defence",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "defence-budget", metricKey: "defence_allocation_lakh_cr" },
@@ -209,7 +209,7 @@ export const JUSTICE_SYSTEM: JusticeSystemEntry[] = [
   },
 ];
 
-export const JUSTICE_SYSTEM_FOOTER_LABEL = "Justice dashboard →";
+export const JUSTICE_SYSTEM_FOOTER_LABEL = "Justice dashboard";
 
 // ── DEFENCE & ELECTIONS right card ──
 
@@ -245,7 +245,7 @@ export const DEFENCE_AND_ELECTIONS: DefenceElectionsEntry[] = [
   },
 ];
 
-export const DEFENCE_AND_ELECTIONS_FOOTER_LABEL = "Defence + elections →";
+export const DEFENCE_AND_ELECTIONS_FOOTER_LABEL = "Defence + elections";
 
 // ── Step-12 timing constants ──
 export const HERO_ANIMATION_DURATION_MS = 1500;

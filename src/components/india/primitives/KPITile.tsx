@@ -56,10 +56,9 @@ export function KPITile({
     >
       <div
         style={{
-          fontSize: "11px",
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          color: "var(--color-text-tertiary)",
+          fontSize: "12px",
+          fontWeight: 600,
+          color: "var(--color-text-secondary)",
           marginBottom: "4px",
         }}
       >
@@ -69,9 +68,11 @@ export function KPITile({
       <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginBottom: "4px" }}>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "22px",
-            fontWeight: 500,
+            fontFamily: "var(--ftp-font-display)",
+            fontVariantNumeric: "tabular-nums lining-nums",
+            letterSpacing: "-0.02em",
+            fontSize: "24px",
+            fontWeight: 650,
             lineHeight: 1.05,
             color: "var(--color-text-primary)",
           }}

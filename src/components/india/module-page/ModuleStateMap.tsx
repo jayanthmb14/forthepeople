@@ -14,6 +14,7 @@
 import { useState } from "react";
 import IndiaChoroplethMap from "../IndiaChoroplethMap";
 import { INDIA_DESIGN } from "@/lib/india/india-design";
+import { IndiaSectionTitle } from "./v4";
 
 interface Props {
   metricKey: string;
@@ -32,7 +33,7 @@ export default function ModuleStateMap({ metricKey, metricLabel }: Props) {
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <SectionLabel>State view — {metricLabel}</SectionLabel>
+        <IndiaSectionTitle emoji="🗺️">{metricLabel} by state</IndiaSectionTitle>
         <p
           style={{
             fontSize: 13,
@@ -53,19 +54,3 @@ export default function ModuleStateMap({ metricKey, metricLabel }: Props) {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        color: INDIA_DESIGN.textFaint,
-        marginBottom: 6,
-      }}
-    >
-      {children}
-    </div>
-  );
-}

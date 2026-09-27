@@ -49,7 +49,7 @@ export function IndiaChoropleth({
           marginBottom: "12px",
         }}
       >
-        <h3 style={{ fontSize: "14px", fontWeight: 500, margin: 0 }}>{title}</h3>
+        <h3 className="ftp-display" style={{ fontSize: "16px", fontWeight: 600, margin: 0 }}>{title}</h3>
         {unit && (
           <span style={{ fontSize: "11px", color: "var(--color-text-tertiary)" }}>{unit}</span>
         )}

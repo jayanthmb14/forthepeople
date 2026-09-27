@@ -17,6 +17,7 @@ import {
   INDIA_DESIGN,
   categoryTint,
 } from "@/lib/india/india-design";
+import { IndiaSectionTitle } from "./v4";
 
 interface Props {
   locale: string;
@@ -40,18 +41,7 @@ export default function ModuleRelatedModules({ locale, module }: Props) {
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: INDIA_DESIGN.textFaint,
-            marginBottom: 10,
-          }}
-        >
-          Related modules
-        </div>
+        <IndiaSectionTitle emoji="🧭">Related modules</IndiaSectionTitle>
         <div
           style={{
             display: "grid",
@@ -131,7 +121,7 @@ export default function ModuleRelatedModules({ locale, module }: Props) {
                     fontWeight: 600,
                   }}
                 >
-                  Open dashboard →
+                  Open dashboard
                 </div>
               </Link>
             );

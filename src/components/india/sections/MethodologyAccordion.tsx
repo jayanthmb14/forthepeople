@@ -36,9 +36,10 @@ export function MethodologyAccordion({ rows, className }: MethodologyAccordionPr
     >
       <h2
         style={{
-          fontFamily: "var(--font-jakarta)",
-          fontSize: "18px",
-          fontWeight: 500,
+          fontFamily: "var(--ftp-font-display)",
+          fontSize: "20px",
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
           margin: "0 0 12px",
         }}
       >

@@ -68,10 +68,9 @@ export default function ModuleHero({ module }: Props) {
         <div>
           <div
             style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: "capitalize",
               color: accent,
               marginBottom: 6,
               display: "inline-flex",
@@ -89,9 +88,9 @@ export default function ModuleHero({ module }: Props) {
           <h1
             style={{
               fontSize: 36,
-              fontWeight: 800,
+              fontWeight: 700,
               color: INDIA_DESIGN.textPrimary,
-              letterSpacing: "-0.6px",
+              letterSpacing: "-0.02em",
               lineHeight: 1.1,
               margin: "8px 0 6px",
               fontFamily: INDIA_DESIGN.fontDisplay,
@@ -130,22 +129,21 @@ export default function ModuleHero({ module }: Props) {
               >
                 <div
                   style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    color: INDIA_DESIGN.textFaint,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: INDIA_DESIGN.textMuted,
                   }}
                 >
                   {k.label}
                 </div>
                 <div
                   style={{
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: INDIA_DESIGN.textPrimary,
-                    fontFamily: INDIA_DESIGN.fontMono,
-                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 24,
+                    fontWeight: 650,
+                    color: "var(--hue-deep)",
+                    fontFamily: INDIA_DESIGN.fontDisplay,
+                    fontVariantNumeric: "tabular-nums lining-nums",
+                    letterSpacing: "-0.02em",
                     marginTop: 2,
                   }}
                 >

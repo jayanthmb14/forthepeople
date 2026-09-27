@@ -36,10 +36,10 @@ const VARIANT_STYLE: Record<SourcePillVariant, React.CSSProperties> = {
 };
 
 const BASE_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: "10px",
-  fontWeight: 400,
-  letterSpacing: "0.02em",
+  fontFamily: "var(--ftp-font-sans)",
+  fontVariantNumeric: "tabular-nums",
+  fontSize: "11px",
+  fontWeight: 500,
   borderRadius: "999px",
   padding: "2px 7px",
   display: "inline-flex",

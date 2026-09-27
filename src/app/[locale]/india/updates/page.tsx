@@ -11,9 +11,10 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import IndiaUpdateLog from "@/components/india/IndiaUpdateLog";
 import { INDIA_DESIGN } from "@/lib/india/india-design";
+import { hueClass } from "@/lib/design/hues";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -53,6 +54,9 @@ export default async function IndiaUpdatesPage({
   return (
     <main
       role="main"
+      // Design v4: the update log's module hue (slate), same as the
+      // district update-log page, so the kit chip and filter colours match.
+      className={hueClass("update-log")}
       style={{
         background: INDIA_DESIGN.bgPage,
         minHeight: "100vh",
@@ -83,32 +87,37 @@ export default async function IndiaUpdatesPage({
           <ArrowLeft size={14} aria-hidden="true" />
           Back to India dashboard
         </Link>
+        {/* Design v4: the page's group chip (emoji + sentence case), as in
+            the kit PageHeader, instead of a tracked-out uppercase eyebrow. */}
         <div
           style={{
-            fontSize: 11,
-            lineHeight: "16px",
-            fontWeight: 500,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-            color: INDIA_DESIGN.textFaint,
             marginTop: 16,
             display: "flex",
+            width: "fit-content",
             alignItems: "center",
             gap: 6,
+            padding: "3px 10px 3px 6px",
+            borderRadius: 999,
+            background: "var(--hue-tint)",
+            color: "var(--hue-deep)",
+            fontSize: 12,
+            lineHeight: "18px",
+            fontWeight: 600,
           }}
         >
-          {/* Design v3: Lucide icon instead of the clock emoji */}
-          <Clock size={14} aria-hidden="true" />
-          Update Log
+          <span className="ftp-emoji" aria-hidden="true" style={{ fontSize: 14 }}>
+            🕒
+          </span>
+          Update log
         </div>
         <h1
           style={{
-            fontSize: 28,
-            lineHeight: "32px",
-            fontWeight: 600, // v3: 600 only on the page's single H1
+            fontSize: 32,
+            lineHeight: "38px",
+            fontWeight: 700,
             color: INDIA_DESIGN.textPrimary,
-            letterSpacing: "-0.01em",
-            margin: "4px 0 6px",
+            letterSpacing: "-0.02em",
+            margin: "10px 0 6px",
             fontFamily: INDIA_DESIGN.fontDisplay,
           }}
         >
@@ -124,7 +133,7 @@ export default async function IndiaUpdatesPage({
           }}
         >
           The most recent {/* TODO_RESEARCH: word "100" inline once feed is live */}
-          updates to any indicator on /[locale]/india. Each row shows what
+          updates to any indicator on the India dashboard. Each row shows what
           changed, where the value came from, and when. Filter by category
           to focus on a single area.
         </p>

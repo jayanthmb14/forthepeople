@@ -74,7 +74,7 @@ export const INTERSECTION_THRESHOLD = 0.15;
 export const INTERSECTION_ROOT_MARGIN = "0px 0px -10% 0px";
 export const FEATURED_DESCRIPTION =
   "Foodgrain output, rice and wheat estimates from DA&FW.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "TOP STATE";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Top state";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "Uttar Pradesh";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "agriculture-production",
@@ -107,7 +107,7 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "rice",
+    label: "Rice",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "agriculture-production", metricKey: "rice_production_million_tonnes" },
@@ -116,7 +116,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "MT · DA&FW" },
   },
   {
-    label: "wheat",
+    label: "Wheat",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "agriculture-production", metricKey: "wheat_production_million_tonnes" },
@@ -125,12 +125,12 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "MT · DA&FW" },
   },
   {
-    label: "top state",
+    label: "Top state",
     primary: { kind: "static", value: "UP" },
     sub: { kind: "static", text: "wheat leader" },
   },
   {
-    label: "source",
+    label: "Source",
     primary: { kind: "static", value: "DA&FW" },
     sub: { kind: "static", text: "AY 2024 · 4th est." },
   },
@@ -153,7 +153,7 @@ export const TOP_CROP_STATES: TopCropStateEntry[] = [
   { rank: 5, state: "Andhra",      crop: "Rice",  valueRef: { moduleSlug: "agriculture-production", metricKey: "top_state_ap_rice_mt" } },
 ];
 
-export const TOP_CROP_STATES_FOOTER_LABEL = "All major producers →";
+export const TOP_CROP_STATES_FOOTER_LABEL = "All major producers";
 
 // ── FARMER SCHEMES right card ──
 
@@ -188,7 +188,7 @@ export const FARMER_SCHEMES: FarmerSchemeEntry[] = [
   },
 ];
 
-export const FARMER_SCHEMES_FOOTER_LABEL = "All farmer schemes →";
+export const FARMER_SCHEMES_FOOTER_LABEL = "All farmer schemes";
 
 // ── Helpers ──
 

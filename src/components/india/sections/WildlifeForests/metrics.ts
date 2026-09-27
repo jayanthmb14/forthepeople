@@ -53,7 +53,7 @@ export const WF_DIRECTORY: DirectoryRow[] = [
 export const FEATURED_HEADLINE_LABEL = "forest cover";
 export const FEATURED_DESCRIPTION =
   "Forest cover from FSI's biennial India State of Forest Report.";
-export const FEATURED_RIGHT_CALLOUT_LABEL = "TARGET";
+export const FEATURED_RIGHT_CALLOUT_LABEL = "Target";
 export const FEATURED_RIGHT_CALLOUT_SUBLABEL = "NFP 1988";
 export const FEATURED_RIGHT_CALLOUT_REF: MetricRef = {
   moduleSlug: "wildlife-forests",
@@ -89,7 +89,7 @@ export type FeaturedCell = {
 
 export const FEATURED_CELLS: FeaturedCell[] = [
   {
-    label: "forest",
+    label: "Forest",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "wildlife-forests", metricKey: "forest_cover_pct" },
@@ -103,7 +103,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     },
   },
   {
-    label: "tree",
+    label: "Tree",
     primary: {
       kind: "ref",
       ref: { moduleSlug: "wildlife-forests", metricKey: "tree_cover_pct" },
@@ -112,7 +112,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     sub: { kind: "static", text: "outside forest" },
   },
   {
-    label: "top state",
+    label: "Top state",
     primary: { kind: "static", value: "MP" },
     sub: {
       kind: "ref_with_template",
@@ -122,7 +122,7 @@ export const FEATURED_CELLS: FeaturedCell[] = [
     },
   },
   {
-    label: "edition",
+    label: "Edition",
     primary: { kind: "static", value: "ISFR-18" },
     sub: { kind: "static", text: "2023 · biennial" },
   },
@@ -149,7 +149,7 @@ export const TOP_FOREST_STATES: TopForestStateEntry[] = [
  * folds 28 states + 8 UTs (Constitutional fact) — kept as editorial
  * config, not in component JSX.
  */
-export const TOP_FOREST_STATES_FOOTER_LABEL = "All 36 states/UTs →";
+export const TOP_FOREST_STATES_FOOTER_LABEL = "All 36 states/UTs";
 
 // ── BIODIVERSITY right card ──
 

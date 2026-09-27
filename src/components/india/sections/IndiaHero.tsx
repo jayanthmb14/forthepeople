@@ -104,13 +104,15 @@ export function IndiaHero({ locale, dict }: IndiaHeroProps) {
               borderBottom: "0.5px dashed rgba(0,0,0,0.10)",
             }}
           >
+            {/* Design v4: sentence case in the reading face (no tracked-out
+                mono capitals). */}
             <div
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "var(--color-text-tertiary)",
+                fontFamily: "var(--ftp-font-sans)",
+                fontSize: "13px",
+                lineHeight: "18px",
+                fontWeight: 500,
+                color: "var(--ftp-text-2)",
                 marginBottom: "8px",
               }}
             >
@@ -151,9 +153,11 @@ export function IndiaHero({ locale, dict }: IndiaHeroProps) {
                 flexWrap: "wrap",
               }}
             >
+              {/* flex-basis 240 px: on phones the motto takes its own line
+                  instead of squeezing into a one-word column under the pill. */}
               <div
                 style={{
-                  flex: 1,
+                  flex: "1 1 240px",
                   minWidth: 0,
                   fontFamily: "var(--font-serif-display)",
                   fontSize: "15px",

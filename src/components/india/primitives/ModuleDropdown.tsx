@@ -36,6 +36,11 @@ function filterModules(
   return modules;
 }
 
+/** Registry sub-group keys are upper case ("JUSTICE"); show them in sentence case. */
+function sentenceCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 export function ModuleDropdown({
   currentLabel,
   scope,
@@ -154,14 +159,13 @@ export function ModuleDropdown({
               {groupLabel !== "ALL" && (
                 <div
                   style={{
-                    fontSize: "10px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "var(--color-text-tertiary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "var(--color-text-secondary)",
                     marginBottom: "4px",
                   }}
                 >
-                  {groupLabel}
+                  {sentenceCase(groupLabel)}
                 </div>
               )}
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -197,15 +201,15 @@ export function ModuleDropdown({
                       {m.status === "planned" || m.status === "coming_soon" ? (
                         <span
                           style={{
-                            fontSize: "9px",
+                            fontSize: "10px",
+                            fontWeight: 600,
                             background: "#FAEEDA",
                             color: "#854F0B",
                             padding: "1px 5px",
                             borderRadius: "3px",
-                            letterSpacing: "0.05em",
                           }}
                         >
-                          SOON
+                          Soon
                         </span>
                       ) : null}
                     </button>

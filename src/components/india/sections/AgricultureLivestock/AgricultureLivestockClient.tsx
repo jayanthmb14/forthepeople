@@ -161,7 +161,7 @@ function RepeatsDivider() {
   return (
     <div className={styles.repeatsDivider} aria-hidden>
       <span className={styles.repeatsDividerIcon}>↻</span>
-      <span className={styles.repeatsDividerLabel}>repeats</span>
+      <span className={styles.repeatsDividerLabel}>Repeats</span>
     </div>
   );
 }
@@ -232,7 +232,7 @@ function TopCropStatesCard({ data }: { data: AgricultureLivestockData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Top Crop States</span>
+        <span className={styles.rightCardTitle}>Top crop states</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🌾
         </span>
@@ -284,7 +284,7 @@ function FarmerSchemesCard({ data }: { data: AgricultureLivestockData }) {
   return (
     <div className={styles.rightCard}>
       <div className={styles.rightCardHeader}>
-        <span className={styles.rightCardTitle}>Farmer Schemes</span>
+        <span className={styles.rightCardTitle}>Farmer schemes</span>
         <span className={styles.rightCardIcon} aria-hidden>
           🌱
         </span>
@@ -342,9 +342,7 @@ export function AgricultureLivestockClient({ data, locale }: Props) {
           <div className={styles.identityZone}>
             <div className={styles.sectionLabel}>
               <span className={styles.sectionLabelDot} aria-hidden />
-              SECTION{" "}
-              {String(data.superCategory.displayOrder).padStart(2, "0")} · OF{" "}
-              {data.totalSuperCategories}
+              Section {data.superCategory.displayOrder} of {data.totalSuperCategories}
             </div>
             <h2
               id="agriculture-livestock-title"
@@ -394,9 +392,6 @@ export function AgricultureLivestockClient({ data, locale }: Props) {
               className={styles.browseBtn}
             >
               <span>Browse all {data.totalCount}</span>
-              <span className={styles.browseBtnArrow} aria-hidden>
-                →
-              </span>
             </Link>
 
             <SectionWatermark
@@ -417,12 +412,12 @@ export function AgricultureLivestockClient({ data, locale }: Props) {
                 </span>
                 {headlineInd?.source && (
                   <span className={styles.featuredSourceInline}>
-                    · {headlineInd.source}
+                    {headlineInd.source}
                   </span>
                 )}
               </div>
               {featuredModule?.status === "live" && (
-                <span className={styles.livePill}>live</span>
+                <span className={styles.livePill}>Live module</span>
               )}
             </div>
 
@@ -490,7 +485,7 @@ export function AgricultureLivestockClient({ data, locale }: Props) {
                   href={`/${locale}/india/${featuredModuleSlug}`}
                   className={styles.openModuleLink}
                 >
-                  Open module →
+                  Open module
                 </Link>
               )}
             </div>
