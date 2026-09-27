@@ -674,7 +674,7 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
           <>
             <DetailList
               rows={[
-                { emoji: "🏆", label: t("rowRank"), value: openEntry?.rank ? t("rank", { n: openEntry.rank }) : null },
+                { emoji: "🏆", label: t("rowRank"), value: openEntry?.rank ? <span className="ftp-num">{number(openEntry.rank)}</span> : null },
                 {
                   emoji: "🏅",
                   label: t("rowBadge"),
