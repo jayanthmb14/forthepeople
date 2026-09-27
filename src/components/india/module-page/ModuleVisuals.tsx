@@ -4,18 +4,26 @@
  *
  * Pictures for the India module deep-dive, drawn only from real rows:
  *
- *   TopStatesBars   a top-5 bar list (IndiaStateBreakdown or top_state_* rows)
+ *   TopStatesBars   a top-5 bar list (IndiaStateBreakdown or top_state_* rows);
+ *                   tapping a state opens a DetailSheet (place, figure,
+ *                   compared with the top state, date, source)
  *   MixDonut        a share-of-100 ring in hue shades (mix_pct_* rows)
  *   PercentRings    one small ring per percentage indicator
  *
- * Server-safe (no hooks): every string arrives translated from the page.
- * Each picture sits in a kit ChartCard, which adds the "simple" sentence,
- * source, as-of date and the table view. Bars grow in and rings draw in
- * once (globals.css turns that off for reduced motion).
+ * Strings arrive translated from the page (the state sheet reads its row
+ * labels from "page_india-module" sheet.*). Each picture sits in a kit
+ * ChartCard, which adds the "simple" sentence, source, as-of date and the
+ * table view. Bars grow in and rings draw in once (globals.css turns that
+ * off for reduced motion).
  */
+"use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { ChartCard } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
+import { useFormat } from "@/i18n/client";
+import styles from "../india-tap.module.css";
 
 export interface BarItem {
   label: string;
@@ -34,54 +42,111 @@ interface CardBase {
   asOf?: string;
 }
 
-/** Top-N horizontal bars, longest first. */
-export function TopStatesBars({ items, ...card }: CardBase & { items: BarItem[] }) {
+/** Top-N horizontal bars, longest first. Each state opens its own details. */
+export function TopStatesBars({
+  items,
+  hueClassName,
+  metricLabel,
+  ...card
+}: CardBase & { items: BarItem[]; hueClassName?: string; metricLabel?: string }) {
+  const t = useTranslations("page_india-module");
+  const f = useFormat();
+  const [open, setOpen] = React.useState<number | null>(null);
+  const close = React.useCallback(() => setOpen(null), []);
   const max = Math.max(...items.map((i) => i.value), 0) || 1;
+  const leader = items[0];
+  const sel = open !== null ? items[open] : null;
   return (
     <ChartCard {...card} table={items.map((i) => ({ label: i.label, value: i.display }))}>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
         {items.map((it, i) => (
           <li key={`${it.label}-${i}`}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-                fontSize: 14,
-                lineHeight: "20px",
-                marginBottom: 5,
-              }}
+            <button
+              type="button"
+              className={styles.rowButton}
+              onClick={() => setOpen(i)}
+              aria-label={t("sheet.open", { label: it.label })}
             >
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <span
-                  className="ftp-icon-chip ftp-num"
-                  aria-hidden
-                  style={{ width: 24, height: 24, borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--hue-deep)" }}
-                >
-                  {i + 1}
-                </span>
-                <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{it.label}</span>
-              </span>
-              <span className="ftp-num" style={{ fontWeight: 650, color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
-                {it.display}
-              </span>
-            </div>
-            <div aria-hidden style={{ height: 10, borderRadius: 999, background: "var(--hue-tint)", overflow: "hidden" }}>
-              <div
-                className="ftp-grow-x"
+              <span
                 style={{
-                  width: `${Math.max(2, (it.value / max) * 100)}%`,
-                  height: "100%",
-                  borderRadius: 999,
-                  background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
-                  ["--i" as string]: i,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  fontSize: 14,
+                  lineHeight: "20px",
+                  marginBottom: 5,
                 }}
-              />
-            </div>
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <span
+                    className="ftp-icon-chip ftp-num"
+                    aria-hidden
+                    style={{ width: 24, height: 24, borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--hue-deep)" }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{it.label}</span>
+                </span>
+                <span className="ftp-num" style={{ fontWeight: 650, color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
+                  {it.display}
+                </span>
+              </span>
+              <span aria-hidden style={{ display: "block", height: 10, borderRadius: 999, background: "var(--hue-tint)", overflow: "hidden" }}>
+                <span
+                  className="ftp-grow-x"
+                  style={{
+                    display: "block",
+                    width: `${Math.max(2, (it.value / max) * 100)}%`,
+                    height: "100%",
+                    borderRadius: 999,
+                    background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
+                    ["--i" as string]: i,
+                  }}
+                />
+              </span>
+            </button>
           </li>
         ))}
       </ol>
+      <DetailSheet
+        open={sel !== null}
+        onClose={close}
+        title={sel?.label ?? ""}
+        subtitle={metricLabel ?? card.title}
+        emoji={open === 0 ? "🏆" : "📍"}
+        hueClassName={hueClassName}
+        footer={
+          sel && card.source?.href ? (
+            <a href={card.source.href} target="_blank" rel="noopener noreferrer" className={`${styles.sheetAction} ${styles.sheetActionPrimary}`}>
+              {t("sheet.openSource")}
+            </a>
+          ) : undefined
+        }
+      >
+        {sel && open !== null ? (
+          <>
+            <div className={styles.sheetFigure}>
+              <span className={styles.sheetFigureValue}>{sel.display}</span>
+            </div>
+            <DetailList
+              rows={[
+                { emoji: "🏆", label: t("sheet.place"), value: t("sheet.placeValue", { n: open + 1, total: items.length }) },
+                {
+                  emoji: "📏",
+                  label: t("sheet.vsTop"),
+                  value:
+                    open > 0 && leader && leader.value > 0
+                      ? t("sheet.vsTopValue", { pct: `${f.number((sel.value / leader.value) * 100, { maximumFractionDigits: 0 })}%`, leader: leader.label })
+                      : null,
+                },
+                { emoji: "📅", label: t("sheet.asOf"), value: card.asOf ? f.date(card.asOf, { dateStyle: "medium" }) : null },
+                { emoji: "🏛️", label: t("sheet.source"), value: card.source?.label ?? null },
+              ]}
+            />
+          </>
+        ) : null}
+      </DetailSheet>
     </ChartCard>
   );
 }

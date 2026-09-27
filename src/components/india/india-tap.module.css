@@ -1,0 +1,221 @@
+/* Tap-for-details pieces shared by the India pages (v4.1).
+   A tile or card that opens a DetailSheet: the whole surface is one
+   button (44 px+ tall), it lifts 2 px on hover, and a small chevron in
+   the corner says "there is more". Reduced motion turns the lift off. */
+
+.tap {
+  position: relative;
+  min-width: 0;
+  border-radius: var(--ftp-radius-tile);
+  transition: transform 220ms var(--ftp-ease-out, ease), box-shadow 220ms var(--ftp-ease-out, ease);
+}
+.tap:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ftp-shadow-2);
+}
+.tapCover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.tapCover:focus-visible {
+  outline: 3px solid var(--hue);
+  outline-offset: 2px;
+}
+.tapHint {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+  pointer-events: none;
+}
+:global([dir="rtl"]) .tapHint svg {
+  transform: scaleX(-1);
+}
+
+/* A whole card that is a button (category cards, update cards). */
+.cardButton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  flex: 1;
+  padding: 16px 18px 12px;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: inherit;
+}
+.cardButton:focus-visible {
+  outline: 3px solid var(--hue);
+  outline-offset: -3px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  border-radius: var(--ftp-radius-card);
+  box-shadow: var(--ftp-shadow-1);
+  transition: transform 220ms var(--ftp-ease-out, ease), box-shadow 220ms var(--ftp-ease-out, ease), border-color 150ms ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ftp-shadow-2);
+  border-color: color-mix(in srgb, var(--hue) 35%, var(--ftp-border));
+}
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 18px 12px;
+}
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hue-deep);
+  text-decoration: none;
+}
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* A row inside a chart (a state bar) that opens details. */
+.rowButton {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+.rowButton:hover {
+  background: var(--hue-tint);
+}
+.rowButton:focus-visible {
+  outline: 3px solid var(--hue);
+  outline-offset: 0;
+}
+
+/* The big number at the top of a figure sheet. */
+.sheetFigure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--hue-tint);
+}
+.sheetFigureValue {
+  font-family: var(--ftp-font-display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.05;
+  color: var(--hue-deep);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.sheetFigureUnit {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.sheetFigureLabel {
+  flex-basis: 100%;
+  font-size: 14px;
+  color: var(--ftp-text);
+}
+
+/* Buttons in a sheet footer. */
+.sheetAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--hue) 35%, var(--ftp-border));
+  background: var(--ftp-surface);
+  color: var(--hue-deep);
+}
+.sheetActionPrimary {
+  background: var(--hue);
+  border-color: var(--hue);
+  color: #fff;
+}
+
+/* A list of figures inside a sheet (category module sheet). */
+.figList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.figItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
+  background: var(--ftp-surface);
+}
+.figItemValue {
+  font-family: var(--ftp-font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--hue-deep);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.figItemMeta {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tap,
+  .card {
+    transition: none;
+  }
+  .tap:hover,
+  .card:hover {
+    transform: none;
+  }
+}
