@@ -49,11 +49,13 @@ export const INNOV_SPEC: BandSpec = {
       href: "/india/science-startups",
       bars: true,
       rows: [
-        { key: "ka", rank: 1, state: "karnataka", note: { text: "bengaluru" }, value: { ref: { moduleSlug: S, metricKey: "top_state_ka_startups_thousand" }, fmt: "innov.fmt.thousand" } },
-        { key: "mh", rank: 2, state: "maharashtra", note: { text: "mumbai" }, value: { ref: { moduleSlug: S, metricKey: "top_state_mh_startups_thousand" }, fmt: "innov.fmt.thousand" } },
-        { key: "dl", rank: 3, state: "delhi", value: { ref: { moduleSlug: S, metricKey: "top_state_dl_startups_thousand" }, fmt: "innov.fmt.thousand" } },
-        { key: "tn", rank: 4, state: "tamil-nadu", note: { text: "chennai" }, value: { ref: { moduleSlug: S, metricKey: "top_state_tn_startups_thousand" }, fmt: "innov.fmt.thousand" } },
-        { key: "tg", rank: 5, state: "telangana", note: { text: "hyderabad" }, value: { ref: { moduleSlug: S, metricKey: "top_state_tg_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        // DPIIT-recognised startups by state (PIB, 17 Apr 2026): Maharashtra 38.7k (#1), Karnataka 22.6k (#2),
+        // Delhi 21.1k (#4), Tamil Nadu 14.8k (rank not stated), Telangana 12.5k (#7) — docs/DATA-FIXES-2026-09.md.
+        { key: "mh", rank: 1, state: "maharashtra", note: { text: "mumbai" }, value: { ref: { moduleSlug: S, metricKey: "top_state_mh_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "ka", rank: 2, state: "karnataka", note: { text: "bengaluru" }, value: { ref: { moduleSlug: S, metricKey: "top_state_ka_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "dl", rank: 4, state: "delhi", value: { ref: { moduleSlug: S, metricKey: "top_state_dl_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "tn", state: "tamil-nadu", note: { text: "chennai" }, value: { ref: { moduleSlug: S, metricKey: "top_state_tn_startups_thousand" }, fmt: "innov.fmt.thousand" } },
+        { key: "tg", rank: 7, state: "telangana", note: { text: "hyderabad" }, value: { ref: { moduleSlug: S, metricKey: "top_state_tg_startups_thousand" }, fmt: "innov.fmt.thousand" } },
       ],
     },
     {

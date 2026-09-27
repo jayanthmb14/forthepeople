@@ -48,8 +48,9 @@ export const AGRI_SPEC: BandSpec = {
         { key: "up", rank: 1, state: "uttar-pradesh", note: { text: "wheat" }, value: { ref: { moduleSlug: P, metricKey: "top_state_up_wheat_mt" }, fmt: "fmt.mt" } },
         { key: "mp", rank: 2, state: "madhya-pradesh", note: { text: "wheat" }, value: { ref: { moduleSlug: P, metricKey: "top_state_mp_wheat_mt" }, fmt: "fmt.mt" } },
         { key: "pb", rank: 3, state: "punjab", note: { text: "wheat" }, value: { ref: { moduleSlug: P, metricKey: "top_state_pb_wheat_mt" }, fmt: "fmt.mt" } },
-        { key: "wb", rank: 4, state: "west-bengal", note: { text: "rice" }, value: { ref: { moduleSlug: P, metricKey: "top_state_wb_rice_mt" }, fmt: "fmt.mt" } },
-        { key: "ap", rank: 5, state: "andhra-pradesh", note: { text: "rice" }, value: { ref: { moduleSlug: P, metricKey: "top_state_ap_rice_mt" }, fmt: "fmt.mt" } },
+        // Ranks are within each crop (DA&FW final estimates 2024-25): wheat UP, MP, Punjab; rice UP, Telangana,
+        // West Bengal (3rd). Andhra Pradesh is not in the official top three for rice, so its row was removed.
+        { key: "wb", rank: 3, state: "west-bengal", note: { text: "rice" }, value: { ref: { moduleSlug: P, metricKey: "top_state_wb_rice_mt" }, fmt: "fmt.mt" } },
       ],
     },
     {

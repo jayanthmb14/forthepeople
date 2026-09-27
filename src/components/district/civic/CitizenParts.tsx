@@ -46,21 +46,54 @@ export const KINDS: Array<{ id: HelplineKind; icon: LucideIcon }> = [
   { id: "farmers", icon: Sprout },
 ];
 
-/** National helplines. The name and "when to call" are messages (helplines.<key>.*). */
-export const HELPLINES: { key: string; number: string; kind: HelplineKind }[] = [
+export interface Helpline {
+  key: string;
+  number: string;
+  kind: HelplineKind;
+  /** Only in these states (state slugs). Absent = a national number. */
+  states?: string[];
+  /** A state's own number for the same service (e.g. Delhi's CATS ambulance is 102). */
+  numberByState?: Record<string, string>;
+}
+
+/**
+ * Helplines. The name and "when to call" are messages (helplines.<key>.*).
+ * Checked 27 Sep 2026 (docs/DATA-FIXES-2026-09.md):
+ *   - women: 181 is the Women Helpline (MWCD, Mission Shakti), national and
+ *     24x7. 1091 is only a police women's line in some states.
+ *   - road: 1073 is a city traffic-police line (Kolkata, Amritsar), not a
+ *     national number. 1033 is NHAI's 24x7 national-highway helpline.
+ *   - corruption: 1064 is the Anti-Corruption Bureau number in Telangana
+ *     and Maharashtra (their ACB sites say so); it is not national, so it is
+ *     shown only there.
+ *   - consumer: the National Consumer Helpline now lists 1915 (8 am–8 pm).
+ *   - ambulance: Delhi's government ambulance (CATS) is 102, not 108.
+ *   - police 100 removed: 112 (ERSS) is the police emergency number now and
+ *     100 could not be confirmed on an official page (verified or hidden).
+ */
+const ALL_HELPLINES: Helpline[] = [
   { key: "national", number: "112", kind: "emergency" },
-  { key: "police", number: "100", kind: "emergency" },
-  { key: "ambulance", number: "108", kind: "emergency" },
+  { key: "ambulance", number: "108", kind: "emergency", numberByState: { delhi: "102" } },
   { key: "fire", number: "101", kind: "emergency" },
-  { key: "road", number: "1073", kind: "emergency" },
-  { key: "women", number: "1091", kind: "care" },
+  { key: "road", number: "1033", kind: "emergency" },
+  { key: "women", number: "181", kind: "care" },
   { key: "child", number: "1098", kind: "care" },
   { key: "senior", number: "14567", kind: "care" },
   { key: "cyber", number: "1930", kind: "complaints" },
-  { key: "corruption", number: "1064", kind: "complaints" },
-  { key: "consumer", number: "1800-11-4000", kind: "complaints" },
+  { key: "corruption", number: "1064", kind: "complaints", states: ["telangana", "maharashtra"] },
+  { key: "consumer", number: "1915", kind: "complaints" },
   { key: "pmkisan", number: "155261", kind: "farmers" },
 ];
+
+/** National helplines (default numbers; use getHelplines(state) when the state is known). */
+export const HELPLINES: Helpline[] = ALL_HELPLINES.filter((h) => !h.states);
+
+/** The helplines for one state: national ones, that state's own lines, and its own number where it differs. */
+export function getHelplines(stateSlug: string): Helpline[] {
+  return ALL_HELPLINES.filter((h) => !h.states || h.states.includes(stateSlug)).map((h) =>
+    h.numberByState?.[stateSlug] ? { ...h, number: h.numberByState[stateSlug] } : h,
+  );
+}
 
 export interface Right {
   id: string;
@@ -134,7 +167,7 @@ function SheetLink({ href, icon: Icon, children, primary }: { href: string; icon
 
 // ── Helplines ───────────────────────────────────────────────────────────
 
-export function HelplineCard({ h, onInfo }: { h: (typeof HELPLINES)[number]; onInfo: () => void }) {
+export function HelplineCard({ h, onInfo }: { h: Helpline; onInfo: () => void }) {
   const t = useTranslations("page_citizen-corner");
   const name = t(`helplines.${h.key}.name`);
   return (
@@ -192,7 +225,7 @@ export function HelplineCard({ h, onInfo }: { h: (typeof HELPLINES)[number]; onI
   );
 }
 
-export function HelplineSheet({ h, onClose }: { h: (typeof HELPLINES)[number] | null; onClose: () => void }) {
+export function HelplineSheet({ h, onClose }: { h: Helpline | null; onClose: () => void }) {
   const t = useTranslations("page_citizen-corner");
   if (!h) return null;
   const name = t(`helplines.${h.key}.name`);

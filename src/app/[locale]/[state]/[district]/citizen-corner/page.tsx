@@ -45,7 +45,8 @@ import type { Tone } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
 import { HueDonut } from "@/components/district/civic/HueDonut";
 import {
-  HELPLINES,
+  getHelplines,
+  type Helpline,
   KINDS,
   HelplineCard,
   HelplineSheet,
@@ -108,18 +109,18 @@ function EmergencyCallCard() {
 }
 
 /** The picture: what the helplines are for, as shortcuts to each group. */
-function HelplineKinds({ onPick }: { onPick: (kind: HelplineKind) => void }) {
+function HelplineKinds({ helplines, onPick }: { helplines: Helpline[]; onPick: (kind: HelplineKind) => void }) {
   const t = useTranslations("page_citizen-corner");
   const f = useFormat();
   return (
     <Card tinted padding={18}>
       <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650, color: "var(--ftp-text)" }}>
-        {t("kindsTitle", { n: HELPLINES.length })}
+        {t("kindsTitle", { n: helplines.length })}
       </p>
       <p style={{ margin: "2px 0 12px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("kindsLead")}</p>
       <ul className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "170px", gap: 10, listStyle: "none", margin: 0, padding: 0 } as React.CSSProperties}>
         {KINDS.map((k) => {
-          const n = HELPLINES.filter((h) => h.kind === k.id).length;
+          const n = helplines.filter((h) => h.kind === k.id).length;
           const label = t(`kinds.${k.id}`);
           return (
             <li key={k.id}>
@@ -215,14 +216,15 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
   const [tipsMonth, setTipsMonth] = useState<number | null>(null);
   const [tipsYear, setTipsYear] = useState<number | null>(null);
   const [nextRefreshDays, setNextRefreshDays] = useState<number | null>(null);
-  const [helpline, setHelpline] = useState<(typeof HELPLINES)[number] | null>(null);
+  const [helpline, setHelpline] = useState<Helpline | null>(null);
   const [right, setRight] = useState<Right | null>(null);
   const closeHelpline = useCallback(() => setHelpline(null), []);
   const closeRight = useCallback(() => setRight(null), []);
 
   const tipsLoading = loadedFor !== district;
   const rights = getRights(state, district);
-  const emergencyCount = HELPLINES.filter((h) => h.kind === "emergency").length;
+  const helplines = getHelplines(state);
+  const emergencyCount = helplines.filter((h) => h.kind === "emergency").length;
 
   useEffect(() => {
     fetch(`/api/ai/citizen-tips?district=${district}&state=${state}`)
@@ -258,10 +260,10 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
         source={{ label: t("sourceNames.districtAdministration") }}
       />
 
-      <Explainer>{t.rich("simple", { helplines: HELPLINES.length, rights: rights.length, b })}</Explainer>
+      <Explainer>{t.rich("simple", { helplines: helplines.length, rights: rights.length, b })}</Explainer>
 
       <StatStrip cols={4}>
-        <StatTile label={t("tileHelplines")} value={f.number(HELPLINES.length)} sub={t("tileHelplinesSub")} />
+        <StatTile label={t("tileHelplines")} value={f.number(helplines.length)} sub={t("tileHelplinesSub")} />
         <StatTile label={t("tileEmergency")} value={f.number(emergencyCount)} sub={t("tileEmergencySub")} />
         <StatTile label={t("tileRights")} value={f.number(rights.length)} sub={t("tileRightsSub")} />
         <StatTile
@@ -273,7 +275,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
 
       {/* The picture: what the helplines are for, beside one big number for any emergency. */}
       <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-        <HelplineKinds onPick={jumpTo} />
+        <HelplineKinds helplines={helplines} onPick={jumpTo} />
         <EmergencyCallCard />
       </div>
 
@@ -289,7 +291,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
               {t(`kinds.${k.id}`)}
             </h3>
             <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px", gap: 12 } as React.CSSProperties}>
-              {HELPLINES.filter((h) => h.kind === k.id).map((h) => (
+              {helplines.filter((h) => h.kind === k.id).map((h) => (
                 <HelplineCard key={h.key} h={h} onInfo={() => setHelpline(h)} />
               ))}
             </div>

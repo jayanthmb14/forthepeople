@@ -35,8 +35,8 @@
       "when": "A fire, a gas leak, or someone trapped in a building."
     },
     "road": {
-      "name": "Road accident",
-      "when": "To report a road accident and get help to the spot."
+      "name": "Highway emergency",
+      "when": "An accident, breakdown or blockage on a national highway: NHAI sends an ambulance, patrol vehicle or crane."
     },
     "women": {
       "name": "Women helpline",
@@ -55,12 +55,12 @@
       "when": "Money was stolen online or through UPI. Call at once: the sooner you call, the better the chance to stop the money."
     },
     "corruption": {
-      "name": "Anti-corruption",
+      "name": "Anti-Corruption Bureau",
       "when": "An official asks you for a bribe."
     },
     "consumer": {
       "name": "Consumer helpline",
-      "when": "A complaint about something you bought: a faulty product, overcharging, or a bad service."
+      "when": "A complaint about something you bought: a faulty product, overcharging, or a bad service. Open 8 am to 8 pm."
     },
     "pmkisan": {
       "name": "PM-KISAN helpline",

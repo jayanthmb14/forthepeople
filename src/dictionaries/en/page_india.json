@@ -498,8 +498,8 @@
     "population": {
       "label": "Population",
       "unit": "billion",
-      "meta": "Growing about 0.8% a year",
-      "source": "UN, 2024 estimate"
+      "meta": "Growing about 0.9% a year",
+      "source": "UN WPP 2024, 2025 estimate"
     },
     "area": {
       "label": "Area",
@@ -510,8 +510,8 @@
     "gdp": {
       "label": "Nominal GDP",
       "unit": "trillion",
-      "meta": "6.5% growth projected",
-      "source": "IMF, FY26"
+      "meta": "7.8% growth in FY26 (MoSPI)",
+      "source": "IMF, April 2026 (FY26)"
     },
     "states": {
       "label": "States and UTs",
@@ -558,10 +558,10 @@
     },
     "notes": {
       "postal": "1.56 lakh post offices",
-      "milk": "230 million tonnes",
+      "milk": "248 million tonnes (2024-25)",
       "railway": "14 lakh staff",
-      "internet": "90 crore users",
-      "renewable": "191 GW"
+      "internet": "109 crore internet subscribers",
+      "renewable": "296 GW incl. large hydro (Aug 2026)"
     },
     "open": "Details: {title}",
     "sheet": {
@@ -810,7 +810,7 @@
       "livestock": "{value}M animals",
       "fish": "{value} lakh t fish",
       "share": "{value}% share",
-      "estimate": "4th advance estimate, {value}",
+      "estimate": "3rd advance estimate, {value}",
       "crInsured": "{value} cr insured",
       "crCards": "{value} cr cards"
     },
