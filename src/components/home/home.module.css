@@ -1638,6 +1638,105 @@
     flex: 1 1 150px;
     padding: 0 14px;
   }
+  /* Stats: no icons, smaller chips, so they fit in two or three rows. */
+  .stats {
+    gap: 6px;
+  }
+  .stat {
+    min-height: 30px;
+    padding: 3px 10px;
+    font-size: 12.5px;
+  }
+  .statIcon {
+    display: none;
+  }
+  .statNum {
+    font-size: 14px;
+  }
+  .statUpdated {
+    padding-left: 10px;
+  }
+  /* Live districts: two tight columns, no picture; the badge sits in the corner. */
+  .chip {
+    position: relative;
+    align-items: flex-start;
+    min-height: 0;
+    padding: 8px 10px;
+  }
+  .chipArt {
+    display: none;
+  }
+  .chipName {
+    padding-right: 30px;
+    font-size: 14.5px;
+    line-height: 19px;
+  }
+  .chipLocal {
+    font-size: 12.5px;
+  }
+  .chipMeta {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .chipGrade,
+  .newTag {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    min-width: 0;
+    padding: 1px 5px;
+    font-size: 11.5px;
+  }
+  .voteChip {
+    align-items: center;
+  }
+  /* India figures: a smaller picture beside the label. */
+  .figure {
+    padding: 10px 12px;
+  }
+  .figureLabel {
+    gap: 6px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .figureIcon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+  }
+  .figureIcon svg {
+    width: 15px;
+    height: 15px;
+  }
+  .figureValue {
+    font-size: 21px;
+  }
+  /* Support: the heart stays beside the words. */
+  .supportBand {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+  .supportArt {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .supportArt svg {
+    width: 20px;
+    height: 20px;
+  }
+  .supportTitle {
+    font-size: 18px;
+  }
+  /* Tighter sections on phones: no big gaps. */
+  .section {
+    margin-top: 32px;
+  }
+  .sectionFirst {
+    margin-top: 20px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

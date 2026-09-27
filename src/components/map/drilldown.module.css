@@ -26,6 +26,9 @@
   cursor: pointer;
   outline: none;
 }
+.pinHit {
+  fill: transparent;
+}
 .pinPing {
   fill: var(--hue);
   opacity: 0;
@@ -40,7 +43,7 @@
 .pinDot {
   fill: var(--hue);
   stroke: var(--ftp-surface);
-  stroke-width: 2.5;
+  stroke-width: 3;
 }
 .pinCore {
   fill: var(--ftp-surface);
@@ -48,7 +51,7 @@
 .pinRing {
   fill: none;
   stroke: var(--hue-deep);
-  stroke-width: 2.5;
+  stroke-width: 3;
   opacity: 0;
 }
 .pin:hover .pinHalo,
@@ -132,12 +135,17 @@
   max-width: calc(100% - 16px);
   padding: 12px 14px 14px;
 }
-.card[data-dock="true"] {
+.card[data-dock] {
   left: 8px;
   right: 8px;
-  bottom: 8px;
   width: auto;
   max-width: none;
+}
+.card[data-dock="bottom"] {
+  bottom: 8px;
+}
+.card[data-dock="top"] {
+  top: 8px;
 }
 .close {
   position: absolute;
@@ -201,7 +209,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinPing {
+  .pinHit {
+  fill: transparent;
+}
+.pinPing {
     animation: none;
     opacity: 0;
   }

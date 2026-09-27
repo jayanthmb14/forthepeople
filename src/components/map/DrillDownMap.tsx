@@ -58,7 +58,7 @@ export interface MapPin {
 
 /** Degrees within which two pins are "crowded", and the ring radius they fan out to. */
 const CROWD_DEG = 1.6;
-const RING_DEG = 1.75;
+const RING_DEG = 1.9;
 
 function buildPins(): MapPin[] {
   const pins: MapPin[] = [];
@@ -156,6 +156,8 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
   const router = useRouter();
   const wrap = useRef<HTMLDivElement>(null);
   const pointer = useRef<string>("mouse");
+  /** When the last pointer went down: a focus right after it came from a tap or click, not the keyboard. */
+  const lastDown = useRef(0);
   const hideTimer = useRef<number | null>(null);
   const [sel, setSel] = useState<Selection>(null);
   const [view, setView] = useState<{ center: [number, number]; zoom: number }>({ center: DEFAULT_CENTER, zoom: 1 });
@@ -197,9 +199,17 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
     return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, w: box.width, h: box.height };
   }, []);
 
+  /** Show a pin's card. A card that was pinned (tapped) stays pinned when
+   *  focus or hover reaches the same pin again (a tap also focuses it). */
   const selectPin = (pin: MapPin, el: Element, pinned: boolean) => {
     cancelHide();
-    setSel({ kind: "pin", key: pin.key, pinned, ...spotOf(el) });
+    const spot = spotOf(el);
+    setSel((prev) => ({
+      kind: "pin",
+      key: pin.key,
+      pinned: pinned || (prev?.kind === "pin" && prev.key === pin.key && prev.pinned),
+      ...spot,
+    }));
   };
 
   const onPinClick = (e: React.MouseEvent, pin: MapPin) => {
@@ -247,8 +257,9 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
 
   const selectedPin = sel?.kind === "pin" ? LIVE_PINS.find((p) => p.key === sel.key) ?? null : null;
   const pinScale = 1 / view.zoom;
-  // The card docks to the bottom of the map on narrow screens (phones).
-  const dock = sel ? sel.w < 520 : false;
+  // On narrow screens (phones) the card docks to the edge of the map away
+  // from the pin: the bottom for a northern pin, the top for a southern one.
+  const dock: "top" | "bottom" | null = sel && sel.w < 420 ? (sel.y > sel.h / 2 ? "top" : "bottom") : null;
   const cardStyle: React.CSSProperties =
     sel?.kind !== "pin" || dock
       ? MAP_CARD_STYLE
@@ -265,6 +276,7 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
       data-zoomed={view.zoom > 1.01 ? "true" : "false"}
       onPointerDown={(e) => {
         pointer.current = e.pointerType;
+        lastDown.current = e.timeStamp;
         // A tap on the sea (the SVG itself) closes the card.
         if ((e.target as Element).tagName === "svg") setSel(null);
       }}
@@ -347,17 +359,24 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
                     onClick={(e) => onPinClick(e, pin)}
                     onMouseEnter={(e) => pointer.current === "mouse" && selectPin(pin, e.currentTarget, false)}
                     onMouseLeave={() => pointer.current === "mouse" && hideSoon()}
-                    onFocus={(e) => selectPin(pin, e.currentTarget, false)}
+                    onFocus={(e) => {
+                      // Keyboard focus shows the card. A tap also focuses the
+                      // pin, but there the click decides (showing the card on
+                      // focus would put it under the finger before the click).
+                      if (e.timeStamp - lastDown.current > 800) selectPin(pin, e.currentTarget, false);
+                    }}
                     onBlur={(e) => {
                       if (!wrap.current?.contains(e.relatedTarget as Node | null)) hideSoon();
                     }}
                   >
                     <g transform={`scale(${pinScale})`}>
-                      <circle r={10} className={styles.pinPing} style={{ animationDelay: `${(i % 5) * 0.55}s` }} />
-                      <circle r={17} className={styles.pinHalo} />
-                      <circle r={9.5} className={styles.pinDot} />
-                      <circle r={3.2} className={styles.pinCore} />
-                      <circle r={13.5} className={styles.pinRing} />
+                      {/* An invisible, larger target for fingers */}
+                      <circle r={30} className={styles.pinHit} />
+                      <circle r={13} className={styles.pinPing} style={{ animationDelay: `${(i % 5) * 0.55}s` }} />
+                      <circle r={21} className={styles.pinHalo} />
+                      <circle r={12.5} className={styles.pinDot} />
+                      <circle r={4.2} className={styles.pinCore} />
+                      <circle r={17} className={styles.pinRing} />
                     </g>
                   </a>
                 </Marker>
@@ -383,7 +402,7 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
       {selectedPin && renderCard && (
         <div
           className={styles.card}
-          data-dock={dock ? "true" : undefined}
+          data-dock={dock ?? undefined}
           style={cardStyle}
           onMouseEnter={cancelHide}
           onMouseLeave={() => pointer.current === "mouse" && hideSoon()}

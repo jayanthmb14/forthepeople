@@ -39,7 +39,7 @@
     "districts": "{n, plural, one {district live} other {districts live}}",
     "states": "{n, plural, one {state} other {states}}",
     "dataPoints": "data points tracked",
-    "dashboards": "dashboards in each district",
+    "dashboards": "dashboards each",
     "updatedAgo": "Updated {ago}",
     "updatedAt": "Updated {date}, {time} IST"
   },
@@ -48,7 +48,7 @@
   },
   "map": {
     "title": "India, live",
-    "hint": "Tap a pin for its latest facts, or a state to open it.",
+    "hint": "Pick a pin for its latest facts, or a state to open it.",
     "aria": "Map of India. Each state opens its own page; the pins are the live districts.",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
@@ -69,7 +69,7 @@
     "newest": "Newest data",
     "noFacts": "No facts collected yet for this district.",
     "open": "Open {name}",
-    "legendLive": "Live district — tap for facts",
+    "legendLive": "Live district — pick it for facts",
     "legendState": "State — opens its page"
   },
   "india": {

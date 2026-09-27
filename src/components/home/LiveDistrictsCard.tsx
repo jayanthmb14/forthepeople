@@ -40,6 +40,7 @@ import { useFormat, usePlaceText } from "@/i18n/client";
 import { placeNamePair } from "@/i18n/place-name";
 import DistrictLandmark, { hasLandmark } from "./DistrictLandmark";
 import { useMinute } from "./home-clock";
+import { agoShort } from "./home-format";
 import type { HomeDistrict, MapDistrictStat } from "./home-types";
 import styles from "./home.module.css";
 
@@ -120,7 +121,7 @@ export default function LiveDistrictsCard({
                       <>
                         <span className={styles.legendDot} data-fresh={fresh === false ? "false" : "true"} aria-hidden />
                         <span className={styles.chipAgo}>
-                          {minute === null ? f.date(newest, { day: "numeric", month: "short" }) : f.ago(newest)}
+                          {minute === null ? f.date(newest, { day: "numeric", month: "short" }) : agoShort(newest, minute, locale)}
                         </span>
                       </>
                     )}

@@ -42,3 +42,13 @@ export function dayWords(day: string, ageDays: number, locale: string): string {
 export function perKg(perQuintal: number): string {
   return (perQuintal / 100).toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 });
 }
+
+/** "6 hr ago" / "3 days ago" (narrow Intl wording, page language) from `then` to `now`. */
+export function agoShort(then: Date, now: number, locale: string): string {
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(locale), { numeric: "auto", style: "narrow" });
+  const min = Math.round((then.getTime() - now) / 60000);
+  if (Math.abs(min) < 60) return rtf.format(Math.min(0, min), "minute");
+  const h = Math.round(min / 60);
+  if (Math.abs(h) < 24) return rtf.format(h, "hour");
+  return rtf.format(Math.round(h / 24), "day");
+}

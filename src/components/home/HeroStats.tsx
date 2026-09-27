@@ -30,8 +30,8 @@ import { useMinute } from "./home-clock";
 import type { PlatformStats } from "./home-types";
 import styles from "./home.module.css";
 
-/** "Updated" counts as fresh (green dot) for this long; older is amber. */
-const FRESH_MS = 6 * 60 * 60 * 1000;
+/** "Updated" is fresh (green dot) for a day, like the live-district dots; older is amber. */
+const FRESH_MS = 24 * 60 * 60 * 1000;
 
 export default function HeroStats({ stats }: { stats: PlatformStats }) {
   const t = useTranslations("page_home");
