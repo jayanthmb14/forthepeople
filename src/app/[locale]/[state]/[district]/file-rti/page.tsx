@@ -27,6 +27,7 @@ import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import { getDistrict } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { useModuleText } from "@/i18n/client";
+import { officeEmoji } from "@/components/accountability/AccountabilityVisuals";
 import { scriptLang } from "@/lib/utils/script-lang";
 
 /** Page wrapper: the container (24 px sides, 16 on phones) at reading width. */
@@ -66,38 +67,6 @@ const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 /** Small sentence-case label above a block (12 px, text-2). */
 function BlockLabel({ children }: { children: React.ReactNode }) {
   return <div className="ftp-label" style={{ marginBottom: 4 }}>{children}</div>;
-}
-
-/**
- * An emoji for a letter's topic, picked from words in its English topic and
- * office name (the templates are stored in English). First match wins.
- */
-const TOPIC_EMOJI: Array<[RegExp, string]> = [
-  [/metro|rail/i, "🚇"],
-  [/police|fir\b|crime/i, "👮"],
-  [/dam\b|cauvery|reservoir/i, "🌊"],
-  [/drain|waterlogging|storm/i, "🌧️"],
-  [/water|jal\b|wssb/i, "🚰"],
-  [/electric|power|bescom|uppcl|tgspdcl|discom/i, "💡"],
-  [/road|pothole|pwd|highway/i, "🛣️"],
-  [/tender|contractor/i, "📑"],
-  [/tax/i, "🧾"],
-  [/building|construction|plan approval|permission/i, "🏗️"],
-  [/housing|allotment|awas|pmay/i, "🏠"],
-  [/land|7\/12|record|survey/i, "🗺️"],
-  [/school|education/i, "🏫"],
-  [/hospital|health/i, "🏥"],
-  [/forest|eco/i, "🌳"],
-  [/heritage|palace/i, "🏛️"],
-  [/sugar|farmer|crop|agri/i, "🌾"],
-  [/ration|pds/i, "🍚"],
-  [/pension/i, "👵"],
-  [/budget|expenditure|fund|payment|smart city/i, "💰"],
-];
-
-function topicEmoji(topic: string, department: string): string {
-  const text = `${topic} ${department}`;
-  return TOPIC_EMOJI.find(([re]) => re.test(text))?.[1] ?? "📄";
 }
 
 /** The three steps of filing an RTI — a real sequence, so it is numbered. */
@@ -343,7 +312,7 @@ export default function FileRTIPage({ params }: { params: Promise<{ locale: stri
                     }}
                   >
                     <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 38, height: 38, fontSize: 20, borderRadius: 12 }}>
-                      {topicEmoji(tpl.topic, tpl.department)}
+                      {officeEmoji(`${tpl.topic} ${tpl.department}`)}
                     </span>
                     <span style={{ display: "block", minWidth: 0 }}>
                       <span className="ftp-title" style={{ display: "block" }}>{tpl.topic}</span>

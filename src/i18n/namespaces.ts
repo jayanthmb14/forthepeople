@@ -3,5 +3,6 @@
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_courts",
   "page_file-rti",
-  "page_police"
+  "page_police",
+  "page_rti"
 ];

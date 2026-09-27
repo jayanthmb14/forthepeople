@@ -24,6 +24,41 @@
 
 import type React from "react";
 
+/**
+ * An emoji for a government office or an RTI topic, picked from words in
+ * its English name (offices and topics are stored in English). First match
+ * wins; anything unknown gets a plain document.
+ */
+const OFFICE_EMOJI: Array<[RegExp, string]> = [
+  [/metro|rail/i, "🚇"],
+  [/police|fir\b|crime|home dep/i, "👮"],
+  [/dam\b|cauvery|reservoir|irrigation/i, "🌊"],
+  [/drain|waterlogging|storm/i, "🌧️"],
+  [/water|jal\b|wssb/i, "🚰"],
+  [/electric|power|bescom|uppcl|tgspdcl|discom|energy/i, "💡"],
+  [/road|pothole|pwd|public works|highway/i, "🛣️"],
+  [/tender|contractor/i, "📑"],
+  [/tax|treasury|finance/i, "🧾"],
+  [/building|construction|plan approval|permission|urban dev/i, "🏗️"],
+  [/housing|allotment|awas|pmay/i, "🏠"],
+  [/revenue|land|7\/12|record|survey|tahsil|taluk office/i, "🗺️"],
+  [/school|education|university|college/i, "🏫"],
+  [/hospital|health|medical/i, "🏥"],
+  [/forest|eco-?tourism|environment/i, "🌳"],
+  [/heritage|palace|tourism/i, "🏛️"],
+  [/sugar|farmer|crop|agri|horticult/i, "🌾"],
+  [/ration|pds|food/i, "🍚"],
+  [/pension|welfare|social/i, "🤝"],
+  [/transport|rto|bus/i, "🚌"],
+  [/panchayat|rural/i, "🏘️"],
+  [/municipal|corporation|\bcity\b/i, "🏙️"],
+  [/budget|expenditure|fund|payment|smart city/i, "💰"],
+];
+
+export function officeEmoji(text: string): string {
+  return OFFICE_EMOJI.find(([re]) => re.test(text))?.[1] ?? "📄";
+}
+
 /** Slice colours: shades of the page hue, darkest first; "other" is grey. */
 const SHADES = [
   "var(--hue-deep)",
