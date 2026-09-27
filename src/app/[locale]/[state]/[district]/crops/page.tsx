@@ -5,79 +5,71 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Crop Prices — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md §4)
+//  Crop prices — layout v4.1 (docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Data: useCropPrices() → up to 100 AGMARKNET rows, newest date first.
-//  Page order: header → summary → AI insight → unit + commodity chips →
-//  latest price per commodity (emoji StatTiles) → picture row (the chosen
-//  crop's price in plain words + its cheapest-to-dearest bar, and how many
-//  crops got dearer) → second picture row (which crops cost the most, and
-//  the biggest price changes since the last market day) → trend ChartCard
-//  → full table → sources → news → CSV / Share / Compare.
+//  The question: "What will my crop fetch?"
+//  The answer, in one line: "The latest prices are from 26 Sep: 14 crops
+//  at 3 mandis in Mandya." Then tap any crop to see everything about it.
 //
-//  Prices arrive in ₹ per quintal (100 kg). The Kg/Quintal chips only
-//  change how we DISPLAY them (÷100 for kg); CSV exports stay per quintal.
+//    PageHeader → Explainer (the answer) → 4 StatTiles → picture: how
+//    many crops went up / stayed / went down since their last market day
+//    → one price card per crop (tap → CropSheet: price, week-ago
+//    comparison, trend, each mandi, detail rows) → AI insight → charts
+//    (which crops cost the most · biggest changes) → news → footer.
 //
-//  Every word comes from the "page_crops" messages
-//  (src/dictionaries/<locale>/page_crops.json); numbers and dates go
-//  through useFormat(). Commodity and market names are data and stay as
-//  AGMARKNET publishes them.
+//  Data: useCropPrices() → the newest ≤ 100 AGMARKNET rows (the collector
+//  keeps only 100 per district). Prices arrive in ₹ per quintal (100 kg);
+//  the Kg / Quintal chips only change how they are SHOWN (÷100 for kg).
+//  Every word comes from "page_crops"; numbers and dates go through
+//  useFormat(). Commodity and mandi names stay as AGMARKNET publishes them.
 "use client";
 
 import { use, useMemo, useState } from "react";
 import type React from "react";
 import { useTranslations } from "next-intl";
-import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Wheat } from "lucide-react";
+import { Search, Wheat } from "lucide-react";
 import { useCropPrices } from "@/hooks/useRealtimeData";
 import type { CropPrice } from "@/hooks/useRealtimeData";
 import { useFormat, useModuleText } from "@/i18n/client";
 import {
+  ModulePage,
   PageHeader,
   Section,
   Card,
   Chips,
   StatTile,
   StatStrip,
-  DataTable,
   LoadingShell,
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
-import { ChartCard, ChartGradients, Explainer, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, Explainer } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
-import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
-import { cropEmoji, PriceMoves, PriceRange } from "@/components/crops/CropVisuals";
+import { cropEmoji, PriceMoves } from "@/components/crops/CropVisuals";
 import type { PriceMove } from "@/components/crops/CropVisuals";
 import { HueBarList, useDistrictName } from "@/components/land-water/visuals";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { fitGrid, Chip, EmojiTile, Sparkline, SplitBar, TapCard, TapHint } from "@/components/land-water/cards";
+import { CropSheet } from "@/components/land-water/CropSheet";
+import { LandWaterFooter } from "@/components/land-water/PageFooter";
+import { commodityKey, dailySeries, dayOf, latestPerCrop, latestPerMarket, previousDay } from "@/components/land-water/crop-data";
 import { downloadCSV, todayISO } from "@/lib/csv";
 
 type Unit = "kg" | "quintal";
 
-/** Commodity names sometimes differ only by case/spaces between mandis. */
-function commodityKey(name: string): string {
-  return name.trim().toLowerCase();
-}
-
-/** Calendar day of a row, used to compare "same day" vs "earlier day". */
-function dayOf(iso: string): string {
-  return iso.slice(0, 10);
-}
+const AGMARKNET = { label: "AGMARKNET", href: "https://agmarknet.gov.in" };
 
 /** Bold runs inside translated sentences (<b>…</b> in the messages). */
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
-
-/** Dashed swatch for the "Highest" line in the chart legend. */
-const DASHED_SWATCH = "repeating-linear-gradient(90deg, var(--hue-deep) 0 4px, transparent 4px 7px)";
 
 /** How many crops the "which crops cost the most" bars show. */
 const LADDER_MAX = 8;
 /** How many crops the "biggest changes" bars show. */
 const MOVES_MAX = 5;
+/** Show the crop search box when there are more cards than this. */
+const SEARCH_FROM = 12;
 
 function CropsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -87,74 +79,41 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const base = `/${locale}/${state}/${district}`;
   const districtName = useDistrictName(state, district);
   const { data, isLoading, error } = useCropPrices(district, state);
-  const [selected, setSelected] = useState<string | null>(null);
   const [unit, setUnit] = useState<Unit>("kg");
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   // Display helpers: ₹/quintal → ₹/kg when the Kg chip is on.
   const dp = (price: number) => Math.round(unit === "kg" ? price / 100 : price);
   const rupees = (n: number) => f.number(n, { style: "currency", currency: "INR", maximumFractionDigits: 0 });
   /** "₹42/kg" — a display-unit price with its unit. */
   const perUnit = (quintalPrice: number) => t("pricePer", { price: rupees(dp(quintalPrice)), unit });
-  const unitShort = t("unitShort", { unit });
   const shortDay = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
   const fullDay = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
+  const pctText = (pct: number) => f.number(Math.abs(pct) / 100, { style: "percent", maximumFractionDigits: 1 });
 
   const prices = useMemo(() => data?.data ?? [], [data]);
+  const latestByCrop = useMemo(() => latestPerCrop(prices), [prices]);
+  const openCrop = openKey ? latestByCrop.find((p) => commodityKey(p.commodity) === openKey) ?? null : null;
 
-  // Newest row per commodity (rows arrive newest-first, so the first one
-  // we meet for each commodity is the latest). This also removes duplicate
-  // commodity names that differ only by case or spacing.
-  const latestByCrop = useMemo(() => {
-    const seen = new Map<string, CropPrice>();
-    for (const p of prices) {
-      const k = commodityKey(p.commodity);
-      if (!seen.has(k)) seen.set(k, p);
-    }
-    return Array.from(seen.values());
-  }, [prices]);
-
-  const activeKey = selected ?? (latestByCrop[0] ? commodityKey(latestByCrop[0].commodity) : null);
-  const activeLatest = latestByCrop.find((p) => commodityKey(p.commodity) === activeKey) ?? null;
-
-  // Trend series for the chosen commodity: one point per day. We prefer the
-  // same market as the latest price so the line compares like with like;
-  // if that market has fewer than two days, we fall back to all markets.
-  const trend = useMemo(() => {
-    if (!activeLatest) return [];
-    const rows = prices.filter((p) => commodityKey(p.commodity) === activeKey);
-    const onePerDay = (list: CropPrice[]) => {
-      const byDay = new Map<string, CropPrice>();
-      for (const p of list) if (!byDay.has(dayOf(p.date))) byDay.set(dayOf(p.date), p);
-      return Array.from(byDay.values()).reverse(); // oldest → newest for the chart
-    };
-    const sameMarket = onePerDay(rows.filter((p) => p.market === activeLatest.market));
-    return sameMarket.length > 1 ? sameMarket : onePerDay(rows);
-  }, [prices, activeKey, activeLatest]);
-
-  /** Previous day's price for the same commodity and market (for the trend arrow). */
-  function previousOf(p: CropPrice): CropPrice | undefined {
-    return prices.find(
-      (x) =>
-        commodityKey(x.commodity) === commodityKey(p.commodity) &&
-        x.market === p.market &&
-        dayOf(x.date) < dayOf(p.date),
-    );
-  }
-
-  // For the pictures: every crop that has an earlier price at the same
-  // market to compare with, and how many of them got dearer.
+  // Each crop's newest price next to its price on the market day before
+  // (same mandi). Crops with only one day have nothing to compare.
   const compared = latestByCrop.flatMap((p) => {
-    const prev = previousOf(p);
+    const prev = previousDay(prices, p);
     return prev ? [{ p, prev }] : [];
   });
-  const rising = compared.filter(({ p, prev }) => p.modalPrice > prev.modalPrice).length;
+  const up = compared.filter(({ p, prev }) => p.modalPrice > prev.modalPrice).length;
+  const down = compared.filter(({ p, prev }) => p.modalPrice < prev.modalPrice).length;
+  const same = compared.length - up - down;
 
-  // Picture 2a: latest typical price per crop, dearest first.
-  const ladder = [...latestByCrop].sort((a, b) => b.modalPrice - a.modalPrice);
+  const markets = new Set(prices.map((p) => p.market)).size;
   const newestDate = latestByCrop.reduce<string | null>((best, p) => (!best || p.date > best ? p.date : best), null);
+  const cropsOnNewest = newestDate ? latestByCrop.filter((p) => dayOf(p.date) === dayOf(newestDate)).length : 0;
+  const marketsOnNewest = newestDate ? new Set(prices.filter((p) => dayOf(p.date) === dayOf(newestDate)).map((p) => p.market)).size : 0;
 
-  // Picture 2b: the biggest changes (in %) since each crop's previous
-  // market day. Crops whose price did not change are left out.
+  // Chart: latest typical price per crop, dearest first.
+  const ladder = [...latestByCrop].sort((a, b) => b.modalPrice - a.modalPrice);
+  // Chart: the biggest changes (in %) since each crop's previous market day.
   const moves: PriceMove[] = compared
     .filter(({ p, prev }) => prev.modalPrice > 0 && p.modalPrice !== prev.modalPrice)
     .map(({ p, prev }) => ({
@@ -166,10 +125,14 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
     }))
     .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
     .slice(0, MOVES_MAX);
-  const pctText = (pct: number) => f.number(Math.abs(pct) / 100, { style: "percent", maximumFractionDigits: 1 });
+  const showLadder = ladder.length >= 3;
+  const showMoves = moves.length >= 2;
+
+  const q = search.trim().toLowerCase();
+  const shownCrops = q ? latestByCrop.filter((p) => p.commodity.toLowerCase().includes(q)) : latestByCrop;
 
   function handleDownload() {
-    const rows = prices.slice(0, 100).map((p) => ({
+    const rows = prices.map((p) => ({
       [t("csvDate")]: dayOf(p.date),
       [t("csvCommodity")]: p.commodity,
       [t("csvMarket")]: p.market,
@@ -190,41 +153,7 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
         })
       : t("shareEmpty", { district: districtName });
 
-  // Chart copy, computed from the same trend rows the chart draws.
-  const trendOneMarket = activeLatest ? trend.every((p) => p.market === activeLatest.market) : false;
-  const trendSimple = (() => {
-    if (trend.length < 2) return null;
-    const first = trend[0];
-    const last = trend[trend.length - 1];
-    const a = dp(first.modalPrice);
-    const b = dp(last.modalPrice);
-    if (a === b) {
-      return t.rich("trendSame", { b: bold, price: rupees(b), unit, from: shortDay(first.date), to: shortDay(last.date) });
-    }
-    return t.rich("trendChange", {
-      b: bold,
-      from: shortDay(first.date),
-      to: shortDay(last.date),
-      dir: b > a ? "up" : "down",
-      oldPrice: rupees(a),
-      newPrice: rupees(b),
-      unit,
-    });
-  })();
-
-  const showRisingPicture = compared.length >= 2;
-  const risingPicture = showRisingPicture
-    ? compared.length <= 12
-      ? { filled: rising, total: compared.length, label: t("risingCount", { rising, total: compared.length }) }
-      : {
-          filled: (rising / compared.length) * 10,
-          total: 10,
-          label: t("risingAbout", { n: Math.round((rising / compared.length) * 10) }),
-        }
-    : null;
-
-  const showLadder = ladder.length >= 3;
-  const showMoves = moves.length >= 2;
+  const hasData = !isLoading && !error && latestByCrop.length > 0;
 
   return (
     <ModulePage>
@@ -233,125 +162,135 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
         title={mt.label("crops")}
         description={t("description")}
         backHref={base}
-        accent={getModuleAccent("crops")}
         freshness={{ asOf: data?.meta?.lastUpdated }}
-        source={{ label: "AGMARKNET", href: "https://agmarknet.gov.in" }}
+        source={AGMARKNET}
       />
-
-      {/* Plain-language summary — also what search engines and AI crawlers read. */}
-      <ModuleSummary>{t("summary")}</ModuleSummary>
-
-      <AIInsightCard module="crops" district={district} />
 
       {isLoading && <LoadingShell rows={5} />}
       {error && <ErrorBlock />}
-
       {!isLoading && !error && latestByCrop.length === 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <EmptyState emoji="🧺" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
-        </div>
+        <EmptyState emoji="🧺" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
       )}
 
-      {!isLoading && latestByCrop.length > 0 && (
+      {hasData && newestDate && (
         <>
-          {/* Controls: unit and commodity. Chips are 44 px tall on phones. */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
-            <Chips
-              label={t("unitGroup")}
-              value={unit}
-              onChange={(v) => setUnit(v as Unit)}
-              items={[
-                { value: "kg", label: t("perKg") },
-                { value: "quintal", label: t("perQuintal") },
-              ]}
-            />
-            <Chips
-              label={t("commodityGroup")}
-              value={activeKey ?? ""}
-              onChange={(v) => setSelected(v)}
-              items={latestByCrop.map((p) => ({ value: commodityKey(p.commodity), label: `${cropEmoji(p.commodity)} ${p.commodity}` }))}
-            />
-          </div>
+          {/* 1 · The answer in plain words. */}
+          <Explainer emoji="🌾">
+            {t.rich("answer", {
+              b: bold,
+              date: fullDay(newestDate),
+              n: cropsOnNewest,
+              markets: marketsOnNewest,
+              district: districtName,
+            })}{" "}
+            {t("tapHint")}
+          </Explainer>
 
-          {/* Latest modal price per commodity, each with its market and date. */}
-          <Section title={t("latestTitle")} emoji="🏷️">
-            <StatStrip cols={4}>
-              {latestByCrop.map((p) => {
-                const prev = previousOf(p);
-                const change = prev ? p.modalPrice - prev.modalPrice : 0;
-                const shownChange = dp(Math.abs(change));
-                const sub = !prev
-                  ? p.market
-                  : change === 0
-                    ? t("tileSame", { market: p.market, date: shortDay(prev.date) })
-                    : shownChange === 0
-                      ? t("tileAbout", { market: p.market, date: shortDay(prev.date) })
-                      : t(change > 0 ? "tileMore" : "tileLess", { market: p.market, amount: rupees(shownChange), date: shortDay(prev.date) });
-                return (
-                  <StatTile
-                    key={p.id}
-                    emoji={cropEmoji(p.commodity)}
-                    label={p.commodity}
-                    value={rupees(dp(p.modalPrice))}
-                    unit={unitShort}
-                    sub={sub}
-                    trend={prev ? (change > 0 ? "up" : change < 0 ? "down" : "neutral") : undefined}
-                    asOf={p.date}
-                  />
-                );
-              })}
-            </StatStrip>
-          </Section>
+          {/* 2 · The big numbers. */}
+          <StatStrip cols={4}>
+            <StatTile emoji="🧺" label={t("tileCrops")} value={f.number(latestByCrop.length)} asOf={newestDate} />
+            <StatTile emoji="🏪" label={t("tileMarkets")} value={f.number(markets)} sub={t("tileMarketsSub")} />
+            {compared.length > 0 ? (
+              <StatTile emoji="📈" label={t("tileUp")} value={f.number(up)} sub={t("tileMovesSub", { n: compared.length })} />
+            ) : (
+              <StatTile emoji="📅" label={t("tileLatest")} value={shortDay(newestDate)} countUp={false} />
+            )}
+            {compared.length > 0 && (
+              <StatTile emoji="📉" label={t("tileDown")} value={f.number(down)} sub={t("tileMovesSub", { n: compared.length })} />
+            )}
+          </StatStrip>
 
-          {/* The picture: the chosen crop's price in one plain sentence and a
-              cheapest → dearest bar, plus how many crops got dearer. Every
-              number is from the rows above. */}
-          {activeLatest && (
-            <div className={showRisingPicture ? "ftp-picture-row" : undefined} style={{ marginTop: 20 }}>
-              <Card tinted padding={18}>
-                <Explainer emoji={cropEmoji(activeLatest.commodity)}>
-                  {t.rich("explainer", {
-                    b: bold,
-                    market: activeLatest.market,
-                    date: shortDay(activeLatest.date),
-                    unit,
-                    crop: activeLatest.commodity,
-                    modal: rupees(dp(activeLatest.modalPrice)),
-                    min: rupees(dp(activeLatest.minPrice)),
-                    max: rupees(dp(activeLatest.maxPrice)),
-                  })}
-                </Explainer>
-                <PriceRange
-                  min={dp(activeLatest.minPrice)}
-                  modal={dp(activeLatest.modalPrice)}
-                  max={dp(activeLatest.maxPrice)}
-                  unit={unit}
-                  emoji={cropEmoji(activeLatest.commodity)}
-                />
-              </Card>
-              {risingPicture && (
-                <Card tinted padding={18} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }}>
-                  <p className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
-                    {t("risingTitle")}
-                  </p>
-                  <Pictogram filled={risingPicture.filled} total={risingPicture.total} emoji="📈" label={risingPicture.label} size={24} />
-                </Card>
-              )}
-            </div>
+          {/* 3 · The picture: up / same / down since the last market day. */}
+          {compared.length >= 2 && (
+            <Card tinted padding={18} style={{ marginTop: 16, ...fitGrid(300, { alignItems: "center", gap: 18 }) }}>
+              <div>
+                <p className="ftp-display" style={{ margin: "0 0 4px", fontSize: 19, lineHeight: "24px", fontWeight: 650 }}>
+                  {t("pictureTitle")}
+                </p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("pictureSub")}</p>
+              </div>
+              <SplitBar
+                ariaLabel={t("splitAria", { total: compared.length, up, same, down })}
+                parts={[
+                  { key: "up", emoji: "📈", label: t("splitUp"), value: up, fill: "linear-gradient(90deg, var(--hue), var(--hue-deep))" },
+                  { key: "same", emoji: "➖", label: t("splitSame"), value: same, fill: "var(--hue-pop)", ink: "var(--hue-deep)" },
+                  {
+                    key: "down",
+                    emoji: "📉",
+                    label: t("splitDown"),
+                    value: down,
+                    fill: "color-mix(in srgb, var(--hue-pop) 45%, var(--ftp-surface))",
+                    ink: "var(--hue-deep)",
+                  },
+                ]}
+              />
+            </Card>
           )}
 
-          {/* Second picture row: which crops cost the most right now (tap a
-              bar to follow that crop), and which prices moved the most since
-              their previous market day. */}
+          {/* 4 · One card per crop. Tap → everything about it. */}
+          <Section
+            title={t("latestTitle")}
+            emoji="🏷️"
+            action={
+              <Chips
+                label={t("unitGroup")}
+                value={unit}
+                onChange={(v) => setUnit(v as Unit)}
+                items={[
+                  { value: "kg", label: t("perKg") },
+                  { value: "quintal", label: t("perQuintal") },
+                ]}
+              />
+            }
+          >
+            {latestByCrop.length > SEARCH_FROM && (
+              <label style={{ position: "relative", display: "block", marginBottom: 14, maxWidth: 420 }}>
+                <span className="sr-only">{t("searchLabel")}</span>
+                <Search size={16} aria-hidden style={{ position: "absolute", insetInlineStart: 12, top: 14, color: "var(--hue)" }} />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("searchPlaceholder")}
+                  style={{
+                    width: "100%",
+                    minHeight: 44,
+                    paddingBlock: 0,
+                    paddingInline: "36px 14px",
+                    borderRadius: 12,
+                    border: "1px solid color-mix(in srgb, var(--hue) 28%, var(--ftp-border))",
+                    fontSize: 15,
+                    fontFamily: "var(--ftp-font-sans)",
+                    background: "var(--ftp-surface)",
+                    color: "var(--ftp-text)",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </label>
+            )}
+            {shownCrops.length === 0 && <EmptyState emoji="🔍" title={t("noMatch", { q: search })} />}
+            <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, ["--ftp-grid-min" as string]: "260px" }}>
+              {shownCrops.map((p) => (
+                <li key={p.id}>
+                  <PriceCard
+                    row={p}
+                    prices={prices}
+                    unit={unit}
+                    onOpen={() => setOpenKey(commodityKey(p.commodity))}
+                    fmt={{ rupees, dp, perUnit, shortDay }}
+                  />
+                </li>
+              ))}
+            </ul>
+          </Section>
+
+          <div style={{ marginTop: 24 }}>
+            <AIInsightCard module="crops" district={district} />
+          </div>
+
+          {/* 5 · Charts, each with its one-line takeaway. */}
           {(showLadder || showMoves) && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-                gap: 12,
-                marginTop: 20,
-              }}
-            >
+            <div style={fitGrid(340, { marginTop: 8 })}>
               {showLadder && (
                 <ChartCard
                   title={t("ladderTitle")}
@@ -364,33 +303,30 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
                     bottom: ladder[ladder.length - 1].commodity,
                     bottomPrice: perUnit(ladder[ladder.length - 1].modalPrice),
                   })}
-                  source={{ label: "AGMARKNET", href: "https://agmarknet.gov.in" }}
+                  source={AGMARKNET}
                   asOf={newestDate}
                   table={ladder.map((p) => ({
                     label: p.commodity,
                     value: t("ladderRow", { price: perUnit(p.modalPrice), market: p.market, date: fullDay(p.date) }),
                   }))}
                 >
-                  <div style={{ marginTop: 12 }}>
-                    <HueBarList
-                      rows={ladder.slice(0, LADDER_MAX).map((p) => ({
-                        key: commodityKey(p.commodity),
-                        label: p.commodity,
-                        emoji: cropEmoji(p.commodity),
-                        value: p.modalPrice,
-                        display: perUnit(p.modalPrice),
-                        sub: t("ladderSub", { market: p.market, date: shortDay(p.date) }),
-                      }))}
-                      selectedKey={activeKey}
-                      onSelect={(k) => setSelected(k)}
-                      selectAria={(row) => t("ladderPick", { crop: row.label })}
-                    />
-                    {ladder.length > LADDER_MAX && (
-                      <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                        {t("ladderMore", { shown: LADDER_MAX, total: ladder.length })}
-                      </p>
-                    )}
-                  </div>
+                  <HueBarList
+                    rows={ladder.slice(0, LADDER_MAX).map((p) => ({
+                      key: commodityKey(p.commodity),
+                      label: p.commodity,
+                      emoji: cropEmoji(p.commodity),
+                      value: p.modalPrice,
+                      display: perUnit(p.modalPrice),
+                      sub: t("ladderSub", { market: p.market, date: shortDay(p.date) }),
+                    }))}
+                    onSelect={(k) => setOpenKey(k)}
+                    selectAria={(row) => t("ladderPick", { crop: row.label })}
+                  />
+                  {ladder.length > LADDER_MAX && (
+                    <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                      {t("ladderMore", { shown: LADDER_MAX, total: ladder.length })}
+                    </p>
+                  )}
                 </ChartCard>
               )}
               {showMoves && (
@@ -404,124 +340,112 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
                     dir: moves[0].pct > 0 ? "up" : "down",
                     pct: pctText(moves[0].pct),
                   })}
-                  source={{ label: "AGMARKNET", href: "https://agmarknet.gov.in" }}
+                  source={AGMARKNET}
                   asOf={newestDate}
                   table={moves.map((m) => ({
                     label: m.crop,
                     value: t("movesRow", { dir: m.pct > 0 ? "up" : "down", pct: pctText(m.pct), detail: m.sub }),
                   }))}
                 >
-                  <div style={{ marginTop: 14 }}>
-                    <PriceMoves moves={moves} />
-                  </div>
+                  <PriceMoves moves={moves} />
                 </ChartCard>
               )}
             </div>
           )}
-
-          {/* Price trend for the selected commodity. */}
-          {activeLatest && trend.length > 1 && (
-            <div style={{ marginTop: 24 }}>
-              <ChartCard
-                title={t("trendTitle", { crop: activeLatest.commodity })}
-                emoji="📈"
-                units={trendOneMarket ? t("trendUnitsOne", { unit, market: activeLatest.market }) : t("trendUnitsAll", { unit })}
-                simple={trendSimple}
-                legend={[
-                  { label: t("legendTypical"), swatch: "var(--hue)" },
-                  { label: t("legendLowest"), swatch: "var(--hue-pop)" },
-                  { label: t("legendHighest"), swatch: DASHED_SWATCH },
-                ]}
-                source={{ label: "AGMARKNET", href: "https://agmarknet.gov.in" }}
-                asOf={activeLatest.date}
-                table={trend.map((p) => ({
-                  label: trendOneMarket ? fullDay(p.date) : t("trendRowLabel", { date: fullDay(p.date), market: p.market }),
-                  value: t("trendRowValue", { modal: rupees(dp(p.modalPrice)), min: rupees(dp(p.minPrice)), max: rupees(dp(p.maxPrice)) }),
-                }))}
-              >
-                <div dir="ltr">
-                  <ResponsiveContainer width="100%" height={230}>
-                    <ComposedChart data={trend} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
-                      <ChartGradients />
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
-                      <XAxis dataKey="date" tickFormatter={shortDay} tick={CHART_AXIS} stroke="var(--ftp-border)" />
-                      <YAxis tick={CHART_AXIS} stroke="var(--ftp-border)" width={56} tickFormatter={(v) => rupees(dp(Number(v)))} />
-                      <Tooltip
-                        contentStyle={chartTooltipStyle}
-                        cursor={{ stroke: "var(--hue-pop)", strokeWidth: 1 }}
-                        formatter={(v, name) => [perUnit(Number(v)), name]}
-                        labelFormatter={(d) => fullDay(String(d))}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="modalPrice"
-                        stroke="var(--hue)"
-                        strokeWidth={2.5}
-                        fill="url(#ftpHueArea)"
-                        dot={{ r: 2.5, fill: "var(--hue)", strokeWidth: 0 }}
-                        name={t("seriesTypical")}
-                      />
-                      <Line type="monotone" dataKey="minPrice" stroke="var(--hue-pop)" strokeWidth={1.5} dot={false} name={t("seriesLowest")} />
-                      <Line
-                        type="monotone"
-                        dataKey="maxPrice"
-                        stroke="var(--hue-deep)"
-                        strokeWidth={1.5}
-                        dot={false}
-                        name={t("seriesHighest")}
-                        strokeDasharray="4 3"
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </ChartCard>
-            </div>
-          )}
-
-          {/* Every row we hold (newest 30), for people who want the detail. */}
-          <Section title={t("allTitle")} emoji="📋">
-            <DataTable
-              caption={t("tableCaption", { district: districtName, unit })}
-              columns={[
-                { key: "date", label: t("colDate") },
-                { key: "commodity", label: t("colCommodity") },
-                { key: "market", label: t("colMarket") },
-                { key: "min", label: t("colMin", { unit }), numeric: true },
-                { key: "modal", label: t("colModal", { unit }), numeric: true },
-                { key: "max", label: t("colMax", { unit }), numeric: true },
-              ]}
-              rows={prices.slice(0, 30).map((p) => ({
-                date: shortDay(p.date),
-                commodity: (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <span className="ftp-emoji" aria-hidden>
-                      {cropEmoji(p.commodity)}
-                    </span>
-                    {p.commodity}
-                  </span>
-                ),
-                market: p.market,
-                min: f.number(dp(p.minPrice)),
-                modal: f.number(dp(p.modalPrice)),
-                max: f.number(dp(p.maxPrice)),
-              }))}
-            />
-          </Section>
         </>
       )}
 
-      <ModuleSources module="crops" state={state} />
       <ModuleNews district={district} state={state} locale={locale} module="crops" />
-      <ModuleToolbar
+
+      <LandWaterFooter
+        ns="page_crops"
+        about={t("summary")}
+        sources={[{ name: t("sourceName"), url: AGMARKNET.href, frequency: t("footer.frequency") }]}
         locale={locale}
         district={district}
         moduleSlug="crops"
-        moduleLabel={mt.label("crops")}
         shareText={shareText}
         onCsv={prices.length > 0 ? handleDownload : undefined}
-        csvLabel={t("csvLabel")}
       />
+
+      <CropSheet crop={openCrop} prices={prices} unit={unit} onClose={() => setOpenKey(null)} />
     </ModulePage>
+  );
+}
+
+/**
+ * One crop's price card: emoji, name, the typical price big, the day's
+ * low–high, mandi and date, the change since the market day before, and a
+ * small line of recent prices. A tap anywhere on the card opens the
+ * crop's sheet.
+ */
+function PriceCard({
+  row,
+  prices,
+  unit,
+  onOpen,
+  fmt,
+}: {
+  row: CropPrice;
+  prices: CropPrice[];
+  unit: Unit;
+  onOpen: () => void;
+  fmt: {
+    rupees: (n: number) => string;
+    dp: (q: number) => number;
+    perUnit: (q: number) => string;
+    shortDay: (iso: string) => string;
+  };
+}) {
+  const t = useTranslations("page_crops");
+  const prev = previousDay(prices, row);
+  const change = prev ? row.modalPrice - prev.modalPrice : 0;
+  const shownChange = fmt.dp(Math.abs(change));
+  const otherMarkets = latestPerMarket(prices, commodityKey(row.commodity)).length - 1;
+  const { rows: series } = dailySeries(prices, row);
+  return (
+    <TapCard onClick={onOpen} label={t("detailsFor", { name: row.commodity })}>
+      <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <EmojiTile emoji={cropEmoji(row.commodity)} />
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, overflowWrap: "anywhere" }}>
+            {row.commodity}
+          </h3>
+          <span style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", overflowWrap: "anywhere" }}>
+            {t("cardMarket", { market: row.market, date: fmt.shortDay(row.date) })}
+          </span>
+        </span>
+      </span>
+
+      <span style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
+            <span className="ftp-bignum" style={{ fontSize: 30, lineHeight: "34px", color: "var(--hue-deep)" }}>
+              {fmt.rupees(fmt.dp(row.modalPrice))}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ftp-text-2)" }}>{t("unitShort", { unit })}</span>
+          </span>
+          <span style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+            {t("cardRange", { min: fmt.rupees(fmt.dp(row.minPrice)), max: fmt.rupees(fmt.dp(row.maxPrice)) })}
+          </span>
+        </span>
+        <Sparkline values={series.map((s) => s.modalPrice)} width={88} height={32} />
+      </span>
+
+      <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {prev && (
+          <Chip tone={change > 0 && shownChange > 0 ? "hue" : "quiet"}>
+            <span aria-hidden>{change > 0 && shownChange > 0 ? "▲" : change < 0 && shownChange > 0 ? "▼" : "="}</span>
+            {shownChange === 0
+              ? t("cardSame", { date: fmt.shortDay(prev.date) })
+              : t(change > 0 ? "cardMore" : "cardLess", { amount: fmt.rupees(shownChange), date: fmt.shortDay(prev.date) })}
+          </Chip>
+        )}
+        {otherMarkets > 0 && <Chip tone="quiet">{t("moreMarkets", { n: otherMarkets })}</Chip>}
+      </span>
+
+      <TapHint>{t("details")}</TapHint>
+    </TapCard>
   );
 }
 
