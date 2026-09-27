@@ -17,7 +17,14 @@
 //    dams together + dams more than half full → one tank card per dam
 //    (tap → DamSheet: tank, sentence, storage trend, every figure, source)
 //    → canal release cards (coming up first) → AI insight → charts
-//    (water in / out · storage over time, all dams) → news → footer.
+//    (water in / out · storage over time, all dams) → news → Share.
+//
+//  Honesty: the date of the newest reading sits right above the big
+//  numbers. Older than the dams max age (3 days,
+//  src/lib/constants/dataset-collection.ts) it turns amber — "N days old;
+//  we could not find newer data" — the big percentages turn grey, and the
+//  simple-words line says so. Sources and "report a mistake" are in the
+//  layout's verification panel.
 //
 //  Data: useWater() → { dams (newest 20 readings), canals (newest 20) }
 //  and /api/data/dam-history (every stored reading, for the trends).
@@ -31,7 +38,7 @@ import { use, useMemo, useState } from "react";
 import type React from "react";
 import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Waves } from "lucide-react";
+import { Droplet, Equal, TrendingDown, TrendingUp, Waves } from "lucide-react";
 import { useWater } from "@/hooks/useRealtimeData";
 import type { CanalRelease, DamReading } from "@/hooks/useRealtimeData";
 import { useDistrictData } from "@/hooks/useDistrictData";
@@ -46,9 +53,10 @@ import {
   LoadingShell,
   ErrorBlock,
   EmptyState,
-  AsOfText,
 } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram, WaterTank, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, Explainer, WaterTank, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { IconPictogram, PageActions, ReadingAge, ageInDays, isOlderThan, useClientNow } from "@/components/district/page-kit";
+import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -56,11 +64,12 @@ import { FlowBars, FLOW_IN_FILL, FLOW_OUT_FILL } from "@/components/water/WaterV
 import { HUE_SHADES, namePair, useDistrictName } from "@/components/land-water/visuals";
 import { fitGrid, Chip, Sparkline, TapCard, TapHint } from "@/components/land-water/cards";
 import { DamSheet, flowState } from "@/components/land-water/DamSheet";
-import { LandWaterFooter } from "@/components/land-water/PageFooter";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { getDamConfig } from "@/lib/constants/dam-config";
 
 const INDIA_WRIS = { label: "India-WRIS", href: "https://indiawris.gov.in" };
+/** Dam readings older than this are not current (src/lib/constants/dataset-collection.ts). */
+const MAX_AGE_HOURS = maxAgeHoursOf("dams") ?? 72;
 
 /** Bold runs inside translated sentences (<b>…</b> in the messages). */
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
@@ -84,6 +93,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   const { data: historyData } = useDistrictData<DamReading[]>("dam-history", district, state);
   const [openDam, setOpenDam] = useState<string | null>(null);
   const [today] = useState(todayIST);
+  const now = useClientNow();
 
   const pct = (n: number, digits = 0) => f.number(n / 100, { style: "percent", maximumFractionDigits: digits, minimumFractionDigits: digits });
   const shortDay = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
@@ -130,6 +140,9 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   const fullest = byLevel[0];
   const lowest = byLevel[byLevel.length - 1];
   const headerSource = damList[0]?.source ? { label: damList[0].source, href: portal?.href } : INDIA_WRIS;
+  // Old readings are not today's levels: the numbers turn grey and carry their date and age.
+  const isOld = newestReading ? isOlderThan(newestReading, MAX_AGE_HOURS, now) : false;
+  const oldDays = newestReading && isOld ? ageInDays(newestReading, now) : 0;
 
   // Canals: coming up first (soonest first), then past releases (newest first).
   const canalDay = (c: CanalRelease) => c.scheduledDate.slice(0, 10);
@@ -195,15 +208,6 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
         })
       : t("shareEmpty", { district: districtName });
 
-  const sourceNames = Array.from(new Set([...damList.map((d) => d.source), ...canals.map((c) => c.source)].filter(Boolean)));
-  const sources =
-    sourceNames.length > 0
-      ? sourceNames.map((name) => ({ name, url: name === sc?.waterPortalName ? sc?.waterPortalUrl : undefined, frequency: t("footer.frequency") }))
-      : [
-          { name: portalName, url: portal?.href },
-          { name: t("wrisName"), url: INDIA_WRIS.href },
-        ];
-
   const hasAny = !isLoading && !error && (damList.length > 0 || canals.length > 0);
 
   return (
@@ -220,14 +224,14 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && damList.length === 0 && canals.length === 0 && (
-        <EmptyState emoji="🏞️" title={t("emptyTitle", { district: districtName })} body={t("emptyBody", { portal: portalName })} />
+        <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody", { portal: portalName })} />
       )}
 
       {hasAny && (
         <>
           {/* 1 · The answer in plain words. */}
           {fullest && (
-            <Explainer emoji="💧">
+            <Explainer>
               {damList.length >= 2 ? (
                 <>
                   {combinedPct !== null && <>{t.rich("explainerTogether", { b: bold, n: damList.length, district: districtName, pct: pct(combinedPct) })} </>}
@@ -242,17 +246,22 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
               ) : (
                 t.rich("explainerOne", { b: bold, dam: shownName(fullest).primary, pct: pct(fullest.storagePct), flow: flowState(fullest) })
               )}{" "}
+              {isOld && newestReading ? <>{t.rich("explainerOld", { b: bold, date: fullDay(newestReading), n: oldDays })} </> : null}
               {t("tapHint")}
             </Explainer>
           )}
-          {!fullest && canals.length > 0 && <Explainer emoji="🌊">{t("explainerCanalsOnly", { n: upcoming.length })}</Explainer>}
+          {!fullest && canals.length > 0 && <Explainer>{t("explainerCanalsOnly", { n: upcoming.length })}</Explainer>}
 
-          {/* 2 · The big numbers. */}
+          {/* 2 · The big numbers, with the date they were true right above them. */}
+          {newestReading && (
+            <div style={{ margin: "0 0 10px" }}>
+              <ReadingAge at={newestReading} maxAgeHours={MAX_AGE_HOURS} withTime now={now} />
+            </div>
+          )}
           <StatStrip>
-            {damList.length > 0 && <StatTile emoji="🏞️" label={t("tileDams")} value={f.number(damList.length)} asOf={newestReading} />}
+            {damList.length > 0 && <StatTile label={t("tileDams")} value={f.number(damList.length)} />}
             {combinedPct !== null && (
               <StatTile
-                emoji="💧"
                 label={t("tileStored")}
                 value={f.number(Math.round(combinedPct))}
                 unit="%"
@@ -261,7 +270,6 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
             )}
             {damList.length > 0 && (
               <StatTile
-                emoji="📈"
                 label={t("tileFilling")}
                 value={`${f.number(fillingUp)}/${f.number(damList.length)}`}
                 sub={t("tileFillingSub")}
@@ -269,7 +277,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
               />
             )}
             {canals.length > 0 && (
-              <StatTile emoji="🌊" label={t("tileCanals")} value={f.number(upcoming.length)} sub={t("tileCanalsSub", { n: canals.length })} />
+              <StatTile label={t("tileCanals")} value={f.number(upcoming.length)} sub={t("tileCanalsSub", { n: canals.length })} />
             )}
           </StatStrip>
 
@@ -280,7 +288,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                 <p className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
                   {t("halfTitle")}
                 </p>
-                <Pictogram filled={halfPicture.filled} total={halfPicture.total} emoji="💧" label={halfPicture.label} size={26} />
+                <IconPictogram icon={Droplet} filled={halfPicture.filled} total={halfPicture.total} label={halfPicture.label} />
               </Card>
               <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <WaterTank pct={combinedPct} label={t("tankAll")} />
@@ -290,7 +298,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* 4 · One tank card per dam. Tap → everything about it. */}
           {damList.length > 0 && (
-            <Section title={t("damsTitle")} emoji="🏞️">
+            <Section title={t("damsTitle")}>
               <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, ["--ftp-grid-min" as string]: "280px" }}>
                 {damList.map((dam) => {
                   const n = shownName(dam);
@@ -310,7 +318,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                                 {n.secondary}
                               </span>
                             )}
-                            <span className="ftp-bignum" style={{ fontSize: 28, lineHeight: "32px", color: "var(--hue-deep)" }}>
+                            <span className="ftp-bignum" style={{ fontSize: 28, lineHeight: "32px", color: isOlderThan(dam.recordedAt, MAX_AGE_HOURS, now) ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
                               {pct(dam.storagePct, 1)}
                             </span>
                             <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{t("fullOfCapacity")}</span>
@@ -318,7 +326,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                         </span>
                         <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                           <Chip tone={st === "filling" ? "hue" : "quiet"}>
-                            <span aria-hidden>{st === "filling" ? "▲" : st === "emptying" ? "▼" : "="}</span>
+                            {st === "filling" ? <TrendingUp size={13} aria-hidden /> : st === "emptying" ? <TrendingDown size={13} aria-hidden /> : <Equal size={13} aria-hidden />}
                             {t(`flowState.${st}`)}
                           </Chip>
                           <Sparkline values={history.map((h) => h.storagePct)} width={96} height={28} />
@@ -326,7 +334,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                         <span style={{ fontSize: 13, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
                           {t("cardFlow", { inflow: f.number(Math.round(dam.inflow)), outflow: f.number(Math.round(dam.outflow)) })}
                         </span>
-                        <AsOfText asOf={dam.recordedAt} />
+                        <ReadingAge at={dam.recordedAt} maxAgeHours={MAX_AGE_HOURS} now={now} />
                         <TapHint>{t("details")}</TapHint>
                       </TapCard>
                     </li>
@@ -338,7 +346,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* Canal releases: everything on the card, coming up first. */}
           {canals.length > 0 && (
-            <Section title={t("canalsTitle")} emoji="🌊">
+            <Section title={t("canalsTitle")}>
               <p style={{ margin: "-4px 0 14px", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("canalsIntro")}</p>
               <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, ["--ftp-grid-min" as string]: "260px" }}>
                 {canalCards.map((c) => {
@@ -349,9 +357,6 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                     <Card key={c.id} as="li" tinted={status !== "done"} padding={16}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
                         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }}>
-                          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 38, height: 38, fontSize: 20, borderRadius: 12 }}>
-                            🌊
-                          </span>
                           <div style={{ minWidth: 0 }}>
                             <h3 lang={n.primaryLang} className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "21px", fontWeight: 650, overflowWrap: "anywhere" }}>
                               {n.primary}
@@ -366,10 +371,10 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                         <Chip tone={status === "done" ? "quiet" : "strong"}>{t(`canalStatus.${status}`)}</Chip>
                       </div>
                       <dl style={{ margin: "12px 0 0", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px 12px" }}>
-                        <CanalFact emoji="📅" label={t("canalDate")} value={fullDay(c.scheduledDate)} />
-                        <CanalFact emoji="💦" label={t("canalFlow")} value={t("cusecs", { n: f.number(Math.round(c.releaseCusecs)) })} />
-                        {c.duration && <CanalFact emoji="⏳" label={t("canalDuration")} value={c.duration} />}
-                        {c.targetArea && <CanalFact emoji="🌾" label={t("canalArea")} value={c.targetArea} />}
+                        <CanalFact label={t("canalDate")} value={fullDay(c.scheduledDate)} />
+                        <CanalFact label={t("canalFlow")} value={t("cusecs", { n: f.number(Math.round(c.releaseCusecs)) })} />
+                        {c.duration && <CanalFact label={t("canalDuration")} value={c.duration} />}
+                        {c.targetArea && <CanalFact label={t("canalArea")} value={c.targetArea} />}
                       </dl>
                     </Card>
                   );
@@ -388,7 +393,6 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
               {showFlows && (
                 <ChartCard
                   title={t("flowTitle")}
-                  emoji="🔁"
                   units={t("flowUnits")}
                   simple={t.rich("flowSimple", { b: bold, n: fillingUp, total: damList.length })}
                   legend={[
@@ -408,7 +412,6 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
               {showTrend && (
                 <ChartCard
                   title={t("trendAllTitle")}
-                  emoji="📈"
                   units={t("trendUnits")}
                   simple={trendSimple}
                   legend={damList.map((d, i) => ({ label: shownName(d).primary, swatch: HUE_SHADES[i % HUE_SHADES.length] }))}
@@ -457,15 +460,9 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
 
       <ModuleNews district={district} state={state} locale={locale} module="water" />
 
-      <LandWaterFooter
-        ns="page_water"
-        about={t("summary", { portal: portalName })}
-        sources={sources}
-        locale={locale}
-        district={district}
-        moduleSlug="water"
-        shareText={shareText}
-      />
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="water" shareText={shareText} />
+      </div>
 
       <DamSheet
         dam={opened}
@@ -480,15 +477,10 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
 }
 
 /** One label + value on a canal card. */
-function CanalFact({ emoji, label, value }: { emoji: string; label: string; value: string }) {
+function CanalFact({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ minWidth: 0 }}>
-      <dt style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-        <span className="ftp-emoji" aria-hidden>
-          {emoji}{" "}
-        </span>
-        {label}
-      </dt>
+      <dt style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{label}</dt>
       <dd style={{ margin: "2px 0 0", fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)", overflowWrap: "anywhere" }}>{value}</dd>
     </div>
   );

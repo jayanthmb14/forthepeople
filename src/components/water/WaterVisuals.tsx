@@ -66,9 +66,6 @@ export function FlowBars({ rows }: { rows: FlowRow[] }) {
         const state = r.inflow > r.outflow ? "filling" : r.inflow < r.outflow ? "emptying" : "steady";
         return (
           <li key={r.key} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-              🏞️
-            </span>
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <span lang={r.nameLang} style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>
