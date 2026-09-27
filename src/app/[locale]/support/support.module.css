@@ -1,6 +1,8 @@
-/* Contribution tiers. There are five tiers, so the column count is chosen
-   to avoid one card alone on a row: 5 across on wide screens, 3 + 2 on
-   laptops and tablets, 2-up on large phones, then a single column. */
+/* /support — Design v5 "calm". Colours come from tokens only. */
+
+/* Five plans. The column count avoids one card alone on a row:
+   5 across on wide screens, 3 + 2 on laptops and tablets, 2-up on large
+   phones, then one column. */
 .tierGrid {
   display: grid;
   gap: 16px;
@@ -14,4 +16,93 @@
 }
 @media (max-width: 519px) {
   .tierGrid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.tierCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+}
+
+.tierName {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 650;
+  color: var(--ftp-text);
+}
+
+/* "Monthly" / "One time": the soft support rose, as a small tag. */
+.planChip {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: var(--ftp-radius-pill);
+  background: var(--ftp-support-tint);
+  color: var(--ftp-support);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+/* How to subscribe: three numbered steps, side by side from tablet up. */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+.step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+}
+.stepNum {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-size: 15px;
+}
+
+/* Closed-by-default sections ("Where the money goes", "Why this exists"). */
+.disclosure {
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+}
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 16px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ftp-text);
+}
+.summary::-webkit-details-marker { display: none; }
+.summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: var(--ftp-radius-card); }
+.chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform 150ms ease; }
+.disclosure[open] .chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
 }
