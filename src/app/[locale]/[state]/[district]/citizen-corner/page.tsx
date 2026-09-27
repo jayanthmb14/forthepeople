@@ -4,57 +4,81 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Citizen Corner — Design v3 "Civic Ledger" module page (CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  PageHeader → AI summary → StatStrip → three tabs (AI tips · Helplines ·
+//  Your rights) → SourcesFooter → Toolbar (Share, Compare).
+//
+//  Tips come from /api/ai/citizen-tips (generated weekly). Each tip card
+//  shows a Lucide icon for its category, a category Pill and an urgency
+//  Pill — no emoji, no coloured side stripe. Helplines are real tel: links
+//  with 44 px+ touch targets.
+//
 "use client";
 import { use, useState, useEffect } from "react";
-import { Users } from "lucide-react";
-import { ModuleHeader, SectionLabel, LoadingShell } from "@/components/district/ui";
+import {
+  Users, Sparkles, Phone, Scale, RefreshCw, Share2, GitCompare,
+  Siren, Flame, Ambulance, PhoneCall, UserRound, Baby, HeartHandshake, Laptop, Car, ShoppingCart, Wheat,
+  FileText, BookOpen, Shovel, Landmark, HeartPulse, PiggyBank, Droplets, ShieldCheck, GraduationCap, Leaf, Lightbulb,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  PageHeader, Section, Card, Pill, StatStrip, StatTile, LoadingShell, EmptyState,
+  SourcesFooter, Toolbar, ToolbarButton,
+} from "@/components/district/ui";
+import type { Tone } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
-import NoDataCard from "@/components/common/NoDataCard";
+import ModuleNews from "@/components/district/ModuleNews";
 import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
+// Urgency → label + Pill tone (colour appears only as the pill's text/dot).
 const URGENCY_LABEL: Record<string, string> = { now: "Do Now", soon: "This Month", general: "Good to Know" };
-const URGENCY_COLOR: Record<string, string> = { now: "#DC2626", soon: "#D97706", general: "#6B7280" };
+const URGENCY_TONE: Record<string, Tone> = { now: "danger", soon: "warn", general: "neutral" };
 
-const CAT_COLORS: Record<string, string> = {
-  Agriculture: "#16A34A", Health: "#DC2626", Finance: "#2563EB", Water: "#0891B2",
-  Rights: "#7C3AED", Safety: "#B45309", Education: "#D97706", Environment: "#059669",
+// Tip category → Lucide icon (replaces the emoji the AI returns in `icon`).
+const CAT_ICONS: Record<string, LucideIcon> = {
+  Agriculture: Wheat, Health: HeartPulse, Finance: PiggyBank, Water: Droplets,
+  Rights: Scale, Safety: ShieldCheck, Education: GraduationCap, Environment: Leaf,
 };
 
-const HELPLINES = [
-  { name: "Police Emergency", number: "100", icon: "🚔" },
-  { name: "Fire", number: "101", icon: "🔥" },
-  { name: "Ambulance", number: "108", icon: "🚑" },
-  { name: "National Emergency", number: "112", icon: "📞" },
-  { name: "Women Helpline", number: "1091", icon: "👩" },
-  { name: "Child Helpline", number: "1098", icon: "👶" },
-  { name: "Senior Citizen", number: "14567", icon: "🧓" },
-  { name: "Cyber Crime", number: "1930", icon: "💻" },
-  { name: "Anti-Corruption", number: "1064", icon: "⚖️" },
-  { name: "Road Accident", number: "1073", icon: "🚗" },
-  { name: "Consumer Helpline", number: "1800-11-4000", icon: "🛒" },
-  { name: "PM KISAN Helpline", number: "155261", icon: "🌾" },
+const HELPLINES: { name: string; number: string; icon: LucideIcon }[] = [
+  { name: "Police Emergency", number: "100", icon: Siren },
+  { name: "Fire", number: "101", icon: Flame },
+  { name: "Ambulance", number: "108", icon: Ambulance },
+  { name: "National Emergency", number: "112", icon: PhoneCall },
+  { name: "Women Helpline", number: "1091", icon: UserRound },
+  { name: "Child Helpline", number: "1098", icon: Baby },
+  { name: "Senior Citizen", number: "14567", icon: HeartHandshake },
+  { name: "Cyber Crime", number: "1930", icon: Laptop },
+  { name: "Anti-Corruption", number: "1064", icon: Scale },
+  { name: "Road Accident", number: "1073", icon: Car },
+  { name: "Consumer Helpline", number: "1800-11-4000", icon: ShoppingCart },
+  { name: "PM KISAN Helpline", number: "155261", icon: Wheat },
 ];
 
-function getRights(stateSlug: string) {
+function getRights(stateSlug: string): { right: string; desc: string; icon: LucideIcon }[] {
   const sc = getStateConfig(stateSlug);
   const isUrban = sc ? !sc.gramPanchayatApplicable : false;
   return [
-    { right: "Right to Information (RTI)", desc: "Any citizen can request government documents within 30 days. Fee: ₹10.", icon: "📄" },
-    { right: "Right to Food", desc: "BPL families entitled to subsidised grain under NFSA at Rs 2–3/kg.", icon: "🌾" },
-    { right: "Right to Education", desc: "Free & compulsory education for children 6–14 years under RTE Act.", icon: "📚" },
-    { right: "MGNREGA", desc: "100 days of guaranteed wage employment per rural household per year.", icon: "⛏️" },
+    { right: "Right to Information (RTI)", desc: "Any citizen can request government documents within 30 days. Fee: ₹10.", icon: FileText },
+    { right: "Right to Food", desc: "BPL families entitled to subsidised grain under NFSA at Rs 2–3/kg.", icon: Wheat },
+    { right: "Right to Education", desc: "Free & compulsory education for children 6–14 years under RTE Act.", icon: BookOpen },
+    { right: "MGNREGA", desc: "100 days of guaranteed wage employment per rural household per year.", icon: Shovel },
     isUrban
-      ? { right: "Ward Committee", desc: `Participate in your ward committee meetings. Held quarterly by your municipal corporation${sc?.municipalBody ? ` (${sc.municipalBody})` : ""}.`, icon: "🏛️" }
-      : { right: "Gram Sabha", desc: "Attend your village's Gram Sabha meetings — held quarterly.", icon: "🏛️" },
-    { right: "Consumer Rights", desc: "File consumer complaint online at consumerhelpline.gov.in.", icon: "⚖️" },
+      ? { right: "Ward Committee", desc: `Participate in your ward committee meetings. Held quarterly by your municipal corporation${sc?.municipalBody ? ` (${sc.municipalBody})` : ""}.`, icon: Landmark }
+      : { right: "Gram Sabha", desc: "Attend your village's Gram Sabha meetings — held quarterly.", icon: Landmark },
+    { right: "Consumer Rights", desc: "File consumer complaint online at consumerhelpline.gov.in.", icon: Scale },
   ];
 }
 
 interface CitizenTip {
   category: string;
+  /** Emoji from the AI pipeline — kept in the data, not rendered (v3: no emoji in chrome). */
   icon: string;
   title: string;
   description: string;
@@ -62,6 +86,42 @@ interface CitizenTip {
 }
 
 type Tab = "ai-tips" | "helplines" | "rights";
+
+/** 36 px icon square on the neutral surface-2 tint (quieter than the PageHeader icon). */
+function IconSquare({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: "var(--ftp-radius-tile)",
+        background: "var(--ftp-surface-2)",
+        color: "var(--ftp-text-2)",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <Icon size={18} />
+    </span>
+  );
+}
+
+/** Share button: the phone's share sheet when available, else copy the link. */
+function SharePageButton() {
+  const [copied, setCopied] = useState(false);
+  function share() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: document.title, url }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
+    }
+  }
+  return <ToolbarButton icon={Share2} onClick={share}>{copied ? "Link copied" : "Share"}</ToolbarButton>;
+}
 
 export default function CitizenCornerPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -74,6 +134,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
   const [nextRefreshDays, setNextRefreshDays] = useState<number | null>(null);
 
   const tipsLoading = loadedFor !== district;
+  const sources = getModuleSources("citizen-corner", state);
 
   useEffect(() => {
     fetch(`/api/ai/citizen-tips?district=${district}&state=${state}`)
@@ -88,170 +149,190 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       .catch(() => setLoadedFor(district));
   }, [district, state]);
 
-  const TABS: { id: Tab; label: string; emoji: string }[] = [
-    { id: "ai-tips", label: "AI Tips", emoji: "🧠" },
-    { id: "helplines", label: "Helplines", emoji: "📞" },
-    { id: "rights", label: "Your Rights", emoji: "⚖️" },
+  const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
+    { id: "ai-tips", label: "AI Tips", icon: Sparkles },
+    { id: "helplines", label: "Helplines", icon: Phone },
+    { id: "rights", label: "Your Rights", icon: Scale },
   ];
 
+  const tipsPeriod = tipsMonth && tipsYear ? `${MONTHS[tipsMonth - 1]} ${tipsYear}` : null;
+
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Users} title="Citizen Corner" description="AI-powered civic tips, rights, and emergency helplines" backHref={base} />
-      {(() => { const _src = getModuleSources("citizen-corner", state); return <DataSourceBanner moduleName="citizen-corner" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
+    <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
+      <PageHeader
+        icon={Users}
+        title="Citizen Corner"
+        description="AI-powered civic tips, rights, and emergency helplines"
+        backHref={base}
+        accent={getModuleAccent("citizen-corner")}
+        source={{ label: "District Administration" }}
+      />
       <AIInsightCard module="citizen-corner" district={district} />
 
-      {/* Tab switcher */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24, borderBottom: "1px solid #E8E8E4", paddingBottom: 0 }}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            style={{
-              padding: "8px 16px",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              background: "transparent",
-              border: "none",
-              borderBottom: tab === t.id ? "2px solid #2563EB" : "2px solid transparent",
-              color: tab === t.id ? "#2563EB" : "#6B6B6B",
-              marginBottom: -1,
-            }}
-          >
-            {t.emoji} {t.label}
-          </button>
-        ))}
+      <StatStrip cols={3}>
+        <StatTile
+          label="Civic tips"
+          value={tipsLoading ? "—" : tips.length}
+          sub={tipsPeriod ? `For ${tipsPeriod}` : "Generated weekly"}
+        />
+        <StatTile
+          label="Do now"
+          value={tipsLoading ? "—" : tips.filter((t) => t.urgency === "now").length}
+          sub="Urgent tips"
+        />
+        <StatTile label="Helplines" value={HELPLINES.length} sub="Tap a number to call" />
+      </StatStrip>
+
+      {/* Tab switcher — real tabs, 44 px tall, brand underline on the active one */}
+      <div
+        role="tablist"
+        aria-label="Citizen Corner sections"
+        style={{ display: "flex", gap: 4, margin: "24px 0 20px", borderBottom: "1px solid var(--ftp-border)", overflowX: "auto" }}
+      >
+        {TABS.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.id)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                minHeight: 44,
+                padding: "0 14px",
+                fontFamily: "var(--ftp-font-sans)",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: "pointer",
+                background: "transparent",
+                border: "none",
+                borderBottom: active ? "2px solid var(--ftp-brand)" : "2px solid transparent",
+                color: active ? "var(--ftp-brand-deep)" : "var(--ftp-text-2)",
+                marginBottom: -1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <t.icon size={16} aria-hidden />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── AI Tips ─────────────────────────────────────── */}
       {tab === "ai-tips" && (
-        <>
+        <div role="tabpanel" aria-label="AI Tips">
           {tipsLoading && <LoadingShell rows={4} />}
 
           {!tipsLoading && tips.length === 0 && (
-            <div style={{
-              padding: "32px 24px", textAlign: "center",
-              background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 16,
-            }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1A1A", marginBottom: 6 }}>
-                Citizen Tips generate weekly
-              </div>
-              <div style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.6, maxWidth: 300, margin: "0 auto 16px" }}>
-                {nextRefreshDays != null
+            <EmptyState
+              title="Citizen Tips generate weekly"
+              body={
+                nextRefreshDays != null
                   ? `Next tips will be available in ${nextRefreshDays === 1 ? "1 day" : nextRefreshDays + " days"}.`
-                  : "New tips will be generated automatically next week."}
-              </div>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 20,
-                padding: "4px 12px", fontSize: 11, color: "#D97706", fontWeight: 600,
-              }}>
-                🔄 Auto-generated every Sunday
-              </div>
-            </div>
+                  : "New tips will be generated automatically next week."
+              }
+              action={<Pill tone="warn" icon={RefreshCw}>Auto-generated every Sunday</Pill>}
+            />
           )}
 
           {!tipsLoading && tips.length > 0 && (
             <>
-              {tipsMonth && tipsYear && (
-                <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                    background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 20,
-                    padding: "4px 12px", fontSize: 12, color: "#2563EB", fontWeight: 600,
-                  }}>
-                    🧠 AI-generated tips for {MONTHS[tipsMonth - 1]} {tipsYear}
-                  </div>
-                  <span style={{ fontSize: 11, color: "#9B9B9B" }}>Updated weekly</span>
+              {tipsPeriod && (
+                <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <Pill tone="features" icon={Sparkles}>AI-generated tips for {tipsPeriod}</Pill>
+                  <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>Updated weekly</span>
                 </div>
               )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-                {tips.map((tip, i) => {
-                  const catColor = CAT_COLORS[tip.category] ?? "#6B7280";
-                  const urgColor = URGENCY_COLOR[tip.urgency] ?? "#6B7280";
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        background: "#FFF",
-                        border: "1px solid #E8E8E4",
-                        borderLeft: `4px solid ${catColor}`,
-                        borderRadius: 12,
-                        padding: "14px 16px",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
-                        <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{tip.icon}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-                              color: catColor, background: `${catColor}15`, padding: "2px 7px", borderRadius: 20,
-                            }}>
-                              {tip.category}
-                            </span>
-                            <span style={{
-                              fontSize: 10, fontWeight: 600, color: urgColor, background: `${urgColor}10`,
-                              padding: "2px 7px", borderRadius: 20,
-                            }}>
-                              {URGENCY_LABEL[tip.urgency] ?? tip.urgency}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.3 }}>{tip.title}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
+                {tips.map((tip, i) => (
+                  <Card key={i} as="article">
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
+                      <IconSquare icon={CAT_ICONS[tip.category] ?? Lightbulb} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                          <Pill>{tip.category}</Pill>
+                          <Pill tone={URGENCY_TONE[tip.urgency] ?? "neutral"} dot>
+                            {URGENCY_LABEL[tip.urgency] ?? tip.urgency}
+                          </Pill>
                         </div>
+                        <h3 className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>{tip.title}</h3>
                       </div>
-                      <div style={{ fontSize: 13, color: "#4B4B4B", lineHeight: 1.6 }}>{tip.description}</div>
                     </div>
-                  );
-                })}
+                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{tip.description}</p>
+                  </Card>
+                ))}
               </div>
 
-              <div style={{ marginTop: 16, padding: "10px 14px", background: "#F5F5F0", borderRadius: 8, fontSize: 11, color: "#9B9B9B" }}>
+              <p style={{ marginTop: 16, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
                 Powered by Gemini 2.5 Flash · Tips are AI-generated and should be verified with official sources.
-              </div>
+              </p>
             </>
           )}
-        </>
+        </div>
       )}
 
       {/* ── Helplines ───────────────────────────────────── */}
       {tab === "helplines" && (
-        <>
-          <SectionLabel>Emergency & Important Helplines</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
-            {HELPLINES.map((h) => (
-              <a key={h.number} href={`tel:${h.number}`} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, textDecoration: "none",
-              }}>
-                <span style={{ fontSize: 20 }}>{h.icon}</span>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: "#1A1A1A" }}>{h.number}</div>
-                  <div style={{ fontSize: 11, color: "#9B9B9B" }}>{h.name}</div>
-                </div>
-              </a>
-            ))}
-          </div>
-        </>
+        <div role="tabpanel" aria-label="Helplines">
+          <Section title="Emergency & important helplines">
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(160px, 100%), 1fr))", gap: 8 }}>
+              {HELPLINES.map((h) => (
+                <li key={h.number}>
+                  <a
+                    href={`tel:${h.number}`}
+                    className="ftp-card-link"
+                    aria-label={`Call ${h.name}: ${h.number}`}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", minHeight: 56,
+                      background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)",
+                      borderRadius: "var(--ftp-radius-card)", textDecoration: "none",
+                    }}
+                  >
+                    <h.icon size={18} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>{h.number}</div>
+                      <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        </div>
       )}
 
       {/* ── Rights ──────────────────────────────────────── */}
       {tab === "rights" && (
-        <>
-          <SectionLabel>Know Your Rights</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
-            {getRights(state).map((r) => (
-              <div key={r.right} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 22, marginBottom: 6 }}>{r.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", marginBottom: 4 }}>{r.right}</div>
-                <div style={{ fontSize: 12, color: "#6B6B6B", lineHeight: 1.5 }}>{r.desc}</div>
-              </div>
-            ))}
-          </div>
-        </>
+        <div role="tabpanel" aria-label="Your Rights">
+          <Section title="Know your rights">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", gap: 12 }}>
+              {getRights(state).map((r) => (
+                <Card key={r.right}>
+                  <IconSquare icon={r.icon} />
+                  <h3 className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", margin: "10px 0 4px" }}>{r.right}</h3>
+                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{r.desc}</p>
+                </Card>
+              ))}
+            </div>
+          </Section>
+        </div>
       )}
+
+      <SourcesFooter sources={sources.sources.map((name) => ({ name, frequency: sources.frequency }))} />
+      {/* Related news (renders nothing when no article is tagged for this module) */}
+      <ModuleNews district={district} state={state} locale={locale} module="citizen-corner" />
+      <Toolbar>
+        <SharePageButton />
+        <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=citizen-corner&a=${district}`}>
+          Compare with another district
+        </ToolbarButton>
+      </Toolbar>
     </div>
   );
 }
