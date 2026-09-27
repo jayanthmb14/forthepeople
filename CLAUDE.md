@@ -32,10 +32,9 @@ Prefer existing tables or Redis keys over new columns when a fix allows it.
 
 ## AI cost rules (CRITICAL)
 - All AI calls go through `callAI()` / `callAIJSON()` in `src/lib/ai-provider.ts`.
-- `news-analysis` purpose → free Tier-1 model (currently the `gemma-4` class on
-  OpenRouter). Classification is pick-a-category + extract-a-few-fields; the
-  free tier handles it.
-- `insight` purpose → low-cost flash-lite model. Call `hasDataChanged()` first
+- `news-analysis` purpose → Tier-1 chain: free models first (Jev Router, free
+  Gemma), paid backstop last. Classification is pick-a-category + extract-a-few-fields.
+- `insight` purpose → Tier-2 low-cost paid model. Call `hasDataChanged()` first
   and skip when nothing is new.
 - `fact-check` → Claude Sonnet, manual trigger only.
 - Paid fallback only when `AI_PAID_FALLBACK=1`. Model IDs (and their known

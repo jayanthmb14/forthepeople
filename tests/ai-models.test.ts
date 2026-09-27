@@ -33,14 +33,14 @@ describe("tierForPurpose / getModelForPurpose", () => {
   });
 
   it("names the first model of each tier", () => {
-    expect(getModelForPurpose("news-analysis")).toBe("google/gemma-4-26b-a4b-it:free");
-    expect(getModelForPurpose("insight")).toBe("google/gemini-3.1-flash-lite");
-    expect(getModelForPurpose("fact-check")).toBe("anthropic/claude-sonnet-4.6");
+    expect(getModelForPurpose("news-analysis")).toBe("typesafe/jev-router");
+    expect(getModelForPurpose("insight")).toBe("openai/gpt-5.6-luna");
+    expect(getModelForPurpose("fact-check")).toBe("anthropic/claude-sonnet-5");
   });
 });
 
 describe("planChain + selectChain", () => {
-  it("tier 1 without paid fallback: the four free models in order", () => {
+  it("tier 1 without paid fallback: the free models in order", () => {
     const chain = selectChain(planChain("news-analysis", { paidFallback: false }), { live: null, broken: none });
     expect(chain).toEqual([...TIER1_FREE_MODELS]);
     expect(chain).not.toContain(TIER1_PAID_BACKSTOP);
@@ -60,13 +60,13 @@ describe("planChain + selectChain", () => {
   });
 
   it("skips circuit-broken and non-live models", () => {
-    const live = new Set<string>([...ALL_CHAIN_MODELS].filter((m) => m !== "google/gemma-4-31b-it:free"));
-    const broken = new Set<string>(["google/gemma-4-26b-a4b-it:free"]);
+    const live = new Set<string>([...ALL_CHAIN_MODELS].filter((m) => m !== "openrouter/free"));
+    const broken = new Set<string>(["typesafe/jev-router"]);
     const chain = selectChain(planChain("news-analysis", { paidFallback: false }), { live, broken });
-    expect(chain).toEqual(["nvidia/nemotron-3-super-120b-a12b:free", "openrouter/free"]);
+    expect(chain).toEqual(["google/gemma-4-26b-a4b-it:free"]);
   });
 
-  it("tier 2 tries flash-lite, then paid gemma, then the free chain", () => {
+  it("tier 2 tries luna, then flash-lite, then the free chain", () => {
     const chain = selectChain(planChain("insight", { paidFallback: false }), { live: null, broken: none });
     expect(chain.slice(0, 2)).toEqual([...TIER2_MODELS]);
     expect(chain[2]).toBe(TIER1_FREE_MODELS[0]);

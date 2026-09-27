@@ -267,9 +267,9 @@ placeholders and fill in as soon as the hourly `scrape-news` cron runs:
 - Backfill: `npx tsx scripts/backfill-exams-from-news.ts --limit 10 [--dry-run]`
 
 ### AI cost guardrails (applies to BOTH modules)
-- Use `purpose: "classify"` (free tier: `openai/gpt-oss-20b:free` with
-  fallback chain to other free models).
-- `purpose: "insight"` (Gemini 2.5 Pro) is only used for the lazy
+- Use `purpose: "classify"` (Tier-1 chain: free models first, paid backstop
+  last; the ids live in `src/lib/ai-models.ts`).
+- `purpose: "insight"` (Tier 2, see `src/lib/ai-models.ts`) is only used for the lazy
   /api/data/infra-analysis endpoint, triggered by the user clicking
   "Generate AI Analysis". 24h Redis cache.
 - try/catch around every extract/verify/sync call — one failure never

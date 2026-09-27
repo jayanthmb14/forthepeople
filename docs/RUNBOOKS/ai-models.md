@@ -8,27 +8,42 @@ disappears, how to opt into the paid backstop, and the monthly check.
 
 ## 1. What is wired today
 
-| Purpose (`purpose:` argument) | Model | Price (USD per 1M in / out) |
+The chains live in `src/lib/ai-models.ts` (the only place model ids are
+written). As of 2026-09-27:
+
+| Purpose (`purpose:` argument) | Chain, in order | Price (USD per 1M in / out) |
 |---|---|---|
-| `classify`, `summarize`, `format`, `news-analysis`, default | `google/gemma-4-31b-it:free` | 0 / 0 |
-| `insight`, `document` | `google/gemini-2.5-flash-lite` | 0.10 / 0.40 |
-| `document-large` | `google/gemini-2.5-pro` | 1.25 / 10 |
-| `fact-check` | `anthropic/claude-sonnet-4` | 3 / 15 |
+| `classify`, `summarize`, `format`, `news-analysis`, default | `typesafe/jev-router` → `google/gemma-4-26b-a4b-it:free` → `openrouter/free` → paid backstop `openai/gpt-5.6-luna` (only when `AI_PAID_FALLBACK=1`) | router: price of the model it picks (a free stealth model on 27 Sep) · free · free · 0.20 / 1.20 |
+| `insight`, `document`, `document-large` | `openai/gpt-5.6-luna` → `google/gemini-3.1-flash-lite` → the free Tier-1 chain | 0.20 / 1.20 · 0.25 / 1.50 |
+| `fact-check` | `anthropic/claude-sonnet-5` → `anthropic/claude-haiku-4.5` (never a free model) | 2 / 10 · 1 / 5 |
 
-Free fallback chain (tried in order when the primary fails):
+`AI_PAID_FALLBACK=1` was set in Vercel (all environments) on 2026-09-27. A
+news article that falls through to the backstop costs about $0.0004.
 
-1. `google/gemma-4-26b-a4b-it:free`
-2. `nvidia/nemotron-3-super-120b-a12b:free`
-3. `qwen/qwen3.8-27b:free`
-4. `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`
-5. `nvidia/nemotron-3-ultra-550b-a55b:free`
+**Why these models.** On 2026-09-27 the news-analysis prompt was run on 28
+real headlines (all 10 districts) and scored against Claude Sonnet 5:
 
-Paid backstop (only when `AI_PAID_FALLBACK=1`): `openai/gpt-oss-20b`
-(0.018 / 0.09 per 1M). Worst case if every Tier-1 call lands here: about
-$1/month (~Rs 85).
+| Model | Valid JSON | Same "about this district" call | Same module | Median time | Cost for 28 |
+|---|---|---|---|---|---|
+| openai/gpt-5.6-luna | 28 | 28 | 22 | 2.4 s | $0.010 |
+| typesafe/jev-router | 28 | 26 (2 cautious "no") | 19 | 3.9 s | $0 |
+| google/gemini-3.1-flash-lite | 28 | 27 | 17 | 1.7 s | $0.015 |
+| z-ai/glm-5.3-flashx | 28 | 27 | 17 | 2.1 s | $0.012 |
+| deepseek/deepseek-v4.1-flash | 26 | 22 | 16 | 6.4 s | $0.021 |
+| z-ai/glm-5.3-flash | 22 (timeouts) | 22 | 14 | 29 s | $0.010 |
+| qwen/qwen3.7-flash | 2 | – | – | 16 s | $0.006 |
+| google/gemma-4-26b-a4b-it:free | 0 (rate-limited) | – | – | – | $0 |
 
-At most **3 models** are tried per call. One `AIUsageLog` row is written per
-call; if fallbacks were used, `errorMsg` says `fallback after: <model> (gone|429|...)`.
+**Jev Router caveats.** It chooses its own model and reasoning effort, so it
+rejects `response_format` and `reasoning` (listed in `PLAIN_PARAMS_MODELS`,
+which sends it the plain request). It was free on 27 Sep because it routed to
+a stealth model; stealth models end without notice and the router may start
+picking paid models. The OpenRouter key's $10/month limit caps the risk —
+check Activity on openrouter.ai monthly.
+
+At most **4 models** are tried per Tier-1/Tier-2 call (2 for fact-check), and
+the paid backstop always keeps the last slot. One `AIUsageLog` row is written
+per call; if fallbacks were used, `errorMsg` says `fallback after: <model> (gone|429|...)`.
 
 ## 2. How the provider protects itself (so you know what the logs mean)
 

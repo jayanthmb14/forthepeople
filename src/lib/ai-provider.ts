@@ -36,6 +36,7 @@ import {
   ALL_CHAIN_MODELS,
   EXPIRY_WARNING_DAYS,
   KNOWN_MODEL_EXPIRY,
+  PLAIN_PARAMS_MODELS,
   REASONING_MODELS,
   REASONING_TOKEN_HEADROOM,
   TIER1_FREE_MODELS,
@@ -358,7 +359,7 @@ async function callOpenRouter(
     max_tokens: opts.maxTokens + (reasoning ? REASONING_TOKEN_HEADROOM : 0),
     temperature: opts.temperature,
   };
-  if (opts.optionalParams) {
+  if (opts.optionalParams && !PLAIN_PARAMS_MODELS.has(model)) {
     if (req.jsonMode && req.jsonShape === "object") body.response_format = { type: "json_object" };
     if (reasoning) body.reasoning = { effort: "low", exclude: true };
   }

@@ -14,47 +14,63 @@
 //
 // Every id below was checked against GET https://openrouter.ai/api/v1/models
 // on 2026-09-27 (live, no expiration_date set). See docs/RUNBOOKS/ai-models.md.
+//
+// Chosen 27 Sep 2026 from a test on 28 real headlines with the news-analysis
+// prompt, scored against Claude Sonnet 5 (valid JSON / same "about this
+// district" call / same module):
+//   gpt-5.6-luna 28/28/22 · jev-router 28/26/19 (free, conservative)
+//   gemini-3.1-flash-lite 28/27/17 · glm-5.3-flashx 28/27/17
+//   deepseek-v4.1-flash 26/22/16 · glm-5.3-flash 22 valid (timeouts)
+//   gemma-4 free 0 (rate-limited that day) · qwen3.7-flash 2 valid
 // ═══════════════════════════════════════════════════════════
 
 // ── Tier 1: free models for classify / summarize / format / news-analysis ──
 // Order matters: the first live, non-broken model answers.
-//   gemma-4-26b-a4b  MoE with 4B active params: fast, fits cron time budgets
-//   gemma-4-31b      larger, but often rate-limited upstream (429)
-//   nemotron-3-super reasoning model: we ask for low effort and hide the reasoning
+//   jev-router       TypeSafe's router (OpenRouter): picks a model + effort per
+//                    request. On 2026-09-27 it routed to a free stealth model,
+//                    so it cost $0. Stealth models end without notice, which
+//                    is why the free Gemma and the paid backstop sit behind it.
+//                    It rejects response_format/reasoning (PLAIN_PARAMS_MODELS).
+//   gemma-4-26b-a4b  MoE with 4B active params: fast, often rate-limited
 //   openrouter/free  OpenRouter's own router across the free models; it keeps
 //                    working when individual free slugs are renamed
 export const TIER1_FREE_MODELS = [
+  "typesafe/jev-router",
   "google/gemma-4-26b-a4b-it:free",
-  "google/gemma-4-31b-it:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
   "openrouter/free",
 ] as const;
 
-// Paid backstop for Tier 1. ONLY used when AI_PAID_FALLBACK=1, and always in
-// the LAST slot of the chain (it used to be cut off by the attempt cap, so it
-// could never be reached). $0.018 / $0.09 per 1M tokens.
-export const TIER1_PAID_BACKSTOP = "openai/gpt-oss-20b";
+// Paid backstop for Tier 1. ONLY used when AI_PAID_FALLBACK=1 (set in Vercel
+// on 2026-09-27), and always in the LAST slot of the chain. The most accurate
+// model in the 27 Sep test; about $0.0004 per news article.
+export const TIER1_PAID_BACKSTOP = "openai/gpt-5.6-luna";
 
 // ── Tier 2: citizen-facing insights and documents (cheap, paid) ──
-// gemini-3.1-flash-lite replaces gemini-2.5-flash-lite, which OpenRouter
-// retires on 2026-10-20. gemma-4-31b (paid) is the budget fallback; after
-// that the call falls through to the free Tier-1 chain.
-export const TIER2_MODELS = ["google/gemini-3.1-flash-lite", "google/gemma-4-31b-it"] as const;
+// gpt-5.6-luna ($0.20 / $1.20) beat gemini-3.1-flash-lite ($0.25 / $1.50) on
+// accuracy and price in the 27 Sep test; flash-lite is the fallback. After
+// these the call falls through to the free Tier-1 chain.
+export const TIER2_MODELS = ["openai/gpt-5.6-luna", "google/gemini-3.1-flash-lite"] as const;
 
 // ── Tier 3: fact-check (admin-triggered only) ──
 // No free fallback: a fact-check done by a small free model is worse than
 // no fact-check.
-export const FACT_CHECK_MODELS = ["anthropic/claude-sonnet-4.6", "anthropic/claude-haiku-4.5"] as const;
+// Sonnet 5 ($2 / $10) is newer and cheaper than Sonnet 4.6 ($3 / $15).
+export const FACT_CHECK_MODELS = ["anthropic/claude-sonnet-5", "anthropic/claude-haiku-4.5"] as const;
 
 // Models that "think" before answering. We send
 //   reasoning: { effort: "low", exclude: true }
 // so the thinking stays short and never leaks into the answer text, and we
 // give them extra max_tokens headroom (thinking counts against max_tokens).
 export const REASONING_MODELS: ReadonlySet<string> = new Set([
-  "nvidia/nemotron-3-super-120b-a12b:free",
+  "openai/gpt-5.6-luna",
   "openai/gpt-oss-20b",
+  "nvidia/nemotron-3-super-120b-a12b:free",
   "openrouter/free", // may route to a reasoning model
 ]);
+
+// Routers that choose their own reasoning effort and reject response_format /
+// reasoning: send them the plain request (no failed first attempt).
+export const PLAIN_PARAMS_MODELS: ReadonlySet<string> = new Set(["typesafe/jev-router"]);
 export const REASONING_TOKEN_HEADROOM = 1024;
 
 export type AITier = "tier1" | "tier2" | "fact-check";
@@ -198,12 +214,16 @@ export function findExpiringModels(
 // are logged at $0 so a missing entry never blocks a call. Old ids stay so
 // historical AIUsageLog rows keep their cost.
 export const PRICE_TABLE: Record<string, [number, number]> = {
-  // Tier 1 (free)
+  // Tier 1 (free). jev-router bills at the routed model's price; it routed to
+  // a free stealth model on 2026-09-27. OpenRouter's dashboard is the truth.
+  "typesafe/jev-router": [0, 0],
   "google/gemma-4-26b-a4b-it:free": [0, 0],
   "google/gemma-4-31b-it:free": [0, 0],
   "nvidia/nemotron-3-super-120b-a12b:free": [0, 0],
   "openrouter/free": [0, 0],
   // Paid
+  "openai/gpt-5.6-luna": [0.2, 1.2],
+  "anthropic/claude-sonnet-5": [2, 10],
   "openai/gpt-oss-20b": [0.018, 0.09],
   "google/gemma-4-26b-a4b-it": [0.0675, 0.225],
   "google/gemma-4-31b-it": [0.09, 0.34],
