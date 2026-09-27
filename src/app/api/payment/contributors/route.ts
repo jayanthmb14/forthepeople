@@ -33,8 +33,14 @@ export interface ContributorItem {
 
 export interface ContributorsResponse {
   contributors: ContributorItem[];
+  /** Every active supporter: one-time gifts plus ONE month of each subscription. */
   totalRupees: number;
+  /** Every active supporter row (one-time and monthly). */
   count: number;
+  /** One-time gifts only (isRecurring = false), same filter as `count`. */
+  oneTimeCount: number;
+  /** One-time gifts only, whole rupees. */
+  oneTimeRupees: number;
 }
 
 // Session 14 v8.1 Fix #15: when the supporter has opted in to be public,
@@ -94,7 +100,7 @@ export async function GET() {
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
     };
 
-    const [rows, totals] = await Promise.all([
+    const [rows, totals, oneTimeTotals] = await Promise.all([
       prisma.supporter.findMany({
         where: supporterFilter,
         orderBy: { createdAt: "desc" },
@@ -120,6 +126,11 @@ export async function GET() {
       }),
       prisma.supporter.aggregate({
         where: supporterFilter,
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.supporter.aggregate({
+        where: { ...supporterFilter, isRecurring: false },
         _sum: { amount: true },
         _count: true,
       }),
@@ -154,12 +165,14 @@ export async function GET() {
       contributors,
       totalRupees,
       count,
+      oneTimeCount: typeof oneTimeTotals?._count === "number" ? oneTimeTotals._count : 0,
+      oneTimeRupees: Math.floor(oneTimeTotals?._sum?.amount ?? 0),
     };
 
     await cacheSet(CACHE_KEY, result, CACHE_TTL);
     return NextResponse.json(result);
   } catch (err) {
     console.error("[contributors]", err);
-    return NextResponse.json({ contributors: [], totalRupees: 0, count: 0 });
+    return NextResponse.json({ contributors: [], totalRupees: 0, count: 0, oneTimeCount: 0, oneTimeRupees: 0 });
   }
 }
