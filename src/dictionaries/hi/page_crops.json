@@ -1,5 +1,5 @@
 {
-  "description": "AGMARKNET से मंडी भाव, हर दिन अपडेट",
+  "description": "AGMARKNET से मंडी के नवीनतम भाव, हर भाव के साथ उसके बाज़ार का दिन",
   "emptyTitle": "{district} के मंडी भाव अभी उपलब्ध नहीं हैं।",
   "emptyBody": "इस जिले की मंडियों के दैनिक भाव AGMARKNET से मिलने शुरू होते ही यहाँ दिखेंगे।",
   "answer": "ताज़ा भाव <b>{date}</b> के हैं: {district} की {markets, plural, one {# मंडी} other {# मंडियों}} में {n, plural, one {# फसल} other {# फसलें}}।",
