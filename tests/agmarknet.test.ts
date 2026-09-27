@@ -43,6 +43,11 @@ describe("cropPriceProblems", () => {
     expect(cropPriceProblems(800, 2_000_000, 1100)).toContain("price is absurdly high");
     expect(cropPriceProblems(10, 5000, 1000)).toContain("spread between min and max is absurd");
   });
+  it("rejects per-bunch prices stored as per quintal (under ₹50 a quintal)", () => {
+    expect(cropPriceProblems(15, 15, 15)).toContain("price is too low to be per quintal"); // Pune(Moshi) Onion Green
+    expect(cropPriceProblems(4, 10, 7)).toContain("price is too low to be per quintal");
+    expect(cropPriceProblems(40, 60, 50)).toEqual([]);
+  });
 });
 
 describe("toCropRow", () => {

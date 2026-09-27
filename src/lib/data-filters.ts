@@ -8,6 +8,7 @@
 // insights) so every screen agrees.
 import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
+import { MIN_MODAL_PRICE_PER_QUINTAL } from "@/scraper/lib/agmarknet";
 
 /**
  * Rows written straight from a news article carry the article URL as
@@ -98,3 +99,14 @@ export const SHOWN_TRAFFIC = {
  */
 export const VERIFIED_PANCHAYAT_SOURCES: string[] = [];
 export const VERIFIED_PANCHAYAT = { source: { in: VERIFIED_PANCHAYAT_SOURCES } };
+
+// ── National / prices (Sept 2026 audit, "national" area) ─────────────────
+
+/**
+ * CropPrice rows a page may show: the modal price is a believable price per
+ * quintal. AGMARKNET sometimes files a per-bunch or per-piece rate under
+ * "per quintal" (Pune(Moshi) "Onion Green" ₹15/quintal = 15 paise a kilo);
+ * those rows are hidden, never converted. The collector rejects them too
+ * (cropPriceProblems in src/scraper/lib/agmarknet.ts).
+ */
+export const PLAUSIBLE_CROP_PRICE = { modalPrice: { gte: MIN_MODAL_PRICE_PER_QUINTAL } };

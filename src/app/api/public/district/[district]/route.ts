@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { PLAUSIBLE_CROP_PRICE } from "@/lib/data-filters";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ export async function GET(
         select: { damName: true, storagePct: true, waterLevel: true, maxLevel: true, storage: true, maxStorage: true, inflow: true, outflow: true, recordedAt: true },
       }),
       prisma.cropPrice.findMany({
-        where: { district: { slug: district } },
+        where: { district: { slug: district }, ...PLAUSIBLE_CROP_PRICE },
         orderBy: { date: "desc" },
         take: 5,
         distinct: ["commodity"],

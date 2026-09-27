@@ -13,6 +13,10 @@
 //   - min ≤ modal ≤ max,
 //   - no price is absurd (> ₹10,00,000 per quintal) and the spread is
 //     not wild (max more than 20 × min is almost always a typo),
+//   - the modal price is at least ₹50 a quintal (50 paise a kilo). Lower
+//     "per quintal" prices are per-bunch / per-piece rates entered in the
+//     wrong unit (Sept 2026 audit: Pune(Moshi) "Onion Green" ₹15, mint ₹7,
+//     spinach ₹7, Mysuru ashgourd ₹11 a quintal).
 //   - the arrival date is not in the future.
 // Rejected records are counted and logged, never "fixed".
 // ═══════════════════════════════════════════════════════════
@@ -44,6 +48,12 @@ export interface CropRow {
 
 /** Highest believable price, rupees per quintal. */
 export const MAX_PRICE_PER_QUINTAL = 1_000_000;
+/**
+ * Lowest believable modal price, rupees per quintal (₹0.50 a kilo). Even a
+ * glut rarely takes a crop below ₹1 a kilo; anything under this is a price
+ * per bunch or per piece stored as per quintal.
+ */
+export const MIN_MODAL_PRICE_PER_QUINTAL = 50;
 /** Highest believable max ÷ min ratio within one record. */
 export const MAX_PRICE_SPREAD = 20;
 
@@ -65,6 +75,7 @@ export function cropPriceProblems(min: number | null, max: number | null, modal:
   if (min <= 0 || max <= 0 || modal <= 0) p.push("a price is zero");
   if (min > modal || modal > max) p.push("min ≤ modal ≤ max does not hold");
   if (max > MAX_PRICE_PER_QUINTAL) p.push("price is absurdly high");
+  if (modal > 0 && modal < MIN_MODAL_PRICE_PER_QUINTAL) p.push("price is too low to be per quintal");
   if (min > 0 && max / min > MAX_PRICE_SPREAD) p.push("spread between min and max is absurd");
   return p;
 }

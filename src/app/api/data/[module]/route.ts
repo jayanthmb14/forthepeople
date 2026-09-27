@@ -26,6 +26,7 @@ import {
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
 } from "@/lib/data-filters";
+import { PLAUSIBLE_CROP_PRICE } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
@@ -218,7 +219,7 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "crops": {
       const data = await prisma.cropPrice.findMany({
-        where: { districtId: did },
+        where: { districtId: did, ...PLAUSIBLE_CROP_PRICE },
         orderBy: [{ date: "desc" }, { commodity: "asc" }],
         take: 100,
       });
