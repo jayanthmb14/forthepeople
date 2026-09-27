@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 //
 //  The district registry (src/lib/constants/districts.ts) stores each
-//  badge as { emoji, label }, e.g. { emoji: "🏭", label: "Sugar Capital" }.
+//  badge as { emoji, label }, e.g. { emoji: <factory emoji>, label: "Sugar Capital" }.
 //  Design v3 does not allow emoji in the page chrome, so this component
 //  swaps each registry emoji for a matching Lucide icon and renders the
 //  label inside a kit <Pill>. Unknown emoji fall back to a neutral icon,

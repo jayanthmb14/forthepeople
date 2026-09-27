@@ -5,6 +5,10 @@
  * projects with mini progress bars, and total tracked budget. Links
  * to the full /infrastructure page. Renders nothing if the district
  * has zero projects so empty districts don't show a hollow shell.
+ *
+ * Design v3: kit Card + title row, status counts with 6 px dots,
+ * thin kit ProgressBars, and a "Checked <date>" line (newest
+ * lastVerifiedAt / lastNewsAt across the projects).
  */
 
 "use client";
@@ -18,6 +22,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
+import { AsOfText, Card, ProgressBar } from "@/components/district/ui";
 
 type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
 
@@ -113,108 +118,98 @@ export default function InfraSnippet({
   const top: InfraProject[] = (inProgress.length > 0 ? inProgress : completed).slice(0, 3);
   if (top.length < 3) top.push(...projects.filter((p) => !top.includes(p)).slice(0, 3 - top.length));
 
+  // Newest date anyone checked or reported on a project — the honest
+  // "as of" for this whole card.
+  const asOf = projects
+    .map((p) => p.lastVerifiedAt ?? p.lastNewsAt ?? null)
+    .filter((d): d is string => Boolean(d))
+    .sort()
+    .pop() ?? null;
+
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <HardHat size={14} style={{ color: "#D97706" }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#9B9B9B", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Infrastructure At a Glance
-          </span>
-        </div>
-        <Link
-          href={`${base}/infrastructure`}
-          style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", fontWeight: 500 }}
-        >
-          View all →
+    <Card as="section" aria-label="Infrastructure at a glance">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HardHat size={16} aria-hidden style={{ color: "var(--accent-amber-700)" }} />
+          <h3 className="ftp-title">Infrastructure</h3>
+        </span>
+        <Link href={`${base}/infrastructure`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+          View all
         </Link>
       </div>
 
-      <div
-        style={{
-          background: "#FFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 14,
-          padding: "14px 16px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-        }}
-      >
-        {/* Top counts row */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 13, color: "#1A1A1A", marginBottom: 12 }}>
-          <span><strong style={{ fontFamily: "var(--font-mono)" }}>{counts.total}</strong> Projects</span>
-          <span style={{ color: "#D97706" }}>· <strong style={{ fontFamily: "var(--font-mono)" }}>{counts.active}</strong> Active</span>
-          <span style={{ color: "#16A34A" }}>· <strong style={{ fontFamily: "var(--font-mono)" }}>{counts.completed}</strong> Completed</span>
-          <span style={{ color: counts.delayed > 0 ? "#DC2626" : "#9B9B9B" }}>
-            · <strong style={{ fontFamily: "var(--font-mono)" }}>{counts.delayed}</strong> Delayed
-          </span>
-        </div>
+      {/* Counts row — semantic colour only as a 6 px dot. */}
+      <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0, display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
+        <li><span className="ftp-num">{counts.total}</span> projects</li>
+        <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-warn)" }} />
+          <span className="ftp-num">{counts.active}</span> active
+        </li>
+        <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)" }} />
+          <span className="ftp-num">{counts.completed}</span> completed
+        </li>
+        <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: counts.delayed > 0 ? "var(--ftp-danger)" : "var(--ftp-border-strong)" }} />
+          <span className="ftp-num">{counts.delayed}</span> delayed
+        </li>
+      </ul>
 
-        {/* Top 3 projects */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {top.map((p) => {
-            const Icon = CATEGORY_ICON[normalizeCategory(p.category)] ?? HardHat;
-            const status = normalizeStatus(p.status);
-            const statusLabel = STATUS_LABEL[status] ?? status;
-            const completedRow = isCompleted(p);
-            const progress = p.progressPct ?? (completedRow ? 100 : 0);
-            const shortDesc = p.description && p.description.length > 60
-              ? p.description.trim().slice(0, 60).replace(/\s+\S*$/, "") + "…"
-              : (p.description ?? "");
+      {/* Top 3 projects */}
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        {top.map((p) => {
+          const Icon = CATEGORY_ICON[normalizeCategory(p.category)] ?? HardHat;
+          const status = normalizeStatus(p.status);
+          const statusLabel = STATUS_LABEL[status] ?? status;
+          const completedRow = isCompleted(p);
+          const progress = p.progressPct ?? (completedRow ? 100 : 0);
+          const shortDesc = p.description && p.description.length > 60
+            ? p.description.trim().slice(0, 60).replace(/\s+\S*$/, "") + "…"
+            : (p.description ?? "");
 
-            return (
-              <div key={p.id} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <Icon size={14} style={{ color: "#2563EB", flexShrink: 0, marginTop: 2 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 12, color: "#1A1A1A", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {p.name}
-                    </span>
-                    <span style={{ fontSize: 10, color: "#9B9B9B", flexShrink: 0 }}>
-                      {completedRow
-                        ? "✅ Completed"
-                        : progress > 0
-                          ? `${progress}% · ${statusLabel}`
-                          : `Not started · ${statusLabel}`}
-                    </span>
-                  </div>
-                  {shortDesc && (
-                    <div
-                      style={{
-                        fontSize: 11, color: "#9B9B9B",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        marginTop: 2,
-                      }}
-                      title={p.description ?? undefined}
-                    >
-                      {shortDesc}
-                    </div>
-                  )}
-                  {!completedRow && (
-                    <div style={{ height: 4, background: "#F0F0EC", borderRadius: 2, overflow: "hidden", marginTop: 4 }}>
-                      <div
-                        style={{
-                          width: `${Math.max(0.5, Math.min(100, progress))}%`,
-                          height: "100%",
-                          background: progress >= 75 ? "#16A34A"
-                            : progress >= 40 ? "#D97706"
-                            : progress > 0 ? "#2563EB"
-                            : "#D1D5DB",
-                        }}
-                      />
-                    </div>
-                  )}
+          return (
+            <li key={p.id} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 3 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {p.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--ftp-text-2)", flexShrink: 0 }}>
+                    {completedRow
+                      ? "Completed"
+                      : progress > 0
+                        ? <><span className="ftp-num">{progress}%</span> · {statusLabel}</>
+                        : `Not started · ${statusLabel}`}
+                  </span>
                 </div>
+                {shortDesc && (
+                  <div
+                    style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}
+                    title={p.description ?? undefined}
+                  >
+                    {shortDesc}
+                  </div>
+                )}
+                {!completedRow && (
+                  <div style={{ marginTop: 4 }}>
+                    <ProgressBar value={Math.max(0.5, Math.min(100, progress))} max={100} height={4} tone="amber" />
+                  </div>
+                )}
               </div>
-            );
-          })}
-        </div>
+            </li>
+          );
+        })}
+      </ul>
 
-        {totalBudget > 0 && (
-          <div style={{ marginTop: 12, fontSize: 12, color: "#6B6B6B" }}>
-            Total budget tracked: <strong style={{ color: "#1A1A1A", fontFamily: "var(--font-mono)" }}>{formatINR(totalBudget)}</strong>
-          </div>
-        )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+        {totalBudget > 0 ? (
+          <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+            Total budget tracked: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatINR(totalBudget)}</span>
+          </span>
+        ) : <span />}
+        <AsOfText asOf={asOf} prefix="Checked" />
       </div>
-    </div>
+    </Card>
   );
 }

@@ -1,16 +1,20 @@
 /**
  * ForThePeople.in — Overview-page election alert.
  *
- * Renders a prominent red banner only when the district's state has an
- * active ElectionEvent with polling within 30 days. Otherwise renders
- * nothing (no shell), so quiet states stay calm.
+ * Renders a notice only when the district's state has an active
+ * ElectionEvent with polling within 30 days. Otherwise renders nothing
+ * (no shell), so quiet states stay calm.
+ *
+ * Design v3: a linked kit Card (no red fill, no shadow). The urgency is
+ * carried by a "danger" Pill with the days left and a Lucide Vote icon.
  */
 
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { Vote } from "lucide-react";
 import type { ElectionEvent } from "@/components/district/ElectionSection";
+import { Card, Pill } from "@/components/district/ui";
 
 function daysFromToday(iso: string | null | undefined): number | null {
   if (!iso) return null;
@@ -48,25 +52,27 @@ export default function LiveElectionBanner({
     : `Polling on ${formatDay(live.pollingDate)}`;
 
   return (
-    <Link
-      href={leadershipHref}
-      style={{
-        display: "block", textDecoration: "none",
-        marginBottom: 16, borderRadius: 10, padding: "12px 16px",
-        background: "#FEF2F2", border: "1px solid #FCA5A5",
-        color: "#991B1B",
-        boxShadow: "0 1px 3px rgba(220,38,38,0.08)",
-      }}
-    >
-      <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.45 }}>
-        🗳 {live.label} — {phaseSummary}
-        {days <= 14 ? <span style={{ marginLeft: 8, fontWeight: 600 }}>({days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} away`})</span> : null}
-      </div>
-      {live.resultDate && (
-        <div style={{ fontSize: 12, marginTop: 3, color: "#7F1D1D" }}>
-          Results: {formatDay(live.resultDate)} · Check leadership page for details →
+    <Card href={leadershipHref} padding={14} aria-label={`${live.label}: ${phaseSummary}`}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <Vote size={16} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>
+              {live.label} — {phaseSummary}
+            </span>
+            {days <= 14 && (
+              <Pill tone="danger">
+                {days === 0 ? "Today" : <><span className="ftp-num">{days}</span>&nbsp;day{days === 1 ? "" : "s"} away</>}
+              </Pill>
+            )}
+          </div>
+          {live.resultDate && (
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 2 }}>
+              Results: {formatDay(live.resultDate)} · Check the leadership page for details
+            </p>
+          )}
         </div>
-      )}
-    </Link>
+      </div>
+    </Card>
   );
 }

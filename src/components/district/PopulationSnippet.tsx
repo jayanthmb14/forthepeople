@@ -1,18 +1,21 @@
 /**
  * ForThePeople.in — Compact population & demographics snippet for the district
- * overview. Matches InfraSnippet's visual shell. Renders nothing when the
- * district has no DemographicProfile, so empty districts don't show a hollow
- * card. Religion row displays the top 3 religions *alphabetically* (not
- * ranked by size) with their actual percentages, per the demographic
- * neutrality guideline.
+ * overview. Renders nothing when the district has no DemographicProfile, so
+ * empty districts don't show a hollow card. Religion row displays the top 3
+ * religions *alphabetically* (not ranked by size) with their actual
+ * percentages, per the demographic neutrality guideline.
+ *
+ * Design v3: kit Card + title row, three small mono figures, and the census
+ * year as the as-of line (these numbers are from a census, not live).
  */
 
 "use client";
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Users } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import type { PopulationProfileResponse } from "@/hooks/useRealtimeData";
+import { Card } from "@/components/district/ui";
 
 interface Props {
   district: string;
@@ -44,6 +47,19 @@ function top3Alphabetical(religion: Record<string, number> | null): Array<{
     }));
 }
 
+/** Label above a mono figure. */
+function Figure({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div className="ftp-label">{label}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+        <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", color: "var(--ftp-text)" }}>{value}</span>
+        {unit && <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{unit}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function PopulationSnippet({ district, state, base }: Props) {
   const { data } = useQuery<PopulationProfileResponse>({
     queryKey: ["district", district, "population-profile", "snippet"],
@@ -60,103 +76,41 @@ export default function PopulationSnippet({ district, state, base }: Props) {
   const religions = top3Alphabetical(profile.religion);
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Users size={14} style={{ color: "#2563EB" }} />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9B9B9B",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}
-          >
-            Population &amp; Demographics
-          </span>
-        </div>
-        <Link
-          href={`${base}/population`}
-          style={{
-            fontSize: 12,
-            color: "#2563EB",
-            textDecoration: "none",
-            fontWeight: 500,
-          }}
-        >
-          View full demographics →
+    <Card as="section" aria-label="Population and demographics">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart3 size={16} aria-hidden style={{ color: "var(--accent-pink-700)" }} />
+          <h3 className="ftp-title">Population &amp; demographics</h3>
+        </span>
+        <Link href={`${base}/population`} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+          View all
         </Link>
       </div>
 
-      <div
-        style={{
-          background: "#FFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 14,
-          padding: "14px 16px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 16,
-            fontSize: 13,
-            color: "#1A1A1A",
-            marginBottom: 10,
-          }}
-        >
-          <span>
-            Population{profile.year ? ` (${profile.year})` : ""}:{" "}
-            <strong style={{ fontFamily: "var(--font-mono)" }}>
-              {formatInt(profile.totalPopulation)}
-            </strong>
-          </span>
-          {typeof profile.sexRatio === "number" && (
-            <span>
-              Sex ratio:{" "}
-              <strong style={{ fontFamily: "var(--font-mono)" }}>
-                {profile.sexRatio}
-                <span style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 400 }}>
-                  /1k
-                </span>
-              </strong>
-            </span>
-          )}
-          {typeof profile.literacyTotal === "number" && (
-            <span>
-              Literacy:{" "}
-              <strong style={{ fontFamily: "var(--font-mono)", color: "#16A34A" }}>
-                {profile.literacyTotal.toFixed(1)}%
-              </strong>
-            </span>
-          )}
-        </div>
-
-        {religions.length > 0 && (
-          <div style={{ fontSize: 12, color: "#6B6B6B", lineHeight: 1.7 }}>
-            Religion (top 3, alphabetical):{" "}
-            {religions.map((r, i) => (
-              <span key={r.name}>
-                {i > 0 && <span style={{ color: "#D0D0D0" }}> · </span>}
-                <span style={{ color: "#1A1A1A" }}>{r.name}</span>{" "}
-                <span style={{ fontFamily: "var(--font-mono)" }}>
-                  {r.pct.toFixed(1)}%
-                </span>
-              </span>
-            ))}
-          </div>
-        )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 10 }}>
+        <Figure label="Population" value={formatInt(profile.totalPopulation)} />
+        {typeof profile.sexRatio === "number" && <Figure label="Sex ratio" value={String(profile.sexRatio)} unit="/1k" />}
+        {typeof profile.literacyTotal === "number" && <Figure label="Literacy" value={profile.literacyTotal.toFixed(1)} unit="%" />}
       </div>
-    </div>
+
+      {religions.length > 0 && (
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+          Religion (top 3, alphabetical):{" "}
+          {religions.map((r, i) => (
+            <span key={r.name}>
+              {i > 0 && " · "}
+              <span style={{ color: "var(--ftp-text)" }}>{r.name}</span>{" "}
+              <span className="ftp-num">{r.pct.toFixed(1)}%</span>
+            </span>
+          ))}
+        </p>
+      )}
+
+      {profile.year && (
+        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "8px 0 0" }}>
+          Figures as of <span className="ftp-num">{profile.year}</span>
+        </p>
+      )}
+    </Card>
   );
 }
