@@ -1,0 +1,73 @@
+{
+  "description": "Warnings and advisories in force for the district",
+  "summary": "Active alerts and advisories for {district}, such as weather warnings, water or power cuts and public health notices. Each alert shows how serious it is, where it applies, the dates it covers and when it was posted.",
+  "tiles": {
+    "active": "Active alerts",
+    "critical": "Critical",
+    "high": "High priority",
+    "types": "Kinds of alert"
+  },
+  "empty": {
+    "title": "No active alerts right now.",
+    "body": "Advisories from IMD, the district administration and NDMA appear here when they are published."
+  },
+  "explainer": "{total, plural, one {<b>#</b> alert is} other {<b>#</b> alerts are}} active in {district}.",
+  "explainerSevere": "{critical, plural, one {<b>#</b> is} other {<b>#</b> are}} critical and {high, plural, one {<b>#</b> is} other {<b>#</b> are}} high priority.",
+  "explainerCalm": "None of them is critical or high priority.",
+  "symbols": {
+    "aria": "{total} active alerts: {critical} critical, {high} high priority, {other} other.",
+    "more": "+{n} more",
+    "each": "Each symbol is one alert.",
+    "critical": "Critical",
+    "high": "High priority",
+    "other": "Other"
+  },
+  "kinds": {
+    "title": "Kinds of alert",
+    "units": "Active alerts of each kind",
+    "simple": "Most alerts are about <b>{type}</b>: {n} of {total}.",
+    "aria": "{total} active alerts, split by kind.",
+    "other": "Other kinds"
+  },
+  "list": {
+    "title": "Active alerts",
+    "from": "From {start}",
+    "range": "{start} to {end}"
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "info": "Information"
+  },
+  "types": {
+    "weather": "Weather",
+    "rain": "Heavy rain",
+    "heavy_rain": "Heavy rain",
+    "flood": "Flood",
+    "cyclone": "Cyclone",
+    "heat": "Heat",
+    "heatwave": "Heatwave",
+    "heat_wave": "Heatwave",
+    "cold": "Cold",
+    "thunderstorm": "Thunderstorm",
+    "water": "Water supply",
+    "water_supply": "Water supply",
+    "power": "Power cut",
+    "power_cut": "Power cut",
+    "power_outage": "Power cut",
+    "traffic": "Traffic",
+    "road": "Roads",
+    "road_closure": "Road closure",
+    "health": "Health",
+    "disease": "Disease outbreak",
+    "fire": "Fire",
+    "exam": "Exams",
+    "school": "Schools",
+    "general": "General",
+    "advisory": "Advisory"
+  },
+  "share": "{district} alerts: {total} active ({critical} critical, {high} high priority)",
+  "shareEmpty": "No active alerts for {district}"
+}
