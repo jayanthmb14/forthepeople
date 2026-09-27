@@ -790,7 +790,7 @@
     },
     "water": {
       "title": "Dam & reservoir data being prepared",
-      "body": "Water supply data for {district} is being collected from {portal} and India-WRIS. Dam levels, inflow/outflow, and canal release data will appear here once integration is complete."
+      "body": "Water supply data for {district} is being collected from {portal}. Dam levels, inflow/outflow, and canal release data will appear here once integration is complete."
     },
     "crops": {
       "title": "Crop price data being collected",
