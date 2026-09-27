@@ -5,84 +5,115 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Job: Weather — OpenWeatherMap API
+// Job: Weather — OpenWeather, with Open-Meteo as the fallback
 // Schedule: every 30 min via /api/cron/scrape-weather (vercel.json).
 //   (The old "every 5 minutes" ran on a Railway node-cron container that
 //    expired in April 2026; Vercel Cron is the only scheduler now.)
+//
+// Sept 2026 (v5):
+//  - Open-Meteo (no key) is tried when OpenWeather fails, has no key, or
+//    sends a reading that fails the range checks. Both parsers and the
+//    checks live in src/scraper/lib/weather-sources.ts.
+//  - A reading is stored with the time the source measured it, and the
+//    same reading is never stored twice.
+//  - No UpdateLog row per reading any more (10,818 of ~13,100 UpdateLog
+//    rows were weather readings). The cron route writes ONE summary row
+//    per run instead.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
-import { logUpdate } from "@/lib/update-log";
+import { weatherCityName } from "../lib/district-aliases";
+import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
+import {
+  openMeteoUrl,
+  parseOpenMeteo,
+  parseOpenWeather,
+  weatherProblems,
+  type WeatherSample,
+} from "../lib/weather-sources";
 
 const OWM_KEY = process.env.OPENWEATHER_API_KEY;
+const FETCH_TIMEOUT_MS = 8_000; // both APIs answer in < 1 s normally
 
-// Override map for districts where OWM city name differs from district name
-const OWM_CITY_OVERRIDE: Record<string, string> = {
-  "bengaluru-urban": "Bangalore",
-  "mysuru":          "Mysore",
-  "new-delhi":       "New Delhi",
-  "central-delhi":   "New Delhi",
-  "north-delhi":     "New Delhi",
-  "north-west-delhi":"New Delhi",
-  "north-east-delhi":"New Delhi",
-  "east-delhi":      "New Delhi",
-  "south-delhi":     "New Delhi",
-  "south-west-delhi":"New Delhi",
-  "south-east-delhi":"New Delhi",
-  "west-delhi":      "New Delhi",
-  "shahdara":        "New Delhi",
-  "mumbai":          "Mumbai",
-  "kolkata":         "Kolkata",
-  "chennai":         "Chennai",
-  "pune":            "Pune",
-};
-
-interface OWMResponse {
-  main: { temp: number; feels_like: number; humidity: number; pressure: number };
-  wind: { speed: number; deg: number };
-  weather: Array<{ description: string }>;
-  visibility: number;
-  rain?: { "1h"?: number };
+async function fromOpenWeather(ctx: JobContext): Promise<WeatherSample> {
+  if (!OWM_KEY) throw new Error("OPENWEATHER_API_KEY not set");
+  const city = weatherCityName(ctx.districtSlug, ctx.districtName);
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},IN&appid=${OWM_KEY}&units=metric`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!res.ok) throw new Error(`OpenWeather HTTP ${res.status}`);
+  const sample = parseOpenWeather(await res.json());
+  if (!sample) throw new Error("OpenWeather reply had no temperature or time");
+  return sample;
 }
 
-const WIND_DIR = (deg: number) => {
-  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
-  return dirs[Math.round(deg / 22.5) % 16];
-};
+async function fromOpenMeteo(ctx: JobContext): Promise<WeatherSample> {
+  const point = DISTRICT_CENTROIDS[`${ctx.stateSlug}/${ctx.districtSlug}`];
+  if (!point) throw new Error(`no coordinates for ${ctx.stateSlug}/${ctx.districtSlug}`);
+  const res = await fetch(openMeteoUrl(point.lat, point.lng), {
+    headers: { "User-Agent": "ForThePeople.in (https://forthepeople.in)" },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
+  const sample = parseOpenMeteo(await res.json());
+  if (!sample) throw new Error("Open-Meteo reply had no temperature or time");
+  return sample;
+}
 
-export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
-  if (!OWM_KEY) {
-    ctx.log("OPENWEATHER_API_KEY not set — skipping");
-    return { success: false, recordsNew: 0, recordsUpdated: 0, error: "No API key" };
+/** Result of one district's collection, with which source was used. */
+export interface WeatherCollectResult extends ScraperResult {
+  /** Source label of the stored (or already-stored) reading. */
+  source?: string;
+  /** True when the reading was already in the DB (nothing new measured). */
+  duplicate?: boolean;
+}
+
+/**
+ * Collect one district's current weather. Tries OpenWeather, then
+ * Open-Meteo; stores the first reading that passes the range checks.
+ */
+export async function collectWeather(ctx: JobContext): Promise<WeatherCollectResult> {
+  const problems: string[] = [];
+  let sample: WeatherSample | null = null;
+
+  for (const [label, get] of [
+    ["OpenWeather", fromOpenWeather],
+    ["Open-Meteo", fromOpenMeteo],
+  ] as const) {
+    try {
+      const s = await get(ctx);
+      const bad = weatherProblems(s, Date.now());
+      if (bad.length > 0) {
+        problems.push(`${label}: rejected (${bad.join(", ")})`);
+        continue;
+      }
+      sample = s;
+      break;
+    } catch (err) {
+      problems.push(`${label}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  if (problems.length > 0) ctx.log(problems.join(" | "));
+  if (!sample) {
+    return { success: false, recordsNew: 0, recordsUpdated: 0, error: problems.join(" | ") || "no source answered" };
   }
 
   try {
-    const city = OWM_CITY_OVERRIDE[ctx.districtSlug] ?? ctx.districtName ?? ctx.districtSlug;
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},IN&appid=${OWM_KEY}&units=metric`;
-    // 8 s cap: OpenWeather normally answers in <1 s; a hung call must not
-    // block the other districts in the same cron run.
-    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data: OWMResponse = await res.json();
+    // Same source + same measurement time = the same reading; don't store twice.
+    const existing = await prisma.weatherReading.findFirst({
+      where: { districtId: ctx.districtId, source: sample.source, recordedAt: sample.recordedAt },
+      select: { id: true },
+    });
+    if (existing) {
+      ctx.log(`${sample.source}: reading of ${sample.recordedAt.toISOString()} already stored`);
+      return { success: true, recordsNew: 0, recordsUpdated: 0, source: sample.source, duplicate: true };
+    }
 
-    const reading = await prisma.weatherReading.create({
-      data: {
-        districtId: ctx.districtId,
-        temperature: data.main.temp,
-        feelsLike: data.main.feels_like,
-        humidity: data.main.humidity,
-        windSpeed: data.wind.speed,
-        windDir: WIND_DIR(data.wind.deg),
-        conditions: data.weather[0]?.description ?? null,
-        rainfall: data.rain?.["1h"] ?? null,
-        pressure: data.main.pressure,
-        visibility: data.visibility ? data.visibility / 1000 : null, // m→km
-        source: "OpenWeatherMap",
-        recordedAt: new Date(),
-      },
+    await prisma.weatherReading.create({
+      data: { districtId: ctx.districtId, ...sample },
     });
 
-    // Keep only last 48 readings
+    // Keep only the last 48 readings per district.
     const old = await prisma.weatherReading.findMany({
       where: { districtId: ctx.districtId },
       orderBy: { recordedAt: "desc" },
@@ -93,26 +124,17 @@ export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
       await prisma.weatherReading.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
     }
 
-    const summary = `Weather updated: ${data.main.temp}°C, ${data.weather[0]?.description ?? "—"}`;
-    ctx.log(summary);
-
-    await logUpdate({
-      source: "scraper",
-      actorLabel: "cron",
-      tableName: "WeatherReading",
-      recordId: reading.id,
-      action: "create",
-      districtId: ctx.districtId,
-      districtName: ctx.districtName,
-      moduleName: "weather",
-      description: summary,
-      recordCount: 1,
-    });
-
-    return { success: true, recordsNew: 1, recordsUpdated: 0 };
+    ctx.log(`${sample.source}: ${sample.temperature}°C, ${sample.conditions ?? "—"} (measured ${sample.recordedAt.toISOString()})`);
+    return { success: true, recordsNew: 1, recordsUpdated: 0, source: sample.source };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     ctx.log(`Error: ${msg}`);
     return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };
   }
+}
+
+/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
+export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
+  const { success, recordsNew, recordsUpdated, error } = await collectWeather(ctx);
+  return { success, recordsNew, recordsUpdated, error };
 }
