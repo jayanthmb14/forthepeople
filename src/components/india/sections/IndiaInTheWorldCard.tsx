@@ -8,9 +8,15 @@
  * gold/silver/bronze gradient row tints fading horizontally to the page bg,
  * Lucide mini-icons per ranking category, color-coded trend pills.
  *
- * Static seed of 8 verified rankings sourced from external authorities (IMF,
- * UN, UNESCO, IRENA, ISRO, WTO, TRAI, Global Firepower). Data lives in
- * src/data/india-world-rankings.json so future updates are a registry edit.
+ * Static seed of rankings, each naming the body that published it (IMF, UN,
+ * UNESCO, IRENA, ISRO, ECI, DAHD, India Post, Global Firepower). Data lives
+ * in src/data/india-world-rankings.json so future updates are a registry edit.
+ * Sept 2026 audit: a rank is listed only when the body named actually
+ * publishes it, and its note's figure names its own source when that
+ * differs (renewables: IRENA's rank, CEA's GW). "Largest railway employer"
+ * (14 lakh staff; 12.29 lakh per the IR Year Book 2024-25, and China's
+ * railway is larger) and "Internet users #2, up from #3 (TRAI)" (TRAI
+ * ranks no countries) were removed.
  *
  * TODO Phase 5+: populate the missing 16 rankings to reach the full 24
  * tracked rankings. Until then the toggle button + footer text honestly

@@ -98,7 +98,7 @@ export default async function PrivacyPage({ params }: Props) {
   return (
     <main className="ftp-hue-slate" style={{ background: "var(--ftp-bg)", minHeight: "100vh" }}>
       <ModulePage>
-          <LegalPageHeader title={t("title")} lastUpdated="2026-04-16" emoji="🔒" />
+          <LegalPageHeader title={t("title")} lastUpdated="2026-09-28" emoji="🔒" />
           <Explainer emoji="🔒">{t("simple")}</Explainer>
           <LegalGlance
             label={t("glanceLabel")}

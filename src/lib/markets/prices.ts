@@ -30,7 +30,7 @@
 //  adds beside this snapshot.
 
 import { cacheGet, cacheSet } from "@/lib/cache";
-import { scaleSeries, type PricePoint } from "./compute";
+import { brentFrontMonthSymbol, dayOf, scaleSeries, type PricePoint } from "./compute";
 import { fetchIbjaSeries, fetchYahooSeries, IBJA_URL, yahooQuoteUrl, type FetchCacheOptions } from "./sources";
 
 export type PriceKey = "gold24" | "gold22" | "silver" | "usdInr" | "crude" | "sensex" | "nifty" | "bankNifty";
@@ -42,6 +42,11 @@ export interface PriceItem {
   source: "ibja" | "yahoo";
   /** Yahoo symbol (Yahoo items only). */
   symbol?: string;
+  /**
+   * Yahoo symbol that depends on the day (futures: the front-month
+   * contract), given the trading day in New York. Used instead of `symbol`.
+   */
+  symbolFor?: (day: string) => string;
   /** "INR" → "₹1,234"; "USD" → "$97.44"; null → a plain number (index points). */
   currency: "INR" | "USD" | null;
   /** Decimals for the value and the change. */
@@ -56,7 +61,10 @@ export const PRICE_ITEMS: PriceItem[] = [
   { key: "gold22", group: "metals", source: "ibja", currency: "INR", decimals: 0, divisor: 10 },
   { key: "silver", group: "metals", source: "ibja", currency: "INR", decimals: 0 },
   { key: "usdInr", group: "money", source: "yahoo", symbol: "USDINR=X", currency: "INR", decimals: 2 },
-  { key: "crude", group: "money", source: "yahoo", symbol: "BZ=F", currency: "USD", decimals: 2 },
+  // Brent: the named front-month contract, never the continuous "BZ=F"
+  // (its contract roll showed a fake −8.6 % day on 25 Sep 2026 — see
+  // brentFrontMonthSymbol in ./compute).
+  { key: "crude", group: "money", source: "yahoo", symbolFor: brentFrontMonthSymbol, currency: "USD", decimals: 2 },
   { key: "sensex", group: "shares", source: "yahoo", symbol: "^BSESN", currency: null, decimals: 0 },
   { key: "nifty", group: "shares", source: "yahoo", symbol: "^NSEI", currency: null, decimals: 0 },
   { key: "bankNifty", group: "shares", source: "yahoo", symbol: "^NSEBANK", currency: null, decimals: 0 },
@@ -78,7 +86,8 @@ export interface PricesSnapshot {
   fetchedAt: string;
 }
 
-const CACHE_KEY = "ftp:prices:v1";
+// v2 (28 Sep 2026): Brent moved from BZ=F to the front-month contract.
+const CACHE_KEY = "ftp:prices:v2";
 
 /** NSE hours: Mon–Fri 09:15–15:30 IST (no holiday calendar). */
 export function isIndianMarketOpen(nowMs: number = Date.now()): boolean {
@@ -93,11 +102,24 @@ function trim(points: PricePoint[], keep = 110): PricePoint[] {
   return points.length > keep ? points.slice(points.length - keep) : points;
 }
 
+/** Trading day in New York (UTC−5; the hour of daylight saving does not matter here). */
+function newYorkDay(nowMs: number = Date.now()): string {
+  return dayOf(Math.floor(nowMs / 1000), -5 * 3600);
+}
+
+/** The Yahoo symbol an item reads today, or null for a non-Yahoo item. */
+export function yahooSymbolOf(item: PriceItem, nowMs: number = Date.now()): string | null {
+  if (item.source !== "yahoo") return null;
+  return item.symbolFor ? item.symbolFor(newYorkDay(nowMs)) : (item.symbol ?? null);
+}
+
 async function fetchSnapshot(opts?: FetchCacheOptions): Promise<PricesSnapshot> {
-  const yahooItems = PRICE_ITEMS.filter((i) => i.source === "yahoo" && i.symbol);
+  const yahooItems = PRICE_ITEMS.map((item) => ({ item, symbol: yahooSymbolOf(item) })).filter(
+    (x): x is { item: PriceItem; symbol: string } => x.symbol !== null,
+  );
   const [ibjaR, ...yahooR] = await Promise.allSettled([
     fetchIbjaSeries(opts),
-    ...yahooItems.map((i) => fetchYahooSeries(i.symbol as string, "6mo", opts)),
+    ...yahooItems.map((x) => fetchYahooSeries(x.symbol, "6mo", opts)),
   ]);
 
   const series: Partial<Record<PriceKey, PriceSeries>> = {};
@@ -113,11 +135,11 @@ async function fetchSnapshot(opts?: FetchCacheOptions): Promise<PricesSnapshot> 
     add("silver", ibja.silverPerKg);
   }
 
-  yahooItems.forEach((item, i) => {
+  yahooItems.forEach(({ item, symbol }, i) => {
     const r = yahooR[i];
     const y = r.status === "fulfilled" ? r.value : null;
     if (!y || y.points.length === 0) return;
-    series[item.key] = { key: item.key, points: trim(y.points), asOf: y.asOf, sourceUrl: yahooQuoteUrl(item.symbol as string) };
+    series[item.key] = { key: item.key, points: trim(y.points), asOf: y.asOf, sourceUrl: yahooQuoteUrl(symbol) };
   });
 
   return { series, fetchedAt: new Date().toISOString() };

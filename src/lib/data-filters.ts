@@ -185,10 +185,17 @@ export const NOT_STUB_TENDER = { OR: [{ rawHtmlSnapshot: null }, { NOT: { rawHtm
  *    coconut (per 1,000 nuts) or cut flowers (per stem) —
  *    NOT_PER_QUINTAL_COMMODITIES in src/scraper/lib/agmarknet.ts;
  *  - at least ₹1 a kg: smaller figures are per bunch and showed as "₹0".
+ *    Both the minimum and the modal price are checked: v54/fix-national
+ *    hid rows by their modal price (PLAUSIBLE_CROP_PRICE, modal ≥ ₹50 a
+ *    quintal — Pune(Moshi) "Onion Green" ₹15) and v54/fix-land-water by
+ *    their minimum (≥ ₹100); merged into this one rule with the stricter
+ *    floor (an old stored row whose modal is below ₹1 a kg is hidden even
+ *    when its minimum is not).
  */
 export const SHOWN_CROP_PRICE = {
   arrivalQty: null,
   minPrice: { gte: MIN_PRICE_PER_QUINTAL },
+  modalPrice: { gte: MIN_PRICE_PER_QUINTAL },
   commodity: { notIn: [...NOT_PER_QUINTAL_COMMODITIES] },
 };
 

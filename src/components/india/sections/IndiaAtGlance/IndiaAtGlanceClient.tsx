@@ -38,6 +38,10 @@ import {
 } from "./metrics";
 import { INDIA_SUPER_CATEGORIES } from "@/lib/india/india-super-categories";
 import { getIndiaModuleBySlug } from "@/lib/india/india-modules";
+import { oldFigureYear } from "@/lib/india/figure-dates";
+
+/** Page-load time: a cell figure older than 18 months shows its year. */
+const LOADED_AT = Date.now();
 import type { MacroSnapshotData, MacroIndicator, LatestUpdate } from "@/lib/india/getMacroSnapshotData";
 
 type Props = {
@@ -149,7 +153,13 @@ function FeaturedCellItem({ cell, data, text }: { cell: FeaturedCell; data: Macr
     <div className={styles.featuredCell}>
       <div className={styles.featuredCellLabel}>{tb(`cells.${cell.key}.label`)}</div>
       <div>
-        <div className={styles.featuredCellValue}>{valueNode}</div>
+        <div className={styles.featuredCellValue}>
+          {valueNode}
+          {/* Density (2023) sits beside the 2025 population: say the year of an old figure. */}
+          {primary && oldFigureYear(primary.asOfDate, LOADED_AT) ? (
+            <span style={{ fontSize: "0.55em", fontWeight: 400, color: "var(--ftp-text-2)" }}> ({oldFigureYear(primary.asOfDate, LOADED_AT)})</span>
+          ) : null}
+        </div>
         {subNode !== null && <div className={styles.featuredCellSub}>{subNode}</div>}
       </div>
     </div>

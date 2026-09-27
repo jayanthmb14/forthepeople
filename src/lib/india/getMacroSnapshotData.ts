@@ -12,10 +12,12 @@
  */
 
 import { prisma } from "@/lib/db";
+import { NOT_STANDING_FACT } from "./figure-dates";
 import { INDIA_SUPER_CATEGORIES } from "./india-super-categories";
 import { INDIA_MODULES, type IndiaModuleDef } from "./india-modules";
 import {
   allMacroRefs,
+  featuredRefs,
   indicatorKey,
 } from "@/components/india/sections/IndiaAtGlance/metrics";
 
@@ -110,10 +112,15 @@ export async function getMacroSnapshotData(): Promise<MacroSnapshotData> {
     };
   }
 
-  // Distinct sources across the loaded rows, ordered by frequency, top 5.
+  // Sources of the featured card (Population and demographics), ordered by
+  // frequency, top 5. Only the card's own rows that show a value count: the
+  // band also loads GDP (IMF) and hidden placeholder rows (smartphones,
+  // "GSMA · Statista"), which the Sept 2026 audit found listed here.
+  const featuredKeys = new Set(featuredRefs().map((r) => indicatorKey(r)));
   const sourceCounts = new Map<string, number>();
   for (const r of rows) {
-    if (!r.source) continue;
+    if (!r.source || r.numericValue == null) continue;
+    if (!featuredKeys.has(indicatorKey({ moduleSlug: r.moduleSlug, metricKey: r.metricKey }))) continue;
     sourceCounts.set(r.source, (sourceCounts.get(r.source) ?? 0) + 1);
   }
   const sources = Array.from(sourceCounts.entries())
@@ -150,7 +157,8 @@ export async function getMacroSnapshotData(): Promise<MacroSnapshotData> {
     moduleSlugs.length === 0
       ? []
       : await prisma.indiaIndicator.findMany({
-          where: { moduleSlug: { in: moduleSlugs } },
+          // Dated data only: not hidden rows, not standing facts re-checked by hand.
+          where: { moduleSlug: { in: moduleSlugs }, numericValue: { not: null }, ...NOT_STANDING_FACT },
           orderBy: { asOfDate: "desc" },
           take: 4,
           select: {

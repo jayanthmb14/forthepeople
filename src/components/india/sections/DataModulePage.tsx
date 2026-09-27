@@ -199,6 +199,7 @@ export async function DataModulePage({
                   label: ts.has(r.stateSlug) ? ts(r.stateSlug) : r.stateName,
                   value: r.value,
                   display: text(r.value, r.unit),
+                  rank: r.rank,
                 }))}
                 source={{ label: stateRows[0].source, href: stateRows[0].sourceUrl || undefined }}
                 asOf={stateRows[0].asOf}

@@ -31,7 +31,11 @@
     "goalSimple": "{label} अपने लक्ष्य का {pct} पूरा कर चुका है।",
     "goalLine": "अभी {now}, लक्ष्य {goal}",
     "trendTitle": "समय के साथ बदलाव",
-    "trendSimple": "यह {fromYear} में {from} था और {toYear} में {to} हो गया।"
+    "trendSimple": "यह {fromYear} में {from} था और {toYear} में {to} हो गया।",
+    "goalLabel": {
+      "nonFossil": "गैर-जीवाश्म बिजली (नवीकरणीय, जल और परमाणु)",
+      "forestTree": "वन और वृक्ष आवरण"
+    }
   },
   "parts": {
     "coal": "कोयला",
@@ -76,7 +80,8 @@
       "Annual": "हर साल",
       "Event-driven": "जब कुछ होता है",
       "Manual": "हाथ से अपडेट"
-    }
+    },
+    "ofFigures": "इस पेज का हर आँकड़ा कहाँ से आया है।"
   },
   "metric": {
     "wildlife-tigers": {
@@ -275,7 +280,7 @@
       "cities_count": "मिशन में शामिल शहर"
     },
     "infra-telecom": {
-      "subscribers_crore": "मोबाइल ग्राहक"
+      "subscribers_crore": "टेलीफ़ोन ग्राहक (मोबाइल और लैंडलाइन)"
     },
     "justice-police": {
       "civil_police_total_lakh": "सिविल पुलिस",
@@ -430,8 +435,9 @@
     }
   },
   "explain": {
-    "figure": "ताज़ा सरकारी आँकड़ा: {label} {value} है, {date} तक ({source})।",
-    "none": "{module} के लिए अभी यहाँ कोई सरकारी आँकड़ा नहीं दिखाया गया है। हम आँकड़े तभी जोड़ते हैं जब {source} उन्हें प्रकाशित करता है; कुछ भी अंदाज़े से नहीं भरा जाता।"
+    "figure": "हमारे पास सबसे हालिया आँकड़ा: {label} {value} है, {date} तक ({source})।",
+    "none": "{module} के लिए अभी यहाँ कोई सरकारी आँकड़ा नहीं दिखाया गया है। हम आँकड़े तभी जोड़ते हैं जब {source} उन्हें प्रकाशित करता है; कुछ भी अंदाज़े से नहीं भरा जाता।",
+    "fact": "{label} {value} है ({source})। यह अक्सर नहीं बदलता; हमने इसे आख़िरी बार {date} को जाँचा।"
   },
   "sheet": {
     "open": "विवरण: {label}",
@@ -444,8 +450,10 @@
     "recorded": "हमने दर्ज किया",
     "openSource": "स्रोत खोलें",
     "place": "स्थान",
-    "placeValue": "शीर्ष {total} में #{n}",
+    "placeRank": "भारत में #{n}",
     "vsTop": "सबसे आगे वाले राज्य की तुलना में",
-    "vsTopValue": "{leader} का {pct}"
+    "vsTopValue": "{leader} का {pct}",
+    "checked": "आख़िरी बार जाँचा",
+    "checkedOn": "{date} को जाँचा"
   }
 }

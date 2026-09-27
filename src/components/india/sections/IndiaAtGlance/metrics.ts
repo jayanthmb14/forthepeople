@@ -207,6 +207,22 @@ export function indicatorKey(ref: MetricRef): string {
  * fetcher needs to load. The fetcher imports just this — it never has
  * to know about which slots exist.
  */
+/**
+ * The rows the featured "Population and demographics" card itself shows
+ * (headline, growth, rank and its four cells). Its "Sources:" line names
+ * only these rows' sources.
+ */
+export function featuredRefs(): MetricRef[] {
+  const refs: MetricRef[] = [FEATURED_HEADLINE, FEATURED_GROWTH, FEATURED_RANK];
+  for (const cell of FEATURED_CELLS) {
+    refs.push(cell.primary);
+    if (cell.companion) refs.push(cell.companion);
+    if (cell.sub.kind === "computed_pct_of") refs.push(cell.sub.numerator);
+    if (cell.sub.kind === "computed_sum") refs.push(cell.sub.first, cell.sub.second);
+  }
+  return refs;
+}
+
 export function allMacroRefs(): MetricRef[] {
   const refs: MetricRef[] = [FEATURED_HEADLINE, FEATURED_GROWTH, FEATURED_RANK];
   for (const row of MACRO_DIRECTORY) {

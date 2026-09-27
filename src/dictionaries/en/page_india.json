@@ -131,8 +131,8 @@
     },
     "demographics-population": {
       "t": "Population and demographics",
-      "g": "Population, births and life expectancy from SRS and the Census.",
-      "d": "Yearly Sample Registration System (SRS) bulletins and the ten-yearly Census. SRS gives birth, death and infant death rates and life expectancy every year; the Census gives the full picture by age and sex."
+      "g": "Population, yearly growth and density, from UN and World Bank figures.",
+      "d": "India's population, how fast it is growing and how many people live per square km, from the UN World Population Prospects 2024 and World Bank data."
     },
     "economy-gdp": {
       "t": "Economy and GDP",
@@ -251,8 +251,8 @@
     },
     "health-overview": {
       "t": "Health indicators",
-      "g": "Key NFHS-5 figures and National Health Mission coverage.",
-      "d": "NFHS-5 figures on child growth, child deaths and vaccination coverage. National totals, with state figures inside."
+      "g": "Life expectancy and infant deaths, from the Sample Registration System.",
+      "d": "Life expectancy and infant deaths from the Sample Registration System (Registrar General of India), with the states that lead. National totals."
     },
     "health-pmjay": {
       "t": "Ayushman Bharat (PM-JAY)",
@@ -296,8 +296,8 @@
     },
     "justice-pendency": {
       "t": "Court pendency",
-      "g": "Pending court cases, from NJDG.",
-      "d": "National Judicial Data Grid weekly snapshot: total pending cases across district courts, high courts and the Supreme Court. Totals only."
+      "g": "Pending cases in district courts, from NJDG.",
+      "d": "Pending cases in district and subordinate courts, from the National Judicial Data Grid (NJDG). Totals only."
     },
     "justice-crime": {
       "t": "NCRB crime statistics",
@@ -517,7 +517,7 @@
       "label": "States and UTs",
       "value": "{a} + {b}",
       "meta": "{n} districts",
-      "source": "MHA, 2024"
+      "source": "LGD (Local Government Directory), Sept 2026"
     },
     "languages": {
       "label": "Languages",
@@ -526,7 +526,7 @@
       "source": "Constitution, Schedule 8"
     },
     "footLeft": "Each figure names its source and year",
-    "footRight": "Independent. Sourced from .gov.in portals and NDSAP."
+    "footRight": "Independent. From government portals and other reputed sources."
   },
   "world": {
     "title": "India in the world",
@@ -557,11 +557,10 @@
       "economy": "Economy size (nominal GDP)"
     },
     "notes": {
-      "postal": "1.56 lakh post offices",
+      "postal": "1.64 lakh post offices",
+      "democracy": "96.88 crore registered voters (2024)",
       "milk": "248 million tonnes (2024-25)",
-      "railway": "14 lakh staff",
-      "internet": "109 crore internet subscribers",
-      "renewable": "296 GW incl. large hydro (Aug 2026)"
+      "renewable": "296 GW incl. large hydro (CEA, 31 Aug 2026)"
     },
     "open": "Details: {title}",
     "sheet": {
@@ -768,7 +767,7 @@
     },
     "headlineUnit": "of the land under forest",
     "growth": "+{value} km² since 2021",
-    "calloutSub": "National Forest Policy, 1988",
+    "calloutSub": "Forest and tree cover goal, National Forest Policy 1988",
     "desc": "Forest cover from FSI's India State of Forest Report, published every two years.",
     "cells": {
       "forest": {
@@ -868,7 +867,7 @@
     },
     "headlineUnit": "GW of power plants",
     "growth": "+{value} GW in a year",
-    "calloutSub": "Clean power goal for 2030",
+    "calloutSub": "Non-fossil power goal for 2030 (renewables, hydro, nuclear)",
     "desc": "All the power plants India has, by the fuel they use.",
     "cells": {
       "coal": {
@@ -976,7 +975,7 @@
       },
       "lokSabha": {
         "label": "Lok Sabha",
-        "sub": "seats, Article 81"
+        "sub": "seats"
       }
     },
     "cards": {
@@ -1016,16 +1015,16 @@
     "headlineUnit": "lakh recognised startups",
     "growth": "+{value} lakh in a year",
     "calloutLabel": "Unicorns",
-    "calloutSub": "on the 2024 list",
+    "calloutSub": "the government's count",
     "desc": "India's startups, from the Startup India dashboard.",
     "cells": {
       "dpiit": {
         "label": "Startups",
-        "sub": "lakh, 2024"
+        "sub": "lakh, DPIIT"
       },
       "unicorns": {
         "label": "Unicorns",
-        "sub": "DPIIT list"
+        "sub": "government count"
       },
       "added": {
         "label": "New",
@@ -1078,7 +1077,7 @@
     "cells": {
       "unesco": {
         "label": "UNESCO",
-        "sub": "sites, 2024"
+        "sub": "sites"
       },
       "asi": {
         "label": "ASI",
@@ -1091,7 +1090,7 @@
       "source": {
         "label": "Source",
         "value": "ASI",
-        "sub": "and UNESCO, 2024"
+        "sub": "and UNESCO"
       }
     },
     "cards": {

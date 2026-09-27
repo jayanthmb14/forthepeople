@@ -115,7 +115,7 @@ export default async function PricesPage({ params }: Props) {
               <li>{t.rich("verifyIbja", { b })}</li>
               <li>{t.rich("verifyBse", { b })}</li>
               <li>{t.rich("verifyNse", { b })}</li>
-              <li>{t.rich("verifyRbi", { b })}</li>
+              <li>{t.rich("verifyFbil", { b })}</li>
               <li>{t.rich("verifyYahoo", { b })}</li>
             </ul>
             <p style={NOTE}>{t("verifyCadence")}</p>

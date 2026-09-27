@@ -70,7 +70,8 @@ const ROWS: SeedRow[] = [
     moduleSlug: "health-overview",
     metricKey: "life_expectancy_change_1990",
     metricLabel: "Life expectancy gain since 1990",
-    numericValue: 14,
+    // World Bank WDI SP.DYN.LE00.IN: 58.618 (1990) → 72.235 (2024) = 13.6.
+    numericValue: 13.6,
     unit: "years",
     source: "World Bank · UN",
     sourceUrl: "https://data.worldbank.org/indicator/SP.DYN.LE00.IN?locations=IN",

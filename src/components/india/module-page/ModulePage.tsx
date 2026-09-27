@@ -45,8 +45,8 @@ import { TopStatesBars, MixDonut, PercentRings, GoalBars, type BarItem, type Mix
 import TrendLine from "./TrendLine";
 import IndiaReportIssueButton from "@/components/india/IndiaReportIssueButton";
 import { indiaCategoryHue } from "./v4";
+import { GOAL_PAIRS, goalProgress } from "./goals";
 import {
-  GOAL_PAIRS,
   getModuleIndicators,
   getModuleSeries,
   getModuleStates,
@@ -56,6 +56,7 @@ import {
 } from "./data";
 import { fmtDate, fmtDecimal, formatIndicator, formatIndicatorText } from "../format";
 import { INDIA_NS, indiaText } from "../i18n";
+import { isStandingFact } from "@/lib/india/figure-dates";
 
 interface Props {
   locale: string;
@@ -107,6 +108,15 @@ export default async function ModulePage({ locale, module }: Props) {
 
   const hue = indiaCategoryHue(module.category);
 
+  // Sources of the figures actually shown (rows with a value), one per source.
+  const figureSources: Array<{ label: string; href: string | null }> = [];
+  for (const r of indicators) {
+    if (r.value === null || !r.source) continue;
+    const href = r.sourceUrl && r.sourceUrl.startsWith("https://") ? r.sourceUrl : null;
+    if (figureSources.some((s) => s.label === r.source && s.href === href)) continue;
+    figureSources.push({ label: r.source, href });
+  }
+
   // ── Hero tiles (each opens its own detail sheet) ──────────────────
   const figures = groups.tiles.slice(0, MAX_TILES).map((row) =>
     toFigure(row, { tp, locale, label: label(row), emoji: tileEmoji(row, module.icon) }),
@@ -115,7 +125,7 @@ export default async function ModulePage({ locale, module }: Props) {
   // ── "In simple words": one sentence from the headline row ─────────
   const headline = pickHeadline(module.headlineMetric?.key, indicators);
   const simple = headline
-    ? t("explain.figure", {
+    ? t(isStandingFact(headline.metricKey) ? "explain.fact" : "explain.figure", {
         label: label(headline),
         value: text(headline.value ?? 0, headline.unit),
         date: fmtDate(locale, headline.asOf),
@@ -136,10 +146,14 @@ export default async function ModulePage({ locale, module }: Props) {
       label: stateName(r.stateSlug, r.stateName),
       value: r.value,
       display: text(r.value, r.unit),
+      rank: r.rank,
     }));
     barsSource = { label: stateRows[0].source, href: stateRows[0].sourceUrl || undefined };
     barsAsOf = stateRows[0].asOf;
   } else if (groups.topStates.length >= 3) {
+    // top_state_* indicator rows carry no published rank, and a list may
+    // skip states (UP, 5th in power capacity, has no row) or mix crops, so
+    // these bars get no rank numbers.
     bars = groups.topStates.slice(0, 5).map((s) => {
       const name = stateName(s.stateSlug, s.stateSlug);
       return {
@@ -198,22 +212,18 @@ export default async function ModulePage({ locale, module }: Props) {
 
   // 3. Progress towards a published goal.
   const byKey = new Map(indicators.map((r) => [r.metricKey, r]));
+  // "now" can be a sum (non-fossil = renewables + hydro + nuclear); see ./goals.
   const goals = (GOAL_PAIRS[module.slug] ?? [])
-    .map(([nowKey, goalKey]) => ({ now: byKey.get(nowKey), goal: byKey.get(goalKey) }))
-    .filter((p): p is { now: IndicatorRow; goal: IndicatorRow } =>
-      Boolean(p.now && p.goal && p.now.value !== null && p.goal.value && p.goal.value > 0),
-    )
-    .map(({ now, goal }) => {
-      const pct = ((now.value ?? 0) / (goal.value ?? 1)) * 100;
-      return {
-        label: label(now),
-        pct,
-        pctText: `${fmtDecimal(locale, pct, 0)}%`,
-        line: t("vis.goalLine", { now: text(now.value ?? 0, now.unit), goal: text(goal.value ?? 0, goal.unit) }),
-        source: { label: goal.source, href: goal.sourceUrl || undefined },
-        asOf: now.asOf,
-      };
-    });
+    .map((pair) => goalProgress(pair, byKey))
+    .filter((g): g is NonNullable<typeof g> => g !== null)
+    .map((g) => ({
+      label: g.labelKey && t.has(g.labelKey) ? t(g.labelKey) : label(g.first),
+      pct: g.pct,
+      pctText: `${fmtDecimal(locale, g.pct, 0)}%`,
+      line: t("vis.goalLine", { now: text(g.nowValue, g.first.unit), goal: text(g.goal.value ?? 0, g.goal.unit) }),
+      source: { label: g.goal.source, href: g.goal.sourceUrl || undefined },
+      asOf: g.asOf,
+    }));
   if (goals.length > 0) {
     pictures.push(
       <GoalBars
@@ -389,7 +399,7 @@ export default async function ModulePage({ locale, module }: Props) {
         <ModuleNewsStrip locale={locale} newsKeywords={getModuleNewsKeywords(module)} moduleTitle={title} />
         <ModuleComingSoonRail locale={locale} module={module} moduleTitle={title} />
         <ModuleRelatedModules locale={locale} module={module} />
-        <ModuleSourcePanel locale={locale} module={module} moduleTitle={title} />
+        <ModuleSourcePanel locale={locale} module={module} moduleTitle={title} figureSources={figureSources} />
       </PageFrame>
 
       <IndiaReportIssueButton moduleSlug={module.slug} moduleLabel={title} />

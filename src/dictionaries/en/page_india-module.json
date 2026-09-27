@@ -31,7 +31,11 @@
     "goalSimple": "{label} has reached {pct} of its goal.",
     "goalLine": "Now {now}, goal {goal}",
     "trendTitle": "Change over time",
-    "trendSimple": "It went from {from} in {fromYear} to {to} in {toYear}."
+    "trendSimple": "It went from {from} in {fromYear} to {to} in {toYear}.",
+    "goalLabel": {
+      "nonFossil": "Non-fossil power (renewables, hydro and nuclear)",
+      "forestTree": "Forest and tree cover"
+    }
   },
   "parts": {
     "coal": "Coal",
@@ -76,7 +80,8 @@
       "Annual": "Yearly",
       "Event-driven": "When something happens",
       "Manual": "Updated by hand"
-    }
+    },
+    "ofFigures": "Where each figure on this page comes from."
   },
   "metric": {
     "wildlife-tigers": {
@@ -275,7 +280,7 @@
       "cities_count": "Cities in the mission"
     },
     "infra-telecom": {
-      "subscribers_crore": "Mobile subscribers"
+      "subscribers_crore": "Telephone subscribers (mobile and landline)"
     },
     "justice-police": {
       "civil_police_total_lakh": "Civil police",
@@ -430,8 +435,9 @@
     }
   },
   "explain": {
-    "figure": "The latest official figure: {label} is {value}, as of {date} ({source}).",
-    "none": "No official figures for {module} are shown here yet. We add them only when {source} publishes them; nothing is guessed."
+    "figure": "The most recent figure we have: {label} is {value}, as of {date} ({source}).",
+    "none": "No official figures for {module} are shown here yet. We add them only when {source} publishes them; nothing is guessed.",
+    "fact": "{label} is {value} ({source}). This does not change often; we last checked it on {date}."
   },
   "sheet": {
     "open": "Details: {label}",
@@ -444,8 +450,10 @@
     "recorded": "We recorded it on",
     "openSource": "Open the source",
     "place": "Place",
-    "placeValue": "#{n} of the top {total}",
+    "placeRank": "#{n} in India",
     "vsTop": "Compared with the top state",
-    "vsTopValue": "{pct} of {leader}"
+    "vsTopValue": "{pct} of {leader}",
+    "checked": "Last checked",
+    "checkedOn": "Checked {date}"
   }
 }

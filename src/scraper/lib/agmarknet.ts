@@ -15,9 +15,10 @@
 //   - min, max and modal prices are all published and above zero,
 //   - min ≤ modal ≤ max,
 //   - no price is below ₹1 a kg (₹100 a quintal: such a figure is per
-//     bunch or per piece, not per quintal) or absurd (> ₹10,00,000 per
-//     quintal), and the spread is not wild (max more than 20 × min is
-//     almost always a typo),
+//     bunch or per piece, not per quintal — Sept 2026 audit: Pune(Moshi)
+//     "Onion Green" ₹15, mint ₹7, spinach ₹7, Mysuru ashgourd ₹11 a
+//     quintal) or absurd (> ₹10,00,000 per quintal), and the spread is not
+//     wild (max more than 20 × min is almost always a typo),
 //   - the arrival date is not in the future.
 // Rejected records are counted and logged, never "fixed".
 // ═══════════════════════════════════════════════════════════
@@ -51,10 +52,13 @@ export interface CropRow {
 export const MAX_PRICE_PER_QUINTAL = 1_000_000;
 /**
  * Lowest believable wholesale price, rupees per quintal (₹1 a kg).
- * Sept 2026 audit: Pune spinach (3–10), mint (7–8), rajgir (4–8) and
- * Mysuru ash gourd (10–12) were stored as "per quintal" and shown as
- * ₹0/kg; those figures are per bunch or mis-keyed. The lowest real
- * vegetable price we hold is ~₹300 a quintal (bottle gourd).
+ * Sept 2026 audit: Pune spinach (3–10), mint (7–8), rajgir (4–8),
+ * Pune(Moshi) "Onion Green" (15) and Mysuru ash gourd (10–12) were stored
+ * as "per quintal" and shown as ₹0/kg; those figures are per bunch or
+ * mis-keyed. The lowest real vegetable price we hold is ~₹300 a quintal
+ * (bottle gourd). (Merge note: v54/fix-national set a ₹50 floor on the
+ * modal price for the same finding; this ₹100 floor on the minimum is the
+ * stricter of the two, and min ≤ modal is checked, so it covers both.)
  */
 export const MIN_PRICE_PER_QUINTAL = 100;
 

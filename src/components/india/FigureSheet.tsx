@@ -34,8 +34,10 @@ export interface FigureDetail {
   value: string;
   unit?: string;
   emoji: string;
-  /** ISO date the figure is true for. */
+  /** ISO date the figure is true for (or, when `checked`, the day it was last checked). */
   asOf: string;
+  /** A standing fact with no release date: `asOf` is when it was last checked. */
+  checked?: boolean;
   source: { label: string; href?: string };
   /** The figure before this one, formatted. */
   previous?: { value: string; asOf: string | null } | null;
@@ -64,7 +66,7 @@ export function FigureSheetBody({ figure }: { figure: FigureDetail }) {
       </div>
       <DetailList
         rows={[
-          { emoji: "📅", label: t("sheet.asOf"), value: date(figure.asOf) },
+          { emoji: "📅", label: figure.checked ? t("sheet.checked") : t("sheet.asOf"), value: date(figure.asOf) },
           {
             emoji: "⏪",
             label: t("sheet.before"),
@@ -130,6 +132,7 @@ export function FigureSheetActions({ figure }: { figure: FigureDetail }) {
 /** One StatTile that opens its figure's sheet. */
 function TapTile({ figure, onOpen }: { figure: FigureDetail; onOpen: () => void }) {
   const t = useTranslations("page_india-module");
+  const f = useFormat();
   return (
     <div className={styles.tap}>
       <StatTile
@@ -137,7 +140,8 @@ function TapTile({ figure, onOpen }: { figure: FigureDetail; onOpen: () => void 
         value={figure.value}
         unit={figure.unit || undefined}
         emoji={figure.emoji}
-        asOf={figure.asOf}
+        asOf={figure.checked ? undefined : figure.asOf}
+        sub={figure.checked ? t("sheet.checkedOn", { date: f.date(figure.asOf, { dateStyle: "medium" }) }) : undefined}
         // No link inside the tile: the whole tile is the button, and the
         // source link is in the sheet.
         source={{ label: figure.source.label }}

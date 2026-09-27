@@ -23,7 +23,7 @@
 //     price. Removed until there is a real, dated source.
 //   • The "fallback" list of invented numbers is gone: when every source
 //     fails, `items` is empty and the ticker hides itself.
-//   • Crude is Brent (BZ=F), the benchmark India's oil basket follows, in US
+//   • Crude is Brent (the front-month contract, e.g. BZX26.NYM), the benchmark India's oil basket follows, in US
 //     dollars per barrel — the same series as the /prices page.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";

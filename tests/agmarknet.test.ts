@@ -43,6 +43,15 @@ describe("cropPriceProblems", () => {
     expect(cropPriceProblems(800, 2_000_000, 1100)).toContain("price is absurdly high");
     expect(cropPriceProblems(10, 5000, 1000)).toContain("spread between min and max is absurd");
   });
+  // v54/fix-national (₹50 floor on the modal price) merged with
+  // v54/fix-land-water (₹100 floor on the minimum): one rule, the stricter
+  // floor, so ₹40–60 a quintal is now rejected too.
+  it("rejects per-bunch prices stored as per quintal (under ₹1 a kg)", () => {
+    expect(cropPriceProblems(15, 15, 15)).toContain("price is below ₹1 a kg (not a per-quintal price)"); // Pune(Moshi) Onion Green
+    expect(cropPriceProblems(4, 10, 7)).toContain("price is below ₹1 a kg (not a per-quintal price)");
+    expect(cropPriceProblems(40, 60, 50)).toContain("price is below ₹1 a kg (not a per-quintal price)");
+    expect(cropPriceProblems(100, 150, 120)).toEqual([]);
+  });
 });
 
 describe("toCropRow", () => {

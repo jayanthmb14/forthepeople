@@ -26,7 +26,12 @@ import { SIDEBAR_MODULES } from "@/lib/constants/sidebar-modules";
 export const DASHBOARDS_PER_DISTRICT: number = SIDEBAR_MODULES.length;
 
 /**
- * Canonical total of Indian districts (2024 Census-aligned). Used for
- * "X coming" stat tiles and the /vote-district pool size.
+ * Total districts in India, as the Local Government Directory counts them:
+ * lgdirectory.gov.in home page, read 28 Sep 2026 — 36 States/UTs (28 + 8),
+ * 784 districts. LGD (Ministry of Panchayati Raj) is the official register
+ * of administrative units; the page carries no date, so re-check it when
+ * states create districts. (Was 780, labelled "2024 Census-aligned" and
+ * "MHA, 2024" — there was no 2024 census and MHA publishes no such count.)
+ * Used as the goal ("all N districts") — never as current coverage.
  */
-export const TOTAL_INDIA_DISTRICTS = 780;
+export const TOTAL_INDIA_DISTRICTS = 784;

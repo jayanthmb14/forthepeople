@@ -48,6 +48,7 @@ script is a dry run until the owner runs it with `--confirm`.
   families (en/hi/kn); health "data date" no longer uses a maintenance edit's timestamp.
 - **Data script** `scripts/fix-audit-2026-09-people-services.ts` (dry run: 296 changes with sources).
   After `--confirm`: clear Redis caches and re-run the health-score job.
+
 ### Fixed — news and the overview's tiles and cards (branch `v54/fix-news`, 2026-09-28)
 Verified audit findings (news area). Code first, then one dry-run data script. Nothing is deployed or
 applied to the database yet.
@@ -87,6 +88,36 @@ Where the news branch and an already-merged branch fixed the same thing, one rul
   freshness SQL; a test checks it hides every `SEEDED_BUDGET_SOURCES` label.
 - **Projects card, news-made alerts**: the two identical fixes kept once; related-news flags (government)
   are computed on the cleaned headlines (news).
+
+### Fixed — national audit: India dashboard, prices, About (branch `v54/fix-national`, 2026-09-28)
+Rule: verified or hidden; each fix is in the code that made the error. Not deployed; the data
+script is a dry run until the owner runs it with `--confirm`.
+- **Brent crude** reads the named front-month contract (e.g. `BZX26.NYM`), not Yahoo's rolling
+  `BZ=F`, whose contract roll showed a fake −8.6 % day on 25 Sep (real: 104.32, −2.1 %).
+- **Mandi prices** under ₹50 a quintal (per-bunch rates filed as per quintal) are rejected by the
+  collector and hidden by the APIs (merged into land & water's ₹1-a-kg floor, `SHOWN_CROP_PRICE`).
+- **Goal gauges** compare like with like: 500 GW = non-fossil (renewables + hydro + nuclear, 61 %);
+  NFP 1988 = forest + tree cover (76 %). Top-state bars show a published rank or no number.
+- **Dates**: standing facts (seats, states, targets) say "checked", never drive "Data as of" or the
+  updates feed; band figures over 18 months old show their year; the population card's sources
+  line names its own rows only; life expectancy no longer shows a World Bank gain under SRS.
+- **Module status** follows the figures shown (15 labels corrected) — `scripts/check-india-module-status.ts`.
+- **Module pages** list the sources of the figures shown; population/health/court descriptions match.
+- **World ranks** name the body that publishes them; railway-employer and internet-users ranks hidden.
+- **District total** 784 from LGD (was 780, "2024 Census", "MHA"); vote page counts its own list.
+- **Copy**: About/India/site no longer claim ".gov.in / NDSAP only" or 24-hour freshness; About
+  source cards list the real collectors; FBIL (not RBI) for the dollar rate; privacy lists the
+  supporter phone number; no hard-typed "2024" on India page labels.
+- **Data script** `scripts/fix-audit-2026-09-national.ts`: 12 updates (tigers 2018 = 2,967 and
+  state date 29 Jul 2023, TRAI label, GST Aug 2026, life-expectancy gain 13.6, seat sources).
+
+### Merged — `v54/fix-national` into `v54/merge-rest` (2026-09-28)
+- **Mandi price floor**: national's ₹50-a-quintal floor on the modal price and land & water's
+  ₹100-a-quintal floor on the minimum were the same fix; one rule is kept — ₹100 a quintal, checked
+  on both the minimum and the modal price in `SHOWN_CROP_PRICE`, and on the minimum in the collector
+  (`cropPriceProblems`, with min ≤ modal). `PLAUSIBLE_CROP_PRICE` / `MIN_MODAL_PRICE_PER_QUINTAL`
+  are gone; the crops and public-district APIs use `shownCropPrices()`, the homepage preview's
+  top-crops list `SHOWN_CROP_PRICE`.
 
 ### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
 Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed

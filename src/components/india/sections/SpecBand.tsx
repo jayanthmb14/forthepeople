@@ -28,13 +28,23 @@ import { indicatorKey, type BandSpec, type CardSpec, type RowSpec, type TextOrVa
 import { INDIA_SUPER_CATEGORIES, type IndiaSuperCategoryDef } from "@/lib/india/india-super-categories";
 import { INDIA_NS } from "../i18n";
 import { getIndiaModuleBySlug, type IndiaModuleStatus } from "@/lib/india/india-modules";
+import { oldFigureYear } from "@/lib/india/figure-dates";
 
 export interface BandDataLike {
   superCategory: IndiaSuperCategoryDef;
   moduleBySlug: Record<string, { slug: string; title: string; status: IndiaModuleStatus }>;
   totalCount: number;
   liveCount: number;
-  indicatorByKey: Record<string, { value: number; source: string | null }>;
+  indicatorByKey: Record<string, { value: number; source: string | null; asOfDate?: Date | string | null }>;
+}
+
+/** Page-load time: a directory figure older than 18 months shows its year. */
+const LOADED_AT = Date.now();
+
+/** " (2020)" after a figure that is more than 18 months old (Sept 2026 audit: R&D "0.65%" is 2020's). */
+function OldYear({ asOf }: { asOf: Date | string | null | undefined }) {
+  const year = oldFigureYear(asOf, LOADED_AT);
+  return year ? <span style={{ fontSize: "0.8em", fontWeight: 400, color: "var(--ftp-text-2)" }}> ({year})</span> : null;
 }
 
 type Styles = Readonly<Record<string, string>>;
@@ -191,6 +201,7 @@ export function SpecBand({ spec, styles, data, locale }: { spec: BandSpec; style
             </span>
             <span className={styles.directoryRowValue}>
               <Value spec={row.value} byKey={data.indicatorByKey} />
+              <OldYear asOf={data.indicatorByKey[indicatorKey(row.value.ref)]?.asOfDate} />
             </span>
           </Link>
         );

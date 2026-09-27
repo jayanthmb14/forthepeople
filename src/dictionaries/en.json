@@ -2,7 +2,7 @@
   "site": {
     "name": "ForThePeople.in",
     "tagline": "Your District. Your Data. Your Right.",
-    "disclaimer": "ForThePeople.in is an independent citizen transparency initiative. This is NOT an official government website. All data is sourced from publicly available government portals under India's Open Data Policy (NDSAP)."
+    "disclaimer": "ForThePeople.in is an independent citizen transparency initiative. This is NOT an official government website. Data comes from government portals (many under India's Open Data Policy, NDSAP) and other reputed sources; each figure shows its source and date."
   },
   "nav": {
     "home": "Home",
@@ -151,7 +151,7 @@
       "defence": "Data on this page is limited to information publicly disclosed by the Ministry of Defence, Press Information Bureau, and Parliamentary Q&A. ForThePeople.in does not publish, infer, or speculate on classified, operational, or strategic information.",
       "health": "Aggregated public-health statistics only. Personal health data and individual hospital outcomes are not published. Consult a registered medical practitioner for health decisions.",
       "elections": "Electoral data is for citizen information. ForThePeople.in does not endorse, predict, or campaign for any party or candidate.",
-      "justice": "Aggregated case statistics from NJDG. Individual case details are not published.",
+      "justice": "Aggregated statistics only (NJDG for courts, BPRD for police, NCRB for crime). Individual case and personal details are not published.",
       "mcc": "Model Code of Conduct in effect. ForThePeople.in is non-partisan and complies with ECI guidelines."
     },
     "superCategory": {

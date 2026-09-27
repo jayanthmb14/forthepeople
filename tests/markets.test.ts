@@ -8,10 +8,12 @@ import { describe, expect, it } from "vitest";
 import {
   ageInDays,
   beforeNow,
+  brentFrontMonthSymbol,
   chartWindow,
   cleanSeries,
   ddmmyyyyToIso,
   isStale,
+  lastWeekdayOfMonth,
   latestWithChange,
   minusMonths,
   parseIbjaHtml,
@@ -171,5 +173,30 @@ describe("series arithmetic", () => {
     expect(ageInDays("2026-09-25", Date.parse("2026-09-27T18:00:00Z"))).toBe(2); // Sun 23:30 IST
     expect(isStale("2026-09-25", mondayMorning)).toBe(false);
     expect(isStale("2026-09-20", mondayMorning)).toBe(true);
+  });
+});
+
+describe("Brent front-month contract", () => {
+  it("the last weekday of a month skips the weekend", () => {
+    expect(lastWeekdayOfMonth(2026, 9)).toBe("2026-09-30"); // Wednesday
+    expect(lastWeekdayOfMonth(2026, 10)).toBe("2026-10-30"); // 31 Oct is a Saturday
+    expect(lastWeekdayOfMonth(2026, 2)).toBe("2026-02-27"); // 28 Feb is a Saturday
+  });
+
+  it("25 Sep 2026 is still the November contract (Yahoo's BZ=F had already rolled to December)", () => {
+    expect(brentFrontMonthSymbol("2026-09-25")).toBe("BZX26.NYM");
+    expect(brentFrontMonthSymbol("2026-09-30")).toBe("BZX26.NYM"); // its last trading day
+  });
+
+  it("rolls to the next contract the day after expiry", () => {
+    expect(brentFrontMonthSymbol("2026-10-01")).toBe("BZZ26.NYM");
+    expect(brentFrontMonthSymbol("2026-10-30")).toBe("BZZ26.NYM");
+    expect(brentFrontMonthSymbol("2026-10-31")).toBe("BZF27.NYM"); // Saturday after the December expiry
+    expect(brentFrontMonthSymbol("2026-11-02")).toBe("BZF27.NYM");
+  });
+
+  it("crosses the year end", () => {
+    expect(brentFrontMonthSymbol("2026-12-15")).toBe("BZG27.NYM");
+    expect(brentFrontMonthSymbol("2027-01-04")).toBe("BZH27.NYM");
   });
 });

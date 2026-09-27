@@ -35,9 +35,13 @@ export interface PlatformFacts {
   activeStates: number;
   /** Modules in the district sidebar — the honest "dashboards per district". */
   modulesPerDistrict: number;
-  /** Census-aligned total of Indian districts (780). */
+  /** Total districts in India (LGD count, see TOTAL_INDIA_DISTRICTS). */
   totalIndiaDistricts: number;
-  /** Districts still to launch (total − active), never negative. */
+  /**
+   * Districts a visitor can vote for on /vote-district: the not-yet-live
+   * districts in the registry (the same list the page shows). Not
+   * "total − active": the registry does not list every district in India.
+   */
   comingDistricts: number;
 }
 
@@ -49,7 +53,7 @@ export function getPlatformFacts(): PlatformFacts {
     activeStates: getActiveStateCount(),
     modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
     totalIndiaDistricts: TOTAL_INDIA_DISTRICTS,
-    comingDistricts: Math.max(0, TOTAL_INDIA_DISTRICTS - activeDistricts),
+    comingDistricts: INDIA_STATES.reduce((n, s) => n + s.districts.filter((d) => !d.active).length, 0),
   };
 }
 

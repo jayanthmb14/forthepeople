@@ -251,7 +251,9 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "crops": {
       const data = await prisma.cropPrice.findMany({
-        // No seed rows, no livestock / per-nut / per-stem prices, only mandis in the district (Sept 2026 audit).
+        // No seed rows, no livestock / per-nut / per-stem prices, no per-bunch
+        // figures under ₹1 a kg (min or modal), only mandis in the district
+        // (Sept 2026 audit: land & water + national).
         where: { districtId: did, ...shownCropPrices(districtSlug) },
         orderBy: [{ date: "desc" }, { commodity: "asc" }],
         take: 100,

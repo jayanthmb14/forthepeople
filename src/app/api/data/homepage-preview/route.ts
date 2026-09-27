@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { SHOWN_CROP_PRICE } from "@/lib/data-filters";
 import { cacheGet, cacheSet } from "@/lib/cache";
 
 // v2 (Sept 2026): weather now carries recordedAt and is null when older
@@ -109,7 +110,9 @@ export async function GET() {
 
     // Also fetch top 3 crops across all active districts for the crops card
     const topCrops = await prisma.cropPrice.findMany({
-      where: { districtId: { in: activeDistricts.map((d) => d.id) } },
+      // No per-bunch figures under ₹1 a kg, seed rows or livestock / per-nut /
+      // per-stem prices (SHOWN_CROP_PRICE; national + land & water, Sept 2026).
+      where: { districtId: { in: activeDistricts.map((d) => d.id) }, ...SHOWN_CROP_PRICE },
       orderBy: { date: "desc" },
       take: 30,
       select: { commodity: true, modalPrice: true, date: true, districtId: true },
