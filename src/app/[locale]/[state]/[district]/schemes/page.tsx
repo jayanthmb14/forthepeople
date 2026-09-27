@@ -426,7 +426,8 @@ function SchemeCard({ v, levelLabel, onOpen }: { v: SchemeView; levelLabel: (k: 
         style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 15, lineHeight: "22px", fontWeight: 650, color: "var(--hue-deep)" }}
       >
         <span className="ftp-emoji" aria-hidden>🎁</span>
-        <span style={{ minWidth: 0 }}>{get.text}</span>
+        {/* One short line: long published text is cut to two lines here and shown in full in the sheet. */}
+        <span style={{ minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{get.text}</span>
       </span>
       <TagRow>
         {v.level && <HueTag emoji={LEVEL_EMOJI[v.level]}>{levelLabel(v.level)}</HueTag>}
@@ -436,6 +437,12 @@ function SchemeCard({ v, levelLabel, onOpen }: { v: SchemeView; levelLabel: (k: 
           </HueTag>
         ))}
         {v.aud.length > shownAud.length && <HueTag outline>{t("list.moreWho", { n: v.aud.length - shownAud.length })}</HueTag>}
+        {/* No known group in the text: show who it is for as published (short). */}
+        {v.aud.length === 0 && v.who && (
+          <HueTag outline emoji="👥">
+            <span lang="en">{v.who.length > 48 ? `${v.who.slice(0, 47)}…` : v.who}</span>
+          </HueTag>
+        )}
         {v.apply && <HueTag emoji="🔗">{t("list.applyOnline")}</HueTag>}
       </TagRow>
     </TapCard>
