@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       await logUpdate({
         source: "cron",
         actorLabel: "cron",
-        tableName: "Redis:ftp:data:mgnrega",
+        tableName: "MGNREGA At a glance",
         recordId: `scrape-mgnrega:${slug}:${s?.asOf ?? "?"}`,
         action: "update",
         districtId: d?.id,

@@ -62,7 +62,7 @@ export async function GET(request: Request) {
       await logUpdate({
         source: "cron",
         actorLabel: "cron",
-        tableName: "Redis:ftp:data:udise",
+        tableName: "UDISE+ district statistics",
         recordId: `scrape-schools:${slug}:${s?.year ?? "?"}`,
         action: "update",
         districtId: d?.id,
