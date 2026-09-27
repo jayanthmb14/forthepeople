@@ -34,6 +34,7 @@
   "cardSame": "{date} जितना ही",
   "moreMarkets": "+{n, plural, one {# और मंडी} other {# और मंडियाँ}}",
   "details": "पूरी जानकारी देखें",
+  "detailsFor": "पूरी जानकारी देखें: {name}",
   "sheetSub": "{date} को {market} मंडी में आम भाव",
   "bothUnits": "{kg} प्रति किलो · {q} प्रति क्विंटल (100 किलो)",
   "modalHelp": "आम (मॉडल) भाव वह भाव है जिस पर उस दिन ज़्यादातर माल बिका।",

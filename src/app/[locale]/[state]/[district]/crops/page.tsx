@@ -374,7 +374,7 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
 /**
  * One crop's price card: emoji, name, the typical price big, the day's
  * low–high, mandi and date, the change since the market day before, and a
- * small line of recent prices. The whole card is a button that opens the
+ * small line of recent prices. A tap anywhere on the card opens the
  * crop's sheet.
  */
 function PriceCard({
@@ -402,13 +402,13 @@ function PriceCard({
   const otherMarkets = latestPerMarket(prices, commodityKey(row.commodity)).length - 1;
   const { rows: series } = dailySeries(prices, row);
   return (
-    <TapCard onClick={onOpen}>
+    <TapCard onClick={onOpen} label={t("detailsFor", { name: row.commodity })}>
       <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <EmojiTile emoji={cropEmoji(row.commodity)} />
         <span style={{ minWidth: 0, flex: 1 }}>
-          <span className="ftp-display" style={{ display: "block", fontSize: 17, lineHeight: "22px", fontWeight: 650, overflowWrap: "anywhere" }}>
+          <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, overflowWrap: "anywhere" }}>
             {row.commodity}
-          </span>
+          </h3>
           <span style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", overflowWrap: "anywhere" }}>
             {t("cardMarket", { market: row.market, date: fmt.shortDay(row.date) })}
           </span>

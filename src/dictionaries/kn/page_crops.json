@@ -34,6 +34,7 @@
   "cardSame": "{date} ರಷ್ಟೇ",
   "moreMarkets": "+{n, plural, one {ಇನ್ನೂ # ಮಂಡಿ} other {ಇನ್ನೂ # ಮಂಡಿಗಳು}}",
   "details": "ವಿವರ ನೋಡಿ",
+  "detailsFor": "ವಿವರ ನೋಡಿ: {name}",
   "sheetSub": "{date} ರಂದು {market} ಮಂಡಿಯಲ್ಲಿ ಸಾಮಾನ್ಯ ದರ",
   "bothUnits": "ಕೆಜಿಗೆ {kg} · ಕ್ವಿಂಟಾಲ್‌ಗೆ (100 ಕೆಜಿ) {q}",
   "modalHelp": "ಸಾಮಾನ್ಯ (ಮಾದರಿ) ದರ ಎಂದರೆ ಆ ದಿನ ಹೆಚ್ಚಿನ ಲಾಟ್‌ಗಳು ಮಾರಾಟವಾದ ದರ.",

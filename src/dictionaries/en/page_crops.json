@@ -34,6 +34,7 @@
   "cardSame": "Same as on {date}",
   "moreMarkets": "+{n, plural, one {# more mandi} other {# more mandis}}",
   "details": "See details",
+  "detailsFor": "See details: {name}",
   "sheetSub": "Typical price at {market} mandi on {date}",
   "bothUnits": "{kg} a kg · {q} a quintal (100 kg)",
   "modalHelp": "The typical (modal) price is the price most lots sold at that day.",

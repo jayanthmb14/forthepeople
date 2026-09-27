@@ -8,10 +8,10 @@
 //  Land & water — tappable cards and small pictures (layout v4.1)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//    TapCard    a whole card that is one button: tapping it opens the
-//               item's DetailSheet. 44 px minimum, lifts on hover, focus
-//               ring from globals.css. Put it inside <li> of a
-//               <ul className="ftp-grid">.
+//    TapCard    a card with one transparent button stretched over it:
+//               tapping anywhere opens the item's DetailSheet. Lifts on
+//               hover, focus ring from globals.css. Put it inside <li> of
+//               a <ul className="ftp-grid">.
 //    TapHint    the small "See details ›" line at the bottom of a TapCard,
 //               so a first-time visitor knows the card opens.
 //    Sparkline  a tiny line of recent values (prices, dam storage) for a
@@ -31,35 +31,38 @@ import { useFormat } from "@/i18n/client";
 //  TapCard
 // ─────────────────────────────────────────────────────────────────────
 
+/**
+ * The card is a normal box (so it may hold headings, pictures and charts)
+ * with one transparent button stretched over it: a tap anywhere opens the
+ * sheet, keyboard users get one tab stop with a clear name (`label`, e.g.
+ * "See details: Tomato"), and the focus ring draws around the whole card.
+ */
 export function TapCard({
   onClick,
+  label,
   children,
   tinted,
   style,
 }: {
   onClick: () => void;
+  /** Accessible name of the stretched button. */
+  label: string;
   children: React.ReactNode;
   tinted?: boolean;
   style?: React.CSSProperties;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-haspopup="dialog"
+    <div
       className="ftp-card-link"
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         gap: 10,
-        width: "100%",
         height: "100%",
         minHeight: 44,
         padding: 16,
-        textAlign: "start",
-        font: "inherit",
         color: "var(--ftp-text)",
-        cursor: "pointer",
         background: tinted
           ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, var(--ftp-surface)) 0%, var(--ftp-surface) 70%)"
           : "var(--ftp-surface)",
@@ -68,11 +71,31 @@ export function TapCard({
         boxShadow: "var(--ftp-shadow-1)",
         boxSizing: "border-box",
         minWidth: 0,
+        cursor: "pointer",
         ...style,
       }}
     >
       {children}
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-haspopup="dialog"
+        aria-label={label}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          padding: 0,
+          margin: 0,
+          border: 0,
+          borderRadius: "var(--ftp-radius-card)",
+          background: "transparent",
+          cursor: "pointer",
+          zIndex: 1,
+        }}
+      />
+    </div>
   );
 }
 
