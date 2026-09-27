@@ -2,62 +2,57 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * Home page (v5.1) — the pure rules behind the ticker, the map card, the
- * support band and the number formats (src/components/home/home-picks.ts,
+ * Home page (v5.1) — the pure rules behind the fuel prices, the map card,
+ * the support band and the number formats (src/components/home/home-picks.ts,
  * home-format.ts). No database, no React.
  */
 import { describe, expect, it } from "vitest";
-import { buildMapStat, pickCropTicks, pickSupporters, type CropRow, type PublicSupporter } from "@/components/home/home-picks";
-import { agoShort, dayWords, money, pct, perKg, shortDay } from "@/components/home/home-format";
+import { buildMapStat, fuelFigures, pickSupporters, type PublicSupporter } from "@/components/home/home-picks";
+import { agoShort, dayWords, money, pct, shortDay } from "@/components/home/home-format";
 
 // 27 Sep 2026, 17:30 IST
 const NOW = Date.parse("2026-09-27T12:00:00Z");
-// Mandi dates are stored as IST midnight (18:30 UTC the day before).
-const JUN22 = new Date("2026-06-21T18:30:00Z");
-const SEP26 = new Date("2026-09-25T18:30:00Z");
 
-const districts = [
-  { id: "d-mandya", slug: "mandya", stateSlug: "karnataka" },
-  { id: "d-pune", slug: "pune", stateSlug: "maharashtra" },
-  { id: "d-lucknow", slug: "lucknow", stateSlug: "uttar-pradesh" },
-];
-const row = (districtId: string, commodity: string, modalPrice: number, date: Date, market = "Some APMC"): CropRow => ({ districtId, commodity, market, modalPrice, date });
+describe("fuelFigures", () => {
+  const snap = {
+    kind: "fuel" as const,
+    asOf: "2026-09-25",
+    cities: [
+      { city: "Delhi" as const, petrol: 102.12, diesel: 95.2, check: "double" as const },
+      { city: "Mumbai" as const, petrol: 111.21, diesel: 97.83, check: "single" as const },
+      { city: "Chennai" as const, petrol: 107.77, diesel: 99.55, check: "single" as const },
+      { city: "Kolkata" as const, petrol: 113.51, diesel: 99.82, check: "single" as const },
+    ],
+    sources: { ppacHome: "https://ppac.gov.in/", ppacTable: "https://ppac.gov.in/x.pdf", bpcl: { petrol: "a", diesel: "b" } },
+    bpclEffective: { petrol: "2026-08-01", diesel: "2026-08-01" },
+    fetchedAt: "2026-09-27T07:00:00.000Z",
+  };
 
-describe("pickCropTicks", () => {
-  it("takes one staple per district, different crops first, newest mandi day first", () => {
-    const rows = [
-      row("d-mandya", "Paddy(Common)", 1900, JUN22, "Srirangapattana APMC"),
-      row("d-pune", "Tomato", 1750, SEP26, "Pune APMC"),
-      row("d-pune", "Onion", 1350, SEP26),
-      row("d-lucknow", "Tomato", 1200, JUN22),
-      row("d-lucknow", "Wheat", 2450, JUN22),
-    ];
-    const ticks = pickCropTicks(districts, rows, NOW);
-    expect(ticks.map((t) => `${t.districtSlug}:${t.cropKey}`)).toEqual(["pune:tomato", "mandya:paddy", "lucknow:wheat"]);
-    const pune = ticks[0];
-    expect(pune.day).toBe("2026-09-26");
-    expect(pune.ageDays).toBe(1);
-    expect(pune.old).toBe(false);
-    const mandya = ticks.find((t) => t.districtSlug === "mandya")!;
-    expect(mandya.day).toBe("2026-06-22");
-    expect(mandya.ageDays).toBe(97);
-    expect(mandya.old).toBe(true);
-    expect(mandya.market).toBe("Srirangapattana APMC");
+  it("Delhi as the headline, the other metros beside it, PPAC's day and age", () => {
+    const [petrol, diesel] = fuelFigures(snap, NOW);
+    expect(petrol).toEqual({
+      fuel: "petrol",
+      city: "Delhi",
+      value: 102.12,
+      check: "double",
+      others: [
+        { city: "Mumbai", value: 111.21 },
+        { city: "Chennai", value: 107.77 },
+        { city: "Kolkata", value: 113.51 },
+      ],
+      day: "2026-09-25",
+      ageDays: 2,
+      old: false,
+    });
+    expect(diesel.value).toBe(95.2);
   });
 
-  it("never shows a zero price or a non-staple, and never invents a tick", () => {
-    const rows = [row("d-mandya", "Tomato", 0, SEP26), row("d-mandya", "Arecanut", 45000, SEP26)];
-    expect(pickCropTicks(districts, rows, NOW)).toEqual([]);
-  });
-
-  it("ignores rows from districts that are not live", () => {
-    expect(pickCropTicks(districts, [row("d-other", "Tomato", 1000, SEP26)], NOW)).toEqual([]);
-  });
-
-  it("fills up to five from more districts, even with one crop, and stops there", () => {
-    const many = Array.from({ length: 8 }, (_, i) => ({ id: `d${i}`, slug: `s${i}`, stateSlug: "x" }));
-    const rows = many.map((d) => row(d.id, "Onion", 1000, SEP26));
-    expect(pickCropTicks(many, rows, NOW)).toHaveLength(5);
+  it("an old day is marked old; no snapshot, a broken one or no Delhi shows nothing", () => {
+    const later = Date.parse("2026-10-02T06:00:00Z");
+    expect(fuelFigures(snap, later)[0]).toMatchObject({ ageDays: 7, old: true });
+    expect(fuelFigures(null, NOW)).toEqual([]);
+    expect(fuelFigures({ ...snap, cities: [{ ...snap.cities[0], petrol: Number.NaN }] }, NOW)).toEqual([]);
+    expect(fuelFigures({ ...snap, cities: snap.cities.slice(1) }, NOW)).toEqual([]);
   });
 });
 
@@ -125,8 +120,8 @@ describe("home formats", () => {
     expect(money(97.44, "USD", 2)).toBe("$97.44");
     expect(money(73896, null, 0)).toBe("73,896");
     expect(pct(-0.3712)).toBe("0.37%");
-    expect(perKg(1750)).toBe("17.5");
-    expect(perKg(1800)).toBe("18");
+    expect(money(152110, "INR", 0)).toBe("₹1,52,110");
+    expect(money(102.12, "INR", 2)).toBe("₹102.12");
   });
 
   it("dates read as words in the page language", () => {

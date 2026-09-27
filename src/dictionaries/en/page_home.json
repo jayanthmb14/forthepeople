@@ -4,7 +4,6 @@
   "onGithub": "ForThePeople on GitHub",
   "ticker": {
     "region": "Prices today",
-    "timeIst": "{time} IST",
     "pause": "Stop the moving prices",
     "play": "Move the prices again",
     "gold24": "Gold 24K",
@@ -13,21 +12,14 @@
     "sensex": "Sensex",
     "nifty": "Nifty 50",
     "usdInr": "US dollar",
-    "crude": "Crude oil",
-    "perGram": "/gram",
     "perKg": "/kg",
-    "perBarrel": "/barrel",
     "up": "up {pct}",
     "down": "down {pct}",
-    "oldDate": "{date} · {days} days old"
-  },
-  "crops": {
-    "tomato": "Tomato",
-    "onion": "Onion",
-    "potato": "Potato",
-    "rice": "Rice",
-    "paddy": "Paddy",
-    "wheat": "Wheat"
+    "oldDate": "{date} · {days} days old",
+    "petrol": "Petrol",
+    "diesel": "Diesel",
+    "perLitre": "/litre",
+    "per10g": "/10 g"
   },
   "hero": {
     "title": "See what is happening in <hl>your district</hl>",
@@ -107,7 +99,11 @@
     "srcIbja": "IBJA",
     "srcYahoo": "Yahoo Finance",
     "none": "Prices could not be loaded just now. The prices page may have them.",
-    "note": "Gold and silver from IBJA (India Bullion and Jewellers Association); shares, the dollar and crude oil from Yahoo Finance. Crop prices for each district are on its Crop prices page."
+    "note": "Gold (per 10 grams) and silver (per kg) as IBJA (India Bullion and Jewellers Association) publishes them. Petrol and diesel at Indian Oil pumps from PPAC (Petroleum Planning & Analysis Cell, Government of India); the Delhi price is also checked against BPCL's. Shares and the dollar from Yahoo Finance.",
+    "fuelOthers": "Other metro cities",
+    "fuelChecked": "Delhi price matches <a>BPCL</a>'s",
+    "srcPpac": "PPAC (Indian Oil pumps)",
+    "marketsLabel": "Shares and the dollar"
   },
   "checks": {
     "title": "How we get and check the data",
@@ -130,5 +126,13 @@
     "monthly": "monthly supporter",
     "cta": "Support the project",
     "all": "See all supporters"
+  },
+  "fuel": {
+    "city": {
+      "Delhi": "Delhi",
+      "Mumbai": "Mumbai",
+      "Chennai": "Chennai",
+      "Kolkata": "Kolkata"
+    }
   }
 }

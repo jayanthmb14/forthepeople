@@ -5,11 +5,11 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Home page — server-side loaders (database + the cached price snapshot)
+//  Home page — server-side loaders (database)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  SERVER ONLY: imports Prisma. Only src/app/[locale]/page.tsx calls these.
-//  (Market prices need no database: see home-markets.ts.)
+//  (Prices need no database: see home-markets.ts.)
 //  Every loader is read-only and never throws: a failed query leaves its
 //  part of the page out (or shows an empty state), it never invents a number.
 //
@@ -29,8 +29,8 @@ import { LOCAL_INFRA, VERIFIED_PANCHAYAT_SOURCES } from "@/lib/data-filters";
 import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { getPlatformFacts } from "@/lib/platform-facts";
-import { buildMapStat, pickCropTicks } from "./home-picks";
-import type { CropTick, IndiaFigure, MapDistrictStat, PlatformStats } from "./home-types";
+import { buildMapStat } from "./home-picks";
+import type { IndiaFigure, MapDistrictStat, PlatformStats } from "./home-types";
 
 /** A live district row as the page loads it. */
 export interface LiveDistrictRow {
@@ -41,37 +41,6 @@ export interface LiveDistrictRow {
 }
 
 const statKey = (stateSlug: string, slug: string) => `${stateSlug}/${slug}`;
-
-// ─────────────────────────────────────────────────────────────────────
-//  Mandi prices for the ticker
-// ─────────────────────────────────────────────────────────────────────
-
-/**
- * Up to five staple prices from the live districts' newest mandi days (the
- * choice itself: home-picks.ts → pickCropTicks). Old ones are marked old.
- */
-export async function loadCropTicks(districts: LiveDistrictRow[], nowMs: number = Date.now()): Promise<CropTick[]> {
-  if (districts.length === 0) return [];
-  try {
-    const ids = districts.map((d) => d.id);
-    const latest = await prisma.cropPrice.groupBy({
-      by: ["districtId"],
-      where: { districtId: { in: ids } },
-      _max: { date: true },
-    });
-    const newestDay = latest.filter((l) => l._max.date).map((l) => ({ districtId: l.districtId, date: l._max.date as Date }));
-    if (newestDay.length === 0) return [];
-    const rows = await prisma.cropPrice.findMany({
-      where: { OR: newestDay.map((l) => ({ districtId: l.districtId, date: l.date })) },
-      select: { districtId: true, commodity: true, market: true, modalPrice: true, date: true },
-      orderBy: [{ market: "asc" }],
-      take: 2000,
-    });
-    return pickCropTicks(districts, rows, nowMs);
-  } catch {
-    return [];
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────
 //  Per-district facts for the map

@@ -10,93 +10,40 @@
 //
 //  The rules that decide WHICH figure the home page shows, kept apart from
 //  the queries so they can be tested:
-//    pickCropTicks   which mandi prices the ticker shows
+//    fuelFigures     petrol and diesel for the ticker and the price cards
 //    buildMapStat    a live district's facts on the map card (the same
 //                    order of sources as the district pages)
 //    pickSupporters  which supporters' names the support band lists
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
-import { dayOf, daysBetween, todayIST } from "@/lib/markets/compute";
-import type { CropTick, MapDistrictStat } from "./home-types";
+import { ageInDays as marketAgeDays, isStale } from "@/lib/markets/compute";
+import { isFuelSnapshot, type FuelSnapshot } from "@/scraper/lib/fuel-prices";
+import type { FuelFigure, MapDistrictStat } from "./home-types";
 
-// ── Mandi prices for the ticker ────────────────────────────────────────
-
-/** Staples a citizen recognises, in the order the ticker prefers them. */
-export const STAPLES: ReadonlyArray<{ key: string; match: RegExp }> = [
-  { key: "tomato", match: /^tomato$/i },
-  { key: "onion", match: /^onion$/i },
-  { key: "potato", match: /^potato$/i },
-  { key: "rice", match: /^rice$/i },
-  { key: "paddy", match: /^paddy/i },
-  { key: "wheat", match: /^wheat$/i },
-];
-
-/** Crop prices older than this many days are marked old (DESIGN-SYSTEM §6: crop prices 7). */
-export const CROP_MAX_AGE_DAYS = 7;
-export const MAX_CROP_TICKS = 5;
-
-export interface CropRow {
-  districtId: string;
-  commodity: string;
-  market: string;
-  modalPrice: number;
-  date: Date;
-}
+// ── Petrol and diesel ──────────────────────────────────────────────────
 
 /**
- * Up to five staple prices, each from a different district and, as far as
- * possible, a different crop, from each district's newest mandi day
- * (`rows` holds only those days). Districts with the newest day go first,
- * then the order of `districts`. Every tick keeps its market and date; one
- * older than a week is marked old.
+ * The price cards' petrol and diesel from the stored PPAC snapshot: Delhi
+ * as the headline (the national reference), the other metros beside it.
+ * Nothing without a readable snapshot or without Delhi; the day's age uses
+ * the markets' rule (a normal weekend / holiday gap is not "old").
  */
-export function pickCropTicks(
-  districts: ReadonlyArray<{ id: string; slug: string; stateSlug: string }>,
-  rows: readonly CropRow[],
-  nowMs: number = Date.now(),
-): CropTick[] {
-  const newest = new Map<string, number>();
-  for (const r of rows) newest.set(r.districtId, Math.max(newest.get(r.districtId) ?? 0, r.date.getTime()));
-  const order = new Map(districts.map((d, i) => [d.id, i]));
-  const byDistrict = [...newest.entries()]
-    .filter(([id]) => order.has(id))
-    .sort((a, b) => b[1] - a[1] || (order.get(a[0]) ?? 0) - (order.get(b[0]) ?? 0))
-    .map(([id]) => id);
-
-  const today = todayIST(nowMs);
-  const picked: CropTick[] = [];
-  const used = new Set<string>();
-  // Round-robin over the staples (one district per crop per round), so the
-  // ticker shows different crops before it repeats one; stop when a round
-  // finds nothing more.
-  for (let progress = true; progress && picked.length < MAX_CROP_TICKS; ) {
-    progress = false;
-    for (const staple of STAPLES) {
-      if (picked.length >= MAX_CROP_TICKS) break;
-      const hit = byDistrict
-        .filter((id) => !used.has(id))
-        .map((id) => rows.find((r) => r.districtId === id && r.date.getTime() === newest.get(id) && staple.match.test(r.commodity.trim()) && r.modalPrice > 0))
-        .find(Boolean);
-      if (!hit) continue;
-      const d = districts.find((x) => x.id === hit.districtId);
-      if (!d) continue;
-      used.add(hit.districtId);
-      progress = true;
-      const day = dayOf(Math.floor(hit.date.getTime() / 1000));
-      const age = Math.max(0, daysBetween(day, today));
-      picked.push({
-        commodity: hit.commodity.trim(),
-        cropKey: staple.key,
-        market: hit.market.trim(),
-        perQuintal: hit.modalPrice,
-        day,
-        ageDays: age,
-        old: age > CROP_MAX_AGE_DAYS,
-        stateSlug: d.stateSlug,
-        districtSlug: d.slug,
-      });
-    }
-  }
-  return picked;
+export function fuelFigures(snap: FuelSnapshot | null, nowMs: number = Date.now()): FuelFigure[] {
+  if (!isFuelSnapshot(snap)) return [];
+  const delhi = snap.cities.find((c) => c.city === "Delhi");
+  if (!delhi) return [];
+  const others = snap.cities.filter((c): c is typeof c & { city: "Mumbai" | "Chennai" | "Kolkata" } => c.city !== "Delhi");
+  const ageDays = marketAgeDays(snap.asOf, nowMs);
+  const old = isStale(snap.asOf, nowMs);
+  return (["petrol", "diesel"] as const).map((fuel) => ({
+    fuel,
+    city: "Delhi" as const,
+    value: delhi[fuel],
+    check: delhi.check,
+    others: others.map((c) => ({ city: c.city, value: c[fuel] })),
+    day: snap.asOf,
+    ageDays,
+    old,
+  }));
 }
 
 // ── A live district's facts on the map card ────────────────────────────

@@ -8,26 +8,25 @@
 //  PriceTicker — the running prices strip at the top of the home page
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌──────────────┬──────────────────────────────────────────────────┬───┐
-//   │ Sat, 27 Sep  │ (coin) Gold 24K ₹15,211/gram ▲0.9% 26 Sep ·      │ ❚❚│
-//   │ 7:12 pm IST  │ (bar) Silver … · (chart) Sensex … · (sprout)     │   │
-//   │              │ Tomato, Pune APMC ₹17.5/kg · 22 Jun · 97 days old│   │
-//   └──────────────┴──────────────────────────────────────────────────┴───┘
+//   ┌──────────────────────────────────────────────────────────────────┬───┐
+//   │ (coin) Gold 24K ₹1,52,110/10 g ▲0.9% 25 Sept · (bar) Silver …    │ ❚❚│
+//   │ (pump) Petrol · Delhi ₹102.12/litre 25 Sept · (chart) Sensex …   │   │
+//   └──────────────────────────────────────────────────────────────────┴───┘
 //
-//  - Gold 24K / 22K (per gram) and silver (per kg) from IBJA; Sensex,
-//    Nifty 50, the US dollar and crude oil from public market feeds —
-//    the same snapshot as the /prices page (home-data.ts).
-//  - A few mandi prices from the live districts, each with its market and
-//    date; a price older than a week says how old it is, in amber.
-//  - Every item is a link: markets → /prices, a crop → that district's
-//    crop prices page.
+//  The everyday prices, in this order: gold 24K and 22K (per 10 g) and
+//  silver (per kg) from IBJA; petrol and diesel in Delhi (per litre, PPAC,
+//  double-checked with BPCL); then Sensex, Nifty 50 and the US dollar.
+//  Each item keeps its own date; one older than a normal weekend or
+//  holiday gap says how old it is, in amber. (Mandi crop prices and crude
+//  oil are no longer shown here; the date and IST time are in the status
+//  strip right above, so the ticker does not repeat them.)
+//
+//  - Metals and markets link to /prices; petrol and diesel to the home
+//    page's price cards (#home-prices), which name the sources.
 //  - The strip moves slowly (CSS only). It stops while the pointer or the
 //    keyboard focus is on it, and the ❚❚ button stops it for good. With
 //    "reduce motion" it does not move at all: it becomes a row you can
 //    scroll sideways.
-//  - The left chip shows today's day and date and the time in India
-//    (client-only, updated each minute), a small "status" detail the old
-//    site had.
 //
 "use client";
 
@@ -35,35 +34,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Pause, Play } from "lucide-react";
-import { intlLocale } from "@/i18n/languages";
 import { Glyph, glyphFor } from "./HomeGlyphs";
-import { dayWords, money, pct, perKg, shortDay } from "./home-format";
-import { useMinute } from "./home-clock";
-import type { CropTick, MarketFigure } from "./home-types";
+import { FUEL_HUE, UNIT_KEY, dayWords, money, pct, shortDay } from "./home-format";
+import type { FuelFigure, MarketFigure } from "./home-types";
 import styles from "./home.module.css";
 
-// ── The clock (client only; the server renders an empty chip) ──────────
-
-function TodayChip({ locale }: { locale: string }) {
-  const t = useTranslations("page_home");
-  const minute = useMinute();
-  const intl = intlLocale(locale);
-  const when = minute === null ? null : new Date(minute);
-  return (
-    <p className={styles.tickerToday}>
-      <span className={styles.tickerTodayDate}>
-        {when ? when.toLocaleDateString(intl, { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kolkata" }) : " "}
-      </span>
-      <span className={styles.tickerTodayTime}>
-        {when ? t("ticker.timeIst", { time: when.toLocaleTimeString(intl, { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }) }) : " "}
-      </span>
-    </p>
-  );
-}
-
-// ── One item ───────────────────────────────────────────────────────────
-
-const UNIT_KEY = { gram: "ticker.perGram", kg: "ticker.perKg", barrel: "ticker.perBarrel" } as const;
+const METALS = new Set(["gold24", "gold22", "silver"]);
 
 function Arrow({ up }: { up: boolean }) {
   return (
@@ -102,55 +78,54 @@ function MarketItem({ m, locale, tab }: { m: MarketFigure; locale: string; tab: 
   );
 }
 
-function CropItem({ c, locale, tab }: { c: CropTick; locale: string; tab: 0 | -1 }) {
+function FuelItem({ f, locale, tab }: { f: FuelFigure; locale: string; tab: 0 | -1 }) {
   const t = useTranslations("page_home");
-  const name = c.cropKey ? t(`crops.${c.cropKey}`) : c.commodity;
   return (
     <li className={styles.tickItemWrap}>
-      <Link href={`/${locale}/${c.stateSlug}/${c.districtSlug}/crops`} className={styles.tickItem} tabIndex={tab}>
-        <Glyph kind="sprout" size={20} />
+      <a href="#home-prices" className={`${styles.tickItem} ftp-hue-${FUEL_HUE[f.fuel]}`} tabIndex={tab}>
+        <Glyph kind="fuel" size={20} />
         <span className={styles.tickLabel}>
-          {name}
-          <span className={styles.tickMarket} lang="en">
-            {c.market}
-          </span>
+          {t(`ticker.${f.fuel}`)}
+          <span className={styles.tickMarket}>{t("fuel.city.Delhi")}</span>
         </span>
         <span className={`${styles.tickValue} ftp-num`}>
-          ₹{perKg(c.perQuintal)}
-          <span className={styles.tickUnit}>{t("ticker.perKg")}</span>
+          {money(f.value, "INR", 2)}
+          <span className={styles.tickUnit}>{t("ticker.perLitre")}</span>
         </span>
-        <span className={styles.tickDate} data-old={c.old ? "true" : undefined}>
-          {c.old ? t("ticker.oldDate", { date: shortDay(c.day, locale), days: c.ageDays }) : dayWords(c.day, c.ageDays, locale)}
+        <span className={styles.tickDate} data-old={f.old ? "true" : undefined}>
+          {f.old ? t("ticker.oldDate", { date: shortDay(f.day, locale), days: f.ageDays }) : dayWords(f.day, f.ageDays, locale)}
         </span>
-      </Link>
+      </a>
     </li>
   );
 }
 
-// ── The strip ──────────────────────────────────────────────────────────
-
-export default function PriceTicker({ locale, markets, crops }: { locale: string; markets: MarketFigure[]; crops: CropTick[] }) {
+export default function PriceTicker({ locale, markets, fuel }: { locale: string; markets: MarketFigure[]; fuel: FuelFigure[] }) {
   const t = useTranslations("page_home");
   const [paused, setPaused] = useState(false);
-  const count = markets.length + crops.length;
+  const metals = markets.filter((m) => METALS.has(m.key));
+  const rest = markets.filter((m) => !METALS.has(m.key));
+  const count = markets.length + fuel.length;
   if (count === 0) return null;
 
   // About 5 s per item keeps the text readable (roughly 45–60 px a second).
   const duration = `${Math.max(30, count * 5)}s`;
   const list = (copy: boolean) => (
     <ul className={styles.tickList} aria-hidden={copy || undefined} inert={copy || undefined} data-copy={copy ? "true" : undefined}>
-      {markets.map((m) => (
+      {metals.map((m) => (
         <MarketItem key={m.key} m={m} locale={locale} tab={copy ? -1 : 0} />
       ))}
-      {crops.map((c) => (
-        <CropItem key={`${c.districtSlug}-${c.commodity}`} c={c} locale={locale} tab={copy ? -1 : 0} />
+      {fuel.map((f) => (
+        <FuelItem key={f.fuel} f={f} locale={locale} tab={copy ? -1 : 0} />
+      ))}
+      {rest.map((m) => (
+        <MarketItem key={m.key} m={m} locale={locale} tab={copy ? -1 : 0} />
       ))}
     </ul>
   );
 
   return (
     <section className={styles.ticker} aria-label={t("ticker.region")}>
-      <TodayChip locale={locale} />
       <div className={styles.tickerViewport} data-paused={paused ? "true" : undefined}>
         <div className={styles.tickerTrack} style={{ "--ticker-duration": duration } as React.CSSProperties}>
           {list(false)}
