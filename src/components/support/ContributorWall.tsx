@@ -13,16 +13,18 @@
 //  1. Active supporters (monthly subscribers, from /api/data/contributors)
 //  2. One-time contributions (from /api/payment/contributors)
 //
-//  Design v4: each strip is a row of small tinted Cards in the page hue
-//  that the visitor can swipe / scroll sideways (no auto-scrolling
-//  marquee). Section headings carry an emoji chip. Data fetching (React
-//  Query keys, refetch timings, caps) is unchanged — SupportCheckout
-//  invalidates these same query keys after a payment.
+//  Design v5 (calm): each strip is a row of small plain Cards the visitor
+//  can swipe / scroll sideways (no auto-scrolling marquee). No emoji: the
+//  headings are plain h3s under the page's "Our supporters" heading, and
+//  the tier label is text only. Data fetching (React Query keys, refetch
+//  timings, caps) is unchanged — SupportCheckout invalidates these same
+//  query keys after a payment.
 //
 //  Languages: headings and counts come from "page_support". The payments
 //  API sends English tier labels ("☕ Chai Supporter") and relative times
 //  ("This week", "September 2026"); both are mapped to translated text
-//  here, and anything unknown is shown as sent. Names are shown as entered.
+//  here (the emoji is dropped), and anything unknown is shown as sent.
+//  Names are shown as entered.
 //
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -30,7 +32,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
 import type { ContributorsResponse, ContributorItem } from "@/app/api/payment/contributors/route";
 import { normalizeSocialLink } from "@/lib/social-link";
-import { Card, EmptyState, Pill, SectionHeader } from "@/components/district/ui";
+import { Card, Pill, SectionHeader } from "@/components/district/ui";
 import { useFormat } from "@/i18n/client";
 
 const SOCIAL_ICONS: Record<string, typeof Instagram> = {
@@ -51,7 +53,7 @@ interface SubscriberItem {
   monthsActive: number;
 }
 
-/** English tier label from /api/payment/contributors → message key (emoji kept). */
+/** English tier label from /api/payment/contributors → message key (emoji dropped). */
 const WALL_TIER_KEYS: Array<[string, string]> = [
   ["Chai Supporter", "wallTier_chai"],
   ["District Supporter", "wallTier_district"],
@@ -83,9 +85,9 @@ function useWallText() {
     name: (n: string) => (n === "Anonymous" ? t("anonymous") : n === "Supporter" ? t("supporter") : n),
     tier: (label: string) => {
       const hit = WALL_TIER_KEYS.find(([en]) => label.endsWith(en));
-      if (!hit) return label;
-      const emoji = label.slice(0, label.length - hit[0].length).trim();
-      return emoji ? `${emoji} ${t(hit[1])}` : t(hit[1]);
+      // Unknown label: show it as sent, minus any leading emoji.
+      if (!hit) return label.replace(/^[^\p{L}\p{N}]+/u, "");
+      return t(hit[1]);
     },
     time: (s: string) => {
       if (s === "Today") return t("wallToday");
@@ -101,7 +103,7 @@ function useWallText() {
 function ContributorCard({ item }: { item: ContributorItem }) {
   const w = useWallText();
   return (
-    <Card as="li" tinted padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
+    <Card as="li" padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
       <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>{w.name(item.displayName)}</p>
       <div style={{ margin: "4px 0 6px", maxWidth: "100%", overflow: "hidden" }}>
         <Pill tone="support" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{w.tier(item.tierLabel)}</Pill>
@@ -125,7 +127,7 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
     (item.socialPlatform ? SOCIAL_ICONS[item.socialPlatform] : null) ?? (safeLink ? ExternalLink : null);
   const badgeKey = item.badgeLevel ? `badge_${item.badgeLevel}` : null;
   return (
-    <Card as="li" tinted padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
+    <Card as="li" padding={12} style={{ width: 170, minWidth: 170, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 14, lineHeight: 1.45, fontWeight: 600, flex: 1 }}>{item.name}</span>
         {SocialIcon && safeLink && (
@@ -135,7 +137,7 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
             rel="noopener noreferrer"
             title={safeLink}
             aria-label={t("wallProfile", { name: item.name })}
-            style={{ color: "var(--hue)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
+            style={{ color: "var(--ftp-text-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
           >
             <SocialIcon size={12} aria-hidden />
           </a>
@@ -143,7 +145,7 @@ function SubscriberCard({ item }: { item: SubscriberItem }) {
       </div>
       {item.badgeLevel && (
         <div style={{ marginTop: 4 }}>
-          <Pill tone="warn">{badgeKey && t.has(badgeKey) ? t(badgeKey) : item.badgeLevel}</Pill>
+          <Pill tone="neutral">{badgeKey && t.has(badgeKey) ? t(badgeKey) : item.badgeLevel}</Pill>
         </div>
       )}
       {item.monthsActive > 0 && (
@@ -173,7 +175,7 @@ const TEXT_LINK: React.CSSProperties = {
   minHeight: 44,
   fontSize: 14,
   fontWeight: 600,
-  color: "var(--hue-deep)",
+  color: "var(--ftp-brand)",
   textDecoration: "none",
 };
 
@@ -181,7 +183,7 @@ export default function ContributorWall() {
   const t = useTranslations("page_support");
   const locale = useLocale();
   const { number } = useFormat();
-  const num = (c: React.ReactNode) => <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>{c}</span>;
+  const num = (c: React.ReactNode) => <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{c}</span>;
 
   // Existing one-time contributors (from Contribution model)
   const { data, isLoading } = useQuery<ContributorsResponse>({
@@ -210,7 +212,7 @@ export default function ContributorWall() {
       {subscribers.length > 0 && (
         <section>
           <SectionHeader
-            emoji="🔁"
+            as="h3"
             title={
               <>
                 {t("wallActive")}
@@ -238,7 +240,7 @@ export default function ContributorWall() {
       {/* ── One-time contributions ── */}
       <section>
         <SectionHeader
-          emoji="🎁"
+          as="h3"
           title={subscribers.length > 0 ? t("wallOneTime") : t("wallContributions")}
           action={
             <>
@@ -261,7 +263,10 @@ export default function ContributorWall() {
             {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : contributors.length === 0 ? (
-          <EmptyState emoji="🎁" title={t("wallEmptyTitle")} body={t("wallEmptyBody")} />
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>
+            <span style={{ display: "block", fontWeight: 600, color: "var(--ftp-text)" }}>{t("wallEmptyTitle")}</span>
+            {t("wallEmptyBody")}
+          </p>
         ) : (
           <Strip label={subscribers.length > 0 ? t("wallOneTime") : t("wallContributions")}>
             {contributors.map((item, i) => (

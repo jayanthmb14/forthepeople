@@ -5,66 +5,50 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  /support — Design v4.1 (rose, the support colour)
+//  /support — Design v5 "calm": simple on purpose
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  The question it answers: "What does it cost to keep this free, and how
-//  can I help pay for it?"
+//  The owner asked for a simple support page: what support does, the plans,
+//  how to subscribe, and the supporters. So, top to bottom:
+//    1. Title + one line: what your money pays for.
+//    2. The five plans as simple cards (price, what you get, the checkout).
+//    3. "How to subscribe" in 3 numbered steps.
+//    4. Supporters: the All-India line (Founding Builder first), the wall,
+//       a link to everyone.
+//    5. Two closed disclosures, one tap away: "Where the money goes" (the
+//       admin-written percentages) and "Why this exists" (the admin-written
+//       founder bio — only when it passes bio-check.ts).
+//    6. One line of other ways to help.
 //
-//  This is a SERVER component. It reads the admin-editable bio / cost /
-//  help content from the DB (falls back to SUPPORT_DEFAULTS) and lays the
-//  page out on the docs/LAYOUT.md recipe inside <ModulePage> (full width on
-//  phones and tablets, 1320 px on laptop / PC):
-//    1. SiteHeader band
-//    2. The answer in one sentence (Explainer)
-//    3. Four emoji StatTiles — the ₹3.30 target, the monthly server cost,
-//       the data modules at full scale, ₹0 to citizens (these used to be
-//       split between a lone tile at the top and a second row further
-//       down; now they appear once)
-//    4. The supporter count and the international-payments note
-//    5. The tier cards (with the checkout) — the page's main list
-//    6. "The scale": the explanation, then two pictures side by side on
-//       tablet and up:
-//         • "Cost at scale": the monthly running cost for one district,
-//           one state and all of India as bars on one scale (the April
-//           2026 estimate);
-//         • "Where your money goes": 10 coins lit for the biggest share,
-//           with the same percentages as bars underneath
-//    7. Supporters, supporter quotes, the founder's note, other ways to
-//       help, and the closing call to action.
+//  Removed in v5: the crimson header band, the ₹3.30/day, ₹96K and "₹12 lakh
+//  a year" tiles and essays, the cost-at-scale and coin charts, the "Most
+//  popular" and "Royal Contributor" sales lines, the supporter-count banner
+//  and quotes (the wall already shows both), the repeated closing checkout,
+//  and the "International supporters … we'll arrange another way" note
+//  (the project takes no foreign money; the owner decides any wording).
 //
-//  The money flow lives entirely in <SupportCheckout /> (a client
-//  component). This page only decides WHERE each checkout sits and what
-//  tier data it receives — the props passed to SupportCheckout are the same
-//  as before the redesign (the tier `label` stays English because it is
-//  also the Razorpay description), so Razorpay behaviour is unchanged.
+//  The money flow lives entirely in <SupportCheckout /> and is unchanged: it
+//  gets exactly the same tier props as before (the English tier `label` is
+//  also the Razorpay description), and `?tier=&state=&district=` still opens
+//  the right form.
 //
-//  Text: "page_support" messages. The bio, cost rows and help items are
-//  admin-written content and are shown as stored.
-//
-//  Server → client rule: kit components are client components, so this
-//  file never passes a Lucide icon *component* as a prop to them
-//  (functions cannot cross that boundary). SiteHeader is not a client
-//  component, so it may take one.
-//
-//  Served at /<locale>/support through src/app/[locale]/support/page.tsx.
-//
-import { Suspense, Fragment } from "react";
+//  Colour: the page runs in the brand-blue hue (buttons, focus); the support
+//  rose appears only as the small plan chips.
+
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ChevronRight, ExternalLink, HeartHandshake } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import SupportCheckout from "@/components/support/SupportCheckout";
 import ContributorWallClient from "@/components/support/ContributorWallClient";
-import ContributorCountBanner from "@/components/support/ContributorCountBanner";
+import NationalSupporters from "@/components/support/NationalSupporters";
 import FeedbackModal from "@/components/common/FeedbackModal";
-import { Card, ModulePage, Pill, ProgressBar, Section, StatStrip, StatTile } from "@/components/district/ui";
-import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
-import SiteHeader from "@/components/site/SiteHeader";
-import { BarList } from "@/components/site/SiteVisuals";
+import { ModulePage, Section } from "@/components/district/ui";
+import PlainPageHeader from "@/components/site/PlainPageHeader";
 import { TIER_CONFIG, TIER_ORDER } from "@/lib/constants/razorpay-plans";
 import { getPlatformFacts } from "@/lib/platform-facts";
-import SupporterQuotes from "@/components/support/SupporterQuotes";
+import { bioIssues } from "@/components/support/bio-check";
 import styles from "./support.module.css";
 import { prisma } from "@/lib/db";
 import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem, type SupportPageContent } from "@/lib/support-defaults";
@@ -80,16 +64,15 @@ function renderBioText(text: string): React.ReactNode {
     const parts = para.split(/(\*\*[^*]+\*\*)/g);
     return (
       <p key={i} style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text)", margin: i === 0 ? 0 : "12px 0 0" }}>
-        {parts.map((seg, j) => {
-          if (seg.startsWith("**") && seg.endsWith("**")) {
-            return (
-              <strong key={j} style={{ fontWeight: 600 }}>
-                {seg.slice(2, -2)}
-              </strong>
-            );
-          }
-          return <Fragment key={j}>{seg}</Fragment>;
-        })}
+        {parts.map((seg, j) =>
+          seg.startsWith("**") && seg.endsWith("**") ? (
+            <strong key={j} style={{ fontWeight: 600 }}>
+              {seg.slice(2, -2)}
+            </strong>
+          ) : (
+            <span key={j}>{seg}</span>
+          ),
+        )}
       </p>
     );
   });
@@ -123,44 +106,29 @@ type Props = { params: Promise<{ locale?: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = (await params).locale ?? "en";
   const t = await getTranslations({ locale, namespace: "page_support" });
+  const nf = new Intl.NumberFormat(NUMBER_LOCALE);
   return {
     title: t("metaTitle"),
-    description: t("metaDescription", { total: FACTS.totalIndiaDistricts }),
+    description: t("metaDescription", { amount: `₹${nf.format(TIER_CONFIG.district.amount)}` }),
     alternates: languageAlternates("/support", locale),
     openGraph: { url: `${BASE_URL}/${locale}/support` },
   };
 }
 
-// Projected running costs at each scale (April 2026 estimate — see the
-// "The scale" block below). Whole rupees and US dollars a month; the year
-// figure is what the estimate states.
-const SCALE_COSTS: { key: "district" | "state" | "india"; emoji: string; monthly: number; yearly: number; usd: number }[] = [
-  { key: "district", emoji: "🏘️", monthly: 500, yearly: 6_000, usd: 6 },
-  { key: "state", emoji: "🗺️", monthly: 7_000, yearly: 84_000, usd: 85 },
-  { key: "india", emoji: "🌏", monthly: 96_000, yearly: 11_50_000, usd: 1_175 },
-];
-
-const INSTAGRAM_URL = "https://www.instagram.com/forthepeople_in/";
-
-/**
- * The help items are admin-editable and may store an emoji in `icon`. v4
- * shows it when it is a short emoji; otherwise it picks one from the link
- * itself. Anything unrecognised gets a hand-shake.
- */
-function helpEmojiFor(item: HelpItem): string {
-  const own = (item.icon ?? "").trim();
-  if (own && own.length <= 8 && !/[A-Za-z0-9]/.test(own)) return own;
-  const url = item.url.toLowerCase();
-  const label = item.label.toLowerCase();
-  if (label.includes("star")) return "⭐";
-  if (url.includes("github.com")) return "💻";
-  if (url.includes("twitter.com") || url.includes("x.com") || label.includes("share")) return "📣";
-  if (url.includes("/feedback")) return "📝";
-  return "🤝";
+/** A closed-by-default section: one tap to open. */
+function Disclosure({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className={styles.disclosure}>
+      <summary className={styles.summary}>
+        <span>{title}</span>
+        <ChevronDown size={18} aria-hidden className={styles.chevron} />
+      </summary>
+      <div style={{ padding: "0 16px 16px" }}>{children}</div>
+    </details>
+  );
 }
 
-/** Shared style for the small quiet text links on this page. */
-const QUIET_LINK: React.CSSProperties = {
+const TEXT_LINK: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 4,
@@ -168,7 +136,7 @@ const QUIET_LINK: React.CSSProperties = {
   fontSize: 14,
   lineHeight: 1.45,
   fontWeight: 600,
-  color: "var(--hue-deep)",
+  color: "var(--ftp-brand)",
   textDecoration: "none",
 };
 
@@ -177,119 +145,52 @@ export default async function SupportPage({ params }: Props) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "page_support" });
   const nf = new Intl.NumberFormat(NUMBER_LOCALE);
-  const fmt = (n: number) => nf.format(n);
-  const inr = (n: number) => `₹${fmt(n)}`;
-  const usd = (n: number) => `$${fmt(n)}`;
-  const b = (c: React.ReactNode) => <strong style={{ fontWeight: 700 }}>{c}</strong>;
+  const inr = (n: number) => `₹${nf.format(n)}`;
 
-  const { activeDistricts, activeStates, modulesPerDistrict, totalIndiaDistricts } = FACTS;
   const content = await loadSupportContent();
-  // "N districts × M modules" — derived from the registries, never typed by hand.
-  const totalModulesAtScale = totalIndiaDistricts * modulesPerDistrict;
-  // Values for the patron tier's text (same numbers razorpay-plans.ts uses).
-  const tierValues = { districts: fmt(totalIndiaDistricts), dashboards: fmt(totalModulesAtScale) };
-  const tierText = (key: string, part: "name" | "desc" | "hook", fallback: string) =>
-    t.has(`tier_${key}_${part}`) ? t(`tier_${key}_${part}`, tierValues) : fallback;
-  // The picture: the biggest slice of "Where your money goes".
-  const biggestCost = [...content.costBreakdown].filter((c) => c.pct > 0).sort((a, b2) => b2.pct - a.pct)[0] ?? null;
-  // Cost-at-scale picture: how many times one district's cost all of India is.
-  const scaleTimes = Math.round(SCALE_COSTS[2].monthly / SCALE_COSTS[0].monthly);
+  // The admin-written bio is shown only when it is safe (bio-check.ts).
+  const issues = bioIssues(content.bioText, FACTS);
+  if (issues.length > 0) {
+    console.warn(`[support] founder bio hidden until it is rewritten in the admin panel: ${issues.join("; ")}`);
+  }
+  const showBio = issues.length === 0;
+  const costRows = content.costBreakdown.filter((c) => c.pct > 0);
+  const tierValues = { districts: nf.format(FACTS.totalIndiaDistricts), dashboards: nf.format(FACTS.totalIndiaDistricts * FACTS.modulesPerDistrict) };
+
+  const steps = [
+    { title: t("how1Title"), body: t("how1Body") },
+    { title: t("how2Title"), body: t("how2Body") },
+    { title: t("how3Title"), body: t("how3Body") },
+  ];
 
   return (
-    <main className="ftp-hue-rose" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
+    <main className="ftp-hue-blue" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
       <ModulePage>
-        {/* ── Page header ─────────────────────────────────────────────── */}
-        <SiteHeader
-          emoji="💝"
-          icon={HeartHandshake}
-          chip={t("chip")}
-          title={t("title")}
-          description={t.rich("description", { total: fmt(totalIndiaDistricts), b })}
-          backHref={`/${locale}`}
-        />
+        {/* ── 1. What support does ─────────────────────────────────── */}
+        <PlainPageHeader title={t("title")} description={t("lead")} backHref={`/${locale}`} />
 
-        {/* ── The answer in one sentence + the numbers (once) ───────── */}
-        <Explainer emoji="🪙">{t.rich("simple", { amount: inr(TIER_CONFIG.district.amount), b })}</Explainer>
-        <StatStrip cols={4}>
-          <StatTile
-            emoji="🪙"
-            label={t("targetLabel")}
-            value="₹3.30"
-            unit={t("targetUnit")}
-            countUp={false}
-            sub={t("targetSub", { total: fmt(totalIndiaDistricts), active: activeDistricts })}
-          />
-          <StatTile emoji="🖥️" label={t("tileServer")} value={t("tileServerValue")} sub={t("tileServerSub")} countUp={false} />
-          <StatTile emoji="🧩" label={t("tileModules")} value={fmt(totalModulesAtScale)} sub={t("tileModulesSub", { n: fmt(totalIndiaDistricts) })} />
-          <StatTile emoji="🆓" label={t("tileCitizens")} value="₹0" countUp={false} />
-        </StatStrip>
-
-        {/* ── International note ─────────────────────────────────────── */}
-        <Card padding={16} style={{ display: "flex", gap: 12, alignItems: "flex-start", margin: "16px 0" }}>
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-            🌍
-          </span>
-          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, lineHeight: 1.6 }}>
-            {t.rich("intlNote", {
-              link: (c) => (
-                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)", fontWeight: 600, textDecoration: "none" }}>
-                  {c}
-                </a>
-              ),
-            })}
-          </p>
-        </Card>
-
-        {/* ── Contributor count (link to the leaderboard) ────────────── */}
-        <ContributorCountBanner />
-
-        {/* ── Tier cards ─────────────────────────────────────────────── */}
-        <Section title={t("tiersTitle")} id="tiers" emoji="🎯">
+        {/* ── 2. The plans ─────────────────────────────────────────── */}
+        <Section title={t("tiersTitle")} id="tiers">
           <div className={styles.tierGrid}>
             {TIER_ORDER.map((key) => {
               const tier = TIER_CONFIG[key];
               const isCustom = key === "custom";
-              const shownName = tierText(key, "name", tier.name);
+              const name = t.has(`tier_${key}_name`) ? t(`tier_${key}_name`) : tier.name;
+              const desc = t.has(`tier_${key}_desc`) ? t(`tier_${key}_desc`, tierValues) : tier.description;
               return (
-                <Card
-                  key={key}
-                  as="article"
-                  tinted={Boolean(tier.featured)}
-                  padding={16}
-                  aria-label={shownName}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    // The featured tier gets the hue border and wash, the
-                    // open-amount tier a dashed border.
-                    borderColor: tier.featured ? "var(--hue)" : "var(--ftp-border)",
-                    borderStyle: isCustom ? "dashed" : "solid",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 19, borderRadius: 11 }}>
-                      {tier.emoji}
-                    </span>
-                    {tier.featured && <Pill tone="support">{t("pillPopular")}</Pill>}
-                    <Pill tone="neutral">{tier.isRecurring ? t("pillMonthly") : t("pillOneTime")}</Pill>
-                  </div>
-                  <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: 1.35, fontWeight: 650, color: "var(--ftp-text)" }}>
-                    {shownName}
-                  </h3>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-                    <span className="ftp-bignum" style={{ fontSize: 30, lineHeight: "34px", color: "var(--hue-deep)" }}>
+                <article key={key} aria-label={name} className={styles.tierCard}>
+                  <span className={styles.planChip}>{tier.isRecurring ? t("pillMonthly") : t("pillOneTime")}</span>
+                  <h3 className={styles.tierName}>{name}</h3>
+                  <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                    <span className="ftp-num" style={{ fontSize: 28, lineHeight: "34px", fontWeight: 700, color: "var(--ftp-text)" }}>
                       {inr(tier.amount)}
                     </span>
-                    <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
-                      {tier.isRecurring ? t("perMonth") : isCustom ? t("suggested") : ""}
+                    <span style={{ fontSize: 14, color: "var(--ftp-text-2)" }}>
+                      {tier.isRecurring ? t("priceMonthly") : t("priceOnce", { min: inr(tier.minAmount) })}
                     </span>
-                  </div>
-                  <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", margin: 0 }}>
-                    {tier.isRecurring ? t("noteMonthly") : isCustom ? t("noteCustom") : t("noteOneTime")}
                   </p>
-                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{tierText(key, "desc", tier.description)}</p>
-                  <p className="ftp-body" style={{ color: "var(--hue-deep)", fontStyle: "italic" }}>{tierText(key, "hook", tier.hookLine)}</p>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text)" }}>{desc}</p>
+                  {tier.isRecurring && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("noteMonthly")}</p>}
                   <div style={{ marginTop: "auto", paddingTop: 8 }}>
                     <Suspense>
                       <SupportCheckout
@@ -311,219 +212,107 @@ export default async function SupportPage({ params }: Props) {
                       />
                     </Suspense>
                   </div>
-                </Card>
+                </article>
               );
             })}
           </div>
         </Section>
 
-        {/* ── The scale ──────────────────────────────────────────────── */}
-        <Section title={t("scaleTitle")} emoji="📈">
-          <Card padding={24}>
-            <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>{t("scaleHeadline")}</p>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-              {t.rich("scaleMath", {
-                districts: fmt(totalIndiaDistricts),
-                modules: modulesPerDistrict,
-                total: fmt(totalModulesAtScale),
-                n: (c) => <span className="ftp-num">{c}</span>,
-                hl: (c) => <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{c}</span>,
-              })}
-            </p>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-              {t.rich("scaleBody", {
-                active: activeDistricts,
-                states: activeStates,
-                total: fmt(totalIndiaDistricts),
-                b: (c) => <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{c}</span>,
-              })}
-            </p>
-          </Card>
-
-          {/* The two pictures, side by side from tablet up */}
-          <div style={{ display: "grid", gap: 16, alignItems: "start", marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
-          {/* Picture 1 — cost at scale: the three scales on one bar scale */}
-          <ChartCard
-            title={t("costScaleChart")}
-            emoji="💸"
-            units={t("costScaleUnits")}
-            simple={t.rich("costScaleSimple", { times: fmt(scaleTimes), b: (c) => <strong>{c}</strong> })}
-            source={{ label: t("costScaleSource") }}
-            table={SCALE_COSTS.map((c) => ({
-              label: t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) }),
-              value: `${t("perMonthAmount", { amount: inr(c.monthly) })}; ${t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}`,
-            }))}
-          >
-            <BarList
-              height={14}
-              rows={SCALE_COSTS.map((c) => ({
-                key: c.key,
-                emoji: c.emoji,
-                label: (
-                  <>
-                    <span style={{ fontWeight: 600 }}>{t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) })}</span>
-                    <span className="ftp-num" style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
-                      {t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}
-                    </span>
-                  </>
-                ),
-                value: c.monthly,
-                display: t("perMonthAmount", { amount: inr(c.monthly) }),
-              }))}
-            />
-          </ChartCard>
-
-          {/* Picture 2 — where your money goes: 10 coins lit for the biggest share, the bars below */}
-          <ChartCard
-            title={t("moneyTitle")}
-            emoji="🧾"
-            simple={
-              biggestCost
-                ? t.rich("moneySimple", {
-                    n: Math.round(biggestCost.pct / 10),
-                    label: biggestCost.label,
-                    b: (c) => <strong>{c}</strong>,
-                  })
-                : undefined
-            }
-            source={{ label: t("costScaleSource") }}
-            table={content.costBreakdown.map((item) => ({ label: item.label, value: `${item.pct}%` }))}
-          >
-            {biggestCost && (
-              <div style={{ marginBottom: 16 }}>
-                <Pictogram
-                  filled={biggestCost.pct / 10}
-                  emoji="💰"
-                  label={t("moneyPicto", { n: Math.round(biggestCost.pct / 10), label: biggestCost.label })}
-                />
-              </div>
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* The admin-editable `color` per row is ignored: bars use the page hue. */}
-              {content.costBreakdown.map((item) => (
-                <ProgressBar key={item.label} label={item.label} pct={item.pct} />
-              ))}
-            </div>
-          </ChartCard>
-          </div>
+        {/* ── 3. How to subscribe ──────────────────────────────────── */}
+        <Section title={t("howTitle")} id="how">
+          <ol className={styles.steps}>
+            {steps.map((s, i) => (
+              <li key={i} className={styles.step}>
+                <span aria-hidden className={`ftp-num ${styles.stepNum}`}>{i + 1}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 15, lineHeight: 1.45, fontWeight: 600, color: "var(--ftp-text)" }}>{s.title}</span>
+                  <span style={{ display: "block", marginTop: 2, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{s.body}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>
+            {t.rich("howNote", {
+              link: (c) => (
+                <a href="mailto:support@forthepeople.in" style={{ color: "var(--ftp-brand)", fontWeight: 600, textDecoration: "none" }}>
+                  {c}
+                </a>
+              ),
+            })}
+          </p>
         </Section>
 
-        {/* ── Supporters (subscribers + one-time) ────────────────────── */}
-        <ContributorWallClient />
-        <div style={{ textAlign: "center", marginTop: 4 }}>
-          <Link href={`/${locale}/contributors`} style={QUIET_LINK}>
+        {/* ── 4. Supporters ────────────────────────────────────────── */}
+        <Section title={t("supportersTitle")} id="supporters">
+          <NationalSupporters style={{ marginBottom: 8 }} />
+          <ContributorWallClient />
+          <Link href={`/${locale}/contributors`} style={TEXT_LINK}>
             {t("leaderboardLink")}
           </Link>
+        </Section>
+
+        {/* ── 5. One tap away: money and the founder's note ────────── */}
+        <div style={{ display: "grid", gap: 12, marginTop: 28 }}>
+          {costRows.length > 0 && (
+            <Disclosure title={t("moneyTitle")}>
+              <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("moneyNote")}</p>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+                {/* Admin-written labels, shown as stored. */}
+                {costRows.map((item) => (
+                  <li key={item.label} lang={locale === "en" ? undefined : "en"}>
+                    <span style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, lineHeight: 1.5, color: "var(--ftp-text)" }}>
+                      <span>{item.label}</span>
+                      <span className="ftp-num">{item.pct}%</span>
+                    </span>
+                    <span aria-hidden style={{ display: "block", height: 6, borderRadius: 999, background: "var(--ftp-surface-2)", marginTop: 4, overflow: "hidden" }}>
+                      <span style={{ display: "block", height: "100%", width: `${Math.min(100, item.pct)}%`, background: "var(--ftp-brand)", borderRadius: 999 }} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Disclosure>
+          )}
+
+          {showBio && (
+            <Disclosure title={t("bioTitle")}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={content.photoUrl}
+                  alt={t("photoAlt", { name: content.bioName })}
+                  width={56}
+                  height={56}
+                  style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--ftp-border)", flexShrink: 0 }}
+                />
+                <div lang={locale === "en" ? undefined : "en"} style={{ flex: 1, minWidth: 220 }}>
+                  <p style={{ margin: 0, fontSize: 16, lineHeight: 1.4, fontWeight: 600, color: "var(--ftp-text)" }}>{content.bioName}</p>
+                  <p style={{ margin: "2px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{content.bioSubtitle}</p>
+                  {renderBioText(content.bioText)}
+                </div>
+              </div>
+            </Disclosure>
+          )}
         </div>
 
-        {/* ── Supporter quotes (renders nothing when there are none) ─── */}
-        <SupporterQuotes />
-
-        {/* ── Personal message (bio, admin-written) ──────────────────── */}
-        <Section title={t("bioTitle")} emoji="👋">
-          <Card padding={24}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={content.photoUrl}
-                alt={t("photoAlt", { name: content.bioName })}
-                width={64}
-                height={64}
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "2px solid var(--hue-tint)",
-                  boxShadow: "0 0 0 1px color-mix(in srgb, var(--hue) 30%, transparent)",
-                  flexShrink: 0,
-                }}
-              />
-              <div lang={locale === "en" ? undefined : "en"} style={{ flex: 1, minWidth: 220 }}>
-                <h3 className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>{content.bioName}</h3>
-                <p className="ftp-body" style={{ color: "var(--hue-deep)", marginBottom: 16 }}>{content.bioSubtitle}</p>
-                {renderBioText(content.bioText)}
-              </div>
-            </div>
-          </Card>
-        </Section>
-
-
-        {/* ── Other ways to help (admin-written items) ───────────────── */}
-        <Section title={t("helpTitle")} emoji="🙌">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {content.helpItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.url}
-                target={item.external ? "_blank" : undefined}
-                rel={item.external ? "noopener noreferrer" : undefined}
-                className="ftp-card-link"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  minHeight: 56,
-                  padding: "10px 16px",
-                  background: "var(--ftp-surface)",
-                  border: "1px solid var(--ftp-border)",
-                  borderRadius: "var(--ftp-radius-card)",
-                  boxShadow: "var(--ftp-shadow-1)",
-                  textDecoration: "none",
-                  color: "inherit",
-                }}
-              >
-                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
-                  {helpEmojiFor(item)}
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span className="ftp-title" style={{ display: "block", fontWeight: 600 }}>{item.label}</span>
-                  <span className="ftp-body" style={{ display: "block", color: "var(--ftp-text-2)" }}>{item.desc}</span>
-                </span>
-                <span aria-hidden style={{ color: "var(--hue)", display: "flex", flexShrink: 0 }}>
-                  {item.external ? <ExternalLink size={16} /> : <ChevronRight size={16} />}
-                </span>
-              </a>
-            ))}
-            <Card padding={16} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
-                🐞
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="ftp-title" style={{ display: "block", fontWeight: 600 }}>{t("reportTitle")}</span>
-                <span className="ftp-body" style={{ display: "block", color: "var(--ftp-text-2)" }}>
-                  {t("reportBody")} <FeedbackModal label={t("reportLink")} />
-                </span>
-              </span>
-            </Card>
-          </div>
-        </Section>
-
-        {/* ── Closing call to action ─────────────────────────────────── */}
-        <Card tinted padding={24} style={{ marginTop: 32, textAlign: "center" }}>
-          <span className="ftp-emoji" aria-hidden style={{ display: "block", fontSize: 36, marginBottom: 6 }}>🪙</span>
-          <h2 className="ftp-h2">{t("ctaTitle", { amount: inr(TIER_CONFIG.custom.amount) })}</h2>
-          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", maxWidth: 560, margin: "8px auto 20px" }}>
-            {t("ctaBody", { n: Math.max(0, modulesPerDistrict - 3) })}
-          </p>
-          <div style={{ display: "inline-block", width: "100%", maxWidth: 280, textAlign: "start" }}>
-            <Suspense>
-              <SupportCheckout
-                tier={{
-                  emoji: TIER_CONFIG.custom.emoji,
-                  label: TIER_CONFIG.custom.name,
-                  defaultAmount: TIER_CONFIG.custom.amount,
-                  minAmount: TIER_CONFIG.custom.minAmount,
-                  maxAmount: TIER_CONFIG.custom.maxAmount,
-                  step: TIER_CONFIG.custom.step,
-                  accent: TIER_CONFIG.district.accent,
-                  tierKey: "custom",
-                  hookLine: TIER_CONFIG.custom.hookLine,
-                }}
-              />
-            </Suspense>
-          </div>
-        </Card>
+        {/* ── 6. Other ways to help — one quiet line ───────────────── */}
+        <nav aria-label={t("helpTitle")} style={{ marginTop: 28, display: "flex", alignItems: "center", gap: "0 16px", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ftp-text-2)" }}>{t("helpTitle")}</span>
+          {content.helpItems.map((item) => (
+            <a
+              key={item.label}
+              href={item.url}
+              title={item.desc}
+              target={item.external ? "_blank" : undefined}
+              rel={item.external ? "noopener noreferrer" : undefined}
+              lang={locale === "en" ? undefined : "en"}
+              style={TEXT_LINK}
+            >
+              {item.label}
+              {item.external && <ExternalLink size={13} aria-hidden />}
+            </a>
+          ))}
+          <FeedbackModal label={t("reportLink")} />
+        </nav>
       </ModulePage>
     </main>
   );
