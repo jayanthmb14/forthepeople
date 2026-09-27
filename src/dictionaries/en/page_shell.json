@@ -25,6 +25,7 @@
     "budget": "Budget",
     "budgetValue": "{amount} ({fy})",
     "nextVote": "Next election",
+    "nextBigVote": "Next Lok Sabha or Assembly election",
     "lokSabha": "Lok Sabha",
     "assembly": "Assembly",
     "localBody": "Local body",
