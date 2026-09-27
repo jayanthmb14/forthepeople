@@ -42,7 +42,7 @@
   "nutrientChip": "{nutrient}: {level}",
   "soilSub": "{date} ರಂದು ಮಣ್ಣು ಪರೀಕ್ಷಿಸಲಾಗಿದೆ",
   "soilSubNoDate": "ಪರೀಕ್ಷೆಯ ದಿನಾಂಕ ನೀಡಿಲ್ಲ",
-  "soilSentence": "{village} ನ ಮಣ್ಣು <b>{band, select, acidic {ಆಮ್ಲೀಯ} alkaline {ಕ್ಷಾರೀಯ} other {ತಟಸ್ಥ}}</b> (pH {ph}).",
+  "soilSentence": "{village}: ಮಣ್ಣು <b>{band, select, acidic {ಆಮ್ಲೀಯ} alkaline {ಕ್ಷಾರೀಯ} other {ತಟಸ್ಥ}}</b> (pH {ph}).",
   "nutrientsBlock": "ಮಣ್ಣಿನಲ್ಲಿ ಏನಿದೆ",
   "organicCarbon": "ಸಾವಯವ ಇಂಗಾಲ",
   "recommendation": "ಶಿಫಾರಸು",
