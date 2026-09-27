@@ -181,6 +181,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
         level: s.level ?? "",
         eligibility: s.eligibility ?? "",
         benefit_amount_inr: s.amount ?? "",
+        benefit_unit: amountBasis(s.name) ?? "",
         beneficiaries: s.beneficiaryCount ?? "",
         apply_url: s.applyUrl ?? "",
         source: s.source ?? "",
