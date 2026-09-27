@@ -13,7 +13,28 @@
   --sup-gold-soft: #f4de94;
   --sup-gold-tint: #fdf6dc;
   --sup-gold-deep: #6b4f08;
+  /* Month badges (bronze → platinum) as small metal medals. */
+  --sup-bronze: #b87333;
+  --sup-bronze-soft: #f0c9a4;
+  --sup-silver: #9ca3af;
+  --sup-silver-soft: #e5e7eb;
+  --sup-platinum: #7c93ad;
+  --sup-platinum-soft: #dfe7f1;
 }
+
+/* A month badge as a tiny medal before its word ("Bronze", "Silver" …). */
+.medal {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, var(--sup-silver-soft), var(--sup-silver));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ftp-text) 12%, transparent);
+}
+.medal[data-level="bronze"] { background: linear-gradient(145deg, var(--sup-bronze-soft), var(--sup-bronze)); }
+.medal[data-level="gold"] { background: linear-gradient(145deg, var(--sup-gold-soft), var(--sup-gold)); }
+.medal[data-level="platinum"] { background: linear-gradient(145deg, var(--sup-platinum-soft), var(--sup-platinum)); }
 
 /* ── Plan illustration tile ───────────────────────────────────────────── */
 .art {

@@ -31,6 +31,10 @@
 //  "every 5 to 30 minutes from official government portals"), the growth
 //  chart and the closing call-to-action card (the header link is enough).
 //  All queries, filters and pagination behave exactly as before.
+//  v5.1 ("Warm Calm"): each supporter card, its avatar and the detail sheet
+//  wear the supporter's plan colour — one-time rose, District blue, State
+//  teal, All-India violet, Founding Builder gold — the same colours as the
+//  plan cards on /support (src/components/support/tier-look.ts).
 //  Text: "page_site-contributors" messages; supporter badges from
 //  "page_site.tier". Names of people, districts and states stay as stored.
 //
@@ -60,6 +64,10 @@ import PlainPageHeader from "@/components/site/PlainPageHeader";
 import TapCard from "@/components/site/TapCard";
 import NationalSupporters from "@/components/support/NationalSupporters";
 import { isFoundingBuilder, placementLevel } from "@/components/support/placement";
+import SupporterAvatar from "@/components/support/SupporterAvatar";
+import { supporterTierKey, tierHueClass } from "@/components/support/tier-look";
+import { publicName } from "@/components/support/public-name";
+import look from "@/components/support/look.module.css";
 import { tierLabel } from "@/components/site/tier-label";
 import { useFormat } from "@/i18n/client";
 
@@ -77,6 +85,8 @@ interface Contributor {
   createdAt: string;
   districtName?: string | null;
   stateName?: string | null;
+  /** Set here: the stored name is not shown (anonymous, or contact details). */
+  hidden?: boolean;
 }
 
 interface DistrictRanking {
@@ -99,6 +109,19 @@ interface OpenEntry {
 const FILTERS = ["all", "patron", "state", "district", "founder", "one-time"] as const;
 
 type Tr = (key: string, values?: Record<string, string | number>) => string;
+
+/**
+ * Names safe to show: "Anonymous" and any phone number or e-mail stored as a
+ * name become the translated "Anonymous" / "Supporter" (public-name.ts).
+ * /api/data/contributors does not mask contact details yet.
+ */
+function maskNames(list: Contributor[], tsup: Tr): Contributor[] {
+  return list.map((c) => {
+    const shown = publicName(c.name);
+    if (shown === c.name) return c;
+    return { ...c, name: shown ?? (c.name === "Anonymous" ? tsup("anonymous") : tsup("supporter")), hidden: !shown };
+  });
+}
 
 /**
  * The badge line under a name. Founder- and patron-level gifts are labelled
@@ -136,30 +159,9 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-/** Round initials avatar in the hue. */
-function Initials({ name, size = 38 }: { name: string; size?: number }) {
-  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  return (
-    <span
-      aria-hidden
-      className="ftp-display"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: "var(--hue-tint)",
-        color: "var(--hue-deep)",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: Math.round(size * 0.37),
-        fontWeight: 650,
-        flexShrink: 0,
-      }}
-    >
-      {initials}
-    </span>
-  );
+/** Round initials avatar in the supporter's plan colour (gold ring for the Founding Builder). */
+function Initials({ c, size = 40 }: { c: Contributor; size?: number }) {
+  return <SupporterAvatar name={c.name} tier={supporterTierKey(c)} size={size} anonymous={!!c.hidden} />;
 }
 
 /** One supporter as a tap card: rank, initials, name, badge line. Opens the detail sheet. */
@@ -183,19 +185,20 @@ function ContributorCard({
   const { number } = useFormat();
   const badgeKey = c.badgeLevel ? `badge_${c.badgeLevel}` : null;
 
+  const tier = supporterTierKey(c);
   return (
-    <li style={{ listStyle: "none", minWidth: 0 }}>
-      <TapCard onClick={onOpen} label={t("openDetails", { name: c.name })} padding={12}>
+    <li style={{ listStyle: "none", minWidth: 0 }} className={`${tierHueClass(tier)} ${look.metal}`}>
+      <TapCard onClick={onOpen} label={t("openDetails", { name: c.name })} padding={12} tinted>
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {rank !== undefined && <RankBadge rank={rank} />}
-          <Initials name={c.name} />
+          <Initials c={c} />
           <span style={{ minWidth: 0, flex: 1, display: "block" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span className="ftp-title" style={{ fontSize: 14, lineHeight: 1.45, fontWeight: 600, overflowWrap: "anywhere" }}>{c.name}</span>
               {extra}
             </span>
             <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-              <span>{supporterLabel(ts, tsup, c)}</span>
+              <span style={{ color: tier === "founder" ? "var(--sup-gold-deep)" : "var(--hue-deep)", fontWeight: 600 }}>{supporterLabel(ts, tsup, c)}</span>
               {showAmount && c.amount && (
                 <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{number(c.amount)}</span>
               )}
@@ -273,9 +276,9 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
     staleTime: 120_000,
   });
 
-  const leaders = useMemo(() => leaderboard?.contributors ?? [], [leaderboard]);
-  const subscribers = useMemo(() => allData?.subscribers ?? [], [allData]);
-  const oneTimers = useMemo(() => allData?.oneTime ?? [], [allData]);
+  const leaders = useMemo(() => maskNames(leaderboard?.contributors ?? [], tsup), [leaderboard, tsup]);
+  const subscribers = useMemo(() => maskNames(allData?.subscribers ?? [], tsup), [allData, tsup]);
+  const oneTimers = useMemo(() => maskNames(allData?.oneTime ?? [], tsup), [allData, tsup]);
   const subscribersTotal = allData?.subscribersTotal ?? subscribers.length;
   const oneTimeTotal = allData?.oneTimeTotal ?? oneTimers.length;
   const rankings = rankingsData?.rankings ?? [];
@@ -577,8 +580,8 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
       <DetailSheet
         open={!!oc}
         onClose={() => setOpenEntry(null)}
-        hueClassName="ftp-hue-blue"
-        media={oc ? <Initials name={oc.name} size={48} /> : undefined}
+        hueClassName={oc ? `${tierHueClass(supporterTierKey(oc))} ${look.metal}` : "ftp-hue-blue"}
+        media={oc ? <Initials c={oc} size={48} /> : undefined}
         title={oc?.name ?? ""}
         subtitle={oc ? supporterLabel(ts, tsup, oc) : undefined}
         footer={

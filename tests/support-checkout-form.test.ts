@@ -3,7 +3,8 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * The checkout popup's rules (src/components/support/checkout-form.ts) and
- * the plan colours (src/components/support/tier-look.ts).
+ * the plan colours (src/components/support/tier-look.ts) and the name guard
+ * (src/components/support/public-name.ts).
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -15,6 +16,7 @@ import {
   type CheckoutFields,
 } from "@/components/support/checkout-form";
 import { initialsOf, supporterTierKey, tierHueClass, tierKeyFromWallLabel, tierKeyOf } from "@/components/support/tier-look";
+import { looksLikeContactInfo, publicName } from "@/components/support/public-name";
 
 const blank: CheckoutFields = {
   name: "",
@@ -125,5 +127,22 @@ describe("tier-look", () => {
     expect(initialsOf("Micah")).toBe("M");
     expect(initialsOf("ರವಿ ಕುಮಾರ್")).toBe("ರಕ");
     expect(initialsOf("  ")).toBe("");
+  });
+});
+
+describe("publicName", () => {
+  it("never shows a phone number or e-mail stored as a name", () => {
+    expect(publicName("+918758997204")).toBeNull();
+    expect(publicName("98765 43210")).toBeNull();
+    expect(publicName("asha@example.org")).toBeNull();
+    expect(looksLikeContactInfo("Call 9876543210")).toBe(true);
+  });
+  it("hides placeholders and keeps real names, Indic too", () => {
+    expect(publicName("Anonymous")).toBeNull();
+    expect(publicName("Supporter")).toBeNull();
+    expect(publicName("X")).toBeNull();
+    expect(publicName(" Asha Rao ")).toBe("Asha Rao");
+    expect(publicName("ರವಿ")).toBe("ರವಿ");
+    expect(publicName("SML F.")).toBe("SML F.");
   });
 });
