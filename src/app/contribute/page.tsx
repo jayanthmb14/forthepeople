@@ -7,24 +7,34 @@
 "use client";
 
 // ═══════════════════════════════════════════════════════════════════════
-//  /contribute — ways to help + an in-page feedback sheet
+//  /contribute — ways to help + the feedback sheet
 //
-//  Design v4 "Rang": SiteHeader band in green, one card per way to help,
-//  each with its own emoji and hue, kit Chips for the feedback type, and a
-//  primary button in the page hue. The picture: the most-requested
-//  districts (citizens' votes, from /api/district-request — the same list
-//  the vote page uses), shown only when there are votes.
+//  The question it answers: "How can I help, today, in five minutes?"
+//
+//  Design v4.1 (green), docs/LAYOUT.md recipe inside <ModulePage> (full
+//  width on phones and tablets, 1320 px on laptop / PC):
+//    1. SiteHeader band
+//    2. The answer in one sentence (Explainer)
+//    3. One card per way to help (.ftp-grid: 1 / 2 / 3 across), each with
+//       its own emoji and hue. The feedback actions open the shared
+//       DetailSheet (a bottom sheet on phones and tablets, a right-hand
+//       panel on laptop / PC) with the form inside; the Send button sits in
+//       the sheet's footer so it is always in reach.
+//    4. The picture — the most-requested districts (citizens' votes, from
+//       /api/district-request, the same list the vote page uses), shown
+//       only when there are votes — beside the open-source card.
 //  The feedback request body and the success behaviour are unchanged.
 //  Text: "page_contribute" messages. Metadata lives in the [locale] route
 //  file (this is a client component).
 // ═══════════════════════════════════════════════════════════════════════
-import { useState } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, HeartHandshake, X } from "lucide-react";
-import { Card, Chips } from "@/components/district/ui";
-import { ChartCard } from "@/components/district/visuals";
+import { ExternalLink, HeartHandshake } from "lucide-react";
+import { Card, Chips, ModulePage } from "@/components/district/ui";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { DetailSheet } from "@/components/district/DetailSheet";
 import SiteHeader from "@/components/site/SiteHeader";
 import { BarList } from "@/components/site/SiteVisuals";
 import type { Hue } from "@/lib/design/hues";
@@ -43,6 +53,7 @@ const LIVE_KEYS = new Set(
 
 // ── Shared field styles (tokens only) ────────────────────────────────
 const FIELD: React.CSSProperties = {
+  width: "100%",
   minHeight: 44,
   padding: "10px 12px",
   border: "1px solid var(--ftp-border)",
@@ -83,16 +94,22 @@ const ACTION: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+/**
+ * The feedback form inside the DetailSheet. The sheet's footer holds the
+ * submit button (it points at this form through `form={formId}`).
+ */
 function FeedbackForm({
+  formId,
   defaultType,
   defaultSubject,
   onSuccess,
-  onClose,
+  onSubmitting,
 }: {
+  formId: string;
   defaultType: string;
   defaultSubject: string;
   onSuccess: () => void;
-  onClose: () => void;
+  onSubmitting: (busy: boolean) => void;
 }) {
   const t = useTranslations("page_contribute");
   const [type, setType] = useState(defaultType);
@@ -100,12 +117,11 @@ function FeedbackForm({
   const [message, setMessage] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
+    onSubmitting(true);
     setError("");
     try {
       const res = await fetch("/api/feedback", {
@@ -121,131 +137,74 @@ function FeedbackForm({
     } catch {
       setError(t("errorNetwork"));
     }
-    setSubmitting(false);
+    onSubmitting(false);
   }
 
   return (
-    <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        // Scrim behind the sheet (a neutral dim, not a brand colour).
-        background: "rgba(0, 0, 0, 0.45)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="contribute-feedback-title"
-        className="ftp-hue-green"
-        style={{
-          background: "var(--ftp-surface)",
-          color: "var(--ftp-text)",
-          border: "1px solid var(--ftp-border)",
-          borderBottom: "none",
-          borderRadius: "22px 22px 0 0",
-          width: "100%", maxWidth: 520,
-          padding: "16px 20px 32px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-      >
-        <div aria-hidden style={{ width: 36, height: 4, background: "var(--ftp-border-strong)", borderRadius: "var(--ftp-radius-pill)", margin: "0 auto 16px" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 id="contribute-feedback-title" className="ftp-display" style={{ margin: 0, fontSize: 20, lineHeight: 1.35, fontWeight: 650, display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>💬</span>
-            {t("sheetTitle")}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("closeAria")}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ftp-text-2)", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", marginRight: -12 }}
-          >
-            <X size={18} aria-hidden />
-          </button>
-        </div>
+    <form id={formId} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <Chips
+        label={t("typeLabel")}
+        items={FEEDBACK_TYPES.map((value) => ({ value, label: t(`type_${value}`) }))}
+        value={type}
+        onChange={setType}
+      />
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Chips
-            label={t("typeLabel")}
-            items={FEEDBACK_TYPES.map((value) => ({ value, label: t(`type_${value}`) }))}
-            value={type}
-            onChange={setType}
-          />
+      <input
+        required
+        maxLength={200}
+        placeholder={t("subjectPlaceholder")}
+        aria-label={t("subjectAria")}
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+        style={FIELD}
+      />
 
+      <textarea
+        required
+        maxLength={2000}
+        placeholder={t("messagePlaceholder")}
+        aria-label={t("messageAria")}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={5}
+        style={{ ...FIELD, resize: "vertical" }}
+      />
+
+      {/* Two columns on wider sheets, stacked on phones */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 180px" }}>
+          <label htmlFor={`${formId}-name`} style={FIELD_LABEL}>{t("nameLabel")}</label>
           <input
-            required maxLength={200}
-            placeholder={t("subjectPlaceholder")}
-            aria-label={t("subjectAria")}
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            id={`${formId}-name`}
+            maxLength={100}
+            placeholder={t("namePlaceholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             style={FIELD}
           />
-
-          <textarea
-            required maxLength={2000}
-            placeholder={t("messagePlaceholder")}
-            aria-label={t("messageAria")}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={4}
-            style={{ ...FIELD, resize: "vertical" }}
+        </div>
+        <div style={{ flex: "1 1 180px" }}>
+          <label htmlFor={`${formId}-email`} style={FIELD_LABEL}>{t("emailLabel")}</label>
+          <input
+            id={`${formId}-email`}
+            type="email"
+            maxLength={200}
+            placeholder={t("emailPlaceholder")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={FIELD}
           />
-
-          {/* Two columns on wider sheets, stacked on phones */}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 180px" }}>
-              <label htmlFor="ct-name" style={FIELD_LABEL}>{t("nameLabel")}</label>
-              <input
-                id="ct-name"
-                maxLength={100} placeholder={t("namePlaceholder")}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{ ...FIELD, width: "100%" }}
-              />
-            </div>
-            <div style={{ flex: "1 1 180px" }}>
-              <label htmlFor="ct-email" style={FIELD_LABEL}>{t("emailLabel")}</label>
-              <input
-                id="ct-email"
-                type="email" maxLength={200} placeholder={t("emailPlaceholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ ...FIELD, width: "100%" }}
-              />
-            </div>
-          </div>
-
-          {name && email ? (
-            <p style={{ ...HINT, color: "var(--ftp-live-text)", fontWeight: 600 }}>{t("hintBoth")}</p>
-          ) : !email ? (
-            <p style={HINT}>{t("hintNoEmail")}</p>
-          ) : null}
-
-          {error && <p role="alert" style={{ ...HINT, fontSize: 13, color: "var(--ftp-danger)" }}>{error}</p>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="ftp-btn ftp-btn-primary"
-            style={{
-              minHeight: 48,
-              color: "#fff",
-              border: "1px solid var(--hue)",
-              borderRadius: "var(--ftp-radius-tile)",
-              fontSize: 15, fontWeight: 600,
-              fontFamily: "inherit",
-              cursor: submitting ? "default" : "pointer",
-              opacity: submitting ? 0.6 : 1,
-            }}
-          >
-            {submitting ? t("sending") : t("send")}
-          </button>
-        </form>
+        </div>
       </div>
-    </div>
+
+      {name && email ? (
+        <p style={{ ...HINT, color: "var(--ftp-live-text)", fontWeight: 600 }}>{t("hintBoth")}</p>
+      ) : !email ? (
+        <p style={HINT}>{t("hintNoEmail")}</p>
+      ) : null}
+
+      {error && <p role="alert" style={{ ...HINT, fontSize: 13, color: "var(--ftp-danger)" }}>{error}</p>}
+    </form>
   );
 }
 
@@ -290,7 +249,7 @@ function TopRequests({ locale }: { locale: string }) {
   if (rows.length < 2) return null;
   const top = rows[0];
   return (
-    <div className="ftp-hue-yellow" style={{ marginBottom: 32 }}>
+    <div className="ftp-hue-yellow">
       <ChartCard
         title={t("reqTitle")}
         emoji="🗳️"
@@ -328,75 +287,83 @@ function TopRequests({ locale }: { locale: string }) {
 export default function ContributePage() {
   const t = useTranslations("page_contribute");
   const locale = useLocale();
+  const formId = useId();
   const [feedbackOpen, setFeedbackOpen] = useState<{
     type: string;
     subject: string;
+    /** Changes on every open so the form starts empty each time. */
+    n: number;
   } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
 
   return (
     <main className="ftp-hue-green" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
-      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 64 }}>
-        <div style={{ maxWidth: 760 }}>
-          <SiteHeader
-            emoji="🙌"
-            icon={HeartHandshake}
-            title={t("title")}
-            description={t("description")}
-            backHref={`/${locale}`}
-          />
+      <ModulePage>
+        <SiteHeader
+          emoji="🙌"
+          icon={HeartHandshake}
+          title={t("title")}
+          description={t("description")}
+          backHref={`/${locale}`}
+        />
 
-          {successMsg && (
-            <Card padding={14} role="status" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, borderColor: "color-mix(in srgb, var(--ftp-live) 40%, var(--ftp-border))" }}>
-              <span className="ftp-emoji" aria-hidden style={{ fontSize: 20 }}>✅</span>
-              <span className="ftp-body" style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{t("thanks")}</span>
-            </Card>
-          )}
+        <Explainer emoji="🙌">{t("simple", { n: WAYS.length })}</Explainer>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: 12, marginBottom: 32 }}>
-            {WAYS.map((w) => (
-              <div key={w.key} className={`ftp-hue-${w.hue}`}>
-                <Card as="article" tinted padding={20} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 42, height: 42, fontSize: 21, borderRadius: 13 }}>
-                    {w.emoji}
-                  </span>
-                  <h2 className="ftp-display" style={{ margin: "12px 0 0", fontSize: 18, lineHeight: 1.35, fontWeight: 650, color: "var(--hue-deep)" }}>
-                    {t(`way_${w.key}_title`)}
-                  </h2>
-                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4, marginBottom: w.hasAction ? 14 : 0 }}>
-                    {t(`way_${w.key}_desc`)}
-                  </p>
-                  {w.hasAction && w.feedbackType && (
-                    <div style={{ marginTop: "auto" }}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFeedbackOpen({
-                            type: w.feedbackType!,
-                            subject: t(`subject_${w.feedbackType}`),
-                          })
-                        }
-                        style={ACTION}
-                      >
-                        {t(`way_${w.key}_action`)}
-                      </button>
-                    </div>
-                  )}
-                  {w.hasAction && w.href && (
-                    <div style={{ marginTop: "auto" }}>
-                      <a href={w.href} target="_blank" rel="noopener noreferrer" style={ACTION}>
-                        {t(`way_${w.key}_action`)} <ExternalLink size={14} aria-hidden />
-                      </a>
-                    </div>
-                  )}
-                </Card>
-              </div>
-            ))}
-          </div>
+        {successMsg && (
+          <Card padding={14} role="status" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, borderColor: "color-mix(in srgb, var(--ftp-live) 40%, var(--ftp-border))" }}>
+            <span className="ftp-emoji" aria-hidden style={{ fontSize: 20 }}>✅</span>
+            <span className="ftp-body" style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{t("thanks")}</span>
+          </Card>
+        )}
 
-          {/* The picture: what citizens have asked for most */}
+        <div className="ftp-grid" style={{ gap: 12, marginBottom: 32, ["--ftp-grid-min" as string]: "300px" } as React.CSSProperties}>
+          {WAYS.map((w) => (
+            <div key={w.key} className={`ftp-hue-${w.hue}`}>
+              <Card as="article" tinted padding={20} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 42, height: 42, fontSize: 21, borderRadius: 13 }}>
+                  {w.emoji}
+                </span>
+                <h2 className="ftp-display" style={{ margin: "12px 0 0", fontSize: 18, lineHeight: 1.35, fontWeight: 650, color: "var(--hue-deep)" }}>
+                  {t(`way_${w.key}_title`)}
+                </h2>
+                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4, marginBottom: w.hasAction ? 14 : 0 }}>
+                  {t(`way_${w.key}_desc`)}
+                </p>
+                {w.hasAction && w.feedbackType && (
+                  <div style={{ marginTop: "auto" }}>
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      onClick={() =>
+                        setFeedbackOpen((prev) => ({
+                          type: w.feedbackType!,
+                          subject: t(`subject_${w.feedbackType}`),
+                          n: (prev?.n ?? 0) + 1,
+                        }))
+                      }
+                      style={ACTION}
+                    >
+                      {t(`way_${w.key}_action`)}
+                    </button>
+                  </div>
+                )}
+                {w.hasAction && w.href && (
+                  <div style={{ marginTop: "auto" }}>
+                    <a href={w.href} target="_blank" rel="noopener noreferrer" style={ACTION}>
+                      {t(`way_${w.key}_action`)} <ExternalLink size={14} aria-hidden />
+                    </a>
+                  </div>
+                )}
+              </Card>
+            </div>
+          ))}
+        </div>
+
+        {/* The picture (what citizens have asked for most) beside the open-source card */}
+        {/* auto-fit (not auto-fill): with no picture yet, the card takes the full width */}
+        <div style={{ display: "grid", gap: 16, alignItems: "start", gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
           <TopRequests locale={locale} />
-
           <Card tinted padding={20} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
             <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 42, height: 42, fontSize: 21, borderRadius: 13 }}>
               🔓
@@ -405,24 +372,58 @@ export default function ContributePage() {
               <h2 className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650, color: "var(--hue-deep)" }}>
                 {t("openTitle")}
               </h2>
-              <p className="ftp-body" style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)", marginTop: 4 }}>{t("openBody")}</p>
+              <p className="ftp-body ftp-prose" style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)", marginTop: 4 }}>{t("openBody")}</p>
             </div>
           </Card>
         </div>
-      </div>
+      </ModulePage>
 
-      {feedbackOpen && (
-        <FeedbackForm
-          defaultType={feedbackOpen.type}
-          defaultSubject={feedbackOpen.subject}
-          onSuccess={() => {
-            setFeedbackOpen(null);
-            setSuccessMsg(true);
-            setTimeout(() => setSuccessMsg(false), 5000);
-          }}
-          onClose={() => setFeedbackOpen(null)}
-        />
-      )}
+      {/* The feedback sheet: bottom sheet on phones / tablets, right panel on laptop / PC */}
+      <DetailSheet
+        open={!!feedbackOpen}
+        onClose={() => setFeedbackOpen(null)}
+        hueClassName="ftp-hue-green"
+        emoji="💬"
+        title={t("sheetTitle")}
+        subtitle={t("sheetSub")}
+        footer={
+          <button
+            type="submit"
+            form={formId}
+            disabled={submitting}
+            className="ftp-btn ftp-btn-primary"
+            style={{
+              flex: 1,
+              minHeight: 48,
+              color: "#fff",
+              border: "1px solid var(--hue)",
+              borderRadius: "var(--ftp-radius-tile)",
+              fontSize: 15,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: submitting ? "default" : "pointer",
+              opacity: submitting ? 0.6 : 1,
+            }}
+          >
+            {submitting ? t("sending") : t("send")}
+          </button>
+        }
+      >
+        {feedbackOpen && (
+          <FeedbackForm
+            key={feedbackOpen.n}
+            formId={formId}
+            defaultType={feedbackOpen.type}
+            defaultSubject={feedbackOpen.subject}
+            onSubmitting={setSubmitting}
+            onSuccess={() => {
+              setFeedbackOpen(null);
+              setSuccessMsg(true);
+              setTimeout(() => setSuccessMsg(false), 5000);
+            }}
+          />
+        )}
+      </DetailSheet>
     </main>
   );
 }
