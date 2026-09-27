@@ -60,6 +60,7 @@ import { fitGrid, TapCard, CardBar, SearchBox, MoreButton, ActionLink, SheetNote
 import PageEnd from "@/components/services-1/PageEnd";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
+import { tapShare } from "@/components/land-water/tap-share";
 
 const EJALSHAKTI = { label: "eJalShakti", href: "https://ejalshakti.gov.in" };
 
@@ -124,7 +125,8 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
   const coverage = totalHH > 0 ? (totalTaps / totalHH) * 100 : 0;
   const tested = areas.filter((v) => v.waterQualityTested).length;
   const testedPct = areas.length > 0 ? (tested / areas.length) * 100 : 0;
-  const tenths = Math.round(Math.min(100, coverage) / 10);
+  // "N of every 10", or "of every 100" when tenths would round to 10 (or 0) untruly.
+  const share = tapShare(totalTaps, totalHH);
   // Newest update across all rows (ISO strings sort correctly as text).
   const asOf = rows.reduce<string | null>((m, v) => (!m || v.updatedAt > m ? v.updatedAt : m), null);
 
@@ -210,16 +212,18 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
           {/* 1. The answer in one sentence. */}
           <Explainer>
             {districtTotal && totalHH > 0
-              ? t.rich("answer.district", {
-                  tenths: f.number(tenths),
+              ? t.rich(share.per === 100 ? "answer.districtHundred" : "answer.district", {
+                  tenths: f.number(share.n),
+                  n: f.number(share.n),
                   district: districtName,
                   taps: f.number(totalTaps),
                   homes: f.number(totalHH),
                   b: bNum,
                 })
               : totalHH > 0
-              ? t.rich("answer.main", {
-                  tenths: f.number(tenths),
+              ? t.rich(share.per === 100 ? "answer.mainHundred" : "answer.main", {
+                  tenths: f.number(share.n),
+                  n: f.number(share.n),
                   district: districtName,
                   taps: f.number(totalTaps),
                   homes: f.number(totalHH),
@@ -265,7 +269,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
                 <p className="ftp-display" style={{ margin: "0 0 12px", fontSize: 17, lineHeight: 1.35, fontWeight: 650 }}>
                   {t("picture.title")}
                 </p>
-                <IconPictogram icon={House} filled={Math.min(100, coverage) / 10} label={t("picture.homes", { n: f.number(tenths) })} />
+                <IconPictogram icon={House} filled={Math.min(100, coverage) / 10} label={t(share.per === 100 ? "picture.homesHundred" : "picture.homes", { n: f.number(share.n) })} />
               </Card>
               <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <WaterTank pct={coverage} label={t("picture.tank")} />

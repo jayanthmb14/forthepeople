@@ -7,7 +7,9 @@
 import { describe, expect, it } from "vitest";
 import {
   agmarknetDistrictNames,
+  agmarknetMarketsInDistrict,
   alertDistrictNames,
+  isMarketInDistrict,
   mentionsName,
   weatherCityName,
 } from "@/scraper/lib/district-aliases";
@@ -45,5 +47,25 @@ describe("mentionsName", () => {
     expect(mentionsName("Punekar family", "Pune")).toBe(false);
     expect(mentionsName("Bengaluru-Urban district", "Bengaluru Urban")).toBe(true);
     expect(mentionsName("MANDYA district of Karnataka", "Mandya")).toBe(true);
+  });
+});
+
+describe("isMarketInDistrict (Sept 2026 audit)", () => {
+  it("keeps only Bangalore APMC for Bengaluru Urban, not the old undivided district's mandis", () => {
+    expect(isMarketInDistrict("bengaluru-urban", "Bangalore APMC")).toBe(true);
+    expect(isMarketInDistrict("bengaluru-urban", "Binny Mill (F&V), Bangalore")).toBe(true);
+    for (const m of ["Ramanagara APMC", "Kanakapura APMC", "Doddaballa Pur APMC", "Hoskote APMC"]) {
+      expect(isMarketInDistrict("bengaluru-urban", m)).toBe(false);
+    }
+  });
+  it("counts no Delhi mandi as New Delhi district's", () => {
+    expect(agmarknetMarketsInDistrict("new-delhi")).toEqual([]);
+    expect(isMarketInDistrict("new-delhi", "APMC Azadpur")).toBe(false);
+    expect(isMarketInDistrict("new-delhi", "Flower Market,Gazipur APMC")).toBe(false);
+  });
+  it("keeps every mandi where the AGMARKNET district is ours", () => {
+    expect(agmarknetMarketsInDistrict("mandya")).toBeNull();
+    expect(isMarketInDistrict("mandya", "Pandavapura APMC")).toBe(true);
+    expect(isMarketInDistrict("tumakuru", "Tiptur APMC")).toBe(true);
   });
 });

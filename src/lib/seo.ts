@@ -379,8 +379,8 @@ export interface ModuleSchemaProps {
 
 const MODULE_SCHEMA_TYPE: Record<string, { type: string; description: (d: string, s: string) => string }> = {
   crops:          { type: "Dataset", description: (d, s) => `Agricultural mandi prices, current and past, for ${d} district, ${s}. Data sourced from AGMARKNET (Agricultural Marketing Information Network).` },
-  weather:        { type: "Dataset", description: (d, s) => `Weather readings and historical rainfall data for ${d} district, ${s}. Sourced from India Meteorological Department (IMD).` },
-  water:          { type: "Dataset", description: (d, s) => `Dam water levels, inflow, outflow and storage data for reservoirs serving ${d} district, ${s}. Sourced from India-WRIS.` },
+  weather:        { type: "Dataset", description: (d, s) => `Weather readings and forecast for ${d} district, ${s}. Sourced from OpenWeatherMap and Open-Meteo.` },
+  water:          { type: "Dataset", description: (d, s) => `Dam water levels, inflow, outflow and storage data for reservoirs serving ${d} district, ${s}. Sourced from the state water resources department portal.` },
   finance:        { type: "GovernmentService", description: (d, s) => `District budget allocations, utilisation percentages, and fiscal data for ${d} district, ${s}.` },
   schools:        { type: "Dataset", description: (d, s) => `Government school enrollment, board exam pass rates, student-teacher ratios for ${d} district, ${s}. Sourced from UDISE+.` },
   elections:      { type: "Dataset", description: (d, s) => `Assembly and Lok Sabha election results, voter turnout, and candidate data for ${d} district, ${s}. Source: Election Commission of India.` },

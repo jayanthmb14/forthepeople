@@ -8,6 +8,9 @@
 // insights) so every screen agrees.
 import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
+import { MIN_PRICE_PER_QUINTAL, NOT_PER_QUINTAL_COMMODITIES } from "@/scraper/lib/agmarknet";
+import { agmarknetMarketsInDistrict } from "@/scraper/lib/district-aliases";
+import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
 
 /**
  * Rows written straight from a news article carry the article URL as
@@ -35,11 +38,14 @@ export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: ["DISTRICT", "
  * shown. Matched by the exact seed source labels AND the seeded years
  * (2020–2024), so a real collector writing current years is unaffected.
  */
+export const SEEDED_RAINFALL_SOURCES = ["Karnataka State Natural Disaster Monitoring Centre (KSNDMC)", "KSNDMC / IMD", "IMD Delhi", "IMD Mysuru"];
+/** Last year the rainfall seeds wrote (the SQL in /api/data/freshness uses it too). */
+export const SEEDED_RAINFALL_LAST_YEAR = 2024;
 export const NOT_SEEDED_RAINFALL = {
   NOT: {
     AND: [
-      { source: { in: ["Karnataka State Natural Disaster Monitoring Centre (KSNDMC)", "KSNDMC / IMD", "IMD Delhi", "IMD Mysuru"] } },
-      { year: { lte: 2024 } },
+      { source: { in: SEEDED_RAINFALL_SOURCES } },
+      { year: { lte: SEEDED_RAINFALL_LAST_YEAR } },
     ],
   },
 };
@@ -164,3 +170,49 @@ export const VERIFIED_SUGAR_SEASON = { source: { in: VERIFIED_SUGAR_SEASON_SOURC
  */
 export const TENDER_STUB_MARKER = "STUB_PENDING_SCRAPER_VERIFICATION";
 export const NOT_STUB_TENDER = { OR: [{ rawHtmlSnapshot: null }, { NOT: { rawHtmlSnapshot: TENDER_STUB_MARKER } }] };
+
+// ═══ Land & water (Sept 2026 audit) ═══════════════════════════════════
+// Crops, alerts. Each filter says which audit finding it answers.
+
+/**
+ * CropPrice rows a page may show or count:
+ *  - not hand-typed seed rows. prisma/seed.ts wrote 8 invented Mandya
+ *    prices labelled "AGMARKNET / data.gov.in" (Areca "₹350/kg",
+ *    Sugarcane "₹3/kg"), and the Bengaluru / Mysuru seed scripts did the
+ *    same; every seed row carries an arrival quantity, which the
+ *    AGMARKNET collector (src/scraper/jobs/crops.ts) never writes;
+ *  - a crop priced per quintal: not livestock (an ox shown as "₹800/kg"),
+ *    coconut (per 1,000 nuts) or cut flowers (per stem) —
+ *    NOT_PER_QUINTAL_COMMODITIES in src/scraper/lib/agmarknet.ts;
+ *  - at least ₹1 a kg: smaller figures are per bunch and showed as "₹0".
+ */
+export const SHOWN_CROP_PRICE = {
+  arrivalQty: null,
+  minPrice: { gte: MIN_PRICE_PER_QUINTAL },
+  commodity: { notIn: [...NOT_PER_QUINTAL_COMMODITIES] },
+};
+
+/**
+ * SHOWN_CROP_PRICE, plus only the mandis inside the district where the
+ * AGMARKNET district is bigger than ours (Bengaluru Urban: only Bangalore
+ * APMC; New Delhi: none — agmarknetMarketsInDistrict in
+ * src/scraper/lib/district-aliases.ts). An empty OR matches no row.
+ */
+export function shownCropPrices(districtSlug: string) {
+  const markets = agmarknetMarketsInDistrict(districtSlug);
+  if (markets === null) return SHOWN_CROP_PRICE;
+  return {
+    AND: [SHOWN_CROP_PRICE, { OR: markets.map((m) => ({ market: { contains: m, mode: "insensitive" as const } })) }],
+  };
+}
+
+/**
+ * LocalAlert rows that are official warnings: the ones the NDMA SACHET
+ * collector wrote (src/scraper/jobs/alerts.ts), whose sourceUrl is the
+ * CAP message link. The news pipeline used to turn health and election
+ * stories into "warnings in force" (an advert for a scan centre, a
+ * political allegation); those rows, and the old headline-keyword rows,
+ * are never shown or counted as warnings.
+ */
+export const OFFICIAL_ALERTS = { sourceUrl: { startsWith: SACHET_SOURCE_PREFIX } };
+

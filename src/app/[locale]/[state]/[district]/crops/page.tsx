@@ -63,6 +63,7 @@ import { PageActions, ReadingAge, ageInDays, isOlderThan, useClientNow } from "@
 import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { commodityKey, dailySeries, dayOf, latestPerCrop, latestPerMarket, previousDay } from "@/components/land-water/crop-data";
 import { downloadCSV, todayISO } from "@/lib/csv";
+import { agmarknetMarketsInDistrict } from "@/scraper/lib/district-aliases";
 
 type Unit = "kg" | "quintal";
 
@@ -120,6 +121,11 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const newestDate = latestByCrop.reduce<string | null>((best, p) => (!best || p.date > best ? p.date : best), null);
   const cropsOnNewest = newestDate ? latestByCrop.filter((p) => dayOf(p.date) === dayOf(newestDate)).length : 0;
   const marketsOnNewest = newestDate ? new Set(prices.filter((p) => dayOf(p.date) === dayOf(newestDate)).map((p) => p.market)).size : 0;
+  // The tiles count every stored row, over several market days; the
+  // simple-words line counts the newest day only. Each tile says which days
+  // it covers so the two never seem to disagree (Sept 2026 audit).
+  const oldestDate = prices.reduce<string | null>((best, p) => (!best || p.date < best ? p.date : best), null);
+  const oneDay = !oldestDate || !newestDate || dayOf(oldestDate) === dayOf(newestDate);
   // Old prices are not today's: the numbers turn grey and carry their date and age.
   const isOld = newestDate ? isOlderThan(newestDate, MAX_AGE_HOURS, now) : false;
   const oldDays = newestDate && isOld ? ageInDays(newestDate, now) : 0;
@@ -166,6 +172,9 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
       : t("shareEmpty", { district: districtName });
 
   const hasData = !isLoading && !error && latestByCrop.length > 0;
+  // No AGMARKNET mandi is inside this district (New Delhi): say so, rather
+  // than "not yet" (src/scraper/lib/district-aliases.ts, Sept 2026 audit).
+  const noMandiHere = agmarknetMarketsInDistrict(district)?.length === 0;
 
   return (
     <ModulePage>
@@ -181,7 +190,10 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
       {isLoading && <LoadingShell rows={5} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && latestByCrop.length === 0 && (
-        <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+        <EmptyState
+          title={t(noMandiHere ? "emptyNoMandiTitle" : "emptyTitle", { district: districtName })}
+          body={t(noMandiHere ? "emptyNoMandiBody" : "emptyBody")}
+        />
       )}
 
       {hasData && newestDate && (
@@ -204,8 +216,12 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
             <ReadingAge at={newestDate} maxAgeHours={MAX_AGE_HOURS} what="prices" now={now} />
           </div>
           <StatStrip cols={4}>
-            <StatTile label={t("tileCrops")} value={f.number(latestByCrop.length)} />
-            <StatTile label={t("tileMarkets")} value={f.number(markets)} sub={t("tileMarketsSub")} />
+            <StatTile
+              label={t("tileCrops")}
+              value={f.number(latestByCrop.length)}
+              sub={oneDay || !oldestDate ? t("tileSpanOne", { date: shortDay(newestDate) }) : t("tileSpan", { from: shortDay(oldestDate), to: shortDay(newestDate) })}
+            />
+            <StatTile label={t("tileMarkets")} value={f.number(markets)} sub={t("tileMarketsSub", { days: oneDay ? 1 : 2 })} />
             {compared.length > 0 ? (
               <StatTile label={t("tileUp")} value={f.number(up)} sub={t("tileMovesSub", { n: compared.length })} />
             ) : (

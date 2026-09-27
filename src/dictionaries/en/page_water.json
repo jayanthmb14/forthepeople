@@ -2,7 +2,7 @@
   "description": "How full the dams are, water flowing in and out, and canal release dates",
   "fallbackPortal": "the state water resources department",
   "emptyTitle": "No dam or canal readings for {district} yet.",
-  "emptyBody": "Dam levels, inflow, outflow and canal releases from {portal} and India-WRIS will show here once we start receiving them for this district.",
+  "emptyBody": "Dam levels, inflow, outflow and canal releases from {portal} will show here once we start receiving them for this district.",
   "explainerTogether": "Together, the {n} dams that serve {district} hold about <b>{pct}</b> of the water they can store.",
   "explainerRange": "{fullest} is the fullest at <b>{fullestPct}</b> and {lowest} is the lowest at <b>{lowestPct}</b>.",
   "explainerOne": "{dam} is about <b>{pct}</b> full{flow, select, filling {, and more water is flowing in than going out.} emptying {, and more water is going out than flowing in.} other {.}}",

@@ -34,6 +34,7 @@
     "nowTempCond": "ಈಗ <b>{temp}</b> ಇದೆ, {cond}.",
     "nowTemp": "ಈಗ <b>{temp}</b> ಇದೆ.",
     "nowCond": "ಈಗ ಹವಾಮಾನ: {cond}.",
+    "nowRange": "ಈಗ ತಾಪಮಾನ <b>{low}</b> ಮತ್ತು <b>{high}</b> ನಡುವೆ ಇದೆ: ನಮ್ಮ ಎರಡು ಮೂಲಗಳ ನಡುವೆ 3° ಗಿಂತ ಹೆಚ್ಚು ವ್ಯತ್ಯಾಸವಿದೆ.",
     "thenTempCond": "ಕೊನೆಯ ಬಾರಿ ದಾಖಲಿಸಿದಾಗ, {when} IST ರಂದು, <b>{temp}</b> ಇತ್ತು, {cond}.",
     "thenTemp": "ಕೊನೆಯ ಬಾರಿ ದಾಖಲಿಸಿದಾಗ, {when} IST ರಂದು, <b>{temp}</b> ಇತ್ತು.",
     "thenCond": "ಕೊನೆಯ ಬಾರಿ ದಾಖಲಿಸಿದಾಗ, {when} IST ರಂದು, ಹವಾಮಾನ: {cond}.",

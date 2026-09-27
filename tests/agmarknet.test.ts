@@ -6,7 +6,7 @@
 // AGMARKNET record checks (src/scraper/lib/agmarknet.ts): only sane,
 // complete price records are stored; everything else is counted and dropped.
 import { describe, expect, it } from "vitest";
-import { cropPriceProblems, isRetryableStatus, parseArrivalDate, toCropRow } from "@/scraper/lib/agmarknet";
+import { cropPriceProblems, isPricedPerQuintal, isRetryableStatus, parseArrivalDate, toCropRow } from "@/scraper/lib/agmarknet";
 
 const NOW = Date.UTC(2026, 8, 27, 12, 0, 0);
 const good = {
@@ -62,6 +62,29 @@ describe("toCropRow", () => {
     expect(toCropRow({ ...good, market: " " }, NOW)).toEqual({ reason: "no commodity or market" });
     expect(toCropRow({ ...good, arrival_date: "30/09/2026" }, NOW)).toEqual({ reason: "arrival date is in the future" });
     expect(toCropRow({ ...good, max_price: undefined }, NOW)).toEqual({ reason: "a price is missing" });
+  });
+});
+
+describe("prices that are not per quintal (Sept 2026 audit)", () => {
+  it("rejects a price below ₹1 a kg — a per-bunch figure shown as ₹0/kg", () => {
+    expect(cropPriceProblems(3, 10, 7)).toContain("price is below ₹1 a kg (not a per-quintal price)");
+    expect(toCropRow({ ...good, commodity: "Spinach", min_price: 3, max_price: 10, modal_price: 7 }, NOW)).toEqual({
+      reason: "price is below ₹1 a kg (not a per-quintal price)",
+    });
+    expect(cropPriceProblems(300, 900, 600)).toEqual([]);
+  });
+  it("rejects livestock, coconut by the 1,000 and cut flowers by the stem", () => {
+    for (const c of ["Ox", "Cow", "Sheep", "Coconut", "Tender Coconut", "Tulip", " lotus "]) {
+      expect(isPricedPerQuintal(c)).toBe(false);
+    }
+    expect(toCropRow({ ...good, commodity: "Ox", min_price: 70000, max_price: 90000, modal_price: 80000 }, NOW)).toEqual({
+      reason: "not priced per quintal (livestock, by count or by stem)",
+    });
+  });
+  it("keeps crops sold by weight, including loose flowers and copra", () => {
+    for (const c of ["Tomato", "Copra", "Marigold(loose)", "Chrysanthemum(Loose)", "Rose(Loose))", "Arecanut(Betelnut/Supari)"]) {
+      expect(isPricedPerQuintal(c)).toBe(true);
+    }
   });
 });
 

@@ -64,10 +64,10 @@ import { FlowBars, FLOW_IN_FILL, FLOW_OUT_FILL } from "@/components/water/WaterV
 import { HUE_SHADES, namePair, useDistrictName } from "@/components/land-water/visuals";
 import { fitGrid, Chip, Sparkline, TapCard, TapHint } from "@/components/land-water/cards";
 import { DamSheet, flowState } from "@/components/land-water/DamSheet";
+import { fillPct, sameDam, shownDamName } from "@/components/land-water/dam-data";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { getDamConfig } from "@/lib/constants/dam-config";
 
-const INDIA_WRIS = { label: "India-WRIS", href: "https://indiawris.gov.in" };
 /** Dam readings older than this are not current (src/lib/constants/dataset-collection.ts). */
 const MAX_AGE_HOURS = maxAgeHoursOf("dams") ?? 72;
 
@@ -99,7 +99,9 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   const shortDay = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
   const fullDay = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
 
-  const dams = useMemo(() => data?.data?.dams ?? [], [data]);
+  // One canonical name per dam, whatever spelling a district's rows carry
+  // (src/components/land-water/dam-data.ts), so KRS reads the same everywhere.
+  const dams = useMemo(() => (data?.data?.dams ?? []).map((d) => ({ ...d, ...shownDamName(d) })), [data]);
   const canals = useMemo(() => data?.data?.canals ?? [], [data]);
 
   // Latest reading per dam (rows arrive newest first).
@@ -112,7 +114,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   // Every stored reading per dam, oldest → newest (history route; falls
   // back to the readings the water route sent).
   const historyOf = useMemo(() => {
-    const rows = historyData?.data && historyData.data.length > 0 ? historyData.data : dams;
+    const rows = historyData?.data && historyData.data.length > 0 ? historyData.data.map((d) => ({ ...d, ...shownDamName(d) })) : dams;
     const map = new Map<string, DamReading[]>();
     for (const r of rows) {
       const list = map.get(r.damName) ?? [];
@@ -126,7 +128,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   const shownName = (d: Pick<DamReading, "damName" | "damNameLocal">) => namePair(d.damName, d.damNameLocal, locale);
   const damConfig = getDamConfig(district);
   const riverOf = (d: DamReading) =>
-    damConfig?.dams.find((c) => c.name === d.damName || (d.damNameLocal && c.nameLocal === d.damNameLocal))?.river ?? null;
+    damConfig?.dams.find((c) => sameDam(c.name, d.damName) || (d.damNameLocal && c.nameLocal === d.damNameLocal))?.river ?? null;
 
   // Figures for the answer, tiles and picture — each dam's latest reading.
   const newestReading = damList.reduce<string | null>((best, d) => (!best || d.recordedAt > best ? d.recordedAt : best), null);
@@ -139,7 +141,13 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
   const byLevel = [...damList].sort((a, b) => b.storagePct - a.storagePct);
   const fullest = byLevel[0];
   const lowest = byLevel[byLevel.length - 1];
-  const headerSource = damList[0]?.source ? { label: damList[0].source, href: portal?.href } : INDIA_WRIS;
+  // The portal the readings came from; never a source we do not read (India-WRIS — Sept 2026 audit).
+  const headerSource = damList[0]?.source ? { label: damList[0].source, href: portal?.href } : portal ? { label: portal.name, href: portal.href } : undefined;
+  /** "56.6%" from the TMC figures, or the portal's whole number as published. */
+  const fullText = (d: DamReading) => {
+    const fp = fillPct(d);
+    return pct(fp.pct, fp.digits);
+  };
   // Old readings are not today's levels: the numbers turn grey and carry their date and age.
   const isOld = newestReading ? isOlderThan(newestReading, MAX_AGE_HOURS, now) : false;
   const oldDays = newestReading && isOld ? ageInDays(newestReading, now) : 0;
@@ -161,7 +169,9 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
     .sort((a, b) => Math.max(b.inflow, b.outflow) - Math.max(a.inflow, a.outflow))
     .map((d) => {
       const n = shownName(d);
-      return { key: d.id, name: n.primary, nameLang: n.primaryLang, inflow: d.inflow, outflow: d.outflow };
+      // A dam whose reading is older than the newest one says its own date (Kabini 25 Sept beside KRS 27 Sept).
+      const ownDay = newestReading && d.recordedAt.slice(0, 10) !== newestReading.slice(0, 10) ? ` (${shortDay(d.recordedAt)})` : "";
+      return { key: d.id, name: `${n.primary}${ownDay}`, nameLang: n.primaryLang, inflow: d.inflow, outflow: d.outflow };
     });
 
   // Chart: storage over time, every dam on one chart (one point per day).
@@ -203,7 +213,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
       ? t("share", {
           district: districtName,
           list: new Intl.ListFormat(f.intl, { style: "short", type: "unit" }).format(
-            damList.slice(0, 3).map((d) => t("shareItem", { dam: shownName(d).primary, pct: pct(d.storagePct, 1) })),
+            damList.slice(0, 3).map((d) => t("shareItem", { dam: shownName(d).primary, pct: fullText(d) })),
           ),
         })
       : t("shareEmpty", { district: districtName });
@@ -255,7 +265,8 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
           {/* 2 · The big numbers, with the date they were true right above them. */}
           {newestReading && (
             <div style={{ margin: "0 0 10px" }}>
-              <ReadingAge at={newestReading} maxAgeHours={MAX_AGE_HOURS} withTime now={now} />
+              {/* Date only: the portal gives a day, not a time (Sept 2026 audit: "05:30 am" was UTC midnight). */}
+              <ReadingAge at={newestReading} maxAgeHours={MAX_AGE_HOURS} now={now} />
             </div>
           )}
           <StatStrip>
@@ -319,7 +330,7 @@ function WaterPageInner({ params }: { params: Promise<{ locale: string; state: s
                               </span>
                             )}
                             <span className="ftp-bignum" style={{ fontSize: 28, lineHeight: "32px", color: isOlderThan(dam.recordedAt, MAX_AGE_HOURS, now) ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
-                              {pct(dam.storagePct, 1)}
+                              {fullText(dam)}
                             </span>
                             <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{t("fullOfCapacity")}</span>
                           </span>

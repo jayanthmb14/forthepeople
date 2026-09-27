@@ -34,6 +34,7 @@
     "nowTempCond": "अभी <b>{temp}</b> है, {cond}।",
     "nowTemp": "अभी <b>{temp}</b> है।",
     "nowCond": "अभी मौसम: {cond}।",
+    "nowRange": "अभी तापमान <b>{low}</b> से <b>{high}</b> के बीच है: हमारे दोनों स्रोतों में 3° से ज़्यादा का अंतर है।",
     "thenTempCond": "आख़िरी बार {when} IST को दर्ज होने पर <b>{temp}</b> था, {cond}।",
     "thenTemp": "आख़िरी बार {when} IST को दर्ज होने पर <b>{temp}</b> था।",
     "thenCond": "आख़िरी बार {when} IST को दर्ज होने पर मौसम: {cond}।",

@@ -19,9 +19,13 @@ import {
   NOT_FROM_NEWS,
   NOT_FROM_NEWS_OPTIONAL,
   NOT_SEEDED_RAINFALL,
+  OFFICIAL_ALERTS,
   SHOWN_CRIME,
+  SHOWN_CROP_PRICE,
   VERIFIED_PANCHAYAT,
   ELECTION_RESULTS_WITHHELD,
+
+  shownCropPrices,
 } from "@/lib/data-filters";
 import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
@@ -60,11 +64,11 @@ export async function collectDatasetDates(
     profiles, popHistory, famous, insights, courtsSnapshot, udise, nrega,
   ] = await Promise.all([
     prisma.newsItem.aggregate({ where: d, _count: { _all: true }, _max: { publishedAt: true } }),
-    prisma.localAlert.aggregate({ where: d, _count: { _all: true }, _max: { createdAt: true } }),
-    prisma.localAlert.count({ where: { ...d, active: true } }),
+    prisma.localAlert.aggregate({ where: { ...d, ...OFFICIAL_ALERTS }, _count: { _all: true }, _max: { createdAt: true } }),
+    prisma.localAlert.count({ where: { ...d, active: true, ...OFFICIAL_ALERTS } }),
     prisma.weatherReading.aggregate({ where: d, _count: { _all: true }, _max: { recordedAt: true } }),
     prisma.rainfallHistory.findFirst({ where: { ...d, ...NOT_SEEDED_RAINFALL }, orderBy: [{ year: "desc" }, { month: "desc" }], select: { year: true, month: true } }),
-    prisma.rainfallHistory.count({ where: d }),
+    prisma.rainfallHistory.count({ where: { ...d, ...NOT_SEEDED_RAINFALL } }),
     prisma.rtiStat.count({ where: d }),
     prisma.rtiStat.aggregate({ where: d, _max: { year: true } }),
     prisma.leader.aggregate({ where: { ...d, active: true, ...NOT_FROM_NEWS_OPTIONAL }, _count: { _all: true }, _max: { lastVerifiedAt: true } }),
@@ -95,7 +99,7 @@ export async function collectDatasetDates(
     prisma.busRoute.count({ where: d }),
     prisma.trainSchedule.count({ where: d }),
     prisma.school.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
-    prisma.cropPrice.aggregate({ where: d, _count: { _all: true }, _max: { date: true } }),
+    prisma.cropPrice.aggregate({ where: { ...d, ...(districtSlug ? shownCropPrices(districtSlug) : SHOWN_CROP_PRICE) }, _count: { _all: true }, _max: { date: true } }),
     prisma.soilHealth.aggregate({ where: d, _count: { _all: true }, _max: { testedAt: true } }),
     prisma.agriAdvisory.aggregate({ where: d, _count: { _all: true }, _max: { weekOf: true } }),
     prisma.demographicProfile.findMany({ where: d, select: { dataset: true, year: true }, orderBy: { year: "asc" } }),

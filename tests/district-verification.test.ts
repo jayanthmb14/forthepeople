@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  checkKind,
   newestCheck,
   normaliseVerification,
   summariseVerification,
@@ -41,7 +42,56 @@ describe("normaliseVerification", () => {
     ]);
     expect(Object.keys(map ?? {})).toEqual(["dams"]);
     expect(map?.dams.status).toBe("unchecked");
-    expect(map?.dams.checks).toEqual([{ source: "India-WRIS", agreed: false, checkedAt: null }]);
+    // "yes" is not a comparison result: nothing to compare, never "agrees" (Sept 2026 audit).
+    expect(map?.dams.checks).toEqual([{ source: "India-WRIS", agreed: null, checkedAt: null, independent: true, role: null }]);
+  });
+});
+
+describe("checkKind (Sept 2026 audit)", () => {
+  it("says 'no data' — not 'does not agree' — when the second source had nothing", () => {
+    const map = normaliseVerification([
+      {
+        dataset: "mandi",
+        status: "single-source",
+        checks: [
+          { source: "AGMARKNET / data.gov.in", role: "shown", agreed: null, independent: true },
+          { source: "CEDA Ashoka (AGMARKNET mirror)", role: "check", agreed: null, independent: false },
+        ],
+      },
+    ]);
+    const v = map!.mandi;
+    expect(v.checks.map((c) => checkKind(c, v.status))).toEqual(["shownOnly", "noData"]);
+  });
+
+  it("never counts a re-read of the same publisher as a second source that agrees", () => {
+    const map = normaliseVerification([
+      {
+        dataset: "dams",
+        status: "single-source",
+        checks: [
+          { source: "Karnataka Water Resources Department", role: "shown", agreed: true, independent: true },
+          { source: "Karnataka Water Resources Department (read again)", role: "check", agreed: true, independent: false },
+        ],
+      },
+    ]);
+    const v = map!.dams;
+    expect(v.checks.map((c) => checkKind(c, v.status))).toEqual(["shownOnly", "sameSource"]);
+  });
+
+  it("keeps agrees / does not agree for real comparisons", () => {
+    const map = normaliseVerification([
+      {
+        dataset: "weather",
+        status: "disagreement",
+        checks: [
+          { source: "OpenWeatherMap", role: "shown", agreed: false, independent: true },
+          { source: "Open-Meteo", role: "check", agreed: false, independent: true },
+        ],
+      },
+      ROW,
+    ]);
+    expect(map!.weather.checks.map((c) => checkKind(c, "disagreement"))).toEqual(["disagrees", "disagrees"]);
+    expect(map!.mandi.checks.map((c) => checkKind(c, "verified"))).toEqual(["agrees", "agrees"]);
   });
 });
 

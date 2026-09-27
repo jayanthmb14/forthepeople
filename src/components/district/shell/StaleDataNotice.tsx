@@ -84,7 +84,7 @@ export default function StaleDataNotice({ stateSlug, districtSlug }: { stateSlug
   }
 
   // Late.
-  const source = moduleSourceNames(route.module, stateSlug).slice(0, 2).map(src.name).join(", ");
+  const source = moduleSourceNames(route.module, stateSlug, districtSlug).slice(0, 2).map(src.name).join(", ");
   const periodText = d.period ? (d.periodKind === "fy" ? tv("periodFy", { period: d.period }) : d.period) : null;
   const dateText = d.dataDate ? f.date(d.dataDate, { day: "numeric", month: "short", year: "numeric" }) : null;
   const hours = d.ageHours ?? 0;

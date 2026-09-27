@@ -542,6 +542,7 @@
 .ftp-vchecks li svg { flex-shrink: 0; margin-top: 2px; }
 .ftp-vchecks li[data-agreed="true"] svg { color: var(--ftp-live); }
 .ftp-vchecks li[data-agreed="false"] svg { color: var(--ftp-warn); }
+.ftp-vchecks li[data-agreed="none"] svg { color: var(--ftp-text-2); }
 .ftp-vchecks-when { color: var(--ftp-text-2); font-variant-numeric: tabular-nums; }
 .ftp-vsummary { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; }
 .ftp-vsummary-title { font-size: 13px; color: var(--ftp-text-2); }
