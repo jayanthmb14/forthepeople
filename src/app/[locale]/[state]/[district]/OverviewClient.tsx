@@ -27,6 +27,8 @@
 //  All data hooks are unchanged from v2; only the layout changed.
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useFormat, useModuleText } from "@/i18n/client";
 import Link from "next/link";
 import { MessageSquareWarning } from "lucide-react";
 import {
@@ -91,10 +93,10 @@ const STATUS_DOT: Record<FreshnessStatus, string> = {
 
 /** Modules whose freshness we show in the identity card's freshness row. */
 const FRESHNESS_ROW: Array<{ slug: string; label: string }> = [
-  { slug: "weather", label: "Weather" },
-  { slug: "crops", label: "Mandi prices" },
-  { slug: "water", label: "Dam levels" },
-  { slug: "news", label: "News" },
+  { slug: "weather", label: "freshWeather" },
+  { slug: "crops", label: "freshMandi" },
+  { slug: "water", label: "freshDams" },
+  { slug: "news", label: "freshNews" },
 ];
 
 type Exam = ExamsData["stateExams"][number];
@@ -204,6 +206,10 @@ function TodayEmpty({ label, emoji, hue, sentence, href }: { label: string; emoj
 }
 
 export default function OverviewClient({ locale, stateSlug, districtSlug, stateName, districtData }: Props) {
+  const t = useTranslations("overview");
+  const ts = useTranslations("status");
+  const mt = useModuleText();
+  const f = useFormat();
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
   const stateConfig = getStateConfig(stateSlug);
   const subUnitPlural = stateConfig?.subDistrictUnitPlural ?? "Taluks";
@@ -228,7 +234,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const cardArea = census?.areaSqKm ?? districtData.area;
   const cardStatsAsOf = census?.totalPopulation ? census.dataset : null;
   const cardStatsSource = census?.totalPopulation && census.sourceUrl
-    ? { label: "Census of India", href: census.sourceUrl }
+    ? { label: t("censusOfIndia"), href: census.sourceUrl }
     : null;
 
   // Taluk count: prefer the live DB list, fall back to the registry.
@@ -290,7 +296,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         {Object.keys(fresh.modules).length > 0 && (
           <div
             role="group"
-            aria-label="How recent the data is"
+            aria-label={ts("howRecent")}
             style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--ftp-border)" }}
           >
             {FRESHNESS_ROW.map(({ slug, label }) => {
@@ -298,7 +304,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               if (!f?.asOf) return null;
               return (
                 <span key={slug} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{label}</span>
+                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{t(label)}</span>
                   <FreshnessPill asOf={f.asOf} status={f.status} />
                 </span>
               );
@@ -313,7 +319,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </div>
 
       {/* ═══ 2. Today in <district> ═════════════════════════ */}
-      <Section title={`Today in ${districtData.name}`} emoji="☀️">
+      <Section title={t("today", { name: districtData.name })} emoji="☀️">
         <div
           style={{
             display: "grid",
@@ -329,7 +335,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               href={`${base}/weather`}
               emoji={weatherEmoji(latestWeather.conditions)}
               hue="sky"
-              label="Weather"
+              label={t("weather")}
               value={latestWeather.temperature != null ? `${Math.round(latestWeather.temperature)}` : "—"}
               unit={latestWeather.temperature != null ? "°C" : undefined}
               sub={latestWeather.conditions ?? undefined}
@@ -337,7 +343,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               source={latestWeather.source}
             />
           ) : (
-            <TodayEmpty href={`${base}/weather`} emoji="🌦️" hue="sky" label="Weather" sentence="No weather reading from the last 24 hours." />
+            <TodayEmpty href={`${base}/weather`} emoji="🌦️" hue="sky" label={t("weather")} sentence={t("noWeather")} />
           )}
 
           {/* Mandi (≤ 30 d) — modal price is per quintal; shown per kg. */}
@@ -348,7 +354,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               href={`${base}/crops`}
               emoji="🌾"
               hue="green"
-              label="Mandi"
+              label={t("mandi")}
               value={`₹${Math.round(latestCrop.modalPrice / 100).toLocaleString("en-IN")}`}
               unit="/kg"
               sub={`${latestCrop.commodity} · ${latestCrop.market}`}
@@ -356,7 +362,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               source={latestCrop.source}
             />
           ) : (
-            <TodayEmpty href={`${base}/crops`} emoji="🌾" hue="green" label="Mandi" sentence="No mandi prices from the last 30 days." />
+            <TodayEmpty href={`${base}/crops`} emoji="🌾" hue="green" label={t("mandi")} sentence={t("noMandi")} />
           )}
 
           {/* One headline (≤ 30 d) */}
@@ -367,13 +373,13 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               href={`${base}/news`}
               emoji="📰"
               hue="blue"
-              label="Headline"
+              label={t("headline")}
               sub={headline.headline}
               asOf={headline.publishedAt}
               source={headline.publisher || headline.source}
             />
           ) : (
-            <TodayEmpty href={`${base}/news`} emoji="📰" hue="blue" label="Headline" sentence="No local news from the last 30 days." />
+            <TodayEmpty href={`${base}/news`} emoji="📰" hue="blue" label={t("headline")} sentence={t("noNews")} />
           )}
 
           {/* Alert (preferred) or next exam */}
@@ -382,7 +388,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             <Card href={`${base}/alerts`} padding={14} tinted style={{ height: "100%" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10 }}>⚠️</span>
-                <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>Alert</span>
+                <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>{t("alert")}</span>
                 <Pill tone={topAlert.severity === "critical" || topAlert.severity === "high" ? "danger" : "warn"} style={{ marginLeft: "auto", textTransform: "capitalize" }}>
                   {topAlert.severity}
                 </Pill>
@@ -402,13 +408,13 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               href={`${base}/exams`}
               emoji="📝"
               hue="violet"
-              label={nextExam.kind === "Exam" ? "Next exam" : "Apply by"}
+              label={nextExam.kind === "Exam" ? t("nextExam") : t("applyBy")}
               value={shortDay(nextExam.date)}
               sub={nextExam.exam.title}
               asOfText={nextExam.exam.department}
             />
           ) : (
-            <TodayEmpty href={`${base}/exams`} emoji="📝" hue="violet" label="Exams & alerts" sentence="No active alerts and no upcoming exam dates on record." />
+            <TodayEmpty href={`${base}/exams`} emoji="📝" hue="violet" label={t("examsAlerts")} sentence={t("noExams")} />
           )}
 
           {/* Budget spent % for the latest financial year */}
@@ -419,16 +425,16 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               href={`${base}/finance`}
               emoji="💰"
               hue="amber"
-              label="Budget spent"
+              label={t("budgetSpent")}
               value={spentPct.toFixed(1)}
               unit="%"
-              sub={`₹${Math.round(totalSpent / 1e7).toLocaleString("en-IN")} Cr of ₹${Math.round(totalAllocated / 1e7).toLocaleString("en-IN")} Cr`}
+              sub={t("spentOf", { spent: f.number(Math.round(totalSpent / 1e7)), total: f.number(Math.round(totalAllocated / 1e7)) })}
               visual={<ProgressBar pct={spentPct} height={8} />}
               asOfText={latestFY ? `FY ${latestFY}` : undefined}
               source={budgetSource}
             />
           ) : (
-            <TodayEmpty href={`${base}/finance`} emoji="💰" hue="amber" label="Budget spent" sentence="No budget figures on record for this district yet." />
+            <TodayEmpty href={`${base}/finance`} emoji="💰" hue="amber" label={t("budgetSpent")} sentence={t("noBudget")} />
           )}
         </div>
       </Section>
@@ -439,15 +445,15 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </div>
 
       {/* ═══ 3. Every dashboard, as colourful emoji tiles ═════ */}
-      <Section title={`Explore ${districtData.name}`} emoji="🧭">
+      <Section title={t("explore", { name: districtData.name })} emoji="🧭">
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {groups.map((group) => {
             const mods = group.modules.filter((m) => m.slug !== "overview");
             if (mods.length === 0) return null;
             return (
-              <section key={group.label} aria-label={group.label}>
+              <section key={group.label} aria-label={mt.group(group.label)}>
                 <h3 className="ftp-display" style={{ margin: "0 0 10px", fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
-                  {group.label}
+                  {mt.group(group.label)}
                 </h3>
                 <ul className="ftp-module-grid">
                   {mods.map((mod) => {
@@ -458,17 +464,17 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                           <span className="ftp-module-emoji ftp-emoji" aria-hidden>
                             {mod.emoji}
                           </span>
-                          <span className="ftp-module-name">{mod.label}</span>
-                          <span className="ftp-module-desc">{mod.description}</span>
+                          <span className="ftp-module-name">{mt.label(mod.slug)}</span>
+                          <span className="ftp-module-desc">{mt.description(mod.slug)}</span>
                           {f && (
                             <>
                               <span
                                 aria-hidden
                                 className="ftp-module-dot"
-                                title={f.age ? `Updated ${f.age}` : "No recent data"}
+                                title={f.age ? t("dataUpdated", { age: f.age }) : t("noRecentData")}
                                 style={{ background: STATUS_DOT[f.status] }}
                               />
-                              <span className="sr-only">{f.age ? `Data updated ${f.age}.` : "No recent data."}</span>
+                              <span className="sr-only">{f.age ? t("dataUpdated", { age: f.age }) : t("noRecentData")}</span>
                             </>
                           )}
                         </Link>
@@ -483,7 +489,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </Section>
 
       {/* ═══ 4. At a glance — each snippet hides itself when it has no data ═══ */}
-      <Section title="At a glance" emoji="👀">
+      <Section title={t("atAGlance")} emoji="👀">
         <div
           style={{
             display: "grid",
@@ -504,7 +510,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
 
       {/* ═══ 5a. Sub-districts ══════════════════════════════ */}
       {districtData.taluks.length > 0 && (
-        <Section title={`${subUnitPlural} in ${districtData.name}`}>
+        <Section title={t("subUnits", { units: subUnitPlural, name: districtData.name })} emoji="🏘️">
           <ul
             style={{
               listStyle: "none", margin: 0, padding: 0,
@@ -540,12 +546,12 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </div>
       <p className="ftp-body" style={{ marginTop: 16, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <MessageSquareWarning size={14} aria-hidden />
-        Something wrong or missing on this page?
+        {t("somethingWrong")}
         <Link
           href={`/${locale}/feedback`}
           style={{ color: "var(--ftp-brand)", textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 44 }}
         >
-          Report an issue
+          {t("reportIssue")}
         </Link>
       </p>
 
@@ -553,8 +559,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       {!weatherLoading && !cropsLoading && !newsLoading && !budgetLoading && !latestWeather && !latestCrop && !headline && budgetEntries.length === 0 && (
         <div style={{ marginTop: 16 }}>
           <EmptyState
-            title={`${districtData.name} was added recently.`}
-            body="Data feeds are being connected one by one. Each module shows its own date as soon as its first update arrives."
+            title={t("addedRecently", { name: districtData.name })}
+            body={t("addedRecentlyBody")}
           />
         </div>
       )}

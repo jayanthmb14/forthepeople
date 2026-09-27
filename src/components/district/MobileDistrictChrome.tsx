@@ -19,6 +19,8 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useModuleText } from "@/i18n/client";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronDown, LayoutDashboard } from "lucide-react";
@@ -41,6 +43,8 @@ export function MobileDistrictChrome({
   districtSlug,
   districtName,
 }: Props) {
+  const ts = useTranslations("sidebar");
+  const mt = useModuleText();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname() ?? "";
   const parts = pathname.split("/").filter(Boolean);
@@ -50,7 +54,7 @@ export function MobileDistrictChrome({
   const activeSlug = currentModule?.slug ?? (segment ? undefined : "overview");
   const CurrentIcon = currentModule?.icon ?? LayoutDashboard;
   // A taluk page (segment is not a module) shows the district name instead.
-  const currentLabel = currentModule?.label ?? districtName;
+  const currentLabel = currentModule ? mt.label(currentModule.slug) : districtName;
 
   useEffect(() => {
     function onOpen() {
@@ -63,7 +67,7 @@ export function MobileDistrictChrome({
   return (
     <>
       <nav
-        aria-label="Current module"
+        aria-label={ts("currentModule")}
         className="md:hidden"
         style={{
           display: "flex",
@@ -116,7 +120,7 @@ export function MobileDistrictChrome({
             flexShrink: 0,
           }}
         >
-          All modules
+          {ts("allModules")}
           <ChevronDown size={16} aria-hidden />
         </button>
       </nav>

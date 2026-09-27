@@ -28,9 +28,10 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
-import { asOfLabel } from "@/lib/utils/timeAgo";
 import { useFreshness } from "@/hooks/useFreshness";
 import type { FreshnessKey } from "@/hooks/useFreshness";
 import { Pill } from "@/components/district/ui";
@@ -54,12 +55,13 @@ type Light = "green" | "amber" | "red" | "unknown";
 // Which modules to list, in display order, with citizen-friendly names.
 // The API also returns `alerts` (a count, not a timestamp) — it is left
 // out because it carries no freshness information.
+// Second value = message key in the "status" namespace.
 const MODULE_LABELS: Array<[key: FreshnessKey, label: string]> = [
-  ["weather", "Weather"],
-  ["crops", "Crop prices"],
-  ["dam", "Dam levels"],
-  ["news", "News"],
-  ["aiInsights", "AI insights"],
+  ["weather", "rowWeather"],
+  ["crops", "rowCrops"],
+  ["dam", "rowDams"],
+  ["news", "rowNews"],
+  ["aiInsights", "rowAi"],
 ];
 
 type Overall = Light | "loading";
@@ -81,12 +83,13 @@ const LIGHT_DOT: Record<Light, string> = {
   unknown: "var(--ftp-border-strong)",
 };
 
+// Message keys ("status" namespace) for the strip's summary pill.
 const LIGHT_TEXT: Record<Overall, string> = {
-  green: "Data current",
-  amber: "Partly updated",
-  red: "Data behind",
-  unknown: "No dated data",
-  loading: "Checking data…",
+  green: "current",
+  amber: "partly",
+  red: "dataBehind",
+  unknown: "noDated",
+  loading: "checking",
 };
 
 /** Roll the per-module lights up into one light for the strip. */
@@ -98,11 +101,10 @@ function summarise(lights: Light[]): Light {
   return "amber";
 }
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTHS = ["January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"];
 
 export default function DistrictStatusBar({ districtName, stateName, districtSlug, stateSlug }: DistrictStatusBarProps) {
+  const t = useTranslations("status");
+  const { intl } = useFormat();
   const [timeStr, setTimeStr] = useState("");
   const [dateStr, setDateStr] = useState("");
   const [open, setOpen] = useState(false);
@@ -124,12 +126,13 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
       const mm = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
       setTimeStr(`${hh}:${mm}:${ss} IST`);
-      setDateStr(`${DAYS[now.getDay()]}, ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`);
+      // Weekday + date in the chosen language (IST).
+      setDateStr(new Date().toLocaleDateString(intl, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }));
     }
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [intl]);
 
   // Freshness: the shared hook makes one request per district page load.
   // Grey while it is loading, grey again if it fails — we never guess.
@@ -139,8 +142,10 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
     ? MODULE_LABELS.map(([key, label]) => {
         const m = fresh.modules[key];
         const light: Light = m?.status ?? "unknown";
-        const asOf = asOfLabel(m?.asOf ?? null) || "no data yet";
-        return { label, light, asOf };
+        const asOf = m?.asOf
+          ? new Date(m.asOf).toLocaleDateString(intl, { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })
+          : t("noDataYet");
+        return { label: t(label), light, asOf };
       })
     : [];
 
@@ -152,7 +157,7 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
         ? "unknown"
         : "loading";
 
-  const text = LIGHT_TEXT[overall];
+  const text = t(LIGHT_TEXT[overall]);
   // Plain-text version of the popover for the native tooltip / screen readers.
   const title = rows.length ? rows.map((r) => `${r.label} · ${r.asOf}`).join("\n") : text;
 
@@ -244,7 +249,7 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
                 <span className="ftp-num" style={{ color: "var(--ftp-text-2)" }}>{r.asOf}</span>
               </span>
             ))}
-            <span className="ftp-fresh-pop-foot">Dates are when the source last published.</span>
+            <span className="ftp-fresh-pop-foot">{t("datesNote")}</span>
           </span>
         )}
       </button>

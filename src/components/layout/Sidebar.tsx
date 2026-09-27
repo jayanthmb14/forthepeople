@@ -20,6 +20,8 @@
 //
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useModuleText } from "@/i18n/client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
@@ -146,6 +148,8 @@ function UtilityLink({
 }
 
 export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProps) {
+  const ts = useTranslations("sidebar");
+  const mt = useModuleText();
   const pathname = usePathname();
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
   const freshness = useFreshness(stateSlug, districtSlug);
@@ -177,8 +181,8 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
       <Link
         key={slug}
         href={href}
-        title={collapsed ? mod.label : undefined}
-        aria-label={collapsed ? mod.label : undefined}
+        title={collapsed ? mt.label(slug) : undefined}
+        aria-label={collapsed ? mt.label(slug) : undefined}
         aria-current={isActive ? "page" : undefined}
         data-active={isActive ? "true" : "false"}
         className="ftp-rail-item"
@@ -203,7 +207,7 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         >
           {mod.emoji}
         </span>
-        {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{mod.label}</span>}
+        {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{mt.label(slug)}</span>}
         {hasFeed && (
           <span
             aria-hidden
@@ -227,7 +231,7 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
 
   return (
     <aside
-      aria-label="District navigation"
+      aria-label={ts("navigation")}
       style={{
         width: collapsed ? "var(--ftp-rail-collapsed)" : "var(--ftp-rail-width)",
         minWidth: collapsed ? "var(--ftp-rail-collapsed)" : "var(--ftp-rail-width)",
@@ -258,8 +262,8 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         <button
           type="button"
           onClick={toggleCollapsed}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? ts("expand") : ts("collapse")}
+          aria-label={collapsed ? ts("expand") : ts("collapse")}
           aria-expanded={!collapsed}
           className="ftp-btn-secondary"
           style={{
@@ -279,14 +283,14 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         </button>
       </div>
 
-      <nav aria-label="District modules" style={{ paddingBottom: 12 }}>
+      <nav aria-label={ts("modules")} style={{ paddingBottom: 12 }}>
         {collapsed ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>{ALL_SLUGS.map(renderModule)}</div>
         ) : (
           SIDEBAR_GROUPS.map((group) => (
             <div key={group.label}>
               <div className="ftp-label" style={{ padding: "14px 18px 4px" }}>
-                {group.label}
+                {mt.group(group.label)}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{group.slugs.map(renderModule)}</div>
             </div>
@@ -296,10 +300,10 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         {/* Utility links */}
         <div style={{ height: 1, background: "var(--ftp-border)", margin: "12px 8px 8px" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <UtilityLink href={`/${locale}/compare?a=${districtSlug}`} icon={GitCompareArrows} label="Compare districts" collapsed={collapsed} />
-          <UtilityLink href="/support" icon={Heart} label="Support this project" collapsed={collapsed} color="var(--ftp-support)" />
-          <UtilityLink href={`/${locale}/features`} icon={Lightbulb} label="Vote on features" collapsed={collapsed} color="var(--ftp-features)" />
-          <UtilityLink href={`/${locale}/features?tab=suggest`} icon={MessageSquare} label="Spot something wrong? Tell us." collapsed={collapsed} />
+          <UtilityLink href={`/${locale}/compare?a=${districtSlug}`} icon={GitCompareArrows} label={ts("compare")} collapsed={collapsed} />
+          <UtilityLink href={`/${locale}/support`} icon={Heart} label={ts("support")} collapsed={collapsed} color="var(--ftp-support)" />
+          <UtilityLink href={`/${locale}/features`} icon={Lightbulb} label={ts("voteFeatures")} collapsed={collapsed} color="var(--ftp-features)" />
+          <UtilityLink href={`/${locale}/features?tab=suggest`} icon={MessageSquare} label={ts("spotWrong")} collapsed={collapsed} />
         </div>
       </nav>
     </aside>

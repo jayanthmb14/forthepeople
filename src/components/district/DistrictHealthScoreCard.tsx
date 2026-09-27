@@ -23,6 +23,7 @@
 //  word for word from v2 — only the presentation changed.
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { AsOfText, Card, KpiRing, ProgressBar } from "@/components/district/ui";
@@ -88,6 +89,7 @@ export function useHealthScore(districtSlug: string) {
  */
 export function HealthScoreRing({ districtSlug, size = 64, compact = false }: { districtSlug: string; size?: number; compact?: boolean }) {
   const { data } = useHealthScore(districtSlug);
+  const th = useTranslations("health");
   if (!data) return null;
   if (compact) return <KpiRing score={data.overallScore} grade={data.grade} size={size} />;
   const TrendIcon =
@@ -96,15 +98,15 @@ export function HealthScoreRing({ districtSlug, size = 64, compact = false }: { 
     <a
       href="#health-score"
       style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit", minHeight: 44 }}
-      aria-label={`District health score ${data.overallScore} out of 100, grade ${data.grade}. See how it is calculated.`}
+      aria-label={th("ringAria", { score: data.overallScore, grade: data.grade })}
     >
       <KpiRing score={data.overallScore} grade={data.grade} size={size} />
       <span style={{ display: "flex", flexDirection: "column" }}>
-        <span className="ftp-label">Health score</span>
+        <span className="ftp-label">{th("score")}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
           <span className="ftp-num">{data.overallScore}</span>
           <span style={{ color: "var(--ftp-text-2)" }}>/ 100</span>
-          {TrendIcon && <TrendIcon size={14} aria-label={data.trend ?? undefined} style={{ color: "var(--ftp-text-2)" }} />}
+          {TrendIcon && <TrendIcon size={14} aria-hidden style={{ color: "var(--ftp-text-2)" }} />}
         </span>
       </span>
     </a>
@@ -118,6 +120,8 @@ export function HealthScoreRing({ districtSlug, size = 64, compact = false }: { 
  */
 export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string }) {
   const { data } = useHealthScore(districtSlug);
+  const t = useTranslations("overview");
+  const th = useTranslations("health");
   if (!data) return null;
 
   const rows = CATEGORY_CONFIG.map((cat) => {
@@ -128,23 +132,18 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
   }).filter((r): r is NonNullable<typeof r> => r !== null);
 
   return (
-    <Card as="section" padding={18} id="health-score" aria-label="District report card" className="ftp-hue-blue" tinted>
+    <Card as="section" padding={18} id="health-score" aria-label={t("reportCard")} className="ftp-hue-blue" tinted>
       {/* Header: the grade ring, what it is, and when it was computed. */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <KpiRing score={data.overallScore} grade={data.grade} size={72} />
         <div style={{ flex: 1, minWidth: 200 }}>
           <h3 className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650, color: "var(--ftp-text)" }}>
-            <span className="ftp-emoji" aria-hidden>🩺 </span>District report card
+            <span className="ftp-emoji" aria-hidden>🩺 </span>{t("reportCard")}
           </h3>
           <p style={{ margin: "2px 0 0", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-            Grade <strong className="ftp-num" style={{ color: "var(--hue-deep)" }}>{data.grade}</strong>, a score of{" "}
-            <span className="ftp-num">{data.overallScore}</span> out of 100
-            {data.previousScore !== null && (
-              <>
-                {" "}(<span className="ftp-num">{data.previousScore}</span> last week)
-              </>
-            )}
-            . It is a rough guide built from the data we have, not an official rating.
+            {t("gradeLine", { grade: data.grade, score: data.overallScore })}
+            {data.previousScore !== null && t("gradeLast", { prev: data.previousScore })}
+            {t("gradeNote")}
           </p>
         </div>
         <AsOfText asOf={data.generatedAt} prefix="Computed" />
@@ -171,7 +170,7 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
               <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 26, height: 26, fontSize: 14, borderRadius: 8 }}>
                 {cat.emoji}
               </span>
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--ftp-text)" }}>{cat.label}</span>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--ftp-text)" }}>{th(cat.key)}</span>
               <span className="ftp-num" style={{ fontSize: 13, color: "var(--hue-deep)" }}>{score}</span>
             </div>
             <ProgressBar value={score} max={100} height={7} />
@@ -182,15 +181,14 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
       {/* The method, on demand. */}
       <details style={{ marginTop: 14 }}>
         <summary style={{ minHeight: 44, display: "flex", alignItems: "center", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)" }}>
-          How is the grade calculated?
+          {t("howGraded")}
         </summary>
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 12px" }}>
-          The District Health Score combines 10 governance categories with different weights (total 100%).
-          Scores are computed from live database records. Updated weekly.
+          {th("method")}
         </p>
         <p className="ftp-body" style={{ margin: "0 0 12px" }}>
-          <span style={{ fontWeight: 600, color: "var(--ftp-warn)" }}>Important: </span>
-          This score is indicative and continuously evolving. As more data modules are populated and verified for this district, the score will change. Categories with insufficient data use baseline estimates and are not fully representative. Do not use this score for official comparisons or policy decisions.
+          <span style={{ fontWeight: 600, color: "var(--ftp-warn)" }}>{th("important")} </span>
+          {th("caveat")}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))", gap: 10 }}>
           {rows.map(({ cat, bd, score }) => (
@@ -198,13 +196,13 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 600 }}>
                 <span>
                   <span className="ftp-emoji" aria-hidden>{cat.emoji} </span>
-                  {cat.label}
+                  {th(cat.key)}
                 </span>
                 <span className="ftp-num">{score}/100</span>
               </div>
               {bd && (
                 <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 6 }}>
-                  Weight <span className="ftp-num">{bd.weight}%</span>, adds <span className="ftp-num">{bd.weightedScore}</span> points
+                  {th("weightLine", { weight: bd.weight, points: bd.weightedScore })}
                 </div>
               )}
               {bd?.subMetrics &&

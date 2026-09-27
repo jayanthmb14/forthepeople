@@ -336,7 +336,17 @@
     "dataFresh": "Data fresh",
     "dataMixed": "Some data behind",
     "howRecent": "How recent the data is",
-    "datesNote": "Dates are when the source last published."
+    "datesNote": "Dates are when the source last published.",
+    "rowWeather": "Weather",
+    "rowCrops": "Crop prices",
+    "rowDams": "Dam levels",
+    "rowNews": "News",
+    "rowAi": "AI insights",
+    "current": "Data current",
+    "partly": "Partly updated",
+    "noDated": "No dated data",
+    "checking": "Checking data…",
+    "noDataYet": "no data yet"
   },
   "intro": {
     "line1": "Your district.",
@@ -413,7 +423,18 @@
     "howGraded": "How is the grade calculated?",
     "gradeLine": "Grade {grade}, a score of {score} out of 100",
     "gradeLast": " ({prev} last week)",
-    "gradeNote": ". It is a rough guide built from the data we have, not an official rating."
+    "gradeNote": ". It is a rough guide built from the data we have, not an official rating.",
+    "freshWeather": "Weather",
+    "freshMandi": "Mandi prices",
+    "freshDams": "Dam levels",
+    "freshNews": "News",
+    "somethingWrong": "Something wrong or missing on this page?",
+    "reportIssue": "Report an issue",
+    "addedRecently": "{name} was added recently.",
+    "addedRecentlyBody": "Data feeds are being connected one by one. Each module shows its own date as soon as its first update arrives.",
+    "censusOfIndia": "Census of India",
+    "dataUpdated": "Data updated {age}.",
+    "noRecentData": "No recent data."
   },
   "footer2": {
     "tagline": "Your district. Your data. Your right.",
@@ -507,5 +528,36 @@
     "cancel": "Cancel",
     "shareIdea": "Share an idea",
     "viewFeatures": "View all features"
+  },
+  "sidebar": {
+    "navigation": "District navigation",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar",
+    "modules": "District modules",
+    "compare": "Compare districts",
+    "support": "Support this project",
+    "voteFeatures": "Vote on features",
+    "spotWrong": "Spot something wrong? Tell us.",
+    "closeList": "Close module list",
+    "currentModule": "Current module",
+    "allModules": "All modules"
+  },
+  "health": {
+    "governance": "Governance",
+    "education": "Education",
+    "health": "Healthcare",
+    "infrastructure": "Infrastructure",
+    "waterSanitation": "Water",
+    "economy": "Economy",
+    "safety": "Safety",
+    "agriculture": "Agriculture",
+    "digitalAccess": "Digital",
+    "citizenWelfare": "Welfare",
+    "method": "The District Health Score combines 10 governance categories with different weights (total 100%). Scores are computed from live database records. Updated weekly.",
+    "important": "Important:",
+    "caveat": "This score is indicative and continuously evolving. As more data modules are populated and verified for this district, the score will change. Categories with insufficient data use baseline estimates and are not fully representative. Do not use this score for official comparisons or policy decisions.",
+    "weightLine": "Weight {weight}%, adds {points} points",
+    "ringAria": "District health score {score} out of 100, grade {grade}. See how it is calculated.",
+    "score": "Health score"
   }
 }

@@ -25,6 +25,7 @@
 //  This file holds the ONLY <h1> of the page it is used on.
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { SourcePill, StatStrip, StatTile } from "@/components/district/ui";
 import { DEFAULT_PALETTE, DistrictSVG, PALETTES } from "@/components/district/DistrictHeroIllustration";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
@@ -82,7 +83,14 @@ export default function DistrictIdentityCard({
 }: DistrictIdentityCardProps) {
   // v4: the card wears the district's own hue and its hand-drawn
   // landmark illustration (restored from the original site) on the right.
+  const t = useTranslations("overview");
+  const tk = useTranslations("kit");
+  const locale = useLocale();
   const slug = districtSlug ?? healthSlug ?? "";
+  // UI in the district's own language → lead with the local name.
+  const localFirst = Boolean(nameLocal && nameLocal !== name && scriptLang(nameLocal) === locale);
+  const primaryName = localFirst ? (nameLocal as string) : name;
+  const secondaryName = localFirst ? name : nameLocal && nameLocal !== name ? nameLocal : undefined;
   const palette = PALETTES[slug] ?? DEFAULT_PALETTE;
   const hasArt = Boolean(PALETTES[slug]);
   return (
@@ -122,15 +130,15 @@ export default function DistrictIdentityCard({
               }}
             >
               <span className="ftp-emoji" aria-hidden>📍</span>
-              {stateName} district
+              {t("districtOf", { state: stateName })}
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)", textWrap: "balance" }}>
-                {name}
+                <span lang={localFirst ? scriptLang(primaryName) : undefined}>{primaryName}</span>
               </h1>
-              {nameLocal && nameLocal !== name && (
-                <span lang={scriptLang(nameLocal)} style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
-                  {nameLocal}
+              {secondaryName && (
+                <span lang={localFirst ? "en" : scriptLang(secondaryName)} style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
+                  {secondaryName}
                 </span>
               )}
             </div>
@@ -148,14 +156,14 @@ export default function DistrictIdentityCard({
             the figure is an estimate. Never claim a census year we don't have. */}
         <div style={{ marginTop: 20, maxWidth: 720 }}>
           <StatStrip cols={4}>
-            <StatTile emoji="👨‍👩‍👧" label="Population" value={population ? population.toLocaleString("en-IN") : "—"} />
-            <StatTile emoji="🗺️" label="Area" value={area ? area.toLocaleString("en-IN") : "—"} unit={area ? "km²" : undefined} />
-            <StatTile emoji="📚" label="Literacy" value={literacy ? `${literacy}` : "—"} unit={literacy ? "%" : undefined} />
+            <StatTile emoji="👨‍👩‍👧" label={t("population")} value={population ? population.toLocaleString("en-IN") : "—"} />
+            <StatTile emoji="🗺️" label={t("area")} value={area ? area.toLocaleString("en-IN") : "—"} unit={area ? "km²" : undefined} />
+            <StatTile emoji="📚" label={t("literacy")} value={literacy ? `${literacy}` : "—"} unit={literacy ? "%" : undefined} />
             <StatTile emoji="🏘️" label={subUnitLabel} value={subUnitCount ?? "—"} />
           </StatStrip>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
             <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-              {statsAsOf ? `As of ${statsAsOf}` : "Latest available estimate"}
+              {statsAsOf ? t("asOfCensus", { dataset: statsAsOf }) : tk("latestEstimate")}
             </span>
             {statsSource && <SourcePill label={statsSource.label} href={statsSource.href} />}
           </div>

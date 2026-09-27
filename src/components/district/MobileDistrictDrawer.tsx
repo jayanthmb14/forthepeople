@@ -18,6 +18,8 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useModuleText } from "@/i18n/client";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
@@ -47,6 +49,8 @@ export function MobileDistrictDrawer({
   districtName,
   activeSlug,
 }: Props) {
+  const ts = useTranslations("sidebar");
+  const mt = useModuleText();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   // Lock page scroll while the sheet is open.
@@ -122,7 +126,7 @@ export function MobileDistrictDrawer({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            aria-label="Close module list"
+            aria-label={ts("closeList")}
             style={{
               width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
               border: "none", background: "transparent", color: "var(--ftp-text)", cursor: "pointer",
@@ -134,10 +138,10 @@ export function MobileDistrictDrawer({
         </div>
 
         {/* Groups */}
-        <nav aria-label="District modules" style={{ overflowY: "auto", padding: "4px 0 8px" }}>
+        <nav aria-label={ts("modules")} style={{ overflowY: "auto", padding: "4px 0 8px" }}>
           {TIERS.map((tier) => (
-            <section key={tier.label} aria-label={tier.label}>
-              <h2 className="ftp-label" style={{ padding: "12px 16px 4px" }}>{tier.label}</h2>
+            <section key={tier.label} aria-label={mt.group(tier.label)}>
+              <h2 className="ftp-label" style={{ padding: "12px 16px 4px" }}>{mt.group(tier.label)}</h2>
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {tier.modules.map((m) => {
                   const href = m.slug === "overview" ? base : `${base}/${m.slug}`;
@@ -165,7 +169,7 @@ export function MobileDistrictDrawer({
                         >
                           {m.emoji}
                         </span>
-                        <span>{m.label}</span>
+                        <span>{mt.label(m.slug)}</span>
                       </Link>
                     </li>
                   );
