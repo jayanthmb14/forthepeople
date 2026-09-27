@@ -5,11 +5,16 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Government Offices — Design v3 module page (CONCEPT-v3 §5)
+//  Government Offices — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Data: useOffices() → the district office directory (active rows only).
 //  Search box + department Chips filter the list on the client.
+//
+//  v4 look: emoji StatTiles, then the picture — an "In simple words" line
+//  and a week strip (Mon … Sun, lit on the days OFFICE_HOURS says offices
+//  open, today ringed). Accents come from the page hue (slate for offices);
+//  the open / lunch / closed pills keep their semantic live / warn colours.
 //
 //  "Open now" (2026-09-27 fix): the old rule used 09:00–18:00 in the
 //  VISITOR'S BROWSER time zone while the page said "10:00 AM – 5:30 PM".
@@ -23,7 +28,7 @@
 //      open / closed / lunch status from those hours.
 "use client";
 import { use, useState } from "react";
-import { Building, Phone, Mail, Globe, MapPin, Clock, Search } from "lucide-react";
+import { Building, Phone, Mail, Globe, MapPin, Search } from "lucide-react";
 import { useOffices } from "@/hooks/useRealtimeData";
 import type { GovOffice } from "@/hooks/useRealtimeData";
 import {
@@ -38,12 +43,13 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
+import { Explainer } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
 import { getModuleSources } from "@/lib/constants/state-config";
-import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -156,10 +162,67 @@ function ContactLink({ href, icon: Icon, children, external }: { href: string; i
     <a
       href={href}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, fontSize: 13, fontWeight: 500, color: "var(--hue-deep)", textDecoration: "none" }}
     >
-      <Icon size={12} aria-hidden /> {children}
+      <Icon size={12} aria-hidden style={{ color: "var(--hue)" }} /> {children}
     </a>
+  );
+}
+
+/** Pill colours taken from the page hue instead of the neutral grey. */
+const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
+
+/** Mon … Sun, the order people read a week in. */
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/**
+ * WeekStrip — seven day tiles, lit (hue) on the days OFFICE_HOURS says
+ * offices open and grey on the others, with today ringed. The same
+ * constant drives the sentence and the "Open now" rule, so the picture
+ * can never disagree with them.
+ */
+function WeekStrip({ openDays, today }: { openDays: readonly number[]; today: number }) {
+  return (
+    <figure style={{ margin: 0 }}>
+      <div
+        role="img"
+        aria-label={`Offices open ${dayRangeLabel(openDays)}. Today is ${DAY_SHORT[today]}.`}
+        style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, maxWidth: 460 }}
+      >
+        {WEEK_ORDER.map((d, i) => {
+          const open = openDays.includes(d);
+          const isToday = d === today;
+          return (
+            <span
+              key={d}
+              aria-hidden
+              className="ftp-pop"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                padding: "8px 0",
+                borderRadius: 12,
+                background: open ? "var(--hue-tint)" : "var(--ftp-surface-2)",
+                border: isToday ? "2px solid var(--hue-deep)" : "2px solid transparent",
+                ["--i" as string]: i,
+              }}
+            >
+              <span className="ftp-emoji" style={{ fontSize: 20, filter: open ? "none" : "grayscale(1)", opacity: open ? 1 : 0.35 }}>
+                🏢
+              </span>
+              <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: open ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>
+                {DAY_SHORT[d]}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+      <figcaption style={{ marginTop: 8, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+        Coloured days are open days. The ringed day is today (India time).
+      </figcaption>
+    </figure>
   );
 }
 
@@ -173,6 +236,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
   const offices: OfficeRow[] = (data?.data ?? []).filter((o) => o.active);
   const departments = Array.from(new Set(offices.map((o) => o.department)));
   const openNow = isOpenNow();
+  const todayIST = nowInIST().day;
   const refresh = `Directory updates: ${getModuleSources("offices", state).frequency.toLowerCase()}`;
 
   const filtered = offices.filter((o) => {
@@ -186,10 +250,15 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
       <PageHeader
         icon={Building}
         title="Government Offices"
-        description="Directory of government offices — addresses, contacts, and services"
+        description="Directory of government offices: addresses, contacts and services"
         backHref={base}
         accent={getModuleAccent("offices")}
       />
+
+      <ModuleSummary>
+        A directory of government offices in this district: where each office is, which department it belongs to, who
+        heads it, how to reach it, and which services it handles. Opening hours are shown in Indian Standard Time.
+      </ModuleSummary>
 
       <AIInsightCard module="offices" district={district} />
       {isLoading && <LoadingShell rows={4} />}
@@ -199,26 +268,29 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
       {!isLoading && offices.length > 0 && (
         <>
           <StatStrip cols={3}>
-            <StatTile label="Offices" value={offices.length} icon={Building} sub={refresh} />
-            <StatTile label="Departments" value={departments.length} sub={refresh} />
-            <StatTile label="Status" value={openNow ? "Open Now" : "Closed"} icon={Clock} sub={`${OFFICE_HOURS_LABEL} IST`} />
+            <StatTile emoji="🏢" label="Offices" value={offices.length} sub={refresh} />
+            <StatTile emoji="🗂️" label="Departments" value={departments.length} sub={refresh} />
+            <StatTile emoji={openNow ? "🔓" : "🔒"} label="Status" value={openNow ? "Open now" : "Closed"} sub={`${OFFICE_HOURS_LABEL} IST`} />
           </StatStrip>
 
-          {/* Office hours line — plain text, no tinted box. Both the words
-              and the open/closed rule come from OFFICE_HOURS. */}
-          <p style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: "16px 0 0" }}>
-            <Clock size={14} aria-hidden style={{ color: openNow ? "var(--ftp-live)" : "var(--ftp-text-2)", flexShrink: 0 }} />
-            <span suppressHydrationWarning>
-              {openNow ? `Offices are open now (${OFFICE_HOURS_LABEL}, IST)` : `Offices are currently closed. Open ${OFFICE_HOURS_LABEL} (IST)`}
-              {offices.some((o) => officeStatus(o) !== null) ? ". Some offices keep their own hours, shown on their cards." : ""}
-            </span>
-          </p>
+          {/* The picture: office hours in plain words plus a week strip.
+              Both the words and the open/closed rule come from OFFICE_HOURS. */}
+          <Card tinted padding={18} style={{ marginTop: 16 }}>
+            <Explainer title="In simple words" emoji="🕙">
+              <span suppressHydrationWarning>
+                {openNow ? "Right now, offices are open." : "Right now, offices are closed."} They usually open{" "}
+                <strong>{OFFICE_HOURS_LABEL}</strong>, India time.
+                {offices.some((o) => officeStatus(o) !== null) ? " Some offices keep their own hours, shown on their cards." : ""}
+              </span>
+            </Explainer>
+            <WeekStrip openDays={OFFICE_HOURS.days} today={todayIST} />
+          </Card>
 
-          <Section title="Office directory">
+          <Section title="Office directory" emoji="📇">
             {/* Search + department filter. */}
             <label style={{ position: "relative", display: "block", marginBottom: 12 }}>
               <span className="sr-only">Search offices</span>
-              <Search size={16} aria-hidden style={{ position: "absolute", left: 12, top: 14, color: "var(--ftp-text-2)" }} />
+              <Search size={16} aria-hidden style={{ position: "absolute", left: 12, top: 14, color: "var(--hue)" }} />
               <input
                 type="search"
                 placeholder="Search offices..."
@@ -229,7 +301,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                   minHeight: 44,
                   padding: "10px 14px 10px 36px",
                   borderRadius: "var(--ftp-radius-tile)",
-                  border: "1px solid var(--ftp-border)",
+                  border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
                   background: "var(--ftp-surface)",
                   color: "var(--ftp-text)",
                   fontFamily: "var(--ftp-font-sans)",
@@ -251,7 +323,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
             </div>
 
             {filtered.length === 0 ? (
-              <EmptyState title="No offices match your search." body="Try a different name or department." />
+              <EmptyState emoji="🔍" title="No offices match your search." body="Try a different name or department." />
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
                 {filtered.map((o) => {
@@ -260,8 +332,11 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                   return (
                   <Card key={o.id} as="article">
                     <h3 className="ftp-title">{o.name}</h3>
-                    {o.nameLocal && <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{o.nameLocal}</div>}
-                    <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{o.department} · {o.type}</div>
+                    {o.nameLocal && <div lang="und" style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>{o.nameLocal}</div>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                      <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: "var(--hue-deep)" }}>{o.department}</span>
+                      <Pill>{o.type}</Pill>
+                    </div>
 
                     {status && (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
@@ -270,9 +345,9 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                             {status.state === "open" ? "Open now" : status.state === "lunch" ? "Lunch break" : "Closed now"}
                           </span>
                         </Pill>
-                        <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
-                          Today: <span className="ftp-num">{status.today ?? "closed"}</span>
-                          {status.today && o.lunchBreak ? <> · lunch <span className="ftp-num">{o.lunchBreak}</span></> : null} (IST)
+                        <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
+                          Today <span className="ftp-num">{status.today ?? "closed"}</span>
+                          {status.today && o.lunchBreak ? <>, lunch <span className="ftp-num">{o.lunchBreak}</span></> : null} (IST)
                         </span>
                       </div>
                     )}
@@ -285,7 +360,7 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                     )}
 
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                      <MapPin size={12} aria-hidden style={{ flexShrink: 0, marginTop: 4 }} />
+                      <MapPin size={12} aria-hidden style={{ flexShrink: 0, marginTop: 4, color: "var(--hue)" }} />
                       <span>{o.address}</span>
                     </div>
 
@@ -301,9 +376,13 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
                       <div style={{ marginTop: 8 }}>
                         <div className="ftp-label" style={{ marginBottom: 4 }}>Services</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-                          {o.services.slice(0, 4).map((s, i) => <Pill key={i}>{s}</Pill>)}
+                          {o.services.slice(0, 4).map((s, i) => (
+                            <Pill key={i} style={HUE_PILL}>
+                              {s}
+                            </Pill>
+                          ))}
                           {o.services.length > 4 && (
-                            <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>+{o.services.length - 4} more</span>
+                            <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>+{o.services.length - 4} more</span>
                           )}
                         </div>
                       </div>
