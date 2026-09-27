@@ -16,7 +16,7 @@ export default function LegalFooter() {
     <div role="note" style={{ marginTop: 32 }}>
       <Card>
         <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
-          <span style={STRONG}>Legal Notice:</span>{" "}
+          <span style={STRONG}>Legal notice:</span>{" "}
           Infrastructure project data on ForThePeople.in is compiled from publicly available news articles and government
           press releases under <span style={{ color: "var(--ftp-text)" }}>Article 19(1)(a)</span> of the Indian Constitution
           (Right to Freedom of Speech and Expression) and India&apos;s{" "}

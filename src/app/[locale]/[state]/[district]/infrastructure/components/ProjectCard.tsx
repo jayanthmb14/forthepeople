@@ -3,17 +3,19 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Infrastructure Tracker — one project card (status, people, budget, dates,
- * progress, latest news). Design v3: kit Card + Pill + ProgressBar, Lucide
- * icons instead of emoji, token colours only. Semantic colour appears as
- * text (warn / danger / live) or a dot — never as a tinted box. All the
- * honesty lines (news-derived status, single source, "as of" dates) stay.
+ * progress, latest news). Design v4: kit Card + Pill + ProgressBar, the
+ * category icon in a chip of the module hue, a hue progress bar and a
+ * hue "View timeline" link. Semantic colour (warn / danger / live) stays
+ * as text or a dot for status. Facts sit side by side as small items
+ * instead of "·"-joined strings. All the honesty lines (news-derived
+ * status, single source, "as of" dates) stay.
  */
 
 "use client";
 
 import { useState } from "react";
 import {
-  AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, IndianRupee, Newspaper, Scale,
+  AlertTriangle, CalendarDays, CheckCircle2, IndianRupee, Newspaper, Scale,
 } from "lucide-react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { Card, Pill, ProgressBar } from "@/components/district/ui";
@@ -28,6 +30,8 @@ import TimelineModal from "./TimelineModal";
 const NOTE: React.CSSProperties = { fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" };
 /** Row of icon + text (budget, dates, latest news). */
 const ICON_ROW: React.CSSProperties = { display: "flex", alignItems: "flex-start", gap: 6 };
+/** Facts that sit side by side and wrap (dates, footer). */
+const FACTS: React.CSSProperties = { display: "inline-flex", flexWrap: "wrap", alignItems: "center", columnGap: 12, rowGap: 2 };
 
 export default function ProjectCard({ p }: { p: InfraProject }) {
   const [open, setOpen] = useState(false);
@@ -47,9 +51,11 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
       {/* Header: name + short description + category·agency line + status badge */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 6 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 className="ftp-title" style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <CategoryIcon category={p.category} size={16} />
-            <span>{p.name}</span>
+          <h3 className="ftp-title" style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="ftp-icon-chip" aria-hidden style={{ width: 30, height: 30, borderRadius: 10 }}>
+              <CategoryIcon category={p.category} size={16} />
+            </span>
+            <span style={{ minWidth: 0 }}>{p.name}</span>
           </h3>
           {p.description && (
             <div
@@ -64,10 +70,21 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
               {truncate(p.description, 100)}
             </div>
           )}
-          <div className="ftp-label">
-            {normalCategory}
-            {p.executingAgency && <> · {p.executingAgency}</>}
-            {p.scope && p.scope !== "DISTRICT" && <> · {p.scope}</>}
+          <div className="ftp-label" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+            <span
+              style={{
+                padding: "1px 8px", borderRadius: "var(--ftp-radius-pill)",
+                background: "var(--hue-tint)", color: "var(--hue-deep)",
+              }}
+            >
+              {normalCategory}
+            </span>
+            {p.executingAgency && <span>{p.executingAgency}</span>}
+            {p.scope && p.scope !== "DISTRICT" && (
+              <span style={{ padding: "1px 8px", borderRadius: "var(--ftp-radius-pill)", border: "1px solid var(--ftp-border)" }}>
+                {p.scope}
+              </span>
+            )}
           </div>
         </div>
         <Pill tone={ss.tone} dot icon={showDelayIcon ? AlertTriangle : undefined}>
@@ -176,19 +193,21 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
               return <>Timeline not announced</>;
             }
             return (
-              <>
-                {anchorLabel ?? "Not started"}
-                {anchorDate ? <>: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatMonthYear(anchorDate)}</span></> : ""}
+              <span style={FACTS}>
+                <span>
+                  {anchorLabel ?? "Not started"}
+                  {anchorDate ? <>: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatMonthYear(anchorDate)}</span></> : ""}
+                </span>
                 {(p.originalEndDate ?? p.expectedEnd) && (
-                  <> · Expected: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatMonthYear(p.originalEndDate ?? p.expectedEnd)}</span></>
+                  <span>Expected: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{formatMonthYear(p.originalEndDate ?? p.expectedEnd)}</span></span>
                 )}
                 {p.revisedEndDate && (
-                  <> · <span style={{ color: "var(--ftp-warn)" }}>Revised: <span className="ftp-num">{formatMonthYear(p.revisedEndDate)}</span>{p.delayMonths ? ` (+${p.delayMonths}mo)` : ""}</span></>
+                  <span style={{ color: "var(--ftp-warn)" }}>Revised: <span className="ftp-num">{formatMonthYear(p.revisedEndDate)}</span>{p.delayMonths ? ` (+${p.delayMonths}mo)` : ""}</span>
                 )}
                 {isCancelled(p) && p.cancelledDate && (
-                  <> · <span style={{ color: "var(--ftp-danger)" }}>Cancelled: <span className="ftp-num">{formatMonthYear(p.cancelledDate)}</span></span></>
+                  <span style={{ color: "var(--ftp-danger)" }}>Cancelled: <span className="ftp-num">{formatMonthYear(p.cancelledDate)}</span></span>
                 )}
-              </>
+              </span>
             );
           })()}
         </span>
@@ -212,7 +231,7 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
             <div style={{ ...NOTE, marginTop: 4 }}>
               {lastTs
                 ? <>Progress as of <span className="ftp-num">{formatFullDate(lastTs)}</span></>
-                : <>Progress approximate · Last verified: <span className="ftp-num">{formatFullDate(p.lastVerifiedAt)}</span></>
+                : <>Progress is approximate. Last verified: <span className="ftp-num">{formatFullDate(p.lastVerifiedAt)}</span></>
               }
             </div>
           )}
@@ -229,7 +248,7 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           ) : (
             <>
               <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
-              Single source — awaiting additional verification
+              Single source, awaiting additional verification
             </>
           )}
         </div>
@@ -259,33 +278,33 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
                 title={latest.headline}
               >
                 {truncate(latest.headline, 60)}
-                {latest.newsSource && <span style={{ color: "var(--ftp-text-2)" }}> — {latest.newsSource}, {formatFullDate(latest.date)}</span>}
+                {latest.newsSource && <span style={{ color: "var(--ftp-text-2)" }}> ({latest.newsSource}, {formatFullDate(latest.date)})</span>}
               </a>
             ) : (
               <span style={{ color: "var(--ftp-text-2)" }}>
-                No news coverage yet — updates as articles are published
+                No news coverage yet. This updates as articles are published.
               </span>
             )}
           </div>
         );
       })()}
 
-      {/* Footer: Last updated · Source · View Timeline (N) */}
+      {/* Footer: last updated, source, verified count, and the timeline link */}
       <div
         style={{
-          marginTop: "auto", paddingTop: 8, borderTop: "1px solid var(--ftp-border)",
+          marginTop: "auto", paddingTop: 8, borderTop: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: 8, flexWrap: "wrap", ...NOTE,
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-          Last updated: {lastTs ? relativeTime(lastTs) : "—"} · Source: {sourceLabel}
+        <span style={FACTS}>
+          <span>Last updated: {lastTs ? relativeTime(lastTs) : "—"}</span>
+          <span>Source: {sourceLabel}</span>
           {verifiedCount > 0 && (
-            <>
-              {" · "}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
               <CheckCircle2 size={12} aria-label="Verified sources" style={{ color: "var(--ftp-live-text)" }} />
               <span className="ftp-num">{verifiedCount}</span>
-            </>
+            </span>
           )}
         </span>
         {/* ftp-chip = 32 px tall on desktop, 44 px tap target on phones. */}
@@ -294,14 +313,14 @@ export default function ProjectCard({ p }: { p: InfraProject }) {
           onClick={() => setOpen(true)}
           className="ftp-chip"
           style={{
-            display: "inline-flex", alignItems: "center", gap: 4, padding: 0,
-            background: "none", border: "none", color: "var(--ftp-brand)",
-            fontSize: 13, fontWeight: 500, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 4, padding: "0 12px",
+            background: "var(--hue-tint)", border: "1px solid color-mix(in srgb, var(--hue) 25%, transparent)",
+            borderRadius: "var(--ftp-radius-pill)", color: "var(--hue-deep)",
+            fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--ftp-font-sans)",
           }}
           aria-haspopup="dialog"
         >
-          View Timeline{updates.length > 0 ? ` (${updates.length})` : ""}
-          <ArrowRight size={14} aria-hidden />
+          View timeline{updates.length > 0 ? ` (${updates.length})` : ""}
         </button>
       </div>
 
