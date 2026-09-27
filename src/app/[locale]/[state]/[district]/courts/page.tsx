@@ -27,7 +27,7 @@
 "use client";
 
 import type React from "react";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Scale } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -100,6 +100,8 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useCourts(district, state);
   const [open, setOpen] = useState<string | null>(null);
+  // Stable, so the sheet's focus handling does not re-run on every render.
+  const closeSheet = useCallback(() => setOpen(null), []);
   const [showAll, setShowAll] = useState(false);
   const num = (n: number) => f.number(n);
 
@@ -347,7 +349,7 @@ function CourtsPageInner({ params }: { params: Promise<{ locale: string; state: 
       {/* Everything about one court. */}
       <DetailSheet
         open={openLatest !== null}
-        onClose={() => setOpen(null)}
+        onClose={closeSheet}
         title={openLatest?.courtName ?? ""}
         titleLang="en"
         subtitle={openLatest ? t("sheetSub", { year: String(openLatest.year) }) : undefined}

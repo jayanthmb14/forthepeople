@@ -27,7 +27,7 @@
 "use client";
 
 import type React from "react";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ClipboardList } from "lucide-react";
@@ -120,6 +120,8 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useRTI(district, state);
   const [open, setOpen] = useState<string | null>(null);
+  // Stable, so the sheet's focus handling does not re-run on every render.
+  const closeSheet = useCallback(() => setOpen(null), []);
   const [showAll, setShowAll] = useState(false);
   const num = (n: number) => f.number(n);
   const days = (n: number) => f.number(n, { maximumFractionDigits: 0 });
@@ -356,7 +358,7 @@ function RTIPageInner({ params }: { params: Promise<{ locale: string; state: str
       {/* Everything about one office. */}
       <DetailSheet
         open={openDept !== null}
-        onClose={() => setOpen(null)}
+        onClose={closeSheet}
         title={openDept?.dept ?? ""}
         titleLang="en"
         subtitle={period}

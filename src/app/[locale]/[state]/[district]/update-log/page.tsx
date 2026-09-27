@@ -25,7 +25,7 @@
 "use client";
 
 import type React from "react";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { History } from "lucide-react";
@@ -115,6 +115,8 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
   const [filter, setFilter] = useState<FilterTab>("all");
   const [pageSize, setPageSize] = useState(PAGE_STEP);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Stable, so the sheet's focus handling does not re-run on every render.
+  const closeSheet = useCallback(() => setOpenId(null), []);
   const num = (n: number) => f.number(n);
 
   const { data, isLoading, error } = useQuery<UpdateLogResponse>({
@@ -368,7 +370,7 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
       {/* Everything about one change. */}
       <DetailSheet
         open={open !== null}
-        onClose={() => setOpenId(null)}
+        onClose={closeSheet}
         title={open ? pageName(open.moduleName) : ""}
         subtitle={open ? <span suppressHydrationWarning>{formatIST(open.timestamp, f.intl)}</span> : undefined}
         emoji={open?.moduleName ? getModuleMeta(open.moduleName)?.emoji ?? "🗂️" : "🗂️"}

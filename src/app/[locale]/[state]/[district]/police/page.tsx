@@ -28,7 +28,7 @@
 "use client";
 
 import type React from "react";
-import { use, useMemo, useState } from "react";
+import { use, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -105,6 +105,8 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
   const hue = hueClass("police");
   const { data, isLoading, error } = usePolice(district, state);
   const [open, setOpen] = useState<Station | null>(null);
+  // Stable, so the sheet's focus handling does not re-run on every render.
+  const closeSheet = useCallback(() => setOpen(null), []);
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
 
@@ -606,7 +608,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
       {/* Everything about one station, without leaving the page. */}
       <DetailSheet
         open={open !== null}
-        onClose={() => setOpen(null)}
+        onClose={closeSheet}
         title={open?.name ?? ""}
         titleLang="en"
         subtitle={

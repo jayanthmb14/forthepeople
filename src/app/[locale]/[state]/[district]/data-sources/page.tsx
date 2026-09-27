@@ -29,7 +29,7 @@
 "use client";
 
 import type React from "react";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Database } from "lucide-react";
@@ -145,6 +145,8 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
   const base = `/${locale}/${state}/${district}`;
   const num = (n: number) => f.number(n);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  // Stable, so the sheet's focus handling does not re-run on every render.
+  const closeSheet = useCallback(() => setOpenIdx(null), []);
 
   const sources = getDataSources(state);
   const liveCount = sources.filter((s) => s.status === "live").length;
@@ -368,7 +370,7 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
       {/* Everything about one source. */}
       <DetailSheet
         open={open !== null}
-        onClose={() => setOpenIdx(null)}
+        onClose={closeSheet}
         title={open ? rowName(open.ds.module) : ""}
         subtitle={open ? <span lang="en">{open.ds.source}</span> : undefined}
         emoji={open ? rowEmoji(open.ds.module) : "🔗"}
