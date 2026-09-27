@@ -16,6 +16,8 @@ import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
 import {
+  ACTIVE_TRANSPORT,
+  BORN_HERE_PERSONALITY,
   JJM_DISTRICT_TOTAL,
   LOCAL_INFRA,
   NJDG_COURTSTAT,
@@ -40,6 +42,9 @@ import { dedupeStories } from "@/lib/news-dedupe";
 import { leaderOfficePhone } from "@/lib/government-checks";
 import { isRelatedNews } from "@/lib/related-news";
 import { getStateConfig } from "@/lib/constants/state-config";
+
+import { pickCensus2011, withCensusFigures } from "@/lib/census-2011";
+import { schoolForDisplay } from "@/lib/school-rows";
 
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
@@ -154,7 +159,17 @@ async function fetchModule(
       // the schools we list by name (compare reads this).
       if (d && udise) d._count.schools = udise.data.totals.schools;
       if (d) d.leaders = d.leaders.map((l) => ({ ...l, phone: leaderOfficePhone(l.phone) }));
-      return { data: d ? { ...d, schoolsFrom: udise ? "udise" : "listed" } : d, meta };
+      // People figures (population, literacy, sex ratio, density): the
+      // checked Census 2011 row, not the hand-typed District columns
+      // (Sept 2026 audit — src/lib/census-2011.ts).
+      const census = pickCensus2011(
+        await prisma.populationHistory.findMany({
+          where: { districtId: did, year: 2011 },
+          select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
+        }),
+      );
+      const shown = d ? withCensusFigures(d, census) : d;
+      return { data: shown ? { ...shown, schoolsFrom: udise ? "udise" : "listed", figuresFrom: census ? "census-2011" : "district" } : shown, meta };
     }
 
     // ══════════════════════════════════════════════════
@@ -482,7 +497,7 @@ async function fetchModule(
       // the district's UDISE+ totals from /api/cron/scrape-schools (schools,
       // teachers, students for the school year) — the page's headline
       // figures come from it whenever it exists, never from adding up the list.
-      const [data, snapshot] = await Promise.all([
+      const [rows, snapshot] = await Promise.all([
         prisma.school.findMany({
           where: { districtId: did },
           include: { results: { orderBy: { year: "desc" }, take: 3 } },
@@ -491,6 +506,9 @@ async function fetchModule(
         }),
         readDistrictSnapshot<UdiseSnapshotData>("udise", districtSlug),
       ]);
+      // Per-school students / teachers only for a school with a UDISE+ code;
+      // the address without the notes a seed packed into it (Sept 2026 audit).
+      const data = rows.map(schoolForDisplay);
       return { data, meta: { ...meta, lastUpdated: snapshot?.fetchedAt ?? null }, snapshot };
     }
 
@@ -539,12 +557,13 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "transport": {
       const [buses, trains] = await Promise.all([
+        // Active rows only: unchecked seeded rows are set inactive (ACTIVE_TRANSPORT).
         prisma.busRoute.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...ACTIVE_TRANSPORT },
           orderBy: { routeNumber: "asc" },
         }),
         prisma.trainSchedule.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...ACTIVE_TRANSPORT },
           orderBy: { trainNumber: "asc" },
         }),
       ]);
@@ -702,8 +721,9 @@ async function fetchModule(
     }
 
     case "famous-personalities": {
+      // Born in the district only (BORN_HERE_PERSONALITY).
       const data = await prisma.famousPersonality.findMany({
-        where: { districtId: did, active: true },
+        where: { districtId: did, ...BORN_HERE_PERSONALITY },
         orderBy: [{ category: "asc" }, { name: "asc" }],
       });
       return { data, meta };

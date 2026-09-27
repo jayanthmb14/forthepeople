@@ -536,8 +536,10 @@ export const UNIVERSAL_DATA_SOURCES: DataSourceEntry[] = [
   { module: "Infrastructure", source: "PMGSY / State PWD Portal", type: "Collected", frequency: "Monthly", url: null, status: "static" },
   { module: "Jal Jeevan Mission", source: "JJM National Dashboard (eJalShakti)", type: "API", frequency: "Daily", url: "https://ejalshakti.gov.in/jjmreport/JJMIndia.aspx", status: "live" },
   { module: "Housing", source: "AwaasSoft (PMAY Dashboard)", type: "API", frequency: "Monthly", url: "https://pmayg.nic.in", status: "live" },
-  { module: "Population", source: "Census of India 2011 + NFHS-5 (2019-21) + NITI MPI 2023 + SRS 2023 + PLFS (latest)", type: "Collected", frequency: "Census: decadal (2027 upcoming) · NFHS: 5-yearly · PLFS: quarterly · SRS: annual · GBA municipal: ad-hoc", url: "https://censusindia.gov.in", status: "static" },
-  { module: "Panchayats", source: "MGNREGA “At a glance” (NREGASoft)", type: "API", frequency: "Daily", url: "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx", status: "live" },
+  // Only the sources the population page actually shows (Sept 2026 audit):
+  // NFHS-5 rows are empty and no SRS / PLFS figures are loaded.
+  { module: "Population", source: "Census of India 2011 + NITI Aayog MPI 2023 (Karnataka districts)", type: "Collected", frequency: "Census: every ten years (next: Census 2027) · NITI MPI: when NITI Aayog publishes", url: "https://censusindia.gov.in", status: "static" },
+ { module: "Panchayats", source: "MGNREGA “At a glance” (NREGASoft)", type: "API", frequency: "Daily", url: "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx", status: "live" },
   { module: "News", source: "Google News RSS / Regional news aggregation", type: "RSS", frequency: "Daily", url: null, status: "live" },
   { module: "Leaders", source: "Wikipedia / IndiaVotes / News reports / District NIC Portal", type: "Collected", frequency: "On-change", url: null, status: "static" },
   { module: "Famous Personalities", source: "Wikipedia (CC-BY-SA licensed)", type: "Static", frequency: "Static", url: null, status: "static" },
@@ -619,19 +621,16 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     transport:         { sources: [config?.stateTransportFullName ?? "State Transport Corporation", "IRCTC"], frequency: "Monthly" },
     rti:               { sources: [config?.stateInformationCommission ?? "State Information Commission", "RTI Online Portal"], frequency: "When the source publishes" },
     courts:            { sources: ["NJDG (National Judicial Data Grid)"], frequency: "Daily", isLive: true },
+    // Only what the population page shows (Sept 2026 audit): the Census
+    // figures, and the NITI MPI card where NITI publishes the district. The
+    // NFHS-5 rows are empty and no SRS / PLFS / municipal figures are loaded,
+    // so they are not listed as sources.
     population:        {
       sources: [
         "Census of India 2011 (Office of the Registrar General & Census Commissioner)",
-        "NFHS-5 2019-21 (IIPS, Mumbai)",
-        "NITI Aayog Multidimensional Poverty Index 2023",
-        "Sample Registration System (SRS) — latest",
-        "PLFS (MoSPI) — latest quarter (state-level)",
-        `${config?.name ?? "State"} Directorate of Economics & Statistics (where applicable)`,
-        config?.municipalBody
-          ? `${config.municipalBody} / Municipal sources (where applicable)`
-          : "Municipal sources (where applicable)",
+        "NITI Aayog Multidimensional Poverty Index 2023 (where shown)",
       ],
-      frequency: "Foundational data is decadal (Census); supplements refresh monthly (NFHS, SRS) to quarterly (PLFS).",
+      frequency: "Census: every ten years (the next is Census 2027).",
       isLive: false,
     },
     health:            { sources: ["National Health Mission", "State Health Department"], frequency: "Monthly" },

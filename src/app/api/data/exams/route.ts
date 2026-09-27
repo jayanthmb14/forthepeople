@@ -21,6 +21,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import redis from "@/lib/redis";
 import { examsForDisplay, storedExamScope } from "@/lib/dedupe/exam-rules";
+import { isOfficialStaffingRow } from "@/lib/data-filters";
+import { withoutEligibilityTestPosts } from "@/lib/exams/eligibility-test";
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -64,7 +66,7 @@ export async function GET(req: NextRequest) {
 
     // National rows (and legacy per-district copies of them), this state's
     // rows (and legacy copies), and this district's own rows.
-    const [rows, staffing] = await Promise.all([
+    const [rows, staffingRows] = await Promise.all([
       prisma.governmentExam.findMany({
         where: {
           OR: [
@@ -83,6 +85,10 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // Sanctioned vs working posts only from a government source: the news
+    // pipeline turned national stories into "district" rows (Sept 2026 audit).
+    const staffing = staffingRows.filter(isOfficialStaffingRow);
+
     // Keep only rows that belong on this page: every national exam, this
     // state's exams, this district's exams (a row filed under another
     // state's district never leaks in).
@@ -94,7 +100,7 @@ export async function GET(req: NextRequest) {
     });
     const byDate = (a: { announcedDate: Date | null; title: string }, b: { announcedDate: Date | null; title: string }) =>
       (b.announcedDate?.getTime() ?? 0) - (a.announcedDate?.getTime() ?? 0) || a.title.localeCompare(b.title);
-    const shown = examsForDisplay(relevant);
+    const shown = examsForDisplay(relevant).map(withoutEligibilityTestPosts);
     const allExams = shown.filter((e) => storedExamScope(e) !== "DISTRICT").sort(byDate);
     const districtExams = shown.filter((e) => storedExamScope(e) === "DISTRICT").sort(byDate);
 

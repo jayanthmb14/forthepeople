@@ -573,8 +573,10 @@ function CompareContent({ locale }: { locale: string }) {
   const popA = typeof dA?.population === "number" && dA.population > 0 ? dA.population : null;
   const popB = typeof dB?.population === "number" && dB.population > 0 ? dB.population : null;
   const litPair = isNum(dA?.literacy) && isNum(dB?.literacy) ? { a: dA!.literacy as number, b: dB!.literacy as number } : null;
-  const usedA = totalBudA > 0 ? (totalSpentA / totalBudA) * 100 : null;
-  const usedB = totalBudB > 0 ? (totalSpentB / totalBudB) * 100 : null;
+  // Budget used only when spending is published: rows with no spending
+  // figure are stored as 0 (Lucknow), which is "not published", not 0 %.
+  const usedA = totalBudA > 0 && totalSpentA > 0 ? (totalSpentA / totalBudA) * 100 : null;
+  const usedB = totalBudB > 0 && totalSpentB > 0 ? (totalSpentB / totalBudB) * 100 : null;
   const budPair = usedA !== null && usedB !== null ? { a: usedA, b: usedB } : null;
 
   // How numbers are written in each row.
@@ -722,7 +724,8 @@ function CompareContent({ locale }: { locale: string }) {
                 <MetricRow metric="density" a={dA.density} b={dB.density} show={whole} onExplain={setExplain} />
                 <MetricRow metric="literacy" a={dA.literacy} b={dB.literacy} show={withPct} judged onExplain={setExplain} />
                 <MetricRow metric="sexRatio" a={dA.sexRatio} b={dB.sexRatio} show={whole} onExplain={setExplain} />
-                <MetricRow metric="taluks" a={dA.talukCount ?? dA.taluks?.length} b={dB.talukCount ?? dB.taluks?.length} show={whole} onExplain={setExplain} />
+                {/* The official count only: the listed units were invented for some metros (Sept 2026 audit). */}
+                <MetricRow metric="taluks" a={dA.talukCount} b={dB.talukCount} show={whole} onExplain={setExplain} />
                 <MetricRow metric="villages" a={dA.villageCount} b={dB.villageCount} show={whole} onExplain={setExplain} />
 
                 {/* Infrastructure */}

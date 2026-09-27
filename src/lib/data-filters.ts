@@ -216,3 +216,45 @@ export function shownCropPrices(districtSlug: string) {
  */
 export const OFFICIAL_ALERTS = { sourceUrl: { startsWith: SACHET_SOURCE_PREFIX } };
 
+
+// ── People & services (Sept 2026 audit) ─────────────────────
+// Rows that were typed into seed scripts or lifted from news stories
+// without a checkable source. Hidden at the API, never deleted here.
+
+/**
+ * FamousPersonality rows a page may show: active AND born in the
+ * district (CLAUDE.md: "Never add a famous personality unless they were
+ * born in that district"). Rows only "linked to" a district (Tilak in
+ * Pune, Mother Teresa in Kolkata) are kept in the table but not shown.
+ */
+export const BORN_HERE_PERSONALITY = { active: true, bornInDistrict: true };
+
+/**
+ * BusRoute / TrainSchedule rows a page may show: active ones. Every row
+ * was hand- or AI-seeded (no NTES / KSRTC feed) and many were wrong
+ * (train numbers of the opposite direction, invented route codes), so
+ * the unchecked rows are set active=false and stay hidden until someone
+ * checks them against the operator's own timetable and re-activates them.
+ */
+export const ACTIVE_TRANSPORT = { active: true };
+
+/** Government sites (.gov.in / .nic.in / .gov) — same rule as the exams page. */
+function isGovernmentUrl(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  try {
+    const host = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`).hostname.toLowerCase();
+    return /(^|\.)(gov\.in|nic\.in|gov)$/.test(host);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * DepartmentStaffing (sanctioned vs working posts) is shown only when its
+ * source is a government site. The news pipeline turned numbers in
+ * national stories into "district" rows (Kolkata: 2,73,000 CAPF posts, 0
+ * working; Mysuru: 10 health posts), labelled official data.
+ */
+export function isOfficialStaffingRow(row: { sourceUrl: string | null }): boolean {
+  return isGovernmentUrl(row.sourceUrl);
+}

@@ -368,7 +368,7 @@ export default async function StatePage({ params }: Props) {
                       </div>
                       <dl style={{ display: "flex", gap: 24, margin: "14px 0 0", flexWrap: "wrap" }}>
                         <MiniStat label={t("miniPopulation")} value={popOf(d) > 0 ? fmt(popOf(d)) : "—"} />
-                        <MiniStat label={subUnitLabel} value={d.talukCount ?? (d.taluks.length || "—")} />
+                        <MiniStat label={subUnitLabel} value={d.talukCount ?? ((!d.subUnitsUnchecked && d.taluks.length) || "—")} />
                       </dl>
                     </Card>
                   </li>

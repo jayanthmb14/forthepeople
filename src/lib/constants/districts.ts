@@ -55,6 +55,12 @@ export interface District {
   population?: number;
   area?: number; // sq km
   talukCount?: number;
+  /**
+   * True when the `taluks` listed below are NOT the official sub-districts
+   * (Sept 2026 audit: invented zones for some metros). The overview then
+   * shows no list, and the count only when `talukCount` is the official one.
+   */
+  subUnitsUnchecked?: boolean;
   villageCount?: number;
   literacy?: number;
   sexRatio?: number;
@@ -86,12 +92,14 @@ const MANDYA_DISTRICT: District = {
     { emoji: "🌊", label: "Home of KRS Dam" },
     { emoji: "🌾", label: "Kaveri Basin Heartland" },
   ],
-  population: 1940428,
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  population: 1805769,
   area: 4961,
   talukCount: 7,
   villageCount: 1291,
-  literacy: 72.8,
-  sexRatio: 982,
+  literacy: 70.4,
+  sexRatio: 995,
   taluks: [
     {
       slug: "mandya",
@@ -215,11 +223,13 @@ const BENGALURU_URBAN_DISTRICT: District = {
     { emoji: "🔬", label: "ISRO & HAL Headquarters" },
     { emoji: "🚀", label: "India's Silicon Valley" },
   ],
-  population: 12765000,
-  area: 741,
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  population: 9621551,
+  area: 2196,
   talukCount: 4,
   villageCount: 532,
-  literacy: 88.48,
+  literacy: 87.67,
   sexRatio: 916,
   taluks: [
     {
@@ -309,12 +319,16 @@ const MYSURU_DISTRICT: District = {
     { emoji: "🐘", label: "Wildlife Capital" },
     { emoji: "🧼", label: "Mysore Sandal Soap" },
   ],
-  population: 3248000,
-  area: 6854,
-  talukCount: 7,
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  population: 3001127,
+  area: 6307,
+  // 9 taluks incl. Saligrama and Sargur (mysore.nic.in/en/subdivision-blocks/,
+  // checked 28 Sep 2026); the list below still has the older 7.
+  talukCount: 9,
   villageCount: 2629,
-  literacy: 72.64,
-  sexRatio: 984,
+  literacy: 72.79,
+  sexRatio: 985,
   taluks: [
     {
       slug: "mysuru-taluk",
@@ -486,12 +500,18 @@ const NEW_DELHI_DISTRICT: District = {
     { emoji: "🏛️", label: "UNESCO World Heritage" },
     { emoji: "🏗️", label: "Lutyens Architecture" },
   ],
-  population: 1173902,
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  population: 142004,
   area: 35,
+  // 3 subdivisions: Chanakyapuri, Delhi Cantonment, Vasant Vihar
+  // (https://en.wikipedia.org/wiki/New_Delhi_district, checked 28 Sep 2026).
+  // The list below (Connaught Place, Lodhi Road …) is not them.
   talukCount: 3,
+  subUnitsUnchecked: true,
   villageCount: 0,
-  literacy: 89.38,
-  sexRatio: 824,
+  literacy: 88.34,
+  sexRatio: 822,
   taluks: [
     {
       slug: "connaught-place",
@@ -555,12 +575,17 @@ const MUMBAI_DISTRICT: District = {
     { emoji: "🌊", label: "Gateway of India" },
     { emoji: "🚂", label: "World's Busiest Suburban Rail" },
   ],
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  // Mumbai = Mumbai City + Mumbai Suburban; no checked combined literacy
+  // figure, so none is given.
   population: 12442373,
   area: 603,
-  talukCount: 5,
+  // The units below are zones, not the talukas of Mumbai City + Mumbai
+  // Suburban. Count not given until checked (Sept 2026 audit).
+  subUnitsUnchecked: true,
   villageCount: 0,
-  literacy: 89.73,
-  sexRatio: 832,
+  sexRatio: 853,
   taluks: [
     {
       slug: "south-mumbai",
@@ -659,11 +684,15 @@ const CHENNAI_DISTRICT: District = {
     { emoji: "🏥", label: "India's Health Capital" },
     { emoji: "🎵", label: "Carnatic Music Heritage" },
   ],
-  population: 7088000,
-  area: 426,
-  talukCount: 4,
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  population: 4646732,
+  area: 175,
+  // Chennai has 3 revenue divisions and 16-17 taluks (chennai.nic.in);
+  // the four "taluks" below are not them. Count not given until checked.
+  subUnitsUnchecked: true,
   villageCount: 0,
-  literacy: 90.33,
+  literacy: 90.18,
   sexRatio: 989,
   taluks: [
     {
@@ -749,11 +778,15 @@ const KOLKATA_DISTRICT: District = {
     { emoji: "🏆", label: "Nobel Laureate City" },
     { emoji: "🎊", label: "Durga Puja UNESCO Heritage" },
   ],
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 4496694,
-  area: 205,
-  talukCount: 4,
+  area: 185,
+  // Kolkata is fully urban with no CD blocks; the units below are not
+  // official sub-districts. Count not given (Sept 2026 audit).
+  subUnitsUnchecked: true,
   villageCount: 0,
-  literacy: 87.14,
+  literacy: 86.31,
   sexRatio: 908,
   taluks: [
     {
@@ -839,11 +872,17 @@ const LUCKNOW_DISTRICT: District = {
     { emoji: "🍢", label: "Kebab Capital" },
     { emoji: "🏛️", label: "State Capital of UP" },
   ],
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
   population: 4589838,
   area: 2528,
-  talukCount: 4,
+  // 5 tehsils: Sadar, Sarojini Nagar, Bakshi Ka Talab, Malihabad, Mohanlalganj
+  // (lucknow.nic.in/tehsil/, checked 28 Sep 2026). The list below is not
+  // those five ("Lucknow City", no Sarojini Nagar), so it is not shown.
+  talukCount: 5,
+  subUnitsUnchecked: true,
   villageCount: 823,
-  literacy: 79.33,
+  literacy: 77.29,
   sexRatio: 917,
   taluks: [
     {
@@ -923,7 +962,9 @@ const HYDERABAD_DISTRICT: District = {
     { emoji: "💻", label: "India's GCC Hub" },
     { emoji: "🍗", label: "Biryani Capital" },
   ],
-  population: 4500000,
+  // Census 2011 (Primary Census Abstract via census2011.co.in; same as the
+  // checked PopulationHistory row), checked 28 Sep 2026 — Sept 2026 audit.
+  population: 3943323,
   area: 217,
   talukCount: 16,
   villageCount: 0,

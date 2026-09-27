@@ -248,7 +248,8 @@ function ExamCard({ view, now, onOpen }: { view: ExamView; now: number; onOpen: 
       ) : (
         view.phase !== "done" && <CheckedLine confirm={view.confirm} />
       )}
-      {e.vacancies != null && e.vacancies > 0 && (
+      {/* Posts only for a confirmed exam: unchecked rows carried an older cycle's count (Sept 2026 audit). */}
+      {view.confirm.confirmed && e.vacancies != null && e.vacancies > 0 && (
         <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
           {t.rich("postsLine", { n: e.vacancies, count: f.number(e.vacancies), b: (c) => <strong className="ftp-num" style={{ color: "var(--hue-deep)" }}>{c}</strong> })}
         </p>
@@ -371,7 +372,7 @@ function ExamSheet({
         <SheetHeading>{t("sheet.facts")}</SheetHeading>
         <DetailList
           rows={[
-            { label: t("facts.vacancies"), value: e.vacancies != null ? <span className="ftp-num">{f.number(e.vacancies)}</span> : notGiven },
+            { label: t("facts.vacancies"), value: confirmed && e.vacancies != null ? <span className="ftp-num">{f.number(e.vacancies)}</span> : notGiven },
             { label: t("facts.qualification"), value: e.qualification ?? notGiven },
             { label: t("facts.ageLimit"), value: e.ageLimit ?? notGiven },
             { label: t("facts.fee"), value: e.applicationFee ?? notGiven },
@@ -464,6 +465,7 @@ function ExamList({
   onOpen,
   intro,
   action,
+  count,
 }: {
   title: string;
   views: ExamView[];
@@ -471,6 +473,8 @@ function ExamList({
   onOpen: (v: ExamView) => void;
   intro?: string;
   action?: React.ReactNode;
+  /** The group's size when the cards are folded away (views is then empty). */
+  count?: number;
 }) {
   const t = useTranslations("page_exams");
   const f = useFormat();
@@ -480,7 +484,7 @@ function ExamList({
       title={
         <>
           {title}{" "}
-          <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(views.length) })}</span>
+          <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(count ?? views.length) })}</span>
         </>
       }
       action={action}
@@ -661,6 +665,7 @@ function ExamsPageInner({ params }: { params: Promise<{ locale: string; state: s
             <ExamList
               title={t("finishedTitle")}
               views={showFinished ? finished : []}
+              count={finished.length}
               now={now}
               onOpen={setSelected}
               action={

@@ -29,6 +29,7 @@ import type { ComponentType } from "react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { AsOfText, ProgressBar } from "@/components/district/ui";
 import OverviewCard from "@/components/district/shell/OverviewCard";
+import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 import { ProjectsMark } from "@/components/district/shell/overview-art";
 
 type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
@@ -75,8 +76,13 @@ const STATUS_KEY: Record<string, string> = {
   CANCELLED: "CANCELLED", OPERATIONAL: "OPERATIONAL",
 };
 
-function isCompleted(p: InfraProject) { return ["COMPLETED", "INAUGURATED"].includes(normalizeStatus(p.status)); }
-function isCancelled(p: InfraProject) { return normalizeStatus(p.status) === "CANCELLED"; }
+// Stages come from the same rule as the glance tile and the Projects page
+// (projectStage in src/lib/civic/project-facts.ts), so "being built" here is
+// the tile's number. Sept 2026 audit: this card used to count every
+// not-finished project (proposed, approved, announced) as being built.
+function isCompleted(p: InfraProject) { return projectStage(p.status) === "completed"; }
+function isCancelled(p: InfraProject) { return projectStage(p.status) === "cancelled"; }
+function isBuilding(p: InfraProject) { return projectStage(p.status) === "building"; }
 function isDelayed(p: InfraProject) {
   const s = normalizeStatus(p.status);
   return s === "DELAYED" || s === "STALLED" || (p.delayMonths ?? 0) > 0;
@@ -99,7 +105,8 @@ export default function InfraSnippet({
   const t = useTranslations("page_snippets");
   const td = useTranslations("page_district-shell.cards.projects");
   const f = useFormat();
-  const projects = data?.data ?? [];
+  // Real projects only (not scheme announcements), as the glance tile counts them.
+  const projects = (data?.data ?? []).filter((p) => !isNonProject({ name: p.name ?? "" }));
   if (projects.length === 0) return null; // no shell when no data
 
   // Rupees → words in the page language. (The old helper used 10^11 for
@@ -113,14 +120,14 @@ export default function InfraSnippet({
 
   const counts = {
     total: projects.length,
-    active: projects.filter((p) => !isCancelled(p) && !isCompleted(p)).length,
+    active: projects.filter(isBuilding).length,
     completed: projects.filter(isCompleted).length,
     delayed: projects.filter(isDelayed).length,
   };
   // The bar: being built (not late) · being built but late · completed.
   // The legend counts all projects being built (the glance tile's number)
   // and says how many of them are late.
-  const delayedActive = projects.filter((p) => !isCancelled(p) && !isCompleted(p) && isDelayed(p)).length;
+  const delayedActive = projects.filter((p) => isBuilding(p) && isDelayed(p)).length;
   const segments = [
     { key: "building", n: counts.active - delayedActive },
     { key: "delayed", n: delayedActive },

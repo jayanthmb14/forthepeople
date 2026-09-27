@@ -13,6 +13,8 @@
 // aggregate per table (plus the courts snapshot from Redis).
 import { prisma } from "@/lib/db";
 import {
+  ACTIVE_TRANSPORT,
+  BORN_HERE_PERSONALITY,
   JJM_DISTRICT_TOTAL,
   LOCAL_INFRA,
   NJDG_COURTSTAT,
@@ -96,15 +98,15 @@ export async function collectDatasetDates(
     prisma.jJMStatus.aggregate({ where: { ...d, ...JJM_DISTRICT_TOTAL }, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.damReading.aggregate({ where: d, _count: { _all: true }, _max: { recordedAt: true } }),
     prisma.powerOutage.aggregate({ where: { ...d, ...NOT_FROM_NEWS }, _count: { _all: true }, _max: { createdAt: true } }),
-    prisma.busRoute.count({ where: d }),
-    prisma.trainSchedule.count({ where: d }),
+    prisma.busRoute.count({ where: { ...d, ...ACTIVE_TRANSPORT } }),
+    prisma.trainSchedule.count({ where: { ...d, ...ACTIVE_TRANSPORT } }),
     prisma.school.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.cropPrice.aggregate({ where: { ...d, ...(districtSlug ? shownCropPrices(districtSlug) : SHOWN_CROP_PRICE) }, _count: { _all: true }, _max: { date: true } }),
     prisma.soilHealth.aggregate({ where: d, _count: { _all: true }, _max: { testedAt: true } }),
     prisma.agriAdvisory.aggregate({ where: d, _count: { _all: true }, _max: { weekOf: true } }),
     prisma.demographicProfile.findMany({ where: d, select: { dataset: true, year: true }, orderBy: { year: "asc" } }),
     prisma.populationHistory.findMany({ where: d, select: { year: true, source: true } }),
-    prisma.famousPersonality.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { createdAt: true } }),
+    prisma.famousPersonality.aggregate({ where: { ...d, ...BORN_HERE_PERSONALITY }, _count: { _all: true }, _max: { createdAt: true } }),
     prisma.aIModuleInsight.aggregate({ where: d, _count: { _all: true }, _max: { generatedAt: true } }),
     districtSlug ? readCourtsSnapshot(districtSlug) : Promise.resolve(null),
     districtSlug ? readDistrictSnapshot("udise", districtSlug) : Promise.resolve(null),
