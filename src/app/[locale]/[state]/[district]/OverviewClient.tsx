@@ -51,7 +51,8 @@ import { getDistrictHue, hueClass } from "@/lib/design/hues";
 import { ageInDays } from "@/lib/utils/timeAgo";
 import { useAlerts, useCropPrices, useExams, useNews } from "@/hooks/useRealtimeData";
 import TodayWeatherTile from "@/components/district/TodayWeatherTile";
-import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
+import type { LocalAlert } from "@/hooks/useRealtimeData";
+import { pickNextExam } from "@/lib/next-exam";
 import { useFreshness } from "@/hooks/useFreshness";
 import { Card, ModulePage, Section } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
@@ -97,25 +98,6 @@ interface Props {
 const MANDI_MAX_DAYS = 7;
 const NEWS_MAX_DAYS = 30;
 const SERIOUS = new Set(["critical", "high", "severe"]);
-
-type Exam = ExamsData["stateExams"][number];
-
-/**
- * The next state or district exam (or open application deadline). National
- * exams are left out: they are not news about this district.
- */
-function pickNextExam(data: ExamsData | undefined): { exam: Exam; date: string; kind: "exam" | "apply" } | null {
-  if (!data) return null;
-  const nowMs = Date.now();
-  const local = [...(data.districtExams ?? []), ...(data.stateExams ?? []).filter((e) => e.level !== "national")];
-  const upcoming: Array<{ exam: Exam; date: string; kind: "exam" | "apply" }> = [];
-  for (const exam of local) {
-    if (exam.examDate && new Date(exam.examDate).getTime() >= nowMs) upcoming.push({ exam, date: exam.examDate, kind: "exam" });
-    else if (exam.endDate && new Date(exam.endDate).getTime() >= nowMs) upcoming.push({ exam, date: exam.endDate, kind: "apply" });
-  }
-  upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  return upcoming[0] ?? null;
-}
 
 /**
  * The most serious active OFFICIAL warning, only if it is high or critical.
@@ -175,6 +157,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
     const age = ageInDays(n.publishedAt);
     return age !== null && age <= NEWS_MAX_DAYS;
   }).slice(0, 3);
+  // Only checked rows with a source (src/lib/next-exam.ts, Sept 2026 audit).
   const nextExam = pickNextExam(examsData?.data);
   const latestCrop = crops?.data?.[0];
   const cropAge = latestCrop ? ageInDays(latestCrop.date) : null;

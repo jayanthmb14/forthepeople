@@ -826,6 +826,10 @@ export interface ExamsData {
     admitCardDate: string | null;
     examDate: string | null;
     resultDate: string | null;
+    // Sent by /api/data/exams (whole rows); used by the overview's "Next exam" rule.
+    needsVerification?: boolean | null;
+    sourceUrls?: unknown;
+    lastVerifiedAt?: string | null;
   }>;
   districtExams: Array<ExamsData["stateExams"][number]>;
   staffing: Array<{
