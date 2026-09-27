@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 // eJalShakti API for district-level JJM data
 // Public API: https://ejalshakti.gov.in/JJM/JJMReports/BasicInformation/JJMRpt_HouseHoldTapConn_D.aspx
@@ -46,15 +47,19 @@ export async function scrapeJJM(ctx: JobContext): Promise<ScraperResult> {
     let updCount = 0;
 
     for (const r of records) {
+      // Both counts must be published; coverage is only derived from them.
       if (!r.villageName) continue;
+      const households = firstAmount(r as unknown as Record<string, unknown>, ["totalHouseholds"]);
+      const taps = firstAmount(r as unknown as Record<string, unknown>, ["tapConnections"]);
+      if (households === null || taps === null || households === 0 || taps > households) continue;
       const existing = await prisma.jJMStatus.findFirst({
         where: { districtId: ctx.districtId, villageName: r.villageName },
       });
 
       const payload = {
-        totalHouseholds: r.totalHouseholds || 0,
-        tapConnections: r.tapConnections || 0,
-        coveragePct: r.coveragePct ?? (r.totalHouseholds > 0 ? (r.tapConnections / r.totalHouseholds) * 100 : 0),
+        totalHouseholds: Math.round(households),
+        tapConnections: Math.round(taps),
+        coveragePct: (taps / households) * 100,
         source: "eJalShakti / JJM Dashboard",
         updatedAt: new Date(),
       };

@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 // ECI constituency-wise election results Karnataka
@@ -58,7 +59,7 @@ export async function scrapeElections(ctx: JobContext): Promise<ScraperResult> {
 
       const winnerName = (rec.winner_name ?? rec.winner ?? rec.candidate_name ?? "").trim();
       const winnerParty = normalizeParty(rec.winner_party ?? rec.party ?? "Independent");
-      const winnerVotes = parseInt(rec.winner_votes ?? rec.votes ?? 0, 10);
+      const winnerVotesRaw = firstAmount(rec, ["winner_votes", "votes"]);
       const runnerUpName = (rec.runner_up_name ?? rec.runner_up ?? null)?.trim() ?? null;
       const runnerUpParty = rec.runner_up_party ? normalizeParty(rec.runner_up_party) : null;
       const runnerUpVotes = rec.runner_up_votes ? parseInt(rec.runner_up_votes, 10) : null;
@@ -67,7 +68,10 @@ export async function scrapeElections(ctx: JobContext): Promise<ScraperResult> {
       const totalVoters = rec.total_voters ? parseInt(rec.total_voters, 10) : null;
       const votesPolled = rec.votes_polled ? parseInt(rec.votes_polled, 10) : null;
 
-      if (!winnerName) continue;
+      // A result without the winner's published vote count is skipped
+      // (the old code stored 0 votes).
+      if (!winnerName || winnerVotesRaw === null) continue;
+      const winnerVotes = Math.round(winnerVotesRaw);
 
       const existing = await prisma.electionResult.findFirst({
         where: { districtId: ctx.districtId, constituency, year, electionType },
@@ -82,7 +86,7 @@ export async function scrapeElections(ctx: JobContext): Promise<ScraperResult> {
             year,
             winnerName,
             winnerParty,
-            winnerVotes: isNaN(winnerVotes) ? 0 : winnerVotes,
+            winnerVotes,
             runnerUpName,
             runnerUpParty,
             runnerUpVotes: runnerUpVotes && !isNaN(runnerUpVotes) ? runnerUpVotes : null,

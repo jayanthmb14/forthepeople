@@ -27,12 +27,19 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 
 // Known data.gov.in resource IDs for budget/expenditure data per state
 // These need to be discovered and updated as datasets become available
-const STATE_BUDGET_RESOURCES: Record<string, { resourceId: string; description: string } | null> = {
+// `unit` must say what the dataset publishes; amounts are stored in whole
+// rupees (CLAUDE.md), so crore figures are multiplied by 1,00,00,000.
+// Never guess the unit.
+const STATE_BUDGET_RESOURCES: Record<
+  string,
+  { resourceId: string; description: string; unit: "rupee" | "crore" } | null
+> = {
   karnataka: null, // No district-level expenditure dataset found on data.gov.in
   telangana: null,
   delhi: null,
@@ -78,11 +85,16 @@ export async function scrapeBudget(ctx: JobContext): Promise<ScraperResult> {
 
         for (const rec of records) {
           const sector = rec.department ?? rec.sector ?? rec.scheme ?? null;
-          const allocated = parseFloat(rec.allocated ?? rec.allocation ?? "0");
-          const released = parseFloat(rec.released ?? rec.release ?? "0");
-          const spent = parseFloat(rec.spent ?? rec.expenditure ?? rec.utilised ?? "0");
-
-          if (!sector || allocated === 0) continue;
+          // All three published figures, or the row is skipped (the old code
+          // stored a missing "released"/"spent" as 0).
+          const scale = resource.unit === "crore" ? 10_000_000 : 1;
+          const a = firstAmount(rec, ["allocated", "allocation"]);
+          const r = firstAmount(rec, ["released", "release"]);
+          const sp = firstAmount(rec, ["spent", "expenditure", "utilised"]);
+          if (!sector || a === null || r === null || sp === null || a === 0) continue;
+          const allocated = a * scale;
+          const released = r * scale;
+          const spent = sp * scale;
 
           const existing = await prisma.budgetEntry.findFirst({
             where: {
@@ -95,9 +107,9 @@ export async function scrapeBudget(ctx: JobContext): Promise<ScraperResult> {
             await prisma.budgetEntry.update({
               where: { id: existing.id },
               data: {
-                allocated: allocated * 10000000, // Convert Crores to Rupees if needed
-                released: released * 10000000,
-                spent: spent * 10000000,
+                allocated,
+                released,
+                spent,
                 source: `data.gov.in (${resource.description})`,
               },
             });
@@ -108,9 +120,9 @@ export async function scrapeBudget(ctx: JobContext): Promise<ScraperResult> {
                 districtId: ctx.districtId,
                 fiscalYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1).toString().slice(-2),
                 sector,
-                allocated: allocated * 10000000,
-                released: released * 10000000,
-                spent: spent * 10000000,
+                allocated,
+                released,
+                spent,
                 source: `data.gov.in (${resource.description})`,
               },
             });
@@ -122,24 +134,27 @@ export async function scrapeBudget(ctx: JobContext): Promise<ScraperResult> {
       ctx.log(`Budget: No data.gov.in dataset configured for state "${stateSlug}" — using existing seed data. District-level expenditure APIs will be integrated when available.`);
     }
 
-    // Update DataRefresh tracking
-    try {
-      await prisma.dataRefresh.upsert({
-        where: { endpoint: "budget" },
-        update: {
-          lastRefreshed: new Date(),
-          nextRefresh: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          status: "success",
-        },
-        create: {
-          endpoint: "budget",
-          lastRefreshed: new Date(),
-          nextRefresh: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          status: "success",
-        },
-      });
-    } catch {
-      // DataRefresh upsert failure is non-fatal
+    // DataRefresh records a refresh only when rows were actually written.
+    // (It used to say "success" every week while collecting nothing.)
+    if (newCount + updatedCount > 0) {
+      try {
+        await prisma.dataRefresh.upsert({
+          where: { endpoint: "budget" },
+          update: {
+            lastRefreshed: new Date(),
+            nextRefresh: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            status: "success",
+          },
+          create: {
+            endpoint: "budget",
+            lastRefreshed: new Date(),
+            nextRefresh: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            status: "success",
+          },
+        });
+      } catch {
+        // DataRefresh upsert failure is non-fatal
+      }
     }
 
     ctx.log(`Budget: ${newCount} new, ${updatedCount} updated for ${ctx.districtSlug}`);

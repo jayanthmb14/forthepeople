@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 // Soil Health Card distribution data (DAC&FW)
@@ -51,12 +52,19 @@ export async function scrapeSoil(ctx: JobContext): Promise<ScraperResult> {
       const villageName = (rec.village_name ?? rec.village ?? rec.taluk ?? "").trim();
       if (!villageName) continue;
 
-      const pH = parseFloat(rec.ph ?? rec.pH ?? "6.8");
-      const nitrogen = parseFloat(rec.nitrogen ?? rec.N ?? "0");
-      const phosphorus = parseFloat(rec.phosphorus ?? rec.P ?? "0");
-      const potassium = parseFloat(rec.potassium ?? rec.K ?? "0");
+      // Only published readings. The old code defaulted a missing pH to 6.8
+      // and missing N/P/K to 0 (then rated them) — invented soil results.
+      const pHRaw = firstAmount(rec, ["ph", "pH"]);
+      const pH = pHRaw !== null && pHRaw <= 14 ? pHRaw : null;
+      const nitrogen = firstAmount(rec, ["nitrogen", "N"]);
+      const phosphorus = firstAmount(rec, ["phosphorus", "P"]);
+      const potassium = firstAmount(rec, ["potassium", "K"]);
+      if (pH === null && nitrogen === null && phosphorus === null && potassium === null) continue;
 
-      const recommendation = `N: ${nitrogenRating(nitrogen)}, P: ${phosphorusRating(phosphorus)}, K: ${potassiumRating(potassium)}`;
+      const recommendation =
+        nitrogen !== null && phosphorus !== null && potassium !== null
+          ? `N: ${nitrogenRating(nitrogen)}, P: ${phosphorusRating(phosphorus)}, K: ${potassiumRating(potassium)}`
+          : null;
 
       const existing = await prisma.soilHealth.findFirst({
         where: { districtId: ctx.districtId, villageName },
@@ -67,10 +75,10 @@ export async function scrapeSoil(ctx: JobContext): Promise<ScraperResult> {
           data: {
             districtId: ctx.districtId,
             villageName,
-            pH: isNaN(pH) ? null : pH,
-            nitrogen: nitrogen > 0 ? nitrogenRating(nitrogen) : null,
-            phosphorus: phosphorus > 0 ? phosphorusRating(phosphorus) : null,
-            potassium: potassium > 0 ? potassiumRating(potassium) : null,
+            pH,
+            nitrogen: nitrogen !== null && nitrogen > 0 ? nitrogenRating(nitrogen) : null,
+            phosphorus: phosphorus !== null && phosphorus > 0 ? phosphorusRating(phosphorus) : null,
+            potassium: potassium !== null && potassium > 0 ? potassiumRating(potassium) : null,
             organicCarbon: rec.organic_carbon ?? null,
             recommendation,
             testedAt: rec.test_date ? new Date(rec.test_date) : null,
@@ -82,11 +90,11 @@ export async function scrapeSoil(ctx: JobContext): Promise<ScraperResult> {
         await prisma.soilHealth.update({
           where: { id: existing.id },
           data: {
-            pH: isNaN(pH) ? existing.pH : pH,
-            nitrogen: nitrogen > 0 ? nitrogenRating(nitrogen) : existing.nitrogen,
-            phosphorus: phosphorus > 0 ? phosphorusRating(phosphorus) : existing.phosphorus,
-            potassium: potassium > 0 ? potassiumRating(potassium) : existing.potassium,
-            recommendation,
+            pH: pH ?? existing.pH,
+            nitrogen: nitrogen !== null && nitrogen > 0 ? nitrogenRating(nitrogen) : existing.nitrogen,
+            phosphorus: phosphorus !== null && phosphorus > 0 ? phosphorusRating(phosphorus) : existing.phosphorus,
+            potassium: potassium !== null && potassium > 0 ? potassiumRating(potassium) : existing.potassium,
+            recommendation: recommendation ?? existing.recommendation,
             source: "Soil Health Card / data.gov.in",
           },
         });

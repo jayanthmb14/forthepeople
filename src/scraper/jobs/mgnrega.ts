@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 // data.gov.in: MGNREGA GP-wise employment dataset
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
@@ -38,9 +39,12 @@ export async function scrapeMGNREGA(ctx: JobContext): Promise<ScraperResult> {
       const gpName = (rec.gp_name ?? rec.Gram_Panchayat ?? rec.village ?? "").trim();
       if (!gpName) continue;
 
-      const mgnregaWorks = parseInt(rec.total_works ?? rec.works_completed ?? 0, 10);
-      const totalFunds = parseFloat(rec.total_expenditure ?? rec.fund_utilised ?? 0);
-      const fundsUtilized = parseFloat(rec.fund_utilised ?? rec.expenditure ?? totalFunds * 0.85);
+      // Only published figures. The old code filled a missing "funds
+      // utilised" with 85% of the total — an invented number.
+      const mgnregaWorks = firstAmount(rec, ["total_works", "works_completed"]);
+      const totalFunds = firstAmount(rec, ["total_expenditure", "fund_utilised"]);
+      const fundsUtilized = firstAmount(rec, ["fund_utilised", "expenditure"]);
+      if (mgnregaWorks === null && totalFunds === null && fundsUtilized === null) continue;
 
       // Upsert by GP name within district
       const existing = await prisma.gramPanchayat.findFirst({
@@ -51,9 +55,9 @@ export async function scrapeMGNREGA(ctx: JobContext): Promise<ScraperResult> {
         await prisma.gramPanchayat.update({
           where: { id: existing.id },
           data: {
-            mgnregaWorks: isNaN(mgnregaWorks) ? existing.mgnregaWorks : mgnregaWorks,
-            totalFunds: isNaN(totalFunds) || totalFunds === 0 ? existing.totalFunds : totalFunds,
-            fundsUtilized: isNaN(fundsUtilized) || fundsUtilized === 0 ? existing.fundsUtilized : fundsUtilized,
+            ...(mgnregaWorks !== null ? { mgnregaWorks: Math.round(mgnregaWorks) } : {}),
+            ...(totalFunds !== null && totalFunds > 0 ? { totalFunds } : {}),
+            ...(fundsUtilized !== null && fundsUtilized > 0 ? { fundsUtilized } : {}),
             source: "NREGASoft / data.gov.in",
           },
         });

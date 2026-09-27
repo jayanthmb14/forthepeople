@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 // UDISE+ school enrolment & infrastructure Karnataka
@@ -40,8 +41,12 @@ export async function scrapeSchools(ctx: JobContext): Promise<ScraperResult> {
       const name = (rec.school_name ?? rec.name ?? "").trim();
       if (!name) continue;
 
-      const students = parseInt(rec.total_students ?? rec.enrolment ?? 0, 10);
-      const teachers = parseInt(rec.teachers ?? rec.total_teachers ?? 0, 10);
+      // Missing counts stay null (the old `?? 0` stored "0 students").
+      const studentsRaw = firstAmount(rec, ["total_students", "enrolment"]);
+      const teachersRaw = firstAmount(rec, ["teachers", "total_teachers"]);
+      const students = studentsRaw === null ? null : Math.round(studentsRaw);
+      const teachers = teachersRaw === null ? null : Math.round(teachersRaw);
+      const ratio = students !== null && teachers !== null && teachers > 0 ? Math.round((students / teachers) * 10) / 10 : null;
       const type = rec.management ?? rec.school_type ?? "Government";
       const level = rec.school_category ?? rec.level ?? "Primary";
       const hasToilets = (rec.toilet ?? "0") !== "0";
@@ -59,10 +64,9 @@ export async function scrapeSchools(ctx: JobContext): Promise<ScraperResult> {
             type,
             level,
             udiseCode,
-            students: isNaN(students) ? null : students,
-            teachers: isNaN(teachers) ? null : teachers,
-            studentTeacherRatio:
-              teachers > 0 ? Math.round((students / teachers) * 10) / 10 : null,
+            students,
+            teachers,
+            studentTeacherRatio: ratio,
             hasToilets,
             hasLibrary,
           },
@@ -73,10 +77,9 @@ export async function scrapeSchools(ctx: JobContext): Promise<ScraperResult> {
         await prisma.school.update({
           where: { id: existing.id },
           data: {
-            students: isNaN(students) || students === 0 ? existing.students : students,
-            teachers: isNaN(teachers) || teachers === 0 ? existing.teachers : teachers,
-            studentTeacherRatio:
-              teachers > 0 ? Math.round((students / teachers) * 10) / 10 : existing.studentTeacherRatio,
+            students: students || existing.students,
+            teachers: teachers || existing.teachers,
+            studentTeacherRatio: ratio ?? existing.studentTeacherRatio,
           },
         });
         updatedCount++;

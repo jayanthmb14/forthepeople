@@ -77,8 +77,8 @@ export async function scrapeTransport(ctx: JobContext): Promise<ScraperResult> {
               operator: busOperator,
               busType: rec.bus_type ?? "Ordinary",
               departureTime: rec.departure_time ?? null,
-              frequency: rec.frequency ?? "Daily",
-              fare: parseFloat(rec.fare ?? "0") || null,
+              frequency: rec.frequency ?? null, // unknown ≠ "Daily"
+              fare: parseFloat(rec.fare ?? "") || null,
               active: true,
             },
           });
@@ -106,16 +106,21 @@ export async function scrapeTransport(ctx: JobContext): Promise<ScraperResult> {
         });
 
         if (!existing) {
-          const daysRaw = rec.days_of_week ?? rec.runs_on ?? "1234567";
+          // Running days, origin and destination must come from the source:
+          // the old code assumed "runs daily" and "Unknown" stations.
+          const daysRaw = rec.days_of_week ?? rec.runs_on ?? "";
           const daysOfWeek = daysRaw.split("").filter((d: string) => /[1-7]/.test(d));
+          const trainOrigin = rec.origin ?? rec.from_station ?? null;
+          const trainDestination = rec.destination ?? rec.to_station ?? null;
+          if (daysOfWeek.length === 0 || !trainOrigin || !trainDestination) continue;
 
           await prisma.trainSchedule.create({
             data: {
               districtId: ctx.districtId,
               trainNumber,
               trainName,
-              origin: rec.origin ?? rec.from_station ?? "Unknown",
-              destination: rec.destination ?? rec.to_station ?? "Unknown",
+              origin: trainOrigin,
+              destination: trainDestination,
               stationName,
               arrivalTime: rec.arrival ?? null,
               departureTime: rec.departure ?? null,

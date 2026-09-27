@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 // data.gov.in: NCRB crime statistics (state/district-level)
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
@@ -27,7 +28,6 @@ export async function scrapePolice(ctx: JobContext): Promise<ScraperResult> {
   try {
     let newCount = 0;
     let updatedCount = 0;
-    const currentYear = new Date().getFullYear() - 1; // NCRB publishes previous year
 
     // ── Crime stats from NCRB ────────────────────────────
     const crimeUrl = `${DATA_GOV_BASE}/${CRIME_RESOURCE}?api-key=${apiKey}&format=json&limit=50&filters[district]=${ctx.districtSlug}`;
@@ -40,11 +40,15 @@ export async function scrapePolice(ctx: JobContext): Promise<ScraperResult> {
       const records = crimeData?.records ?? [];
 
       for (const rec of records) {
-        const year = parseInt(rec.year ?? rec.Year ?? currentYear, 10);
-        const category = (rec.crime_head ?? rec.Category ?? "IPC").trim();
-        const count = parseInt(rec.cases_registered ?? rec.Count ?? 0, 10);
+        // Year, head and count must all be published: the old code assumed
+        // the current year, "IPC" and 0 cases when a field was missing.
+        const yearRaw = firstAmount(rec, ["year", "Year"]);
+        const year = yearRaw === null ? null : Math.round(yearRaw);
+        const category = String(rec.crime_head ?? rec.Category ?? "").trim();
+        const countRaw = firstAmount(rec, ["cases_registered", "Count"]);
+        const count = countRaw === null ? null : Math.round(countRaw);
 
-        if (!category || isNaN(count)) continue;
+        if (!category || year === null || count === null || year > new Date().getFullYear()) continue;
 
         const existing = await prisma.crimeStat.findFirst({
           where: { districtId: ctx.districtId, year, category },
@@ -80,17 +84,18 @@ export async function scrapePolice(ctx: JobContext): Promise<ScraperResult> {
     if (trafficRes.ok) {
       const trafficData = await trafficRes.json();
       const records = trafficData?.records ?? [];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
 
       for (const rec of records) {
+        // A row needs its own date and both figures; the old code used
+        // "today" for a missing date and 0 for a missing figure.
         const dateStr = rec.date ?? rec.Date ?? null;
-        const challans = parseInt(rec.challans ?? rec.Challans ?? 0, 10);
-        const amount = parseFloat(rec.fine_amount ?? rec.Amount ?? 0);
+        const challansRaw = firstAmount(rec, ["challans", "Challans"]);
+        const amount = firstAmount(rec, ["fine_amount", "Amount"]);
+        if (!dateStr || challansRaw === null || amount === null) continue;
+        const challans = Math.round(challansRaw);
 
-        if (!challans && !amount) continue;
-
-        const date = dateStr ? new Date(dateStr) : today;
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime()) || date.getTime() > Date.now()) continue;
 
         const existing = await prisma.trafficCollection.findFirst({
           where: { districtId: ctx.districtId, date },
