@@ -417,7 +417,8 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         title={mt.label("weather")}
         description={t("description")}
         backHref={base}
-        source={nowView ? nowView.source : IMD}
+        // The source of the reading shown; none until it loads (never IMD, which we do not read — Sept 2026 audit).
+        source={nowView ? nowView.source : undefined}
         freshness={nowView ? { asOf: nowView.time, thresholdHours: FRESH_HOURS, maxAgeDays: 1 } : undefined}
       />
 

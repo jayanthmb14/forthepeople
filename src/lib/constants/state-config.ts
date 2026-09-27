@@ -321,9 +321,14 @@ const TAMIL_NADU: StateConfig = {
   slug: "tamil-nadu",
   name: "Tamil Nadu",
   nameLocal: "தமிழ்நாடு",
-  discomName: "TANGEDCO",
-  discomFullName: "Tamil Nadu Generation and Distribution Corporation Limited (TANGEDCO)",
-  discomPortalUrl: "https://www.tangedco.gov.in",
+  // TANGEDCO was split up and its distribution arm renamed Tamil Nadu Power
+  // Distribution Corporation Limited (TNPDCL); the Registrar of Companies
+  // approved the new name on 27 June 2024 (DT Next, "Union govt approves
+  // TANGEDCO renaming to TNPDCL"). Site checked 2026-09-28: www.tnpdcl.org
+  // ("Welcome to TNPDCL"); www.tangedco.gov.in no longer resolves.
+  discomName: "TNPDCL",
+  discomFullName: "Tamil Nadu Power Distribution Corporation Limited (TNPDCL)",
+  discomPortalUrl: "https://www.tnpdcl.org",
   waterPortalName: "Tamil Nadu Public Works Department (Water Resources)",
   waterPortalUrl: "https://www.tn.gov.in/department/38",
   stateTransportName: "TNSTC / Chennai Metro",
@@ -349,7 +354,7 @@ const TAMIL_NADU: StateConfig = {
   lastElectionYear: 2021,
   lastElectionType: "Tamil Nadu assembly",
   dataSources: [
-    { module: "Power Outages", source: "TANGEDCO", type: "Collected", frequency: "When the source publishes", url: "https://www.tangedco.gov.in", status: "static" },
+    { module: "Power Outages", source: "TNPDCL", type: "Collected", frequency: "When the source publishes", url: "https://www.tnpdcl.org", status: "static" },
     { module: "Dam Levels", source: "TN Public Works Department (WRD)", type: "Collected", frequency: "Daily", url: null, status: "static" },
     { module: "Budget & Revenue", source: "Tamil Nadu Finance Department", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
     { module: "RTI", source: "Tamil Nadu Information Commission", type: "Collected", frequency: "Annual", url: "https://www.tnic.gov.in", status: "static" },
@@ -473,12 +478,25 @@ const DISTRICT_OVERRIDES: Record<string, DistrictOverride> = {
   "karnataka/bengaluru-urban": {
     municipalBody: "BBMP",
   },
+  // New Delhi district: the New Delhi Municipal Council (NDMC) is the
+  // electricity licensee and water supplier in the NDMC area (Lutyens'
+  // Delhi, Connaught Place, Chanakyapuri — https://ndmc.gov.in/departments/power.aspx,
+  // read 2026-09-28); BSES Rajdhani serves the rest of the district (south
+  // and west Delhi). BSES Yamuna (east) and Tata Power-DDL (north) do not.
+  // The Vasant Vihar area is under MCD with Delhi Jal Board water.
+  "delhi/new-delhi": {
+    discomName: "NDMC / BSES Rajdhani",
+    discomFullName: "New Delhi Municipal Council (NDMC) / BSES Rajdhani Power Limited",
+    discomPortalUrl: "https://ndmc.gov.in",
+    municipalBody: "NDMC / MCD",
+    waterBoard: "NDMC / DJB",
+  },
 };
 
 // ── Universal data sources (apply to ALL districts) ────────
 export const UNIVERSAL_DATA_SOURCES: DataSourceEntry[] = [
   { module: "Crop Prices", source: "AGMARKNET (Agricultural Marketing Information Network)", type: "API", frequency: "Daily (market days)", url: "https://agmarknet.gov.in", status: "live" },
-  { module: "Weather", source: "India Meteorological Department (IMD) / OpenWeatherMap", type: "API", frequency: "Every 30 minutes", url: "https://mausam.imd.gov.in", status: "live" },
+  { module: "Weather", source: "OpenWeatherMap / Open-Meteo", type: "API", frequency: "Every 30 minutes", url: "https://openweathermap.org", status: "live" },
   { module: "Schools", source: "UDISE+ (Unified District Information System for Education)", type: "API", frequency: "Weekly", url: "https://dashboard.udiseplus.gov.in/", status: "live" },
   { module: "Elections", source: "Election Commission of India (ECI)", type: "Static", frequency: "Post-election", url: "https://eci.gov.in", status: "static" },
   { module: "Schemes", source: "MyScheme.gov.in / State scheme portals", type: "API", frequency: "Weekly", url: "https://myscheme.gov.in", status: "static" },
@@ -527,6 +545,8 @@ const SOURCE_LINKS: Record<string, string> = {
   "UDISE+ (Unified District Information System for Education)": "https://dashboard.udiseplus.gov.in/",
   "AGMARKNET (Agricultural Marketing Information Network)": "https://agmarknet.gov.in",
   "India Meteorological Department (IMD)": "https://mausam.imd.gov.in",
+  OpenWeatherMap: "https://openweathermap.org",
+  "Open-Meteo": "https://open-meteo.com",
 };
 
 // Honesty rule (Sept 2026 audit): `isLive` is true ONLY for modules that a
@@ -536,9 +556,16 @@ const SOURCE_LINKS: Record<string, string> = {
 export function getModuleSources(moduleName: string, stateSlug: string, districtSlug?: string): ModuleSourceInfo {
   const config = getStateConfig(stateSlug, districtSlug);
   const map: Record<string, ModuleSourceInfo> = {
-    weather:           { sources: ["India Meteorological Department (IMD)", "OpenWeatherMap"], frequency: "Every 30 minutes", isLive: true },
+    // Sept 2026 audit: readings come from OpenWeatherMap and the forecast
+    // (and its cross-check) from Open-Meteo (src/scraper/jobs/weather.ts,
+    // src/lib/weather/forecast.ts); nothing is read from IMD, so IMD is
+    // not named as a source.
+    weather:           { sources: ["OpenWeatherMap", "Open-Meteo"], frequency: "Every 30 minutes", isLive: true },
     crops:             { sources: ["AGMARKNET (Agricultural Marketing Information Network)"], frequency: "Daily" },
-    water:             { sources: [config ? `${config.waterPortalName} / India-WRIS` : "India-WRIS (Water Resources Information System)"], frequency: "Every 6 hours", isLive: true },
+    // Dam levels come only from the state water resources portal
+    // (src/scraper/jobs/dams.ts: India-WRIS has no usable public API), so
+    // India-WRIS is not named as a source (Sept 2026 audit).
+    water:             { sources: [config?.waterPortalName ?? "State Water Resources Department"], frequency: "Every 6 hours", isLive: true },
     power:             { sources: [config?.discomFullName ?? "State Power Distribution Company"], frequency: "When the source publishes" },
     budget:            { sources: ["PFMS (Public Financial Management System)", "State Treasury / eGramSwaraj"], frequency: "When the source publishes" },
     police:            { sources: ["NCRB (National Crime Records Bureau)", "data.gov.in"], frequency: "Annual" },

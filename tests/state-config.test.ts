@@ -55,3 +55,20 @@ describe("getModuleSources links", () => {
     expect(getModuleSources("unknown-module", "karnataka").links).toBeUndefined();
   });
 });
+
+describe("Sept 2026 audit (land & water)", () => {
+  it("names the power companies and water suppliers that actually serve the district", () => {
+    expect(getStateConfig("tamil-nadu", "chennai")!.discomFullName).toMatch(/Tamil Nadu Power Distribution Corporation Limited \(TNPDCL\)/);
+    const nd = getStateConfig("delhi", "new-delhi")!;
+    expect(nd.discomFullName).toMatch(/New Delhi Municipal Council/);
+    expect(nd.discomFullName).not.toMatch(/Yamuna|Tata Power/);
+    expect(nd.waterBoard).toMatch(/NDMC/);
+    expect(getModuleSources("power", "karnataka", "mandya").sources[0]).toMatch(/CESC/);
+  });
+
+  it("names only the sources the collectors read: no IMD for weather, no India-WRIS for dams", () => {
+    expect(getModuleSources("weather", "karnataka").sources).toEqual(["OpenWeatherMap", "Open-Meteo"]);
+    expect(getModuleSources("water", "karnataka", "mandya").sources).toEqual(["Karnataka Water Resources Department"]);
+    expect(getModuleSources("weather", "karnataka").links?.OpenWeatherMap).toBe("https://openweathermap.org");
+  });
+});
