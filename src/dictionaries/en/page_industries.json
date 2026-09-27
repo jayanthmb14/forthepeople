@@ -1,6 +1,5 @@
 {
   "sourceLabel": "District Industries Centre",
-  "rowSource": "Source: {source}",
   "season": "Season {season}",
   "units": {
     "crore": "₹ Crore",
@@ -9,7 +8,7 @@
   "meta": {
     "tech": {
       "title": "IT Parks & Startup Ecosystem",
-      "description": "Bengaluru's tech parks, IT clusters, and startup statistics"
+      "description": "Bengaluru's tech parks, IT clusters and startup ecosystem"
     },
     "heritage": {
       "title": "Heritage, Tourism & Manufacturing",
@@ -29,19 +28,10 @@
     }
   },
   "facts": {
-    "area": "Area",
-    "acres": "{n} acres",
     "companies": "Companies",
     "employees": "Employees",
     "jobsEstimate": "Jobs (estimate)",
-    "thousandPlus": "{n}K+",
-    "builtUp": "Built-up",
-    "msf": "{n} MSF",
-    "keyTenants": "Key tenants:",
-    "visitors": "Visitors a year",
-    "revenue": "Revenue a year",
-    "established": "Est. <num>{year}</num>",
-    "employeesLine": "Employees: <num>{n}</num>"
+    "visitors": "Visitors a year"
   },
   "sugar": {
     "empty": {
@@ -53,7 +43,9 @@
       "arrears": "Total pending arrears",
       "arrearsSub": "Payments due to sugarcane farmers",
       "arrearsSubSeason": "Payments due to sugarcane farmers, season {season}",
-      "farmers": "Farmers"
+      "farmers": "Farmers",
+      "cane": "Cane crushed",
+      "caneSub": "Tonnes, latest season"
     },
     "explainer": "Sugar factories here still owe sugarcane farmers about <num>{amount}</num> from their latest crushing season. <num>{owing}</num> of the <num>{total}</num> factories with a recorded figure have not paid in full.",
     "explainerNone": "None of the <num>{total}</num> factories with a recorded figure shows unpaid money to farmers for its latest crushing season.",
@@ -71,74 +63,42 @@
       "simple": "<b>{name}</b> crushed the most cane: {amount}."
     },
     "listTitle": "Sugar factories ({n})",
-    "capacity": "Capacity: <num>{n}</num> TCD",
-    "arrearsAmount": "{amount} arrears",
-    "table": {
-      "title": "Season data",
-      "caption": "Crushing seasons for {name}",
-      "season": "Season",
-      "cane": "Cane crushed (MT)",
-      "recovery": "Recovery %",
-      "frp": "FRP rate",
-      "sap": "SAP rate",
-      "arrears": "Arrears",
-      "farmers": "Farmers"
+    "explainerTap": "Tap a factory to see every season, and to call it or find it on a map.",
+    "paid": "Paid in full",
+    "sheet": {
+      "owed": "Still owed to farmers, season {season}",
+      "owedNone": "Nothing unpaid is recorded for this season.",
+      "owedUnknown": "No figure is recorded for this season.",
+      "capacity": "Crushing capacity",
+      "capacityValue": "{n} tonnes of cane a day",
+      "seasons": "Season by season",
+      "cane": "Cane crushed",
+      "sugar": "Sugar made",
+      "recovery": "Recovery",
+      "frp": "FRP (fair price a tonne)",
+      "sap": "SAP (state price a tonne)",
+      "arrears": "Still owed",
+      "farmers": "Farmers",
+      "started": "Crushing started",
+      "ended": "Crushing ended"
     }
   },
   "tech": {
-    "startupTitle": "Bengaluru startup ecosystem",
-    "startups": "Active startups",
-    "unicorns": "Unicorns",
-    "funding": "Total funding",
-    "workforce": "Tech workforce",
-    "startupSource": "NASSCOM / Inc42 2025",
-    "explainer": "The <num>{parks}</num> IT parks below that report their workforce have about <num>{people}</num> people working in them. The biggest is <b>{name}</b>.",
-    "workforceChart": {
-      "title": "People working in each IT park",
-      "units": "Employees reported for each park",
-      "simple": "<b>{name}</b> has about {n} people at work.",
-      "legend": "Employees"
-    },
     "companies": {
       "title": "Companies in each IT park",
       "units": "Number of companies reported for each park (top 5)",
       "simple": "<b>{name}</b> hosts the most companies: {n}+.",
       "value": "{n}+ companies"
     },
-    "listTitle": "IT parks and tech clusters ({n})",
     "empty": "No IT park data yet for this district."
-  },
-  "heritage": {
-    "dasaraTitle": "Mysuru Dasara, a world-famous cultural festival",
-    "footfall": "Dasara footfall",
-    "budget": "Festival budget",
-    "palaceVisitors": "Mysore Palace visitors a year",
-    "cleanest": "Cleanest city awards",
-    "figuresNote": "Figures as widely reported. We are adding the source and year for each one.",
-    "explainer": "This page lists <num>{sites}</num> heritage and tourism {sites, plural, one {site} other {sites}} and <num>{factories}</num> major {factories, plural, one {factory or industry} other {factories and industries}} in this district.",
-    "countsAria": "What this page lists",
-    "countHeritage": "heritage sites",
-    "countTourism": "tourism sites",
-    "countFactories": "factories and industries",
-    "sitesTitle": "Heritage and tourism sites ({n})",
-    "empty": "No heritage or tourism sites listed yet.",
-    "factoriesTitle": "Major manufacturing and industries"
   },
   "general": {
     "empty": "No industry data available for this district yet.",
-    "explainer": "This page lists <num>{total}</num> major industries and business hubs. The most common kind is <b>{name}</b>, with <num>{n}</num> of them.",
-    "chart": {
-      "title": "Industries by kind",
-      "units": "Number of listed industries and business hubs in each category",
-      "simple": "{n} of {total} are <b>{name}</b>.",
-      "legend": "Listed industries"
-    },
     "jobs": {
       "title": "Biggest employers",
       "units": "People employed at each place, as reported (top 5)",
       "simple": "<b>{name}</b> gives work to the most people: about {n}."
-    },
-    "listTitle": "Major industries and business hubs ({n})"
+    }
   },
   "cat": {
     "itpark": "IT Park",
@@ -174,5 +134,75 @@
     "inprogress": "In progress",
     "closed": "Closed",
     "pending": "Pending"
+  },
+  "local": {
+    "explainer": "{district} has <num>{total}</num> {total, plural, one {place} other {places}} listed here. The most common kind is <b>{name}</b> ({n}).",
+    "explainerJobs": "About <num>{people}</num> people work in the {places, plural, one {# place} other {# places}} that report a number.",
+    "explainerTap": "Tap any place to see everything we have on it.",
+    "tiles": {
+      "listed": "Places listed",
+      "kinds": "Kinds of place",
+      "jobs": "People working",
+      "reportedBy": "{n, plural, one {# place reports it} other {# places report it}}"
+    },
+    "kindsAria": "Kinds of place on this page",
+    "listTitle": "Places ({n})",
+    "filterAria": "Filter places by kind",
+    "all": "All",
+    "more": "See details",
+    "cardAria": "{name}: show details",
+    "visitors": {
+      "title": "Most visited places",
+      "units": "Visitors a year, as reported (top 5)",
+      "simple": "<b>{name}</b> gets the most visitors: about {n} a year."
+    }
+  },
+  "sheet": {
+    "about": "About",
+    "category": "Category",
+    "type": "Type",
+    "location": "Location",
+    "taluk": "Taluk",
+    "phone": "Phone",
+    "details": "Details",
+    "source": "Source",
+    "updated": "Updated",
+    "updatedLine": "Updated {date}",
+    "call": "Call",
+    "directions": "Directions"
+  },
+  "dk": {
+    "employees": "Employees",
+    "employmentEstimate": "Jobs (estimate)",
+    "established": "Started in",
+    "founded": "Founded in",
+    "built": "Built in",
+    "area": "Area",
+    "area_acres": "Area (acres)",
+    "area_sqft": "Area (sq ft)",
+    "companies": "Companies",
+    "developer": "Developer",
+    "anchor_tenants": "Main tenants",
+    "keyTenants": "Main tenants",
+    "annual_revenue_cr": "Revenue a year",
+    "revenue_cr": "Revenue",
+    "revenue": "Revenue",
+    "visitors_annual": "Visitors a year",
+    "visitorsPerYear": "Visitors a year",
+    "entry_fee": "Entry fee",
+    "entry_fee_adult": "Entry fee (adult)",
+    "entry_adult": "Entry fee (adult)",
+    "entryfee": "Entry fee",
+    "builtUpArea": "Built-up area (million sq ft)",
+    "products": "Products",
+    "sectors": "Sectors",
+    "major_sectors": "Main sectors",
+    "exports_usd_mn": "Exports (US$ million)",
+    "exports_usd_bn": "Exports (US$ billion)",
+    "export_countries": "Export countries",
+    "style": "Style",
+    "height_ft": "Height (ft)",
+    "illumination_days": "Lit up on",
+    "tier": "Tier"
   }
 }
