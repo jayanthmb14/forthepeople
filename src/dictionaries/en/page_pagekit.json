@@ -10,9 +10,8 @@
     "readingStale": "Last reading: {date}",
     "pricesStale": "Latest prices: {date}",
     "dataStale": "Latest data: {date}",
-    "daysOld": "{n, plural, one {# day old} other {# days old}}",
-    "hoursOld": "less than a day old",
-    "noNewer": "We could not find newer data.",
-    "noDate": "Date not published by the source"
+    "noDate": "Date not published by the source",
+    "staleDays": "{n, plural, one {# day old} other {# days old}}. We could not find newer data.",
+    "staleHours": "Less than a day old. We could not find newer data."
   }
 }

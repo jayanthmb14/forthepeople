@@ -204,9 +204,7 @@ export function ReadingAge({
       <p suppressHydrationWarning style={{ margin: 0, fontSize: 13, lineHeight: "20px" }}>
         <strong style={{ fontWeight: 650 }}>{t(`age.${what}Stale`, { date: when })}</strong>
         {" · "}
-        {days > 0 ? t("age.daysOld", { n: days }) : t("age.hoursOld")}
-        {". "}
-        {t("age.noNewer")}
+        {days > 0 ? t("age.staleDays", { n: days }) : t("age.staleHours")}
       </p>
     </div>
   );
