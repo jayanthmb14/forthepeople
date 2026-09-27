@@ -137,14 +137,20 @@ export function TapCard({
   );
 }
 
-/** A small "🏢 Tahsildar office" line inside a card. */
-export function MetaLine({ emoji, children, lang }: { emoji: string; children: React.ReactNode; lang?: string }) {
+/**
+ * A small "🏢 Tahsildar office" line inside a card. `clamp` cuts long text
+ * after that many lines on the card (the sheet shows it in full).
+ */
+export function MetaLine({ emoji, children, lang, clamp }: { emoji: string; children: React.ReactNode; lang?: string; clamp?: number }) {
+  const clampStyle: React.CSSProperties = clamp
+    ? { display: "-webkit-box", WebkitLineClamp: clamp, WebkitBoxOrient: "vertical", overflow: "hidden" }
+    : {};
   return (
     <span style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: "19px", color: "var(--ftp-text)", minWidth: 0 }}>
       <span className="ftp-emoji" aria-hidden style={{ fontSize: 14, lineHeight: "19px" }}>
         {emoji}
       </span>
-      <span lang={lang} style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+      <span lang={lang} style={{ minWidth: 0, overflowWrap: "anywhere", ...clampStyle }}>
         {children}
       </span>
     </span>
