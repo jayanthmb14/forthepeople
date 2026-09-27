@@ -545,9 +545,21 @@
 .ftp-rail-item { transition: background-color 150ms ease, color 150ms ease; }
 .ftp-rail-item:hover:not([data-active="true"]) { background: var(--ftp-surface-2); color: var(--ftp-text); }
 
+/* Every kit button (ToolbarButton, PrimaryButton) carries `.ftp-btn`.
+   Desktop height is set inline (32 px quiet, 40 px primary); on phones
+   min-height lifts both to the 44 px touch target. min-height wins over
+   an inline `height`, so no !important is needed anywhere. */
+@media (max-width: 767px) {
+  .ftp-btn { min-height: 44px; }
+}
+
 /* Secondary (quiet) button used by Toolbar. */
 .ftp-btn-secondary { transition: border-color 150ms ease, background-color 150ms ease; }
 .ftp-btn-secondary:hover { border-color: var(--ftp-border-strong); background: var(--ftp-surface-2); }
+
+/* Primary (filled brand) button — PrimaryButton in the kit. */
+.ftp-btn-primary { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-btn-primary:hover:not(:disabled) { border-color: var(--ftp-brand-deep); background: var(--ftp-brand-deep); }
 
 /* Live dot: the ONE permitted animation — 2 s opacity pulse, only when
    data is under 30 minutes old. Reduced motion turns it off. */
@@ -563,7 +575,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ftp-live-dot, .ftp-skeleton { animation: none; }
-  .ftp-card-link, .ftp-rail-item, .ftp-btn-secondary { transition: none; }
+  .ftp-card-link, .ftp-rail-item, .ftp-btn-secondary, .ftp-btn-primary { transition: none; }
 }
 
 /* Consumer anchors so the bundler never drops a v3 token (same reason as
@@ -601,35 +613,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Session 11.4 — Section wrap pattern ──
-   Lets each redesign-v2 section render its background edge-to-edge
-   while content stays in a centered 1200px column. Use as:
-     <section className="ftp-section-wrap" style={{ background: ... }}>
-       <div className="ftp-section-inner">{content}</div>
-     </section>
-*/
-.ftp-section-wrap {
-  width: 100%;
-  padding: 32px 0;
-}
-.ftp-section-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-@media (max-width: 767px) {
-  .ftp-section-wrap { padding: 24px 0; }
-  .ftp-section-inner { padding: 0 16px; }
-}
-
-/* Session 15 v9 Phase C (Fixes #2, #4): alternating section backgrounds.
-   Each section's bg + the 32px padding-y above gives visible separation
-   so the eye registers each section as distinct. */
-.ftp-hero-wrap        { background: #FFFFFF; }
-.ftp-livedata-wrap    { background: #FFFFFF; }
-.ftp-how-wrap         { background: #FAFAF8; }
-.ftp-supporters-wrap  { background: #FFFFFF; }
-.ftp-vote-wrap        { background: #F0F7FF; }
+/* (Removed in Design v3: the old home-page section wrappers
+   .ftp-section-wrap / .ftp-section-inner and the .ftp-*-wrap
+   background classes. The home page now uses .ftp-container and
+   home.module.css; nothing referenced them any more.) */
 
 /* ── Utility: Card ── */
 .card {
@@ -827,29 +814,9 @@ body {
   transform: translateX(3px);
 }
 
-/* ── DrillDownMap (Session 12 v7 polish) ─────────────── */
-/* Ambient pulse on active (live) state geographies — purely cosmetic;
-   the inline style prop on Geography still drives fill/stroke. */
-@keyframes ftp-geo-pulse {
-  0%   { filter: drop-shadow(0 0 0 rgba(74, 144, 217, 0.0)); }
-  50%  { filter: drop-shadow(0 0 6px rgba(74, 144, 217, 0.55)); }
-  100% { filter: drop-shadow(0 0 0 rgba(74, 144, 217, 0.0)); }
-}
-.ftp-geo-active {
-  animation: ftp-geo-pulse 2.6s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.ftp-geo-active:hover {
-  animation: none; /* hover state owns the visual; pulse pauses */
-}
-.ftp-geo-locked {
-  /* No animation — locked states stay quiet so the eye is drawn to live ones. */
-  transition: filter 200ms ease;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ftp-geo-active { animation: none; }
-}
+/* (Removed in Design v3: the DrillDownMap glow pulse — .ftp-geo-active,
+   .ftp-geo-locked and @keyframes ftp-geo-pulse. Map colours now come
+   from src/components/map/mapTheme.tsx; no glow, no pulse.) */
 
 /* ── Phase 4.7 §Section 2.2 heritage foundation ── */
 

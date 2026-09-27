@@ -40,16 +40,32 @@
   color: var(--ftp-warn);
   flex-shrink: 0;
 }
+/* One line: [sentence, cut with "…" if it has to be] [link]. */
 .disclaimerText {
   flex: 1;
   min-width: 0;
+  margin: 0;
   padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.disclaimerSentence {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .disclaimerText a {
+  flex-shrink: 0;
   color: var(--ftp-brand-deep);
   text-decoration: underline;
   text-underline-offset: 2px;
   white-space: nowrap;
+}
+/* "Read the disclaimer" from 768 px up; "More" on phones. */
+.disclaimerLinkShort {
+  display: none;
 }
 .disclaimerClose {
   flex-shrink: 0;
@@ -479,6 +495,20 @@
   .disclaimerClose {
     width: 44px;
     height: 44px;
+  }
+  .disclaimerText {
+    padding: 0;
+  }
+  .disclaimerLinkLong {
+    display: none;
+  }
+  /* 44 px tall tap area for "More" without making the line taller
+     than the 44 px close button beside it. */
+  .disclaimerLinkShort {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 4px;
   }
   .myDistrictForget {
     width: 44px;

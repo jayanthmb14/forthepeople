@@ -11,6 +11,9 @@
 //  Sits directly above the sticky header on every page (except /india,
 //  which has its own IndiaLegalDisclaimer with the same NDSAP text).
 //
+//  Layout: always a single line — the full sentence on desktop, a cut-off
+//  sentence plus a "More" link (to /<locale>/disclaimer) on phones.
+//
 //  Behaviour:
 //    - Shown on first load (the server renders it, so nobody misses it).
 //    - The × hides it and remembers that for 7 days in localStorage
@@ -31,6 +34,10 @@ import styles from "./chrome.module.css";
 
 const STORAGE_KEY = "ftp.disclaimerDismissedAt";
 const HIDE_FOR_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/** The one-line notice. The full legal wording lives on /<locale>/disclaimer. */
+const DISCLAIMER_SENTENCE =
+  "Independent, not a government website. Data from official portals under NDSAP; verify at the source.";
 
 // ── A tiny store around one localStorage key ──
 const listeners = new Set<() => void>();
@@ -73,12 +80,23 @@ export default function DisclaimerLine({ locale }: { locale: string }) {
     <div role="region" aria-label="Site disclaimer" className={styles.disclaimer}>
       <div className={`ftp-container ${styles.disclaimerRow}`}>
         <Info size={14} aria-hidden className={styles.disclaimerIcon} />
-        <p className={styles.disclaimerText} style={{ margin: 0 }}>
-          ForThePeople.in is not an official government website: data is
-          aggregated from official portals (NDSAP), accredited research
-          institutions and verified public sources, so always verify at the
-          original source.{" "}
-          <Link href={`/${locale}/disclaimer`}>Read the disclaimer</Link>
+        {/*
+          Always ONE line. The sentence is short enough to fit whole on a
+          desktop (1200 px container); on narrower screens it is cut with
+          "…" (full text in the tooltip, and screen readers still read all
+          of it). The link text swaps by width in chrome.module.css:
+          "Read the disclaimer" from 768 px up, "More" on phones.
+        */}
+        <p className={styles.disclaimerText}>
+          <span className={styles.disclaimerSentence} title={DISCLAIMER_SENTENCE}>
+            {DISCLAIMER_SENTENCE}
+          </span>
+          <Link href={`/${locale}/disclaimer`} className={styles.disclaimerLinkLong}>
+            Read the disclaimer
+          </Link>
+          <Link href={`/${locale}/disclaimer`} className={styles.disclaimerLinkShort} aria-label="Read the full disclaimer">
+            More
+          </Link>
         </p>
         <button
           type="button"

@@ -69,15 +69,26 @@ name; `PageHeader accent="teal"` applies it.
 - `PageHeader({icon, title, titleLocal?, description, backHref, freshness?, source?, actions?, accent?})`
 - `Section({title, titleLocal?, action?, children})`, `SectionHeader` (row only)
 - `Card({children, padding?, as?, href?})`, `CardGrid({children, cols?})`
-- `Toolbar({children})` + `ToolbarButton({icon?, children, onClick?|href?})`
+- `Toolbar({children})` + `ToolbarButton({icon?, children, onClick?|href?})` — quiet
+  button, 32 px on desktop and 44 px on phones (class `.ftp-btn`; pages need no override)
+- `PrimaryButton({children, icon?, href?, external?, onClick?, type?, disabled?, fullWidth?})`
+  — the one filled button per view: `--ftp-brand` fill, `--ftp-surface` text, radius 8,
+  40 px desktop / 44 px phone. A `<Link>` when `href` is set, a `<button>` otherwise.
 - `SourcesFooter({sources: [{name, url?, licence?, frequency?}], methodologyHref?})`
 
 **Numbers and freshness**
-- `StatTile({label, value, unit?, sub?, asOf?, trend?, icon?, source?})`
-- `StatStrip({children, cols?})` — 2/3/4 tiles, 2 × 2 on phones
-- `FreshnessPill({asOf, status?, thresholdHours?})` — renders nothing without `asOf`
-- `SourcePill({label, href?})`, `AsOfText({asOf})`
-- `describeFreshness(asOf, status?)` and `formatIST(date)` — pure helpers
+- `StatTile({label, value, unit?, sub?, asOf?, asOfPeriod?, trend?, icon?, source?})`
+- `StatStrip({children, cols?})` — 2/3/4 tiles, 2 × 2 on phones. The column count
+  ignores children that render nothing (`{x && <StatTile/>}` when `x` is false).
+- `FreshnessPill({asOf, status?, thresholdHours?})` — renders nothing without `asOf`.
+  `PageHeader freshness={{asOf, status?, thresholdHours?}}` forwards the threshold
+  (e.g. `168` for a weekly feed so it stays green all week).
+- `SourcePill({label, href?})` — never wider than its parent; a long name ends in
+  "…" and the full name is in the tooltip
+- `AsOfText({asOf?, period?, prefix?})` — "As of 12 Sep", or with a free-text period
+  "As of Census 2011" / "As of FY 2024-25". `AsOfPeriod({period, prefix?})` is the
+  shorthand for figures that belong to a period rather than a date.
+- `describeFreshness(asOf, status?, thresholdHours?)` and `formatIST(date)` — pure helpers
 - `ProgressBar({value, max | pct, label?, tone?})`, `KpiRing({score, grade})`
 
 **Lists, filters, states**

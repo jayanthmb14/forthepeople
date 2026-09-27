@@ -4,8 +4,17 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// ⚠ Dynamic plan creation is now used — these static plan IDs are no longer
-// required (kept only for legacy compatibility). See create-subscription route.
+import { DASHBOARDS_PER_DISTRICT, TOTAL_INDIA_DISTRICTS } from "@/lib/constants";
+
+// Counts shown in the All-India Patron copy. Derived, never typed by hand:
+// TOTAL_INDIA_DISTRICTS is the canonical district total and
+// DASHBOARDS_PER_DISTRICT is the length of the sidebar module registry,
+// so adding a module updates "N dashboards" here automatically.
+const ALL_INDIA_DISTRICTS = TOTAL_INDIA_DISTRICTS.toLocaleString("en-IN");
+const ALL_INDIA_DASHBOARDS = (TOTAL_INDIA_DISTRICTS * DASHBOARDS_PER_DISTRICT).toLocaleString("en-IN");
+
+// Note: dynamic plan creation is now used — these static plan IDs are no
+// longer required (kept only for legacy compatibility). See create-subscription route.
 export const RAZORPAY_PLANS = {
   district: process.env.RAZORPAY_PLAN_DISTRICT ?? "",
   state: process.env.RAZORPAY_PLAN_STATE ?? "",
@@ -56,7 +65,7 @@ export const TIER_CONFIG: Record<string, TierConfigItem> = {
     step: 50,
     isRecurring: true,
     description: "Monthly · your name on the district page you champion",
-    hookLine: "₹99/mo — one less Zomato order, one more district with free data 🍛",
+    hookLine: "₹99/mo — one less Zomato order, one more district with free data",
     emoji: "🏛️",
     badgeType: "champion",
     requiresDistrict: true,
@@ -74,7 +83,7 @@ export const TIER_CONFIG: Record<string, TierConfigItem> = {
     step: 500,
     isRecurring: true,
     description: "Monthly · your name on all districts in one state",
-    hookLine: "₹33/day — a cup of coffee to keep an entire state's districts free ☕",
+    hookLine: "₹33/day — a cup of coffee to keep an entire state's districts free",
     emoji: "🇮🇳",
     badgeType: "state",
     requiresState: true,
@@ -89,8 +98,8 @@ export const TIER_CONFIG: Record<string, TierConfigItem> = {
     maxAmount: 49998,
     step: 1000,
     isRecurring: true,
-    description: "Monthly · featured across all 780+ districts, homepage spotlight",
-    hookLine: "780 districts. 22,620 dashboards. Your name on all of them 🇮🇳",
+    description: `Monthly · featured across all ${ALL_INDIA_DISTRICTS}+ districts, homepage spotlight`,
+    hookLine: `${ALL_INDIA_DISTRICTS} districts. ${ALL_INDIA_DASHBOARDS} dashboards. Your name on all of them`,
     emoji: "🌟",
     badgeType: "patron",
     color: "#FEF2F2",
@@ -105,7 +114,7 @@ export const TIER_CONFIG: Record<string, TierConfigItem> = {
     step: 5000,
     isRecurring: true,
     description: "Monthly · everything + permanent homepage feature, gold card on every page, listed first everywhere",
-    hookLine: "Royal Contributor — permanently etched into India's data revolution 👑",
+    hookLine: "Royal Contributor — permanently etched into India's data revolution",
     emoji: "👑",
     badgeType: "founder",
     color: "#FFFBEB",

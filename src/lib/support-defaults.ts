@@ -18,6 +18,12 @@ const FACTS = getPlatformFacts();
 export interface CostBreakdownItem {
   label: string;
   pct: number;
+  /**
+   * LEGACY. A hex colour per bar. The v3 support page ignores it (every bar
+   * uses the brand token), so the defaults below leave it empty (""). It
+   * stays a required string only because the admin editor and
+   * /api/admin/support-config still read and write it inside the DB JSON row.
+   */
   color: string;
 }
 
@@ -25,7 +31,14 @@ export interface HelpItem {
   label: string;
   desc: string;
   url: string;
-  icon: string; // emoji
+  /**
+   * LEGACY. An emoji the old page showed. The v3 support page ignores it and
+   * picks a Lucide icon from the url/label instead (helpIconFor), so the
+   * defaults below leave it empty (""). It stays a required string only
+   * because the admin editor and /api/admin/support-config still read and
+   * write it inside the stored DB JSON.
+   */
+  icon: string;
   external: boolean;
 }
 
@@ -51,17 +64,17 @@ export const SUPPORT_DEFAULTS: SupportPageContent = {
   ].join("\n\n"),
   photoUrl: "/jayanth-profile.jpg",
   costBreakdown: [
-    { label: "Servers & Hosting (Vercel + Railway)", pct: 40, color: "#2563EB" },
-    { label: "AI Analysis & Intelligence (OpenRouter)", pct: 20, color: "#7C3AED" },
-    { label: "Data Collection & APIs", pct: 15, color: "#16A34A" },
-    { label: "Analytics & Monitoring (Plausible + Sentry)", pct: 10, color: "#F59E0B" },
-    { label: "Development & Expansion", pct: 10, color: "#EC4899" },
-    { label: "Domain & Security", pct: 5, color: "#6B7280" },
+    { label: "Servers & Hosting (Vercel + Railway)", pct: 40, color: "" },
+    { label: "AI Analysis & Intelligence (OpenRouter)", pct: 20, color: "" },
+    { label: "Data Collection & APIs", pct: 15, color: "" },
+    { label: "Analytics & Monitoring (Plausible + Sentry)", pct: 10, color: "" },
+    { label: "Development & Expansion", pct: 10, color: "" },
+    { label: "Domain & Security", pct: 5, color: "" },
   ],
   helpItems: [
-    { label: "Star on GitHub", desc: "Help us get visibility — star the repository", url: "https://github.com/jayanthmb14/forthepeople", icon: "⭐", external: true },
-    { label: "Share on social media", desc: "Share ForThePeople.in with #OpenDataIndia", url: "https://twitter.com/intent/tweet?text=Check%20out%20ForThePeople.in%20%E2%80%94%20free%20government%20data%20dashboards%20for%20Indian%20districts%20%23OpenDataIndia&url=https://forthepeople.in", icon: "🐦", external: true },
-    { label: "Contribute code", desc: "We're open source — PRs welcome on GitHub", url: "https://github.com/jayanthmb14/forthepeople/issues", icon: "💻", external: true },
-    { label: "Send district data", desc: "Know RTI documents or official reports? Share them", url: "/en/feedback", icon: "📊", external: false },
+    { label: "Star on GitHub", desc: "Help us get visibility — star the repository", url: "https://github.com/jayanthmb14/forthepeople", icon: "", external: true },
+    { label: "Share on social media", desc: "Share ForThePeople.in with #OpenDataIndia", url: "https://twitter.com/intent/tweet?text=Check%20out%20ForThePeople.in%20%E2%80%94%20free%20government%20data%20dashboards%20for%20Indian%20districts%20%23OpenDataIndia&url=https://forthepeople.in", icon: "", external: true },
+    { label: "Contribute code", desc: "We're open source — PRs welcome on GitHub", url: "https://github.com/jayanthmb14/forthepeople/issues", icon: "", external: true },
+    { label: "Send district data", desc: "Know RTI documents or official reports? Share them", url: "/en/feedback", icon: "", external: false },
   ],
 };
