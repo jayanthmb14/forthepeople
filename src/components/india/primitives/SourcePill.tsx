@@ -38,7 +38,7 @@ const VARIANT_STYLE: Record<SourcePillVariant, React.CSSProperties> = {
 const BASE_STYLE: React.CSSProperties = {
   fontFamily: "var(--ftp-font-sans)",
   fontVariantNumeric: "tabular-nums",
-  fontSize: "11px",
+  fontSize: "12px",
   fontWeight: 500,
   borderRadius: "999px",
   padding: "2px 7px",

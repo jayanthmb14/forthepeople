@@ -190,7 +190,7 @@ export function ModuleDropdown({ currentLabel, scope, superCategorySlug, locale,
                         </span>
                         <span style={{ flex: 1 }}>{x.moduleTitle(m)}</span>
                         {m.status === "planned" || m.status === "coming_soon" ? (
-                          <span style={{ fontSize: 11, fontWeight: 600, background: "#FAEEDA", color: "#854F0B", padding: "1px 7px", borderRadius: 999 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, background: "var(--ftp-warn-tint)", color: "var(--ftp-warn)", padding: "1px 7px", borderRadius: 999 }}>
                             {t("status.soon")}
                           </span>
                         ) : null}

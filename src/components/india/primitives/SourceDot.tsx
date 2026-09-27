@@ -55,7 +55,7 @@ export function SourceDot({ accentHex, domain, cadence, className }: SourceDotPr
           borderRadius: "6px",
           fontFamily: "var(--ftp-font-sans)",
           fontVariantNumeric: "tabular-nums",
-          fontSize: "11px",
+          fontSize: "12px",
           whiteSpace: "nowrap",
           opacity: hovered ? 1 : 0,
           visibility: hovered ? "visible" : "hidden",

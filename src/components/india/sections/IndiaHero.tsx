@@ -238,6 +238,13 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
             font-size: 28px !important;
           }
         }
+        /* v4.1: on tablets six tiles in a row squeezed the labels; three per row. */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          [data-ftp-national-symbols="1"],
+          [data-ftp-kpi-quickactions="1"] {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+        }
       `}</style>
     </section>
   );

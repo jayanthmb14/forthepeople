@@ -54,7 +54,7 @@ export function NationalIdentityGrid() {
             <div
               style={{
                 fontFamily: "var(--ftp-font-sans)",
-                fontSize: "11px",
+                fontSize: "12px",
                 lineHeight: "15px",
                 fontWeight: 600,
                 color: "#885410",
