@@ -3,7 +3,8 @@
 // How old a dataset's reference year is, as a small kit Pill:
 //   ≤ 2 years → live (green) · ≤ 5 years → warn (amber) · older → danger (red)
 // The colour is only the pill's text + 6 px dot (Design v3 rule: semantic
-// colour never fills a box).
+// colour never fills a box). Text: page_population.source.*.
+import { useTranslations } from "next-intl";
 import { Pill, type Tone } from "@/components/district/ui";
 
 interface DataAgeChipProps {
@@ -19,15 +20,13 @@ function classify(referenceYear: number): { age: number; tone: Tone; tier: "gree
 }
 
 export default function DataAgeChip({ referenceYear }: DataAgeChipProps) {
+  const t = useTranslations("page_population.source");
   const { age, tone, tier } = classify(referenceYear);
-  const tooltip =
-    tier === "red"
-      ? "Census 2027 fieldwork has begun — refreshed figures expected on this platform within 90 days of official release."
-      : undefined;
+  const tooltip = tier === "red" ? t("ageTip") : undefined;
 
   return (
     <Pill tone={tone} dot title={tooltip}>
-      <span className="ftp-num" suppressHydrationWarning>{age}y old</span>
+      <span className="ftp-num" suppressHydrationWarning>{t("age", { n: age })}</span>
     </Pill>
   );
 }

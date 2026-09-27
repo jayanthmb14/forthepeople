@@ -3,6 +3,9 @@
 // Sex ratio (females per 1,000 males) on a 700–1,100 scale with reference
 // marks at 900, 950 and 1,000 (equal numbers). Design v4: the track is a
 // soft hue tint, the marker is a hue-deep pin, the value is a big number.
+// Words come from page_population; numbers follow the page language.
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { type ProfileLike } from "../types";
 import { ChartEmpty, ChartNote } from "../chartKit";
 
@@ -26,30 +29,32 @@ function toPct(v: number): number {
 }
 
 function Track({ ratio, label }: { ratio: number; label: string }) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
   const pct = toPct(ratio);
   // Scale labels sit exactly under their marks (absolute positions).
   const scaleLabels = [
-    { v: MIN, text: String(MIN) },
-    ...MARKS.map((m) => ({ v: m, text: m === 1000 ? "1000 (equal)" : String(m) })),
-    { v: MAX, text: String(MAX) },
+    { v: MIN, text: f.number(MIN) },
+    ...MARKS.map((m) => ({ v: m, text: m === 1000 ? t("equalMark", { v: f.number(m) }) : f.number(m) })),
+    { v: MAX, text: f.number(MAX) },
   ];
   return (
     <div style={{ margin: "12px 0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", fontSize: 12, color: "var(--ftp-text-2)", marginBottom: 8 }}>
         <span style={{ fontWeight: 600, color: "var(--ftp-text)" }}>{label}</span>
         <span>
-          <span className="ftp-bignum" style={{ fontSize: 22, color: "var(--hue-deep)" }}>{ratio}</span> females per 1,000 males
+          <span className="ftp-bignum" style={{ fontSize: 22, color: "var(--hue-deep)" }}>{f.number(ratio)}</span> {t("perThousand")}
         </span>
       </div>
       <div
         role="img"
-        aria-label={`${label}: ${ratio} females per 1,000 males`}
+        aria-label={t("gaugeAria", { label, ratio: f.number(ratio) })}
         style={{ position: "relative", height: 12, background: "var(--hue-tint)", borderRadius: 6 }}
       >
         {MARKS.map((m) => (
           <div
             key={m}
-            title={`${m}`}
+            title={f.number(m)}
             style={{
               position: "absolute",
               top: -2,
@@ -99,19 +104,17 @@ function Track({ ratio, label }: { ratio: number; label: string }) {
 }
 
 export default function SexRatioGauge({ sexRatio, childSexRatio }: Props) {
+  const t = useTranslations("page_population");
   if (typeof sexRatio !== "number") {
-    return <ChartEmpty message="The sex ratio is not available for this district yet." />;
+    return <ChartEmpty message={t("sexRatioEmpty")} />;
   }
   return (
     <div>
-      <Track ratio={sexRatio} label="Sex ratio (all ages)" />
+      <Track ratio={sexRatio} label={t("sexRatioAll")} />
       {typeof childSexRatio === "number" && (
         <>
-          <Track ratio={childSexRatio} label="Child sex ratio (0–6)" />
-          <ChartNote>
-            * Published in the public interest. See the &quot;Child sex ratio (PCPNDT Act
-            context)&quot; section of the disclosure panel.
-          </ChartNote>
+          <Track ratio={childSexRatio} label={t("sexRatioChild")} />
+          <ChartNote>{t("childNote")}</ChartNote>
         </>
       )}
     </div>

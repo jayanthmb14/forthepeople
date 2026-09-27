@@ -5,6 +5,8 @@
 // category gets a saturated colour, and deliberately not the page hue
 // either. Chrome (v4 tooltip, axis) comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { CASTE_COLORS, isNonEmptyObject, type CasteMap, type ProfileLike } from "../types";
 import { AXIS_LINE, AXIS_TICK, ChartEmpty, ChartNote, LEGEND_STYLE, TOOLTIP_PROPS } from "../chartKit";
 
@@ -17,6 +19,9 @@ export function canRenderCasteStackedBar(profile: ProfileLike | null | undefined
 }
 
 export default function CasteStackedBar({ caste }: Props) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
+  const pct = (v: number, d = 2) => f.number(v / 100, { style: "percent", minimumFractionDigits: d, maximumFractionDigits: d });
   const hasAny =
     caste &&
     (typeof caste.SC === "number" ||
@@ -24,12 +29,12 @@ export default function CasteStackedBar({ caste }: Props) {
       typeof caste.Other === "number");
 
   if (!hasAny) {
-    return <ChartEmpty message="Caste-category data is not available for this district yet." />;
+    return <ChartEmpty message={t("casteEmpty")} />;
   }
 
   const data = [
     {
-      name: "Caste categories",
+      name: t("casteTitle"),
       SC: caste!.SC ?? 0,
       ST: caste!.ST ?? 0,
       Other: caste!.Other ?? 0,
@@ -41,21 +46,17 @@ export default function CasteStackedBar({ caste }: Props) {
       <div style={{ width: "100%", height: 140 }}>
         <ResponsiveContainer>
           <BarChart data={data} layout="vertical" margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => `${v}%`} />
+            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={AXIS_LINE} tickLine={AXIS_LINE} tickFormatter={(v) => pct(v, 0)} />
             <YAxis type="category" dataKey="name" hide />
-            <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(2)}%` : "—")} />
+            <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? pct(v) : "—")} />
             <Legend wrapperStyle={LEGEND_STYLE} />
-            <Bar dataKey="SC" name="Scheduled Caste" stackId="c" fill={CASTE_COLORS.SC} radius={[6, 0, 0, 6]} />
-            <Bar dataKey="ST" name="Scheduled Tribe" stackId="c" fill={CASTE_COLORS.ST} />
-            <Bar dataKey="Other" name="Other" stackId="c" fill={CASTE_COLORS.Other} radius={[0, 6, 6, 0]} />
+            <Bar dataKey="SC" name={t("caste.SC")} stackId="c" fill={CASTE_COLORS.SC} radius={[6, 0, 0, 6]} />
+            <Bar dataKey="ST" name={t("caste.ST")} stackId="c" fill={CASTE_COLORS.ST} />
+            <Bar dataKey="Other" name={t("caste.Other")} stackId="c" fill={CASTE_COLORS.Other} radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <ChartNote>
-        Constitutional categories only (Scheduled Caste, Scheduled Tribe, Other). Sub-caste / jati
-        data is not displayed — see the &quot;Caste-category data&quot; section of the disclosure
-        panel above.
-      </ChartNote>
+      <ChartNote>{t("casteNote")}</ChartNote>
     </div>
   );
 }

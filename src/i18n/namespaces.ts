@@ -5,5 +5,6 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_exams",
   "page_famous-personalities",
   "page_map",
-  "page_news"
+  "page_news",
+  "page_population"
 ];

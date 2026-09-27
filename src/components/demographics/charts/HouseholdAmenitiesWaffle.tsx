@@ -5,6 +5,8 @@
 // its own label and emoji, so colour is not needed to tell them apart —
 // filled squares use the page hue (Design v4), empty squares a soft tint.
 // The grid wraps on phones so nothing scrolls sideways.
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import {
   isNonEmptyObject,
   type HouseholdAmenitiesData,
@@ -16,7 +18,8 @@ interface Props {
   amenities: HouseholdAmenitiesData | null | undefined;
 }
 
-/** The four amenities we draw, in order (also used by the page's table view). */
+/** The four amenities we draw, in order (also used by the page's table view).
+ *  `label` is the English fallback; the shown name is page_population.amenities.<key>. */
 export const AMENITIES: {
   key: keyof HouseholdAmenitiesData;
   label: string;
@@ -35,6 +38,9 @@ export function canRenderHouseholdAmenitiesWaffle(
 }
 
 function Waffle({ pct, emoji, label }: { pct: number; emoji: string; label: string }) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
+  const pctText = f.number(pct / 100, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const filled = Math.round(Math.max(0, Math.min(100, pct)));
   return (
     <div style={{ textAlign: "center" }}>
@@ -48,7 +54,7 @@ function Waffle({ pct, emoji, label }: { pct: number; emoji: string; label: stri
           width: 120,
           margin: "0 auto",
         }}
-        aria-label={`${label}: ${pct.toFixed(1)} percent of households`}
+        aria-label={t("amenityAria", { label, pct: pctText })}
       >
         {Array.from({ length: 100 }).map((_, i) => (
           <div
@@ -62,7 +68,7 @@ function Waffle({ pct, emoji, label }: { pct: number; emoji: string; label: stri
         ))}
       </div>
       <div className="ftp-bignum" style={{ marginTop: 8, fontSize: 20, lineHeight: "26px", color: "var(--hue-deep)" }}>
-        {pct.toFixed(1)}%
+        {pctText}
       </div>
       <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{label}</div>
     </div>
@@ -70,12 +76,13 @@ function Waffle({ pct, emoji, label }: { pct: number; emoji: string; label: stri
 }
 
 export default function HouseholdAmenitiesWaffle({ amenities }: Props) {
+  const t = useTranslations("page_population");
   if (!amenities) {
-    return <ChartEmpty message="Household amenities are not available for this district yet." />;
+    return <ChartEmpty message={t("amenitiesEmpty")} />;
   }
   const available = AMENITIES.filter((a) => typeof amenities[a.key] === "number");
   if (available.length === 0) {
-    return <ChartEmpty message="Household amenities are not available for this district yet." />;
+    return <ChartEmpty message={t("amenitiesEmpty")} />;
   }
   return (
     <div
@@ -91,7 +98,7 @@ export default function HouseholdAmenitiesWaffle({ amenities }: Props) {
           key={a.key as string}
           pct={amenities[a.key] as number}
           emoji={a.emoji}
-          label={a.label}
+          label={t(`amenities.${a.key}`)}
         />
       ))}
     </div>

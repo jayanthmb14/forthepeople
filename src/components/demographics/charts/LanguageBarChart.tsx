@@ -4,6 +4,8 @@
 // it is drawn in the page hue (Design v4 recharts theme: gradient fill,
 // rounded bar ends); chrome comes from ../chartKit.
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { ChartGradients } from "@/components/district/visuals";
 import {
   isNonEmptyObject,
@@ -23,8 +25,11 @@ export function canRenderLanguageBarChart(profile: ProfileLike | null | undefine
 }
 
 export default function LanguageBarChart({ language }: Props) {
+  const t = useTranslations("page_population");
+  const f = useFormat();
+  const pct = (v: number, d = 1) => f.number(v / 100, { style: "percent", minimumFractionDigits: d, maximumFractionDigits: d });
   if (!language || !Array.isArray(language.top10) || language.top10.length === 0) {
-    return <ChartEmpty message="Language data is not available for this district yet." />;
+    return <ChartEmpty message={t("languageEmpty")} />;
   }
 
   const data = [...language.top10].sort((a, b) => b.pct - a.pct);
@@ -42,11 +47,11 @@ export default function LanguageBarChart({ language }: Props) {
             tick={AXIS_TICK}
             axisLine={AXIS_LINE}
             tickLine={AXIS_LINE}
-            tickFormatter={(v) => `${v}%`}
+            tickFormatter={(v) => pct(v, 0)}
           />
           <YAxis type="category" dataKey="name" width={90} tick={CATEGORY_TICK} axisLine={AXIS_LINE} tickLine={false} interval={0} />
-          <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? `${v.toFixed(1)}%` : "—")} />
-          <Bar dataKey="pct" name="Share of speakers" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
+          <Tooltip {...TOOLTIP_PROPS} formatter={(v) => (typeof v === "number" ? pct(v) : "—")} />
+          <Bar dataKey="pct" name={t("speakersShare")} fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
