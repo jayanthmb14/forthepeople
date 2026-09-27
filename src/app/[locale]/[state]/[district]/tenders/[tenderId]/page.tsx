@@ -24,7 +24,7 @@ import type React from "react";
 import { use } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { Gavel, ExternalLink, Share2, Bookmark, Clock } from "lucide-react";
+import { Bookmark, Clock, ExternalLink, Gavel, LockKeyhole, Receipt, Share2, Wallet } from "lucide-react";
 import {
   ModulePage,
   PageHeader,
@@ -46,7 +46,7 @@ import RedFlagBadge from "@/components/tenders/RedFlagBadge";
 import TenderGanttTimeline from "@/components/tenders/TenderGanttTimeline";
 import EligibilityWizard from "@/components/tenders/EligibilityWizard";
 import { useTenderStatus } from "@/components/tenders/TenderCard";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { useMoney } from "@/components/money/useMoney";
 import { HueTag, TagRow, safeUrl } from "@/components/money/TapCard";
 import type { TenderDetail } from "@/components/money/tender-types";
@@ -115,7 +115,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
         />
 
         {/* 1. The answer in one sentence. */}
-        <Explainer emoji="📑">
+        <Explainer>
           {t.rich("detail.explainer", {
             authority: td.authority.name,
             hasValue: value !== "—" ? "yes" : "no",
@@ -128,18 +128,17 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
 
         {/* 2. Four big numbers. */}
         <StatStrip cols={4}>
-          <StatTile emoji="💰" label={t("detail.tiles.value")} value={value} countUp={false} />
+          <StatTile icon={Wallet} label={t("detail.tiles.value")} value={value} countUp={false} />
           <StatTile
-            emoji="🔐"
+            icon={LockKeyhole}
             label={t("detail.tiles.emd")}
             value={td.emdAmountInr ? m.short(td.emdAmountInr) : td.mseReserved || td.startupExempt ? t("detail.tiles.exempt") : "—"}
             countUp={false}
           />
-          <StatTile emoji="🧾" label={t("detail.tiles.fee")} value={m.short(td.tenderFeeInr)} countUp={false} />
+          <StatTile icon={Receipt} label={t("detail.tiles.fee")} value={m.short(td.tenderFeeInr)} countUp={false} />
           {/* The countdown ticks, so it is composed here instead of StatTile. */}
           <div style={{ background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)", border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))", borderRadius: "var(--ftp-radius-tile)", padding: "14px 16px", minWidth: 0 }}>
             <div className="ftp-label" style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-              <span className="ftp-emoji" aria-hidden>⏰</span>
               {t("detail.tiles.closesIn")}
             </div>
             <CountdownTimer deadline={td.bidSubmissionEnd} />
@@ -169,8 +168,8 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
             <HueTag>{td.authority.shortCode}</HueTag>
             {td.category && <HueTag outline>{td.category.name}</HueTag>}
             <Pill tone={status.tone}>{status.label}</Pill>
-            {td.mseReserved && <HueTag emoji="🏪">{t("tag.mse")}</HueTag>}
-            {td.startupExempt && <HueTag outline emoji="🚀">{t("tag.startup")}</HueTag>}
+            {td.mseReserved && <HueTag>{t("tag.mse")}</HueTag>}
+            {td.startupExempt && <HueTag outline>{t("tag.startup")}</HueTag>}
             <Pill tone={urgency.tone} dot icon={Clock}>{t(`detail.urgency.${urgency.key}`)}</Pill>
           </TagRow>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -208,7 +207,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
 
         {/* Factual indicators */}
         {td.redFlags.length > 0 && (
-          <Section title={t("detail.flagsTitle")} emoji="🚩">
+          <Section title={t("detail.flagsTitle")}>
             <p className="ftp-body ftp-prose" style={{ color: "var(--ftp-text-2)", marginBottom: 10 }}>{t("detail.flagsIntro")}</p>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               {td.redFlags.map((fl) => (
@@ -224,7 +223,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
 
         {/* Plain words + the full summary side by side on wide screens. */}
         <div className="ftp-grid" style={{ marginTop: 8, alignItems: "start", ["--ftp-grid-min" as string]: "340px" } as React.CSSProperties}>
-          <Section title={t("detail.plainTitle")} emoji="💬">
+          <Section title={t("detail.plainTitle")}>
             {td.aiSummary?.plainBullets && (td.aiSummary.plainBullets.what || td.aiSummary.plainBullets.whoCanApply || td.aiSummary.plainBullets.deadline) ? (
               <Card tinted>
                 <ul className="ftp-body" style={{ margin: 0, paddingInlineStart: 18, fontSize: 14, lineHeight: "22px" }}>
@@ -239,7 +238,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
           </Section>
 
           {td.aiSummary?.plainEnglishSummary ? (
-            <Section title={t("detail.fullTitle")} emoji="📝">
+            <Section title={t("detail.fullTitle")}>
               <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginBottom: 8 }}>
                 {t.rich("detail.fullNote", { model: td.aiSummary.aiModel, time: formatIST(td.aiSummary.generatedAt, f.intl) ?? "", num })}
               </div>
@@ -251,13 +250,13 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
         </div>
 
         {/* Can I apply? */}
-        <Section title={t("detail.canApply")} emoji="✅">
+        <Section title={t("detail.canApply")}>
           <EligibilityWizard eligibility={td.eligibility} tenderMseReserved={td.mseReserved} tenderStartupExempt={td.startupExempt} />
         </Section>
 
         {/* Changes issued — cards, so nothing scrolls sideways on a phone. */}
         {td.corrigenda.length > 0 && (
-          <Section title={t("detail.corrigendaTitle")} emoji="✏️">
+          <Section title={t("detail.corrigendaTitle")}>
             <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
               {td.corrigenda.map((c) => (
                 <Card key={c.id} padding={14}>
@@ -275,7 +274,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
 
         {/* Award + Contract */}
         {td.awards.length > 0 && (
-          <Section title={t("detail.awardTitle")} emoji="🏆">
+          <Section title={t("detail.awardTitle")}>
             <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
               {td.awards.map((a) => (
                 <Card key={a.id} padding={14}>
@@ -293,7 +292,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
 
         {/* Documents */}
         {td.documents.length > 0 && (
-          <Section title={t("detail.documents")} emoji="📂">
+          <Section title={t("detail.documents")}>
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column" }}>
               {td.documents.map((d) => {
                 const url = safeUrl(d.sourceUrl);
@@ -317,14 +316,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ locale:
           <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
         </div>
 
-        <ModulePageFooter
-          moduleSlug="tenders"
-          locale={locale}
-          state={stateSlug}
-          district={districtSlug}
-          showCompare={false}
-          extraSources={[{ name: t("detail.noticeSource", { portal: td.sourcePortal }), url: sourceUrl }]}
-        />
+        <MoneyToolbar shareTitle={mt.label("tenders")} />
       </ModulePage>
     </ModuleErrorBoundary>
   );

@@ -108,7 +108,6 @@ export default function TenderDisclaimerPage({
       <ModulePage>
         <PageHeader
           icon={ShieldCheck}
-          emoji="⚖️"
           title={t("legalPage.title")}
           backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
           backLabel={t("backToTenders")}
@@ -134,19 +133,19 @@ export default function TenderDisclaimerPage({
           </p>
         )}
         {!isLoading && !error && data && !hasContent && (
-          <EmptyState emoji="⚖️" title={t("legalPage.empty")} />
+          <EmptyState title={t("legalPage.empty")} />
         )}
 
         {data && hasContent && (
           <>
             {data.universal.length > 0 && (
-              <Section title={t("legalPage.general")} emoji="📜">
+              <Section title={t("legalPage.general")}>
                 {data.universal.map((c) => <Clause key={c.slug} clause={c} />)}
               </Section>
             )}
 
             {data.stateSpecific.length > 0 && (
-              <Section title={t("legalPage.stateSpecific", { state: stateLabel })} emoji="🏛️">
+              <Section title={t("legalPage.stateSpecific", { state: stateLabel })}>
                 {data.stateSpecific.map((c) => <Clause key={c.slug} clause={c} />)}
               </Section>
             )}

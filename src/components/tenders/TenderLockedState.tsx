@@ -1,25 +1,24 @@
 /**
  * Rendered on /tenders pages when District.tendersActive === false.
- * Tells the visitor tenders for this district aren't tracked yet + offers
- * a sponsor CTA to prioritise activation. Also lists currently-live
- * districts so they can find coverage elsewhere.
+ * Tells the visitor tenders for this district aren't tracked yet, and
+ * lists currently-live districts so they can find coverage elsewhere.
  *
  * The sidebar still renders "Govt. Tenders" for every district (intentional
  * discoverability). This component is the gated entry-point content.
  *
- * Design v4: the kit PageHeader band (the page's one <h1>, module hue and
- * emoji from the registry), a tinted sponsor Card with a hue button,
- * a Section of districts that are tracked today. 44 px tap targets.
+ * The kit PageHeader (the page's one <h1>, module hue and emoji from the
+ * registry) and a Section of districts that are tracked today. 44 px tap
+ * targets. v5: no sponsor ask here — support lives in the site header
+ * and footer only.
  * Words come from "page_tenders"; state names are translated, district
  * names are shown as the database has them.
  */
 
 "use client";
 
-import type React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Lock, ArrowRight, Heart } from "lucide-react";
+import { Lock, ArrowRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, PageHeader, Section } from "@/components/district/ui";
 import { usePlaceText } from "@/i18n/client";
@@ -40,20 +39,6 @@ interface LiveDistrict {
 }
 
 /** Primary call-to-action link (module-hue fill, 44 px tall). */
-const PRIMARY_LINK: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  minHeight: 44,
-  padding: "0 20px",
-  background: "linear-gradient(135deg, var(--hue) 0%, var(--hue-deep) 100%)",
-  color: "#fff",
-  borderRadius: "var(--ftp-radius-pill)",
-  boxShadow: "0 10px 20px -12px color-mix(in srgb, var(--hue) 80%, transparent)",
-  textDecoration: "none",
-  fontSize: 14,
-  fontWeight: 600,
-};
 
 export default function TenderLockedState({
   locale,
@@ -79,33 +64,16 @@ export default function TenderLockedState({
 
   return (
     <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
-      {/* Header band: module hue + emoji, the lock as the watermark icon. */}
+      {/* Header: the module's own identity, the lock as its icon. */}
       <PageHeader
         icon={Lock}
         title={t("locked.title", { district: districtName })}
         description={t("locked.description", { state: stateLabel })}
-        backHref={`/${locale}/${stateSlug}/${districtSlug}`}
       />
-
-      {/* Sponsor CTA */}
-      <Card tinted padding={18} style={{ marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <span className="ftp-icon-chip" aria-hidden style={{ width: 34, height: 34, borderRadius: 11 }}>
-            <Heart size={18} style={{ color: "var(--ftp-support)" }} />
-          </span>
-          <h2 className="ftp-title">{t("locked.helpTitle", { district: districtName })}</h2>
-        </div>
-        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>
-          {t("locked.helpBody")}
-        </p>
-        <Link href={`/${locale}/support`} style={PRIMARY_LINK}>
-          {t("locked.support")}
-        </Link>
-      </Card>
 
       {/* What's covered elsewhere */}
       {liveElsewhere.length > 0 && (
-        <Section title={t("locked.tracked")} emoji="📍">
+        <Section title={t("locked.tracked")}>
           <Card>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               {liveElsewhere.map((d) => (

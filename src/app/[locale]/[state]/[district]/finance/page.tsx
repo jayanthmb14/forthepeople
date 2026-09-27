@@ -11,13 +11,14 @@
 //  2024-25, about ₹82 was spent."
 //  Page recipe (docs/LAYOUT.md):
 //    ModulePage → PageHeader → Explainer → 4 StatTiles (total, spent,
-//    utilisation, lapsed) → the picture (10 coins + a dial) → departments
-//    as cards (year chips, "money lapsed" chip); tapping a card opens a
-//    DetailSheet with that department's full numbers, notes and source →
-//    charts two or three to a row (how each ₹100 is shared, where the
-//    money went, revenue each month) → AI insight → plain summary →
-//    sources → news → Download / Share / Compare.
-//  Data: useBudget, useRevenue, useAIInsight (unchanged). Amounts are
+//    utilisation, lapsed) → the picture (10 coin icons + a dial) →
+//    departments as cards (year chips, "money lapsed" chip); tapping a card
+//    opens a DetailSheet with that department's full numbers, notes and
+//    source → charts two or three to a row (how each ₹100 is shared, where
+//    the money went, revenue each month) → one AI insight → Download /
+//    Share / Compare → news. v5: no emoji; sources, "not an official
+//    website" and the stale-data note come from the district shell.
+//  Data: useBudget, useRevenue. Amounts are
 //  stored in whole rupees and formatted at render (useMoney). Every total
 //  carries the fiscal year and an "As of" date from when the rows were
 //  fetched. Words live in "page_finance".
@@ -27,8 +28,8 @@ import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ExternalLink, PiggyBank } from "lucide-react";
-import { useBudget, useRevenue, useAIInsight, type BudgetAllocation } from "@/hooks/useRealtimeData";
+import { Coins, ExternalLink, Hourglass, Percent, PiggyBank, Receipt, Wallet } from "lucide-react";
+import { useBudget, useRevenue, type BudgetAllocation } from "@/hooks/useRealtimeData";
 import {
   ModulePage,
   PageHeader,
@@ -40,19 +41,17 @@ import {
   LoadingShell,
   ProgressBar,
   EmptyState,
-  AIInsightBanner,
-  SourcesFooter,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import { ChartCard, ChartGradients, Explainer, Gauge, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
+import { ChartCard, ChartGradients, Explainer, Gauge, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
-import { getModuleSources } from "@/lib/constants/state-config";
+import { IconPictogram } from "@/components/district/calm-parts";
 import { hueClass } from "@/lib/design/hues";
 import ModuleNews from "@/components/district/ModuleNews";
-import { useDistrictName, useFormat, useModuleText, usePlaceText } from "@/i18n/client";
-import { ShareDonut, type DonutSlice } from "@/components/money/visuals";
-import { useMoney, useSourceText } from "@/components/money/useMoney";
-import MoneyToolbar, { NotOfficialNote, downloadCsv } from "@/components/money/MoneyToolbar";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
+import { OTHER_SHADE, ShareDonut, type DonutSlice } from "@/components/money/visuals";
+import { useMoney } from "@/components/money/useMoney";
+import MoneyToolbar, { downloadCsv } from "@/components/money/MoneyToolbar";
 import { CardHead, SheetHighlight, SheetLink, TapCard, safeUrl } from "@/components/money/TapCard";
 import knDict from "@/dictionaries/kn.json";
 
@@ -60,12 +59,8 @@ import knDict from "@/dictionaries/kn.json";
 const CRORE = 10_000_000;
 const LAKH = 100_000;
 
-/** Official websites for the sources named by getModuleSources("budget"). */
-const SOURCE_URLS: Record<string, string> = {
-  "PFMS (Public Financial Management System)": "https://pfms.nic.in",
-  "State Treasury / eGramSwaraj": "https://egramswaraj.gov.in",
-};
-const PFMS = { label: "PFMS", href: SOURCE_URLS["PFMS (Public Financial Management System)"] };
+/** The main source, shown in the page header and on the charts. */
+const PFMS = { label: "PFMS", href: "https://pfms.nic.in" };
 
 /** An allocation row as the API sends it (the hook type plus the fields it leaves out). */
 type AllocationRow = BudgetAllocation & {
@@ -91,15 +86,11 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const { locale, state, district } = use(params);
   const t = useTranslations("page_finance");
   const mt = useModuleText();
-  const place = usePlaceText();
   const f = useFormat();
   const m = useMoney();
-  const st = useSourceText();
   const districtName = useDistrictName(state, district);
-  const base = `/${locale}/${state}/${district}`;
   const { data: budgetData, isLoading: bLoading } = useBudget(district, state);
   const { data: revenueData, isLoading: rLoading } = useRevenue(district, state);
-  const { data: aiInsight } = useAIInsight(district, "finance");
   const [pickedYear, setPickedYear] = useState<string | null>(null);
   const [show, setShow] = useState<"all" | "lapsed">("all");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -164,10 +155,6 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
   const deptRows = show === "lapsed" ? yearRows.filter((a) => a.lapsed > 0) : yearRows;
   const open = openId ? allocations.find((a) => a.id === openId) ?? null : null;
 
-  // Sources: the same list the old DataSourceBanner showed, now as a footer.
-  const src = getModuleSources("budget", state);
-  const stateName = place.state(state, "");
-  const stateFinSource = stateName ? t("summarySourcesState", { state: stateName }) : t("summarySources");
   // Local-script title: the module name in the state's language (Kannada only
   // for now). PageHeader hides it when it is already the title.
   const title = mt.label("finance");
@@ -195,20 +182,19 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
         title={title}
         titleLocal={titleLocal}
         description={t("description")}
-        backHref={base}
         freshness={asOf ? { asOf } : undefined}
         source={PFMS}
       />
 
       {bLoading && <LoadingShell rows={4} />}
 
-      {!bLoading && !hasBudget && <EmptyState emoji="💰" title={t("empty.title")} body={t("empty.body")} />}
+      {!bLoading && !hasBudget && <EmptyState title={t("empty.title")} body={t("empty.body")} />}
 
       {!bLoading && hasBudget && (
         <>
           {/* 1. The answer in one sentence. */}
           {totalAllocated > 0 && latestYear && (
-            <Explainer emoji="🪙">
+            <Explainer>
               {totalSpent > 0
                 ? t.rich("explainer", { district: districtName, year: latestYear, pct: pctSpent, b })
                 : t.rich("explainerAllocOnly", { district: districtName, year: latestYear, amount: m.short(totalAllocated, 0), b })}
@@ -218,9 +204,9 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
 
           {/* 2. Four big numbers. */}
           <StatStrip cols={4}>
-            <StatTile emoji="💰" label={t("tiles.total")} value={m.num(Math.round(totalAllocated / CRORE))} unit={t("tiles.unitCr")} sub={fyLabel} asOf={asOf} />
+            <StatTile icon={Wallet} label={t("tiles.total")} value={m.num(Math.round(totalAllocated / CRORE))} unit={t("tiles.unitCr")} sub={fyLabel} asOf={asOf} />
             <StatTile
-              emoji="🧾"
+              icon={Receipt}
               label={t("tiles.spent")}
               value={totalSpent === 0 && totalAllocated > 0 ? t("tiles.dataPending") : m.num(Math.round(totalSpent / CRORE))}
               unit={totalSpent === 0 && totalAllocated > 0 ? undefined : t("tiles.unitCr")}
@@ -228,7 +214,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
               asOf={asOf}
             />
             <StatTile
-              emoji="📈"
+              icon={Percent}
               label={t("tiles.utilisation")}
               value={totalAllocated > 0 ? (totalSpent === 0 ? t("tiles.pending") : m.num(pctSpent)) : "—"}
               unit={totalAllocated > 0 && totalSpent > 0 ? "%" : undefined}
@@ -236,7 +222,7 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
               asOf={asOf}
             />
             <StatTile
-              emoji="⏳"
+              icon={Hourglass}
               label={t("tiles.lapsed")}
               value={totalSpent === 0 && totalLapsed === 0 ? "—" : m.num(totalLapsed / CRORE, 1)}
               unit={totalSpent === 0 && totalLapsed === 0 ? undefined : t("tiles.unitCr")}
@@ -245,27 +231,27 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
             />
           </StatStrip>
 
-          {/* 3. The picture: 10 coins, one per ₹10 of every ₹100, lit for
-              what was spent; plus a dial. Same numbers as the tiles. */}
+          {/* 3. The picture: 10 coin icons, one per ₹10 of every ₹100, lit
+              for what was spent; plus a dial. Same numbers as the tiles. */}
           {totalAllocated > 0 && totalSpent > 0 && (
             <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-              <Card tinted padding={18} style={{ display: "flex", alignItems: "center" }}>
-                <Pictogram
+              <Card padding={18} style={{ display: "flex", alignItems: "center" }}>
+                <IconPictogram
                   filled={(totalSpent / totalAllocated) * 10}
-                  emoji="💰"
+                  icon={Coins}
                   label={t("pictogram", { n: Math.round((totalSpent / totalAllocated) * 10) })}
                 />
               </Card>
-              <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Card padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Gauge value={(totalSpent / totalAllocated) * 100} label={t("gauge.label")} caption={t("gauge.caption", { year: latestYear ?? "" })} />
               </Card>
             </div>
           )}
 
           {/* 4. Departments as cards; tap one for all its numbers. */}
-          <Section emoji="🏢" title={t("depts.title")}>
+          <Section title={t("depts.title")}>
             {allocations.length === 0 ? (
-              <EmptyState emoji="🏢" title={t("depts.empty")} />
+              <EmptyState title={t("depts.empty")} />
             ) : (
               <>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
@@ -284,13 +270,13 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
                       onChange={(v) => setShow(v as "all" | "lapsed")}
                       items={[
                         { value: "all", label: t("depts.all"), count: yearRows.length },
-                        { value: "lapsed", label: `⏳ ${t("depts.lapsedOnly")}`, count: lapsedCount },
+                        { value: "lapsed", label: t("depts.lapsedOnly"), count: lapsedCount },
                       ]}
                     />
                   )}
                 </div>
                 {deptRows.length === 0 ? (
-                  <EmptyState emoji="🔍" title={t("depts.noMatch")} />
+                  <EmptyState title={t("depts.noMatch")} />
                 ) : (
                   <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
                     {deptRows.map((a) => (
@@ -311,7 +297,6 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
           {shareSlices.length >= 2 && totalAllocated > 0 && (
             <ChartCard
               title={t("share.title", { year: latestYear ?? "" })}
-              emoji="🍰"
               units={t("share.units")}
               simple={t.rich("share.simple", { sector: bySize[0].sector, n: topShare, b })}
               source={PFMS}
@@ -335,14 +320,13 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
           {budgetChart.length > 0 && (
             <ChartCard
               title={t("sectors.title", { year: latestYear ?? "" })}
-              emoji="🏗️"
               units={t("sectors.units")}
               simple={(() => {
                 const top = [...budgetChart].sort((a, c) => c.allocated - a.allocated)[0];
                 return top ? t.rich("sectors.simple", { sector: top.sectorFull, given: m.crore(top.allocated), spent: m.crore(top.spent), b }) : null;
               })()}
               legend={[
-                { label: t("sectors.legendGiven"), swatch: "#D8D5CB" },
+                { label: t("sectors.legendGiven"), swatch: OTHER_SHADE },
                 { label: t("sectors.legendSpent"), swatch: "var(--hue)" },
               ]}
               source={PFMS}
@@ -373,11 +357,10 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
           {!rLoading && revChart.length > 0 && (
             <ChartCard
               title={t("revenue.title")}
-              emoji="🧾"
               units={t("revenue.units")}
               legend={[
                 { label: t("revenue.collected"), swatch: "var(--hue)" },
-                { label: t("revenue.target"), swatch: "#D8D5CB" },
+                { label: t("revenue.target"), swatch: OTHER_SHADE },
               ]}
               asOf={revenueAsOf}
               table={revChart.map((r) => ({
@@ -401,40 +384,20 @@ function FinancePageInner({ params }: { params: Promise<{ locale: string; state:
         </div>
       )}
 
-      {aiInsight && (
-        <div style={{ marginTop: 24 }}>
-          <AIInsightBanner
-            headline={aiInsight.headline}
-            summary={aiInsight.summary}
-            sentiment={aiInsight.sentiment}
-            confidence={aiInsight.confidence}
-            sourceUrls={aiInsight.sourceUrls}
-            createdAt={aiInsight.createdAt}
-          />
-        </div>
-      )}
-      <div style={{ marginTop: 16 }}>
+      {/* One AI insight (it hides itself when there is none). */}
+      <div style={{ marginTop: 24 }}>
         <AIInsightCard module="budget" district={district} />
       </div>
 
-      {/* Plain summary for search engines and screen readers. */}
-      <p className="ftp-body ftp-prose" style={{ color: "var(--ftp-text-2)", marginTop: 24 }}>
-        {t("summary", { sources: stateFinSource })}
-      </p>
-
-      <SourcesFooter sources={src.sources.map((name) => ({ name: st.name(name), url: SOURCE_URLS[name], frequency: st.freq(src.frequency) }))} />
-      <NotOfficialNote />
+      <MoneyToolbar shareTitle={title} onCsv={onCsv} csvDisabled={allocations.length === 0} compareHref={`/${locale}/compare?module=finance&a=${district}`} />
 
       <ModuleNews district={district} state={state} locale={locale} module="budget" />
-
-      <MoneyToolbar shareTitle={title} onCsv={onCsv} csvDisabled={allocations.length === 0} compareHref={`/${locale}/compare?module=finance&a=${district}`} />
 
       <DetailSheet
         open={!!open}
         onClose={closeSheet}
         title={open?.department ?? ""}
         subtitle={open ? t("fy", { year: open.fiscalYear }) : undefined}
-        emoji="🏢"
         hueClassName={hueClass("finance")}
         footer={
           open && safeUrl(open.sourceUrl) ? (
@@ -456,7 +419,7 @@ function DeptCard({ a, onOpen }: { a: AllocationRow; onOpen: () => void }) {
   const m = useMoney();
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("depts.cardAria", { name: a.department })} more={t("depts.more")}>
-      <CardHead emoji="🏢" title={a.department} titleLocal={a.departmentLocal} />
+      <CardHead title={a.department} titleLocal={a.departmentLocal} />
       <span style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <span>
           <span className="ftp-label" style={{ display: "block" }}>{t("depts.given")}</span>
@@ -475,8 +438,7 @@ function DeptCard({ a, onOpen }: { a: AllocationRow; onOpen: () => void }) {
         <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{t("depts.notSpentYet")}</span>
       )}
       {a.lapsed > 0 && (
-        <span className="ftp-num" style={{ fontSize: 14, fontWeight: 650, color: "var(--ftp-danger)" }}>
-          <span className="ftp-emoji" aria-hidden>⏳ </span>
+        <span className="ftp-num" style={{ fontSize: 14, fontWeight: 650, color: "var(--ftp-warn)" }}>
           {t("depts.lapsed", { amount: m.short(a.lapsed, 1) })}
         </span>
       )}
@@ -493,7 +455,7 @@ function DeptSheet({ a }: { a: AllocationRow }) {
   const url = safeUrl(a.sourceUrl);
   return (
     <>
-      <SheetHighlight emoji="🪙" label={t("sheet.storyLabel")}>
+      <SheetHighlight label={t("sheet.storyLabel")}>
         {a.spent > 0
           ? t("sheet.story", { dept: a.department, given: m.short(a.allocated, 2), year: a.fiscalYear, spent: m.short(a.spent, 2) })
           : t("sheet.storyNoSpend", { dept: a.department, given: m.short(a.allocated, 2), year: a.fiscalYear })}
@@ -501,21 +463,19 @@ function DeptSheet({ a }: { a: AllocationRow }) {
       {used !== null && <ProgressBar pct={used} label={t("sheet.used")} height={10} />}
       <DetailList
         rows={[
-          { emoji: "📅", label: t("sheet.fy"), value: a.fiscalYear },
-          { emoji: "🗂️", label: t("sheet.category"), value: a.category || null },
-          { emoji: "📋", label: t("sheet.scheme"), value: a.scheme || null },
-          { emoji: "💰", label: t("sheet.allocated"), value: m.short(a.allocated, 2) },
-          { emoji: "📤", label: t("sheet.released"), value: a.released > 0 ? m.short(a.released, 2) : null },
-          { emoji: "🧾", label: t("sheet.spent"), value: a.spent > 0 ? m.short(a.spent, 2) : null },
+          { label: t("sheet.fy"), value: a.fiscalYear },
+          { label: t("sheet.category"), value: a.category || null },
+          { label: t("sheet.scheme"), value: a.scheme || null },
+          { label: t("sheet.allocated"), value: m.short(a.allocated, 2) },
+          { label: t("sheet.released"), value: a.released > 0 ? m.short(a.released, 2) : null },
+          { label: t("sheet.spent"), value: a.spent > 0 ? m.short(a.spent, 2) : null },
           {
-            emoji: "⏳",
             label: t("sheet.lapsed"),
-            value: a.lapsed > 0 ? <span style={{ color: "var(--ftp-danger)", fontWeight: 600 }}>{m.short(a.lapsed, 2)}</span> : null,
+            value: a.lapsed > 0 ? <span style={{ color: "var(--ftp-warn)", fontWeight: 600 }}>{m.short(a.lapsed, 2)}</span> : null,
           },
-          { emoji: "📆", label: t("sheet.period"), value: a.quarter ? t("sheet.quarter", { n: a.quarter }) : null },
-          { emoji: "📝", label: t("sheet.remarks"), value: a.remarks || null, lang: "en" },
+          { label: t("sheet.period"), value: a.quarter ? t("sheet.quarter", { n: a.quarter }) : null },
+          { label: t("sheet.remarks"), value: a.remarks || null, lang: "en" },
           {
-            emoji: "🔗",
             label: t("sheet.source"),
             value: a.source ? (
               url ? (
@@ -527,7 +487,7 @@ function DeptSheet({ a }: { a: AllocationRow }) {
               )
             ) : null,
           },
-          { emoji: "🕒", label: t("sheet.asOf"), value: a.fetchedAt ? f.date(a.fetchedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
+          { label: t("sheet.asOf"), value: a.fetchedAt ? f.date(a.fetchedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
         ]}
       />
     </>

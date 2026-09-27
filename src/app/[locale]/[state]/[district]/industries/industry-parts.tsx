@@ -21,7 +21,10 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { MapPin, Navigation, Phone } from "lucide-react";
+import {
+  Anchor, Building2, Car, Factory, FlaskConical, Landmark, Laptop, Luggage, MapPin, Navigation, Phone, Rocket, Shirt, Store,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Pill } from "@/components/district/ui";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { hueClass } from "@/lib/design/hues";
@@ -77,22 +80,21 @@ export function companiesOf(p: LocalIndustry): number | null {
   return numeric(p.details?.companies);
 }
 
-/** One emoji per kind of place, from words in its category / type. */
-export function industryEmoji(p: { category?: string | null; type?: string | null }): string {
+/** One small line icon per kind of place, from words in its category / type (v5: no emoji). */
+export function industryIcon(p: { category?: string | null; type?: string | null }): LucideIcon {
   const c = `${p.category ?? ""} ${p.type ?? ""}`.toLowerCase();
-  if (/\bit\b|it park|tech|software|gcc/.test(c)) return "💻";
-  if (/pharma|biotech|health/.test(c)) return "🧪";
-  if (/financ|bank|exchange/.test(c)) return "🏦";
-  if (/market|commercial|retail|trade/.test(c)) return "🛍️";
-  if (/handicraft|silk|craft|textile|weav/.test(c)) return "🧵";
-  if (/heritage|palace|temple|fort/.test(c)) return "🏛️";
-  if (/touris|wildlife|park|zoo/.test(c)) return "🧳";
-  if (/port|logistic/.test(c)) return "⚓";
-  if (/auto|vehicle/.test(c)) return "🚗";
-  if (/sugar/.test(c)) return "🍬";
-  if (/manufactur|industr|factory|engineering/.test(c)) return "🏭";
-  if (/startup/.test(c)) return "🚀";
-  return "🏢";
+  if (/\bit\b|it park|tech|software|gcc/.test(c)) return Laptop;
+  if (/pharma|biotech|health/.test(c)) return FlaskConical;
+  if (/financ|bank|exchange/.test(c)) return Landmark;
+  if (/market|commercial|retail|trade/.test(c)) return Store;
+  if (/handicraft|silk|craft|textile|weav/.test(c)) return Shirt;
+  if (/heritage|palace|temple|fort/.test(c)) return Landmark;
+  if (/touris|wildlife|park|zoo/.test(c)) return Luggage;
+  if (/port|logistic/.test(c)) return Anchor;
+  if (/auto|vehicle/.test(c)) return Car;
+  if (/sugar|manufactur|industr|factory|engineering/.test(c)) return Factory;
+  if (/startup/.test(c)) return Rocket;
+  return Building2;
 }
 
 /** Translated glossary word (category, factory type, season status), else the text as published. */
@@ -177,7 +179,7 @@ export function IndustryCard({ p, onOpen }: { p: LocalIndustry; onOpen: () => vo
   const kind = gloss("cat", p.type || p.category);
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("local.cardAria", { name: p.name })} more={t("local.more")}>
-      <CardHead emoji={industryEmoji(p)} title={p.name} titleLocal={p.nameLocal} />
+      <CardHead icon={industryIcon(p)} title={p.name} titleLocal={p.nameLocal} />
       <TagRow>
         {kind && <HueTag>{kind}</HueTag>}
         {p.location && (
@@ -214,7 +216,6 @@ export function IndustrySheet({ p, onClose }: { p: LocalIndustry | null; onClose
       onClose={onClose}
       title={p.name}
       subtitle={[gloss("cat", p.category), p.type && p.type !== p.category ? gloss("cat", p.type) : null].filter(Boolean).join(" · ")}
-      emoji={industryEmoji(p)}
       hueClassName={hueClass("industries")}
       footer={
         map || phone ? (
@@ -235,28 +236,27 @@ export function IndustrySheet({ p, onClose }: { p: LocalIndustry | null; onClose
     >
       {p.nameLocal && <p className="ftp-body" style={{ fontSize: 15, color: "var(--hue-deep)" }}>{p.nameLocal}</p>}
       {description && (
-        <SheetHighlight emoji="📖" label={t("sheet.about")} lang="en">
+        <SheetHighlight label={t("sheet.about")} lang="en">
           {description}
         </SheetHighlight>
       )}
       <DetailList
         rows={[
-          { emoji: "🗂️", label: t("sheet.category"), value: gloss("cat", p.category) || null },
-          { emoji: "🏷️", label: t("sheet.type"), value: p.type && p.type !== p.category ? gloss("cat", p.type) : null },
-          { emoji: "📍", label: t("sheet.location"), value: p.location || null },
-          { emoji: "🗺️", label: t("sheet.taluk"), value: p.taluk || null },
-          { emoji: "📞", label: t("sheet.phone"), value: phone },
+          { label: t("sheet.category"), value: gloss("cat", p.category) || null },
+          { label: t("sheet.type"), value: p.type && p.type !== p.category ? gloss("cat", p.type) : null },
+          { label: t("sheet.location"), value: p.location || null },
+          { label: t("sheet.taluk"), value: p.taluk || null },
+          { label: t("sheet.phone"), value: phone },
         ]}
       />
       {extra.length > 0 && (
-        <SheetSection emoji="🧾" title={t("sheet.details")}>
+        <SheetSection title={t("sheet.details")}>
           <DetailList rows={extra} />
         </SheetSection>
       )}
       <DetailList
         rows={[
           {
-            emoji: "🔗",
             label: t("sheet.source"),
             value: src.name ? (
               src.url ? (
@@ -268,7 +268,7 @@ export function IndustrySheet({ p, onClose }: { p: LocalIndustry | null; onClose
               )
             ) : null,
           },
-          { emoji: "🕒", label: t("sheet.updated"), value: p.updatedAt ? f.date(p.updatedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
+          { label: t("sheet.updated"), value: p.updatedAt ? f.date(p.updatedAt, { day: "numeric", month: "short", year: "numeric" }) : null },
         ]}
       />
     </DetailSheet>
@@ -291,7 +291,6 @@ export function FactoryCard({ f: fac, onOpen }: { f: FactoryRow; onOpen: () => v
   return (
     <TapCard onOpen={onOpen} ariaLabel={t("local.cardAria", { name: fac.name })} more={t("local.more")}>
       <CardHead
-        emoji="🏭"
         title={fac.name}
         titleLocal={fac.nameLocal}
         side={
@@ -314,7 +313,7 @@ export function FactoryCard({ f: fac, onOpen }: { f: FactoryRow; onOpen: () => v
         <span style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <span>
             <span className="ftp-label" style={{ display: "block" }}>{t("sugar.sheet.arrears")}</span>
-            <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650, color: owed > 0 ? "var(--ftp-danger)" : "var(--ftp-live-text)" }}>
+            <span className="ftp-num" style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650, color: owed > 0 ? "var(--ftp-warn)" : "var(--ftp-live-text)" }}>
               {latest.totalArrears == null ? "—" : owed > 0 ? m.crore(owed / CRORE, 2) : t("sugar.paid")}
             </span>
           </span>
@@ -347,7 +346,6 @@ export function FactorySheet({ f: fac, onClose }: { f: FactoryRow | null; onClos
       onClose={onClose}
       title={fac.name}
       subtitle={[gloss("factoryType", fac.type), fac.taluk ? `${fac.location}, ${fac.taluk}` : fac.location].filter(Boolean).join(" · ")}
-      emoji="🏭"
       hueClassName={hueClass("industries")}
       footer={
         fac.phone || map ? (
@@ -368,26 +366,26 @@ export function FactorySheet({ f: fac, onClose }: { f: FactoryRow | null; onClos
     >
       {fac.nameLocal && <p className="ftp-body" style={{ fontSize: 15, color: "var(--hue-deep)" }}>{fac.nameLocal}</p>}
       {latest && (
-        <SheetHighlight emoji={owed && owed > 0 ? "💸" : "✅"} label={t("sugar.sheet.owed", { season: latest.season })}>
+        <SheetHighlight label={t("sugar.sheet.owed", { season: latest.season })}>
           {owed == null ? t("sugar.sheet.owedUnknown") : owed > 0 ? m.crore(owed / CRORE, 2) : t("sugar.sheet.owedNone")}
         </SheetHighlight>
       )}
       <DetailList
         rows={[
-          { emoji: "🏷️", label: t("sheet.type"), value: gloss("factoryType", fac.type) || null },
-          { emoji: "📍", label: t("sheet.location"), value: fac.location },
-          { emoji: "🗺️", label: t("sheet.taluk"), value: fac.taluk || null },
-          { emoji: "⚙️", label: t("sugar.sheet.capacity"), value: fac.capacity ? t("sugar.sheet.capacityValue", { n: m.num(fac.capacity) }) : null },
-          { emoji: "📞", label: t("sheet.phone"), value: fac.phone || null },
+          { label: t("sheet.type"), value: gloss("factoryType", fac.type) || null },
+          { label: t("sheet.location"), value: fac.location },
+          { label: t("sheet.taluk"), value: fac.taluk || null },
+          { label: t("sugar.sheet.capacity"), value: fac.capacity ? t("sugar.sheet.capacityValue", { n: m.num(fac.capacity) }) : null },
+          { label: t("sheet.phone"), value: fac.phone || null },
         ]}
       />
       {fac.seasonData.length > 0 && (
-        <SheetSection emoji="🌾" title={t("sugar.sheet.seasons")}>
+        <SheetSection title={t("sugar.sheet.seasons")}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {fac.seasonData.map((s) => (
               <div
                 key={s.id}
-                style={{ padding: 12, borderRadius: 14, border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))", background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)" }}
+                style={{ padding: 12, borderRadius: 14, border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))", background: "var(--ftp-surface)" }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                   <strong className="ftp-title">{t("season", { season: s.season })}</strong>
@@ -406,7 +404,7 @@ export function FactorySheet({ f: fac, onClose }: { f: FactoryRow | null; onClos
                       label: t("sugar.sheet.arrears"),
                       value:
                         s.totalArrears == null ? null : (
-                          <span style={{ color: s.totalArrears > 0 ? "var(--ftp-danger)" : "var(--ftp-live-text)", fontWeight: 600 }}>
+                          <span style={{ color: s.totalArrears > 0 ? "var(--ftp-warn)" : "var(--ftp-live-text)", fontWeight: 600 }}>
                             {s.totalArrears > 0 ? m.crore(s.totalArrears / CRORE, 2) : t("sugar.paid")}
                           </span>
                         ),

@@ -68,25 +68,24 @@ export default function TenderDisclaimer({
       </p>
     );
   }
+  // v5: the full notice is one tap away (a <details>), not a long block on every visit.
   return (
-    <div
+    <details
       role="note"
       style={{
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
-        borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
-        padding: 16,
         margin: "20px 0",
+        borderTop: "1px solid var(--ftp-border)",
+        paddingTop: 12,
         fontSize: 13,
         color: "var(--ftp-text)",
         lineHeight: "20px",
       }}
     >
-      <div className="ftp-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <Scale size={13} aria-hidden style={{ color: "var(--ftp-warn)" }} />
+      <summary className="ftp-label" style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 32, cursor: "pointer" }}>
+        <Scale size={13} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
         {t("disclaimer.heading")}
-      </div>
+      </summary>
+      <div style={{ marginTop: 8 }}>
       {uiLocale !== "en" && (
         <p style={{ margin: "0 0 10px", color: "var(--ftp-text-2)" }}>{t("disclaimer.englishOnly")}</p>
       )}
@@ -103,6 +102,7 @@ export default function TenderDisclaimer({
           {t.rich("disclaimer.c7", { s, godl: (c) => <a href={GODL_URL} target="_blank" rel="noopener" style={LINK}>{c}</a> })}
         </li>
       </ol>
-    </div>
+      </div>
+    </details>
   );
 }

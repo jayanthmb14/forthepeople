@@ -22,7 +22,7 @@ import { ModulePage, PageHeader, LoadingShell, ErrorBlock, EmptyState } from "@/
 import { HowItWorks } from "@/components/district/visuals";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
 import HowTenderWorks from "@/components/tenders/HowTenderWorks";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import MoneyToolbar from "@/components/money/MoneyToolbar";
 import { useModuleText } from "@/i18n/client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
@@ -30,11 +30,11 @@ type Resp = { sections: Array<{ slug: string; section: string; orderIndex: numbe
 
 /** The life of a tender in five steps (a real sequence, so it is numbered). */
 const STEPS = [
-  { key: "publish", emoji: "📢" },
-  { key: "bid", emoji: "📝" },
-  { key: "open", emoji: "📂" },
-  { key: "award", emoji: "🏆" },
-  { key: "build", emoji: "🏗️" },
+  { key: "publish" },
+  { key: "bid" },
+  { key: "open" },
+  { key: "award" },
+  { key: "build" },
 ] as const;
 
 export default function HowItWorksPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -56,7 +56,6 @@ export default function HowItWorksPage({ params }: { params: Promise<{ locale: s
       <ModulePage>
         <PageHeader
           icon={BookOpen}
-          emoji="📚"
           title={t("how.title")}
           description={t("how.description")}
           backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
@@ -68,14 +67,14 @@ export default function HowItWorksPage({ params }: { params: Promise<{ locale: s
         <div style={{ marginBottom: 24 }}>
           <HowItWorks
             title={t("how.stepsAria")}
-            steps={STEPS.map((st) => ({ emoji: st.emoji, title: t(`how.steps.${st.key}.title`), body: t(`how.steps.${st.key}.body`) }))}
+            steps={STEPS.map((st) => ({ emoji: "", title: t(`how.steps.${st.key}.title`), body: t(`how.steps.${st.key}.body`) }))}
           />
         </div>
 
         <div className="ftp-prose">
           {isLoading && <LoadingShell rows={4} />}
           {error && <ErrorBlock message={t("how.loadError")} />}
-          {!isLoading && !error && data?.sections?.length === 0 && <EmptyState emoji="📚" title={t("how.empty")} />}
+          {!isLoading && !error && data?.sections?.length === 0 && <EmptyState title={t("how.empty")} />}
           {data?.sections && data.sections.length > 0 && <HowTenderWorks sections={data.sections} />}
         </div>
 
@@ -83,7 +82,7 @@ export default function HowItWorksPage({ params }: { params: Promise<{ locale: s
           <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
         </div>
 
-        <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} showCompare={false} />
+        <MoneyToolbar shareTitle={mt.label("tenders")} />
       </ModulePage>
     </ModuleErrorBoundary>
   );
