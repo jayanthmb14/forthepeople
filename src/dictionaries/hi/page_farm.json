@@ -63,6 +63,7 @@
   "topicsAriaItem": "{topic} {n}",
   "sourceShc": "मृदा स्वास्थ्य कार्ड पोर्टल (data.gov.in)",
   "sourceKvk": "कृषि विज्ञान केंद्र (KVK) / ICAR फसल सलाह",
+  "shcLabel": "मृदा स्वास्थ्य कार्ड",
   "share": "{district} के लिए खेती की सलाह और मिट्टी की सेहत: {advisories, plural, one {# लागू सलाह} other {# लागू सलाहें}}, {villages, plural, one {# गाँव की मिट्टी रिपोर्ट} other {# गाँवों की मिट्टी रिपोर्ट}}",
   "phBand": {
     "acidic": "अम्लीय",

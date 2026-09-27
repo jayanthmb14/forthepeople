@@ -63,6 +63,7 @@
   "topicsAriaItem": "{topic} {n}",
   "sourceShc": "Soil Health Card portal (data.gov.in)",
   "sourceKvk": "Krishi Vigyan Kendra (KVK) / ICAR crop advisories",
+  "shcLabel": "Soil Health Card",
   "share": "Farm advice and soil health for {district}: {advisories, plural, one {# active advisory} other {# active advisories}}, {villages, plural, one {# village soil report} other {# village soil reports}}",
   "phBand": {
     "acidic": "Acidic",

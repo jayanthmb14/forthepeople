@@ -71,7 +71,7 @@ import { AdvisorySheet, SoilSheet, adviceTexts } from "@/components/land-water/F
 import { LandWaterFooter } from "@/components/land-water/PageFooter";
 import { scriptLang } from "@/lib/utils/script-lang";
 
-const SHC = { label: "Soil Health Card", href: "https://soilhealth.dac.gov.in" };
+const SHC_URL = "https://soilhealth.dac.gov.in";
 
 /** pH band → colour of the number on a soil card (semantic colour as text only). */
 const PH_COLOR = (ph: number) => {
@@ -100,6 +100,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
   const [openAdvice, setOpenAdvice] = useState<AgriAdvisory | null>(null);
   const [openSoil, setOpenSoil] = useState<SoilHealth | null>(null);
 
+  const shc = { label: t("shcLabel"), href: SHC_URL };
   const weekDate = (iso: string) => f.date(iso, { day: "numeric", month: "short" });
   /** Translated topic for an advisory category; unknown categories are shown as sent. */
   const topicLabel = (category: string) => {
@@ -176,7 +177,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
 
   return (
     <ModulePage>
-      <PageHeader icon={Tractor} title={mt.label("farm")} description={t("description")} backHref={base} source={SHC} />
+      <PageHeader icon={Tractor} title={mt.label("farm")} description={t("description")} backHref={base} source={shc} />
 
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
@@ -376,7 +377,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
                       : t("nutrientsNoneLow")
                   }
                   legend={(["low", "medium", "high"] as const).map((lv) => ({ label: t(`level.${lv}`), swatch: NUTRIENT_FILL[lv] }))}
-                  source={SHC}
+                  source={shc}
                   asOf={latestTest}
                   table={nutrientRows.map((r) => ({
                     label: t(`nutrient.${r.key}`),
@@ -410,7 +411,7 @@ function FarmPageInner({ params }: { params: Promise<{ locale: string; state: st
         ns="page_farm"
         about={t("summary")}
         sources={[
-          { name: t("sourceShc"), url: SHC.href, frequency: t("footer.frequencyShc") },
+          { name: t("sourceShc"), url: SHC_URL, frequency: t("footer.frequencyShc") },
           { name: t("sourceKvk"), frequency: t("footer.frequencyKvk") },
         ]}
         locale={locale}

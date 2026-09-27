@@ -63,6 +63,7 @@
   "topicsAriaItem": "{topic} {n}",
   "sourceShc": "ಮಣ್ಣು ಆರೋಗ್ಯ ಕಾರ್ಡ್ ಪೋರ್ಟಲ್ (data.gov.in)",
   "sourceKvk": "ಕೃಷಿ ವಿಜ್ಞಾನ ಕೇಂದ್ರ (KVK) / ICAR ಬೆಳೆ ಸಲಹೆಗಳು",
+  "shcLabel": "ಮಣ್ಣು ಆರೋಗ್ಯ ಕಾರ್ಡ್",
   "share": "{district} ಜಿಲ್ಲೆಯ ಕೃಷಿ ಸಲಹೆ ಮತ್ತು ಮಣ್ಣು ಆರೋಗ್ಯ: ಜಾರಿಯಲ್ಲಿರುವ {advisories, plural, one {# ಸಲಹೆ} other {# ಸಲಹೆಗಳು}}, {villages, plural, one {# ಹಳ್ಳಿಯ ಮಣ್ಣು ವರದಿ} other {# ಹಳ್ಳಿಗಳ ಮಣ್ಣು ವರದಿಗಳು}}",
   "phBand": {
     "acidic": "ಆಮ್ಲೀಯ",
