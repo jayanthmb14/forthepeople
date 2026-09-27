@@ -71,6 +71,13 @@ export const cormorant = localFont({
 
 // Regional scripts. Each family ships its script glyphs plus Latin so a
 // mixed line (e.g. "ಮಂಡ್ಯ · Mandya") renders from one face.
+//
+// Preloading follows the routed languages (docs/I18N.md §4): Kannada and
+// Devanagari (Hindi, beta) are preloaded; Tamil, Bengali and Telugu are
+// not until their languages are switched on. A family is only USED where a
+// stylesheet names its variable, e.g. `:lang(hi) { font-family:
+// var(--font-plus-jakarta), var(--font-noto-devanagari), sans-serif }`
+// (the :lang() stack in globals.css).
 export const notoKannada = localFont({
   variable: "--font-noto-kannada",
   display: "swap",
@@ -99,6 +106,9 @@ export const notoTamil = localFont({
     { path: "../fonts/noto-sans-tamil-latin.woff2", weight: "100 900", style: "normal" },
   ],
   fallback: ["Noto Sans Tamil", "sans-serif"],
+  // Tamil is not a routed language yet (src/i18n/languages.ts): do not
+  // make every visitor download it. Switch to true when Tamil goes beta.
+  preload: false,
 });
 
 export const notoBengali = localFont({
@@ -109,6 +119,7 @@ export const notoBengali = localFont({
     { path: "../fonts/noto-sans-bengali-latin.woff2", weight: "100 900", style: "normal" },
   ],
   fallback: ["Noto Sans Bengali", "sans-serif"],
+  preload: false, // not routed yet (see Tamil)
 });
 
 export const notoTelugu = localFont({
@@ -119,6 +130,7 @@ export const notoTelugu = localFont({
     { path: "../fonts/noto-sans-telugu-latin.woff2", weight: "100 900", style: "normal" },
   ],
   fallback: ["Noto Sans Telugu", "sans-serif"],
+  preload: false, // not routed yet (see Tamil)
 });
 
 /** All font variable classes, ready for the <html className>. */

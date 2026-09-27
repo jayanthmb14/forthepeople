@@ -26,6 +26,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Pill, formatIST } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
 import styles from "./home.module.css";
 
 type TickerItem = {
@@ -39,26 +40,29 @@ type TickerItem = {
 };
 type TickerResponse = { items?: TickerItem[]; tickers?: TickerItem[]; asOf?: string };
 
-/** How often each figure is refreshed upstream — shown in the hover tooltip. */
-function refreshLabelFor(symbol: string): string {
+/**
+ * How often each figure is refreshed upstream — shown in the hover tooltip.
+ * Returns a message key in page_home ("every minute" → "हर मिनट" on /hi).
+ */
+function refreshKeyFor(symbol: string): string {
   switch (symbol) {
     case "SENSEX":
     case "NIFTY50":
     case "NIFTYBANK":
-      return "every minute during market hours";
+      return "cadenceMarketHours";
     case "USD_INR":
     case "EUR_INR":
     case "BTC_INR":
     case "ETH_INR":
-      return "every minute";
+      return "cadenceMinute";
     case "GOLD":
     case "SILVER":
-      return "every 5 minutes (IBJA)";
+      return "cadenceBullion";
     case "PETROL":
     case "DIESEL":
-      return "daily";
+      return "cadenceDaily";
     default:
-      return "every 5 minutes";
+      return "cadenceFiveMin";
   }
 }
 
@@ -105,6 +109,9 @@ function istClock(iso: string | undefined): string | null {
 
 export default function MarketTicker() {
   const t = useTranslations("ticker");
+  const tp = useTranslations("page_home");
+  const tk = useTranslations("kit");
+  const { intl } = useFormat();
   const [items, setItems] = useState<TickerItem[]>([]);
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
@@ -146,7 +153,7 @@ export default function MarketTicker() {
       <span
         key={`${copy ? "b" : "a"}-${it.symbol}`}
         className={styles.tickerItem}
-        title={t("refreshed", { name: t.has(`sym.${it.symbol}`) ? t(`sym.${it.symbol}`) : it.label, cadence: refreshLabelFor(it.symbol) })}
+        title={t("refreshed", { name: t.has(`sym.${it.symbol}`) ? t(`sym.${it.symbol}`) : it.label, cadence: tp(refreshKeyFor(it.symbol)) })}
       >
         <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>{emojiFor(it.symbol)}</span>
         <span className={styles.tickerLabel}>{t.has(`sym.${it.symbol}`) ? t(`sym.${it.symbol}`) : it.label}</span>
@@ -170,7 +177,7 @@ export default function MarketTicker() {
         </Pill>
         <div className={styles.tickerViewport}>
           {items.length === 0 ? (
-            <span className={styles.tickerMuted}>Loading market data…</span>
+            <span className={styles.tickerMuted}>{tk("loading")}</span>
           ) : (
             <div className={styles.tickerTrack}>
               <span className={styles.tickerSet}>{renderItems(false)}</span>
@@ -181,7 +188,7 @@ export default function MarketTicker() {
           )}
         </div>
         {clock && (
-          <span className={styles.tickerAsOf} title={formatIST(asOf) ?? undefined} suppressHydrationWarning>
+          <span className={styles.tickerAsOf} title={formatIST(asOf, intl) ?? undefined} suppressHydrationWarning>
             {t("asOf", { time: clock })}
           </span>
         )}

@@ -30,13 +30,16 @@
 //
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, ExternalLink, Lightbulb } from "lucide-react";
 import { Card, Section } from "@/components/district/ui";
 import SuggestionForm from "@/components/features/SuggestionForm";
 import { STATE_FULL_NAMES } from "@/lib/data/district-meta";
+import { INDIA_STATES } from "@/lib/constants/districts";
+import { usePlaceText } from "@/i18n/client";
+import { placeName } from "@/i18n/place-name";
 import styles from "./home.module.css";
 
 // ── Supporters ──
@@ -79,12 +82,22 @@ function safeExternalLink(url: string | null | undefined): string | null {
   return null;
 }
 
-/** The place a supporter backs: "India", a state or a district. */
+/** The place a supporter backs (English, as stored): "India", a state or a district. */
 function placeFor(c: ContributorItem, tier: SupTier): string {
   if (tier === "founder" || tier === "all-india") return "India";
   if (tier === "state") return c.stateName || STATE_FULL_NAMES[(c.stateName ?? "").toUpperCase()] || "";
   if (tier === "district") return c.districtName ?? "";
   return "";
+}
+
+/** A registry district matched by its English name, for its name in the page language. */
+function districtByName(name: string) {
+  const key = name.trim().toLowerCase();
+  for (const s of INDIA_STATES) {
+    const d = s.districts.find((x) => x.name.toLowerCase() === key);
+    if (d) return d;
+  }
+  return undefined;
 }
 
 /** Homepage pills show active subscribers only; founders always. */
@@ -94,8 +107,22 @@ function isActiveSubscriber(c: ContributorItem, tier: SupTier): boolean {
 }
 
 function SupporterPill({ c }: { c: ContributorItem }) {
+  const locale = useLocale();
+  const tb = useTranslations("breadcrumb");
+  const tp = useTranslations("page_home");
+  const places = usePlaceText();
   const tier = classifyTier(c);
-  const place = placeFor(c, tier);
+  const raw = placeFor(c, tier);
+  // The place in the page language: भारत / कर्नाटक / मंड्या on /hi.
+  const reg = tier === "district" && raw ? districtByName(raw) : undefined;
+  const place =
+    tier === "founder" || tier === "all-india"
+      ? tb("india")
+      : tier === "state"
+        ? places.state(raw, raw)
+        : reg
+          ? placeName(reg, locale)
+          : raw;
   const link = safeExternalLink(c.socialLink);
   const inner = (
     <>
@@ -111,7 +138,7 @@ function SupporterPill({ c }: { c: ContributorItem }) {
         target="_blank"
         rel="noopener noreferrer"
         className={`${styles.supPill} ${styles.supPillLink}`}
-        title={c.socialPlatform ? `${c.displayName} on ${c.socialPlatform}` : c.displayName}
+        title={c.socialPlatform ? tp("onPlatform", { name: c.displayName, platform: c.socialPlatform }) : c.displayName}
       >
         {inner}
       </a>

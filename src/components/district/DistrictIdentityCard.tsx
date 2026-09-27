@@ -29,15 +29,17 @@ import { useLocale, useTranslations } from "next-intl";
 import { SourcePill, StatStrip, StatTile } from "@/components/district/ui";
 import { DEFAULT_PALETTE, DistrictSVG, PALETTES } from "@/components/district/DistrictHeroIllustration";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
-import { scriptLang } from "@/lib/utils/script-lang";
-import { usePlaceText } from "@/i18n/client";
+import { useFormat, usePlaceText } from "@/i18n/client";
+import { placeNamePair } from "@/i18n/place-name";
 import DistrictBadges from "@/components/district/DistrictBadges";
 import { HealthScoreRing } from "@/components/district/DistrictHealthScoreCard";
-import type { DistrictBadge } from "@/lib/constants/districts";
+import type { DistrictBadge, PlaceNames } from "@/lib/constants/districts";
 
 export interface DistrictIdentityCardProps {
   name: string;
   nameLocal?: string;
+  /** Registry names in other languages ({ hi: "मंड्या" }); names[locale] leads the heading. */
+  names?: PlaceNames;
   stateName: string;
   tagline?: string;
   badges?: DistrictBadge[];
@@ -67,6 +69,7 @@ export interface DistrictIdentityCardProps {
 export default function DistrictIdentityCard({
   name,
   nameLocal,
+  names,
   stateName,
   tagline,
   badges,
@@ -88,11 +91,11 @@ export default function DistrictIdentityCard({
   const tk = useTranslations("kit");
   const place = usePlaceText();
   const locale = useLocale();
+  const f = useFormat();
   const slug = districtSlug ?? healthSlug ?? "";
-  // UI in the district's own language → lead with the local name.
-  const localFirst = Boolean(nameLocal && nameLocal !== name && scriptLang(nameLocal) === locale);
-  const primaryName = localFirst ? (nameLocal as string) : name;
-  const secondaryName = localFirst ? name : nameLocal && nameLocal !== name ? nameLocal : undefined;
+  // The name in the page language leads (names[locale], or the local-script
+  // name on a matching page); English or the local script sits beside it.
+  const pair = placeNamePair({ name, nameLocal, names }, locale);
   const palette = PALETTES[slug] ?? DEFAULT_PALETTE;
   const hasArt = Boolean(PALETTES[slug]);
   return (
@@ -136,11 +139,11 @@ export default function DistrictIdentityCard({
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)", textWrap: "balance" }}>
-                <span lang={localFirst ? scriptLang(primaryName) : undefined}>{primaryName}</span>
+                <span lang={pair.primaryLang}>{pair.primary}</span>
               </h1>
-              {secondaryName && (
-                <span lang={localFirst ? "en" : scriptLang(secondaryName)} style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
-                  {secondaryName}
+              {pair.secondary && (
+                <span lang={pair.secondaryLang} style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
+                  {pair.secondary}
                 </span>
               )}
             </div>
@@ -158,8 +161,8 @@ export default function DistrictIdentityCard({
             the figure is an estimate. Never claim a census year we don't have. */}
         <div style={{ marginTop: 20, maxWidth: 720 }}>
           <StatStrip cols={4}>
-            <StatTile emoji="👨‍👩‍👧" label={t("population")} value={population ? population.toLocaleString("en-IN") : "—"} />
-            <StatTile emoji="🗺️" label={t("area")} value={area ? area.toLocaleString("en-IN") : "—"} unit={area ? "km²" : undefined} />
+            <StatTile emoji="👨‍👩‍👧" label={t("population")} value={population ? f.number(population) : "—"} />
+            <StatTile emoji="🗺️" label={t("area")} value={area ? f.number(area) : "—"} unit={area ? "km²" : undefined} />
             <StatTile emoji="📚" label={t("literacy")} value={literacy ? `${literacy}` : "—"} unit={literacy ? "%" : undefined} />
             <StatTile emoji="🏘️" label={subUnitLabel} value={subUnitCount ?? "—"} />
           </StatStrip>
