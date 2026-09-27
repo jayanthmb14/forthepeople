@@ -928,6 +928,23 @@
   line-height: 18px;
   color: var(--ftp-text-2);
 }
+/* "Built by <Jayanth M B>": the name links to LinkedIn. */
+.builtByLink {
+  color: var(--ftp-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--ftp-border-strong);
+  text-underline-offset: 3px;
+}
+.builtByLink:hover {
+  color: var(--ftp-brand-deep);
+  text-decoration-color: currentColor;
+}
+.builtByLink:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 @media (min-width: 640px) {
   .footerCols {

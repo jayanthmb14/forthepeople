@@ -18,7 +18,10 @@
 //    Coming soon from ForThePeople
 //    [mark] ForThePeople Connect — report local problems      Coming soon
 //    [mark] ForThePeople Jobs — government jobs and exams     Coming soon
-//    Built by Jayanth M B in Mandya · Free expression under Article 19(1)(a)
+//    Built by Jayanth M B · Free expression under Article 19(1)(a)
+//
+//  "Jayanth M B" links to his LinkedIn profile (new tab; screen readers
+//  hear "LinkedIn, opens in a new tab").
 //
 //  Each column title has a small icon chip in its own pastel hue. There is
 //  no site-wide "Data refreshed …" line: freshness belongs to each dataset,
@@ -34,6 +37,7 @@ import styles from "./chrome.module.css";
 
 const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
 const INSTAGRAM_URL = "https://www.instagram.com/forthepeople_in/";
+const LINKEDIN_URL = "https://www.linkedin.com/in/jayanthmb/";
 
 export interface FooterProps {
   locale: string;
@@ -85,6 +89,16 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
       ],
     },
   ];
+
+  // "Built by <Jayanth M B>" — the name is the link.
+  const builtBy = t.rich("builtBy", {
+    link: (chunks) => (
+      <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className={styles.builtByLink}>
+        {chunks}
+        <span className="sr-only"> {t("linkedinNote")}</span>
+      </a>
+    ),
+  });
 
   const starBadge = stars && (
     <>
@@ -171,9 +185,13 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
         </section>
       </div>
 
-      <div className={`ftp-container ${styles.footerBottom}`}>
-        <span>{t("builtBy")}</span>
-        <span>{t("article")}</span>
+      {/* The rule sits inside the container, so it lines up with the
+          dashed rule and the columns above (not the container's padding). */}
+      <div className="ftp-container">
+        <div className={styles.footerBottom}>
+          <span>{builtBy}</span>
+          <span>{t("article")}</span>
+        </div>
       </div>
     </footer>
   );
