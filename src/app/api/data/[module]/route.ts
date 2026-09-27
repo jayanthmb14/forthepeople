@@ -26,6 +26,8 @@ import {
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
 } from "@/lib/data-filters";
+import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
+import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
@@ -182,16 +184,20 @@ async function fetchModule(
     // 3. BUDGET
     // ══════════════════════════════════════════════════
     case "budget": {
-      const [entries, allocations] = await Promise.all([
+      // Only rows that trace to a published source; spend figures a row
+      // calls an estimate are blanked (Sept 2026 audit, data-filters.ts).
+      const [entryRows, allocationRows] = await Promise.all([
         prisma.budgetEntry.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...SHOWN_BUDGET_ENTRY },
           orderBy: [{ fiscalYear: "desc" }, { sector: "asc" }],
         }),
         prisma.budgetAllocation.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...SHOWN_BUDGET_ALLOCATION },
           orderBy: [{ fiscalYear: "desc" }, { department: "asc" }],
         }),
       ]);
+      const entries = entryRows.map(withPublishedSpend);
+      const allocations = allocationRows.map(withPublishedSpend);
       return { data: { entries, allocations }, meta };
     }
 

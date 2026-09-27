@@ -11,6 +11,8 @@
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
 import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { SHOWN_BUDGET_ALLOCATION } from "@/lib/data-filters";
+import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 
@@ -84,8 +86,12 @@ function avg(scores: number[]): number {
 async function calcGovernance(districtId: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Budget utilization
-  const budget = await prisma.budgetAllocation.findMany({ where: { districtId } });
+  // Budget utilization: only traceable rows with a published spend figure
+  // (an allocation with spending "not published yet" says nothing about
+  // how well money was used, so it is not scored as 0%).
+  const budget = (await prisma.budgetAllocation.findMany({ where: { districtId, ...SHOWN_BUDGET_ALLOCATION } }))
+    .map(withPublishedSpend)
+    .filter((b) => b.spent > 0);
   if (budget.length > 0) {
     const totalAllocated = budget.reduce((s, b) => s + b.allocated, 0);
     const totalSpent = budget.reduce((s, b) => s + b.spent, 0);

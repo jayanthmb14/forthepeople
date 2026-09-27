@@ -28,6 +28,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
 import type { GlanceData } from "@/components/district/shell/glance-types";
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 
@@ -113,7 +114,7 @@ export async function GET(req: NextRequest) {
       select: { year: true, population: true },
     }),
     prisma.budgetEntry.findFirst({
-      where: { districtId: did },
+      where: { districtId: did, ...SHOWN_BUDGET_ENTRY },
       orderBy: { fiscalYear: "desc" },
       select: { fiscalYear: true },
     }),
@@ -145,7 +146,7 @@ export async function GET(req: NextRequest) {
   let budget: GlanceData["budget"] = null;
   if (newestBudget) {
     const rows = await prisma.budgetEntry.findMany({
-      where: { districtId: did, fiscalYear: newestBudget.fiscalYear },
+      where: { districtId: did, fiscalYear: newestBudget.fiscalYear, ...SHOWN_BUDGET_ENTRY },
       select: { allocated: true, source: true },
     });
     const allocated = rows.reduce((s, r) => s + (r.allocated || 0), 0);

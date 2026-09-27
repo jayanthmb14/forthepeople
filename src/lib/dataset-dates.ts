@@ -22,6 +22,7 @@ import {
   SHOWN_CRIME,
   VERIFIED_PANCHAYAT,
 } from "@/lib/data-filters";
+import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { DatasetDate } from "@/lib/constants/dataset-collection";
 import { readCourtsSnapshot } from "@/lib/courts/store";
@@ -72,9 +73,9 @@ export async function collectDatasetDates(
     prisma.courtStat.aggregate({ where: { ...d, ...NJDG_COURTSTAT }, _count: { _all: true }, _max: { source: true } }),
     prisma.crimeStat.aggregate({ where: { ...d, ...SHOWN_CRIME }, _count: { _all: true }, _max: { year: true } }),
     prisma.policeStation.count({ where: d }),
-    prisma.budgetEntry.aggregate({ where: d, _count: { _all: true }, _max: { fetchedAt: true, fiscalYear: true } }),
-    prisma.budgetAllocation.aggregate({ where: d, _count: { _all: true }, _max: { fetchedAt: true } }),
-    prisma.budgetAllocation.aggregate({ where: d, _max: { fiscalYear: true } }),
+    prisma.budgetEntry.aggregate({ where: { ...d, ...SHOWN_BUDGET_ENTRY }, _count: { _all: true }, _max: { fetchedAt: true, fiscalYear: true } }),
+    prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _count: { _all: true }, _max: { fetchedAt: true } }),
+    prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _max: { fiscalYear: true } }),
     prisma.infraProject.aggregate({ where: { ...d, ...LOCAL_INFRA }, _count: { _all: true }, _max: { lastVerifiedAt: true, updatedAt: true } }),
     prisma.localIndustry.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.scheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
