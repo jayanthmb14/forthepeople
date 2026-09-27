@@ -5,7 +5,7 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Shared map chrome — Design v3 "Civic Ledger"
+//  Shared map chrome — Design v5 "Calm"
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Every map on the site (India drill-down, state maps, taluk map) draws
@@ -13,9 +13,12 @@
 //  hover tooltip and a small legend. They all live here so the colours
 //  come from ONE place and follow the design tokens (and dark mode):
 //
-//    live shape    → --ftp-map-live   (brand blue) at 18 % / 30 % / 45 %
-//    locked shape  → --ftp-map-locked (neutral grey)
-//    tooltip/legend→ flat surface, 1 px border, no shadow
+//    live shape    → pastel blue fill --ftp-map-live-fill (#BFD3FB) with a
+//                    brand-blue outline --ftp-map-live (#2563EB);
+//                    hover/pressed → --ftp-map-live-hover
+//    locked shape  → --ftp-map-locked (#E6ECF5) with a white outline;
+//                    hover → --ftp-map-locked-hover
+//    tooltip/legend→ white card, 1 px border, soft shadow
 //
 //  Map BEHAVIOUR (clicks, projections, zoom) stays in each map file.
 //
@@ -35,8 +38,9 @@ type GeoStyle = React.CSSProperties & { fillOpacity?: number };
 /**
  * Style object for a react-simple-maps <Geography>: { default, hover, pressed }.
  * @param active  Is this state / district live on the site?
- * @param solid   true = strong fill (India map, where shapes are small);
- *                false = light tinted fill (state and district maps).
+ * @param solid   true = small shapes (India map): the pastel fill plus a
+ *                thicker brand outline so a live shape still reads at a glance;
+ *                false = state and district maps (thin outline).
  * @param lockedClickable  true when a locked shape still opens a preview
  *                (state maps); false shows a "not-allowed" cursor instead.
  */
@@ -48,22 +52,23 @@ export function geoStyle(
   if (active) {
     return {
       default: {
-        fill: solid ? "var(--ftp-map-live)" : tint("var(--ftp-map-live)", 18),
-        stroke: solid ? "var(--ftp-surface)" : "var(--ftp-map-live)",
-        strokeWidth: 1.5,
+        fill: "var(--ftp-map-live-fill)",
+        stroke: "var(--ftp-map-live)",
+        strokeWidth: solid ? 1.4 : 1.2,
         outline: "none",
         cursor: "pointer",
         transition: "fill 150ms",
       },
       hover: {
-        fill: solid ? "var(--ftp-brand-deep)" : tint("var(--ftp-map-live)", 30),
-        stroke: solid ? "var(--ftp-surface)" : "var(--ftp-brand-deep)",
-        strokeWidth: 2,
+        fill: "var(--ftp-map-live-hover)",
+        stroke: "var(--ftp-brand-deep)",
+        strokeWidth: solid ? 1.8 : 1.6,
         outline: "none",
         cursor: "pointer",
       },
       pressed: {
-        fill: solid ? "var(--ftp-brand-deep)" : tint("var(--ftp-map-live)", 45),
+        fill: "var(--ftp-map-live-hover)",
+        stroke: "var(--ftp-brand-deep)",
         outline: "none",
       },
     };
@@ -78,18 +83,18 @@ export function geoStyle(
       transition: "fill 150ms",
     },
     hover: {
-      fill: "var(--ftp-border-strong)",
+      fill: "var(--ftp-map-locked-hover)",
       stroke: "var(--ftp-surface)",
       strokeWidth: 0.8,
       outline: "none",
       cursor: lockedClickable ? "pointer" : "not-allowed",
     },
-    pressed: { fill: "var(--ftp-border-strong)", outline: "none" },
+    pressed: { fill: "var(--ftp-map-locked-hover)", outline: "none" },
   };
 }
 
 /**
- * Hover tooltip that follows the pointer. Flat surface card, no shadow.
+ * Hover tooltip that follows the pointer. White card, thin border, soft shadow.
  * @param lockedHint  Text after the name for a locked shape ("Coming soon", "Preview").
  */
 export function MapTooltip({
@@ -117,6 +122,7 @@ export function MapTooltip({
         background: "var(--ftp-surface)",
         color: "var(--ftp-text)",
         border: "1px solid var(--ftp-border-strong)",
+        boxShadow: "var(--ftp-shadow-1)",
         padding: "4px 10px",
         borderRadius: "var(--ftp-radius-tile)",
         fontSize: 12,
@@ -145,7 +151,7 @@ export function MapTooltip({
 function LegendRow({ swatch, border, label }: { swatch: string; border: string; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span aria-hidden style={{ width: 12, height: 8, background: swatch, border: `1px solid ${border}`, borderRadius: 2, display: "inline-block" }} />
+      <span aria-hidden style={{ width: 14, height: 10, background: swatch, border: `1px solid ${border}`, borderRadius: 3, display: "inline-block" }} />
       {label}
     </div>
   );
@@ -153,13 +159,14 @@ function LegendRow({ swatch, border, label }: { swatch: string; border: string; 
 
 /**
  * Small "Active / Coming soon" legend pinned to the bottom-right of a map.
- * (Says "Active", not "Live": in v3 "Live" only ever means data < 30 min old.)
+ * (Says "Active", not "Live": "Live" only ever means data < 30 min old.)
+ * `solid` is accepted for old call sites; v5 draws one swatch style.
  */
 export function MapLegend({
-  solid = false,
   liveLabel,
   lockedLabel,
 }: {
+  /** Kept for old call sites; ignored in v5 (one swatch style for every map). */
   solid?: boolean;
   liveLabel?: string;
   lockedLabel?: string;
@@ -176,6 +183,7 @@ export function MapLegend({
         gap: 4,
         background: "var(--ftp-surface)",
         border: "1px solid var(--ftp-border)",
+        boxShadow: "var(--ftp-shadow-1)",
         borderRadius: "var(--ftp-radius-tile)",
         padding: "6px 10px",
         fontSize: 11,
@@ -184,11 +192,7 @@ export function MapLegend({
         pointerEvents: "none",
       }}
     >
-      <LegendRow
-        swatch={solid ? "var(--ftp-map-live)" : tint("var(--ftp-map-live)", 18)}
-        border="var(--ftp-map-live)"
-        label={liveLabel ?? t("legendActive")}
-      />
+      <LegendRow swatch="var(--ftp-map-live-fill)" border="var(--ftp-map-live)" label={liveLabel ?? t("legendActive")} />
       <LegendRow swatch="var(--ftp-map-locked)" border="var(--ftp-border-strong)" label={lockedLabel ?? t("legendSoon")} />
     </div>
   );

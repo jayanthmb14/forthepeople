@@ -4,9 +4,11 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Design v4 "Rang" — one colour identity per module
+//  Design v5 "Calm" — one pastel colour identity per module
 // ═══════════════════════════════════════════════════════════════════════
-//  Each module slug maps to a hue name. The CSS for every hue lives in
+//  Hues are IDENTITY only (docs/DESIGN-SYSTEM.md): tints for chips and
+//  backgrounds, the deep tone for small icons, numbers and titles. Never a
+//  saturated gradient band. Each module slug maps to a hue name. The CSS for every hue lives in
 //  globals.css as `.ftp-hue-<name>` and sets --hue / --hue-deep /
 //  --hue-pop / --hue-tint. A page (or any element) opts in by adding
 //  `hueClass(slug)` to its className; kit components then colour
@@ -19,22 +21,30 @@ export type Hue =
   | "blue" | "sky" | "cyan" | "teal" | "green" | "lime" | "yellow"
   | "amber" | "orange" | "rose" | "pink" | "violet" | "indigo" | "slate";
 
-/** Solid accent per hue, for places that cannot read CSS variables (SVG maps, canvas, OG images). */
+/**
+ * Solid accent per hue, for places that cannot read CSS variables (SVG maps,
+ * canvas, OG images). MUST match the `.ftp-hue-<name>` classes in
+ * globals.css (v5 "Calm" pastel palette):
+ *   hue   calm mid tone, ≥ 4.5:1 on white (icons, bars, primary buttons)
+ *   deep  ≥ 6.5:1 on white and on tint (numbers, titles, text on a tint)
+ *   pop   pastel (second series, light fills)
+ *   tint  very light background
+ */
 export const HUE_HEX: Record<Hue, { hue: string; deep: string; pop: string; tint: string }> = {
-  blue:   { hue: "#2563EB", deep: "#1E3A8A", pop: "#93B4F5", tint: "#EEF3FE" },
-  sky:    { hue: "#0369A1", deep: "#0C4A6E", pop: "#7CC4EA", tint: "#E9F6FC" },
-  cyan:   { hue: "#0E7490", deep: "#164E63", pop: "#67C3D6", tint: "#E6F5F8" },
-  teal:   { hue: "#0F766E", deep: "#134E4A", pop: "#6CC5BA", tint: "#E5F4F2" },
-  green:  { hue: "#15803D", deep: "#14532D", pop: "#7CC794", tint: "#E9F6EE" },
-  lime:   { hue: "#4D7C0F", deep: "#365314", pop: "#A3C763", tint: "#F0F7E5" },
-  yellow: { hue: "#A16207", deep: "#713F12", pop: "#EFC75E", tint: "#FEF8E3" },
-  amber:  { hue: "#B45309", deep: "#78350F", pop: "#E9B35E", tint: "#FDF3E5" },
-  orange: { hue: "#C2410C", deep: "#7C2D12", pop: "#F0A37A", tint: "#FDEFE7" },
-  rose:   { hue: "#BE123C", deep: "#881337", pop: "#EE8FA6", tint: "#FDEBEF" },
-  pink:   { hue: "#BE185D", deep: "#831843", pop: "#EC91BD", tint: "#FCECF4" },
-  violet: { hue: "#7C3AED", deep: "#4C1D95", pop: "#B79AF3", tint: "#F3EEFD" },
-  indigo: { hue: "#4F46E5", deep: "#312E81", pop: "#A5A1F2", tint: "#EEEEFD" },
-  slate:  { hue: "#475569", deep: "#1E293B", pop: "#A3AEBD", tint: "#F0F3F6" },
+  blue:   { hue: "#3B68D9", deep: "#1E40AF", pop: "#BFD3FB", tint: "#EEF4FF" },
+  sky:    { hue: "#2F77AE", deep: "#0B5A85", pop: "#B5DDF2", tint: "#EAF6FC" },
+  cyan:   { hue: "#237A8C", deep: "#155E6E", pop: "#AEE0E8", tint: "#E8F7F9" },
+  teal:   { hue: "#277A70", deep: "#115E55", pop: "#A9DDD3", tint: "#E7F6F3" },
+  green:  { hue: "#2F7D4C", deep: "#1B6437", pop: "#B5DEC2", tint: "#EAF6EE" },
+  lime:   { hue: "#56752A", deep: "#3F5A12", pop: "#CFE3A8", tint: "#F1F7E6" },
+  yellow: { hue: "#8A6A16", deep: "#6B4F08", pop: "#F3DE9A", tint: "#FDF8E4" },
+  amber:  { hue: "#A2621F", deep: "#7F430C", pop: "#F3D3A2", tint: "#FDF4E7" },
+  orange: { hue: "#B45530", deep: "#8F3712", pop: "#F5C6AA", tint: "#FDF0E9" },
+  rose:   { hue: "#BA3F63", deep: "#9B1D43", pop: "#F4BFCD", tint: "#FDEEF2" },
+  pink:   { hue: "#AE4679", deep: "#8C2257", pop: "#F1C0DA", tint: "#FCEFF6" },
+  violet: { hue: "#7152C9", deep: "#5328A8", pop: "#D3C4F6", tint: "#F4F0FD" },
+  indigo: { hue: "#5256C9", deep: "#3730A3", pop: "#C7C9F6", tint: "#EFF0FD" },
+  slate:  { hue: "#5A6A80", deep: "#334155", pop: "#C9D2DE", tint: "#F1F4F8" },
 };
 
 /** Module slug → hue. Anything not listed (overview, unknown) is brand blue. */
