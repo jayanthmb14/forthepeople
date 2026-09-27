@@ -16,7 +16,7 @@ import PageProgressBar from "@/components/common/PageProgressBar";
 // so no visitor's browser ever calls api.github.com.
 import HeaderBar from "@/components/home/HeaderBar";
 import { getGithubStars } from "@/components/home/github-stars";
-import Footer from "@/components/home/redesign-v2/Footer";
+import Footer from "@/components/home/Footer";
 
 /**
  * Only the locales in src/i18n/routing.ts may render this layout.

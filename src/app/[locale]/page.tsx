@@ -13,7 +13,8 @@
  *   3. HomeHero            — the page's ONE <h1>, one sentence, two buttons
  *   4. Stats               — 4 StatTiles (registry + /api/data/homepage-stats)
  *   5. Map (cols 1–7) + LiveDistrictsCard (cols 8–12)
- *   6. The rest            — latest data, how it works, community, support
+ *   6. The rest            — Latest data, How it works, Built with citizens,
+ *                            support line
  *
  * On phones the order becomes: hero · strip · district list · map · stats ·
  * rest (CSS `order` in home.module.css — the HTML order stays logical for
@@ -35,9 +36,9 @@ import HomeHero from "@/components/home/HomeHero";
 import IndiaMapCard from "@/components/home/IndiaMapCard";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import LatestData from "@/components/home/LatestData";
-import HowItWorks from "@/components/home/redesign-v2/HowItWorks";
-import CommunitySection from "@/components/home/redesign-v2/CommunitySection";
-import SupportBanner from "@/components/home/redesign-v2/SupportBanner";
+import HowItWorks from "@/components/home/HowItWorks";
+import BuiltWithCitizens from "@/components/home/BuiltWithCitizens";
+import SupportLine from "@/components/home/SupportLine";
 import styles from "@/components/home/home.module.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
@@ -177,8 +178,8 @@ export default async function HomePage({
         <div className={`${styles.band} ${styles.bandRest}`}>
           <LatestData locale={locale} districts={activeDistricts} />
           <HowItWorks />
-          <CommunitySection locale={locale} />
-          <SupportBanner locale={locale} />
+          <BuiltWithCitizens locale={locale} />
+          <SupportLine locale={locale} />
         </div>
       </div>
     </main>

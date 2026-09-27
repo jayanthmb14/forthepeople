@@ -519,6 +519,205 @@
   color: var(--ftp-brand-deep);
 }
 
+/* ───────────────────────── How it works ───────────────────────── */
+
+.howGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@media (max-width: 767px) {
+  .howGrid { grid-template-columns: minmax(0, 1fr); }
+}
+.howHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.howNum {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+}
+.howIcon {
+  color: var(--ftp-brand);
+}
+.howBody {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+.howSources {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.howSources a {
+  color: var(--ftp-brand-deep);
+}
+
+/* ───────────────────────── Built with citizens ───────────────────────── */
+
+.communityGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--ftp-gutter);
+}
+.communityMain { grid-column: span 7; display: flex; flex-direction: column; gap: 8px; }
+.communitySide { grid-column: span 5; display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 1023px) {
+  .communityMain,
+  .communitySide { grid-column: 1 / -1; }
+}
+.communityNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+.communityLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+.supList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.supPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-pill);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.supPillLink:hover {
+  border-color: var(--ftp-border-strong);
+  background: var(--ftp-surface-2);
+}
+.supPlace {
+  color: var(--ftp-text-2);
+}
+.voteList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.voteList li + li {
+  border-top: 1px solid var(--ftp-border);
+}
+.voteRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ftp-text);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 20px;
+}
+.voteRow:hover .voteTitle {
+  text-decoration: underline;
+}
+.voteCount {
+  flex-shrink: 0;
+  min-width: 48px;
+  height: 24px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ftp-radius-pill);
+  background: var(--ftp-features-tint);
+  color: var(--ftp-features);
+  font-size: 12px;
+}
+.voteTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shareForm {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ftp-border);
+}
+.shareHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+/* ───────────────────────── Support line ───────────────────────── */
+
+.supportLine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+  padding: 16px 20px;
+  background: var(--ftp-support-tint);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+}
+.supportHeart {
+  color: var(--ftp-support);
+  flex-shrink: 0;
+}
+.supportText {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ftp-text);
+}
+.supportLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.supportLink:hover {
+  background: var(--ftp-surface-2);
+}
+@media (max-width: 767px) {
+  .supportLink { min-height: 44px; width: 100%; justify-content: center; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .button,
   .districtRow { transition: none; }
