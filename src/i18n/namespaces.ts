@@ -4,6 +4,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_health",
   "page_jjm",
   "page_power",
+  "page_schools",
   "page_staffing",
   "page_transport"
 ];

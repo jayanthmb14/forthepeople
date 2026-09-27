@@ -1,0 +1,53 @@
+{
+  "title": "Schools",
+  "description": "School directory, students per teacher and exam pass rates",
+  "summary": "This page shows school data for this district: Class 10 board exam pass rates, how many students and teachers each school has, and how many students there are for each teacher. The data comes from UDISE+ (Unified District Information System for Education), which is published once a year.",
+  "tileSub": "From UDISE+, results up to {year}",
+  "tileSubNoYear": "UDISE+ yearly data",
+  "tiles": {
+    "schools": "Schools listed",
+    "students": "Students",
+    "teachers": "Teachers",
+    "ratio": "Students per teacher"
+  },
+  "ratioValue": "{n}:1",
+  "picture": {
+    "pass": "In {year}, <b>{passed}</b> of the <b>{total}</b> students who sat exams in the schools listed here passed.",
+    "passPictogram": "About {n} of every 10 students passed in {year}.",
+    "people": "The schools listed here have <b>{students}</b> students and <b>{teachers}</b> teachers.",
+    "classroom": "{kids, plural, one {One teacher for every student in the schools listed.} other {One teacher for every {n} students in the schools listed.}}"
+  },
+  "types": {
+    "title": "Kinds of schools",
+    "units": "Schools listed, by type",
+    "simple": "<b>{type}</b> schools are the biggest group: {count} of {total}.",
+    "center": "{count, plural, one {school} other {schools}}",
+    "aria": "Schools by type: {list}.",
+    "other": "Other types"
+  },
+  "chart": {
+    "title": "Pass rate by year",
+    "units": "Share of students who passed, all schools listed",
+    "same": "The pass rate was <b>{rate}</b> in both {from} and {to}.",
+    "up": "The pass rate went up from <b>{start}</b> in {from} to <b>{end}</b> in {to}.",
+    "down": "The pass rate went down from <b>{start}</b> in {from} to <b>{end}</b> in {to}.",
+    "legend": "Pass rate"
+  },
+  "directory": {
+    "title": "School directory",
+    "typeAria": "School type",
+    "all": "All",
+    "level": "Level: {level}",
+    "students": "Students",
+    "teachers": "Teachers",
+    "ratio": "Students per teacher",
+    "pass": "passed",
+    "passAria": "{exam} {year}: {pct} passed",
+    "passCount": "{passed} of {appeared}"
+  },
+  "share": {
+    "withData": "Schools in {district}: {n} listed, {ratio} students per teacher",
+    "withDataNoRatio": "Schools in {district}: {n} listed",
+    "noData": "School information for {district}"
+  }
+}
