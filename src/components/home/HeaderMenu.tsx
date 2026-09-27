@@ -62,7 +62,7 @@ export default function HeaderMenu({ githubStars }: { githubStars: number | null
           if (e.key === "ArrowDown") {
             e.preventDefault();
             setOpen(true);
-            focusFirstItem(panel.current);
+            focusFirstItem(panel);
           }
         }}
       >

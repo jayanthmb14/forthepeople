@@ -67,7 +67,16 @@ export function onMenuKeyDown(e: React.KeyboardEvent<HTMLElement>) {
   items[next]?.focus();
 }
 
-/** Focus the first `[data-menu-item]` inside `panel` (after it renders). */
-export function focusFirstItem(panel: HTMLElement | null) {
-  window.requestAnimationFrame(() => panel?.querySelector<HTMLElement>("[data-menu-item]")?.focus());
+/**
+ * Focus the first `[data-menu-item]` inside the panel once it has rendered
+ * (the panel mounts after the state change, so the ref is read late).
+ */
+export function focusFirstItem(panel: RefObject<HTMLElement | null>) {
+  let tries = 0;
+  const go = () => {
+    const el = panel.current?.querySelector<HTMLElement>("[data-menu-item]");
+    if (el) el.focus();
+    else if (tries++ < 10) window.setTimeout(go, 16);
+  };
+  window.requestAnimationFrame(go);
 }

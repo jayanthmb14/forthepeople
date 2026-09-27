@@ -83,7 +83,7 @@ export default function LanguageMenu() {
           if (e.key === "ArrowDown") {
             e.preventDefault();
             setOpen(true);
-            focusFirstItem(panel.current);
+            focusFirstItem(panel);
           }
         }}
         className={s.button}

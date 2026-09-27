@@ -36,14 +36,18 @@ import styles from "./chrome.module.css";
 
 export default function ProductSwitcher({ logo }: { logo: React.ReactNode }) {
   const t = useTranslations("header");
-  const [open, setOpen] = useState(false);
+  // How it was opened: a hover-opened menu closes when the mouse leaves;
+  // one opened by a click, a tap or the keyboard stays until dismissed.
+  const [openedBy, setOpenedBy] = useState<"hover" | "press" | null>(null);
+  const open = openedBy !== null;
+  const setOpen = (v: boolean) => setOpenedBy(v ? "press" : null);
   const wrap = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const timer = useRef<number | null>(null);
   const panelId = useId();
 
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => setOpenedBy(null), []);
   usePopover(open, close, wrap, button);
 
   const clearTimer = () => {
@@ -56,14 +60,16 @@ export default function ProductSwitcher({ logo }: { logo: React.ReactNode }) {
   const onEnter = (e: React.PointerEvent) => {
     if (e.pointerType !== "mouse") return;
     clearTimer();
-    timer.current = window.setTimeout(() => setOpen(true), 120);
+    timer.current = window.setTimeout(() => setOpenedBy((m) => m ?? "hover"), 120);
   };
   const onLeave = (e: React.PointerEvent) => {
     if (e.pointerType !== "mouse") return;
     clearTimer();
     timer.current = window.setTimeout(() => {
-      // Keep it open while a keyboard user is inside it.
-      if (!wrap.current?.contains(document.activeElement)) setOpen(false);
+      // A keyboard user already inside the list keeps it open.
+      const a = document.activeElement;
+      const keep = !!a && a !== button.current && !!wrap.current?.contains(a);
+      setOpenedBy((m) => (m === "hover" ? (keep ? "press" : null) : m));
     }, 260);
   };
 
@@ -79,13 +85,14 @@ export default function ProductSwitcher({ logo }: { logo: React.ReactNode }) {
         aria-label={t("products.switcherAria")}
         onClick={() => {
           clearTimer();
-          setOpen((x) => !x);
+          // A click on a hover-opened menu pins it open; otherwise it toggles.
+          setOpenedBy((m) => (m === "press" ? null : "press"));
         }}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {
             e.preventDefault();
             setOpen(true);
-            focusFirstItem(panel.current);
+            focusFirstItem(panel);
           }
         }}
       >
