@@ -29,7 +29,7 @@
 //  Words: src/dictionaries/<locale>/page_pagekit.json (en / hi / kn).
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Clock, Download, GitCompare, Share2, type LucideIcon } from "lucide-react";
 import { Toolbar, ToolbarButton } from "@/components/district/ui";
@@ -42,17 +42,20 @@ const DAY_MS = 86_400_000;
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Milliseconds since 1970, set once after the page has hydrated (0 on the
- * server and during hydration, so nothing time-based renders twice).
+ * Milliseconds since 1970 as seen by the reader's browser: 0 on the server
+ * and while hydrating (so nothing time-based renders twice), then the
+ * time the page first read the clock. Day-sized ages need no ticking.
  */
+let clientNow = 0;
+const noSubscribe = () => () => {};
+const clientSnapshot = () => {
+  if (!clientNow) clientNow = Date.now();
+  return clientNow;
+};
+const serverSnapshot = () => 0;
+
 export function useClientNow(): number {
-  const [now, setNow] = useState(0);
-  useEffect(() => {
-    // One reading per mount is enough for "N days old".
-    const id = window.setTimeout(() => setNow(Date.now()), 0);
-    return () => window.clearTimeout(id);
-  }, []);
-  return now;
+  return useSyncExternalStore(noSubscribe, clientSnapshot, serverSnapshot);
 }
 
 /** Whole days between a timestamp and `now` (0 when either is unknown). */

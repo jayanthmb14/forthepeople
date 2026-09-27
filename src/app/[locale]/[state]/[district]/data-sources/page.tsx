@@ -128,7 +128,8 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
   });
 
   const rows: Row[] = useMemo(() => {
-    if (!data) return [];
+    // Ages need the reader's clock, known only after hydration.
+    if (!data || !now) return [];
     return DATASETS.map((info) => {
       const date = data.datasets[info.key] ?? { rows: 0, newest: null, period: null };
       const kind = collectionFor(info, district);
@@ -150,6 +151,8 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
     });
   }, [data, district, now]);
 
+  /** Data and the clock are both in: statuses and counts are real. */
+  const ready = rows.length > 0;
   const withData = rows.filter((r) => r.date.rows > 0);
   const missing = rows.filter((r) => r.date.rows === 0);
   const autoRows = withData.filter((r) => r.kind === "auto");
@@ -197,17 +200,17 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
         freshness={data ? { asOf: data.checkedAt } : undefined}
       />
 
-      {data && (
+      {ready && (
         <Explainer>
           {t.rich("explain", { n: withData.length, auto: autoRows.length, district: districtName, b: bold })}{" "}
           {autoRows.length > 0 ? t.rich("explainCurrent", { current: autoCurrent, auto: autoRows.length, b: bold }) : null}
         </Explainer>
       )}
 
-      {isLoading && <LoadingShell rows={4} />}
+      {(isLoading || (data && !ready)) && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
-      {data && (
+      {ready && (
         <>
           <StatStrip>
             <StatTile label={t("tileKinds")} value={num(withData.length)} sub={t("tileKindsSub", { district: districtName })} />
