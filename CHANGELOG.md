@@ -89,6 +89,26 @@ before. Numbers as in `docs/OWNER-TODO.md` §3.
   Neon one; the rest fail. It redeploys whenever `main` changes. Stop it before merging to `main`
   (steps in `docs/OWNER-TODO.md` §2).
 
+### Changed — home page from the owner's review (branch `v53/ui-home`, 2026-09-28)
+- **Hero** (2026-09-28): heavier heading with "your district" in brand blue; the yellow highlighter
+  stroke is gone; the slogan is larger with "Your data." in bold brand blue.
+- **Stats** (2026-09-28): "Your district data — tracked and checked" over four tiles (districts
+  live, states, dashboards each, data points tracked) with "Updated …" beside it. Districts and
+  states now come from the live District rows the page loads (same rows as the Live districts list).
+- **Prices** (2026-09-28): ticker and cards show only the everyday prices — gold 24K / 22K per 10 g
+  and silver per kg (as IBJA publishes them), petrol and diesel in Delhi (plus Mumbai, Chennai,
+  Kolkata on the cards), and a slim Sensex / Nifty 50 / US dollar row. Mandi crop prices, crude oil
+  and the ticker's own date/time chip (the status strip already shows it) are removed.
+- **Fuel collector** (2026-09-28): new `/api/cron/scrape-fuel` (not in `vercel.json` yet; suggested
+  `0 7,14 * * *`) reads PPAC's daily metro table and "as on" Delhi lines and BPCL's Delhi price
+  build-up; stores Redis `ftp:data:fuel` only when they agree to the paisa; `/api/data/prices` now
+  returns `fuel`. Small dependency-free PDF text reader in `src/scraper/lib/pdf-text.ts`.
+- **Map** (2026-09-28): seamless pastel states in four tones (no district seams), a soft coast
+  outline, pins the same size on every screen with a small name beside each, crowded pins spread
+  in their own compass order, zoom buttons top left.
+- **Removed** (2026-09-28): the map hint line (repeated the legend) and the "The whole country"
+  eyebrow above "Explore all of India".
+
 ### Fixed — v5.2 wiring: verified or hidden (branch `v52/wiring`, 2026-09-28)
 Backend wiring after the v5.1 merge. Rule: a value that is unverified, invented, seeded or
 estimated is not shown as fact. No database writes; the clean-ups below need the owner.
