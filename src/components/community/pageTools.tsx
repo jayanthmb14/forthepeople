@@ -12,7 +12,7 @@
 //   cleanText        tidy HTML entities that news feeds leave in text
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Share2 } from "lucide-react";
 import { ToolbarButton } from "@/components/district/ui";
@@ -34,6 +34,16 @@ export function SharePageButton() {
       {copied ? tf("copied") : tf("share")}
     </ToolbarButton>
   );
+}
+
+/**
+ * What a DetailSheet shows, plus a stable close() for its onClose (the sheet
+ * re-runs its focus/scroll effect whenever onClose changes).
+ */
+export function useSheetState<T>() {
+  const [value, setValue] = useState<T | null>(null);
+  const close = useCallback(() => setValue(null), []);
+  return [value, setValue, close] as const;
 }
 
 /** Milliseconds since 1970 when this page was first drawn (stable across re-renders). */
