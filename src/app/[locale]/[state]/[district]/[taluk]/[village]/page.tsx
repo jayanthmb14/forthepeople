@@ -4,11 +4,25 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Village page — Design v3 "Civic Ledger"
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Breadcrumb (district › taluk › village) → PageHeader (village name +
+//  local-script name, PIN as a pill) → StatStrip (population, households)
+//  → "View on Maps" link → quick links into the district's modules →
+//  a quiet "File an RTI" card (no gradient).
+//
 "use client";
 import { use } from "react";
 import Link from "next/link";
-import { MapPin, Users, Home, ChevronRight, ExternalLink } from "lucide-react";
+import {
+  MapPin, Users, Home, ChevronRight, ExternalLink,
+  Building, ScrollText, GraduationCap, Droplets, HeartPulse, Phone, FilePen,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { PageHeader, StatStrip, StatTile, Section, Card, Pill, LoadingShell } from "@/components/district/ui";
 
 interface VillageData {
   id: string;
@@ -38,13 +52,15 @@ function useVillage(id: string) {
   });
 }
 
-const QUICK_LINKS = [
-  { label: "Gram Panchayat", icon: "🏘️", desc: "MGNREGA, water, funds" },
-  { label: "Schemes", icon: "📋", desc: "Government schemes" },
-  { label: "Schools", icon: "🎓", desc: "Schools in area" },
-  { label: "JJM Water", icon: "🚰", desc: "Tap connection status" },
-  { label: "Health", icon: "🏥", desc: "Nearest health centers" },
-  { label: "Helplines", icon: "📞", desc: "Emergency numbers" },
+// Quick links into district modules. The route slug is derived from the
+// label below (unchanged behaviour); the icon is a Lucide icon.
+const QUICK_LINKS: { label: string; icon: LucideIcon; desc: string }[] = [
+  { label: "Gram Panchayat", icon: Building, desc: "MGNREGA, water, funds" },
+  { label: "Schemes", icon: ScrollText, desc: "Government schemes" },
+  { label: "Schools", icon: GraduationCap, desc: "Schools in area" },
+  { label: "JJM Water", icon: Droplets, desc: "Tap connection status" },
+  { label: "Health", icon: HeartPulse, desc: "Nearest health centers" },
+  { label: "Helplines", icon: Phone, desc: "Emergency numbers" },
 ];
 
 export default function VillagePage({
@@ -59,61 +75,62 @@ export default function VillagePage({
   const districtBase = `/${locale}/${state}/${district}`;
   const talukBase = `${districtBase}/${talukSlug}`;
 
+  const crumbLink: React.CSSProperties = {
+    color: "var(--ftp-text-2)",
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 32,
+  };
+
   return (
-    <div style={{ padding: 24 }}>
+    <div className="ftp-container" style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}>
       {/* Breadcrumb */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9B9B9B", marginBottom: 16, flexWrap: "wrap" }}>
-        <Link href={districtBase} style={{ color: "#9B9B9B", textDecoration: "none" }}>{district}</Link>
-        <ChevronRight size={12} />
-        <Link href={talukBase} style={{ color: "#9B9B9B", textDecoration: "none" }}>{village?.taluk.name ?? talukSlug}</Link>
-        <ChevronRight size={12} />
-        <span style={{ color: "#1A1A1A" }}>{village?.name ?? "Village"}</span>
-      </div>
+      <nav aria-label="Breadcrumb" style={{ marginBottom: 8 }}>
+        <ol style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", flexWrap: "wrap", listStyle: "none", margin: 0, padding: 0 }}>
+          <li><Link href={districtBase} style={crumbLink}>{district}</Link></li>
+          <li aria-hidden><ChevronRight size={14} /></li>
+          <li><Link href={talukBase} style={crumbLink}>{village?.taluk.name ?? talukSlug}</Link></li>
+          <li aria-hidden><ChevronRight size={14} /></li>
+          <li aria-current="page" style={{ color: "var(--ftp-text)" }}>{village?.name ?? "Village"}</li>
+        </ol>
+      </nav>
 
       {isLoading && (
-        <div style={{ background: "#F5F5F0", borderRadius: 12, height: 120, animation: "pulse 1.5s infinite" }} />
+        <>
+          <h1 className="sr-only">Village</h1>
+          <LoadingShell rows={3} />
+        </>
       )}
 
       {village && (
         <>
-          {/* Header */}
-          <div style={{ marginBottom: 24, borderBottom: "1px solid #E8E8E4", paddingBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <div style={{ width: 48, height: 48, background: "#F0FDF4", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <MapPin size={22} style={{ color: "#16A34A" }} />
-              </div>
-              <div>
-                <h1 style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.4px" }}>{village.name}</h1>
-                {village.nameLocal && <div style={{ fontSize: 14, color: "#9B9B9B", fontFamily: "var(--font-regional)", marginTop: 2 }}>{village.nameLocal}</div>}
-                <div style={{ fontSize: 13, color: "#6B6B6B", marginTop: 4 }}>
-                  {village.taluk.name} Taluk · {village.taluk.district.name} District
-                  {village.pincode && <> · PIN: <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{village.pincode}</span></>}
-                </div>
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            icon={MapPin}
+            title={village.name}
+            titleLocal={village.nameLocal ?? undefined}
+            description={`${village.taluk.name} Taluk · ${village.taluk.district.name} District`}
+            accent="blue"
+            actions={
+              village.pincode ? (
+                <Pill>
+                  PIN <span className="ftp-num">{village.pincode}</span>
+                </Pill>
+              ) : undefined
+            }
+          />
 
-          {/* Key stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-            {village.population && (
-              <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-                <div style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 6 }}>
-                  <Users size={13} style={{ color: "#2563EB" }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Population</span>
-                </div>
-                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{village.population.toLocaleString("en-IN")}</div>
-              </div>
-            )}
-            {village.households && (
-              <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-                <div style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 6 }}>
-                  <Home size={13} style={{ color: "#16A34A" }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#9B9B9B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Households</span>
-                </div>
-                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{village.households.toLocaleString("en-IN")}</div>
-              </div>
-            )}
-          </div>
+          {/* Key stats (only the ones we have — never a fake zero) */}
+          {Boolean(village.population || village.households) && (
+            <StatStrip cols={2}>
+              {Boolean(village.population) && (
+                <StatTile icon={Users} label="Population" value={village.population!.toLocaleString("en-IN")} />
+              )}
+              {Boolean(village.households) && (
+                <StatTile icon={Home} label="Households" value={village.households!.toLocaleString("en-IN")} />
+              )}
+            </StatStrip>
+          )}
 
           {/* Map link if coordinates exist */}
           {village.latitude && village.longitude && (
@@ -121,50 +138,59 @@ export default function VillagePage({
               href={`https://maps.google.com/?q=${village.latitude},${village.longitude}`}
               target="_blank"
               rel="noopener noreferrer"
+              className="ftp-btn-secondary"
               style={{
-                display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px",
-                background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 8,
-                fontSize: 13, color: "#2563EB", textDecoration: "none", marginBottom: 24,
+                display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 14px",
+                marginTop: 16,
+                background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)",
+                borderRadius: "var(--ftp-radius-tile)",
+                fontSize: 13, fontWeight: 500, color: "var(--ftp-text)", textDecoration: "none",
               }}
             >
-              <MapPin size={13} /> View on Maps <ExternalLink size={11} />
+              <MapPin size={14} aria-hidden /> View on Maps <ExternalLink size={12} aria-hidden />
             </a>
           )}
 
           {/* Quick access to district data */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#9B9B9B", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-            District Data
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8, marginBottom: 24 }}>
-            {QUICK_LINKS.map(({ label, icon, desc }) => {
-              const slug = label.toLowerCase().replace(/ /g, "-").replace("jjm-water", "jjm");
-              return (
-                <Link key={label} href={`${districtBase}/${slug}`} style={{
-                  display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
-                  background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, textDecoration: "none",
-                }}>
-                  <span style={{ fontSize: 18 }}>{icon}</span>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>{label}</div>
-                    <div style={{ fontSize: 11, color: "#9B9B9B" }}>{desc}</div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* File RTI CTA */}
-          <div style={{ background: "linear-gradient(135deg, #EFF6FF, #F0FDF4)", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>Something missing from your village?</div>
-              <div style={{ fontSize: 12, color: "#6B6B6B" }}>File an RTI to get official information</div>
+          <Section title="District data">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))", gap: 8 }}>
+              {QUICK_LINKS.map(({ label, icon: Icon, desc }) => {
+                const slug = label.toLowerCase().replace(/ /g, "-").replace("jjm-water", "jjm");
+                return (
+                  <Card key={label} href={`${districtBase}/${slug}`} padding={0}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", minHeight: 56 }}>
+                      <Icon size={18} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text)" }}>{label}</div>
+                        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{desc}</div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
-            <Link href={`${districtBase}/file-rti`} style={{
-              display: "inline-block", padding: "8px 14px", background: "#2563EB", color: "#FFF",
-              borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
-            }}>
-              File RTI →
-            </Link>
+          </Section>
+
+          {/* File RTI prompt — a plain Card with one primary button */}
+          <div style={{ marginTop: 24 }}>
+            <Card>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0 }}>
+                  <p className="ftp-title" style={{ fontSize: 14, lineHeight: "20px" }}>Something missing from your village?</p>
+                  <p style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", margin: 0 }}>File an RTI to get official information</p>
+                </div>
+                <Link
+                  href={`${districtBase}/file-rti`}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 16px",
+                    background: "var(--ftp-brand)", color: "var(--ftp-surface)",
+                    borderRadius: "var(--ftp-radius-tile)", fontSize: 13, fontWeight: 500, textDecoration: "none",
+                  }}
+                >
+                  <FilePen size={14} aria-hidden /> File RTI →
+                </Link>
+              </div>
+            </Card>
           </div>
         </>
       )}
