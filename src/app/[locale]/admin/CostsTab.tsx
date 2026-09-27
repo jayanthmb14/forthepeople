@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Pencil, RefreshCw } from "lucide-react";
 import ModuleHelp from "@/components/admin/ModuleHelp";
+import { PRICE_TABLE } from "@/lib/ai-models";
 
 interface UsageData {
   totalCalls: number;
@@ -83,15 +84,12 @@ const card: React.CSSProperties = {
 // map is only consulted for rows logged before that (costUSD = 0). Keep it
 // in sync with the model chain in ai-provider.ts when you rotate models.
 const MODEL_PRICE_USD_PER_MTOK: Record<string, [number, number]> = {
-  "google/gemma-4-31b-it:free": [0, 0],
-  "google/gemma-4-26b-a4b-it:free": [0, 0],
-  "nvidia/nemotron-3-super-120b-a12b:free": [0, 0],
-  "qwen/qwen3.8-27b:free": [0, 0],
+  ...PRICE_TABLE,
+  // Older rows logged before the Sept 2026 model change.
   "google/gemini-2.5-flash-lite": [0.1, 0.4],
   "google/gemini-2.5-pro": [1.25, 10],
   "anthropic/claude-sonnet-4": [3, 15],
-  "openai/gpt-oss-20b": [0.018, 0.09],
-};
+}
 
 function estimateCostUSD(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_PRICE_USD_PER_MTOK[model];

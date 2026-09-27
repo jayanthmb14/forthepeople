@@ -5,6 +5,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { FACT_CHECK_MODELS, PRICE_TABLE, TIER1_FREE_MODELS, TIER1_PAID_BACKSTOP, TIER2_MODELS } from "@/lib/ai-models";
+
+/** "$0.25/M in · $1.5/M out" from the shared price table. */
+function priceText(model: string): string {
+  const p = PRICE_TABLE[model];
+  return p ? `$${p[0]}/M in · $${p[1]}/M out` : "—";
+}
 
 interface AISettings {
   id: string;
@@ -127,11 +134,11 @@ export default function AISettingsPage() {
         <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", marginBottom: 8 }}>Model Routing</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
           {[
-            // Mirrors getModelForPurpose() in src/lib/ai-provider.ts — update both together.
-            { purpose: "Classification / Summaries / Format / News analysis", model: "google/gemma-4-31b-it:free", cost: "Free" },
-            { purpose: "District Insights / Documents", model: "google/gemini-2.5-flash-lite", cost: "~$0.10/M in · $0.40/M out" },
-            { purpose: "Large documents", model: "google/gemini-2.5-pro", cost: "~$1.25/M in · $10/M out" },
-            { purpose: "Fact-check (critical accuracy)", model: "anthropic/claude-sonnet-4", cost: "~$3/M in · $15/M out" },
+            // Read from src/lib/ai-models.ts (the single model list).
+            { purpose: "Classification / Summaries / News analysis (free chain)", model: TIER1_FREE_MODELS.join(" → "), cost: "Free" },
+            { purpose: "Paid backstop (only with AI_PAID_FALLBACK=1)", model: TIER1_PAID_BACKSTOP, cost: priceText(TIER1_PAID_BACKSTOP) },
+            { purpose: "District insights", model: TIER2_MODELS.join(" → "), cost: priceText(TIER2_MODELS[0]) },
+            { purpose: "Fact-check (manual only)", model: FACT_CHECK_MODELS.join(" → "), cost: priceText(FACT_CHECK_MODELS[0]) },
           ].map((r) => (
             <div key={r.purpose} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "#FAFAF8", borderRadius: 6, fontSize: 12 }}>
               <span style={{ color: "#6B6B6B" }}>{r.purpose}</span>

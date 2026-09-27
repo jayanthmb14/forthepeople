@@ -186,7 +186,13 @@ export async function extractExamFromNews(
     shortName: (parsed.shortName ?? parsed.examName)!.toString().trim(),
     organizingBody: (parsed.organizingBody ?? "").toString().trim() || "Unknown",
     category: (parsed.category as ExamCategory) ?? "OTHER",
-    status: (parsed.status as ExamStatus) ?? "NOTIFICATION_OUT",
+    // "Applications open" needs a closing date from the notification; without
+    // one the official collector would flip it back every day (it only marks
+    // an exam open between a published opening and closing date).
+    status:
+      parsed.status === "APPLICATIONS_OPEN" && !parsed.applicationEndDate
+        ? "NOTIFICATION_OUT"
+        : ((parsed.status as ExamStatus) ?? "NOTIFICATION_OUT"),
     applicationStartDate: parsed.applicationStartDate ?? null,
     applicationEndDate: parsed.applicationEndDate ?? null,
     admitCardDate: parsed.admitCardDate ?? null,

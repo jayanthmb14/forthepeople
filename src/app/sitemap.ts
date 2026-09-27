@@ -43,6 +43,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       { url: L, lastModified: now, changeFrequency: "daily", priority: 1.0 },
       { url: `${L}/india`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
       { url: `${L}/india/updates`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+      { url: `${L}/prices`, lastModified: now, changeFrequency: "daily", priority: 0.6 },
       { url: `${L}/about`, changeFrequency: "monthly", priority: 0.7 },
       { url: `${L}/support`, changeFrequency: "monthly", priority: 0.6 },
       { url: `${L}/contribute`, changeFrequency: "monthly", priority: 0.6 },
