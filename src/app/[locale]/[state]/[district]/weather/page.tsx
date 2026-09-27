@@ -5,7 +5,7 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Weather & Rainfall — Design v3 module page (CONCEPT-v3 §5)
+//  Weather & Rainfall — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Data: useWeather() → up to 48 readings, newest first (recordedAt).
@@ -18,10 +18,15 @@
 //     on this page hard-codes "Live".
 //   • In the "Recent readings" table, rows older than 24 hours are greyed
 //     and their time column reads "As of <date>".
+//   • The picture (WeatherGlyph + "In simple words" + humidity dial) uses
+//     the same newest reading as the tiles, and says "last recorded" with
+//     the date when that reading is older than 6 hours.
+//   • Rainfall charts sit in ChartCards (source, month, table view) and are
+//     drawn only when there are at least two months to compare.
 "use client";
 
 import { use, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from "recharts";
 import { Cloud } from "lucide-react";
 import { useWeather, useRainfall } from "@/hooks/useRealtimeData";
 import {
@@ -35,13 +40,22 @@ import {
   FreshnessPill,
   AsOfText,
 } from "@/components/district/ui";
+import {
+  ChartCard,
+  ChartGradients,
+  Explainer,
+  Gauge,
+  WeatherGlyph,
+  weatherEmoji,
+  CHART_AXIS,
+  chartTooltipStyle,
+} from "@/components/district/visuals";
 import { isWithinMinutes } from "@/lib/utils/timeAgo";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleNews from "@/components/district/ModuleNews";
-import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar, ChartLegend, mutedIf } from "@/components/district/daily-services/ModuleShell";
-import { CHART, CHART_TOOLTIP } from "@/components/district/daily-services/chart-tokens";
+import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar, mutedIf } from "@/components/district/daily-services/ModuleShell";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import { downloadCSV, todayISO } from "@/lib/csv";
 
@@ -55,9 +69,21 @@ const STALE_ROW_MINUTES = 24 * 60;
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+const IMD = { label: "IMD", href: "https://mausam.imd.gov.in" };
+
 /** Show a number or an em dash when the source left it empty. */
 function orDash(v: number | null | undefined): string {
   return v === null || v === undefined ? "—" : String(v);
+}
+
+/** "12 Sep, 02:30 pm" in IST, for the "last recorded" sentence. */
+function recordedLabel(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" });
+}
+
+/** Signed millimetres: "+12.5 mm" / "-8.0 mm". */
+function signedMm(v: number): string {
+  return `${v > 0 ? "+" : ""}${v.toFixed(1)} mm`;
 }
 
 function WeatherPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
@@ -83,11 +109,18 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
     .slice(0, 24)
     .map((r) => ({
       label: `${MONTHS_SHORT[r.month - 1]} '${String(r.year).slice(2)}`,
+      longLabel: `${MONTHS_LONG[r.month - 1]} ${r.year}`,
       actual: r.rainfall,
       normal: r.normal,
       departure: r.departure,
     }))
     .reverse();
+
+  // One-line summaries for the two rainfall charts, from the same rows.
+  const belowNormal = chartData.filter((d) => d.actual < d.normal).length;
+  const wettest = chartData.length > 0 ? chartData.reduce((a, b) => (b.departure > a.departure ? b : a)) : null;
+  const driest = chartData.length > 0 ? chartData.reduce((a, b) => (b.departure < a.departure ? b : a)) : null;
+  const latestMonthLabel = latestRain ? `${MONTHS_LONG[latestRain.month - 1]} ${latestRain.year}` : undefined;
 
   function handleDownload() {
     const rows = rainfallRows.slice(0, 60).map((r) => ({
@@ -104,6 +137,9 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
     ? `${district} weather: ${latest.temperature}°C, ${latest.conditions}, humidity ${latest.humidity}%`
     : `Weather data for ${district}`;
 
+  const hasTemp = latest?.temperature !== null && latest?.temperature !== undefined;
+  const hasHumidity = latest?.humidity !== null && latest?.humidity !== undefined;
+
   return (
     <ModulePage>
       <PageHeader
@@ -112,7 +148,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
         description="Weather readings and historical monsoon data"
         backHref={base}
         accent={getModuleAccent("weather")}
-        source={{ label: "IMD", href: "https://mausam.imd.gov.in" }}
+        source={IMD}
         actions={<FreshnessPill asOf={latest?.recordedAt} thresholdHours={FRESH_HOURS} />}
       />
 
@@ -131,35 +167,85 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       {!wLoading && latest && (
         <Section
           title={isRecent ? "Current conditions" : "Last recorded conditions"}
+          emoji={weatherEmoji(latest.conditions)}
           action={<AsOfText asOf={latest.recordedAt} prefix="Recorded" />}
         >
           <StatStrip cols={4}>
             <StatTile
+              emoji="🌡️"
               label="Temperature"
               value={orDash(latest.temperature)}
               unit="°C"
               sub={[
                 latest.conditions ?? undefined,
                 latest.feelsLike !== null && latest.feelsLike !== undefined ? `feels like ${latest.feelsLike}°C` : undefined,
-              ].filter(Boolean).join(" · ") || undefined}
+              ].filter(Boolean).join(", ") || undefined}
               asOf={latest.recordedAt}
             />
-            <StatTile label="Humidity" value={orDash(latest.humidity)} unit="%" asOf={latest.recordedAt} />
+            <StatTile emoji="💧" label="Humidity" value={orDash(latest.humidity)} unit="%" asOf={latest.recordedAt} />
             <StatTile
+              emoji="🌬️"
               label="Wind"
               value={orDash(latest.windSpeed)}
               unit="km/h"
               sub={latest.windDir ?? undefined}
               asOf={latest.recordedAt}
             />
-            <StatTile label="Rainfall (day)" value={latest.rainfall ?? 0} unit="mm" asOf={latest.recordedAt} />
+            <StatTile emoji="🌧️" label="Rainfall (day)" value={latest.rainfall ?? 0} unit="mm" asOf={latest.recordedAt} />
           </StatStrip>
+
+          {/* The picture: a big weather glyph for the newest reading, one
+              plain sentence with its numbers, and a humidity dial. */}
+          {(hasTemp || latest.conditions) && (
+            <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+              <Card tinted padding={18}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+                  <WeatherGlyph conditions={latest.conditions} size={64} />
+                  <div style={{ minWidth: 0 }}>
+                    {hasTemp && (
+                      <div className="ftp-bignum" style={{ fontSize: 44, lineHeight: 1, color: "var(--hue-deep)" }}>
+                        {latest.temperature}°C
+                      </div>
+                    )}
+                    {latest.conditions && (
+                      <div style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)", marginTop: 4, textTransform: "capitalize" }}>
+                        {latest.conditions}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Explainer title="In simple words" emoji="🌤️">
+                  <span suppressHydrationWarning>
+                    {isRecent ? "Right now" : `When last recorded, on ${recordedLabel(latest.recordedAt)} IST,`}
+                    {hasTemp ? (
+                      <>
+                        {" "}it {isRecent ? "is" : "was"} <strong>{latest.temperature}°C</strong>
+                        {latest.conditions ? ` with ${latest.conditions.toLowerCase()}` : ""}.
+                      </>
+                    ) : (
+                      <> the weather {isRecent ? "shows" : "showed"} {latest.conditions?.toLowerCase()}.</>
+                    )}
+                    {latest.feelsLike !== null && latest.feelsLike !== undefined ? (
+                      <>
+                        {" "}It {isRecent ? "feels" : "felt"} like <strong>{latest.feelsLike}°C</strong>.
+                      </>
+                    ) : null}
+                  </span>
+                </Explainer>
+              </Card>
+              {hasHumidity && (
+                <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Gauge value={latest.humidity as number} label="Humidity" caption="How damp the air is (humidity)" />
+                </Card>
+              )}
+            </div>
+          )}
         </Section>
       )}
 
       {/* ── Recent readings: rows older than 24 h are greyed with "As of" ── */}
       {!wLoading && readings.length > 1 && (
-        <Section title="Recent readings">
+        <Section title="Recent readings" emoji="🕒">
           <DataTable
             dense
             caption={`Recent weather readings for ${district}`}
@@ -182,7 +268,16 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
                   </span>
                 ),
                 temp: <span style={muted}>{orDash(r.temperature)}</span>,
-                conditions: <span style={muted}>{r.conditions ?? "—"}</span>,
+                conditions: (
+                  <span style={{ ...muted, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    {r.conditions && (
+                      <span className="ftp-emoji" aria-hidden>
+                        {weatherEmoji(r.conditions)}
+                      </span>
+                    )}
+                    {r.conditions ?? "—"}
+                  </span>
+                ),
                 humidity: <span style={muted}>{orDash(r.humidity)}</span>,
                 rain: <span style={muted}>{orDash(r.rainfall)}</span>,
               };
@@ -195,52 +290,94 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
       {rLoading && <LoadingShell rows={3} />}
       {!rLoading && chartData.length > 0 && (
         <>
-          <Section
-            title="Monthly rainfall, actual vs normal"
-            action={
-              latestRain ? (
-                <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                  Latest month: {MONTHS_SHORT[latestRain.month - 1]} {latestRain.year}
-                </span>
-              ) : undefined
-            }
-          >
-            <Card>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 20, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-                  <XAxis dataKey="label" tick={CHART.tick} stroke={CHART.axis} angle={-45} textAnchor="end" interval={1} />
-                  <YAxis tick={CHART.tick} stroke={CHART.axis} width={40} />
-                  <Tooltip {...CHART_TOOLTIP} cursor={{ fill: "var(--ftp-surface-2)" }} formatter={(v, name) => [`${Number(v)} mm`, name]} />
-                  <Bar dataKey="actual" fill={CHART.primary} radius={[3, 3, 0, 0]} name="Actual" />
-                  <Bar dataKey="normal" fill={CHART.tertiary} radius={[3, 3, 0, 0]} name="Normal" />
-                </BarChart>
-              </ResponsiveContainer>
-              <ChartLegend
-                entries={[
-                  { label: "Actual (mm)", color: CHART.primary },
-                  { label: "Normal (mm)", color: CHART.tertiary },
+          {/* Charts need at least two months; one month is just a number. */}
+          {chartData.length > 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 28 }}>
+              <ChartCard
+                title="Monthly rainfall, actual vs normal"
+                emoji="🌧️"
+                units="Millimetres of rain each month. Grey is the normal for that month, colour is what fell."
+                simple={
+                  <>
+                    Rain was below normal in <strong>{belowNormal}</strong> of the last {chartData.length} months.
+                    {latestRain ? (
+                      <>
+                        {" "}In {latestMonthLabel}, <strong>{latestRain.rainfall.toFixed(1)} mm</strong> fell against a normal of{" "}
+                        {latestRain.normal.toFixed(1)} mm.
+                      </>
+                    ) : null}
+                  </>
+                }
+                legend={[
+                  { label: "Actual", swatch: "var(--hue)" },
+                  { label: "Normal", swatch: "#D8D5CB" },
                 ]}
-              />
-            </Card>
-          </Section>
+                source={IMD}
+                asOfPeriod={latestMonthLabel}
+                table={chartData.map((d) => ({ label: d.longLabel, value: `${d.actual} mm (normal ${d.normal} mm)` }))}
+              >
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 20, left: 0 }} barGap={2}>
+                    <ChartGradients />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                    <XAxis dataKey="label" tick={CHART_AXIS} angle={-45} textAnchor="end" interval={1} height={44} />
+                    <YAxis tick={CHART_AXIS} width={40} />
+                    <Tooltip
+                      contentStyle={chartTooltipStyle}
+                      cursor={{ fill: "var(--hue-tint)" }}
+                      formatter={(v, name) => [`${Number(v)} mm`, name]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.longLabel ?? ""}
+                    />
+                    <Bar dataKey="actual" fill="url(#ftpHueFill)" radius={[6, 6, 0, 0]} name="Actual" />
+                    <Bar dataKey="normal" fill="url(#ftpMutedFill)" radius={[6, 6, 0, 0]} name="Normal" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
 
-          <Section title="Departure from normal">
-            <Card>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 20, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-                  <XAxis dataKey="label" tick={CHART.tick} stroke={CHART.axis} angle={-45} textAnchor="end" interval={1} />
-                  <YAxis tick={CHART.tick} stroke={CHART.axis} width={40} />
-                  <Tooltip {...CHART_TOOLTIP} cursor={{ fill: "var(--ftp-surface-2)" }} formatter={(v) => [`${Number(v)} mm`, "Departure"]} />
-                  <ReferenceLine y={0} stroke={CHART.secondary} />
-                  <Bar dataKey="departure" fill={CHART.secondary} radius={[3, 3, 0, 0]} name="Departure" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          </Section>
+              <ChartCard
+                title="Departure from normal"
+                emoji="⚖️"
+                units="Millimetres above or below the normal for each month"
+                simple={
+                  wettest && driest ? (
+                    <>
+                      The wettest month compared with normal was <strong>{wettest.longLabel}</strong> ({signedMm(wettest.departure)}); the
+                      driest was <strong>{driest.longLabel}</strong> ({signedMm(driest.departure)}).
+                    </>
+                  ) : undefined
+                }
+                legend={[
+                  { label: "More rain than normal", swatch: "var(--hue)" },
+                  { label: "Less rain than normal", swatch: "var(--hue-pop)" },
+                ]}
+                source={IMD}
+                asOfPeriod={latestMonthLabel}
+                table={chartData.map((d) => ({ label: d.longLabel, value: signedMm(d.departure) }))}
+              >
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={chartData} margin={{ top: 5, right: 8, bottom: 20, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" vertical={false} />
+                    <XAxis dataKey="label" tick={CHART_AXIS} angle={-45} textAnchor="end" interval={1} height={44} />
+                    <YAxis tick={CHART_AXIS} width={40} />
+                    <Tooltip
+                      contentStyle={chartTooltipStyle}
+                      cursor={{ fill: "var(--hue-tint)" }}
+                      formatter={(v) => [`${Number(v)} mm`, "Departure"]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.longLabel ?? ""}
+                    />
+                    <ReferenceLine y={0} stroke="var(--ftp-text-2)" />
+                    <Bar dataKey="departure" radius={6} name="Departure">
+                      {chartData.map((d) => (
+                        <Cell key={d.label} fill={d.departure >= 0 ? "var(--hue)" : "var(--hue-pop)"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+          )}
 
-          <Section title="Rainfall history table">
+          <Section title="Rainfall history table" emoji="📅">
             <DataTable
               caption={`Monthly rainfall for ${district}`}
               columns={[
