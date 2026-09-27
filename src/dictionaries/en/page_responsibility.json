@@ -187,7 +187,7 @@
   "chartAria": "Ring chart of actions by area. {summary}",
   "chartCenter": "{n, plural, one {action} other {actions}}",
   "otherAreas": "Other areas",
-  "footSpecific": "These actions are based on official government sources. ForThePeople.in is not an official government website. Tap a card and see \"Where this comes from\".",
+  "footSpecific": "These actions were researched from government pages, official reports and local news. Tap a card to see where each one comes from.",
   "projectionLead": "If citizens and government work together, here is where {name} can be by 2030:",
   "footGeneric": "This is general guidance for {name}. Each district gets its own guide, built around its own challenges and strengths, as research is completed.",
   "downloadCsv": "Download CSV"
