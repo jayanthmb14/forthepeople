@@ -12,8 +12,12 @@
 //   mp         { name, party }
 //   population { value, dataset, year, estimate }  DemographicProfile, else
 //                                        the District row (an estimate)
-//   projects   { active, total }         InfraProject, LOCAL_INFRA, not
-//                                        completed or cancelled
+//   projects   { active, total }         InfraProject, LOCAL_INFRA, renamings
+//                                        left out; active = stage "building"
+//                                        (under construction / ongoing), the
+//                                        same rule as the Projects page and
+//                                        the home map — never proposed or
+//                                        approved work
 //   budget     { allocated, fiscalYear, estimate }  newest financial year
 //   election   { type, label, date, approximate }   next ElectionEvent
 //   grade      { grade, score, generatedAt }        only while not expired
@@ -25,6 +29,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 import type { GlanceData } from "@/components/district/shell/glance-types";
+import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 
 export const runtime = "nodejs";
 
@@ -38,10 +43,6 @@ const isCollector = (role: string) =>
   /^(district collector|collector\b|deputy commissioner(?!\s+of\s+police)|district magistrate)/i.test(role) &&
   !/additional/i.test(role);
 const isMP = (role: string) => /\bmp\b|member of parliament/i.test(role);
-
-/** "Under construction" → UNDER_CONSTRUCTION (same as the projects page). */
-const normalizeStatus = (s: string | null | undefined) =>
-  s ? s.trim().toUpperCase().replace(/[\s-]+/g, "_") : "PROPOSED";
 
 // Same ranking as the alerts page (/api/data/alerts).
 const SEVERITY_RANK: Record<string, number> = {
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
   const stateSlug = req.nextUrl.searchParams.get("state") ?? "";
   if (!districtSlug) return NextResponse.json({ error: "district required" }, { status: 400 });
 
-  const key = cacheKey(districtSlug, "glance:v3");
+  const key = cacheKey(districtSlug, "glance:v4");
   const cached = await cacheGet<GlanceData>(key);
   if (cached) {
     return NextResponse.json(cached, {
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ year: "desc" }, { updatedAt: "desc" }],
       select: { totalPopulation: true, dataset: true, year: true },
     }),
-    prisma.infraProject.findMany({ where: { districtId: did, ...LOCAL_INFRA }, select: { status: true } }),
+    prisma.infraProject.findMany({ where: { districtId: did, ...LOCAL_INFRA }, select: { status: true, name: true } }),
     // Census head count from the population history when there is no census profile.
     prisma.populationHistory.findFirst({
       where: {
@@ -167,7 +168,9 @@ export async function GET(req: NextRequest) {
   }
 
   const sortedAlerts = [...alertRows].sort((a, b) => rankOf(a.severity) - rankOf(b.severity));
-  const activeProjects = projects.filter((p) => !["COMPLETED", "INAUGURATED", "CANCELLED"].includes(normalizeStatus(p.status)));
+  // Same rule as the Projects page and the home map (src/lib/civic/project-facts.ts).
+  const realProjects = projects.filter((p) => !isNonProject({ name: p.name ?? "" }));
+  const beingBuilt = realProjects.filter((p) => projectStage(p.status) === "building");
 
   const data: GlanceData = {
     collector: collector ? { name: collector.name, role: collector.role } : null,
@@ -179,7 +182,7 @@ export async function GET(req: NextRequest) {
         : district.population
           ? { value: district.population, dataset: null, year: null, estimate: true }
           : null,
-    projects: projects.length > 0 ? { active: activeProjects.length, total: projects.length } : null,
+    projects: realProjects.length > 0 ? { active: beingBuilt.length, total: realProjects.length } : null,
     budget,
     election,
     grade:
