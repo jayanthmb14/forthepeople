@@ -92,4 +92,31 @@ export function getRoleDescription(role: string | null | undefined): string {
   return key ? ROLE_DESCRIPTIONS[key] : FALLBACK;
 }
 
+/**
+ * Message id of the matched description, for translated pages:
+ * "CEO, Zilla Panchayat" → "ceo-zilla-panchayat" (the leadership page reads
+ * `roles.<id>` from its messages). Null when only the fallback applies.
+ */
+export function getRoleDescriptionId(role: string | null | undefined): string | null {
+  if (!role) return null;
+  const key = ROLE_DESCRIPTIONS[role] ? role : bestKeyMatch(role);
+  return key ? roleKeyToId(key) : null;
+}
+
+/**
+ * Message id for a description that was copied onto a Leader row from this
+ * table (the seed stores the English text), so it can still be translated.
+ * Null when the stored text is custom.
+ */
+export function getRoleDescriptionIdForText(text: string | null | undefined): string | null {
+  const wanted = text?.trim();
+  if (!wanted) return null;
+  const key = Object.keys(ROLE_DESCRIPTIONS).find((k) => ROLE_DESCRIPTIONS[k] === wanted);
+  return key ? roleKeyToId(key) : null;
+}
+
+function roleKeyToId(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 export { ROLE_DESCRIPTIONS };
