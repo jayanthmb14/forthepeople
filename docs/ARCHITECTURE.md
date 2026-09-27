@@ -26,8 +26,9 @@ are copied into prose. Read `CHANGELOG.md` for what changed and when.
 ```
 
 Everything runs inside Vercel serverless functions. There is no long-running
-worker in production any more: the `src/scraper/scheduler.ts` + Docker path is a
-local/legacy runner for the same job modules, not part of the deployed system.
+worker in production any more: `src/scraper/scheduler.ts` (`npm run scraper`) is
+a local runner for the same job modules, not part of the deployed system. The
+old Docker files are archived in `docs/archive/docker/`.
 
 ## 2. Routing
 

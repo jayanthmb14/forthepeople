@@ -15,6 +15,7 @@ They are kept because they record decisions and where things came from.
 | `PAYMENT-DEBUG-REPORT.md` | Payment, mobile nav and support layout audit | 17 Apr 2026 |
 | `TENDERS_MODULE_REPORT.md` | Tenders module implementation report | 19 Apr 2026 |
 | `india-sessions/` | Build-session reports for the India dashboard | 29 Apr 2026 |
+| `docker/` | The retired Docker and Railway worker files (broken; see its README) | Mar–Apr 2026 |
 | `prompts-completed/` | Prompts already run: the Phase 2 master upgrade, the first UI overhaul and the Delhi, Hyderabad, Mumbai, Kolkata and Chennai launches (was `prompts/completed/`) | Mar–Apr 2026 |
 
 Some of these name the owner's account e-mails and hosting scopes. Account

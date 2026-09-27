@@ -54,7 +54,6 @@ Prefer existing tables or Redis keys over new columns when a fix allows it.
 - NEVER deploy with `npx vercel --prod` — deploys happen via `git push origin main`.
 - NEVER run `npm audit fix`. Bump versions deliberately, one at a time.
 - NEVER commit `.env.local` or any real secret; never print secret values.
-- NEVER use `npm ci` in `Dockerfile.scraper` — `npm install --legacy-peer-deps`.
 - NEVER hard-code citizen-facing text — every new string ships in en + hi + kn
   (`src/dictionaries/<locale>/page_<name>.json`, then `node scripts/gen-i18n-namespaces.mjs`).
 - Emoji only as module identity (sidebar item, module chip, overview tile); tokens
