@@ -12,7 +12,8 @@
       "rank": 1,
       "category": "democracy",
       "title": "Largest democracy",
-      "source": "UN",
+      "annotation": "96.88 crore voters",
+      "source": "Election Commission of India",
       "year": "2024",
       "movement": { "kind": "stable" }
     },
@@ -28,8 +29,9 @@
       "rank": 1,
       "category": "postal",
       "title": "Largest postal network",
+      "annotation": "1.64 lakh post offices",
       "source": "India Post",
-      "year": "2024",
+      "year": "2025",
       "movement": { "kind": "stable" }
     },
     {
@@ -37,26 +39,9 @@
       "category": "milk",
       "title": "Largest milk producer",
       "annotation": "248 MT",
-      "source": "FAO",
-      "year": "2024",
+      "source": "DAHD (BAHS 2025)",
+      "year": "2025",
       "movement": { "kind": "stable" }
-    },
-    {
-      "rank": 1,
-      "category": "railway",
-      "title": "Largest railway employer",
-      "source": "Indian Railways",
-      "year": "2024",
-      "movement": { "kind": "stable" }
-    },
-    {
-      "rank": 2,
-      "category": "internet",
-      "title": "Internet users",
-      "source": "TRAI",
-      "year": "2026",
-      "annotation": "1.09B",
-      "movement": { "kind": "up", "from": 3 }
     },
     {
       "rank": 4,

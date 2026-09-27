@@ -557,11 +557,10 @@
       "economy": "Economy size (nominal GDP)"
     },
     "notes": {
-      "postal": "1.56 lakh post offices",
+      "postal": "1.64 lakh post offices",
+      "democracy": "96.88 crore registered voters (2024)",
       "milk": "248 million tonnes (2024-25)",
-      "railway": "14 lakh staff",
-      "internet": "109 crore internet subscribers",
-      "renewable": "296 GW incl. large hydro (Aug 2026)"
+      "renewable": "296 GW incl. large hydro (CEA, 31 Aug 2026)"
     },
     "open": "Details: {title}",
     "sheet": {
