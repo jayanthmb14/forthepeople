@@ -642,16 +642,15 @@
   padding: 12px 12px 8px;
   border: 1px solid var(--ftp-border);
   border-radius: 20px;
-  background:
-    radial-gradient(80% 60% at 50% 40%, var(--home-sky-tint) 0%, transparent 70%),
-    var(--ftp-surface);
+  /* Plain white, so the pastel land stands out clearly. */
+  background: var(--ftp-surface);
   box-shadow: var(--ftp-shadow-1);
 }
 .mapHead {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 2px 56px 4px 4px;
+  padding: 2px 4px 4px;
 }
 .mapTitle {
   font-size: 15px;
@@ -699,7 +698,6 @@
 .legendLand {
   border-radius: 3px;
   border: 1px solid var(--ftp-border-strong);
-  background: var(--ftp-map-locked);
 }
 
 /* The district card inside the map */
@@ -1800,6 +1798,11 @@
   .actions > * {
     flex: 1 1 150px;
     padding: 0 14px;
+  }
+  /* Map: a little more room for India. */
+  .map {
+    padding: 10px 8px 6px;
+    border-radius: 18px;
   }
   /* Stats: two tiles per row, a little smaller. */
   .stat {

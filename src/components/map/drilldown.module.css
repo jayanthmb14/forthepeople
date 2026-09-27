@@ -21,6 +21,20 @@
   height: auto;
 }
 
+/* States: fills and hover colours come from mapTheme.tsx (indiaStateStyle). */
+.state:focus-visible {
+  outline: none;
+}
+/* The coast and outer border: a soft outline under the states. */
+.coast {
+  fill: none;
+  stroke: var(--ftp-border-strong);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
 /* Live-district pins */
 .pin {
   cursor: pointer;
@@ -43,7 +57,7 @@
 .pinDot {
   fill: var(--hue);
   stroke: var(--ftp-surface);
-  stroke-width: 3;
+  stroke-width: 2;
 }
 .pinCore {
   fill: var(--ftp-surface);
@@ -51,7 +65,7 @@
 .pinRing {
   fill: none;
   stroke: var(--hue-deep);
-  stroke-width: 3;
+  stroke-width: 2.5;
   opacity: 0;
 }
 .pin:hover .pinHalo,
@@ -61,6 +75,23 @@
 .pin[data-on="true"] .pinRing,
 .pin:focus-visible .pinRing {
   opacity: 1;
+}
+/* The district's name beside its pin, with a soft white edge so it reads
+   over state borders. */
+.pinLabel {
+  font-family: var(--ftp-font-sans);
+  font-weight: 700;
+  fill: var(--ftp-text);
+  paint-order: stroke;
+  stroke: var(--ftp-surface);
+  stroke-width: 3.2px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.pin:hover .pinLabel,
+.pin[data-on="true"] .pinLabel,
+.pin:focus-visible .pinLabel {
+  fill: var(--hue-deep);
 }
 .leader {
   stroke: var(--hue);
@@ -84,11 +115,11 @@
   }
 }
 
-/* Zoom buttons (top right) */
+/* Zoom buttons (top left: open sea / neighbours there, never over India) */
 .zoom {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -208,11 +239,15 @@
   border-radius: 6px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pinHit {
-  fill: transparent;
+@media (max-width: 479px) {
+  .zoomBtn {
+    width: 36px;
+    height: 36px;
+  }
 }
-.pinPing {
+
+@media (prefers-reduced-motion: reduce) {
+  .pinPing {
     animation: none;
     opacity: 0;
   }

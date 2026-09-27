@@ -8,9 +8,10 @@
 //  HomeMap — the clickable India map beside the home hero
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌ India, live ─────────────────────── [+][−][⟲] ┐
-//   │   (states open their page; pins = live districts)│
-//   │        ◉ Lucknow                                 │
+//   ┌ India, live ────────────────────────────────────┐
+//   │ [+]  (states open their page; pins = live        │
+//   │ [−]   districts, each with its name)             │
+//   │ [⟲]        ◉ Lucknow                             │
 //   │   ◉ Pune       ┌──────────────────────────────┐  │
 //   │                │ (art) Mandya ಮಂಡ್ಯ · Karnataka │  │
 //   │   ◉◉◉          │ People        19.4 lakh (…)   │  │
@@ -31,9 +32,11 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Award, Clock3, HardHat, Users } from "lucide-react";
 import DrillDownMap, { type DrillDownLabels, type MapPin } from "@/components/map/DrillDownMap";
+import { INDIA_LAND_FILL } from "@/components/map/mapTheme";
 import { getDistrict } from "@/lib/constants/districts";
 import { useFormat, usePlaceText } from "@/i18n/client";
 import { placeName, placeNamePair } from "@/i18n/place-name";
@@ -136,6 +139,15 @@ function DistrictCard({ pin, locale, stat, district }: { pin: MapPin; locale: st
 export default function HomeMap({ locale, districts, stats }: { locale: string; districts: HomeDistrict[]; stats: Record<string, MapDistrictStat> }) {
   const t = useTranslations("page_home");
   const place = usePlaceText();
+  // The short name beside each pin, in the page language (stable per locale,
+  // so the map does not re-place its names on every render).
+  const pinName = useCallback(
+    (p: MapPin) => {
+      const reg = getDistrict(p.stateSlug, p.slug);
+      return reg ? placeName(reg, locale) : p.name;
+    },
+    [locale],
+  );
 
   const labels: DrillDownLabels = {
     map: t("map.aria"),
@@ -147,6 +159,7 @@ export default function HomeMap({ locale, districts, stats }: { locale: string; 
       const reg = getDistrict(p.stateSlug, p.slug);
       return t("map.pinLabel", { name: reg ? placeName(reg, locale) : p.name, state: place.state(p.stateSlug, p.stateName) });
     },
+    pinName: pinName,
     stateName: (slug, fallback) => place.state(slug, fallback),
     stateHint: (n) => (n > 0 ? t("map.stateLive", { n }) : t("map.stateNone")),
     stateOpen: (name) => t("map.stateOpen", { name }),
@@ -171,7 +184,7 @@ export default function HomeMap({ locale, districts, stats }: { locale: string; 
           {t("map.legendLive")}
         </span>
         <span className={styles.legendItem}>
-          <span className={`${styles.legendSwatch} ${styles.legendLand}`} aria-hidden />
+          <span className={`${styles.legendSwatch} ${styles.legendLand}`} style={{ background: INDIA_LAND_FILL }} aria-hidden />
           {t("map.legendState")}
         </span>
       </figcaption>

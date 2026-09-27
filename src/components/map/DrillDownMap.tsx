@@ -8,17 +8,23 @@
 //  DrillDownMap — the interactive India map (home page)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  - Every state is drawn in the same pale land colour and opens its own
-//    page (/[locale]/[state]); it turns brand-tinted on hover or tap.
-//    States are never painted "live": only districts are (DESIGN-SYSTEM §2).
-//  - Each live district is a pin in its own hue with a slow "ping". Pins
-//    that sit close together (Mandya, Mysuru, Bengaluru Urban) fan out on
-//    a small ring, tied to their real place by a thin line.
+//  - Every state is drawn in one of four soft pastel land tones (neighbours
+//    never share one), without the district seams inside it, over a soft
+//    outline along the coast; it opens its own page (/[locale]/[state])
+//    and turns a clearer brand blue on hover or tap. States are never
+//    painted "live": only districts are (DESIGN-SYSTEM §2).
+//  - Each live district is a pin in its own hue with a slow "ping" and a
+//    small name beside it (right, left, above or below — wherever it fits;
+//    a name that does not fit appears once you zoom in). Pins keep the same
+//    size on every screen (a 40 px touch target). Pins that sit close
+//    together (Bengaluru Urban, Mandya, Mysuru) fan out on a small ring in
+//    their own compass order, tied to their real place by a thin line
+//    (pin-layout.ts).
 //  - A pin shows the caller's card (renderCard) — on hover, keyboard focus
 //    or a tap. With a mouse a click opens the district; on a touch screen
 //    the first tap shows the card and the second opens the district (the
 //    card also has its own "Open" link). States work the same way.
-//  - Zoom: the + / − / reset buttons, a pinch on a phone, ctrl + scroll or
+//  - Zoom: the + / − / reset buttons (top left, over the sea), a pinch on a phone, ctrl + scroll or
 //    a trackpad pinch on a laptop. A plain one-finger swipe or scroll
 //    wheel still scrolls the page (the map never traps it); once zoomed
 //    in, one finger pans the map.
@@ -29,15 +35,16 @@
 //  its own. Colours: mapTheme.tsx (shapes) and drilldown.module.css (pins).
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, Line, Marker, ZoomableGroup } from "react-simple-maps";
 import { Minus, Plus, RotateCcw, X, ArrowRight } from "lucide-react";
 import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 import { getDistrictHue, type Hue } from "@/lib/design/hues";
-import { indiaStateStyle, MAP_CARD_STYLE } from "@/components/map/mapTheme";
+import { INDIA_STATE_TONE, indiaStateStyle, MAP_CARD_STYLE } from "@/components/map/mapTheme";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { INDIA_STATE_NAME_TO_SLUG } from "@/lib/geo/aliases";
+import { MAP_CENTER, MAP_H, MAP_SCALE, MAP_W, UNITS_PER_DEG, fanOut, placeLabels, project, type LabelSide } from "./pin-layout";
 import styles from "./drilldown.module.css";
 
 /** One live-district pin, with its badge position fanned out if crowded. */
@@ -56,64 +63,32 @@ export interface MapPin {
   hue: Hue;
 }
 
-/** Degrees within which two pins are "crowded", and the ring radius they fan out to. */
-const CROWD_DEG = 1.6;
-const RING_DEG = 1.9;
+/** A live district before crowded pins are spread (fanOut adds pinLat / pinLng / moved). */
+type BasePin = Omit<MapPin, "pinLat" | "pinLng" | "moved">;
 
-function buildPins(): MapPin[] {
-  const pins: MapPin[] = [];
-  for (const st of INDIA_STATES) {
-    for (const d of st.districts) {
-      const c = d.active ? DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`] : undefined;
-      if (!c) continue;
-      pins.push({
-        key: `${st.slug}/${d.slug}`,
-        slug: d.slug,
-        name: d.name,
-        stateSlug: st.slug,
-        stateName: st.name,
-        lat: c.lat,
-        lng: c.lng,
-        pinLat: c.lat,
-        pinLng: c.lng,
-        moved: false,
-        hue: getDistrictHue(d.slug),
-      });
-    }
-  }
-  // Greedy clusters, then spread each crowded cluster around its centre.
-  const seen = new Set<number>();
-  for (let i = 0; i < pins.length; i++) {
-    if (seen.has(i)) continue;
-    const group = [i];
-    for (let j = i + 1; j < pins.length; j++) {
-      if (seen.has(j)) continue;
-      if (group.some((g) => Math.hypot(pins[g].lat - pins[j].lat, pins[g].lng - pins[j].lng) < CROWD_DEG)) group.push(j);
-    }
-    group.forEach((g) => seen.add(g));
-    if (group.length < 2) continue;
-    const cLat = group.reduce((s, g) => s + pins[g].lat, 0) / group.length;
-    const cLng = group.reduce((s, g) => s + pins[g].lng, 0) / group.length;
-    group.forEach((g, k) => {
-      const a = -Math.PI / 2 + (2 * Math.PI * k) / group.length;
-      pins[g].pinLat = cLat + RING_DEG * Math.sin(a);
-      pins[g].pinLng = cLng + RING_DEG * Math.cos(a);
-      pins[g].moved = true;
-    });
-  }
-  return pins;
-}
-
-const LIVE_PINS = buildPins();
+const BASE_PINS: BasePin[] = INDIA_STATES.flatMap((st) =>
+  st.districts.flatMap((d) => {
+    const c = d.active ? DISTRICT_CENTROIDS[`${st.slug}/${d.slug}`] : undefined;
+    return c
+      ? [{ key: `${st.slug}/${d.slug}`, slug: d.slug, name: d.name, stateSlug: st.slug, stateName: st.name, lat: c.lat, lng: c.lng, hue: getDistrictHue(d.slug) }]
+      : [];
+  }),
+);
 
 /** Live districts per state slug (for the state tooltip). */
-const LIVE_PER_STATE = LIVE_PINS.reduce<Record<string, number>>((m, p) => {
+const LIVE_PER_STATE = BASE_PINS.reduce<Record<string, number>>((m, p) => {
   m[p.stateSlug] = (m[p.stateSlug] ?? 0) + 1;
   return m;
 }, {});
 
-const DEFAULT_CENTER: [number, number] = [82.75, 22.7];
+const DEFAULT_CENTER: [number, number] = MAP_CENTER;
 const MAX_ZOOM = 6;
+
+/** Pin geometry in screen pixels (the pin group is scaled so these hold at any width or zoom). */
+const PIN = { hit: 20, halo: 11, dot: 7, core: 2.6, ring: 10, ping: 7, label: 11.5, labelGap: 11 } as const;
+/** Pins closer than this many pixels (at full view) are spread on a ring of this radius. */
+const CROWD_PX = 30;
+const RING_PX = 24;
 
 export interface DrillDownLabels {
   /** Accessible name of the whole map. */
@@ -124,6 +99,8 @@ export interface DrillDownLabels {
   close: string;
   /** A pin's accessible name, e.g. "Mandya, Karnataka: open its dashboards". */
   pin: (pin: MapPin) => string;
+  /** The short name drawn beside a pin, e.g. "Mandya"; no names are drawn without it. */
+  pinName?: (pin: MapPin) => string;
   /** A state's name in the page language. */
   stateName: (slug: string, fallback: string) => string;
   /** The line under a state's name, e.g. "3 live districts · open the state page". */
@@ -166,6 +143,47 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
     zoomRef.current = view.zoom;
   }, [view.zoom]);
 
+  // The map's drawn width: pins, names and gaps are sized in screen pixels.
+  const [boxW, setBoxW] = useState(480);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0]?.contentRect.width ?? 0);
+      if (w > 0) setBoxW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  /** Map units per screen pixel at full view (rounded so a small resize does not re-lay the pins). */
+  const unitsPerPx = Math.round((MAP_W / boxW) * 20) / 20;
+
+  const pins: MapPin[] = useMemo(
+    () => fanOut(BASE_PINS, Math.max(1.6, (CROWD_PX * unitsPerPx) / UNITS_PER_DEG), Math.max(1.9, (RING_PX * unitsPerPx) / UNITS_PER_DEG)),
+    [unitsPerPx],
+  );
+
+  // Names beside the pins: a side each where it fits, at this width and zoom.
+  const pinName = labels.pinName;
+  const names = useMemo(() => new Map(pins.map((p) => [p.key, pinName ? pinName(p) : ""])), [pins, pinName]);
+  const sides: Record<string, LabelSide | null> = useMemo(() => {
+    if (!pinName) return {};
+    const toPx = view.zoom / unitsPerPx;
+    const [cx, cy] = project(view.center[0], view.center[1]);
+    const items = pins.map((p) => {
+      const [x, y] = project(p.pinLng, p.pinLat);
+      return { key: p.key, x: MAP_W / 2 / unitsPerPx + (x - cx) * toPx, y: MAP_H / 2 / unitsPerPx + (y - cy) * toPx, name: names.get(p.key) ?? "" };
+    });
+    return placeLabels(items, {
+      font: PIN.label,
+      dot: PIN.halo,
+      gap: PIN.labelGap,
+      bounds: { w: MAP_W / unitsPerPx, h: MAP_H / unitsPerPx },
+      // The zoom buttons, top left (8 px in, three 40 px buttons; 36 px on phones).
+      avoid: [{ x0: 0, y0: 0, x1: 54, y1: 134 }],
+    });
+  }, [pins, names, pinName, unitsPerPx, view.zoom, view.center]);
+
   const districtHref = (p: MapPin) => `/${locale}/${p.stateSlug}/${p.slug}`;
   const stateHref = (slug: string) => `/${locale}/${slug}`;
 
@@ -191,10 +209,10 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
     return () => window.removeEventListener("keydown", onKey);
   }, [sel]);
 
-  /** The centre of an element (a pin) inside the map box. */
+  /** The centre of an element (a pin's dot) inside the map box. */
   const spotOf = useCallback((el: Element): Spot => {
     const box = wrap.current?.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
+    const r = (el.querySelector("[data-dot]") ?? el).getBoundingClientRect();
     if (!box) return { x: 0, y: 0, w: 0, h: 0 };
     return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, w: box.width, h: box.height };
   }, []);
@@ -255,8 +273,9 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
     setView((v) => ({ center: zoom === 1 ? DEFAULT_CENTER : v.center, zoom }));
   };
 
-  const selectedPin = sel?.kind === "pin" ? LIVE_PINS.find((p) => p.key === sel.key) ?? null : null;
-  const pinScale = 1 / view.zoom;
+  const selectedPin = sel?.kind === "pin" ? pins.find((p) => p.key === sel.key) ?? null : null;
+  /** Map units per screen pixel inside the zoomed group: pins and names are drawn in pixels. */
+  const pinScale = unitsPerPx / view.zoom;
   // On narrow screens (phones) the card docks to the edge of the map away
   // from the pin: the bottom for a northern pin, the top for a southern one.
   const dock: "top" | "bottom" | null = sel && sel.w < 420 ? (sel.y > sel.h / 2 ? "top" : "bottom") : null;
@@ -285,9 +304,9 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
         projection="geoMercator"
         // Mainland India plus the Andaman & Nicobar Islands fill the
         // 800 × 900 box.
-        projectionConfig={{ center: DEFAULT_CENTER, scale: 1350 }}
-        width={800}
-        height={900}
+        projectionConfig={{ center: DEFAULT_CENTER, scale: MAP_SCALE }}
+        width={MAP_W}
+        height={MAP_H}
         className={styles.svg}
         role="group"
         aria-label={labels.map}
@@ -307,8 +326,11 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
         >
           <g aria-hidden="true">
             <Geographies geography="/geo/india-states.json?v=4">
-              {({ geographies }: { geographies: Array<{ rsmKey: string; properties: Record<string, string> }> }) =>
-                geographies.map((geo) => {
+              {({ geographies }: { geographies: Array<{ rsmKey: string; svgPath?: string; properties: Record<string, string> }> }) => [
+                // A soft outline along the coast and borders, under the states
+                // (their fills cover it inside; their white strokes part them).
+                ...geographies.map((geo) => (geo.svgPath ? <path key={`coast-${geo.rsmKey}`} d={geo.svgPath} className={styles.coast} /> : null)),
+                ...geographies.map((geo) => {
                   const geoName: string = geo.properties?.name ?? geo.properties?.NAME_1 ?? "";
                   const slug = INDIA_STATE_NAME_TO_SLUG[geoName];
                   const state = slug ? INDIA_STATES.find((s) => s.slug === slug) : undefined;
@@ -330,23 +352,35 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
                       onMouseLeave={() => {
                         if (sel?.kind === "state" && !sel.pinned) setSel(null);
                       }}
-                      style={indiaStateStyle(on)}
+                      className={styles.state}
+                      style={indiaStateStyle(on, INDIA_STATE_TONE[geoName] ?? 0)}
                     />
                   );
-                })
-              }
+                }),
+              ]}
             </Geographies>
           </g>
 
-          {LIVE_PINS.map((pin, i) => {
+          {pins.map((pin, i) => {
             const on = sel?.kind === "pin" && sel.key === pin.key;
+            const side = sides[pin.key] ?? null;
+            const name = side ? names.get(pin.key) : "";
+            const g = PIN.labelGap;
+            const text =
+              side === "right"
+                ? { x: g, y: 0, anchor: "start" as const, baseline: "central" as const }
+                : side === "left"
+                  ? { x: -g, y: 0, anchor: "end" as const, baseline: "central" as const }
+                  : side === "top"
+                    ? { x: 0, y: -g - 2, anchor: "middle" as const, baseline: "auto" as const }
+                    : { x: 0, y: g + 2, anchor: "middle" as const, baseline: "hanging" as const };
             return (
               <g key={pin.key} className={`ftp-hue-${pin.hue}`}>
                 {pin.moved && (
                   <>
                     <Line from={[pin.lng, pin.lat]} to={[pin.pinLng, pin.pinLat]} className={styles.leader} strokeWidth={1.5 * pinScale} />
                     <Marker coordinates={[pin.lng, pin.lat]}>
-                      <circle r={3 * pinScale} className={styles.anchor} />
+                      <circle r={2.4 * pinScale} className={styles.anchor} />
                     </Marker>
                   </>
                 )}
@@ -370,13 +404,26 @@ export default function DrillDownMap({ locale, labels, renderCard }: DrillDownMa
                     }}
                   >
                     <g transform={`scale(${pinScale})`}>
-                      {/* An invisible, larger target for fingers */}
-                      <circle r={30} className={styles.pinHit} />
-                      <circle r={13} className={styles.pinPing} style={{ animationDelay: `${(i % 5) * 0.55}s` }} />
-                      <circle r={21} className={styles.pinHalo} />
-                      <circle r={12.5} className={styles.pinDot} />
-                      <circle r={4.2} className={styles.pinCore} />
-                      <circle r={17} className={styles.pinRing} />
+                      {/* An invisible, larger target for fingers (40 px) */}
+                      <circle r={PIN.hit} className={styles.pinHit} />
+                      <circle r={PIN.ping} className={styles.pinPing} style={{ animationDelay: `${(i % 5) * 0.55}s` }} />
+                      <circle r={PIN.halo} className={styles.pinHalo} />
+                      <circle r={PIN.dot} className={styles.pinDot} data-dot="" />
+                      <circle r={PIN.core} className={styles.pinCore} />
+                      <circle r={PIN.ring} className={styles.pinRing} />
+                      {name ? (
+                        <text
+                          x={text.x}
+                          y={text.y}
+                          textAnchor={text.anchor}
+                          dominantBaseline={text.baseline}
+                          className={styles.pinLabel}
+                          style={{ fontSize: PIN.label }}
+                          aria-hidden="true"
+                        >
+                          {name}
+                        </text>
+                      ) : null}
                     </g>
                   </a>
                 </Marker>

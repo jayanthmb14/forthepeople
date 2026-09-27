@@ -20,8 +20,10 @@
 //                    hover → --ftp-map-locked-hover
 //    tooltip/legend→ white card, 1 px border, soft shadow
 //
-//    India map     → indiaStateStyle(): pale land, brand tint on hover /
-//                    tap (states open their page; live DISTRICTS are pins)
+//    India map     → indiaStateStyle(): soft pastel land in four tones
+//                    (neighbours never share one), clearer brand blue on
+//                    hover / tap (states open their page; live DISTRICTS
+//                    are pins)
 //
 //  Map BEHAVIOUR (clicks, projections, zoom) stays in each map file.
 //
@@ -97,16 +99,44 @@ export function geoStyle(
 }
 
 /**
- * The India map on the home page (DrillDownMap): every state is the same
- * pale land colour (a state is never painted "live" — only districts are
- * live, and they are pins). Hover or tap tints a state brand-blue to show
- * that it opens the state's page.
+ * The India map's land: four soft pastel blues (the live fill mixed with
+ * white), so neighbouring states read apart without drawing lines. (The
+ * state shapes in /geo/india-states.json are made of district pieces, so
+ * any outline would also draw every district seam.)
  */
-export function indiaStateStyle(selected = false): { default: GeoStyle; hover: GeoStyle; pressed: GeoStyle } {
+export const INDIA_LAND_TONES = [22, 44, 33, 55].map((pct) => `color-mix(in srgb, var(--ftp-map-live-fill) ${pct}%, var(--ftp-surface))`);
+/** The legend's land swatch. */
+export const INDIA_LAND_FILL = INDIA_LAND_TONES[2];
+
+/**
+ * Tone per state (geo name in india-states.json), chosen so that no two
+ * neighbouring states share one (a 4-colouring of the states' borders,
+ * worked out once from the shapes; Tripura set by hand). A state that is
+ * not listed takes tone 0.
+ */
+export const INDIA_STATE_TONE: Record<string, 0 | 1 | 2 | 3> = {
+  "Andaman and Nicobar": 0, "Andhra Pradesh": 0, "Arunachal Pradesh": 1, Assam: 0, Bihar: 3, Chandigarh: 0,
+  Chhattisgarh: 1, Delhi: 2, "Dadra and Nagar Haveli and Daman and Diu": 2, Goa: 2, Gujarat: 1, Haryana: 1,
+  "Himachal Pradesh": 0, "Jammu and Kashmir": 1, Jharkhand: 2, Karnataka: 1, Kerala: 0, Ladakh: 2, Lakshadweep: 0,
+  "Madhya Pradesh": 2, Maharashtra: 0, Manipur: 1, Meghalaya: 1, Mizoram: 2, Nagaland: 2, Odisha: 3, Puducherry: 1,
+  Punjab: 2, Rajasthan: 3, Sikkim: 0, "Tamil Nadu": 2, Telangana: 2, Tripura: 3, "Uttar Pradesh": 0, Uttarakhand: 1,
+  "West Bengal": 1,
+};
+
+/**
+ * The India map on the home page (DrillDownMap): every state in one of
+ * the soft land tones (a state is never painted "live" — only districts
+ * are live, and they are pins). The stroke is the fill's own colour, a
+ * little wide, so the district pieces inside a state join without seams.
+ * Hover or tap turns a state a clearer brand blue to show that it opens
+ * the state's page.
+ */
+export function indiaStateStyle(selected = false, tone = 0): { default: GeoStyle; hover: GeoStyle; pressed: GeoStyle } {
+  const fill = INDIA_LAND_TONES[tone] ?? INDIA_LAND_TONES[0];
   const hot: GeoStyle = {
-    fill: "var(--ftp-map-live-fill)",
-    stroke: "var(--ftp-map-live)",
-    strokeWidth: 1.2,
+    fill: "var(--ftp-map-live-hover)",
+    stroke: "var(--ftp-map-live-hover)",
+    strokeWidth: 1.6,
     outline: "none",
     cursor: "pointer",
   };
@@ -114,12 +144,13 @@ export function indiaStateStyle(selected = false): { default: GeoStyle; hover: G
     default: selected
       ? hot
       : {
-          fill: "var(--ftp-map-locked)",
-          stroke: "var(--ftp-surface)",
-          strokeWidth: 0.9,
+          fill,
+          stroke: fill,
+          strokeWidth: 1.6,
+          strokeLinejoin: "round",
           outline: "none",
           cursor: "pointer",
-          transition: "fill 150ms",
+          transition: "fill 150ms, stroke 150ms",
         },
     hover: hot,
     pressed: hot,
