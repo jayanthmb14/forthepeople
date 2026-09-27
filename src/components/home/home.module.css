@@ -245,7 +245,11 @@
   height: 100%;
   background: var(--ftp-surface-2);
 }
-/* Re-colour DrillDownMap (it paints inline, hence !important) — see IndiaMapCard. */
+/* DrillDownMap's own frame (inline surface-2 background, 8 px radius,
+   420 px min-height) is replaced by .mapFrame above, so flatten it here.
+   Its state colours already come from the tokens via
+   src/components/map/mapTheme.tsx (--ftp-map-live / --ftp-map-locked),
+   so no colour overrides are needed on the home page. */
 .mapCanvas > div {
   background: transparent !important;
   border-radius: 0 !important;
@@ -257,17 +261,6 @@
   height: 100%;
   transform: scale(1.18);
   transform-origin: center;
-}
-.mapCanvas :global(.ftp-geo-active) {
-  fill: var(--ftp-map-live) !important;
-  stroke: var(--ftp-surface) !important;
-}
-.mapCanvas :global(.ftp-geo-active):hover {
-  fill: var(--ftp-brand-deep) !important;
-}
-.mapCanvas :global(.ftp-geo-locked) {
-  fill: var(--ftp-map-locked) !important;
-  stroke: var(--ftp-surface) !important;
 }
 /* DrillDownMap's own legend is its last child; ours replaces it. */
 .mapCanvas > div > div:last-child {
