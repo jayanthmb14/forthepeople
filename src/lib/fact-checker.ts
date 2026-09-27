@@ -5,10 +5,26 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// ForThePeople.in — Fact Checker
-// Verifies each module's data for a given district
+// ForThePeople.in — Fact Checker (admin-triggered only)
+// Verifies each module's data for a given district.
+//
+// v5 rules (Sept 2026 audit):
+//   - An AI failure is an ERROR, never "0 issues": runModuleFactCheck()
+//     throws, and the admin routes record the module as "failed".
+//   - The model has no web access, so it must not "research" facts. Phone
+//     numbers it suggests are NEVER written to Leader / PoliceStation /
+//     GovOffice; they go to the admin review queue (NewsActionQueue,
+//     dataType "contact-phone") and are listed in the check's details.
+//   - Likewise a "not born here" verdict no longer deletes a famous
+//     personality; it is queued for review ("famous-personality-removal").
+//   - Prompts carry today's date and the district's own state, and the
+//     result details name the model that actually answered.
+// Model routing: purpose "fact-check" = Claude Sonnet → Haiku, no free
+// fallback (src/lib/ai-models.ts).
 // ═══════════════════════════════════════════════════════════
-import { callAI } from "@/lib/ai-provider";
+import { Prisma } from "@/generated/prisma";
+import { callAIJSON } from "@/lib/ai-provider";
+import { asArray } from "@/lib/ai-json";
 import { prisma } from "@/lib/db";
 
 export type CheckResult = {
@@ -30,47 +46,116 @@ type DistrictWithState = {
   state: { name: string };
 };
 
-// ── AI caller (routed through OpenRouter) ──────────────────
-async function callOpus(prompt: string): Promise<string> {
-  try {
-    const res = await callAI({
-      systemPrompt: "You are a fact-checker. Respond with valid JSON only.",
-      userPrompt: prompt,
-      purpose: "fact-check",
-      jsonMode: true,
-      maxTokens: 2048,
-    });
-    return res.text;
-  } catch (err) {
-    return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+/** Thrown when the AI could not answer: the module check FAILED (not "0 issues"). */
+export class FactCheckAIError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FactCheckAIError";
   }
 }
 
-function parseJSON<T>(text: string): T | null {
-  try {
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-    return JSON.parse(match ? match[1].trim() : text.trim());
-  } catch {
-    return null;
+// ── AI caller (routed through OpenRouter, purpose "fact-check") ──
+/** Collects the models that actually answered during one module check. */
+class FactCheckAI {
+  readonly models = new Set<string>();
+
+  /** Ask for a JSON object. Throws FactCheckAIError when no model answers. */
+  async ask(prompt: string): Promise<Record<string, unknown>> {
+    try {
+      const { data, model } = await callAIJSON<Record<string, unknown>>({
+        systemPrompt:
+          "You are a careful fact-checker for an Indian public-data website. You do not have web access: " +
+          "judge only from what you reliably know, and answer \"unknown\" / null when you are not sure. " +
+          "Never guess phone numbers, names or dates. Respond with valid JSON only.",
+        userPrompt: prompt,
+        purpose: "fact-check",
+        jsonShape: "object",
+        maxTokens: 2048,
+        temperature: 0.1,
+      });
+      this.models.add(model);
+      return data;
+    } catch (err) {
+      throw new FactCheckAIError(`AI fact-check failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
+
+  /** Ask, then pull the list at `listKey` out of the answer ([] when absent). */
+  async askList<T>(prompt: string, listKey: string): Promise<T[]> {
+    return asArray<T>(await this.ask(prompt), listKey);
+  }
+}
+
+/** "September 2026" — the model is told what "now" is. */
+function currentMonthYear(): string {
+  return new Date().toLocaleString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+}
+
+function isUsablePhone(phone: unknown): phone is string {
+  if (typeof phone !== "string") return false;
+  const p = phone.trim().toLowerCase();
+  return p !== "" && p !== "null" && p !== "unknown" && p !== "n/a" && /\d{6,}/.test(p.replace(/[\s-]/g, ""));
+}
+
+interface ReviewSuggestion {
+  districtId: string;
+  dataType: "contact-phone" | "famous-personality-removal";
+  headline: string;
+  source?: unknown;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Put an AI suggestion in the admin review queue. Never throws: a queue
+ * write failing must not fail the whole check (the suggestion is still in
+ * the check's details).
+ */
+async function queueForReview(s: ReviewSuggestion, model: string): Promise<void> {
+  const src = typeof s.source === "string" && /^https?:\/\//i.test(s.source.trim()) ? s.source.trim() : `fact-check:${model}`;
+  await prisma.newsActionQueue
+    .create({
+      data: {
+        districtId: s.districtId,
+        dataType: s.dataType,
+        extractedData: { ...s.data, suggestedBy: model, origin: "fact-check" } as unknown as Prisma.InputJsonValue,
+        sourceUrl: src.slice(0, 500),
+        headline: s.headline.slice(0, 300),
+        confidence: 0.5,
+        status: "pending",
+      },
+    })
+    .catch((err) => console.error("[fact-check] could not queue suggestion:", err instanceof Error ? err.message : err));
 }
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ── Module routers ─────────────────────────────────────────
 
+/**
+ * Run one module's check. Throws FactCheckAIError when the AI could not
+ * answer (callers record the module as "failed", not "passed").
+ */
 export async function runModuleFactCheck(
   district: DistrictWithState,
   module: string
 ): Promise<CheckResult> {
+  const ai = new FactCheckAI();
+  const result = await runChecker(district, module, ai);
+  if (ai.models.size > 0) {
+    result.details = { ...result.details, aiModel: [...ai.models].join(", ") };
+  }
+  return result;
+}
+
+async function runChecker(district: DistrictWithState, module: string, ai: FactCheckAI): Promise<CheckResult> {
   switch (module) {
-    case "leadership":         return checkLeadership(district);
-    case "famous-personalities": return checkFamousPersonalities(district);
-    case "finance-budget":     return checkBudget(district);
-    case "police":             return checkPolice(district);
+    case "leadership":         return checkLeadership(district, ai);
+    case "famous-personalities": return checkFamousPersonalities(district, ai);
+    case "finance-budget":     return checkBudget(district, ai);
+    case "police":             return checkPolice(district, ai);
     case "schools":            return checkSchools(district);
-    case "elections":          return checkElections(district);
-    case "offices":            return checkOffices(district);
+    case "elections":          return checkElections(district, ai);
+    case "offices":            return checkOffices(district, ai);
     case "schemes":            return checkSchemes(district);
     case "local-industries":   return checkIndustries(district);
     case "population":         return checkPopulation(district);
@@ -96,7 +181,7 @@ export async function runModuleFactCheck(
 }
 
 // ── LEADERSHIP ─────────────────────────────────────────────
-async function checkLeadership(district: DistrictWithState): Promise<CheckResult> {
+async function checkLeadership(district: DistrictWithState, ai: FactCheckAI): Promise<CheckResult> {
   const leaders = await prisma.leader.findMany({
     where: { districtId: district.id },
     orderBy: { tier: "asc" },
@@ -104,30 +189,36 @@ async function checkLeadership(district: DistrictWithState): Promise<CheckResult
   if (leaders.length === 0) return { itemsChecked: 0, issuesFound: 0, staleItems: 0, details: { message: "No leadership data" } };
 
   const issues: unknown[] = [];
+  const phoneSuggestions: unknown[] = [];
   const BATCH = 10;
 
   for (let i = 0; i < leaders.length; i += BATCH) {
     const batch = leaders.slice(i, i + BATCH);
-    const list = batch.map((l) => `- ${l.name}: ${l.role}, Party: ${l.party ?? "N/A"}, Constituency: ${l.constituency ?? "N/A"}, Phone: ${l.phone ?? "missing"}`).join("\n");
+    const list = batch.map((l, j) => `${j + 1}. ${l.name}: ${l.role}, Party: ${l.party ?? "N/A"}, Constituency: ${l.constituency ?? "N/A"}`).join("\n");
 
-    const prompt = `Fact-check these officials for ${district.name} district, ${district.state.name}, India as of March 2026.
-Verify each person currently holds this position. Check party affiliation and constituency.
-For any MISSING phone numbers, research aggressively — government office numbers are almost always publicly available.
+    const prompt = `Today is ${currentMonthYear()}. Fact-check these officials for ${district.name} district, ${district.state.name}, India.
+For each, say whether they still hold this position and whether party and constituency are right, as far as you reliably know.
+If you are not sure, set "correct" to null and say so in "issue". Only give a phone number if you are certain it is the official published office number; otherwise null.
 
 ${list}
 
-Return ONLY JSON array:
-[{"name":"...","role":"...","correct":true/false,"issue":"...","fix":"...","phone":"found number or null"}]`;
+Return ONLY a JSON object:
+{"results":[{"index":1,"name":"...","role":"...","correct":true|false|null,"issue":"...","fix":"...","phone":null}]}`;
 
-    const text = await callOpus(prompt);
-    const raw = parseJSON<unknown>(text);
-    const parsed = (Array.isArray(raw) ? raw : []) as Array<{ correct: boolean; issue?: string; phone?: string; name?: string; fix?: string }>;
+    const parsed = await ai.askList<{ index?: number; correct?: boolean | null; issue?: string; phone?: unknown; name?: string; fix?: string }>(prompt, "results");
     for (let j = 0; j < parsed.length; j++) {
       const item = parsed[j];
-      if (!item.correct && item.issue) issues.push({ name: item.name, issue: item.issue, fix: item.fix });
-      // Update phone number if found
-      if (item.phone && item.phone !== "null" && !item.phone.includes("null") && batch[j] && !batch[j].phone) {
-        await prisma.leader.update({ where: { id: batch[j].id }, data: { phone: item.phone } }).catch(() => {});
+      if (!item || typeof item !== "object") continue;
+      if (item.correct === false && item.issue) issues.push({ name: item.name, issue: item.issue, fix: item.fix });
+      // Match by the index we gave (fall back to position), and only for leaders WITHOUT a phone.
+      const leader = batch[(typeof item.index === "number" ? item.index : j + 1) - 1];
+      if (leader && !leader.phone && isUsablePhone(item.phone)) {
+        const suggestion = { table: "Leader", recordId: leader.id, name: leader.name, role: leader.role, field: "phone", suggestedValue: item.phone.trim() };
+        phoneSuggestions.push(suggestion);
+        await queueForReview(
+          { districtId: district.id, dataType: "contact-phone", headline: `Phone for ${leader.name} (${leader.role}): ${item.phone.trim()}`, data: suggestion },
+          [...ai.models].pop() ?? "unknown",
+        );
       }
     }
     if (i + BATCH < leaders.length) await delay(2000);
@@ -137,58 +228,58 @@ Return ONLY JSON array:
     itemsChecked: leaders.length,
     issuesFound: issues.length,
     staleItems: 0,
-    details: { issues },
+    details: { issues, phoneSuggestionsQueued: phoneSuggestions.length, phoneSuggestions },
   };
 }
 
 // ── FAMOUS PERSONALITIES ───────────────────────────────────
-async function checkFamousPersonalities(district: DistrictWithState): Promise<CheckResult> {
+async function checkFamousPersonalities(district: DistrictWithState, ai: FactCheckAI): Promise<CheckResult> {
   const people = await prisma.famousPersonality.findMany({ where: { districtId: district.id } });
   if (people.length === 0) return { itemsChecked: 0, issuesFound: 0, staleItems: 0, details: { message: "No data" } };
 
   const list = people.map((p) => `- ${p.name}: ${p.bio ?? "N/A"}, birthPlace: ${p.birthPlace ?? "N/A"}, bornInDistrict: ${p.bornInDistrict}`).join("\n");
 
-  const prompt = `Verify each person was BORN in ${district.name} district, ${district.state.name}, India.
+  const prompt = `Verify whether each person was BORN in ${district.name} district, ${district.state.name}, India.
 STRICT RULES:
 - Must be BORN in this district (not just lived, worked, or associated)
 - Dr. Rajkumar was born in Gajanur, Erode, Tamil Nadu — NOT in ${district.name}
-- Verify birthplace for each person carefully
+- If you do not reliably know the birthplace, set "correctDistrict" to null and "shouldRemove" to false
 
 ${list}
 
-Return ONLY JSON array:
-[{"name":"...","birthPlace":"...","correctDistrict":true/false,"shouldRemove":false/true,"reason":"..."}]`;
+Return ONLY a JSON object:
+{"results":[{"name":"...","birthPlace":"...","correctDistrict":true|false|null,"shouldRemove":false,"reason":"..."}]}`;
 
-  const text = await callOpus(prompt);
-  const raw = parseJSON<unknown>(text);
-  const parsed = (Array.isArray(raw) ? raw : []) as Array<{ name: string; shouldRemove: boolean; reason?: string }>;
+  const parsed = await ai.askList<{ name?: string; shouldRemove?: boolean; reason?: string; birthPlace?: string }>(prompt, "results");
 
-  const toRemove: string[] = [];
+  // A removal is a suggestion for a human, never an automatic delete.
   const issues: unknown[] = [];
   for (const item of parsed) {
-    if (item.shouldRemove) {
-      const person = people.find((p) => p.name === item.name);
-      if (person) {
-        toRemove.push(person.id);
-        issues.push({ name: item.name, reason: item.reason });
-      }
-    }
-    }
-  // Auto-remove wrongly listed personalities
-  if (toRemove.length > 0) {
-    await prisma.famousPersonality.deleteMany({ where: { id: { in: toRemove } } });
+    if (!item || item.shouldRemove !== true) continue;
+    const person = people.find((p) => p.name === item.name);
+    if (!person) continue;
+    issues.push({ name: item.name, reason: item.reason, suggestedBirthPlace: item.birthPlace });
+    await queueForReview(
+      {
+        districtId: district.id,
+        dataType: "famous-personality-removal",
+        headline: `Remove ${person.name}? ${item.reason ?? "birthplace not in this district"}`,
+        data: { table: "FamousPersonality", recordId: person.id, name: person.name, reason: item.reason ?? null, suggestedBirthPlace: item.birthPlace ?? null },
+      },
+      [...ai.models].pop() ?? "unknown",
+    );
   }
 
   return {
     itemsChecked: people.length,
     issuesFound: issues.length,
     staleItems: 0,
-    details: { issues, removed: toRemove.length },
+    details: { issues, removalsQueuedForReview: issues.length },
   };
 }
 
 // ── BUDGET ─────────────────────────────────────────────────
-async function checkBudget(district: DistrictWithState): Promise<CheckResult> {
+async function checkBudget(district: DistrictWithState, ai: FactCheckAI): Promise<CheckResult> {
   const budgets = await prisma.budgetEntry.findMany({
     where: { districtId: district.id },
     take: 30,
@@ -197,17 +288,15 @@ async function checkBudget(district: DistrictWithState): Promise<CheckResult> {
 
   const list = budgets.map((b) => `${b.sector}: Allocated ₹${(b.allocated / 1e7).toFixed(1)}Cr, Spent ₹${(b.spent / 1e7).toFixed(1)}Cr (${b.fiscalYear})`).join("\n");
 
-  const prompt = `Verify these budget figures for ${district.name} district, ${district.state.name}, India.
-Cross-check against Karnataka state budget 2024-25 and typical district allocations.
+  const prompt = `Today is ${currentMonthYear()}. Check whether these budget figures for ${district.name} district, ${district.state.name}, India look plausible
+against the ${district.state.name} state budget and typical district allocations, as far as you reliably know. Flag only clear problems.
 
 ${list}
 
 Return ONLY JSON:
 {"totalChecked":${budgets.length},"issues":[{"sector":"...","problem":"...","expectedRange":"..."}],"summary":"brief"}`;
 
-  const text = await callOpus(prompt);
-  const parsed = parseJSON<{ issues?: unknown[] }>(text);
-  const issues = parsed?.issues ?? [];
+  const issues = await ai.askList<unknown>(prompt, "issues");
 
   return {
     itemsChecked: budgets.length,
@@ -218,7 +307,7 @@ Return ONLY JSON:
 }
 
 // ── POLICE ─────────────────────────────────────────────────
-async function checkPolice(district: DistrictWithState): Promise<CheckResult> {
+async function checkPolice(district: DistrictWithState, ai: FactCheckAI): Promise<CheckResult> {
   const stations = await prisma.policeStation.findMany({ where: { districtId: district.id } });
   const leaders = await prisma.leader.findMany({
     where: { districtId: district.id, tier: { gte: 4, lte: 6 } },
@@ -227,28 +316,31 @@ async function checkPolice(district: DistrictWithState): Promise<CheckResult> {
 
   const noPhones = stations.filter((s) => !s.phone).length;
   const issues: unknown[] = [];
+  const phoneSuggestions: unknown[] = [];
 
   if (noPhones > 0) {
-    // Try to fill missing phone numbers
+    issues.push({ type: "missing_phones", count: noPhones });
+    // Ask for numbers the model is SURE of; they go to review, never to the table.
     const missing = stations.filter((s) => !s.phone).slice(0, 10);
     const list = missing.map((s) => `- ${s.name}, ${(s as Record<string, unknown>).address ?? "address unknown"}`).join("\n");
-    const prompt = `Find phone numbers for these police stations in ${district.name}, ${district.state.name}, India.
-These are public government numbers — almost always available on district websites, state portals, or Google Maps.
+    const prompt = `Which of these police stations in ${district.name}, ${district.state.name}, India have an official published phone number that you know for certain?
+Give null for any you are not certain of. Do not guess.
 
 ${list}
 
-Return ONLY JSON array: [{"name":"...","phone":"STD-number or null","source":"..."}]`;
+Return ONLY a JSON object: {"results":[{"name":"...","phone":null,"source":"URL or null"}]}`;
 
-    const text = await callOpus(prompt);
-    const parsed = parseJSON<Array<{ name: string; phone?: string }>>(text);
-    if (parsed) {
-      for (const item of parsed) {
-        if (item.phone && item.phone !== "null") {
-          const station = missing.find((s) => s.name === item.name);
-          if (station) await prisma.policeStation.update({ where: { id: station.id }, data: { phone: item.phone } }).catch(() => {});
-        }
-      }
-      issues.push({ type: "missing_phones", count: noPhones });
+    const parsed = await ai.askList<{ name?: string; phone?: unknown; source?: unknown }>(prompt, "results");
+    for (const item of parsed) {
+      if (!item || !isUsablePhone(item.phone)) continue;
+      const station = missing.find((s) => s.name === item.name);
+      if (!station) continue;
+      const suggestion = { table: "PoliceStation", recordId: station.id, name: station.name, field: "phone", suggestedValue: item.phone.trim(), source: item.source ?? null };
+      phoneSuggestions.push(suggestion);
+      await queueForReview(
+        { districtId: district.id, dataType: "contact-phone", headline: `Phone for ${station.name}: ${item.phone.trim()}`, source: item.source, data: suggestion },
+        [...ai.models].pop() ?? "unknown",
+      );
     }
   }
 
@@ -258,7 +350,7 @@ Return ONLY JSON array: [{"name":"...","phone":"STD-number or null","source":"..
     itemsChecked: stations.length + 1,
     issuesFound: issues.length,
     staleItems: 0,
-    details: { stationCount: stations.length, noPhoneCount: noPhones, issues },
+    details: { stationCount: stations.length, noPhoneCount: noPhones, issues, phoneSuggestionsQueued: phoneSuggestions.length, phoneSuggestions },
   };
 }
 
@@ -276,7 +368,7 @@ async function checkSchools(district: DistrictWithState): Promise<CheckResult> {
 }
 
 // ── ELECTIONS ──────────────────────────────────────────────
-async function checkElections(district: DistrictWithState): Promise<CheckResult> {
+async function checkElections(district: DistrictWithState, ai: FactCheckAI): Promise<CheckResult> {
   const elections = await prisma.electionResult.findMany({
     where: { districtId: district.id },
     orderBy: { year: "desc" },
@@ -285,47 +377,51 @@ async function checkElections(district: DistrictWithState): Promise<CheckResult>
   if (elections.length === 0) return { itemsChecked: 0, issuesFound: 0, staleItems: 0, details: { message: "No election data" } };
 
   const list = elections.map((e) => `${e.constituency}: Winner ${e.winnerName} (${e.winnerParty}) in ${e.year}`).join("\n");
-  const prompt = `Verify these election results for ${district.name} district, ${district.state.name}, India.
+  const prompt = `Verify these election results for ${district.name} district, ${district.state.name}, India, as far as you reliably know.
+Flag only results you are confident are wrong.
 
 ${list}
 
 Return ONLY JSON:
 {"totalChecked":${elections.length},"issues":[{"constituency":"...","problem":"...","correct":"..."}],"summary":"brief"}`;
 
-  const text = await callOpus(prompt);
-  const parsed = parseJSON<{ issues?: unknown[] }>(text);
+  const issues = await ai.askList<unknown>(prompt, "issues");
 
   return {
     itemsChecked: elections.length,
-    issuesFound: parsed?.issues?.length ?? 0,
+    issuesFound: issues.length,
     staleItems: 0,
-    details: { issues: parsed?.issues ?? [] },
+    details: { issues },
   };
 }
 
 // ── OFFICES ────────────────────────────────────────────────
-async function checkOffices(district: DistrictWithState): Promise<CheckResult> {
+async function checkOffices(district: DistrictWithState, ai: FactCheckAI): Promise<CheckResult> {
   const offices = await prisma.govOffice.findMany({ where: { districtId: district.id } });
   const noPhone = offices.filter((o) => !o.phone).length;
+  const phoneSuggestions: unknown[] = [];
 
   if (noPhone > 0) {
+    // Ask for numbers the model is SURE of; they go to review, never to the table.
     const missing = offices.filter((o) => !o.phone).slice(0, 10);
     const list = missing.map((o) => `- ${o.name}, ${o.address ?? "unknown"}`).join("\n");
-    const prompt = `Find phone numbers for these government offices in ${district.name}, ${district.state.name}, India.
-All these are public government offices — numbers are on district websites and state portals.
+    const prompt = `Which of these government offices in ${district.name}, ${district.state.name}, India have an official published phone number that you know for certain?
+Give null for any you are not certain of. Do not guess.
 
 ${list}
 
-Return ONLY JSON array: [{"name":"...","phone":"number or null","source":"..."}]`;
-    const text = await callOpus(prompt);
-    const parsed = parseJSON<Array<{ name: string; phone?: string }>>(text);
-    if (parsed) {
-      for (const item of parsed) {
-        if (item.phone && item.phone !== "null") {
-          const office = missing.find((o) => o.name === item.name);
-          if (office) await prisma.govOffice.update({ where: { id: office.id }, data: { phone: item.phone } }).catch(() => {});
-        }
-      }
+Return ONLY a JSON object: {"results":[{"name":"...","phone":null,"source":"URL or null"}]}`;
+    const parsed = await ai.askList<{ name?: string; phone?: unknown; source?: unknown }>(prompt, "results");
+    for (const item of parsed) {
+      if (!item || !isUsablePhone(item.phone)) continue;
+      const office = missing.find((o) => o.name === item.name);
+      if (!office) continue;
+      const suggestion = { table: "GovOffice", recordId: office.id, name: office.name, field: "phone", suggestedValue: item.phone.trim(), source: item.source ?? null };
+      phoneSuggestions.push(suggestion);
+      await queueForReview(
+        { districtId: district.id, dataType: "contact-phone", headline: `Phone for ${office.name}: ${item.phone.trim()}`, source: item.source, data: suggestion },
+        [...ai.models].pop() ?? "unknown",
+      );
     }
     await delay(2000);
   }
@@ -334,7 +430,7 @@ Return ONLY JSON array: [{"name":"...","phone":"number or null","source":"..."}]
     itemsChecked: offices.length,
     issuesFound: noPhone > 0 ? 1 : 0,
     staleItems: 0,
-    details: { total: offices.length, missingPhones: noPhone },
+    details: { total: offices.length, missingPhones: noPhone, phoneSuggestionsQueued: phoneSuggestions.length, phoneSuggestions },
   };
 }
 
