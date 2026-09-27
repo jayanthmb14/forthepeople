@@ -1,4 +1,4 @@
-# ForThePeople.in — Design System v5 "Calm"
+# ForThePeople.in — Design System v5.1 "Warm Calm"
 
 The site should feel **calm, clear and trustworthy**: a quiet blue-white page,
 white cards, one blue for actions, and colour only where it tells you which
@@ -6,12 +6,20 @@ dashboard you are in. Anyone should understand a screen at a glance — a
 5-year-old and a 60-year-old — and every number stays honest: a date and a
 source beside it, and a plain warning when it is old.
 
-v5 replaces v4 "Rang" (too many emoji, saturated gradient bands: "cartoonish")
-and keeps what worked in v3 (quiet, precise) without its plainness.
+v5 "Calm" replaced v4 "Rang" (too many emoji, saturated gradient bands:
+"cartoonish") and kept what worked in v3 (quiet, precise) without its
+plainness. **v5.1 "Warm Calm"** (Sept 2026) keeps every v5 rule and adds
+warmth: soft pastel washes on heroes, tiles and cards, a 2 px pastel ribbon
+under the header and footer, gold and silver for money and metals, crafted
+SVG pictures instead of emoji for categories, and a little motion that has a
+job (§8).
 
 Reference implementation: the kit in `src/components/district/ui.tsx`,
-`visuals.tsx` and `DetailSheet.tsx`; tokens in `src/app/globals.css`; module
-hues in `src/lib/design/hues.ts`.
+`visuals.tsx` and `DetailSheet.tsx`; shared SVG glyphs in
+`src/components/graphics/`; the site chrome in `src/components/home/`
+(`HeaderBar`, `StatusStrip`, `Footer`) and `src/components/common/ReportButton.tsx`;
+the district shell in `src/components/district/shell/`; tokens in
+`src/app/globals.css`; module hues in `src/lib/design/hues.ts`.
 
 ---
 
@@ -33,7 +41,9 @@ hues in `src/lib/design/hues.ts`.
 ## 2. Colour
 
 All colours are CSS variables in `globals.css`. **No hex in components** —
-write `var(--ftp-brand)`, not `#2563EB`.
+write `var(--ftp-brand)`, not `#2563EB`. Hex values live only in token
+definitions (see the gold and silver note below for the one temporary
+exception).
 
 | Token | Value | Use | Contrast |
 |---|---|---|---|
@@ -57,6 +67,40 @@ The legacy names (`--color-*`, `--ftp-color-*`) still exist for older pages
 and now carry the same v5 values. The tricolour stays ceremonial (never
 stripes, never a chakra); v5 pages carry no saffron/green washes.
 Contrast is checked by `tests/design-tokens.test.ts`.
+
+### Gold and silver (v5.1)
+
+Gold and silver are for **money and metals only**: the gold and silver price
+cards and ticker pictures, the budget tile and the "spent" ring on the
+district overview, the Founding Builder plan, and the bronze → platinum
+month medals on the supporters wall. Text on gold always uses the deep gold,
+never white.
+
+**`--ftp-gold*` and `--ftp-silver` are not defined in `globals.css` yet.**
+Until they are, each area defines its own family once, in a token block at
+the top of its CSS file, and every rule reads those variables:
+
+| Where | Variables | Notes |
+|---|---|---|
+| `src/components/home/home.module.css` | `--home-gold`, `--home-gold-tint`, `--home-gold-ring`, `--home-silver`, `--home-silver-tint`, `--home-silver-ring` | with dark-mode values |
+| `src/components/home/glyphs.module.css` | `--g-gold-hi/-/-lo`, `--g-silver-hi/-/-lo` | coin and silver-bar pictures |
+| `src/app/[locale]/[state]/[district]/district-shell.css` | `--ov-gold`, `--ov-gold-deep`, `--ov-gold-pop`, `--ov-gold-tint`, `--ov-silver` | already read `var(--ftp-gold, …)` etc., so they switch over by themselves |
+| `src/components/support/look.module.css` (`.metal`) | `--sup-gold*`, `--sup-bronze*`, `--sup-platinum*` | plan art and month medals |
+
+To do: add `--ftp-gold`, `--ftp-gold-deep`, `--ftp-gold-pop`,
+`--ftp-gold-tint` and `--ftp-silver` (the names `district-shell.css` already
+reads) to `globals.css` with a contrast test, then point the other three
+files at them and delete their local copies. New code must not add a fifth
+family.
+
+### Pastel ribbon
+
+A 2 px line along the bottom of the header (`.header::after` in
+`src/components/home/chrome.module.css`) and on the footer: the four
+"people" hues of the site — blue (`--ftp-map-live-fill`), violet
+(`--ftp-features`), green (`--ftp-live`) and amber (`--ftp-warn`) — each mixed
+with white so it stays soft, never neon. It is the only gradient in the
+chrome.
 
 ### Module hues — identity only
 
@@ -125,7 +169,7 @@ district, not its whole state).
 - Local-script names sit beside the English name in `--hue-deep`, tagged with
   `lang` (`scriptLang()`), so the Noto fallback draws them.
 
-## 4. Emoji
+## 4. Emoji and pictures
 
 **Emoji appear only as module identity**, in exactly three places:
 
@@ -139,6 +183,35 @@ titles, chart titles, tickers, steps, callouts or running text.
 Pictures that **encode data** (a pictogram "8 of every 10 houses", a weather
 picture, how-it-works steps, a countdown) use **simple monochrome Lucide
 icons in the hue**, not emoji.
+
+**Categories get crafted SVG glyphs, never emoji** (v5.1).
+`src/components/graphics/` holds about 40 drawn glyphs on one 24 px grid, in
+soft duotone that uses only the hue variables (no hex):
+
+- `CategoryGlyph`: a glyph bare, or on a pastel tile (`chip`), 16–48 px.
+- Helpers pick the glyph and hue for a category: `newsTopicGlyph`,
+  `newsStoryGlyph`, `crimeGlyph`, `projectKindGlyph`, `moduleGlyph`, and
+  `categoryGlyph` for any text.
+- `GlyphChips` (filter chips), `GlyphBarList` ("how many of each kind"),
+  `GlyphStack` (a few overlapping chips, e.g. an "All" tile), `GlyphScene`,
+  `GlyphEmptyState` (an empty state with a small illustration).
+- Used today on News (topics, stories, the story sheet), Police (crime types,
+  helplines, the station sheet) and Infrastructure (kinds of project on
+  chips, cards, the sheet and both charts).
+- Adding one: draw it in `glyph-data.ts`, give it a hue in `GLYPH_HUE`
+  (`category-map.ts`), map the words to it, extend
+  `tests/category-glyph.test.ts`.
+
+Other drawn pictures, all SVG in tokens and hue variables:
+
+| Picture | Where | Notes |
+|---|---|---|
+| Weather pictures | `src/components/weather/WeatherArt.tsx` | the weather page uses these, not the kit's `WeatherGlyph`; 13 weather kinds from `src/lib/weather/codes.ts`; gentle motion on the big picture only |
+| Price pictures | `src/components/home/HomeGlyphs.tsx` | coin, silver bar, chart, note, oil drop, sprout (ticker and price cards) |
+| Product marks | `src/components/home/products.tsx` | ForThePeople.in, Connect, Jobs (apps switcher and footer) |
+| District overview art | `src/components/district/shell/overview-art.tsx` | hero landscape, card marks |
+| Courts | `src/app/[locale]/[state]/[district]/courts/_parts/CourtArt.tsx` | the balance scale (grew / shrank) |
+| Support plans | `src/components/support/TierArt.tsx` | one picture per plan |
 
 How the kit enforces it: StatTile, Explainer, EmptyState, Pictogram,
 HowItWorks, CountdownBar, WeatherGlyph, DetailSheet and DetailList still
@@ -177,7 +250,13 @@ replace it with a Lucide icon or remove it.
 - **`EmptyState`** — one honest sentence with a small Lucide icon.
 - **`DetailSheet`** + **`DetailList`** (`DetailSheet.tsx`) — tap anything to
   see everything; bottom sheet on phones, right panel on laptops. Icons, not
-  emoji, in the header chip and rows.
+  emoji, in the header chip and rows. The support checkout popup uses the
+  same sheet.
+
+`src/components/graphics/` (§4): `CategoryGlyph`, `GlyphChips`,
+`GlyphBarList`, `GlyphStack`, `GlyphScene`, `GlyphEmptyState`. The kit's
+`Chips` and `EmptyState` do not take a glyph yet; use the graphics versions
+where a category needs a picture.
 
 `src/components/district/visuals.tsx`:
 
@@ -244,7 +323,12 @@ is true?" always has one answer. It replaces "About this page", the collapsed
 Content, in order:
 
 1. **How fresh** — one row per dataset on the page: name · source (link) ·
-   data date · when we last checked · status chip.
+   data date · when we last checked · status chip. v5.1 adds the
+   **double-check** status from `/api/data/verification`: "Double-checked"
+   (listing each source that agreed or not, with dates), "One source only",
+   "Sources disagree" or "Not double-checked yet". The overview shows a row
+   of coloured chips and a "Double-checked?" column. If the route fails, the
+   panel looks exactly as in v5.
 2. **How we know** — automatic feed / entered by hand / from news (N sources
    agree) / estimate (always labelled).
 3. **Check it yourself** — a direct link to the source page for this district.
@@ -264,16 +348,116 @@ Style (classes in `globals.css`):
 
 ## 8. Motion
 
-Subtle, and only where it helps:
+Subtle, and only where it helps. Every animation has a job, and
+`prefers-reduced-motion` turns **all** of it off (`globals.css` and each
+module's own `@media (prefers-reduced-motion: reduce)` block).
+
+Everywhere:
 
 - one entrance: fade + 6 px rise (`.ftp-rise`, staggered by `--i`);
-- bars and rings grow in once; numbers count up once; a tank has a slow wave;
-- link cards lift 1 px on hover.
+- bars and rings grow in once; numbers count up once (stat tiles, the
+  overview's number tiles, the home stats row); a tank has a slow wave;
+- link cards lift 1 px on hover; menus and sheets slide in once.
 
-No intro splash, no bouncing, no floating, no looping decoration.
-`prefers-reduced-motion` turns all of it off (`globals.css`).
+v5.1 additions, each with a purpose:
 
-## 9. Words
+| Motion | Where | Why / limits |
+|---|---|---|
+| Branded intro, 1.2 s | home (`HomeIntro`) | once per session; any tap or key skips it; recorded as seen for the session |
+| Running price ticker | home (`PriceTicker`) | pauses on hover or focus and has a pause button; under reduced motion it is a still row you can scroll sideways |
+| Live-district ping | home map pins | marks what is live |
+| Market-open ping | status strip dot | slow, only while the market is open |
+| Weather picture | weather page | sun turning, rain falling, a cloud drifting; big picture only |
+| Balance sway | courts page | only while loading |
+
+Never: bouncing, motion on text, motion that carries no meaning, or anything
+that runs under reduced motion.
+
+## 9. Site chrome (v5.1)
+
+Built in `src/components/home/` (`chrome.module.css`) and
+`src/components/common/`:
+
+- **Disclaimer line** above the header: `--ftp-surface-2`, 12/17 text, lined
+  up with the header's edges.
+- **Header:** full width and sticky, 56 px. The logo sits in the left corner
+  (24 px in, 28 px from 1440 px) and the actions in the right corner, on a
+  translucent white with a light blur, over the pastel ribbon (§2).
+- **Apps switcher:** hovering the logo with a mouse, or pressing the small ▾
+  next to it (44 px touch area), opens "ForThePeople apps": ForThePeople.in
+  (you are here), Connect and Jobs. Connect and Jobs are marked "Coming
+  soon", are not links, and each has its drawn mark.
+- **Right side:** search, language, "Vote on features", GitHub with the star
+  count, and Support as a soft rose pill (`--ftp-support*`). Below 1024 px,
+  Vote, GitHub and Support move into a "Menu" button; on phones the apps list
+  moves there too, the district chip doubles as search, and the language
+  button always stays in the row.
+- **Status strip** under the header, a labelled group: weekday, date and an
+  IST clock that updates each minute (drawn in the browser only); "Share
+  market open / closed" only when the rules are sure (green dot with a slow
+  ping when open, a grey ring when closed); on district pages "Live data
+  refreshed N ago" when every live feed is on time.
+- **District bar** (district pages): the same IST day, date and time, and a
+  pill such as "3 of 5 live feeds up to date" — green when all are current,
+  amber when any is late. On phones and tablets both sit in one thin line
+  under the bar.
+- **Report button:** a pill "Report a problem" in the bottom-right corner on
+  PC and tablet; a 44 px round flag on phones. It opens a short form (kind of
+  problem, what is wrong, optional email). Focus stays inside, Escape closes.
+  Hidden on admin pages and India module pages. District pages also keep one
+  "Report a mistake" in "Check this data".
+- **Footer:** light, with the same ribbon and a coloured icon chip on each
+  column title; links include Prices today, Vote for a district, Vote on
+  features and GitHub stars; a "Coming soon from ForThePeople" row shows
+  Connect and Jobs as two cards. Phones keep space at the bottom for the
+  Report button.
+
+## 10. District overview (v5.1)
+
+Styles in `district-shell.css`; parts in `src/components/district/shell/`:
+
+- **Hero:** a pastel sky in the district's own colours, a sun glow, hills
+  along the bottom and the landmark drawing (a generic drawn landscape where
+  a district has none). A kicker reads, for example, "Karnataka · 7 taluks".
+- **Number tiles:** each tile in its module's pastel, with a drawn picture, a
+  number that counts up once, and where the number comes from. The budget
+  tile is gold and says "Old year" once that financial year has ended
+  (`shell/fiscal.ts`). A small green shield means the dataset is
+  double-checked; an amber warning means the sources disagree. Tiles wrap so
+  no empty cell is left.
+- **Four picture cards** (`OverviewCard`): a soft wash of the card's hue
+  fading to white, a drawn mark in a white medallion, the title in the deep
+  hue, "View all" as a small pill.
+  - Leaders: round initials badges, and a dashed "?" when a name is not
+    published.
+  - People: a literacy ring ("70 of every 100 people can read and write")
+    and women-vs-men bars.
+  - Projects: one status bar with a legend.
+  - Money (`MoneySnippet`, gold tone): a gold "spent" ring.
+- **Report card** (folded): a soft blue wash and a row of ten coloured bars,
+  one per area.
+- News and alerts stay lower down. The glance row shows only on the
+  overview, not above module pages.
+
+## 11. Support page (v5.1)
+
+- Each plan has its own pastel hue (via `ftp-hue-<name>`, `tier-look.ts`) and
+  a drawn picture: one-time gift **rose** (the support colour), District
+  Champion **blue**, State Champion **teal**, All-India Patron **violet**,
+  Founding Builder **gold** (the yellow hue plus the gold accents, with a gold
+  edge).
+- The header sits on a soft rose-and-blue wash; "How to subscribe" has three
+  coloured steps; the "Where the money goes" bars are coloured.
+- Paying opens a popup on `DetailSheet`. Errors appear only after a field is
+  left, or all together with a short amber note on Continue.
+- The supporters wall and `/contributors` use the same plan colours:
+  initials avatars, a coloured plan tag, month badges as small bronze /
+  silver / gold / platinum medals, and a colour key. A name that looks like a
+  phone number or email is shown as "Supporter".
+- The home support band is soft rose and gold, with a few real supporter
+  names (Founding Builder first) and no amounts.
+
+## 12. Words
 
 - "Government portals and other reputed sources" (or "official government
   portals, accredited research institutions and other reputed sources").
@@ -282,9 +466,11 @@ No intro splash, no bouncing, no floating, no looping decoration.
 - Plain, short sentences. Sentence case. No sales words.
 - Nothing hard-coded: every string is in en + hi + kn (`docs/I18N.md`).
 
-## 10. Checklist before you ship a page
+## 13. Checklist before you ship a page
 
-- [ ] No emoji outside the module chip / sidebar / overview tile.
+- [ ] No emoji outside the module chip / sidebar / overview tile; categories
+      use glyphs from `src/components/graphics`.
+- [ ] Gold / silver only for money and metals, from a token (§2).
 - [ ] No saturated gradient band; big areas use the tint.
 - [ ] No hex colours in the component; tokens and hue variables only.
 - [ ] The first screen shows the answer and the main action.
@@ -293,4 +479,5 @@ No intro splash, no bouncing, no floating, no looping decoration.
 - [ ] The verification section is at the bottom.
 - [ ] Text passes AA (use `--ftp-text` / `--ftp-text-2` / `--hue-deep`).
 - [ ] 44 px touch targets; nothing scrolls sideways at 320 px.
-- [ ] Works with reduced motion; en / hi / kn strings exist.
+- [ ] Every animation has a job and is off under reduced motion; en / hi /
+      kn strings exist.

@@ -10,6 +10,85 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Changed — v5.1 "Warm Calm", round 3 (branches `v51/*`, built 2026-09-27, merged 2026-09-28)
+Ten parallel work-streams, merged into `redesign-v4` on 2026-09-28. Nothing here is deployed until
+the owner reviews and pushes. New strings ship in en + hi + kn (Hindi and Kannada are drafts).
+- **Chrome** (2026-09-27): full-width header with an apps switcher (ForThePeople.in; Connect and
+  Jobs "coming soon"), a status strip (IST clock, share market open / closed, "live data refreshed"
+  on district pages), language menu order rule, compact district-finder chips with a vote card, a
+  floating "Report a problem" button on every page, and a light footer with a pastel ribbon.
+- **Home** (2026-09-27): running price ticker, highlighted hero with count-up stats and a 1.2 s
+  once-per-session intro, a clickable India map, "Explore all of India" as the second section,
+  live districts as chips, Prices today cards, "How we get and check the data" and a support band.
+  Rebuilt every 15 minutes; all motion off under reduced motion.
+- **District pages** (2026-09-27): IST clock and a live-feed pill in the district bar; a colourful
+  overview (hero, number tiles, four picture cards); the glance row only on the overview; "Check
+  this data" shows each dataset's double-check status; ended budgets say "Old year".
+- **Pictures** (2026-09-27): shared SVG category glyphs (`src/components/graphics`) on News, Police
+  and Infrastructure. Untagged stories no longer count as "linked to a data page"; Hyderabad's
+  estimated crime and traffic rows are no longer shown as NCRB counts; project-kind chips count
+  only active projects.
+- **Weather** (2026-09-27): "Tomorrow" and a 7-day forecast from Open-Meteo, with OpenWeather as
+  a second opinion (`/api/data/forecast`); an honest "right now"; only the last 48 h of readings;
+  drawn weather pictures.
+- **Support** (2026-09-27): checkout opens in a popup; each plan has its own colour and drawing;
+  a colourful supporters wall; names that are phone numbers show as "Supporter" on screen (the
+  API still sends them — to fix).
+- **Double-check** (2026-09-27): new `DataVerification` model, five verifiers (freshness, leaders,
+  weather, dams, mandi), the daily `verify-data` cron and `/api/data/verification`
+  (`docs/VERIFICATION.md`). Needs `npm run db:push`.
+- **Courts** (2026-09-27): NJDG collector, `scrape-courts` twice a day, `/api/data/court-pendency`
+  and a new courts page (cases waiting, how old, filed vs decided per year, time to decide).
+- **Collectors** (2026-09-27): JJM tap water, UDISE+ schools, MGNREGA "At a glance" and state
+  e-procurement tenders, each cross-checked before it writes; `src/scraper/lib/collector-registry.ts`.
+  Health facilities and power cuts stay blocked at the source (login or captcha).
+- **Leaders** (2026-09-27): `scripts/fix-leaders-2026-09.ts` (dry run by default; on a snapshot it
+  would add 102 rows, deactivate 105 and update 142) and `docs/LEADERS-VERIFIED-2026-09.md`. Not
+  applied yet.
+- **Crons** (2026-09-28): `vercel.json` now schedules `verify-data`, `scrape-courts`, `scrape-jjm`,
+  `scrape-schools`, `scrape-mgnrega` and `scrape-tenders`; `health-score` runs daily because grades
+  expire after 7 days (19 crons in all, `docs/RUNBOOKS/crons.md`).
+- **Docs** (2026-09-28): ARCHITECTURE, BLUEPRINT-UNIFIED, DESIGN-SYSTEM (v5.1), I18N §1, the crons
+  runbook and `.env.example` updated for all of the above.
+
+### Changed — AI models (2026-09-27)
+- Re-chosen from a test on 28 real headlines scored against Claude Sonnet 5
+  (`docs/RUNBOOKS/ai-models.md`). News sorting: Jev Router first (free while it routes to a free
+  model), then free Gemma and OpenRouter's free router, then GPT-5.6 Luna as the paid backstop when
+  `AI_PAID_FALLBACK=1`. Insights: GPT-5.6 Luna, then Gemini 3.1 Flash-Lite. Fact-checks: Claude
+  Sonnet 5, then Claude Haiku 4.5. Routers get the plain request (they reject
+  `response_format` / `reasoning`). Model ids live only in `src/lib/ai-models.ts`.
+- Sarvam translation uses `od-IN` for Odia.
+
+### Fixed — news collector fair share (2026-09-27)
+- The news collector sorted articles one AI call at a time, so the first district used the whole
+  240 s budget and a run reached about one district in ten. Each district now gets an equal share
+  of the AI time (at most 20 AI calls; keyword sorting after that), districts fetched longest ago
+  go first, and articles that may be about another place wait for the next run. The cron runs
+  every 4 hours.
+
+### Data clean-ups applied to production (2026-09-27)
+Dry run shown first; a Neon backup branch `backup-2026-09-27-pre-cleanup` holds the rows from
+before. Numbers as in `docs/OWNER-TODO.md` §3.
+- `scripts/cleanup-news-derived-2026-09.ts --confirm`: removed 26 national project copies, 260 crime
+  numbers taken from headlines and 25 fake power cuts; hid 162 leaders guessed from news.
+- `scripts/cleanup-seeded-2026-09.ts --confirm`: removed 144 seeded rainfall rows, 24 invented
+  traffic-fine rows, 14 hard-coded exams and 8 hand-entered dam readings; blanked 4 invented
+  sugar-arrears figures.
+- The 24 hand-typed Mysuru rainfall rows ("IMD Mysuru") are hidden on the site, not deleted (owner
+  decision).
+
+### Ops — Sentry, Vercel env, Railway (2026-09-27)
+- **Sentry DSN fixed.** The site sent errors to a Sentry project that no longer exists, so Sentry
+  showed nothing for months. `NEXT_PUBLIC_SENTRY_DSN` now points at `forthepeoplein /
+  javascript-nextjs`; it takes effect with the next deploy.
+- **Vercel env changes** (all environments): `AI_PAID_FALLBACK=1` added; `NEXT_PUBLIC_SENTRY_DSN`
+  replaced. No new variables.
+- **Railway finding.** The old Railway collector (project "ForthePeople", Pro plan) is still running
+  the pre-April scheduler and billing. Its weather job writes into an old database, not the live
+  Neon one; the rest fail. It redeploys whenever `main` changes. Stop it before merging to `main`
+  (steps in `docs/OWNER-TODO.md` §2).
+
 ### Changed — v5 "Calm": quieter design, honest dates, cleanup (branches `v5/*`, 2026-09-27)
 The owner found v4 "cartoonish". Nine parallel work-streams moved the site to a calm, pastel,
 blue-based look, made every date honest and cleared out dead files. Nothing here is deployed
@@ -300,17 +379,14 @@ confirmed is hidden. Full table with sources: `docs/DATA-FIXES-2026-09.md`.
   `supporter-message`, `contribution-expiry`, `badge-level`, `social-detect`).
 
 ### Manual actions (only the owner can do these)
-- **Data cleanup (optional, pages already hide these rows):** run
-  `npx tsx scripts/cleanup-news-derived-2026-09.ts` (dry run). If the list looks right, re-run it with
-  `--confirm`. It removes 26 NATIONAL infra copies, 260 news-derived crime rows and 25 fake outages,
-  and deactivates 162 news-derived leaders.
-- **Seeded random numbers still in the database** (not touched by any script):
-  - 24 TrafficCollection rows with fractional-rupee amounts (Mandya, Bengaluru, Lucknow)
-  - 4 SugarFactorySeason `totalArrears`
-  - 120 RainfallHistory rows for Mandya and Bengaluru Urban (2020–2024), labelled KSNDMC / IMD
-
-  They came from `Math.random()` in `prisma/seed*.ts`. Decide whether to delete them or label them
-  as estimates.
+The current, complete owner list is `docs/OWNER-TODO.md`; the items below are kept for history.
+- ~~**Data cleanup:** `scripts/cleanup-news-derived-2026-09.ts`~~ — done on 2026-09-27 (see "Data
+  clean-ups applied to production" above).
+- ~~**Seeded random numbers still in the database**~~ (traffic fines, sugar arrears, rainfall) —
+  removed or blanked on 2026-09-27 by `scripts/cleanup-seeded-2026-09.ts`.
+- **New for v5.1:** `npm run db:push` also creates `DataVerification`; delete the 18 seeded
+  `JJMStatus` rows before the JJM cron's first production run; run `scripts/fix-leaders-2026-09.ts`
+  (dry run, then `--confirm`). Details in `docs/OWNER-TODO.md`.
 - **Translation backend:** run `npm run db:push` once to create `ContentTranslation`, then add ONE
   provider key to Vercel (`BHASHINI_USER_ID` + `BHASHINI_API_KEY`, or `GOOGLE_TRANSLATE_API_KEY`, or
   `SARVAM_API_KEY`). Optional: `TRANSLATION_MONTHLY_CHAR_LIMIT`. Then call
@@ -319,8 +395,9 @@ confirmed is hidden. Full table with sources: `docs/DATA-FIXES-2026-09.md`.
   2026-09-26). Push this branch so Vercel builds a preview: that build proves the font fix below.
   Until this branch is merged, any push to `main` fails on Vercel (`next/font/google` cannot
   download fonts in Vercel's build container).
-- Vercel env: add `AI_PAID_FALLBACK=0` (set 1 only for the paid backstop); confirm
-  `CRON_SECRET`, `ADMIN_SESSION_SECRET`, `VOTE_IP_SALT`, `RAZORPAY_WEBHOOK_SECRET` are all set.
+- Vercel env: `AI_PAID_FALLBACK=1` was added on 2026-09-27 (all environments). Confirm
+  `CRON_SECRET`, `ADMIN_SESSION_SECRET`, `RAZORPAY_WEBHOOK_SECRET` are set; `VOTE_IP_SALT` is still
+  missing (`docs/OWNER-TODO.md` §2).
 - GitHub: set the required status checks to `Type-check & Build`, `Lint` and `Unit tests`; drop the
   1-approval rule on this solo repo; label 4–6 issues `good-first-issue` / `help-wanted`.
 - Admin → Support page: clear the "bio text" field (or edit it). The saved text names the

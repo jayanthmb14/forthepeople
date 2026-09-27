@@ -3,8 +3,9 @@
 The one-page picture of the whole platform: why it exists, who it is for, how
 people use it, what it is made of and the rules every change must keep.
 
-- **Describes:** branch `redesign-v4` plus the v5 "Calm" round (27 Sep 2026).
-  Production still runs `main` = `38df958` (11 Jun 2026) until the owner pushes.
+- **Describes:** branch `redesign-v4` plus the v5 "Calm" round and the v5.1
+  "Warm Calm" round 3 (27–28 Sep 2026). Production still runs `main` =
+  `38df958` (11 Jun 2026) until the owner pushes.
 - **How to use it:** read this first for the shape of things, then the detail
   doc for the area you touch (section 16). When this file disagrees with the
   code, the code wins; when it disagrees with a detail doc, the detail doc
@@ -56,8 +57,9 @@ thing that looks like the answer. So:
 
 1. **The main thing first.** The first screen shows the answer and the main
    actions. Nothing decorative sits above them.
-   - Home: find my district (search or "Use my location") and **"Explore all
-     of India"** (the highlighted primary action), then the live districts.
+   - Home: find my district (search, "Find your district" or "Use my
+     location") beside a clickable India map, then **"Explore all of India"**
+     (a pastel band with one big button), then the live districts.
    - District page: the district's name, a glance row of key facts, then the
      topics.
    - Module page: one sentence that answers the question, 3–4 big numbers,
@@ -70,9 +72,12 @@ thing that looks like the answer. So:
 4. **Trust is visible.** A date and a source beside every number, a plain
    notice when data is old, and one verification section at the bottom of
    every page (section 6).
-5. **Calm beats clever.** Pastel colour tells you which dashboard you are in;
-   it is not decoration. Emoji only mark a module's identity. No marketing
-   hero, no count-up walls, no intro splash.
+5. **Calm beats clever.** Pastel colour tells you which dashboard you are in
+   and warms the page; it never hides the answer. Emoji only mark a module's
+   identity; categories use drawn SVG pictures. Motion is small and has a
+   job: the home page plays a 1.2 s branded intro once per session (any tap
+   or key skips it), its stats count up once, and a price ticker runs along
+   the top. Reduced motion turns all of it off.
 6. **Money last.** Supporters appear after the data, never above it. The ask
    is soft: "zero pressure", "the site stays free for everyone, always".
 
@@ -93,7 +98,7 @@ thing that looks like the answer. So:
 
 | Surface | Route | Notes |
 |---|---|---|
-| Home | `/[locale]` | calm hero (search, "Use my location", **Explore all of India**), live district cards + "Is your district next?", India at a glance, prices today, one support line |
+| Home | `/[locale]` | price ticker; hero (the H1, search, "Find your district", "Use my location", count-up stats) with the clickable India map; **Explore all of India** (four checked national figures, big button); live districts as chips; prices today; "How we get and check the data"; a support band with a few supporters' names |
 | India | `/[locale]/india/…` | national roll-up by category and module (`src/lib/india/india-modules.ts`, `api/india/*`, `India*` models); coming-soon modules say so |
 | State | `/[locale]/[state]` | state map, its live districts, locked previews for the rest |
 | District overview | `/[locale]/[state]/[district]` | name + local-script name, glance row, basics, all topics grouped |
@@ -105,9 +110,11 @@ thing that looks like the answer. So:
 | Admin | `/[locale]/admin/…` | owner console (section 12) |
 
 **ForThePeople Connect** (civic-issue reporting with photos, routed to state
-grievance systems) is a separate future app at `connect.forthepeople.in`.
-It is not built. The site may show one quiet "coming soon" note; it is not a
-jobs product (jobs live in the Exams & jobs module).
+grievance systems) and **ForThePeople Jobs** are separate future apps. Neither
+is built. The header's apps switcher and the footer list both as "coming
+soon"; they are not links. Today jobs live in each district's Exams & jobs
+module; whether Jobs becomes its own app is an owner decision
+(`docs/OWNER-TODO.md` §6).
 
 ## 4. Modules — 36 in 9 groups
 
@@ -131,32 +138,47 @@ Order, labels and groups live in `SIDEBAR_MODULES` / `MODULE_GROUPS`
 Routes (slugs) never change when labels do. A module with no data for a
 district says "coming soon" in the menus instead of showing an empty page.
 
-## 5. Design — v5 "Calm"
+## 5. Design — v5.1 "Warm Calm"
 
-Full rules: `docs/DESIGN-SYSTEM.md` (tokens, kit, stale notice, verification
-section) and `docs/LAYOUT.md` (phone / tablet / laptop / PC, page recipe,
-DetailSheet).
+Full rules: `docs/DESIGN-SYSTEM.md` (tokens, kit, chrome, pictures, stale
+notice, verification section) and `docs/LAYOUT.md` (phone / tablet / laptop /
+PC, page recipe, DetailSheet).
 
-- **Feel:** calm, clear, trustworthy. A soft blue-white page (`#F5F8FC`),
-  white cards, one blue for actions (`#2563EB`, deep `#1E40AF`, tint
-  `#E8F0FE`). Text `#0F1B2D` / `#4A5A70`. Support is a soft rose tint, never a
-  crimson slab. v5 replaced v4 "Rang" (called "cartoonish") and keeps v3's
-  quiet precision without its plainness.
+- **Feel:** calm, clear, trustworthy, and warmer than v5. A soft blue-white
+  page (`#F5F8FC`), white cards, one blue for actions (`#2563EB`, deep
+  `#1E40AF`, tint `#E8F0FE`). Text `#0F1B2D` / `#4A5A70`. Support is a soft
+  rose, never a crimson slab. v5.1 adds soft pastel washes (the home hero,
+  the district overview's hero, tiles and cards), a 2 px pastel ribbon under
+  the header and footer, and gold / silver accents for money and metals.
+  v5 "Calm" replaced v4 "Rang" (called "cartoonish"); v5.1 keeps its rules.
+- **Chrome:** a full-width header with an apps switcher (ForThePeople.in;
+  Connect and Jobs "coming soon"), a slim status strip (IST clock, share
+  market open / closed, "live data refreshed" on district pages), a floating
+  "Report a problem" button on every page, and a light footer.
 - **Module hues are identity only:** 14 pastel hues (`src/lib/design/hues.ts`,
   applied by `HueScope`). Big areas use the tint; the deep tone is for small
   icons, numbers and titles. No saturated gradient bands.
 - **Emoji:** only as module identity — the sidebar/drawer item, the module
-  chip in `PageHeader`, the module tile on the overview. Pictures that encode
-  data use monochrome Lucide icons in the hue.
+  chip in `PageHeader`, the module tile on the overview. Categories (news
+  topics, crime types, kinds of project) use the crafted SVG glyphs in
+  `src/components/graphics`; the weather page uses drawn SVG weather
+  pictures (`src/components/weather`); support plans each have a drawn
+  picture. Other data pictures use monochrome Lucide icons in the hue.
 - **Type:** Plus Jakarta Sans for everything; Bricolage Grotesque only for a
   page H1 (optional). Sentence case. Tabular numbers.
-- **Motion:** subtle (one fade-rise, bars grow, numbers count once). No intro
-  splash. `prefers-reduced-motion` turns it all off.
+- **Motion:** subtle, and each piece has a job: one fade-rise, bars grow,
+  numbers count up once; on home a 1.2 s branded intro once per session
+  (skippable), a running price ticker (pauses on hover or focus, has a pause
+  button) and pinging live-district pins; a gentle sway or drift on weather
+  and court drawings. `prefers-reduced-motion` turns it all off (the ticker
+  becomes a still row you can scroll).
 - **Kit:** `src/components/district/ui.tsx` (`ModulePage`, `PageHeader`,
   `StaleNotice`, `StatTile`, `Card`, `Section`, `Chips`, `DataTable`,
   `EmptyState`, `PrimaryButton`), `visuals.tsx` (`Explainer`, `Pictogram`,
   `Gauge`, `WaterTank`, `ChartCard`, `HowItWorks`, `CountdownBar`),
-  `DetailSheet.tsx`. Use the kit; no hex values in components.
+  `DetailSheet.tsx`, and `src/components/graphics` (`CategoryGlyph`,
+  `GlyphChips`, `GlyphBarList`, `GlyphEmptyState`, `GlyphStack`). Use the kit;
+  tokens and hue variables only, no hex values in components.
 - **Page recipe:** header (+ stale notice) → the answer in one sentence →
   3–4 numbers → one picture (only when real data supports it) → the list as
   cards that open a detail sheet → charts in `ChartCard` → the verification
@@ -178,8 +200,10 @@ DetailSheet).
 4. **One verification section at the bottom of every page** (`#verify`):
    how fresh each dataset is (source, data date, when we last checked, on
    time or late), how we know (automatic feed / entered by hand / from news /
-   estimate), a direct "check it yourself" link, one "report a mistake"
-   button, and the "not a government website" line — once.
+   estimate), whether a second source agreed ("Double-checked", "One source
+   only", "Sources disagree", "Not double-checked yet"), a direct "check it
+   yourself" link, one "report a mistake" button, and the "not a government
+   website" line — once.
 5. **Never fabricate.** When a source fails, write nothing and show the empty
    state. No invented, interpolated or padded numbers; no fake zeros.
    Estimates are always labelled as estimates.
@@ -201,14 +225,18 @@ in `sidebar-modules.ts`) and `src/lib/freshness.ts`; the numbers come from
 
 ## 7. Where the data comes from
 
-**Sources:** government portals (data.gov.in / AGMARKNET, Census, eJalShakti
-JJM, UDISE+, PFMS / eGramSwaraj, PMAY, ECI and state election commissions,
-eCourts / NJDG, PIB, MoSPI, RBI, NCRB, IMD, state water and power portals,
-state procurement portals) **and other reputed sources**: research
-institutions (IIPS / NFHS, NITI Aayog MPI, SHRUG), international bodies for
-national comparisons (UN, IMF, UNESCO and similar), OpenWeatherMap, IBJA,
-Yahoo Finance, DataMeet boundaries, and news outlets for headlines only.
-Per-source notes: `docs/DATA-SOURCES.md`.
+**Sources:** government portals (data.gov.in / AGMARKNET, Census, the JJM
+dashboard (eJalShakti), UDISE+, the NREGA "At a glance" pages, PFMS /
+eGramSwaraj, PMAY, ECI and state election commissions, eCourts / NJDG
+(National Judicial Data Grid), NDMA SACHET alerts, PIB, MoSPI, RBI, NCRB, IMD,
+state water and power portals, state e-procurement (GePNIC) portals)
+**and other reputed sources**: research institutions (IIPS / NFHS, NITI Aayog
+MPI, SHRUG, CEDA's AGMARKNET mirror for price checks), international bodies
+for national comparisons (UN, IMF, UNESCO and similar), OpenWeatherMap,
+Open-Meteo (forecast and weather fallback, CC BY 4.0 credit on the page),
+IBJA, Yahoo Finance, Wikipedia and Wikidata (only to double-check who holds
+a post), DataMeet boundaries, and news outlets for headlines only. Per-source
+notes: `docs/DATA-SOURCES.md`.
 
 **How rows get in:**
 
@@ -219,43 +247,70 @@ Per-source notes: `docs/DATA-SOURCES.md`.
 | From news | AI reads headlines; high confidence (> 0.85) updates, 0.60–0.85 goes to review, < 0.60 is skipped; leaders, police and power always go to review | `src/lib/news-action-engine.ts`, admin review |
 | Estimate | only when the source row says so, and always labelled | — |
 
-**Scheduled jobs** (`vercel.json` is the only schedule; UTC). Details and
-state: `docs/RUNBOOKS/crons.md`.
+**Double-check.** Once a day `verify-data` compares stored values with a
+second source (weather with another weather service, crop prices with CEDA,
+dam levels with a fresh read of the portal, the Chief Minister, Deputy CM,
+Governor / Lieutenant Governor, Prime Minister and President with Wikipedia
+and Wikidata). It writes the result to `DataVerification`, sends
+disagreements to the admin review queue and never changes the data itself.
+Details: `docs/VERIFICATION.md`.
 
-| Cron | Schedule | Job |
+**Scheduled jobs.** `vercel.json` is the only schedule; times are UTC
+(IST = UTC + 5:30). Budgets, what each writes and how to run one by hand:
+`docs/RUNBOOKS/crons.md`.
+
+| Path | Schedule (UTC) | What it does |
 |---|---|---|
-| `scrape-news` | every 4 h (:10) | news per district (equal AI share each), dedupe, expire old alerts |
-| `translate-content` | every 3 h (:20) | translate new live text once (section 9) |
-| `scrape-crops` | daily 03:30 | mandi prices (AGMARKNET via data.gov.in) |
-| `scrape-weather` | every 30 min | OpenWeatherMap reading per district |
-| `scrape-dams` | every 6 h | reservoir levels (Karnataka portal) |
-| `generate-insights` | 00:00, 12:00 | AI module insights, only when data changed |
-| `news-intelligence` | every 4 h | AI classification and extraction of fresh news |
-| `scrape-budget` | Mon 06:00 | returns "skipped" until a real dataset exists |
-| `generate-citizen-tips` | Sun 06:00 | AI tips per district into Redis |
-| `update-exams` | daily 06:30 | moves exam status forward by date |
-| `platform-report` | Sun 00:00 | weekly platform report |
+| `/api/cron/scrape-news` | `10 */4 * * *` | news per district (equal AI share each, max 20 AI calls), dedupe, expire alerts older than 14 days |
+| `/api/cron/translate-content` | `20 */3 * * *` | translate new live text once (section 9) |
+| `/api/cron/scrape-crops` | `30 3 * * *` | mandi prices (AGMARKNET via data.gov.in) |
+| `/api/cron/scrape-weather` | `*/30 * * * *` | one weather reading per district (OpenWeather, Open-Meteo fallback) |
+| `/api/cron/scrape-dams` | `0 */6 * * *` | reservoir levels (Karnataka water portal) |
+| `/api/cron/scrape-alerts` | `*/30 * * * *` | official disaster alerts (NDMA SACHET) |
+| `/api/cron/generate-insights` | `0 0,12 * * *` | AI module insights, only when data changed; infra analyses |
+| `/api/cron/news-intelligence` | `0 */4 * * *` | AI classification and extraction of fresh news |
+| `/api/cron/scrape-budget` | `0 6 * * 1` | returns "skipped" until a real dataset exists |
+| `/api/cron/generate-citizen-tips` | `0 6 * * 0` | AI tips per district into Redis |
+| `/api/cron/update-exams` | `30 6 * * *` | official UPSC / SSC exam pages; moves exam status forward by date |
+| `/api/cron/platform-report` | `0 0 * * 0` | weekly platform report |
+| `/api/cron/health-score` | `30 1 * * *` | recompute every district's report card (grades expire after 7 days) |
+| `/api/cron/verify-data` | `45 6 * * *` | the daily double-check (above) |
+| `/api/cron/scrape-courts` | `40 1,13 * * *` | court cases waiting, their age, filed and decided per year (NJDG) |
+| `/api/cron/scrape-jjm` | `15 4 * * *` | rural homes with a tap (JJM dashboard) |
+| `/api/cron/scrape-schools` | `40 4 * * 2` | district school statistics (UDISE+) |
+| `/api/cron/scrape-mgnrega` | `50 4 * * *` | MGNREGA "At a glance" per rural district |
+| `/api/cron/scrape-tenders` | `15 */2 * * *` | active tenders of followed district bodies (state e-procurement portals) |
 
-**Reality check (27 Sep 2026).** Production (`38df958`) has only 7 of these
+**Reality check (28 Sep 2026).** Production (`38df958`) has only 7 of these
 crons, and its AI chain has failed since 22 Aug 2026 (the free models it
 called were withdrawn). Weather, dams, crops and AI insights on live pages
-are months old. The branch fixes cron auth, the AI chain and adds the
-weather and dam crons, but none of it is deployed. Only weather, crops, news
-and alerts have ever filled rows automatically; most modules are curated by
-hand with sources. The other jobs in `src/scraper/jobs/` (police, schools,
-housing, MGNREGA, JJM, courts, RTI and more) ran only on the retired Railway
-worker and never produced a row; `src/scraper/scheduler.ts` is a local runner,
-not part of production. The honesty rules in section 6 exist because of this:
-say how old the data is rather than pretend.
+are months old. The branch fixes cron auth and the AI chain, and adds the
+weather, dam, alert, report-card, double-check, courts, JJM, schools,
+MGNREGA and tender crons, but none of it is deployed. The v5.1 collectors
+passed dry runs against the live portals on 27 Sep and have never written to
+production. Only weather, crops, news and alerts have ever filled rows
+automatically; most modules are curated by hand with sources. The old jobs
+in `src/scraper/jobs/` (police, housing, power, RTI, and the old schools,
+MGNREGA, JJM and courts jobs) ran only on the retired Railway worker and
+never produced a row; `src/scraper/scheduler.ts` is a local runner, not part
+of production. The honesty rules in section 6 exist because of this: say how
+old the data is rather than pretend.
 
 ## 8. AI
 
 - Every call goes through `callAI()` / `callAIJSON()` in
-  `src/lib/ai-provider.ts`, by purpose: `news-analysis` (free tier, after a
-  keyword classifier), `insight` (low-cost model, only after
-  `hasDataChanged()`), `fact-check` (manual, admin only). Paid fallback only
-  with `AI_PAID_FALLBACK=1`. Model names live in that file only
-  (`docs/RUNBOOKS/ai-models.md` for changing them).
+  `src/lib/ai-provider.ts`, by purpose. The chains are in
+  `src/lib/ai-models.ts`, the only place model ids are written
+  (`docs/RUNBOOKS/ai-models.md` for changing them). As chosen on 27 Sep 2026
+  from a test on 28 real headlines:
+  - `news-analysis` (after a keyword classifier): Jev Router (free while it
+    routes to a free model), then free Gemma, then OpenRouter's free router,
+    then GPT-5.6 Luna as a paid backstop in the last slot. The backstop runs
+    only with `AI_PAID_FALLBACK=1`, which is set in Vercel.
+  - `insight` (only after `hasDataChanged()`): GPT-5.6 Luna, then Gemini 3.1
+    Flash-Lite, then the free chain.
+  - `fact-check` (manual, admin only): Claude Sonnet 5, then Claude Haiku 4.5;
+    never a free model.
 - **Zero-credit rule:** a page request never calls a model. Pages and public
   APIs read stored results.
 - Every call is logged (`AIUsageLog`) so the admin Costs tab shows real spend.
@@ -271,6 +326,10 @@ Full guide: `docs/I18N.md`.
   review). The registry `src/i18n/languages.ts` lists English plus the 22
   scheduled languages; the rest show as locked "planned" entries and redirect
   to English.
+- **Language menu order is a rule, not a list:** the default language first,
+  then the rest by English name (today English, हिन्दी, ಕನ್ನಡ), then one
+  locked line, "20 more Indian languages coming", that opens the locked list
+  in the same order. The number is counted from the registry.
 - **Nothing citizen-facing is hard-coded.** Shared strings live in
   `src/dictionaries/<locale>.json`; each page has its own
   `src/dictionaries/<locale>/page_<name>.json`, indexed by
@@ -298,9 +357,10 @@ Full picture: `docs/ARCHITECTURE.md`.
 - **Routing:** `src/proxy.ts` (Next 16's middleware) runs next-intl; every
   public page is under `src/app/[locale]/`.
 - **Reads:** `src/app/api/data/[module]/route.ts` plus small read-only routes
-  (freshness, glance, election-events, leader-news, …) return
-  `{ data, updatedAt, source }`, cached briefly in Redis; `?locale=` swaps in
-  stored translations.
+  (freshness, verification, forecast, court-pendency, glance,
+  election-events, leader-news, …) return `{ data, updatedAt, source }`-style
+  payloads, cached briefly in Redis; `?locale=` swaps in stored
+  translations.
 - **Writes:** only crons, the admin console, payment webhooks and the public
   forms (votes, feedback, suggestions), all rate-limited.
 
@@ -314,17 +374,27 @@ Full picture: `docs/ARCHITECTURE.md`.
   district, state or all-India pages their tier covers, and the Founding
   Builder first.
 - Public name (with an optional social link) or anonymous. Names are
-  validated; phone numbers, e-mails and promotions are anonymised.
+  validated; phone numbers, e-mails and promotions are anonymised. (Gap,
+  Sept 2026: the support pages hide phone-number names on screen, but
+  `/api/data/contributors` still sends them; see `docs/ARCHITECTURE.md` §5.)
 - The support page is simple: an answer line, the tiers, "how to subscribe",
   then the supporters. Supporters always sit after the data. "Cancel
   anytime." No binding promises and no pressure.
+- v5.1: each plan has its own pastel colour and drawn picture (one-time rose,
+  District blue, State teal, All-India violet, Founding Builder gold), and
+  paying opens a popup (`DetailSheet`: right panel on laptops, bottom sheet on
+  tablets, full screen on phones). The payment API and Razorpay options are
+  unchanged. The supporters wall uses the same plan colours.
 
 ## 12. Admin and security
 
 - Admin console at `/[locale]/admin`: dashboard, content editor, update log,
   news review queue, AI settings and costs, system health, support page,
   site announcement, supporters, feedback and suggestions, traffic, API key
-  vault and more (`src/components/admin/AdminSidebar.tsx`).
+  vault and more (`src/components/admin/AdminSidebar.tsx`). There is no
+  screen yet for `NewsActionQueue`, so the double-check's review items
+  (`verify-leaders`) and pending news actions can only be read in the
+  database.
 - Login = password + TOTP. Sessions are signed, expiring and revocable in
   Redis (`src/lib/admin-auth.ts`); `requireAdmin()` guards every admin route,
   page and action. The key vault needs a second, shorter TOTP session.
@@ -352,6 +422,11 @@ Full picture: `docs/ARCHITECTURE.md`.
   elected representatives, municipal and departments). Never guess an
   officer's name; mark unknowns "verify at <portal>". Famous people must be
   born in the district (`bornInDistrict`).
+- Leader corrections are scripted, never typed live: `scripts/fix-leaders-2026-09.ts`
+  (dry run by default, `--confirm` applies it in one transaction) with the
+  evidence in `docs/LEADERS-VERIFIED-2026-09.md`. Every change has two
+  sources from different outlets; a new person gets a new row and the old
+  row is deactivated, never deleted.
 
 ## 14. Maps
 
@@ -391,12 +466,15 @@ The short list is in `CLAUDE.md`; these are the ones that bite most often.
 |---|---|
 | Rules for any change | `CLAUDE.md` |
 | Structure, routes, data flow, auth | `docs/ARCHITECTURE.md` |
-| Colours, type, kit, stale notice, verification section | `docs/DESIGN-SYSTEM.md` |
+| Colours, type, kit, chrome, pictures, stale notice, verification section | `docs/DESIGN-SYSTEM.md` (v5.1 "Warm Calm") |
 | Device layouts, page recipe, DetailSheet | `docs/LAYOUT.md` |
 | The 36 modules and their groups | `docs/MODULE-MAP.md` |
 | Languages and translation | `docs/I18N.md` |
 | Crons, AI models, admin auth operations | `docs/RUNBOOKS/` |
 | Sources and provenance | `docs/DATA-SOURCES.md`, `docs/MODULE-POPULATION.md` |
+| The daily double-check (verifiers, statuses, reason codes) | `docs/VERIFICATION.md` |
+| Who holds each post, checked Sept 2026 (two sources each) | `docs/LEADERS-VERIFIED-2026-09.md` |
+| What only the owner can do (accounts, database approvals, decisions) | `docs/OWNER-TODO.md` |
 | Adding a district | `docs/DISTRICT-EXPANSION-SKILL.md`, `docs/SCALING-CHECKLIST.md`, `docs/INDIAN-DISTRICT-HIERARCHY-SKILL.md` |
 | News AI | `docs/AI-NEWS-INTELLIGENCE-SKILL.md` |
 | Tenders | `docs/29-…` to `32-…`, `docs/TENDERS-ACTIVATION.md` |
@@ -406,21 +484,25 @@ The short list is in `CLAUDE.md`; these are the ones that bite most often.
 | Old documents | `docs/archive/` (history only) |
 | Machine-readable summary | `public/llms.txt` |
 
-## 17. Open items and owner decisions (27 Sep 2026)
+## 17. Open items and owner decisions (28 Sep 2026)
 
-The owner-only list with exact steps is the "Manual actions" part of the top
-`CHANGELOG.md` entry. The big ones:
+The owner-only list with exact steps is `docs/OWNER-TODO.md`. The big ones:
 
-- **Deploy:** production is `38df958`; the cron, AI, weather and dam fixes
-  on this branch reach citizens only after review and a push.
-- **Translation backend:** `npm run db:push` (creates `ContentTranslation`)
-  and one provider key.
-- **Health score:** `src/lib/health-score.ts` has no cron; the stored scores
-  are from April and expired. Refresh with
-  `npx tsx scripts/calculate-health-scores.ts` or add a cron.
-- **Data cleanup:** news-derived rows and seeded random numbers listed in
-  the CHANGELOG manual actions.
+- **Deploy:** production is `38df958`; the cron, AI, design and collector
+  work on this branch reaches citizens only after review and a push.
+- **`npm run db:push` before the push:** it creates `ContentTranslation`
+  (translation backend, which also needs one provider key) and
+  `DataVerification` (the double-check).
+- **Before the JJM cron first runs in production:** delete the 18 seeded
+  `JJMStatus` rows, or the tap-water page counts them twice.
+- **Leaders:** run `scripts/fix-leaders-2026-09.ts` (dry run, then
+  `--confirm`) and clear the Redis caches.
+- **Data clean-ups:** news-derived rows and seeded random numbers were
+  removed on 27 Sep (numbers in `docs/OWNER-TODO.md` §3). Still waiting for
+  approval: seeded court, tap-water, village-council, school and tender rows,
+  and the NCRB crime rows that fail a cross-check.
 - **To confirm with the owner:** the H1 display font (Bricolage or Plus
   Jakarta only); whether a one-time ₹50,000 gift counts as Founding Builder;
-  whether district votes count people or clicks; where the Connect teaser
-  goes.
+  whether district votes count people or clicks; whether ForThePeople Jobs
+  is a separate app; Open-Meteo's non-commercial licence; what "New Delhi"
+  covers.
