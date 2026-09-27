@@ -71,6 +71,10 @@
     {
       "path": "/api/cron/platform-report",
       "schedule": "0 0 * * 0"
+    },
+    {
+      "path": "/api/cron/health-score",
+      "schedule": "30 1 * * 0"
     }
   ]
 }

@@ -55,11 +55,22 @@ interface SubMetric {
   max: number;
   score: number;
   label: string;
+  /**
+   * True when no data backed this measure and the score is the neutral
+   * placeholder. Stored in the breakdown so the page can say "based on
+   * N of M measures" instead of presenting a placeholder as a finding.
+   */
+  noData?: true;
 }
 
 interface CategoryResult {
   score: number;
   subMetrics: Record<string, SubMetric>;
+}
+
+/** Spread into a SubMetric when its score is a placeholder. */
+function noDataIf(missing: boolean): { noData?: true } {
+  return missing ? { noData: true } : {};
 }
 
 function avg(scores: number[]): number {
@@ -86,8 +97,8 @@ async function calcGovernance(districtId: string): Promise<CategoryResult> {
     const lapsedPct = totalAllocated > 0 ? (lapsed / totalAllocated) * 100 : 0;
     sub.lapsedFunds = { value: Math.round(lapsedPct), max: 0, score: Math.round(Math.max(0, 100 - lapsedPct * 5)), label: "Lapsed Funds (% — lower is better)" };
   } else {
-    sub.budgetUtilization = { value: 0, max: 100, score: 40, label: "Budget Utilization (%)" };
-    sub.lapsedFunds = { value: 0, max: 0, score: 60, label: "Lapsed Funds (%)" };
+    sub.budgetUtilization = { value: 0, max: 100, score: 40, label: "Budget Utilization (%)", noData: true };
+    sub.lapsedFunds = { value: 0, max: 0, score: 60, label: "Lapsed Funds (%)", noData: true };
   }
 
   // Leadership completeness
@@ -107,7 +118,7 @@ async function calcGovernance(districtId: string): Promise<CategoryResult> {
     const rate = filed > 0 ? (disposed / filed) * 100 : 50;
     sub.rtiResponseRate = { value: Math.round(rate), max: 100, score: Math.round(rate), label: "RTI Response Rate (%)" };
   } else {
-    sub.rtiResponseRate = { value: 0, max: 100, score: 50, label: "RTI Response Rate (%)" };
+    sub.rtiResponseRate = { value: 0, max: 100, score: 50, label: "RTI Response Rate (%)", noData: true };
   }
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
@@ -119,7 +130,7 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
 
   const district = await prisma.district.findFirst({ where: { id: districtId } });
   const literacy = district?.literacy ?? 70;
-  sub.literacy = { value: Math.round(literacy), max: 95, score: Math.round(Math.min(100, (literacy / 95) * 100)), label: "Literacy Rate (%)" };
+  sub.literacy = { value: Math.round(literacy), max: 95, score: Math.round(Math.min(100, (literacy / 95) * 100)), label: "Literacy Rate (%)", ...noDataIf(district?.literacy == null) };
 
   const results = await prisma.schoolResult.findMany({
     where: { school: { districtId } },
@@ -130,7 +141,7 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
     const avgPass = results.reduce((s, r) => s + r.passPercentage, 0) / results.length;
     sub.passRate = { value: Math.round(avgPass), max: 100, score: Math.round(avgPass), label: "Avg Board Exam Pass Rate (%)" };
   } else {
-    sub.passRate = { value: 0, max: 100, score: 50, label: "Avg Board Exam Pass Rate (%)" };
+    sub.passRate = { value: 0, max: 100, score: 50, label: "Avg Board Exam Pass Rate (%)", noData: true };
   }
 
   const schools = await prisma.school.findMany({ where: { districtId } });
@@ -138,12 +149,12 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
   const totalTeachers = schools.reduce((s, sc) => s + (sc.teachers ?? 0), 0);
   const ratio = totalTeachers > 0 ? totalStudents / totalTeachers : 35;
   const ratioScore = ratio <= 25 ? 100 : ratio <= 35 ? 70 : ratio <= 45 ? 40 : 20;
-  sub.studentTeacherRatio = { value: Math.round(ratio), max: 25, score: ratioScore, label: "Student-Teacher Ratio (lower is better)" };
+  sub.studentTeacherRatio = { value: Math.round(ratio), max: 25, score: ratioScore, label: "Student-Teacher Ratio (lower is better)", ...noDataIf(totalTeachers === 0) };
 
   const withToilets = schools.filter((s) => s.hasToilets).length;
   const withLib = schools.filter((s) => s.hasLibrary).length;
   const infraPct = schools.length > 0 ? ((withToilets + withLib) / (schools.length * 2)) * 100 : 50;
-  sub.schoolInfra = { value: Math.round(infraPct), max: 100, score: Math.round(infraPct), label: "School Infrastructure (%)" };
+  sub.schoolInfra = { value: Math.round(infraPct), max: 100, score: Math.round(infraPct), label: "School Infrastructure (%)", ...noDataIf(schools.length === 0) };
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -161,7 +172,7 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
   const phcPer100k = pop > 0 ? (phcs / pop) * 100000 : 0;
   // Target: 1 PHC per 30,000 = 3.3 per 100k
   const phcScore = Math.min(100, (phcPer100k / 3.3) * 100);
-  sub.healthFacilities = { value: phcs, max: Math.round((pop / 30000)), score: Math.round(phcScore), label: "PHC/Health Offices" };
+  sub.healthFacilities = { value: phcs, max: Math.round((pop / 30000)), score: Math.round(phcScore), label: "PHC/Health Offices", ...noDataIf(district?.population == null) };
 
   // Check for health alerts (more alerts = worse health situation)
   const healthAlerts = await prisma.localAlert.count({
@@ -173,7 +184,7 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
   // Literacy as a proxy for health literacy
   const literacy = district?.literacy ?? 70;
   const literacyScore = Math.min(100, (literacy / 90) * 100);
-  sub.healthLiteracyProxy = { value: Math.round(literacy), max: 90, score: Math.round(literacyScore), label: "Literacy (Health Literacy Proxy, %)" };
+  sub.healthLiteracyProxy = { value: Math.round(literacy), max: 90, score: Math.round(literacyScore), label: "Literacy (Health Literacy Proxy, %)", ...noDataIf(district?.literacy == null) };
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -191,8 +202,8 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
     const avgProgress = projects.reduce((s, p) => s + (p.progressPct ?? 0), 0) / projects.length;
     sub.avgProgress = { value: Math.round(avgProgress), max: 100, score: Math.round(avgProgress), label: "Average Project Progress (%)" };
   } else {
-    sub.projectCompletionRate = { value: 0, max: 100, score: 40, label: "Project Completion Rate (%)" };
-    sub.avgProgress = { value: 0, max: 100, score: 40, label: "Average Project Progress (%)" };
+    sub.projectCompletionRate = { value: 0, max: 100, score: 40, label: "Project Completion Rate (%)", noData: true };
+    sub.avgProgress = { value: 0, max: 100, score: 40, label: "Average Project Progress (%)", noData: true };
   }
 
   // Road connectivity via gram panchayats
@@ -202,7 +213,7 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
     const roadPct = (connected / gps.length) * 100;
     sub.roadConnectivity = { value: Math.round(roadPct), max: 100, score: Math.round(roadPct), label: "Village Road Connectivity (%)" };
   } else {
-    sub.roadConnectivity = { value: 0, max: 100, score: 50, label: "Village Road Connectivity (%)" };
+    sub.roadConnectivity = { value: 0, max: 100, score: 50, label: "Village Road Connectivity (%)", noData: true };
   }
 
   // Power outage frequency (lower is better)
@@ -231,7 +242,7 @@ async function calcWaterSanitation(districtId: string): Promise<CategoryResult> 
     const storageScore = avgStorage >= 70 ? 100 : avgStorage >= 40 ? ((avgStorage - 40) / 30) * 70 + 30 : (avgStorage / 40) * 30;
     sub.damStorage = { value: Math.round(avgStorage), max: 100, score: Math.round(storageScore), label: "Dam Storage (%)" };
   } else {
-    sub.damStorage = { value: 0, max: 100, score: 50, label: "Dam Storage (%)" };
+    sub.damStorage = { value: 0, max: 100, score: 50, label: "Dam Storage (%)", noData: true };
   }
 
   // JJM coverage
@@ -240,7 +251,7 @@ async function calcWaterSanitation(districtId: string): Promise<CategoryResult> 
     const avgCoverage = jjm.reduce((s, j) => s + j.coveragePct, 0) / jjm.length;
     sub.jjmCoverage = { value: Math.round(avgCoverage), max: 100, score: Math.round(avgCoverage), label: "JJM Tap Water Coverage (%)" };
   } else {
-    sub.jjmCoverage = { value: 0, max: 100, score: 40, label: "JJM Tap Water Coverage (%)" };
+    sub.jjmCoverage = { value: 0, max: 100, score: 40, label: "JJM Tap Water Coverage (%)", noData: true };
   }
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
@@ -264,7 +275,7 @@ async function calcEconomy(districtId: string): Promise<CategoryResult> {
     const stabilityScore = Math.max(0, 100 - cv * 3);
     sub.cropPriceStability = { value: Math.round(cv), max: 0, score: Math.round(stabilityScore), label: "Crop Price Stability (CV % — lower is better)" };
   } else {
-    sub.cropPriceStability = { value: 0, max: 0, score: 60, label: "Crop Price Stability" };
+    sub.cropPriceStability = { value: 0, max: 0, score: 60, label: "Crop Price Stability", noData: true };
   }
 
   // Revenue collection
@@ -277,7 +288,7 @@ async function calcEconomy(districtId: string): Promise<CategoryResult> {
     const collectionRate = totalTarget > 0 ? (totalAmount / totalTarget) * 100 : 70;
     sub.revenueCollection = { value: Math.round(collectionRate), max: 100, score: Math.round(Math.min(100, collectionRate)), label: "Revenue Collection Rate (%)" };
   } else {
-    sub.revenueCollection = { value: 0, max: 100, score: 55, label: "Revenue Collection Rate (%)" };
+    sub.revenueCollection = { value: 0, max: 100, score: 55, label: "Revenue Collection Rate (%)", noData: true };
   }
 
   // Sugar factory health (low arrears = good)
@@ -285,7 +296,7 @@ async function calcEconomy(districtId: string): Promise<CategoryResult> {
   if (factories.length > 0) {
     sub.industryHealth = { value: factories.length, max: 0, score: 70, label: "Active Industries" };
   } else {
-    sub.industryHealth = { value: 0, max: 0, score: 40, label: "Active Industries" };
+    sub.industryHealth = { value: 0, max: 0, score: 40, label: "Active Industries", noData: true };
   }
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
@@ -308,14 +319,14 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
     const crimeScore = Math.max(0, 100 - (crimePer100k / 400) * 50);
     sub.crimeRate = { value: Math.round(crimePer100k), max: 0, score: Math.round(crimeScore), label: "Crime Rate (per 100k — lower is better)" };
   } else {
-    sub.crimeRate = { value: 0, max: 0, score: 60, label: "Crime Rate (per 100k)" };
+    sub.crimeRate = { value: 0, max: 0, score: 60, label: "Crime Rate (per 100k)", noData: true };
   }
 
   // Police station coverage
   const stations = await prisma.policeStation.count({ where: { districtId } });
   const stationsPer100k = (stations / pop) * 100000;
   const stationScore = Math.min(100, (stationsPer100k / 5) * 100); // target: 5/100k
-  sub.policeCoverage = { value: stations, max: Math.round((pop / 20000)), score: Math.round(stationScore), label: "Police Stations" };
+  sub.policeCoverage = { value: stations, max: Math.round((pop / 20000)), score: Math.round(stationScore), label: "Police Stations", ...noDataIf(district?.population == null) };
 
   // Court disposal rate
   const courts = await prisma.courtStat.findMany({ where: { districtId }, orderBy: { year: "desc" }, take: 5 });
@@ -325,7 +336,7 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
     const disposalRate = filed > 0 ? (disposed / filed) * 100 : 50;
     sub.courtDisposal = { value: Math.round(disposalRate), max: 100, score: Math.round(disposalRate), label: "Court Case Disposal Rate (%)" };
   } else {
-    sub.courtDisposal = { value: 0, max: 100, score: 50, label: "Court Case Disposal Rate (%)" };
+    sub.courtDisposal = { value: 0, max: 100, score: 50, label: "Court Case Disposal Rate (%)", noData: true };
   }
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
@@ -339,7 +350,7 @@ async function calcAgriculture(districtId: string): Promise<CategoryResult> {
   const dams = await prisma.damReading.findMany({ where: { districtId }, orderBy: { recordedAt: "desc" }, take: 5 });
   const avgStorage = dams.length > 0 ? dams.reduce((s, d) => s + d.storagePct, 0) / dams.length : 50;
   const irrigationScore = Math.min(100, (avgStorage / 80) * 80);
-  sub.irrigationProxy = { value: Math.round(avgStorage), max: 80, score: Math.round(irrigationScore), label: "Reservoir Storage (Irrigation Proxy, %)" };
+  sub.irrigationProxy = { value: Math.round(avgStorage), max: 80, score: Math.round(irrigationScore), label: "Reservoir Storage (Irrigation Proxy, %)", ...noDataIf(dams.length === 0) };
 
   // Soil health records
   const soilRecords = await prisma.soilHealth.count({ where: { districtId } });
@@ -385,7 +396,7 @@ async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
   const schemes = await prisma.scheme.findMany({ where: { districtId, active: true } });
   const withBeneficiaries = schemes.filter((s) => (s.beneficiaryCount ?? 0) > 0).length;
   const schemeScore = schemes.length > 0 ? Math.min(100, (withBeneficiaries / schemes.length) * 100) : 40;
-  sub.schemeCoverage = { value: schemes.length, max: 0, score: Math.round(schemeScore), label: "Active Schemes with Beneficiary Data" };
+  sub.schemeCoverage = { value: schemes.length, max: 0, score: Math.round(schemeScore), label: "Active Schemes with Beneficiary Data", ...noDataIf(schemes.length === 0) };
 
   // Housing completion
   const housing = await prisma.housingScheme.findMany({ where: { districtId } });
@@ -395,14 +406,14 @@ async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
     const compRate = target > 0 ? (completed / target) * 100 : 40;
     sub.housingCompletion = { value: Math.round(compRate), max: 100, score: Math.round(compRate), label: "Housing Scheme Completion (%)" };
   } else {
-    sub.housingCompletion = { value: 0, max: 100, score: 40, label: "Housing Scheme Completion (%)" };
+    sub.housingCompletion = { value: 0, max: 100, score: 40, label: "Housing Scheme Completion (%)", noData: true };
   }
 
   // MGNREGA utilization via gram panchayats
   const gps = await prisma.gramPanchayat.findMany({ where: { districtId } });
   const withMgnrega = gps.filter((g) => (g.fundsUtilized ?? 0) > 0).length;
   const mgnregaScore = gps.length > 0 ? (withMgnrega / gps.length) * 100 : 40;
-  sub.mgnregaUtilization = { value: withMgnrega, max: gps.length, score: Math.round(mgnregaScore), label: "GPs with MGNREGA Funds Utilized" };
+  sub.mgnregaUtilization = { value: withMgnrega, max: gps.length, score: Math.round(mgnregaScore), label: "GPs with MGNREGA Funds Utilized", ...noDataIf(gps.length === 0) };
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -427,7 +438,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 // ── Main: Calculate and store health score ───────────────────
-export async function calculateDistrictHealthScore(districtId: string): Promise<void> {
+export interface HealthScoreSummary {
+  overallScore: number;
+  grade: string;
+  /** Sub-measures backed by data / all sub-measures. */
+  measured: number;
+  total: number;
+}
+
+export async function calculateDistrictHealthScore(districtId: string): Promise<HealthScoreSummary> {
   // Fetch district for district-type-aware weight adjustment
   const districtInfo = await prisma.district.findFirst({
     where: { id: districtId },
@@ -469,6 +488,10 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
   }
   overallScore = Math.round(overallScore * 100) / 100;  // 2 decimal precision
   const grade = getGrade(overallScore);
+
+  // How much of the score rests on real data (the rest are placeholders).
+  const allSubs = Object.values(categories).flatMap((c) => Object.values(c.subMetrics));
+  const dataCoverage = { measured: allSubs.filter((m) => !m.noData).length, total: allSubs.length };
 
   const existing = await prisma.districtHealthScore.findUnique({ where: { districtId } });
   const previousScore = existing?.overallScore ?? null;
@@ -514,6 +537,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
       districtType,
       trendChange: change,
       trendDetails,
+      dataCoverage,
     } as unknown as Prisma.InputJsonValue,
     previousScore,
     trend,
@@ -528,5 +552,9 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
   });
 
   const district = await prisma.district.findFirst({ where: { id: districtId }, select: { name: true } });
-  console.log(`[Health Score] ${district?.name ?? districtId}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}`);
+  console.log(
+    `[Health Score] ${district?.name ?? districtId}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}` +
+      ` — ${dataCoverage.measured} of ${dataCoverage.total} measures backed by data`,
+  );
+  return { overallScore, grade, ...dataCoverage };
 }
