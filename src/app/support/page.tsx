@@ -5,18 +5,33 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  /support — Design v4 "Rang" (rose, the support colour)
+//  /support — Design v4.1 (rose, the support colour)
 // ═══════════════════════════════════════════════════════════════════════
+//
+//  The question it answers: "What does it cost to keep this free, and how
+//  can I help pay for it?"
 //
 //  This is a SERVER component. It reads the admin-editable bio / cost /
 //  help content from the DB (falls back to SUPPORT_DEFAULTS) and lays the
-//  page out with the v4 kit: a SiteHeader band, tier cards with the tier's
-//  emoji, emoji StatTiles and Sections, and two pictures:
-//    • "Cost at scale": the monthly running cost for one district, one
-//      state and all of India as bars on one scale (the April 2026
-//      estimate), replacing three look-alike cards;
-//    • "Where your money goes": 10 coins lit for the biggest share, beside
-//      the same percentages as bars.
+//  page out on the docs/LAYOUT.md recipe inside <ModulePage> (full width on
+//  phones and tablets, 1320 px on laptop / PC):
+//    1. SiteHeader band
+//    2. The answer in one sentence (Explainer)
+//    3. Four emoji StatTiles — the ₹3.30 target, the monthly server cost,
+//       the data modules at full scale, ₹0 to citizens (these used to be
+//       split between a lone tile at the top and a second row further
+//       down; now they appear once)
+//    4. The supporter count and the international-payments note
+//    5. The tier cards (with the checkout) — the page's main list
+//    6. "The scale": the explanation, then two pictures side by side on
+//       tablet and up:
+//         • "Cost at scale": the monthly running cost for one district,
+//           one state and all of India as bars on one scale (the April
+//           2026 estimate);
+//         • "Where your money goes": 10 coins lit for the biggest share,
+//           with the same percentages as bars underneath
+//    7. Supporters, supporter quotes, the founder's note, other ways to
+//       help, and the closing call to action.
 //
 //  The money flow lives entirely in <SupportCheckout /> (a client
 //  component). This page only decides WHERE each checkout sits and what
@@ -43,7 +58,7 @@ import SupportCheckout from "@/components/support/SupportCheckout";
 import ContributorWallClient from "@/components/support/ContributorWallClient";
 import ContributorCountBanner from "@/components/support/ContributorCountBanner";
 import FeedbackModal from "@/components/common/FeedbackModal";
-import { Card, Pill, ProgressBar, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { Card, ModulePage, Pill, ProgressBar, Section, StatStrip, StatTile } from "@/components/district/ui";
 import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
 import { BarList } from "@/components/site/SiteVisuals";
@@ -181,8 +196,8 @@ export default async function SupportPage({ params }: Props) {
   const scaleTimes = Math.round(SCALE_COSTS[2].monthly / SCALE_COSTS[0].monthly);
 
   return (
-    <main className="ftp-hue-rose" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 80 }}>
-      <div className="ftp-container" style={{ paddingTop: 24 }}>
+    <main className="ftp-hue-rose" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
+      <ModulePage>
         {/* ── Page header ─────────────────────────────────────────────── */}
         <SiteHeader
           emoji="💝"
@@ -192,7 +207,10 @@ export default async function SupportPage({ params }: Props) {
           description={t.rich("description", { total: fmt(totalIndiaDistricts), b })}
           backHref={`/${locale}`}
         />
-        <div style={{ maxWidth: 480, marginBottom: 16 }}>
+
+        {/* ── The answer in one sentence + the numbers (once) ───────── */}
+        <Explainer emoji="🪙">{t.rich("simple", { amount: inr(TIER_CONFIG.district.amount), b })}</Explainer>
+        <StatStrip cols={4}>
           <StatTile
             emoji="🪙"
             label={t("targetLabel")}
@@ -201,10 +219,13 @@ export default async function SupportPage({ params }: Props) {
             countUp={false}
             sub={t("targetSub", { total: fmt(totalIndiaDistricts), active: activeDistricts })}
           />
-        </div>
+          <StatTile emoji="🖥️" label={t("tileServer")} value={t("tileServerValue")} sub={t("tileServerSub")} countUp={false} />
+          <StatTile emoji="🧩" label={t("tileModules")} value={fmt(totalModulesAtScale)} sub={t("tileModulesSub", { n: fmt(totalIndiaDistricts) })} />
+          <StatTile emoji="🆓" label={t("tileCitizens")} value="₹0" countUp={false} />
+        </StatStrip>
 
         {/* ── International note ─────────────────────────────────────── */}
-        <Card padding={16} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 16 }}>
+        <Card padding={16} style={{ display: "flex", gap: 12, alignItems: "flex-start", margin: "16px 0" }}>
           <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
             🌍
           </span>
@@ -296,6 +317,97 @@ export default async function SupportPage({ params }: Props) {
           </div>
         </Section>
 
+        {/* ── The scale ──────────────────────────────────────────────── */}
+        <Section title={t("scaleTitle")} emoji="📈">
+          <Card padding={24}>
+            <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>{t("scaleHeadline")}</p>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
+              {t.rich("scaleMath", {
+                districts: fmt(totalIndiaDistricts),
+                modules: modulesPerDistrict,
+                total: fmt(totalModulesAtScale),
+                n: (c) => <span className="ftp-num">{c}</span>,
+                hl: (c) => <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{c}</span>,
+              })}
+            </p>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
+              {t.rich("scaleBody", {
+                active: activeDistricts,
+                states: activeStates,
+                total: fmt(totalIndiaDistricts),
+                b: (c) => <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{c}</span>,
+              })}
+            </p>
+          </Card>
+
+          {/* The two pictures, side by side from tablet up */}
+          <div style={{ display: "grid", gap: 16, alignItems: "start", marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+          {/* Picture 1 — cost at scale: the three scales on one bar scale */}
+          <ChartCard
+            title={t("costScaleChart")}
+            emoji="💸"
+            units={t("costScaleUnits")}
+            simple={t.rich("costScaleSimple", { times: fmt(scaleTimes), b: (c) => <strong>{c}</strong> })}
+            source={{ label: t("costScaleSource") }}
+            table={SCALE_COSTS.map((c) => ({
+              label: t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) }),
+              value: `${t("perMonthAmount", { amount: inr(c.monthly) })}; ${t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}`,
+            }))}
+          >
+            <BarList
+              height={14}
+              rows={SCALE_COSTS.map((c) => ({
+                key: c.key,
+                emoji: c.emoji,
+                label: (
+                  <>
+                    <span style={{ fontWeight: 600 }}>{t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) })}</span>
+                    <span className="ftp-num" style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+                      {t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}
+                    </span>
+                  </>
+                ),
+                value: c.monthly,
+                display: t("perMonthAmount", { amount: inr(c.monthly) }),
+              }))}
+            />
+          </ChartCard>
+
+          {/* Picture 2 — where your money goes: 10 coins lit for the biggest share, the bars below */}
+          <ChartCard
+            title={t("moneyTitle")}
+            emoji="🧾"
+            simple={
+              biggestCost
+                ? t.rich("moneySimple", {
+                    n: Math.round(biggestCost.pct / 10),
+                    label: biggestCost.label,
+                    b: (c) => <strong>{c}</strong>,
+                  })
+                : undefined
+            }
+            source={{ label: t("costScaleSource") }}
+            table={content.costBreakdown.map((item) => ({ label: item.label, value: `${item.pct}%` }))}
+          >
+            {biggestCost && (
+              <div style={{ marginBottom: 16 }}>
+                <Pictogram
+                  filled={biggestCost.pct / 10}
+                  emoji="💰"
+                  label={t("moneyPicto", { n: Math.round(biggestCost.pct / 10), label: biggestCost.label })}
+                />
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* The admin-editable `color` per row is ignored: bars use the page hue. */}
+              {content.costBreakdown.map((item) => (
+                <ProgressBar key={item.label} label={item.label} pct={item.pct} />
+              ))}
+            </div>
+          </ChartCard>
+          </div>
+        </Section>
+
         {/* ── Supporters (subscribers + one-time) ────────────────────── */}
         <ContributorWallClient />
         <div style={{ textAlign: "center", marginTop: 4 }}>
@@ -336,99 +448,6 @@ export default async function SupportPage({ params }: Props) {
           </Card>
         </Section>
 
-        {/* ── The scale ──────────────────────────────────────────────── */}
-        <Section title={t("scaleTitle")} emoji="📈">
-          <Card padding={24}>
-            <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>{t("scaleHeadline")}</p>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-              {t.rich("scaleMath", {
-                districts: fmt(totalIndiaDistricts),
-                modules: modulesPerDistrict,
-                total: fmt(totalModulesAtScale),
-                n: (c) => <span className="ftp-num">{c}</span>,
-                hl: (c) => <span style={{ color: "var(--hue-deep)", fontWeight: 600 }}>{c}</span>,
-              })}
-            </p>
-            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 8 }}>
-              {t.rich("scaleBody", {
-                active: activeDistricts,
-                states: activeStates,
-                total: fmt(totalIndiaDistricts),
-                b: (c) => <span style={{ color: "var(--ftp-text)", fontWeight: 600 }}>{c}</span>,
-              })}
-            </p>
-            <div style={{ marginTop: 16 }}>
-              <StatStrip cols={4}>
-                <StatTile emoji="🖥️" label={t("tileServer")} value={t("tileServerValue")} sub={t("tileServerSub")} />
-                <StatTile emoji="🧩" label={t("tileModules")} value={fmt(totalModulesAtScale)} sub={t("tileModulesSub", { n: fmt(totalIndiaDistricts) })} />
-                <StatTile emoji="⚡" label={t("tileRefresh")} value="5" unit={t("tileRefreshUnit")} />
-                <StatTile emoji="🆓" label={t("tileCitizens")} value="₹0" />
-              </StatStrip>
-            </div>
-          </Card>
-        </Section>
-
-        {/* ── Cost at scale — picture 1: the three scales on one bar scale ── */}
-        <Section title={t("costScaleTitle")} emoji="🪜">
-          <ChartCard
-            title={t("costScaleChart")}
-            emoji="💸"
-            units={t("costScaleUnits")}
-            simple={t.rich("costScaleSimple", { times: fmt(scaleTimes), b: (c) => <strong>{c}</strong> })}
-            source={{ label: t("costScaleSource") }}
-            table={SCALE_COSTS.map((c) => ({
-              label: t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) }),
-              value: `${t("perMonthAmount", { amount: inr(c.monthly) })}; ${t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}`,
-            }))}
-          >
-            <BarList
-              height={14}
-              rows={SCALE_COSTS.map((c) => ({
-                key: c.key,
-                emoji: c.emoji,
-                label: (
-                  <>
-                    <span style={{ fontWeight: 600 }}>{t(`scale_${c.key}`, { n: fmt(totalIndiaDistricts) })}</span>
-                    <span className="ftp-num" style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
-                      {t("yearUsd", { year: inr(c.yearly), usd: usd(c.usd) })}
-                    </span>
-                  </>
-                ),
-                value: c.monthly,
-                display: t("perMonthAmount", { amount: inr(c.monthly) }),
-              }))}
-            />
-          </ChartCard>
-        </Section>
-
-        {/* ── Where your money goes — picture 2 ──────────────────────── */}
-        <Section title={t("moneyTitle")} emoji="🧾">
-          <div className={biggestCost ? "ftp-picture-row" : undefined}>
-            {/* 10 coins, lit for the biggest slice below. */}
-            {biggestCost && (
-              <Card tinted padding={18}>
-                <Explainer emoji="🪙">
-                  {t.rich("moneySimple", {
-                    n: Math.round(biggestCost.pct / 10),
-                    label: biggestCost.label,
-                    b: (c) => <strong>{c}</strong>,
-                  })}
-                </Explainer>
-                <Pictogram
-                  filled={biggestCost.pct / 10}
-                  emoji="💰"
-                  label={t("moneyPicto", { n: Math.round(biggestCost.pct / 10), label: biggestCost.label })}
-                />
-              </Card>
-            )}
-            <Card padding={24} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* The admin-editable `color` per row is ignored: bars use the page hue. */}
-              {content.costBreakdown.map((item) => (
-                <ProgressBar key={item.label} label={item.label} pct={item.pct} />
-              ))}
-            </Card>
-          </div>
-        </Section>
 
         {/* ── Other ways to help (admin-written items) ───────────────── */}
         <Section title={t("helpTitle")} emoji="🙌">
@@ -505,7 +524,7 @@ export default async function SupportPage({ params }: Props) {
             </Suspense>
           </div>
         </Card>
-      </div>
+      </ModulePage>
     </main>
   );
 }
