@@ -6,11 +6,22 @@
 
 "use client";
 import { use } from "react";
-import { Database, ExternalLink, Clock } from "lucide-react";
-import { ModuleHeader, SectionLabel } from "@/components/district/ui";
+import type React from "react";
+import { Database, Clock } from "lucide-react";
+import {
+  PageHeader,
+  StatStrip,
+  StatTile,
+  Section,
+  Card,
+  Pill,
+  FreshnessPill,
+  SourcePill,
+} from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
-import { getModuleSources } from "@/lib/constants/state-config";
+import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import { useFreshness, type FreshnessKey } from "@/hooks/useFreshness";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 // State-specific source overrides
 const STATE_SOURCES: Record<string, { rainfall: string; dam: string; budget: string; rti: string; transport: string; transportUrl: string | null; sugar: { source: string } | null; leaders: string }> = {
@@ -52,14 +63,36 @@ function getDataSources(stateSlug: string) {
   return sources;
 }
 
-const statusStyle = (status: string) => status === "live"
-  ? { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0", text: "LIVE" }
-  : { bg: "#F9F9F7", color: "#6B6B6B", border: "#E8E8E4", text: "STATIC" };
+// ── Presentation helpers ────────────────────────────────────────────────
 
-const typeColor: Record<string, string> = {
-  "API": "#2563EB", "Collected": "#7C3AED", "Aggregated": "#7C3AED",
-  "PDF Parse": "#D97706", "Static": "#6B7280", "RSS": "#0891B2", "Manual": "#9B9B9B",
+/** Page wrapper: the v3 container (24 px sides, 16 on phones) at reading width. */
+const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
+
+/**
+ * Which rows on this page have a freshness feed in /api/data/freshness.
+ * Only these get a FreshnessPill with a real date; every other source shows
+ * its published refresh cadence instead (we never invent a date).
+ */
+const FRESHNESS_KEY_FOR_ROW: Record<string, FreshnessKey> = {
+  "Crop Prices": "crops",
+  Weather: "weather",
+  "Dam Levels": "dam",
+  News: "news",
 };
+
+/** Short, readable label for a SourcePill: the link's host name. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+/** "live" rows are automatic feeds; "static" rows are refreshed periodically. */
+function feedLabel(status: string): { text: string; tone: "brand" | "neutral" } {
+  return status === "live" ? { text: "Automatic feed", tone: "brand" } : { text: "Periodic update", tone: "neutral" };
+}
 
 export default function DataSourcesPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -69,75 +102,84 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
   const liveCount = DATA_SOURCES.filter((s) => s.status === "live").length;
   const apiCount = DATA_SOURCES.filter((s) => s.type === "API").length;
 
+  // One cached request: "how old is each automatic feed for this district?"
+  // This page is the district's honest freshness dashboard.
+  const fresh = useFreshness(state, district);
+  const summary = fresh.summary;
+  const trackedFeeds = summary ? summary.green + summary.amber + summary.red + summary.unknown : 0;
+
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Database} title="Data Sources" description="Transparency: every data point's source, method, and update frequency" backHref={base} />
-      {(() => { const _src = getModuleSources("data-sources", state); return <DataSourceBanner moduleName="data-sources" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
+    <div className="ftp-container" style={PAGE_STYLE}>
+      <PageHeader
+        icon={Database}
+        title="Data Sources"
+        description="Transparency: every data point's source, method, and update frequency"
+        backHref={base}
+        accent={getModuleAccent("data-sources")}
+        freshness={fresh.checkedAt ? { asOf: fresh.checkedAt } : undefined}
+      />
       <AIInsightCard module="data-sources" district={district} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-        <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px", textAlign: "center" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--font-mono)", color: "#16A34A" }}>{liveCount}</div>
-          <div style={{ fontSize: 12, color: "#9B9B9B" }}>Live Sources</div>
-        </div>
-        <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px", textAlign: "center" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--font-mono)", color: "#2563EB" }}>{apiCount}</div>
-          <div style={{ fontSize: 12, color: "#9B9B9B" }}>Official APIs</div>
-        </div>
-        <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px", textAlign: "center" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--font-mono)", color: "#1A1A1A" }}>{DATA_SOURCES.length}</div>
-          <div style={{ fontSize: 12, color: "#9B9B9B" }}>Data Modules</div>
-        </div>
-      </div>
+      <StatStrip cols={4}>
+        <StatTile label="Data modules" value={DATA_SOURCES.length} sub="Listed on this page" />
+        <StatTile label="Automatic feeds" value={liveCount} sub="Refreshed by our pipeline" />
+        <StatTile label="Official APIs" value={apiCount} sub="Government endpoints" />
+        <StatTile
+          label="Feeds fresh now"
+          value={summary ? `${summary.green}/${trackedFeeds}` : "—"}
+          sub={summary ? "Inside their expected refresh window" : fresh.loading ? "Checking…" : "Freshness check unavailable"}
+          asOf={fresh.checkedAt}
+        />
+      </StatStrip>
 
-      {/* Mission statement */}
-      <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16, marginBottom: 24 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1E40AF", marginBottom: 4 }}>Our Data Pledge</div>
-        <div style={{ fontSize: 13, color: "#1D4ED8", lineHeight: 1.6 }}>
-          All data on ForThePeople.in is sourced exclusively from government portals, official APIs, and publicly available documents.
-          We never fabricate data. Each module clearly links to its source. Live modules auto-refresh every 60 seconds.
-        </div>
-      </div>
+      {/* Data pledge — plain body text in a quiet card (no tinted box). */}
+      <Section title="Our Data Pledge">
+        <Card>
+          <p className="ftp-body">
+            All data on ForThePeople.in is sourced exclusively from government portals, official APIs, and publicly available documents.
+            We never fabricate data. Each module clearly links to its source. Live modules auto-refresh every 60 seconds.
+          </p>
+        </Card>
+      </Section>
 
-      <SectionLabel>Module Data Sources</SectionLabel>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {DATA_SOURCES.map((ds) => {
-          const ss = statusStyle(ds.status);
-          const tc = typeColor[ds.type] ?? "#6B7280";
-          return (
-            <div key={ds.module} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{ds.module}</div>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 8, background: ss.bg, color: ss.color, border: `1px solid ${ss.border}` }}>
-                      {ss.text}
-                    </span>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 8, background: `${tc}15`, color: tc }}>
-                      {ds.type}
-                    </span>
+      <Section title="Module Data Sources">
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          {DATA_SOURCES.map((ds) => {
+            const feed = feedLabel(ds.status);
+            const key = FRESHNESS_KEY_FOR_ROW[ds.module];
+            const freshness = key ? fresh.modules[key] : undefined;
+            return (
+              <Card as="li" key={ds.module} padding={12}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                      <h3 className="ftp-title">{ds.module}</h3>
+                      <Pill tone={feed.tone}>{feed.text}</Pill>
+                      <Pill>{ds.type}</Pill>
+                    </div>
+                    <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+                      Source: <span style={{ color: "var(--ftp-text)" }}>{ds.source}</span>
+                    </p>
                   </div>
-                  <div style={{ fontSize: 12, color: "#6B6B6B" }}>
-                    Source: <span style={{ fontWeight: 500 }}>{ds.source}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    {/* A real date when we track this feed; otherwise the published cadence. */}
+                    {freshness?.asOf ? (
+                      <FreshnessPill asOf={freshness.asOf} status={freshness.status} />
+                    ) : (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                        <Clock size={12} aria-hidden /> {ds.frequency}
+                      </span>
+                    )}
+                    {ds.url && <SourcePill label={hostOf(ds.url)} href={ds.url} />}
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9B9B9B" }}>
-                    <Clock size={10} /> {ds.frequency}
-                  </div>
-                  {ds.url && (
-                    <a href={ds.url} target="_blank" rel="noopener noreferrer" style={{
-                      display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#2563EB", textDecoration: "none",
-                    }}>
-                      Source <ExternalLink size={10} />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </Card>
+            );
+          })}
+        </ul>
+      </Section>
+
+      <ModulePageFooter moduleSlug="data-sources" locale={locale} state={state} district={district} showCompare={false} />
     </div>
   );
 }

@@ -4,14 +4,34 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// Update Log page — Design v3 "Civic Ledger" module template.
+// Every data change for this district, newest first, as a DataTable with
+// mono timestamps (exact IST time + "x ago"). Filter chips narrow it to
+// automatic updates, admin edits or seeds. Data: GET /api/data/update-log.
+
 "use client";
+import type React from "react";
 import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
-import { getModuleSources } from "@/lib/constants/state-config";
-import { ModuleHeader, StatCard, LoadingShell, ErrorBlock } from "@/components/district/ui";
+import ModulePageFooter from "@/components/accountability/ModulePageFooter";
+import {
+  PageHeader,
+  StatStrip,
+  StatTile,
+  Section,
+  Pill,
+  Chips,
+  DataTable,
+  LoadingShell,
+  ErrorBlock,
+  EmptyState,
+  ToolbarButton,
+  formatIST,
+  type Tone,
+} from "@/components/district/ui";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 interface UpdateLogRow {
   id: string;
@@ -31,39 +51,27 @@ interface UpdateLogResponse {
   nextCursor: string | null;
 }
 
+// "scrapers" is the API's filter key (see src/app/api/data/update-log);
+// citizens only ever see the label "Auto-Updates".
 type FilterTab = "all" | "scrapers" | "admin" | "seeds";
 
-const MODULE_COLORS: Record<string, { bg: string; text: string }> = {
-  weather:    { bg: "#EFF6FF", text: "#2563EB" },
-  crops:      { bg: "#F0FDF4", text: "#16A34A" },
-  news:       { bg: "#FFF7ED", text: "#EA580C" },
-  water:      { bg: "#EFF6FF", text: "#0891B2" },
-  finance:    { bg: "#FEFCE8", text: "#A16207" },
-  budget:     { bg: "#FEFCE8", text: "#A16207" },
-  police:     { bg: "#FFF1F2", text: "#DC2626" },
-  infrastructure: { bg: "#FFF7ED", text: "#D97706" },
-  alerts:     { bg: "#FFF1F2", text: "#DC2626" },
-  schemes:    { bg: "#F5F3FF", text: "#7C3AED" },
-  schools:    { bg: "#F0F9FF", text: "#0284C7" },
-  health:     { bg: "#FFF1F2", text: "#E11D48" },
-  leaders:    { bg: "#F5F3FF", text: "#7C3AED" },
-  leadership: { bg: "#F5F3FF", text: "#7C3AED" },
-  power:      { bg: "#FEFCE8", text: "#CA8A04" },
-  courts:     { bg: "#F5F5F0", text: "#525252" },
+/** Page wrapper: the v3 container (24 px sides, 16 on phones) at reading width. */
+const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
+
+/** Who made the change → citizen-facing label + pill tone. */
+const SOURCE_LABELS: Record<string, { label: string; tone: Tone }> = {
+  scraper:    { label: "Auto-Update", tone: "brand" },
+  cron:       { label: "Cron",        tone: "brand" },
+  admin_edit: { label: "Admin",       tone: "warn" },
+  api:        { label: "API / Seed",  tone: "neutral" },
+  ai_bot:     { label: "AI Bot",      tone: "features" },
 };
 
-const SOURCE_LABELS: Record<string, { label: string; bg: string; text: string }> = {
-  scraper:    { label: "Auto-Update", bg: "#EFF6FF", text: "#2563EB" },
-  cron:       { label: "Cron",       bg: "#EFF6FF", text: "#1D4ED8" },
-  admin_edit: { label: "Admin",      bg: "#FFF7ED", text: "#EA580C" },
-  api:        { label: "API / Seed", bg: "#F0FDF4", text: "#16A34A" },
-  ai_bot:     { label: "AI Bot",     bg: "#F5F3FF", text: "#7C3AED" },
-};
-
-const ACTION_COLOR: Record<string, string> = {
-  create: "#16A34A",
-  update: "#D97706",
-  delete: "#DC2626",
+/** What kind of change → pill tone (semantic colour as text on a tint). */
+const ACTION_TONE: Record<string, Tone> = {
+  create: "live",
+  update: "warn",
+  delete: "danger",
 };
 
 function relativeTime(ts: string): string {
@@ -106,6 +114,11 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
   const total = data?.total ?? 0;
   const scraperCount = rows.filter((r) => r.source === "scraper" || r.source === "cron").length;
   const adminCount = rows.filter((r) => r.source === "admin_edit").length;
+  // Newest change on screen — drives the header's freshness pill.
+  const newest = rows.reduce<string | null>(
+    (latest, r) => (!latest || new Date(r.timestamp) > new Date(latest) ? r.timestamp : latest),
+    null,
+  );
 
   const tabs: Array<{ id: FilterTab; label: string }> = [
     { id: "all", label: "All" },
@@ -115,143 +128,81 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader
+    <div className="ftp-container" style={PAGE_STYLE}>
+      <PageHeader
         icon={Clock}
         title="Update Log"
         description="All data changes and updates for this district — full transparency"
         backHref={base}
-        liveTag
+        accent={getModuleAccent("update-log")}
+        freshness={newest ? { asOf: newest } : undefined}
       />
-      {(() => {
-        const _src = getModuleSources("update-log", state);
-        return (
-          <DataSourceBanner
-            moduleName="update-log"
-            sources={_src.sources}
-            updateFrequency={_src.frequency}
-            isLive={_src.isLive}
+
+      {/* Stats — counts of what is loaded; "Total" comes from the server. */}
+      <StatStrip cols={4}>
+        <StatTile label="Total updates" value={total.toLocaleString("en-IN")} icon={Clock} asOf={newest} />
+        <StatTile label="Shown" value={rows.length.toLocaleString("en-IN")} sub="Loaded on this page" />
+        <StatTile label="Auto-Updates" value={scraperCount} sub="Among those shown" />
+        <StatTile label="Admin" value={adminCount} sub="Among those shown" />
+      </StatStrip>
+
+      <Section title="Changes">
+        {/* Filter chips (32 px, 44 px on phones) */}
+        <div style={{ marginBottom: 12 }}>
+          <Chips
+            label="Filter updates"
+            items={tabs.map((t) => ({ value: t.id, label: t.label }))}
+            value={filter}
+            onChange={(v) => setFilter(v as FilterTab)}
           />
-        );
-      })()}
-
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
-        <StatCard label="Total Updates" value={total.toLocaleString("en-IN")} icon={Clock} />
-        <StatCard label="Shown" value={rows.length.toLocaleString("en-IN")} />
-        <StatCard label="Auto-Updates" value={scraperCount} accent="#2563EB" />
-        <StatCard label="Admin" value={adminCount} accent="#EA580C" />
-      </div>
-
-      {/* Filter tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        {tabs.map((t) => {
-          const active = filter === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setFilter(t.id)}
-              style={{
-                padding: "6px 12px",
-                fontSize: 12,
-                fontWeight: 600,
-                borderRadius: 20,
-                border: `1px solid ${active ? "#2563EB" : "#E8E8E4"}`,
-                background: active ? "#EFF6FF" : "#FFF",
-                color: active ? "#2563EB" : "#6B6B6B",
-                cursor: "pointer",
-              }}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {isLoading && <LoadingShell rows={5} />}
-      {error && <ErrorBlock />}
-
-      {!isLoading && !error && rows.length === 0 && (
-        <div style={{ background: "#F9F9F7", border: "1px solid #E8E8E4", borderRadius: 12, padding: 24, textAlign: "center" }}>
-          <Clock size={28} style={{ color: "#9B9B9B", marginBottom: 8 }} />
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6B6B" }}>No updates yet</div>
-          <div style={{ fontSize: 13, color: "#9B9B9B" }}>Data changes will appear here in real-time</div>
         </div>
-      )}
 
-      {/* Timeline */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {rows.map((r) => {
-          const mod = r.moduleName ?? "other";
-          const modColor = MODULE_COLORS[mod] ?? { bg: "#F5F5F0", text: "#6B6B6B" };
-          const srcInfo = SOURCE_LABELS[r.source] ?? { label: r.source, bg: "#F5F5F0", text: "#6B6B6B" };
-          const actionColor = ACTION_COLOR[r.action] ?? "#6B6B6B";
-          return (
-            <div
-              key={r.id}
-              style={{
-                background: "#FFF",
-                border: "1px solid #E8E8E4",
-                borderRadius: 10,
-                padding: "12px 14px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                {r.moduleName && (
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 8,
-                    background: modColor.bg, color: modColor.text,
-                  }}>
-                    {r.moduleName.toUpperCase()}
-                  </span>
-                )}
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6,
-                  background: "#F9F9F7", color: actionColor, border: `1px solid ${actionColor}33`,
-                }}>
-                  {r.action.toUpperCase()}
-                </span>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 6,
-                  background: srcInfo.bg, color: srcInfo.text,
-                }}>
-                  {srcInfo.label}
-                </span>
-                {r.recordCount != null && r.recordCount > 1 && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 6,
-                    background: "#F5F5F0", color: "#525252",
-                  }}>
-                    {r.recordCount} records
-                  </span>
-                )}
-                <span style={{ marginLeft: "auto", fontSize: 11, color: "#9B9B9B", fontFamily: "var(--font-mono)" }}>
-                  {relativeTime(r.timestamp)}
-                </span>
-              </div>
-              <div style={{ fontSize: 13, color: "#1A1A1A", lineHeight: 1.5 }}>
-                {r.description ?? `${r.action} on ${r.tableName}`}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+        {isLoading && <LoadingShell rows={5} />}
+        {error && <ErrorBlock />}
 
-      {/* Load more */}
-      {rows.length >= pageSize && rows.length < total && (
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <button
-            onClick={() => setPageSize((n) => n + 20)}
-            style={{
-              padding: "8px 16px", fontSize: 13, fontWeight: 600,
-              borderRadius: 8, border: "1px solid #E8E8E4",
-              background: "#FFF", color: "#2563EB", cursor: "pointer",
-            }}
-          >
-            Load more
-          </button>
-        </div>
-      )}
+        {!isLoading && !error && rows.length === 0 && (
+          <EmptyState title="No updates yet" body="Data changes will appear here as they happen." />
+        )}
+
+        {!isLoading && rows.length > 0 && (
+          <DataTable
+            caption="Data changes for this district, newest first"
+            columns={[
+              { key: "when", label: "When (IST)", mono: true, align: "left", width: 150 },
+              { key: "module", label: "Module" },
+              { key: "change", label: "Change" },
+              { key: "by", label: "By" },
+              { key: "records", label: "Records", numeric: true },
+              { key: "what", label: "What changed" },
+            ]}
+            rows={rows.map((r) => {
+              const srcInfo = SOURCE_LABELS[r.source] ?? { label: r.source, tone: "neutral" as Tone };
+              return {
+                when: (
+                  <span title={formatIST(r.timestamp) ?? undefined} style={{ display: "flex", flexDirection: "column" }}>
+                    <span suppressHydrationWarning>{formatIST(r.timestamp) ?? "—"}</span>
+                    <span suppressHydrationWarning style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{relativeTime(r.timestamp)}</span>
+                  </span>
+                ),
+                module: r.moduleName ? <Pill>{r.moduleName}</Pill> : "—",
+                change: <Pill tone={ACTION_TONE[r.action] ?? "neutral"}>{r.action.toUpperCase()}</Pill>,
+                by: <Pill tone={srcInfo.tone}>{srcInfo.label}</Pill>,
+                records: r.recordCount != null && r.recordCount > 1 ? r.recordCount.toLocaleString("en-IN") : "—",
+                what: r.description ?? `${r.action} on ${r.tableName}`,
+              };
+            })}
+          />
+        )}
+
+        {/* Load more */}
+        {rows.length >= pageSize && rows.length < total && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+            <ToolbarButton onClick={() => setPageSize((n) => n + 20)}>Load more</ToolbarButton>
+          </div>
+        )}
+      </Section>
+
+      <ModulePageFooter moduleSlug="update-log" locale={locale} state={state} district={district} showCompare={false} />
     </div>
   );
 }

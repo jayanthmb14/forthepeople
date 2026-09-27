@@ -4,7 +4,14 @@
 // Runs pure comparisons against the tender's published eligibility JSON.
 // Advocates Act §33 constraint: this is information, not legal advice.
 
+//
+// Design v3: a kit Card, 44 px form controls, Lucide result icons, semantic
+// colour as text only. The matching logic below is unchanged.
+
+import type React from "react";
 import { useMemo, useState } from "react";
+import { CheckCircle2, CircleDashed, XCircle, Info } from "lucide-react";
+import { Card } from "@/components/district/ui";
 import { formatInr } from "@/lib/tenders/format";
 
 type Eligibility = {
@@ -104,17 +111,30 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
 
   const toggleReg = (r: string) => setProfile((p) => ({ ...p, registrationTypes: p.registrationTypes.includes(r) ? p.registrationTypes.filter((x) => x !== r) : [...p.registrationTypes, r] }));
 
+
+  // Result wording + icon + colour. Semantic colour is used for the icon and
+  // heading text only — no tinted result box (v3 rule).
+  const RESULT: Record<string, { text: string; icon: typeof CheckCircle2; color: string }> = {
+    "no-criteria": { text: "Tender does not list structured eligibility. Review the NIT PDF directly.", icon: Info, color: "var(--ftp-text-2)" },
+    match: { text: "You likely match this tender's eligibility.", icon: CheckCircle2, color: "var(--ftp-live-text)" },
+    borderline: { text: "Borderline match — some criteria not met.", icon: CircleDashed, color: "var(--ftp-warn)" },
+    "not-match": { text: "Likely below the threshold for this tender.", icon: XCircle, color: "var(--ftp-danger)" },
+  };
+  const result = RESULT[matches.status];
+  const ResultIcon = result.icon;
+
   return (
-    <div style={{ border: "1px solid #E8E8E4", borderRadius: 10, padding: 16, background: "#FFFFFF" }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A", marginBottom: 12 }}>Can I apply? (client-side check)</div>
-      <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 14 }}>
+    <Card>
+      <div className="ftp-title" style={{ marginBottom: 4 }}>Can I apply? (client-side check)</div>
+      <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 14px" }}>
         Your answers never leave this browser. Matching runs against the tender&apos;s published eligibility criteria. Information only — not legal advice.
-      </div>
+      </p>
 
       <div style={{ display: "grid", gap: 14 }}>
         <div>
-          <label style={formLabel}>Your annual turnover (last year)</label>
+          <label htmlFor="elig-turnover" className="ftp-label" style={formLabel}>Your annual turnover (last year)</label>
           <select
+            id="elig-turnover"
             value={profile.turnoverBand}
             onChange={(e) => setProfile((p) => ({ ...p, turnoverBand: Number(e.target.value) as UserProfile["turnoverBand"] }))}
             style={formField}
@@ -123,28 +143,44 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
           </select>
         </div>
         <div>
-          <label style={formLabel}>Years in business</label>
+          <label htmlFor="elig-years" className="ftp-label" style={formLabel}>Years in business</label>
           <input
+            id="elig-years"
             type="number"
             min={0}
             max={50}
             value={profile.yearsInBusiness}
             onChange={(e) => setProfile((p) => ({ ...p, yearsInBusiness: Math.max(0, parseInt(e.target.value || "0", 10)) }))}
-            style={formField}
+            style={{ ...formField, fontFamily: "var(--ftp-font-mono)" }}
           />
         </div>
         <div>
-          <label style={formLabel}>Registration (select all that apply)</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {REG_OPTIONS.map((r) => (
-              <button key={r} onClick={() => toggleReg(r)} style={{
-                padding: "4px 10px", fontSize: 12, borderRadius: 6,
-                border: profile.registrationTypes.includes(r) ? "1px solid #2563EB" : "1px solid #D1D5DB",
-                background: profile.registrationTypes.includes(r) ? "#EFF6FF" : "#FFFFFF",
-                color: profile.registrationTypes.includes(r) ? "#1D4ED8" : "#374151",
-                cursor: "pointer",
-              }}>{r}</button>
-            ))}
+          <div className="ftp-label" style={formLabel} id="elig-reg">Registration (select all that apply)</div>
+          <div role="group" aria-labelledby="elig-reg" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {REG_OPTIONS.map((r) => {
+              const on = profile.registrationTypes.includes(r);
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleReg(r)}
+                  className="ftp-chip"
+                  style={{
+                    padding: "0 12px",
+                    fontSize: 13,
+                    fontFamily: "var(--ftp-font-sans)",
+                    borderRadius: "var(--ftp-radius-pill)",
+                    border: `1px solid ${on ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
+                    background: on ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
+                    color: on ? "var(--ftp-brand-deep)" : "var(--ftp-text)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {r}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -154,34 +190,44 @@ export default function EligibilityWizard({ eligibility, tenderMseReserved, tend
         </div>
       </div>
 
-      <div style={{ marginTop: 20, padding: 14, borderRadius: 8, background: matches.status === "match" ? "#ECFDF5" : matches.status === "borderline" ? "#FFF9F0" : "#FEF2F2", border: "1px solid", borderColor: matches.status === "match" ? "#A7F3D0" : matches.status === "borderline" ? "#FED7AA" : "#FCA5A5" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: matches.status === "match" ? "#047857" : matches.status === "borderline" ? "#B45309" : "#B91C1C", marginBottom: 8 }}>
-          {matches.status === "no-criteria" && "Tender does not list structured eligibility. Review the NIT PDF directly."}
-          {matches.status === "match" && "✓ You likely match this tender's eligibility."}
-          {matches.status === "borderline" && "◑ Borderline match — some criteria not met."}
-          {matches.status === "not-match" && "✗ Likely below the threshold for this tender."}
+      {/* Result — separated by a rule, not a tinted box. */}
+      <div role="status" style={{ marginTop: 20, paddingTop: 14, borderTop: "1px solid var(--ftp-border)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, lineHeight: "20px", fontWeight: 500, color: result.color, marginBottom: 8 }}>
+          <ResultIcon size={16} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+          <span>{result.text}</span>
         </div>
         {"passes" in matches && matches.passes && matches.passes.length > 0 && (
-          <ul style={{ fontSize: 12, color: "#065F46", margin: "4px 0", paddingLeft: 18 }}>
+          <ul style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-live-text)", margin: "4px 0", paddingLeft: 18 }}>
             {matches.passes.map((p, i) => <li key={i}>{p}</li>)}
           </ul>
         )}
         {"issues" in matches && matches.issues && matches.issues.length > 0 && (
-          <ul style={{ fontSize: 12, color: "#991B1B", margin: "4px 0", paddingLeft: 18 }}>
+          <ul style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-danger)", margin: "4px 0", paddingLeft: 18 }}>
             {matches.issues.map((p, i) => <li key={i}>{p}</li>)}
           </ul>
         )}
         {(tenderStartupExempt || tenderMseReserved) && (
-          <div style={{ fontSize: 11, color: "#4B5563", marginTop: 8, fontStyle: "italic" }}>
+          <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 8 }}>
             {tenderStartupExempt && "Startup India exemptions apply — EMD waived, turnover/experience relaxed. "}
             {tenderMseReserved && "MSE-reserved — register free at udyamregistration.gov.in."}
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 
-const formLabel: React.CSSProperties = { display: "block", fontSize: 11, color: "#6B7280", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 4 };
-const formField: React.CSSProperties = { width: "100%", padding: "8px 10px", fontSize: 13, borderRadius: 8, border: "1px solid #D1D5DB", background: "#FFFFFF", color: "#0F172A" };
-const checkboxLabel: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#374151" };
+const formLabel: React.CSSProperties = { display: "block", marginBottom: 4 };
+const formField: React.CSSProperties = {
+  width: "100%",
+  minHeight: 44,
+  padding: "0 10px",
+  fontSize: 13,
+  fontFamily: "var(--ftp-font-sans)",
+  borderRadius: "var(--ftp-radius-tile)",
+  border: "1px solid var(--ftp-border)",
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  boxSizing: "border-box",
+};
+const checkboxLabel: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, color: "var(--ftp-text)", cursor: "pointer" };

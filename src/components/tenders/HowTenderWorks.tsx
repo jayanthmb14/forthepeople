@@ -1,6 +1,15 @@
 "use client";
 
+// HowTenderWorks — the accordion of plain-English sections on the
+// /tenders/how-it-works page, with an English / Kannada switch.
+// Design v3: kit Card + Chips, tokens only, 44 px tap targets, Lucide
+// chevrons instead of +/- glyphs. Content and the markdown renderer are
+// unchanged.
+
+import type React from "react";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { Card, Chips } from "@/components/district/ui";
 
 type Section = { slug: string; section: string; orderIndex: number; title: string; bodyMd: string; bodyKn: string | null; translationPending: boolean };
 
@@ -21,10 +30,10 @@ function renderMarkdown(md: string): React.ReactNode {
           <div key={i} style={{ overflowX: "auto", margin: "12px 0" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr>{headers.map((h, j) => <th key={j} style={{ textAlign: "left", padding: "6px 10px", background: "#F5F5F2", borderBottom: "1px solid #D1D5DB", fontWeight: 700 }}>{inline(h)}</th>)}</tr>
+                <tr>{headers.map((h, j) => <th key={j} style={{ textAlign: "left", padding: "6px 10px", background: "var(--ftp-surface-2)", borderBottom: "1px solid var(--ftp-border-strong)", fontWeight: 500 }}>{inline(h)}</th>)}</tr>
               </thead>
               <tbody>
-                {rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} style={{ padding: "6px 10px", borderBottom: "1px solid #E8E8E4", verticalAlign: "top" }}>{inline(c)}</td>)}</tr>)}
+                {rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} style={{ padding: "6px 10px", borderBottom: "1px solid var(--ftp-border)", verticalAlign: "top" }}>{inline(c)}</td>)}</tr>)}
               </tbody>
             </table>
           </div>
@@ -32,12 +41,12 @@ function renderMarkdown(md: string): React.ReactNode {
       }
     }
     if (b.split("\n").every((l) => /^\d+\.\s/.test(l.trim()))) {
-      return <ol key={i} style={{ paddingLeft: 22, margin: "8px 0", lineHeight: 1.7 }}>{b.split("\n").map((l, j) => <li key={j}>{inline(l.replace(/^\d+\.\s*/, ""))}</li>)}</ol>;
+      return <ol key={i} style={{ paddingLeft: 22, margin: "8px 0", lineHeight: "22px" }}>{b.split("\n").map((l, j) => <li key={j}>{inline(l.replace(/^\d+\.\s*/, ""))}</li>)}</ol>;
     }
     if (b.split("\n").every((l) => /^[-*]\s/.test(l.trim()))) {
-      return <ul key={i} style={{ paddingLeft: 22, margin: "8px 0", lineHeight: 1.7 }}>{b.split("\n").map((l, j) => <li key={j}>{inline(l.replace(/^[-*]\s*/, ""))}</li>)}</ul>;
+      return <ul key={i} style={{ paddingLeft: 22, margin: "8px 0", lineHeight: "22px" }}>{b.split("\n").map((l, j) => <li key={j}>{inline(l.replace(/^[-*]\s*/, ""))}</li>)}</ul>;
     }
-    return <p key={i} style={{ margin: "10px 0", lineHeight: 1.7 }}>{inline(b)}</p>;
+    return <p key={i} style={{ margin: "10px 0", lineHeight: "22px" }}>{inline(b)}</p>;
   });
 }
 
@@ -50,8 +59,8 @@ function inline(text: string): React.ReactNode {
   while ((match = re.exec(text)) !== null) {
     if (match.index > lastIdx) parts.push(text.slice(lastIdx, match.index));
     const tok = match[0];
-    if (tok.startsWith("**")) parts.push(<strong key={k++}>{tok.slice(2, -2)}</strong>);
-    else if (tok.startsWith("`")) parts.push(<code key={k++} style={{ background: "#F3F4F6", padding: "1px 6px", borderRadius: 4, fontSize: "0.9em" }}>{tok.slice(1, -1)}</code>);
+    if (tok.startsWith("**")) parts.push(<strong key={k++} style={{ fontWeight: 500 }}>{tok.slice(2, -2)}</strong>);
+    else if (tok.startsWith("`")) parts.push(<code key={k++} style={{ background: "var(--ftp-surface-2)", padding: "1px 6px", borderRadius: 4, fontSize: "0.9em", fontFamily: "var(--ftp-font-mono)" }}>{tok.slice(1, -1)}</code>);
     else parts.push(<em key={k++}>{tok.slice(1, -1)}</em>);
     lastIdx = match.index + tok.length;
   }
@@ -59,17 +68,24 @@ function inline(text: string): React.ReactNode {
   return parts;
 }
 
+
 export default function HowTenderWorks({ sections }: { sections: Section[] }) {
   const [openSlug, setOpenSlug] = useState<string | null>(sections[0]?.slug ?? null);
   const [lang, setLang] = useState<"en" | "kn">("en");
 
   return (
     <div>
+      {/* Language switch (32 px chips, 44 px on phones). */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-        <div style={{ display: "inline-flex", border: "1px solid #D1D5DB", borderRadius: 8, overflow: "hidden" }}>
-          <button onClick={() => setLang("en")} style={{ padding: "6px 14px", background: lang === "en" ? "#0F172A" : "#FFFFFF", color: lang === "en" ? "#FFFFFF" : "#374151", border: "none", cursor: "pointer", fontSize: 13 }}>English</button>
-          <button onClick={() => setLang("kn")} style={{ padding: "6px 14px", background: lang === "kn" ? "#0F172A" : "#FFFFFF", color: lang === "kn" ? "#FFFFFF" : "#374151", border: "none", borderLeft: "1px solid #D1D5DB", cursor: "pointer", fontSize: 13 }}>ಕನ್ನಡ (Kannada)</button>
-        </div>
+        <Chips
+          label="Language"
+          items={[
+            { value: "en", label: "English" },
+            { value: "kn", label: "ಕನ್ನಡ (Kannada)" },
+          ]}
+          value={lang}
+          onChange={(v) => setLang(v as "en" | "kn")}
+        />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -77,28 +93,36 @@ export default function HowTenderWorks({ sections }: { sections: Section[] }) {
           const isOpen = openSlug === s.slug;
           const body = lang === "kn" && s.bodyKn ? s.bodyKn : s.bodyMd;
           const fallbackToEng = lang === "kn" && !s.bodyKn;
+          const panelId = `how-${s.slug}`;
           return (
-            <div key={s.slug} style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 10, overflow: "hidden" }}>
+            <Card key={s.slug} padding={0} style={{ overflow: "hidden" }}>
               <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={panelId}
                 onClick={() => setOpenSlug(isOpen ? null : s.slug)}
-                style={{ width: "100%", padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                style={{ width: "100%", minHeight: 44, padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "var(--ftp-font-sans)" }}
               >
-                <span style={{ fontSize: 15, fontWeight: 600, color: "#0F172A" }}>
-                  <span style={{ color: "#6B7280", marginRight: 10 }}>{s.orderIndex}.</span> {s.title}
+                <span className="ftp-title">
+                  <span className="ftp-num" style={{ color: "var(--ftp-text-2)", marginRight: 10 }}>{s.orderIndex}.</span> {s.title}
                 </span>
-                <span style={{ color: "#6B7280", fontSize: 18 }}>{isOpen ? "−" : "+"}</span>
+                <ChevronDown
+                  size={18}
+                  aria-hidden
+                  style={{ color: "var(--ftp-text-2)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : undefined }}
+                />
               </button>
               {isOpen && (
-                <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#0F172A", borderTop: "1px solid #F3F4F6" }}>
+                <div id={panelId} style={{ padding: "0 16px 16px", fontSize: 13, lineHeight: "22px", color: "var(--ftp-text)", borderTop: "1px solid var(--ftp-border)" }}>
                   {fallbackToEng && (
-                    <div style={{ fontSize: 11, color: "#B45309", padding: "8px 10px", background: "#FFF9F0", borderRadius: 6, marginBottom: 10 }}>
+                    <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-warn)", margin: "10px 0" }}>
                       ಕನ್ನಡ ಅನುವಾದ ಬಾಕಿಯಿದೆ · Kannada translation pending — showing English below.
-                    </div>
+                    </p>
                   )}
                   {renderMarkdown(body)}
                 </div>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>

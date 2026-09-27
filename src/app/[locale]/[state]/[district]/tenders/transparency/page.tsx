@@ -1,12 +1,25 @@
+/**
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ * https://github.com/jayanthmb14/forthepeople
+ */
+
+// Tender transparency page — Design v3 "Civic Ledger" module template.
+// Lists tenders grouped by factual red-flag type, each group with its
+// methodology. Flag logic, methodology text and legal sentences are
+// unchanged; only the presentation moved to the kit (Card, Pill, Section).
+
 "use client";
 
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Flag } from "lucide-react";
+import { PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState } from "@/components/district/ui";
 import TenderDisclaimer from "@/components/tenders/TenderDisclaimer";
-import RedFlagBadge from "@/components/tenders/RedFlagBadge";
+import ModulePageFooter from "@/components/accountability/ModulePageFooter";
 import { formatInr } from "@/lib/tenders/format";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
 type TransparencyResp = {
@@ -37,63 +50,66 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
     },
   });
 
+  const tendersBase = `/${locale}/${stateSlug}/${districtSlug}/tenders`;
+
   return (
     <ModuleErrorBoundary moduleName="TenderTransparency">
-      <div style={{ background: "#FAFAF8", minHeight: "100vh" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 80px" }}>
-          <Link href={`/${locale}/${stateSlug}/${districtSlug}/tenders`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "#2563EB", textDecoration: "none", marginBottom: 16 }}>
-            <ArrowLeft size={14} /> Back to tenders
-          </Link>
-          <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0F172A", margin: "0 0 8px" }}>
-            <AlertTriangle size={24} style={{ display: "inline", marginRight: 8, verticalAlign: "-4px", color: "#991B1B" }} />
-            Transparency — factual indicators
-          </h1>
-          <p style={{ fontSize: 14, color: "#475569", marginBottom: 24, maxWidth: 720 }}>
-            Data-derived observations on live and recent tenders in {data?.districtName ?? "this district"}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.
-          </p>
+      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
+        <PageHeader
+          icon={AlertTriangle}
+          title="Transparency — factual indicators"
+          description={`Data-derived observations on live and recent tenders in ${data?.districtName ?? "this district"}. Each label is a mathematical comparison against a published rule (GFR 2017, KTPPA 1999, CVC guidelines). They are not allegations. Legitimate reasons may exist for any individual case.`}
+          backHref={tendersBase}
+          backLabel="Back to tenders"
+          accent={getModuleAccent("tenders")}
+        />
+        <TenderDisclaimer variant="compact" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
-          {isLoading && <div style={{ color: "#6B7280" }}>Loading…</div>}
-          {error && <div style={{ color: "#B91C1C" }}>Couldn&apos;t load flag data.</div>}
-          {data && data.totalTenders === 0 && (
-            <div style={{ padding: 24, border: "1px dashed #86EFAC", borderRadius: 12, color: "#166534", background: "#F0FDF4", textAlign: "center" }}>
-              ✓ No flagged tenders in {data.districtName} right now. Flags recompute every 2 hours.
-            </div>
-          )}
+        {isLoading && <LoadingShell rows={3} />}
+        {error && <ErrorBlock message="Couldn't load flag data." />}
+        {data && data.totalTenders === 0 && (
+          <EmptyState title={`No flagged tenders in ${data.districtName} right now. Flags recompute every 2 hours.`} />
+        )}
 
-          {data && Object.entries(data.flagGroups).map(([flagType, rows]) => (
-            <div key={flagType} style={{ marginBottom: 24, background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>{FLAG_META[flagType]?.title ?? flagType}</h2>
-                <span style={{ fontSize: 12, color: "#6B7280" }}>{rows.length} tender{rows.length !== 1 ? "s" : ""}</span>
-              </div>
-              <details style={{ fontSize: 12, color: "#475569", marginBottom: 12 }}>
-                <summary style={{ cursor: "pointer", color: "#2563EB" }}>Methodology</summary>
-                <p style={{ marginTop: 6, lineHeight: 1.7 }}>{FLAG_META[flagType]?.methodology ?? "—"}</p>
+        {data && Object.entries(data.flagGroups).map(([flagType, rows]) => (
+          <Section
+            key={flagType}
+            title={FLAG_META[flagType]?.title ?? flagType}
+            action={<Pill tone="danger" icon={Flag}><span className="ftp-num">{rows.length}</span>&nbsp;tender{rows.length !== 1 ? "s" : ""}</Pill>}
+          >
+            <Card>
+              <details style={{ marginBottom: 12 }}>
+                <summary style={{ cursor: "pointer", color: "var(--ftp-brand)", fontSize: 13, lineHeight: "20px", minHeight: 44, display: "flex", alignItems: "center" }}>
+                  Methodology
+                </summary>
+                <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 4 }}>{FLAG_META[flagType]?.methodology ?? "—"}</p>
               </details>
-              <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+              <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 12 }}>
                 {rows.map((r) => (
-                  <li key={r.tenderId} style={{ fontSize: 13, color: "#0F172A" }}>
-                    <Link href={`/${locale}/${stateSlug}/${districtSlug}/tenders/${r.tenderId}`} style={{ color: "#0F172A", fontWeight: 600 }}>
+                  <li key={r.tenderId} className="ftp-body">
+                    <Link href={`${tendersBase}/${r.tenderId}`} style={{ color: "var(--ftp-text)", fontWeight: 500, textDecoration: "underline", textDecorationColor: "var(--ftp-border-strong)" }}>
                       {r.title}
                     </Link>
-                    <div style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>
-                      {r.authority} · {formatInr(r.value)}
+                    <div style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 2 }}>
+                      {r.authority} · <span className="ftp-num">{formatInr(r.value)}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: "#475569", marginTop: 4, padding: "6px 10px", background: "#FEF2F2", borderRadius: 6, border: "1px solid #FECACA" }}>
+                    {/* The factual statement — plain text, rule reference in text-2. */}
+                    <div style={{ marginTop: 4, color: "var(--ftp-text)" }}>
                       {r.factualStatement}
-                      {r.referenceRule && <span style={{ color: "#6B7280", marginLeft: 8 }}>— {r.referenceRule}</span>}
+                      {r.referenceRule && <span style={{ color: "var(--ftp-text-2)", marginLeft: 8 }}>— {r.referenceRule}</span>}
                     </div>
                   </li>
                 ))}
               </ol>
-            </div>
-          ))}
+            </Card>
+          </Section>
+        ))}
 
-          <div style={{ marginTop: 40 }}>
-            <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
-          </div>
+        <div style={{ marginTop: 32 }}>
+          <TenderDisclaimer variant="full" locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
         </div>
+
+        <ModulePageFooter moduleSlug="tenders" locale={locale} state={stateSlug} district={districtSlug} showCompare={false} />
       </div>
     </ModuleErrorBoundary>
   );

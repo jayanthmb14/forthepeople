@@ -6,14 +6,19 @@
  *
  * Data source: TenderEducationContent rows where docType='disclaimer',
  * filtered by stateSlug = null (universal) or the current state.
+ *
+ * Design v3: PageHeader (the one <h1>), clauses in plain Cards, tokens only.
+ * Every legal sentence is unchanged.
  */
 
 "use client";
 
+import type React from "react";
 import { use } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck, Mail } from "lucide-react";
+import { PageHeader, Section, Card, LoadingShell, EmptyState } from "@/components/district/ui";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 
 interface DisclaimerClause {
@@ -32,7 +37,7 @@ interface DisclaimerResponse {
 // just for legal copy.
 function renderParagraphs(md: string): React.ReactNode {
   return md.split(/\n\n+/).map((block, i) => (
-    <p key={i} style={{ margin: "10px 0", lineHeight: 1.7, color: "#334155" }}>
+    <p key={i} className="ftp-body" style={{ margin: "8px 0", lineHeight: "22px" }}>
       {inline(block)}
     </p>
   ));
@@ -47,7 +52,7 @@ function inline(text: string): React.ReactNode {
     if (m.index > idx) parts.push(text.slice(idx, m.index));
     parts.push(
       m[0].startsWith("**") ? (
-        <strong key={key++}>{m[0].slice(2, -2)}</strong>
+        <strong key={key++} style={{ fontWeight: 500 }}>{m[0].slice(2, -2)}</strong>
       ) : (
         <em key={key++}>{m[0].slice(1, -1)}</em>
       ),
@@ -57,6 +62,18 @@ function inline(text: string): React.ReactNode {
   if (idx < text.length) parts.push(text.slice(idx));
   return parts;
 }
+
+/** One clause: title (15/22) + paragraphs, in a plain bordered card. */
+function Clause({ clause }: { clause: DisclaimerClause }) {
+  return (
+    <Card as="article" style={{ marginBottom: 12 }}>
+      <h3 className="ftp-title" style={{ marginBottom: 4 }}>{clause.title}</h3>
+      {renderParagraphs(clause.bodyMd)}
+    </Card>
+  );
+}
+
+const LINK: React.CSSProperties = { color: "var(--ftp-brand)", textDecoration: "underline" };
 
 export default function TenderDisclaimerPage({
   params,
@@ -76,118 +93,65 @@ export default function TenderDisclaimerPage({
 
   return (
     <ModuleErrorBoundary moduleName="TendersDisclaimer">
-      <div style={{ background: "#FAFAF8", minHeight: "100vh" }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 20px 80px" }}>
-          <Link
-            href={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              color: "#2563EB",
-              textDecoration: "none",
-              marginBottom: 20,
-            }}
-          >
-            <ArrowLeft size={14} /> Back to tenders
-          </Link>
+      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: "var(--ftp-reading-max)" }}>
+        <PageHeader
+          icon={ShieldCheck}
+          title="Tenders — Legal & Usage Disclaimer"
+          backHref={`/${locale}/${stateSlug}/${districtSlug}/tenders`}
+          backLabel="Back to tenders"
+          accent={getModuleAccent("tenders")}
+        />
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <ShieldCheck size={22} color="#0F172A" />
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: "#0F172A", margin: 0, letterSpacing: "-0.2px" }}>
-              Tenders — Legal & Usage Disclaimer
-            </h1>
-          </div>
-
-          {isLoading && (
-            <p style={{ color: "#6B7280", fontSize: 14 }}>Loading disclaimer…</p>
-          )}
-          {error && !isLoading && (
-            <p style={{ color: "#B91C1C", fontSize: 14 }}>
-              Couldn&rsquo;t load the disclaimer. Please reach out to{" "}
-              <a
-                href="mailto:support@forthepeople.in?subject=Tenders%20disclaimer%20load%20failure"
-                style={{ color: "#2563EB" }}
-              >
-                support@forthepeople.in
-              </a>
-              .
-            </p>
-          )}
-          {!isLoading && !error && data && !hasContent && (
-            <p style={{ color: "#6B7280", fontSize: 14 }}>
-              Disclaimer content not seeded yet. Please check back shortly.
-            </p>
-          )}
-
-          {data && hasContent && (
-            <>
-              {data.universal.length > 0 && (
-                <section style={{ marginBottom: 32 }}>
-                  <h2 style={sectionHeaderStyle}>General / Nationwide</h2>
-                  {data.universal.map((c) => (
-                    <div key={c.slug} style={clauseCardStyle}>
-                      <div style={clauseTitleStyle}>{c.title}</div>
-                      {renderParagraphs(c.bodyMd)}
-                    </div>
-                  ))}
-                </section>
-              )}
-
-              {data.stateSpecific.length > 0 && (
-                <section>
-                  <h2 style={sectionHeaderStyle}>
-                    State-specific ({stateSlug.replace(/-/g, " ")})
-                  </h2>
-                  {data.stateSpecific.map((c) => (
-                    <div key={c.slug} style={clauseCardStyle}>
-                      <div style={clauseTitleStyle}>{c.title}</div>
-                      {renderParagraphs(c.bodyMd)}
-                    </div>
-                  ))}
-                </section>
-              )}
-            </>
-          )}
-
-          <div style={{ marginTop: 48, padding: 16, background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 10, fontSize: 13, color: "#075985" }}>
-            <strong>Takedown or grievance?</strong> Email{" "}
+        {isLoading && <LoadingShell rows={4} />}
+        {error && !isLoading && (
+          <p className="ftp-body" style={{ color: "var(--ftp-danger)" }}>
+            Couldn&rsquo;t load the disclaimer. Please reach out to{" "}
             <a
-              href="mailto:support@forthepeople.in?subject=Takedown%20Request%3A%20Tenders%20disclaimer"
-              style={{ color: "#0369A1", textDecoration: "underline" }}
+              href="mailto:support@forthepeople.in?subject=Tenders%20disclaimer%20load%20failure"
+              style={LINK}
             >
               support@forthepeople.in
             </a>
-            . SLA: 7 working days per IT Rules 2021.
-          </div>
-        </div>
+            .
+          </p>
+        )}
+        {!isLoading && !error && data && !hasContent && (
+          <EmptyState title="Disclaimer content not seeded yet. Please check back shortly." />
+        )}
+
+        {data && hasContent && (
+          <>
+            {data.universal.length > 0 && (
+              <Section title="General / Nationwide">
+                {data.universal.map((c) => <Clause key={c.slug} clause={c} />)}
+              </Section>
+            )}
+
+            {data.stateSpecific.length > 0 && (
+              <Section title={<span style={{ textTransform: "capitalize" }}>State-specific ({stateSlug.replace(/-/g, " ")})</span>}>
+                {data.stateSpecific.map((c) => <Clause key={c.slug} clause={c} />)}
+              </Section>
+            )}
+          </>
+        )}
+
+        {/* Grievance line — icon in the brand colour, no tinted box. */}
+        <Card style={{ marginTop: 32 }}>
+          <p className="ftp-body" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <Mail size={16} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0, marginTop: 2 }} />
+            <span>
+              <strong style={{ fontWeight: 500 }}>Takedown or grievance?</strong> Email{" "}
+              <a
+                href="mailto:support@forthepeople.in?subject=Takedown%20Request%3A%20Tenders%20disclaimer"
+                style={LINK}
+              >
+                support@forthepeople.in
+              </a>
+              . SLA: 7 working days per IT Rules 2021.
+            </span>
+          </p>
+        </Card>
       </div>
     </ModuleErrorBoundary>
   );
 }
-
-const sectionHeaderStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 700,
-  color: "#6B7280",
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  margin: "0 0 14px",
-};
-
-const clauseCardStyle: React.CSSProperties = {
-  background: "#FFFFFF",
-  border: "1px solid #E8E8E4",
-  borderRadius: 10,
-  padding: "16px 20px",
-  marginBottom: 14,
-};
-
-const clauseTitleStyle: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: "#0F172A",
-  marginBottom: 6,
-  letterSpacing: "0.01em",
-};
