@@ -25,11 +25,16 @@ import {
   SHOWN_CRIME,
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
+  ELECTION_RESULTS_WITHHELD,
+  SHOW_CITIZEN_TIP_ROWS,
 } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
 import { dedupeStories } from "@/lib/news-dedupe";
+import { leaderOfficePhone } from "@/lib/government-checks";
+import { isRelatedNews } from "@/lib/related-news";
+import { getStateConfig } from "@/lib/constants/state-config";
 
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
@@ -102,7 +107,6 @@ async function localizeModule(
 async function fetchModule(
   module: string,
   districtSlug: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _stateSlug: string,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _talukSlug: string
@@ -144,6 +148,7 @@ async function fetchModule(
       // Schools: the district's UDISE+ count (collector) when we have it, not
       // the schools we list by name (compare reads this).
       if (d && udise) d._count.schools = udise.data.totals.schools;
+      if (d) d.leaders = d.leaders.map((l) => ({ ...l, phone: leaderOfficePhone(l.phone) }));
       return { data: d ? { ...d, schoolsFrom: udise ? "udise" : "listed" } : d, meta };
     }
 
@@ -173,6 +178,8 @@ async function fetchModule(
       `;
       const data = raw.map(r => ({
         ...r,
+        // A helpline short code ("100") is never one person's office phone.
+        phone: leaderOfficePhone(r.phone),
         lastVerifiedAt: r.lastVerifiedAt ? r.lastVerifiedAt.toISOString() : null,
       }));
       return { data, meta };
@@ -340,9 +347,13 @@ async function fetchModule(
       });
       // The same story from several outlets, reworded, slips past the
       // ingest-time prefix check; collapse it here (src/lib/news-dedupe.ts).
+      // `related`: may this story appear as related news on its module's page
+      // (src/lib/related-news.ts)? Checked on the English text, before any
+      // translation overlay.
+      const stateName = getStateConfig(_stateSlug)?.name ?? "";
       const data = dedupeStories(rows, [districtSlug, district.name])
         .slice(0, 30)
-        .map((r) => ({ ...r, headline: r.title }));
+        .map((r) => ({ ...r, headline: r.title, related: isRelatedNews(r, district.name, stateName) }));
       return { data, meta };
     }
 
@@ -412,9 +423,9 @@ async function fetchModule(
       // Mysuru seat filed under Mandya, round "votes" (520000), placeholder
       // runners-up ("AIADMK candidate"), rows marked "approximate", and the
       // same seat twice with different counts — all labelled "ECI". Showing
-      // them would break the no-fabrication rule. Flip this to false once
-      // the table is re-loaded from results.eci.gov.in.
-      const ELECTION_RESULTS_WITHHELD = true;
+      // them would break the no-fabrication rule. Flip ELECTION_RESULTS_WITHHELD
+      // (src/lib/data-filters.ts) to false once the table is re-loaded from
+      // results.eci.gov.in.
       const [results, booths] = await Promise.all([
         ELECTION_RESULTS_WITHHELD
           ? Promise.resolve([])
@@ -565,8 +576,9 @@ async function fetchModule(
     // 24. SERVICES (Citizen service guides)
     // ══════════════════════════════════════════════════
     case "services": {
+      // active=false = hidden (a guide that could not be checked; Sept 2026 audit).
       const data = await prisma.serviceGuide.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         orderBy: { category: "asc" },
       });
       return { data, meta };
@@ -576,6 +588,12 @@ async function fetchModule(
     // 25. TIPS (Citizen tips)
     // ══════════════════════════════════════════════════
     case "tips": {
+      // Nothing is served (SHOW_CITIZEN_TIP_ROWS in src/lib/data-filters.ts):
+      // CitizenTip has no source column and every row was typed into the
+      // Mar 2026 seeds, with wrong facts (Sept 2026 audit). No page reads
+      // this endpoint; the civic tips on citizen-corner come from
+      // /api/ai/citizen-tips.
+      if (!SHOW_CITIZEN_TIP_ROWS) return { data: [], meta };
       // active=false = retired (the duplicate guard retires copies this way).
       const data = await prisma.citizenTip.findMany({
         where: { districtId: did, active: true },
@@ -608,8 +626,9 @@ async function fetchModule(
     // 27. OFFICES (Government offices)
     // ══════════════════════════════════════════════════
     case "offices": {
+      // active=false = hidden (an office whose details could not be checked; Sept 2026 audit).
       const data = await prisma.govOffice.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         orderBy: [{ department: "asc" }, { name: "asc" }],
       });
       return { data, meta };

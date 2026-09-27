@@ -16,6 +16,7 @@ import type { LucideIcon } from "lucide-react";
 import type { Leader } from "@/hooks/useRealtimeData";
 import { getRoleDescriptionId, getRoleDescriptionIdForText } from "@/lib/constants/role-descriptions";
 import { scriptLang } from "@/lib/utils/script-lang";
+import { localRoleFits } from "@/lib/government-checks";
 
 export type T = ReturnType<typeof useTranslations>;
 
@@ -79,10 +80,12 @@ export function roleDescription(l: Leader, t: T): string {
   return roleId && t.has(`roles.${roleId}`) ? t(`roles.${roleId}`) : stored ?? t("roleFallback");
 }
 
-/** The role in the reader's language when the record has it (ಜಿಲ್ಲಾಧಿಕಾರಿ on /kn/). */
+/** The role in the reader's language when the record has it (ಜಿಲ್ಲಾಧಿಕಾರಿ on /kn/),
+ *  and only while it still fits the English role (localRoleFits: a stale
+ *  "(Chief Minister)" in the local role is not shown). */
 export function roleText(l: Leader, locale: string, roleLocal?: string | null): { text: string; lang?: string } {
   const local = roleLocal ?? l.roleLocal;
-  if (local && scriptLang(local) === locale) return { text: local, lang: scriptLang(local) };
+  if (local && scriptLang(local) === locale && localRoleFits(l.role, local)) return { text: local, lang: scriptLang(local) };
   return { text: l.role };
 }
 

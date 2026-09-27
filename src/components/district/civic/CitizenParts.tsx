@@ -107,18 +107,36 @@ export interface Right {
   body?: string;
 }
 
+/**
+ * Rural work guarantee. The VB-G RAM G Act (Viksit Bharat – Guarantee for
+ * Rozgar and Ajeevika Mission (Gramin) Act, 2025) replaced MGNREGA on
+ * 1 July 2026: 125 days of wage work a year per rural household (MGNREGA
+ * gave 100); e-KYC'd MGNREGA job cards stay valid until Gramin Rozgar
+ * Guarantee Cards are issued; wages weekly or within 15 days of the muster
+ * roll closing. Source: PIB, Ministry of Rural Development, 11 May 2026
+ * (https://www.pib.gov.in/PressReleasePage.aspx?PRID=2259703), checked
+ * 28 Sep 2026. Rural households only, so fully urban districts do not get
+ * this card.
+ */
+const RURAL_WORK: Right = { id: "ruralWork", icon: Shovel, site: "https://rural.gov.in", module: "schemes" };
+
 /** The rights shown, with the local-government one picked for the state. */
 export function getRights(stateSlug: string, districtSlug?: string): Right[] {
   const sc = getStateConfig(stateSlug, districtSlug);
   const isUrban = sc ? !sc.gramPanchayatApplicable : false;
-  const local: Right = isUrban
-    ? { id: sc?.municipalBody ? "wardBody" : "ward", icon: Building2, body: sc?.municipalBody ?? undefined }
-    : { id: "gramSabha", icon: Users, module: "gram-panchayat" };
+  // A district split between several local bodies (New Delhi: NDMC, MCD,
+  // Delhi Cantonment Board) gets "your local council", naming them all,
+  // instead of one city corporation's ward committees.
+  const local: Right = !isUrban
+    ? { id: "gramSabha", icon: Users, module: "gram-panchayat" }
+    : sc?.municipalBodies?.length
+      ? { id: "localBodies", icon: Building2, body: sc.municipalBodies.join(", ") }
+      : { id: sc?.municipalBody ? "wardBody" : "ward", icon: Building2, body: sc?.municipalBody ?? undefined };
   return [
     { id: "rti", icon: FileText, site: "https://rtionline.gov.in", module: "file-rti" },
     { id: "food", icon: Wheat, site: "https://nfsa.gov.in", module: "schemes" },
     { id: "education", icon: GraduationCap, module: "schools" },
-    { id: "mgnrega", icon: Shovel, site: "https://nrega.nic.in", module: "schemes" },
+    ...(isUrban ? [] : [RURAL_WORK]),
     local,
     { id: "consumer", icon: ShoppingCart, site: "https://consumerhelpline.gov.in" },
   ];

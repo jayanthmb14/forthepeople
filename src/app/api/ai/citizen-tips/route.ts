@@ -9,7 +9,7 @@
 // GET /api/ai/citizen-tips?district=mandya
 // Serves ONLY from Redis cache — never generates live AI on public GET.
 // Tips are generated weekly by /api/cron/generate-citizen-tips (cron).
-// Cache TTL: 7 days. When empty, returns nextRefreshDays info.
+// Cache TTL: 7 days. When empty, returns no tips and no promised date.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
 import { cacheGet } from "@/lib/cache";
@@ -21,11 +21,10 @@ interface TipsResponse {
     category: string; icon: string; title: string;
     description: string; urgency: string;
   }>;
-  month: number;
-  year: number;
+  month: number | null;
+  year: number | null;
   generatedAt: string | null;
   generatedBy?: string;
-  nextRefreshDays?: number;
 }
 
 // ── Route handler — READ-ONLY (public) ───────────────────
@@ -51,21 +50,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Tips not generated yet — return metadata so UI can show "next refresh in X days"
-  const now = new Date();
-  // Next Sunday midnight UTC (weekly schedule)
-  const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
-  const nextRefresh = new Date(now);
-  nextRefresh.setUTCDate(nextRefresh.getUTCDate() + daysUntilSunday);
-  nextRefresh.setUTCHours(6, 0, 0, 0); // Sunday 6AM UTC
-
+  // No tips stored. Say nothing about when new ones come: the weekly cron
+  // has not written any since the AI provider broke in Aug 2026, and a
+  // computed "next Sunday" promised tips that never came (Sept 2026 audit).
+  // No month either, so the page does not label an empty list "September".
   return NextResponse.json({
     tips: [],
-    month: now.getMonth() + 1,
-    year: now.getFullYear(),
+    month: null,
+    year: null,
     generatedAt: null,
-    nextRefreshDays: daysUntilSunday,
-    nextRefreshDate: nextRefresh.toISOString(),
     fromCache: false,
   });
 }

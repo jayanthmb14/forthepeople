@@ -15,7 +15,8 @@
 //                   (…). We could not find newer data."  (amber)
 //   unknown        "Date not published by the source. We cannot tell how
 //                   old this data is."  (grey)
-//   not collected  "We do not collect this data for Pune yet."  (grey)
+//   not collected  "We do not collect this data for Pune yet."  (grey; only
+//                   when none of the page's datasets has rows)
 //   estimate       "Some figures here are estimates, not official counts."
 //
 //  Current data shows nothing (the page header already shows its date).
@@ -58,6 +59,10 @@ export default function StaleDataNotice({ stateSlug, districtSlug }: { stateSlug
   }
 
   if (d.status === "not_collected") {
+    // Only when the page has none of its data: the Bengaluru Urban police
+    // page said "We do not collect this data" above 44 police stations
+    // because its main dataset (NCRB crime) is empty (Sept 2026 audit).
+    if (fresh.datasetsFor(route.module).some((x) => x.status !== "not_collected")) return null;
     return (
       <p className="ftp-stale" data-tone="neutral" role="note">
         <Info size={16} aria-hidden className="ftp-stale-icon" />

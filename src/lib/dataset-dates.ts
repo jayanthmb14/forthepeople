@@ -21,6 +21,7 @@ import {
   NOT_SEEDED_RAINFALL,
   SHOWN_CRIME,
   VERIFIED_PANCHAYAT,
+  ELECTION_RESULTS_WITHHELD,
 } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { DatasetDate } from "@/lib/constants/dataset-collection";
@@ -80,8 +81,8 @@ export async function collectDatasetDates(
     prisma.scheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.housingScheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.housingScheme.aggregate({ where: d, _max: { fiscalYear: true } }),
-    prisma.serviceGuide.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
-    prisma.govOffice.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
+    prisma.serviceGuide.aggregate({ where: { ...d, active: true }, _count: { _all: true } }),
+    prisma.govOffice.aggregate({ where: { ...d, active: true }, _count: { _all: true } }),
     prisma.governmentExam.aggregate({
       where: { OR: [{ level: "national" }, { stateId, level: "state" }, { districtId }] },
       _count: { _all: true },
@@ -130,7 +131,10 @@ export async function collectDatasetDates(
     rainfall: { rows: rainCount, newest: rain ? iso(endOfMonth(rain.year, rain.month)) : null, period: rain ? `${rain.year}-${String(rain.month).padStart(2, "0")}` : null },
     rti: { rows: rtiCount, newest: null, period: rtiTop._max.year ? String(rtiTop._max.year) : null },
     leaders: { rows: leaders._count._all, newest: iso(leaders._max.lastVerifiedAt), period: null },
-    elections: { rows: elections._count._all, newest: null, period: elections._max.year ? String(elections._max.year) : null },
+    // Results withheld (ELECTION_RESULTS_WITHHELD): none are shown, so none are counted.
+    elections: ELECTION_RESULTS_WITHHELD
+      ? { rows: 0, newest: null, period: null }
+      : { rows: elections._count._all, newest: null, period: elections._max.year ? String(elections._max.year) : null },
     panchayats: {
       rows: panchayats._count._all + (nrega ? 1 : 0),
       newest: nregaNewest ?? iso(panchayats._max.updatedAt),
@@ -147,8 +151,12 @@ export async function collectDatasetDates(
     industries: { rows: industries._count._all, newest: iso(industries._max.updatedAt), period: null },
     schemes: { rows: schemes._count._all, newest: iso(schemes._max.updatedAt), period: null },
     housing: { rows: housing._count._all, newest: iso(housing._max.updatedAt), period: housingTop._max.fiscalYear ?? null },
-    services: { rows: services._count._all, newest: iso(services._max.updatedAt), period: null },
-    offices: { rows: offices._count._all, newest: iso(offices._max.updatedAt), period: null },
+    // No date for the hand-typed directories: @updatedAt moves on any bulk
+    // edit (the 27 Sep 2026 hours clean-up made every office look checked
+    // that day), so it is not a check date (Sept 2026 audit). Hidden rows
+    // (active = false) are not counted.
+    services: { rows: services._count._all, newest: null, period: null },
+    offices: { rows: offices._count._all, newest: null, period: null },
     exams: { rows: exams._count._all, newest: iso(exams._max.lastVerifiedAt), period: null },
     jjm: { rows: jjm._count._all, newest: iso(jjm._max.updatedAt), period: null },
     dams: { rows: dams._count._all, newest: iso(dams._max.recordedAt), period: null },

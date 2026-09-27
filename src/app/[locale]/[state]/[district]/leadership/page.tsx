@@ -22,6 +22,7 @@
 //  "not an official website" and the stale note come from the shell.
 //
 //  Data: /api/data/leaders (rows guessed from news are never served),
+//  the source pill names the outlets the rows cite (recordsSource),
 //  grouped by the Leader.tier column; nothing about who sits where is
 //  hard-coded. Text: "page_leadership" namespace. Names, roles, parties
 //  and constituencies are records and are shown as stored (the local-script
@@ -59,10 +60,22 @@ import { getPartyColor } from "@/lib/constants/party-colors";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { scriptLang } from "@/lib/utils/script-lang";
+import { leaderSourceSummary } from "@/lib/government-checks";
 import knDict from "@/dictionaries/kn.json";
 
-/** The main source, shown in the page header and on the party chart. */
-const ECI = { label: "ECI", href: "https://eci.gov.in" };
+/**
+ * The source pill for the page header and the party chart: the outlets the
+ * shown records actually cite (Leader.source), most cited first — e.g.
+ * "Wikipedia, IndiaVotes +12". Sept 2026 audit: the pill used to say "ECI"
+ * although no record cites the Election Commission. No link: the records
+ * cite many pages.
+ */
+function recordsSource(rows: Leader[]): { label: string } | undefined {
+  const outlets = leaderSourceSummary(rows.map((l) => l.source));
+  if (outlets.length === 0) return undefined;
+  const top = outlets.slice(0, 2).map((o) => o.name).join(", ");
+  return { label: outlets.length > 2 ? `${top} +${outlets.length - 2}` : top };
+}
 
 /** Cards within a level: President before PM, Governor before CM, MP before MLAs. */
 const ROLE_ORDER: RegExp[] = [
@@ -203,7 +216,7 @@ function PartyRing({ reps, asOf }: { reps: Leader[]; asOf: string | null }) {
       units={t("partyUnits")}
       simple={t("partySimple", { n: f.number(reps.length), parties })}
       asOf={asOf}
-      source={ECI}
+      source={recordsSource(reps)}
       table={slices.map((s) => ({ label: s.label, value: f.number(s.value) }))}
     >
       <HueDonut
@@ -323,7 +336,7 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
         titleLocal={titleLocal}
         description={t("description")}
         freshness={asOf ? { asOf } : undefined}
-        source={ECI}
+        source={recordsSource(people)}
       />
 
       {people.length > 0 && (

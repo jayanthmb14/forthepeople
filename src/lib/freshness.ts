@@ -94,8 +94,9 @@ export const DATASETS: ReadonlyArray<{ key: string; module: string; rule?: Fresh
   { key: "industries", module: "industries" },
   { key: "schemes", module: "schemes" },
   { key: "housing", module: "housing" },
-  { key: "services", module: "services" },
-  { key: "offices", module: "offices" },
+  // Hand-typed directories with no check date (@updatedAt is not one): reference lists.
+  { key: "services", module: "services", rule: { maxAgeHours: null, every: "onChange", method: "manual" } },
+  { key: "offices", module: "offices", rule: { maxAgeHours: null, every: "onChange", method: "manual" } },
   { key: "exams", module: "exams" },
   { key: "jjm", module: "jjm" },
   { key: "dams", module: "water" },

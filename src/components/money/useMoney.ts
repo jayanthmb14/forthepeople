@@ -30,6 +30,8 @@ const SOURCE_KEY: Record<string, string> = {
   "District Industries Centre": "districtIndustries",
   "State PSC / Recruitment Boards": "statePsc",
   "Government public data portals": "govPortals",
+  "News reports": "newsReports",
+  "State police websites": "statePolice",
 };
 const FREQ_KEY: Record<string, string> = {
   "When the source publishes": "whenPublished",

@@ -42,7 +42,7 @@ import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapsho
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
-import { VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { ELECTION_RESULTS_WITHHELD, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
 
 export const runtime = "nodejs";
 
@@ -98,8 +98,8 @@ interface Row {
   industries_date: Date | null; industries_rows: number;
   schemes_date: Date | null; schemes_rows: number;
   housing_fy: string | null; housing_checked: Date | null; housing_rows: number; housing_estimate: boolean;
-  services_date: Date | null; services_rows: number;
-  offices_date: Date | null; offices_rows: number;
+  services_rows: number;
+  offices_rows: number;
   exams_date: Date | null; exams_rows: number;
   jjm_date: Date | null; jjm_rows: number;
   dams_date: Date | null; dams_checked: Date | null; dams_rows: number; dams_estimate: boolean;
@@ -175,10 +175,8 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT max(x."updatedAt") FROM "HousingScheme" x WHERE x."districtId" = d.id) AS housing_checked,
       (SELECT count(*) FROM "HousingScheme" x WHERE x."districtId" = d.id)::int AS housing_rows,
       EXISTS (SELECT 1 FROM "HousingScheme" x WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%') AS housing_estimate,
-      (SELECT max(x."updatedAt") FROM "ServiceGuide" x WHERE x."districtId" = d.id) AS services_date,
-      (SELECT count(*) FROM "ServiceGuide" x WHERE x."districtId" = d.id)::int AS services_rows,
-      (SELECT max(x."updatedAt") FROM "GovOffice" x WHERE x."districtId" = d.id) AS offices_date,
-      (SELECT count(*) FROM "GovOffice" x WHERE x."districtId" = d.id)::int AS offices_rows,
+      (SELECT count(*) FROM "ServiceGuide" x WHERE x."districtId" = d.id AND x.active)::int AS services_rows,
+      (SELECT count(*) FROM "GovOffice" x WHERE x."districtId" = d.id AND x.active)::int AS offices_rows,
       (SELECT max(x."updatedAt") FROM "GovernmentExam" x
         WHERE x.level = 'national' OR (x.level = 'state' AND x."stateId" = d."stateId") OR x."districtId" = d.id) AS exams_date,
       (SELECT count(*) FROM "GovernmentExam" x
@@ -274,7 +272,10 @@ function rawFacts(r: Row, x: Extra): Record<string, Raw> {
     rtiTemplates: { rows: r.rtitpl_rows },
     rti: { rows: r.rti_rows, date: year(r.rti_year), period: r.rti_year ? String(r.rti_year) : null, periodKind: "year" },
     leaders: { rows: r.leaders_rows, date: r.leaders_date, checked: r.leaders_date },
-    elections: { rows: r.elections_rows, date: year(r.elections_year), period: r.elections_year ? String(r.elections_year) : null, periodKind: "year" },
+    // Results withheld (ELECTION_RESULTS_WITHHELD): nothing is shown, so nothing is "on time".
+    elections: ELECTION_RESULTS_WITHHELD
+      ? { rows: 0 }
+      : { rows: r.elections_rows, date: year(r.elections_year), period: r.elections_year ? String(r.elections_year) : null, periodKind: "year" },
     panchayats: x.nrega
       ? { rows: x.gp.rows + 1, date: x.nrega.date, checked: x.nrega.checked }
       : { rows: x.gp.rows, date: x.gp.date, checked: x.gp.date },
@@ -302,8 +303,11 @@ function rawFacts(r: Row, x: Extra): Record<string, Raw> {
       periodKind: "fy",
       estimate: r.housing_estimate,
     },
-    services: { rows: r.services_rows, date: r.services_date, checked: r.services_date },
-    offices: { rows: r.offices_rows, date: r.offices_date, checked: r.offices_date },
+    // Hand-typed directories: no date. @updatedAt moves on any bulk edit, so
+    // it is not a check date (Sept 2026 audit); src/lib/freshness.ts marks
+    // them "reference".
+    services: { rows: r.services_rows },
+    offices: { rows: r.offices_rows },
     exams: { rows: r.exams_rows, date: r.exams_date, checked: r.exams_date },
     jjm: { rows: r.jjm_rows, date: r.jjm_date, checked: r.jjm_date },
     dams: { rows: r.dams_rows, date: r.dams_date, checked: r.dams_checked, estimate: r.dams_estimate },

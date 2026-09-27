@@ -1,6 +1,6 @@
 {
   "description": "When you vote next, how voting works, and where your polling booth is",
-  "simpleNext": "The next election for {name} voters is the <b>{label}</b>, {when}.",
+  "simpleNext": "The next election on our calendar for {name} is the <b>{label}</b>, {when}. Our calendar has Lok Sabha and state assembly elections only, not city corporation or panchayat elections.",
   "simpleNone": "No coming election for {name} is on our calendar yet. Exact dates come from the Election Commission of India when it announces them.",
   "simpleWithheld": "Past results are not shown for now, because we are checking every number against the Election Commission first.",
   "when": {
@@ -14,7 +14,7 @@
   "tileAhead": "Elections ahead",
   "tileAheadSub": "On our calendar",
   "tileLast": "Last election",
-  "tileLastSub": "Most recent voting day",
+  "tileLastSub": "Year of the most recent election",
   "tileBooths": "Polling booths",
   "tileBoothsSub": "Listed on this page",
   "countdown": {

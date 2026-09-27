@@ -232,7 +232,10 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
     const d = daysUntil(e.pollingDate ?? e.nextExpected);
     return d != null && d >= 0;
   }).length;
-  // The most recent election held: the latest past polling date or "last held".
+  // The most recent election held: the latest past polling date or "last
+  // held". Shown as a year only: the national Lok Sabha row's lastHeld is its
+  // counting day (4 Jun 2024) and polling ran in phases on different days per
+  // seat, so no single stored day is "your" voting day (Sept 2026 audit).
   const lastHeld = events
     .flatMap((e) => [e.lastHeld, e.pollingDate].filter((d): d is string => Boolean(d) && (daysUntil(d) ?? 1) < 0))
     .sort()
@@ -313,7 +316,7 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
         <StatTile
           icon={History}
           label={t("tileLast")}
-          value={lastHeld ? f.date(lastHeld, { month: "short", year: "numeric" }) : "—"}
+          value={lastHeld ? f.date(lastHeld, { year: "numeric" }) : "—"}
           sub={t("tileLastSub")}
           countUp={false}
         />

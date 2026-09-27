@@ -148,8 +148,8 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
   const pct = (share: number) => f.number(share, { style: "percent", maximumFractionDigits: 0 });
 
   const guides: Guide[] = ((data?.data ?? []) as Guide[]).filter((s) => s.active);
-  // The page date: when these guides were last updated (newest row).
-  const updated = guides.reduce<string | null>((best, g) => (g.updatedAt && (!best || g.updatedAt > best) ? g.updatedAt : best), null);
+  // No page date: ServiceGuide.updatedAt moves on any bulk edit, so it is
+  // not the day the fees and steps were checked (Sept 2026 audit).
   const onlineCount = guides.filter((s) => Boolean(extUrl(s.onlineUrl))).length;
   const freeCount = guides.filter((s) => isFree(s.fees)).length;
   const officeCount = new Set(guides.map((s) => s.office.trim().toLowerCase()).filter(Boolean)).size;
@@ -191,7 +191,6 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
         icon={Briefcase}
         title={mt.label("services")}
         description={t("description")}
-        freshness={updated ? { asOf: updated, thresholdHours: 24 * 365 } : undefined}
       />
 
       {isLoading && <LoadingShell rows={4} />}
@@ -414,15 +413,7 @@ function ServicesPageInner({ params }: { params: Promise<{ locale: string; state
               </SheetBlock>
             )}
 
-            <SheetSmall>
-              {t("sheet.check")}
-              {open.updatedAt && (
-                <>
-                  {" · "}
-                  <span suppressHydrationWarning>{t("sheet.updated", { date: f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) })}</span>
-                </>
-              )}
-            </SheetSmall>
+            <SheetSmall>{t("sheet.check")}</SheetSmall>
           </>
         )}
       </DetailSheet>

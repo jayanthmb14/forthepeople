@@ -24,7 +24,9 @@
     "stateDirectory": "State government directory",
     "districtIndustries": "District Industries Centre",
     "statePsc": "State PSC and recruitment boards",
-    "govPortals": "Government public data portals"
+    "govPortals": "Government public data portals",
+    "newsReports": "News reports",
+    "statePolice": "State police websites"
   },
   "freq": {
     "whenPublished": "When the source publishes",

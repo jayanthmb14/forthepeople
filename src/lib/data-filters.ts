@@ -98,3 +98,21 @@ export const SHOWN_TRAFFIC = {
  */
 export const VERIFIED_PANCHAYAT_SOURCES: string[] = [];
 export const VERIFIED_PANCHAYAT = { source: { in: VERIFIED_PANCHAYAT_SOURCES } };
+
+// ── Government area (Sept 2026 audit) ───────────────────────────────────
+
+/**
+ * Election results are WITHHELD until the ElectionResult table is re-loaded
+ * from results.eci.gov.in (the seeded rows had wrong winners and round
+ * vote counts). Shared by the elections API, the freshness panel and the
+ * dataset dates, so no screen calls withheld results "on time".
+ */
+export const ELECTION_RESULTS_WITHHELD = true;
+
+/**
+ * CitizenTip rows are never served: the table has no source column and all
+ * 22 rows were typed into the Mar 2026 seeds (BBMP named as Mysuru's city
+ * body, a stale sugarcane FRP, an unchecked "free entry on Sundays"). Turn
+ * on only after the rows carry a checked source.
+ */
+export const SHOW_CITIZEN_TIP_ROWS = false;
