@@ -9,28 +9,9 @@
  * elements, so per-section CSS modules don't need to be edited.
  * ────────────────────────────────────────────────────────────────── */
 
-/* Step 26 commit 4: LIVE bar marquee — DESKTOP DEFAULT.
-   The LiveStrip's marquee track holds two copies of the trailing
-   items (sources / districts / states / etc.) for the seamless mobile
-   loop. On desktop we hide the duplicate so the bar reads exactly as
-   before and don't run the animation. The wrappers themselves use
-   inline `display: contents` so they're transparent at the layout
-   level on desktop — !important on the hide rule beats the inline
-   `display: contents` on the duplicate wrapper. */
-[data-ftp-live-marquee-track="1"] > div[aria-hidden="true"] {
-  display: none !important;
-}
-
-@keyframes ftp-live-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-ftp-live-marquee-track="1"] {
-    animation: none !important;
-  }
-}
+/* (Design v3: the LIVE-bar marquee rules that lived here were removed —
+   LiveStrip no longer sets data-ftp-live-bar / -pill / -marquee and
+   chrome has no motion. On phones that row simply scrolls sideways.) */
 
 /* Dots indicator — base styles always on so the HTML structure is
    stable across viewports; visibility is mobile-only. */
@@ -127,49 +108,6 @@
   [data-ftp-national-symbols="1"] > div,
   [data-ftp-kpi-quickactions="1"] > a {
     padding: 6px 8px !important;
-  }
-
-  /* Step 26 commit 4: LIVE bar — pin LIVE pill, marquee the rest.
-     The LIVE pip remains anchored at the left edge; the other five
-     fields scroll continuously through a width-bound zone. The track
-     contains two copies of the same items so `translateX(-50%)` loops
-     seamlessly. mask-image fades both edges so the loop transition
-     reads as ambient motion rather than a wrap. Hover pauses; the
-     prefers-reduced-motion override above hard-stops the animation. */
-  [data-ftp-live-bar="1"] {
-    overflow: hidden !important;
-  }
-  [data-ftp-live-pill="1"] {
-    flex: 0 0 auto !important;
-    padding-right: 8px !important;
-    border-right: 0.5px solid rgba(0, 0, 0, 0.08) !important;
-  }
-  [data-ftp-live-marquee="1"] {
-    display: block !important;
-    flex: 1 1 auto !important;
-    overflow: hidden !important;
-    position: relative !important;
-    -webkit-mask-image: linear-gradient(90deg, transparent, black 8px, black calc(100% - 24px), transparent);
-    mask-image: linear-gradient(90deg, transparent, black 8px, black calc(100% - 24px), transparent);
-  }
-  [data-ftp-live-marquee-track="1"] {
-    display: flex !important;
-    gap: 14px !important;
-    width: max-content !important;
-    align-items: center !important;
-    animation: ftp-live-marquee 25s linear infinite !important;
-  }
-  [data-ftp-live-marquee-track="1"] > div {
-    display: flex !important;
-    gap: 14px !important;
-    align-items: center !important;
-    flex-shrink: 0 !important;
-  }
-  [data-ftp-live-marquee-track="1"] > div[aria-hidden="true"] {
-    display: flex !important;
-  }
-  [data-ftp-live-marquee="1"]:hover [data-ftp-live-marquee-track="1"] {
-    animation-play-state: paused !important;
   }
 
   /* Step 25 commit 3: tighten inter-section vertical margin.
