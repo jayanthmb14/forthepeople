@@ -671,6 +671,7 @@ function PolicePageInner({ params }: { params: Promise<{ locale: string; state: 
           )
         }
         hueClassName={hue}
+        media={<CategoryGlyph glyph="shield" size={44} chip />}
         footer={
           open ? (
             <>
