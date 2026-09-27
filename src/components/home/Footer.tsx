@@ -97,10 +97,12 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
     },
   ];
 
-  // "Built by <Jayanth M B>" — the name is the link.
-  const builtBy = t.rich("builtBy", {
+  // "Built by <Jayanth M B>" — the name is the link. A fresh node for each
+  // place it is used (one element must not sit in two places of a tree
+  // that is handed to a client component).
+  const builtBy = () => t.rich("builtBy", {
     link: (chunks) => (
-      <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className={styles.builtByLink}>
+      <a key="linkedin" href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className={styles.builtByLink}>
         {chunks}
         <span className="sr-only"> {t("linkedinNote")}</span>
       </a>
@@ -109,17 +111,21 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
 
   const starBadge = stars && (
     <>
-      <span className={styles.footerStars} aria-hidden>
+      <span key="count" className={styles.footerStars} aria-hidden>
         <Star size={12} className={styles.star} />
         <span className="ftp-num">{stars}</span>
       </span>
-      <span className="sr-only">{th("stars", { n: githubStars ?? 0 })}</span>
+      <span key="sr" className="sr-only">
+        {th("stars", { n: githubStars ?? 0 })}
+      </span>
     </>
   );
 
+  // These pieces are handed to a client component (FooterFrame), where they
+  // can arrive as arrays: every top-level element carries a key.
   const main = (
     <>
-      <div className={`ftp-container ${styles.footerGrid}`}>
+      <div key="grid" className={`ftp-container ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
           <Link href={`/${locale}`} className={styles.footerLogo} aria-label={th("home")} translate="no">
             <span className={styles.logoTile} aria-hidden>
@@ -170,7 +176,7 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
         </nav>
       </div>
 
-      <div className="ftp-container">
+      <div key="soon" className="ftp-container">
         <section className={styles.soon} aria-labelledby="ftp-footer-soon">
           <h2 id="ftp-footer-soon" className={styles.soonTitle}>
             {t("comingSoonTitle")}
@@ -197,15 +203,15 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
   // The rule sits inside the container, so it lines up with the dashed rule
   // and the columns above (not with the container's padding).
   const bottom = (
-    <div className="ftp-container">
+    <div key="bottom" className="ftp-container">
       <div className={styles.footerBottom}>
-        <span>{builtBy}</span>
+        <span>{builtBy()}</span>
         <span>{t("article")}</span>
       </div>
     </div>
   );
   const slimBottom = (
-    <div className="ftp-container">
+    <div key="bottom" className="ftp-container">
       <div className={styles.footerBottom}>
         <span>{t("article")}</span>
       </div>
@@ -216,13 +222,15 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
   // About · Privacy · Disclaimer. FooterFrame adds the "More" button.
   const slimLine = (
     <>
-      <Link href={`/${locale}`} className={styles.slimMark} aria-label={th("home")}>
+      <Link key="mark" href={`/${locale}`} className={styles.slimMark} aria-label={th("home")}>
         <span className={`${styles.logoTile} ${styles.slimTile}`} aria-hidden>
           <Users size={13} strokeWidth={2.4} />
         </span>
       </Link>
-      <span className={styles.slimBuilt}>{builtBy}</span>
-      <ul className={styles.slimLinks}>
+      <span key="built" className={styles.slimBuilt}>
+        {builtBy()}
+      </span>
+      <ul key="links" className={styles.slimLinks}>
         <li>
           <Link href={`/${locale}/about`}>{t("aboutUs")}</Link>
         </li>

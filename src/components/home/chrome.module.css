@@ -1090,6 +1090,9 @@
     visibility 0s;
 }
 .slimMoreClip {
+  /* relative: also clips the absolutely placed screen-reader texts inside,
+     which would otherwise make the page scroll past the folded footer. */
+  position: relative;
   min-height: 0;
   overflow: hidden;
 }
