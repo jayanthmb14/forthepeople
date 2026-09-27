@@ -4,57 +4,66 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Health — Design v3 module page (CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Mostly reference content (helplines, schemes, the kinds of hospitals a
+//  district has) plus the sanctioned-vs-filled staffing numbers, which
+//  carry their own "as of" date. Phone numbers are real tel: links with
+//  44 px tap targets on phones.
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
-import NoDataCard from "@/components/common/NoDataCard";
-import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
-import StaffingWidget from "@/components/district/StaffingWidget";
+import { getStateConfig } from "@/lib/constants/state-config";
 import ModuleNews from "@/components/district/ModuleNews";
 import { use } from "react";
 import { Heart, Phone, ExternalLink } from "lucide-react";
-import { ModuleHeader, SectionLabel } from "@/components/district/ui";
+import { PageHeader, Section, Card, ToolbarButton } from "@/components/district/ui";
+import StaffingSection from "@/components/district/daily-services/StaffingSection";
+import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
-// Static health helplines for India — national numbers only
+// Static health helplines for India — national numbers only.
+// `urgent` marks the life-safety numbers, shown in the danger colour.
 const HELPLINES = [
-  { name: "National Emergency", number: "112", color: "#DC2626" },
-  { name: "Ambulance", number: "108", color: "#DC2626" },
-  { name: "iCALL (Mental Health)", number: "9152987821", color: "#7C3AED" },
-  { name: "Anti-Poison (AIIMS)", number: "1800-116-117", color: "#D97706" },
-  { name: "Ayushman Bharat", number: "14555", color: "#16A34A" },
-  { name: "National Health Helpline", number: "1800-180-1104", color: "#2563EB" },
+  { name: "National Emergency", number: "112", urgent: true },
+  { name: "Ambulance", number: "108", urgent: true },
+  { name: "iCALL (Mental Health)", number: "9152987821" },
+  { name: "Anti-Poison (AIIMS)", number: "1800-116-117" },
+  { name: "Ayushman Bharat", number: "14555" },
+  { name: "National Health Helpline", number: "1800-180-1104" },
 ];
 
 // State-specific health schemes — always show national + state schemes
-const STATE_HEALTH_SCHEMES: Record<string, Array<{ name: string; desc: string; color: string; url: string | null }>> = {
+const STATE_HEALTH_SCHEMES: Record<string, Array<{ name: string; desc: string; url: string | null }>> = {
   karnataka: [
-    { name: "Arogya Karnataka", desc: "State health assurance scheme for Karnataka residents", color: "#2563EB", url: "https://arogyakarnataka.gov.in" },
+    { name: "Arogya Karnataka", desc: "State health assurance scheme for Karnataka residents", url: "https://arogyakarnataka.gov.in" },
   ],
   telangana: [
-    { name: "Aarogyasri", desc: "₹5 lakh health coverage for BPL families, covering 2,500+ procedures at 1,100+ empanelled hospitals", color: "#2563EB", url: "https://aarogyasri.telangana.gov.in" },
+    { name: "Aarogyasri", desc: "₹5 lakh health coverage for BPL families, covering 2,500+ procedures at 1,100+ empanelled hospitals", url: "https://aarogyasri.telangana.gov.in" },
   ],
   "tamil-nadu": [
-    { name: "CMCHIS", desc: "Chief Minister's Comprehensive Health Insurance Scheme — cashless treatment up to ₹5 lakh", color: "#2563EB", url: null },
+    { name: "CMCHIS", desc: "Chief Minister's Comprehensive Health Insurance Scheme — cashless treatment up to ₹5 lakh", url: null },
   ],
   delhi: [
-    { name: "Delhi Arogya Kosh", desc: "Financial assistance for treatment of serious illnesses for Delhi residents", color: "#2563EB", url: null },
+    { name: "Delhi Arogya Kosh", desc: "Financial assistance for treatment of serious illnesses for Delhi residents", url: null },
   ],
   maharashtra: [
-    { name: "MJPJAY", desc: "Mahatma Jyotiba Phule Jan Arogya Yojana — cashless treatment for BPL families", color: "#2563EB", url: null },
+    { name: "MJPJAY", desc: "Mahatma Jyotiba Phule Jan Arogya Yojana — cashless treatment for BPL families", url: null },
   ],
   "west-bengal": [
-    { name: "Swasthya Sathi", desc: "Universal health coverage for all families in West Bengal — ₹5 lakh per family", color: "#2563EB", url: null },
+    { name: "Swasthya Sathi", desc: "Universal health coverage for all families in West Bengal — ₹5 lakh per family", url: null },
   ],
   "uttar-pradesh": [
-    { name: "Ayushman Bharat UP", desc: "Health coverage for BPL families in UP — ₹5 lakh per family, extended state coverage", color: "#2563EB", url: null },
+    { name: "Ayushman Bharat UP", desc: "Health coverage for BPL families in UP — ₹5 lakh per family, extended state coverage", url: null },
   ],
 };
 
 const NATIONAL_SCHEMES = [
-  { name: "Ayushman Bharat PM-JAY", desc: "₹5 lakh health coverage per family per year", color: "#16A34A", url: "https://pmjay.gov.in" },
-  { name: "Janani Suraksha Yojana", desc: "Cash incentive for institutional deliveries", color: "#D97706", url: null },
-  { name: "RBSK", desc: "Rashtriya Bal Swasthya Karyakram for children", color: "#7C3AED", url: null },
+  { name: "Ayushman Bharat PM-JAY", desc: "₹5 lakh health coverage per family per year", url: "https://pmjay.gov.in" },
+  { name: "Janani Suraksha Yojana", desc: "Cash incentive for institutional deliveries", url: null },
+  { name: "RBSK", desc: "Rashtriya Bal Swasthya Karyakram for children", url: null },
 ];
 
 function getHospitalTypes(stateSlug: string) {
@@ -73,93 +82,113 @@ function getHospitalTypes(stateSlug: string) {
 function HealthPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const base = `/${locale}/${state}/${district}`;
+  const schemes = [...NATIONAL_SCHEMES, ...(STATE_HEALTH_SCHEMES[state] ?? [])];
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Heart} title="Health" description="Emergency helplines, hospitals, and health schemes" backHref={base} />
-      {(() => { const _src = getModuleSources("health", state); return <DataSourceBanner moduleName="health" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
-      <AIInsightCard module="health" district={district} />
-
-      {/* Sanctioned vs. Filled staffing widget */}
-      <StaffingWidget
-        module="health"
-        roleLabel="Healthcare Staff"
-        district={district}
-        state={state}
-        accentColor="#DC2626"
+    <ModulePage>
+      <PageHeader
+        icon={Heart}
+        title="Health"
+        description="Emergency helplines, hospitals, and health schemes"
+        backHref={base}
+        accent={getModuleAccent("health")}
       />
 
-      {/* Emergency Helplines */}
-      <SectionLabel>Emergency Helplines</SectionLabel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10, marginBottom: 24 }}>
-        {HELPLINES.map((h) => (
-          <a key={h.name} href={`tel:${h.number}`} style={{
-            display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
-            background: "#FFF", border: `1px solid ${h.color}30`, borderRadius: 12,
-            textDecoration: "none",
-          }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${h.color}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Phone size={18} style={{ color: h.color }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-mono)", color: h.color }}>{h.number}</div>
-              <div style={{ fontSize: 11, color: "#6B6B6B" }}>{h.name}</div>
-            </div>
-          </a>
-        ))}
-      </div>
+      <AIInsightCard module="health" district={district} />
 
-      {/* Health schemes — national + state-specific */}
-      <SectionLabel>Government Health Schemes</SectionLabel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginBottom: 24 }}>
-        {[...NATIONAL_SCHEMES, ...(STATE_HEALTH_SCHEMES[state] ?? [])].map((s) => (
-          <div key={s.name} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A", marginBottom: 4 }}>{s.name}</div>
-              <Heart size={16} style={{ color: s.color, flexShrink: 0 }} />
-            </div>
-            <div style={{ fontSize: 13, color: "#6B6B6B", marginBottom: 10 }}>{s.desc}</div>
-            {s.url && (
-              <a href={s.url} target="_blank" rel="noopener noreferrer" style={{
-                display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: s.color, textDecoration: "none", fontWeight: 600,
-              }}>
-                Learn More <ExternalLink size={11} />
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* Sanctioned vs. filled staffing (renders nothing when there is no data). */}
+      <StaffingSection module="health" roleLabel="Healthcare staff" district={district} state={state} />
 
-      {/* Hospital types */}
-      <SectionLabel>Healthcare Infrastructure</SectionLabel>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {getHospitalTypes(state).map((h) => (
-          <div key={h.type} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: "12px 14px", display: "flex", gap: 10 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#DC2626", flexShrink: 0, marginTop: 5 }} />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>{h.type}</div>
-              <div style={{ fontSize: 12, color: "#6B6B6B", marginTop: 2 }}>{h.description}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <ModuleNews district={district} state={state} locale={locale} module="health" />
-
-      {/* Find hospital */}
-      <div style={{ marginTop: 24, background: "linear-gradient(135deg, #FFF5F5, #FFF)", border: "1px solid #FECACA", borderRadius: 12, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A" }}>Find nearest hospital</div>
-          <div style={{ fontSize: 12, color: "#6B6B6B" }}>View hospitals on NHM portal</div>
+      {/* Emergency helplines — each card is a tel: link. */}
+      <Section title="Emergency helplines">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+          {HELPLINES.map((h) => (
+            <a
+              key={h.name}
+              href={`tel:${h.number}`}
+              className="ftp-card-link"
+              aria-label={`Call ${h.name}: ${h.number}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                minHeight: 44,
+                padding: "12px 14px",
+                background: "var(--ftp-surface)",
+                border: "1px solid var(--ftp-border)",
+                borderRadius: "var(--ftp-radius-card)",
+                textDecoration: "none",
+              }}
+            >
+              <Phone size={18} aria-hidden style={{ color: h.urgent ? "var(--ftp-danger)" : "var(--ftp-text-2)", flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div className="ftp-num" style={{ fontSize: 18, lineHeight: "24px", color: h.urgent ? "var(--ftp-danger)" : "var(--ftp-text)" }}>
+                  {h.number}
+                </div>
+                <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{h.name}</div>
+              </div>
+            </a>
+          ))}
         </div>
-        <a href="https://nhm.gov.in" target="_blank" rel="noopener noreferrer" style={{
-          display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px",
-          background: "#DC2626", color: "#FFF", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
-        }}>
-          NHM Portal <ExternalLink size={11} />
-        </a>
-      </div>
-    </div>
+      </Section>
+
+      {/* Health schemes — national + state-specific. */}
+      <Section title="Government health schemes">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+          {schemes.map((s) => (
+            <Card key={s.name} as="article">
+              <h3 className="ftp-title">{s.name}</h3>
+              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 0" }}>{s.desc}</p>
+              {s.url && (
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, marginTop: 8, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}
+                >
+                  Learn more <ExternalLink size={12} aria-hidden />
+                </a>
+              )}
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      {/* The kinds of facilities a district has (reference). */}
+      <Section title="Healthcare infrastructure">
+        <Card padding={0}>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {getHospitalTypes(state).map((h, i) => (
+              <li key={h.type} style={{ padding: "12px 16px", borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
+                <div className="ftp-title" style={{ fontSize: 13, lineHeight: "20px" }}>{h.type}</div>
+                <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{h.description}</div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </Section>
+
+      {/* Find a hospital on the NHM portal. */}
+      <Card style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div className="ftp-title">Find nearest hospital</div>
+          <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>View hospitals on NHM portal</div>
+        </div>
+        <ToolbarButton icon={ExternalLink} href="https://nhm.gov.in" external>
+          NHM Portal
+        </ToolbarButton>
+      </Card>
+
+      <ModuleSources module="health" state={state} />
+      <ModuleNews district={district} state={state} locale={locale} module="health" />
+      <ModuleToolbar
+        locale={locale}
+        district={district}
+        moduleSlug="health"
+        moduleLabel="Health"
+        shareText={`Health helplines and schemes for ${district}: Emergency 112, Ambulance 108`}
+      />
+    </ModulePage>
   );
 }
 
