@@ -5,11 +5,18 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Insight Generator — uses callAI (OpenRouter tiered routing)
+// Insight Generator — uses callAIJSON (purpose "insight" = Tier 2,
+// see src/lib/ai-models.ts)
+//
+// v5: a module whose data is empty (or whose data could not be read) is
+// skipped — no AI call, nothing written — instead of asking a paid model to
+// judge nothing. A failed AI call is logged with its message and writes
+// nothing (the previous insight stays until it expires).
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { callAIJSON } from "@/lib/ai-provider";
 import { ModuleInsightConfig, getTtlMs } from "./insight-config";
+import { isEmptyModuleData } from "./insight-data";
 
 type Severity = "good" | "watch" | "alert" | "critical";
 
@@ -22,11 +29,12 @@ interface GeneratedInsight {
 }
 
 // ── Fetch module data from our own API ────────────────────
+/** ok=false when the data API could not be read; data is the payload's "data". */
 async function fetchModuleData(
   module: string,
   districtSlug: string,
   stateSlug: string
-): Promise<Record<string, unknown>> {
+): Promise<{ ok: boolean; data: unknown; error?: string }> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
     const url = `${baseUrl}/api/data/${module}?district=${districtSlug}&state=${stateSlug}`;
@@ -34,11 +42,13 @@ async function fetchModuleData(
       headers: { "User-Agent": "ForThePeople-InsightBot/1.0" },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return {};
-    const json = await res.json();
-    return (json?.data ?? json) as Record<string, unknown>;
-  } catch {
-    return {};
+    if (!res.ok) return { ok: false, data: null, error: `data API HTTP ${res.status}` };
+    const json = (await res.json()) as unknown;
+    // The data API answers { data, meta }; an unknown module gives data: null.
+    const data = json && typeof json === "object" && "data" in json ? (json as { data: unknown }).data : json;
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, data: null, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -47,7 +57,7 @@ function buildPrompts(
   config: ModuleInsightConfig,
   districtName: string,
   stateName: string,
-  data: Record<string, unknown>
+  data: unknown
 ): { systemPrompt: string; userPrompt: string } {
   const snippet = JSON.stringify(data, null, 2).slice(0, 3000);
 
@@ -76,21 +86,36 @@ Severity meaning:
 }
 
 // ── Generate and persist one insight ─────────────────────
-export async function generateInsight(
+export type InsightOutcome =
+  | { status: "ok"; model: string }
+  | { status: "empty"; reason: string }
+  | { status: "error"; error: string };
+
+/**
+ * Generate one module insight and store it.
+ *   "ok"    written
+ *   "empty" skipped: no data for this module (or the data API failed) — no AI call
+ *   "error" the AI call failed or gave a half answer — nothing written
+ */
+export async function generateInsightDetailed(
   config: ModuleInsightConfig,
   districtId: string,
   districtSlug: string,
   districtName: string,
   stateSlug: string,
-  stateName: string
-): Promise<boolean> {
-  try {
-    const data = await fetchModuleData(config.module, districtSlug, stateSlug);
-    const { systemPrompt, userPrompt } = buildPrompts(config, districtName, stateName, data);
+  stateName: string,
+  opts: { deadlineAt?: number } = {},
+): Promise<InsightOutcome> {
+  const fetched = await fetchModuleData(config.module, districtSlug, stateSlug);
+  if (!fetched.ok) return { status: "empty", reason: fetched.error ?? "data API failed" };
+  if (isEmptyModuleData(fetched.data)) return { status: "empty", reason: "no data for this module" };
 
-    // Use unified AI provider (OpenRouter tiered routing). The answer is
-    // parsed inside callAIJSON, so prose or broken JSON moves to the next model.
-    const { data: parsed, ...response } = await callAIJSON<{ severity?: string; opinion?: string; recommendation?: string }>({
+  try {
+    const { systemPrompt, userPrompt } = buildPrompts(config, districtName, stateName, fetched.data);
+
+    // The answer is parsed inside callAIJSON, so prose or broken JSON moves
+    // to the next model instead of failing here.
+    const { data: parsed, ...response } = await callAIJSON<{ severity?: unknown; opinion?: unknown; recommendation?: unknown }>({
       systemPrompt,
       userPrompt,
       purpose: "insight",
@@ -98,14 +123,20 @@ export async function generateInsight(
       maxTokens: 2048,
       temperature: 0.3,
       district: districtSlug,
+      timeoutMs: 45_000,
+      deadlineAt: opts.deadlineAt,
     });
 
-    // Validate required fields
-    const severity = (["good", "watch", "alert", "critical"].includes(parsed.severity ?? "")
-      ? parsed.severity
-      : "watch") as Severity;
-    const opinion = parsed.opinion ?? "No analysis available.";
-    const recommendation = parsed.recommendation ?? "No recommendation available.";
+    // Both texts are shown to citizens: a half answer is not written.
+    const opinion = typeof parsed.opinion === "string" ? parsed.opinion.trim() : "";
+    const recommendation = typeof parsed.recommendation === "string" ? parsed.recommendation.trim() : "";
+    if (!opinion || !recommendation) {
+      return { status: "error", error: `${response.model} answered without an opinion or recommendation` };
+    }
+    const severity: Severity =
+      parsed.severity === "good" || parsed.severity === "watch" || parsed.severity === "alert" || parsed.severity === "critical"
+        ? parsed.severity
+        : "watch";
 
     const result: GeneratedInsight = {
       severity,
@@ -140,10 +171,25 @@ export async function generateInsight(
       },
     });
 
-    return true;
-  } catch {
-    return false;
+    return { status: "ok", model: result.aiModel };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    console.error(`[insights] ${config.module}/${districtSlug} failed:`, error.slice(0, 300));
+    return { status: "error", error };
   }
+}
+
+/** Boolean wrapper kept for scripts and the admin "run" button: true = written. */
+export async function generateInsight(
+  config: ModuleInsightConfig,
+  districtId: string,
+  districtSlug: string,
+  districtName: string,
+  stateSlug: string,
+  stateName: string
+): Promise<boolean> {
+  const outcome = await generateInsightDetailed(config, districtId, districtSlug, districtName, stateSlug, stateName);
+  return outcome.status === "ok";
 }
 
 // ── Fetch insight for a module (from DB) ─────────────────
