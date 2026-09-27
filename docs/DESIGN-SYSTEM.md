@@ -1,129 +1,122 @@
-# Design system — v3 "Civic Ledger"
+# ForThePeople.in — Design System v4 "Rang"
 
-Written 2026-09-27. The binding concept is CONCEPT-v3 (design scratchpad, §2
-principles). This page is the short, practical version for anyone editing a
-citizen-facing page. Everything here is enforced by three files:
+The site should feel colourful, warm and easy for anyone to read (a 5-year-old,
+a 70-year-old), while every number stays honest: a date and a source beside it.
+v4 replaces the calm v3 "Civic Ledger" look. Reference implementations:
+`src/app/[locale]/page.tsx` (home), `OverviewClient.tsx` (district overview),
+`[district]/finance/page.tsx` (module page).
 
-| What | Where |
-|---|---|
-| Tokens (colours, radii, fonts, layout utilities) | `src/app/globals.css` — the `DESIGN v3` block |
-| Component kit | `src/components/district/ui.tsx` |
-| Module groups + rail | `src/lib/constants/sidebar-modules.ts`, `src/components/layout/Sidebar.tsx` |
+## 1. Colour
 
-## The rules (from CONCEPT-v3 §2)
+| Token | Value | Use |
+|---|---|---|
+| `--ftp-bg` | `#F6F5F0` | page (with soft saffron/green washes at the top) |
+| `--ftp-surface` | `#FFFFFF` | cards |
+| `--ftp-text` / `--ftp-text-2` | `#15171C` / `#5D6270` | text |
+| brand | `#2563EB` | links, primary buttons outside modules |
+| saffron / green | `#FF9933` / `#138808` | ceremonial washes and the intro line only. Never stripes, never a chakra. |
 
-1. **Calm density.** No gradients, shadows, glow, count-ups or pulsing. The one
-   allowed animation is the 6 px live dot when data is under 30 minutes old.
-2. **One grid.** `.ftp-container` = max 1200 px, 24 px side padding (16 on
-   phones). `.ftp-grid-12` = 12 columns, 24 px gutter. District pages: 240 px
-   rail + content column with a 960 px reading width.
-3. **One type system.** Plus Jakarta Sans 400/500; 600 only for a page H1.
-   Numbers are JetBrains Mono 500 with tabular figures (`.ftp-num`).
-4. **Tokens only. No hex in components.** Write `var(--ftp-brand)`, never
-   `#2563EB`. Semantic colour appears as text or a 6 px dot, never a stripe,
-   gradient or nested tinted box.
-5. **Honest freshness.** Every number that can go stale shows "As of <date>" or
-   a `FreshnessPill`. "Live" means under 30 minutes. Never say "real-time".
-6. **Bilingual identity.** Local-script names come from the dictionary
-   (`titleLocal`), never machine translation.
-7. **Sources are first-class.** A `SourcePill` beside headline numbers and a
-   `SourcesFooter` on every module page.
-8. **Lucide icons only** (16/18/20 px). No emoji in chrome.
-9. **Accessible as drawn.** Real buttons and links, 44 px targets on phones,
-   4.5:1 contrast, one `<h1>` per page, visible focus, reduced motion respected.
+**Module hues.** Every module owns one of 14 hues (`src/lib/design/hues.ts`,
+CSS `.ftp-hue-<name>` in `globals.css`). A hue sets four variables:
 
-## Tokens (`:root` in globals.css, dark variants under `[data-theme="dark"]`)
+- `--hue`: icons, bars, borders, chart fills
+- `--hue-deep`: numbers and text on a tint
+- `--hue-pop`: second chart series, light fills
+- `--hue-tint`: soft backgrounds
 
-```
-Surfaces   --ftp-bg  --ftp-surface  --ftp-surface-2  --ftp-border  --ftp-border-strong
-Text       --ftp-text  --ftp-text-2
-Brand      --ftp-brand  --ftp-brand-deep  --ftp-brand-tint
-Semantic   --ftp-live/-tint/-text  --ftp-warn/-tint  --ftp-danger/-tint
-           --ftp-features/-tint  --ftp-support/-tint
-Map        --ftp-map-live  --ftp-map-locked
-Shape      --ftp-radius-card 12px  --ftp-radius-tile 8px  --ftp-radius-pill 999px
-Type       --ftp-font-sans  --ftp-font-mono   (aliases of the next/font variables)
-Layout     --ftp-container-max 1200  --ftp-reading-max 960  --ftp-gutter 24
-           --ftp-rail-width 240  --ftp-rail-collapsed 56
-```
+`HueScope` (district layout) applies the open module's hue automatically, so
+kit components on a module page are already coloured. To colour a single
+element differently, wrap it in `className="ftp-hue-<name>"`. Never hard-code
+hex values in components when a hue variable exists.
 
-Module accents (icon tints only) reuse the `--accent-<name>-700` ramps:
-civic → purple · money → amber · services → teal · accountability → slate ·
-community → pink. `getModuleAccent(slug)` in sidebar-modules.ts returns the
-name; `PageHeader accent="teal"` applies it.
+Districts also have hues (`getDistrictHue(slug)`), used by district cards and
+the identity card.
 
-## Type scale (CSS classes)
+## 2. Type
 
-| Class | Size / line | Weight | Use |
-|---|---|---|---|
-| `.ftp-h1` | 36 / 40 (28 / 32 phone) | 600 | District overview H1 only |
-| `.ftp-h2` | 22 / 28 | 500 | Section titles, module page H1 |
-| `.ftp-title` | 15 / 22 | 500 | Card titles |
-| `.ftp-body` | 13 / 20 | 400 | Body text |
-| `.ftp-label` | 11 / 16, uppercase, +0.04em | 500 | Labels above numbers |
-| `.ftp-num` | inherits size | 500 mono, tabular | Every number |
+- **Bricolage Grotesque** (`--ftp-font-display`, `.ftp-display`, `.ftp-bignum`):
+  headings, big numbers, card titles.
+- **Plus Jakarta Sans** (`--ftp-font-sans`): everything you read, and small
+  numbers with tabular figures (`.ftp-num`).
+- Labels are **sentence case** (no tracked-out capitals). No eyebrow labels
+  above every heading.
+- Local-script names sit beside the English name in `--hue-deep`.
 
-## Kit exports (`@/components/district/ui`)
+## 3. Emoji
 
-**Page structure**
-- `PageHeader({icon, title, titleLocal?, description, backHref, freshness?, source?, actions?, accent?})`
-- `Section({title, titleLocal?, action?, children})`, `SectionHeader` (row only)
-- `Card({children, padding?, as?, href?})`, `CardGrid({children, cols?})`
-- `Toolbar({children})` + `ToolbarButton({icon?, children, onClick?|href?})` — quiet
-  button, 32 px on desktop and 44 px on phones (class `.ftp-btn`; pages need no override)
-- `PrimaryButton({children, icon?, href?, external?, onClick?, type?, disabled?, fullWidth?})`
-  — the one filled button per view: `--ftp-brand` fill, `--ftp-surface` text, radius 8,
-  40 px desktop / 44 px phone. A `<Link>` when `href` is set, a `<button>` otherwise.
-- `SourcesFooter({sources: [{name, url?, licence?, frequency?}], methodologyHref?})`
+Emoji are part of the language of the site. Use them in these places:
 
-**Numbers and freshness**
-- `StatTile({label, value, unit?, sub?, asOf?, asOfPeriod?, trend?, icon?, source?})`
-- `StatStrip({children, cols?})` — 2/3/4 tiles, 2 × 2 on phones. The column count
-  ignores children that render nothing (`{x && <StatTile/>}` when `x` is false).
-- `FreshnessPill({asOf, status?, thresholdHours?})` — renders nothing without `asOf`.
-  `PageHeader freshness={{asOf, status?, thresholdHours?}}` forwards the threshold
-  (e.g. `168` for a weekly feed so it stays green all week).
-- `SourcePill({label, href?})` — never wider than its parent; a long name ends in
-  "…" and the full name is in the tooltip
-- `AsOfText({asOf?, period?, prefix?})` — "As of 12 Sep", or with a free-text period
-  "As of Census 2011" / "As of FY 2024-25". `AsOfPeriod({period, prefix?})` is the
-  shorthand for figures that belong to a period rather than a date.
-- `describeFreshness(asOf, status?, thresholdHours?)` and `formatIST(date)` — pure helpers
-- `ProgressBar({value, max | pct, label?, tone?})`, `KpiRing({score, grade})`
+- the module emoji from the registry (`SIDEBAR_MODULES[].emoji`), in the sidebar, the header band and tiles;
+- `StatTile emoji="…"`;
+- `Section emoji="…"`;
+- the Explainer, ChartCard and EmptyState components.
 
-**Lists, filters, states**
-- `DataTable({columns, rows, dense?, emptyText?})` — zebra, sticky header, mono numerics
-- `Pill({tone, dot?, icon?})`, `Chips({items, value, onChange})`
-- `LoadingShell({rows?})`, `ErrorBlock({message?, onRetry?})`, `EmptyState({title, body?, action?})`
-- `InfoCard`, `AIInsightBanner`, `SeverityBadge`, `CacheBadge`, `LastUpdated`
+Keep it to **one emoji per element**. Never use emoji inside running
+sentences, and never use more than one in a heading.
 
-**Legacy wrappers (keep compiling, migrate when you touch the page)**
-`ModuleHeader → PageHeader` (`liveTag` ignored) · `StatCard → StatTile`
-(`accent` ignored) · `SectionLabel → SectionHeader` · `EmptyBlock → EmptyState`
-(`icon` ignored) · `LiveBadge({asOf?})` → FreshnessPill, nothing without a date ·
-`LastUpdatedBadge → FreshnessPill`.
+## 4. Components (kit: `src/components/district/ui.tsx`)
 
-## Hooks and helpers
+- `PageHeader`: a gradient band in the module hue, with the module emoji tile, a
+  watermark icon, the group chip, the title and local name, and the freshness
+  and source pills. Every module page starts with it.
+- `StatTile`: a tinted tile with an `emoji` chip. The number is in `--hue-deep`
+  and counts up once.
+- `Card tinted`: a soft hue wash. Plain `Card` for secondary content.
+- `Section emoji`: an H2 with an emoji chip.
+- `ProgressBar`: a hue gradient that grows in. `KpiRing`: a ring that draws itself in the hue.
+- `DataTable`: a hue-tinted header, with rows that tint on hover.
+- `Chips`: the active chip is filled with the hue.
+- `EmptyState emoji`: a friendly empty message, never a fake zero.
 
-- `useFreshness(stateSlug, districtSlug)` — one cached fetch of
-  `/api/data/freshness` per district (5 min), `forModule("crops")` → `{asOf, status}`.
-- `useMyDistrict()` — the visitor's remembered district (`ftp.myDistrict`,
-  written only while "Remember my district" is on).
-- `src/lib/geo/locate.ts` — `pointInPolygon`, `findStateForPoint`,
-  `nearestDistrict`, `haversineKm`, `STATE_NAME_TO_SLUG` (pure, unit-tested).
-- `src/lib/geo/district-centroids.ts` — HQ-town lat/lng per district; a TODO
-  list of districts still missing a value lives at the top of the file.
-- `src/components/home/YourDistrictStrip.tsx` — the "Find my district" row.
-  Not mounted yet. Coordinates never leave the browser.
+**Visuals** (`src/components/district/visuals.tsx`) are the pictures that make
+data readable at a glance:
 
-## Checks before you commit a page
+- `Explainer`: a 💡 "In simple words" card with one plain sentence.
+- `Pictogram`: 10 symbols with N lit ("8 of every 10 rupees were spent").
+- `Gauge`: a half-circle dial from 0 to 100.
+- `WaterTank`: a tank filled to a %, with a moving wave. Use it for dams and coverage.
+- `WeatherGlyph` / `weatherEmoji(conditions)`: a weather picture.
+- `ChartCard`: the frame for every chart. It holds the title, emoji, units,
+  the 👉 "simple" sentence, legend, source, as-of date and a "Show as table" switch.
+- `ChartGradients` + `CHART_AXIS` + `chartTooltipStyle`: the recharts theme.
+  Use `fill="url(#ftpHueFill)"` (vertical bars), `url(#ftpHueFillH)` (horizontal
+  bars), `url(#ftpHueArea)` (areas), `url(#ftpMutedFill)` (the comparison series),
+  and `stroke="var(--hue)"` for lines. Round bar ends (radius 6).
 
-```
-npx tsc --noEmit                                         # 0 errors
-npx eslint <files you touched>                           # 0 errors
-grep -nE '#[0-9A-Fa-f]{6}' <files you touched>           # 0 hits (globals.css excepted)
-grep -nP "[\x{1F300}-\x{1FAFF}]" <files you touched>     # 0 emoji in chrome
-```
+**The module-page recipe** (see finance):
 
-One `<h1>` per page; every stale-able number has an `asOf` or FreshnessPill;
-module pages end with `SourcesFooter` and a `Toolbar`.
+1. `PageHeader`
+2. a one-paragraph description for search engines
+3. the AI insight card
+4. the `StatStrip` of emoji `StatTile`s
+5. the picture row (`.ftp-picture-row`), which holds an Explainer, a pictogram and a gauge or tank
+6. the charts inside `ChartCard`s
+7. the detail tables
+8. the sources footer
+
+Only show a picture when real data supports it. Never draw a chart from a
+single point.
+
+## 5. Motion
+
+There is one orchestrated moment: the home-page intro (2 s, once per session, skippable).
+It is followed by the hero cascade (`.ftp-rise` / `.ftp-pop` with `--i` stagger).
+Everything else in the design moves only for data:
+
+- bars grow in
+- rings and gauges draw in
+- numbers count up once
+- tanks show a wave
+
+Cards lift 2 px on hover when they are links. `prefers-reduced-motion` turns all
+of it off (`globals.css`). Do not add fade-ups to every section.
+
+## 6. Honesty rules (unchanged)
+
+- Every number that can go stale shows "As of …" or a FreshnessPill, plus a
+  source.
+- Nothing says "Live" unless the data is less than 30 minutes old.
+- If a source failed, show the EmptyState. Never invent or pad data.
+- Never use "scraper/scraping" in citizen text. Never hard-code district counts
+  (use `platform-facts` / the database).
+- Budget values are stored in rupees and formatted at render.
