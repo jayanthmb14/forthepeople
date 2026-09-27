@@ -41,5 +41,32 @@
       "done": "{n} completed",
       "barAria": "{building} being built, {delayed} of them late, {done} completed"
     }
+  },
+  "verify": {
+    "chip": {
+      "verified": "Double-checked",
+      "single-source": "One source only",
+      "disagreement": "Sources disagree",
+      "unchecked": "Not double-checked yet"
+    },
+    "text": {
+      "verified": "{n, plural, one {# source agrees} other {# sources agree}} on this data.",
+      "verifiedGeneric": "We compared this with a second source and they agree.",
+      "single-source": "Only one source publishes this, so there is nothing to compare it with yet.",
+      "disagreement": "Our sources do not agree on this data. Please check the official source before you use it.",
+      "unchecked": "We have not compared this with a second source yet."
+    },
+    "lastCompared": "Compared on {date}",
+    "agrees": "{source} agrees",
+    "disagrees": "{source} does not agree",
+    "checkedOn": "checked {date}",
+    "col": "Double-checked?",
+    "summaryTitle": "Compared with a second source:",
+    "summary": {
+      "verified": "{n} double-checked",
+      "single-source": "{n} with one source only",
+      "disagreement": "{n} where sources disagree",
+      "unchecked": "{n} not checked yet"
+    }
   }
 }
