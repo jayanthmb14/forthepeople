@@ -73,8 +73,10 @@ export interface AlertsRunResult extends ScraperResult {
   capFetched: number;
   capFailed: number;
   expired: number;
-  /** New or changed alerts per district slug. */
+  /** New or changed alerts per district slug (for cache busting). */
   changedBy: Record<string, number>;
+  /** New alert threads per district slug (for the "What changed" log). */
+  createdBy: Record<string, number>;
 }
 
 async function getText(url: string, timeoutMs: number): Promise<string> {
@@ -163,6 +165,12 @@ export async function collectSachetAlerts(
   if (useCache && redis) {
     try {
       checked = ((await redis.hgetall<Record<string, string>>(CHECKED_KEY)) ?? {}) as Record<string, string>;
+      // Prune threads older than the TTL so the hash does not grow forever
+      // (its TTL is renewed on every write).
+      const stale = Object.entries(checked)
+        .filter(([, iso]) => now - Date.parse(String(iso)) > CHECKED_TTL_S * 1000)
+        .map(([guid]) => guid);
+      if (stale.length > 0) await redis.hdel(CHECKED_KEY, ...stale.slice(0, 500));
     } catch {
       checked = {};
     }
@@ -171,6 +179,7 @@ export async function collectSachetAlerts(
   log(`feed: ${items.length} items, ${recent.length} from the last 48 h, ${todo.length} to check`);
 
   const changedBy: Record<string, number> = {};
+  const createdBy: Record<string, number> = {};
   const newlyChecked: Record<string, string> = {};
   const cancelled: string[] = [];
   let capFetched = 0;
@@ -224,7 +233,10 @@ export async function collectSachetAlerts(
           if (await upsertAlert(cap, item.guid, d.id)) {
             changedBy[d.slug] = (changedBy[d.slug] ?? 0) + 1;
             if (existed) updated++;
-            else created++;
+            else {
+              created++;
+              createdBy[d.slug] = (createdBy[d.slug] ?? 0) + 1;
+            }
             log(`${d.slug} (${how}): ${info?.event ?? "alert"} — ${(info?.headline ?? "").slice(0, 80)}`);
           }
         } catch (err) {
@@ -271,6 +283,7 @@ export async function collectSachetAlerts(
     capFailed,
     expired: expiredRes.count,
     changedBy,
+    createdBy,
   };
 }
 

@@ -60,6 +60,10 @@ export async function GET(request: Request) {
         await redis.del(cacheKey(slug, "alerts")).catch(() => {});
         await redis.del(cacheKey(slug, "overview")).catch(() => {});
       }
+    }
+    // "What changed and when": one row per district for NEW alerts only
+    // (CWC re-issues a flood bulletin every few hours; updates are not news).
+    for (const slug of Object.keys(r.createdBy)) {
       const d = districts.find((x) => x.slug === slug);
       await logUpdate({
         source: "cron",
@@ -69,8 +73,8 @@ export async function GET(request: Request) {
         action: "create",
         districtId: d?.id,
         moduleName: "alerts",
-        description: `${r.changedBy[slug]} official alert(s) from NDMA SACHET`,
-        recordCount: r.changedBy[slug],
+        description: `${r.createdBy[slug]} new official alert(s) from NDMA SACHET`,
+        recordCount: r.createdBy[slug],
       });
     }
 
