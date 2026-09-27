@@ -43,11 +43,11 @@ import { getTieredModules, TIER_ACCENT } from "@/lib/constants/sidebar-modules";
 import { ageInDays, isWithinMinutes } from "@/lib/utils/timeAgo";
 import {
   AsOfText, Card, EmptyState, FreshnessPill, LoadingShell, Pill, Section,
-  SourcePill, StatStrip, StatTile,
+  SourcePill,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import { DistrictHealthScoreCard, HealthScoreRing } from "@/components/district/DistrictHealthScoreCard";
-import DistrictBadges from "@/components/district/DistrictBadges";
+import { DistrictHealthScoreCard } from "@/components/district/DistrictHealthScoreCard";
+import DistrictIdentityCard from "@/components/district/DistrictIdentityCard";
 import DistrictSponsorBanner from "@/components/common/DistrictSponsorBanner";
 import { getStateConfig } from "@/lib/constants/state-config";
 import InfraSnippet from "@/components/district/InfraSnippet";
@@ -243,42 +243,19 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
     <div className="px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: "calc(var(--ftp-reading-max) + 48px)" }}>
 
       {/* ═══ 1. Identity card ═══════════════════════════════ */}
-      <Card as="section" padding={24} aria-labelledby="district-title">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ minWidth: 0, flex: "1 1 280px" }}>
-            <p className="ftp-label" style={{ marginBottom: 6 }}>
-              {stateName} · District
-            </p>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-              <h1 id="district-title" className="ftp-h1">{districtData.name}</h1>
-              {districtData.nameLocal && districtData.nameLocal !== districtData.name && (
-                <span lang="und" style={{ fontSize: 22, lineHeight: "28px", fontWeight: 400, color: "var(--ftp-text-2)" }}>
-                  {districtData.nameLocal}
-                </span>
-              )}
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <DistrictBadges tagline={districtData.tagline} badges={districtData.badges} />
-            </div>
-          </div>
-          <HealthScoreRing districtSlug={districtSlug} />
-        </div>
-
-        {/* Census numbers. These do not go stale day to day, but they are
-            from the 2011 Census, so we say so right under them. */}
-        <div style={{ marginTop: 20 }}>
-          <StatStrip cols={4}>
-            <StatTile label="Population" value={districtData.population ? districtData.population.toLocaleString("en-IN") : "—"} />
-            <StatTile label="Area" value={districtData.area ? districtData.area.toLocaleString("en-IN") : "—"} unit={districtData.area ? "km²" : undefined} />
-            <StatTile label="Literacy" value={districtData.literacy ? `${districtData.literacy}` : "—"} unit={districtData.literacy ? "%" : undefined} />
-            <StatTile label={subUnitPlural} value={displayedTalukCount ?? "—"} />
-          </StatStrip>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-            <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>As of Census 2011</span>
-            <SourcePill label="Census of India" href="https://censusindia.gov.in/" />
-          </div>
-        </div>
-
+      <DistrictIdentityCard
+        name={districtData.name}
+        nameLocal={districtData.nameLocal}
+        stateName={stateName}
+        tagline={districtData.tagline}
+        badges={districtData.badges}
+        population={districtData.population}
+        area={districtData.area}
+        literacy={districtData.literacy}
+        subUnitCount={displayedTalukCount}
+        subUnitLabel={subUnitPlural}
+        healthSlug={districtSlug}
+      >
         {/* Freshness row — one pill per live feed, from /api/data/freshness. */}
         {Object.keys(fresh.modules).length > 0 && (
           <div
@@ -297,7 +274,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
             })}
           </div>
         )}
-      </Card>
+      </DistrictIdentityCard>
 
       {/* Election notice — renders only when polling is within 30 days. */}
       <div style={{ marginTop: 16 }}>
