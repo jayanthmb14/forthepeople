@@ -201,9 +201,10 @@ export function ProgressRing({
   const stroke = Math.max(5, Math.round(size / 9));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
+  // A <span>, not a <div>: rings sit inside tappable card <button>s.
   return (
-    <div role="img" aria-label={label} style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+    <span role="img" aria-label={label} style={{ position: "relative", display: "inline-block", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden style={{ display: "block" }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} />
         {p > 0 && (
           <circle
@@ -230,7 +231,7 @@ export function ProgressRing({
           {children}
         </span>
       )}
-    </div>
+    </span>
   );
 }
 
