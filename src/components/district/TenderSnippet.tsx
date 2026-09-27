@@ -77,7 +77,7 @@ export default function TenderSnippet({
           <Lock size={14} aria-hidden style={{ color: "var(--ftp-text-2)", marginTop: 3 }} />
           <div className="ftp-body" style={{ flex: 1 }}>
             Coming soon for <span style={{ fontWeight: 500 }}>{data.districtName}</span>.{" "}
-            <Link href="/support" style={{ color: "var(--ftp-brand)", textDecoration: "none" }}>
+            <Link href={`/${locale}/support`} style={{ color: "var(--ftp-brand)", textDecoration: "none" }}>
               Support us to prioritise your district
             </Link>
           </div>
