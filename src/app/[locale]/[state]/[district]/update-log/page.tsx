@@ -41,7 +41,7 @@ import {
 import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import { RankBars } from "@/components/accountability/AccountabilityVisuals";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
-import { getModuleMeta } from "@/lib/design/hues";
+import { getModuleMeta, hueClass } from "@/lib/design/hues";
 import { useFormat, useModuleText } from "@/i18n/client";
 
 interface UpdateLogRow {
@@ -239,6 +239,8 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
                 value: n,
                 display: t("changesCount", { n, count: num(n) }),
                 emoji: getModuleMeta(slug)?.emoji ?? "🗂️",
+                // Each bar in its module's own colour, as in the sidebar.
+                hueClassName: getModuleMeta(slug) ? hueClass(slug) : undefined,
               }))}
             />
           </ChartCard>
@@ -285,7 +287,14 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
                     </span>
                   </span>
                 ),
-                module: r.moduleName ? <Pill>{mt.label(r.moduleName)}</Pill> : "—",
+                // The module's name in that module's own hue.
+                module: r.moduleName ? (
+                  <span className={getModuleMeta(r.moduleName) ? hueClass(r.moduleName) : undefined}>
+                    <Pill style={HUE_PILL}>{mt.label(r.moduleName)}</Pill>
+                  </span>
+                ) : (
+                  "—"
+                ),
                 change: <Pill tone={ACTIONS[r.action]?.tone ?? "neutral"}>{actionLabel(r.action)}</Pill>,
                 by: (
                   <Pill tone={tone} style={tone === "brand" ? HUE_PILL : undefined}>

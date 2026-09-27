@@ -82,6 +82,8 @@ export interface RingSlice {
   display?: string;
   /** Grey slice for "everything else". */
   other?: boolean;
+  /** A fixed colour (e.g. another module's hue) instead of a page-hue shade. */
+  color?: string;
 }
 
 /**
@@ -118,7 +120,7 @@ export function ShareRing({
   for (let i = 0, start = 0, shade = 0; i < slices.length; i++) {
     const s = slices[i];
     const len = (Math.max(0, s.value) / total) * c;
-    const color = s.other ? OTHER_SHADE : SHADES[shade++ % SHADES.length];
+    const color = s.color ?? (s.other ? OTHER_SHADE : SHADES[shade++ % SHADES.length]);
     arcs.push({ key: s.key, len: Math.max(0, len - gap), start, color, i });
     start += len;
   }
@@ -194,6 +196,9 @@ export interface RankItem {
   emoji?: string;
   /** Draw this bar in the danger colour (e.g. past a legal limit). */
   alert?: boolean;
+  /** A .ftp-hue-<name> class so this bar (and its chip) wears another
+      module's hue, e.g. each module's own colour in a list of modules. */
+  hueClassName?: string;
 }
 
 /**
@@ -212,7 +217,10 @@ export function RankBars({
   ariaLabel: string;
 }) {
   if (items.length === 0) return null;
-  const max = Math.max(...items.map((i) => i.value), marker?.value ?? 0, 1);
+  // With a marker, leave room past it so the limit line never sits on the
+  // right edge and bars that cross it visibly overshoot.
+  const biggest = Math.max(...items.map((i) => i.value), 1);
+  const max = marker ? Math.max(biggest, marker.value) * 1.12 : biggest;
   const markerPct = marker ? (marker.value / max) * 100 : null;
   return (
     <div>
@@ -220,7 +228,7 @@ export function RankBars({
         {items.map((it, i) => {
           const pct = Math.max(2, (it.value / max) * 100);
           return (
-            <li key={it.key}>
+            <li key={it.key} className={it.hueClassName}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
                 {it.emoji && (
                   <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 26, height: 26, fontSize: 14, borderRadius: 8 }}>

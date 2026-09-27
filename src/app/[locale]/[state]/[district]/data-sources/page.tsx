@@ -30,7 +30,7 @@ import ModulePageFooter from "@/components/accountability/ModulePageFooter";
 import { useFreshness, type FreshnessKey } from "@/hooks/useFreshness";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import { getStateConfig, UNIVERSAL_DATA_SOURCES, type DataSourceEntry } from "@/lib/constants/state-config";
-import { getModuleMeta, hueClass } from "@/lib/design/hues";
+import { getModuleMeta, hueClass, HUE_HEX, type Hue } from "@/lib/design/hues";
 import { useFormat, useModuleText } from "@/i18n/client";
 
 /** The sources every district shares, then the state's own. */
@@ -113,6 +113,16 @@ const TYPE_KEY: Record<DataSourceEntry["type"], string> = {
   Aggregated: "aggregated",
   Static: "static",
   RSS: "rss",
+};
+
+/** Each kind of source gets its own hue in the ring, so the slices read
+    apart at a glance (the legend names them). */
+const TYPE_HUE: Record<DataSourceEntry["type"], Hue> = {
+  API: "blue",
+  Collected: "amber",
+  Aggregated: "violet",
+  Static: "teal",
+  RSS: "rose",
 };
 
 /** Emoji + hue class for a row; unknown rows keep the page's own look. */
@@ -247,6 +257,7 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
                 label: t(`type.${TYPE_KEY[x.type]}`),
                 value: x.count,
                 display: num(x.count),
+                color: HUE_HEX[TYPE_HUE[x.type]].hue,
               }))}
             />
           </ChartCard>
@@ -281,7 +292,10 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
                         <h3 className="ftp-title">{rowName(ds.module)}</h3>
                         <Pill style={auto ? HUE_PILL : undefined}>{auto ? t("autoFeed") : t("periodic")}</Pill>
-                        <Pill>{t(`type.${TYPE_KEY[ds.type]}`)}</Pill>
+                        {/* Same colour as this kind's slice in the ring above. */}
+                        <Pill style={{ background: HUE_HEX[TYPE_HUE[ds.type]].tint, color: HUE_HEX[TYPE_HUE[ds.type]].deep }}>
+                          {t(`type.${TYPE_KEY[ds.type]}`)}
+                        </Pill>
                       </div>
                       <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
                         {t.rich("sourceLine", {
