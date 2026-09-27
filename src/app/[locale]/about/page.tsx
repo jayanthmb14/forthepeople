@@ -4,4 +4,4 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-export { default, metadata } from "../../about/page";
+export { default, generateMetadata } from "../../about/page";
