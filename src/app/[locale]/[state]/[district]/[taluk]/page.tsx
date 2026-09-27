@@ -152,13 +152,16 @@ export default function TalukPage({
 
   const tileCount = (showVillages ? 1 : 0) + 1 + (talukData.area != null ? 1 : 0);
 
+  const localLeads = Boolean(talukData.nameLocal && scriptLang(talukData.nameLocal) === locale);
   return (
     <div className={pageClass} style={pageStyle}>
       <SiteHeader
         emoji="🏘️"
         icon={MapPin}
-        title={t("title", { name: talukData.name, unit: subUnit })}
-        titleLocal={talukData.nameLocal ?? undefined}
+        // Local-script name leads when it is in the page language
+        // (ಶ್ರೀರಂಗಪಟ್ಟಣ ತಾಲೂಕು on /kn/); the English name then sits beside it.
+        title={t("title", { name: localLeads ? talukData.nameLocal! : talukData.name, unit: subUnit })}
+        titleLocal={localLeads ? talukData.name : (talukData.nameLocal ?? undefined)}
         description={metaLine}
         backHref={districtBase}
         backLabel={t("backTo", { name: districtName })}
