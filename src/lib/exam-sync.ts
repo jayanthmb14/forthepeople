@@ -3,18 +3,28 @@
  *
  * Flow:
  *   NewsItem (classified as module="exams") → extractExamFromNews(AI)
- *     → syncExamFromNews → upsert across affected districts (NATIONAL
- *     exams fan out to every active district; STATE exams stay in their
- *     state) → logUpdate + Redis cache bust.
+ *     → syncExamFromNews → one row per exam per place → logUpdate +
+ *     Redis cache bust for every district that shows it.
+ *
+ * Where a row lives (Sept 2026 — src/lib/dedupe/exam-rules.ts):
+ *   - NATIONAL exam → ONE row (districtId null, stateId null). Every
+ *     district page reads it. (Until Sept 2026 it was copied onto every
+ *     active district — ten copies of "NEET 2026" per exam.)
+ *   - STATE exam    → one row per state (stateId set, districtId null).
+ *   - DISTRICT exam → one row for that district (a city corporation, a
+ *     district court).
+ * An existing row is found by its canonical exam key (src/lib/dedupe/keys.ts:
+ * "NEET 2026" = "NEET (UG) 2026" = "NEET UG 2026"), never by substring.
  *
  * Philosophy:
+ *   - Only government / statutory organisers (classifyExamBody). A private
+ *     university's admission test or a company's hiring is not stored.
  *   - Never fabricate dates — AI must return null when the article is
  *     silent on a field. The sync side mirrors that: null values never
  *     overwrite existing concrete ones.
- *   - Status never downgrades (APPLICATIONS_OPEN → NOTIFICATION_OUT is
- *     rejected; the reverse is accepted).
- *   - Legacy records (seed-sourced, lowercase status) are preserved; the
- *     sync promotes them to the new status scheme when news confirms.
+ *   - Status is written in the canonical words and never downgrades
+ *     (APPLICATIONS_OPEN → NOTIFICATION_OUT is rejected; the reverse is
+ *     accepted). Legacy words ("upcoming", "declared") are normalised.
  */
 
 import { Prisma } from "@/generated/prisma";
@@ -22,20 +32,31 @@ import { prisma } from "./db";
 import { callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
+import {
+  KNOWN_EXAM_BODIES,
+  canonicalExamStatus,
+  examBody,
+  examStatusRank,
+  sameExam,
+  type CanonicalExamStatus,
+} from "./dedupe/keys";
+import {
+  classifyExamBody,
+  correctPlacement,
+  examBucket,
+  examPlacement,
+  pickBestExam,
+  urlList,
+  type ExamPlacement,
+  type ExamScope,
+} from "./dedupe/exam-rules";
 
 // ═══════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════
 
-export type ExamStatus =
-  | "NOTIFICATION_OUT"
-  | "APPLICATIONS_OPEN"
-  | "APPLICATIONS_CLOSED"
-  | "ADMIT_CARD_OUT"
-  | "EXAM_SCHEDULED"
-  | "RESULT_PENDING"
-  | "RESULT_OUT"
-  | "COMPLETED";
+/** Canonical statuses (src/lib/dedupe/keys.ts); "UNVERIFIED" = dates not confirmed. */
+export type ExamStatus = CanonicalExamStatus;
 
 export type ExamCategory =
   | "CENTRAL"
@@ -46,7 +67,7 @@ export type ExamCategory =
   | "TEACHING"
   | "OTHER";
 
-export type ExamScope = "NATIONAL" | "STATE";
+export type { ExamScope };
 
 export interface ExamExtraction {
   examName: string;
@@ -64,39 +85,13 @@ export interface ExamExtraction {
   notificationUrl: string | null;
   vacancies: number | null;
   scope: ExamScope;
-  stateName: string | null; // for STATE scope
+  stateName: string | null; // for STATE / DISTRICT scope
 }
 
 export interface NewsArticleRef {
   title: string;
   url: string;
   publishedAt: Date;
-}
-
-// ═══════════════════════════════════════════════════════════
-// Status ordering (prevents downgrade)
-// ═══════════════════════════════════════════════════════════
-
-const STATUS_ORDER: Record<string, number> = {
-  // Legacy lowercase
-  upcoming: 0,
-  open: 3,
-  closed: 4,
-  results: 7,
-  // New uppercase
-  NOTIFICATION_OUT: 1,
-  APPLICATIONS_OPEN: 3,
-  APPLICATIONS_CLOSED: 4,
-  ADMIT_CARD_OUT: 5,
-  EXAM_SCHEDULED: 5,
-  RESULT_PENDING: 6,
-  RESULT_OUT: 7,
-  COMPLETED: 8,
-};
-
-function canonicalStatusRank(s: string | null | undefined): number {
-  if (!s) return -1;
-  return STATUS_ORDER[s] ?? -1;
 }
 
 function parseDate(v: string | null | undefined): Date | null {
@@ -138,14 +133,15 @@ Extract the exam metadata. Return JSON in this exact shape:
   "applyUrl": "official application URL from the article, or null",
   "notificationUrl": "official notification PDF/page URL, or null",
   "vacancies": "number (total posts mentioned) or null",
-  "scope": "NATIONAL | STATE",
-  "stateName": "If scope=STATE, the state name; else null"
+  "scope": "NATIONAL | STATE | DISTRICT",
+  "stateName": "If scope=STATE or DISTRICT, the state name; else null"
 }
 
 Rules:
 - If the article is vague or not actually about a specific exam, return {"examName": ""} and stop.
 - Never invent a date. Missing date → null.
-- NATIONAL = UPSC/SSC/IBPS/RRB/IB/DRDO/ISRO/CDS/NDA/AFCAT. STATE_PSC / state teacher / state police are STATE.
+- NATIONAL = UPSC/SSC/IBPS/RRB/IB/DRDO/ISRO/CDS/NDA/AFCAT/NTA (NEET, JEE, CUET)/CBSE. STATE_PSC / state teacher / state police / state school boards are STATE. DISTRICT = recruitment for ONE city or district body only (a municipal corporation, a district court, a zilla panchayat).
+- organizingBody must be the body that conducts the exam (NEET UG is conducted by NTA). If the organiser is a private university, college, consortium or company, return {"examName": ""} — only government exams are tracked.
 - applyUrl must point to the official portal (upsconline.nic.in, ssc.nic.in, ibps.in, rrbcdg.gov.in, <state>.gov.in). Not the news article URL.
 - Respond with the JSON only.`;
 }
@@ -180,7 +176,8 @@ export async function extractExamFromNews(
   }
 
   // Normalize shape with defaults. Never coerce null → today or similar.
-  const scope: ExamScope = parsed.scope === "STATE" ? "STATE" : "NATIONAL";
+  const scope: ExamScope = parsed.scope === "STATE" ? "STATE" : parsed.scope === "DISTRICT" ? "DISTRICT" : "NATIONAL";
+  const status = canonicalExamStatus(parsed.status ?? null, parsed.examName);
   return {
     examName: parsed.examName.trim(),
     shortName: (parsed.shortName ?? parsed.examName)!.toString().trim(),
@@ -189,10 +186,7 @@ export async function extractExamFromNews(
     // "Applications open" needs a closing date from the notification; without
     // one the official collector would flip it back every day (it only marks
     // an exam open between a published opening and closing date).
-    status:
-      parsed.status === "APPLICATIONS_OPEN" && !parsed.applicationEndDate
-        ? "NOTIFICATION_OUT"
-        : ((parsed.status as ExamStatus) ?? "NOTIFICATION_OUT"),
+    status: status === "APPLICATIONS_OPEN" && !parsed.applicationEndDate ? "NOTIFICATION_OUT" : status,
     applicationStartDate: parsed.applicationStartDate ?? null,
     applicationEndDate: parsed.applicationEndDate ?? null,
     admitCardDate: parsed.admitCardDate ?? null,
@@ -208,44 +202,58 @@ export async function extractExamFromNews(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Upsert: find target districts, then create-or-update
+// Upsert: one row per exam per place
 // ═══════════════════════════════════════════════════════════
 
-async function findTargetDistricts(extraction: ExamExtraction): Promise<Array<{ id: string; stateId: string | null; stateSlug: string | null; districtSlug: string }>> {
-  if (extraction.scope === "NATIONAL") {
-    // Every active district
-    const rows = await prisma.district.findMany({
-      where: { active: true },
-      select: { id: true, slug: true, stateId: true, state: { select: { slug: true } } },
-    });
-    return rows.map((r) => ({
-      id: r.id,
-      stateId: r.stateId,
-      stateSlug: r.state?.slug ?? null,
-      districtSlug: r.slug,
-    }));
-  }
-  // STATE scope — resolve state by name (case-insensitive)
-  if (!extraction.stateName) return [];
-  const state = await prisma.state.findFirst({
-    where: { name: { equals: extraction.stateName, mode: "insensitive" } },
-    select: { id: true, slug: true },
-  });
-  if (!state) return [];
-  const rows = await prisma.district.findMany({
-    where: { stateId: state.id, active: true },
+interface Place {
+  placement: ExamPlacement;
+  /** Districts whose page shows this exam (cache bust + update log). */
+  districts: Array<{ id: string; slug: string }>;
+}
+
+async function resolvePlace(extraction: ExamExtraction, sourceDistrictId: string): Promise<Place | null> {
+  const src = await prisma.district.findUnique({
+    where: { id: sourceDistrictId },
     select: { id: true, slug: true, stateId: true },
   });
-  return rows.map((r) => ({
-    id: r.id,
-    stateId: r.stateId,
-    stateSlug: state.slug,
-    districtSlug: r.slug,
-  }));
+  if (extraction.scope === "NATIONAL") {
+    const districts = await prisma.district.findMany({ where: { active: true }, select: { id: true, slug: true } });
+    return { placement: examPlacement("NATIONAL", null, null), districts };
+  }
+  // STATE / DISTRICT: the named state, else the article's own state.
+  let stateId = src?.stateId ?? null;
+  if (extraction.stateName) {
+    const named = await prisma.state.findFirst({
+      where: { name: { equals: extraction.stateName, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (named) stateId = named.id;
+  }
+  if (!stateId) return null;
+  if (extraction.scope === "DISTRICT") {
+    // A district exam belongs to the article's district, and only when that district is in the named state.
+    if (!src || src.stateId !== stateId) return null;
+    return { placement: examPlacement("DISTRICT", stateId, src.id), districts: [{ id: src.id, slug: src.slug }] };
+  }
+  const districts = await prisma.district.findMany({ where: { stateId, active: true }, select: { id: true, slug: true } });
+  return { placement: examPlacement("STATE", stateId, null), districts };
+}
+
+/** Rows that could be this exam: everything stored in the same place (national list / one state / one district). */
+async function rowsInPlace(p: ExamPlacement) {
+  const where: Prisma.GovernmentExamWhereInput =
+    p.scope === "NATIONAL"
+      ? { OR: [{ level: "national" }, { scope: "NATIONAL", stateId: null }] }
+      : p.scope === "STATE"
+        ? { stateId: p.stateId, OR: [{ level: "state" }, { scope: "STATE" }] }
+        : { districtId: p.districtId, level: "district" };
+  const rows = await prisma.governmentExam.findMany({ where, take: 2000 });
+  const bucket = examBucket(p);
+  return rows.filter((r) => examBucket(r) === bucket);
 }
 
 function mergeSourceUrls(existing: unknown, nextUrl: string): string[] {
-  const arr = Array.isArray(existing) ? (existing as unknown[]).filter((v): v is string => typeof v === "string") : [];
+  const arr = urlList(existing);
   if (!arr.includes(nextUrl)) arr.push(nextUrl);
   // keep last 10 unique — prevent the JSON column ballooning
   return arr.slice(-10);
@@ -256,6 +264,8 @@ export interface SyncResult {
   created: number;
   updated: number;
   skipped: number;
+  /** Why nothing was written, when nothing was. */
+  rejected?: "non-government" | "no-place";
 }
 
 export async function syncExamFromNews(
@@ -263,148 +273,151 @@ export async function syncExamFromNews(
   article: NewsArticleRef,
   sourceDistrictId: string
 ): Promise<SyncResult> {
-  const targets = await findTargetDistricts(extraction);
-  if (targets.length === 0) {
-    // Fall back to the article's own district so we still persist one row
-    const fallback = await prisma.district.findUnique({
-      where: { id: sourceDistrictId },
-      select: { id: true, slug: true, stateId: true, state: { select: { slug: true } } },
-    });
-    if (!fallback) return { affectedDistricts: 0, created: 0, updated: 0, skipped: 1 };
-    targets.push({
-      id: fallback.id,
-      stateId: fallback.stateId,
-      stateSlug: fallback.state?.slug ?? null,
-      districtSlug: fallback.slug,
-    });
+  const identity = { title: extraction.examName, shortName: extraction.shortName, organizingBody: extraction.organizingBody };
+
+  // Rule 1: only exams run by a government or statutory body.
+  const bodyClass = classifyExamBody(identity);
+  if (bodyClass !== "government") {
+    console.log(`[exam-sync] skipped (${bodyClass} organiser "${extraction.organizingBody}"): ${extraction.examName.slice(0, 80)}`);
+    return { affectedDistricts: 0, created: 0, updated: 0, skipped: 1, rejected: "non-government" };
   }
 
-  const now = new Date();
-  let created = 0;
-  let updated = 0;
-  let skipped = 0;
+  const place = await resolvePlace(extraction, sourceDistrictId);
+  if (!place) return { affectedDistricts: 0, created: 0, updated: 0, skipped: 1, rejected: "no-place" };
+  const { placement } = place;
 
+  const now = new Date();
   const appStart = parseDate(extraction.applicationStartDate);
   const appEnd = parseDate(extraction.applicationEndDate);
   const admitCard = parseDate(extraction.admitCardDate);
   const examDate = parseDate(extraction.examDate);
   const resultDate = parseDate(extraction.resultDate);
   const notifDate = parseDate(extraction.notificationDate);
+  const official = KNOWN_EXAM_BODIES[examBody(identity)];
+  const organizingBody = official?.organizingBody ?? extraction.organizingBody;
 
-  for (const t of targets) {
-    // Fuzzy match by shortName OR by first 3 words of examName
-    const namePrefix = extraction.examName.split(/\s+/).slice(0, 3).join(" ");
-    const existing = await prisma.governmentExam.findFirst({
-      where: {
-        districtId: t.id,
-        OR: [
-          { shortName: { equals: extraction.shortName, mode: "insensitive" } },
-          { title: { contains: extraction.shortName, mode: "insensitive" } },
-          { title: { contains: namePrefix, mode: "insensitive" } },
-        ],
+  // Same exam = shares a canonical key, in the same place. Extra copies
+  // (legacy per-district rows) are merged by the duplicate guard.
+  const matches = (await rowsInPlace(placement)).filter((r) => sameExam(r, identity));
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  let recordId: string;
+
+  if (matches.length === 0) {
+    const row = await prisma.governmentExam.create({
+      data: {
+        ...placement,
+        title: extraction.examName,
+        shortName: extraction.shortName,
+        department: official?.department ?? organizingBody,
+        organizingBody,
+        category: extraction.category,
+        status: extraction.status,
+        vacancies: extraction.vacancies,
+        applyUrl: extraction.applyUrl,
+        notificationUrl: extraction.notificationUrl,
+        notificationDate: notifDate,
+        announcedDate: notifDate ?? now,
+        startDate: appStart,
+        endDate: appEnd,
+        admitCardDate: admitCard,
+        examDate,
+        resultDate,
+        sourceUrls: [article.url] as Prisma.InputJsonValue,
+        lastVerifiedAt: now,
+        needsVerification: false,
       },
+      select: { id: true },
     });
-
-    if (!existing) {
-      await prisma.governmentExam.create({
-        data: {
-          level: extraction.scope === "NATIONAL" ? "national" : "state",
-          stateId: t.stateId,
-          districtId: t.id,
-          title: extraction.examName,
-          shortName: extraction.shortName,
-          department: extraction.organizingBody,
-          organizingBody: extraction.organizingBody,
-          category: extraction.category,
-          scope: extraction.scope,
-          status: extraction.status,
-          vacancies: extraction.vacancies,
-          applyUrl: extraction.applyUrl,
-          notificationUrl: extraction.notificationUrl,
-          notificationDate: notifDate,
-          announcedDate: notifDate ?? now,
-          startDate: appStart,
-          endDate: appEnd,
-          admitCardDate: admitCard,
-          examDate,
-          resultDate,
-          sourceUrls: [article.url] as Prisma.InputJsonValue,
-          lastVerifiedAt: now,
-          needsVerification: false,
-        },
-      });
-      created++;
-      continue;
+    recordId = row.id;
+    created++;
+  } else {
+    const existing = pickBestExam(matches);
+    recordId = existing.id;
+    if (matches.length > 1) {
+      console.log(`[exam-sync] ${matches.length} stored copies of "${extraction.shortName}" — the duplicate guard merges them`);
     }
 
-    // Status never downgrades
-    const incomingRank = canonicalStatusRank(extraction.status);
-    const existingRank = canonicalStatusRank(existing.status);
-    const statusUpdate = incomingRank >= existingRank ? { status: extraction.status } : {};
+    // Status never downgrades; a legacy word is rewritten in the canonical set.
+    const currentStatus = canonicalExamStatus(existing.status, existing.title);
+    const nextStatus = examStatusRank(extraction.status) >= examStatusRank(currentStatus) ? extraction.status : currentStatus;
 
-    const patch: Prisma.GovernmentExamUpdateInput = {
-      ...statusUpdate,
+    const patch: Prisma.GovernmentExamUncheckedUpdateInput = {
       lastVerifiedAt: now,
       needsVerification: false,
       sourceUrls: mergeSourceUrls(existing.sourceUrls, article.url) as Prisma.InputJsonValue,
     };
+    let facts = 0;
+    if (existing.status !== nextStatus) {
+      patch.status = nextStatus;
+      facts++;
+    }
+    // A legacy per-district copy found here becomes the one row for its place.
+    const fix = correctPlacement(existing);
+    if (fix.misplaced) Object.assign(patch, fix.placement);
 
     // Fill-only: null values never overwrite concrete existing data
-    if (!existing.shortName && extraction.shortName) patch.shortName = extraction.shortName;
-    if (!existing.organizingBody && extraction.organizingBody) patch.organizingBody = extraction.organizingBody;
-    if (!existing.category && extraction.category) patch.category = extraction.category;
-    if (!existing.scope && extraction.scope) patch.scope = extraction.scope;
-    if (!existing.applyUrl && extraction.applyUrl) patch.applyUrl = extraction.applyUrl;
-    if (!existing.notificationUrl && extraction.notificationUrl) patch.notificationUrl = extraction.notificationUrl;
-    if (!existing.vacancies && extraction.vacancies != null) patch.vacancies = extraction.vacancies;
-    if (!existing.notificationDate && notifDate) patch.notificationDate = notifDate;
-    if (!existing.startDate && appStart) patch.startDate = appStart;
-    if (!existing.endDate && appEnd) patch.endDate = appEnd;
-    if (!existing.admitCardDate && admitCard) patch.admitCardDate = admitCard;
-    if (!existing.examDate && examDate) patch.examDate = examDate;
-    if (!existing.resultDate && resultDate) patch.resultDate = resultDate;
+    const fields = patch as Record<string, unknown>;
+    const fill = (key: string, has: unknown, value: unknown) => {
+      const empty = has === null || has === undefined || has === "" || (typeof has === "string" && /^unknown$/i.test(has));
+      if (empty && value !== null && value !== undefined) {
+        fields[key] = value;
+        facts++;
+      }
+    };
+    fill("shortName", existing.shortName, extraction.shortName);
+    fill("organizingBody", existing.organizingBody, organizingBody === "Unknown" ? null : organizingBody);
+    fill("category", existing.category, extraction.category);
+    fill("applyUrl", existing.applyUrl, extraction.applyUrl);
+    fill("notificationUrl", existing.notificationUrl, extraction.notificationUrl);
+    fill("vacancies", existing.vacancies, extraction.vacancies);
+    fill("notificationDate", existing.notificationDate, notifDate);
+    fill("startDate", existing.startDate, appStart);
+    fill("endDate", existing.endDate, appEnd);
+    fill("admitCardDate", existing.admitCardDate, admitCard);
+    fill("examDate", existing.examDate, examDate);
+    fill("resultDate", existing.resultDate, resultDate);
+    if (official && existing.organizingBody !== official.organizingBody) {
+      patch.organizingBody = official.organizingBody;
+      patch.department = official.department;
+    }
 
-    // Always set a short name if we have one and the existing is empty
-    const touched = Object.keys(patch).length > 3; // >3 = more than just lastVerifiedAt/needsVerification/sourceUrls
-
-    await prisma.governmentExam.update({
-      where: { id: existing.id },
-      data: patch,
-    });
-
-    if (touched) updated++;
+    await prisma.governmentExam.update({ where: { id: existing.id }, data: patch });
+    if (facts > 0) updated++;
     else skipped++;
   }
 
-  // Cache bust for every affected district's exams module
-  for (const t of targets) {
+  // Cache bust for every district page that shows this exam
+  for (const d of place.districts) {
     try {
-      await cacheSet(cacheKey(t.districtSlug, "exams"), null, 1);
+      await cacheSet(cacheKey(d.slug, "exams"), null, 1);
     } catch {
       /* cache optional */
     }
   }
 
-  // One UpdateLog row per affected district
-  for (const t of targets) {
+  // One UpdateLog row per district that shows it (the district change feed)
+  for (const d of place.districts) {
     await logUpdate({
       source: "scraper",
       actorLabel: "news-cron",
       tableName: "GovernmentExam",
-      recordId: `${t.id}:${extraction.shortName}`,
-      action: "update",
-      districtId: t.id,
+      recordId,
+      action: created ? "create" : "update",
+      districtId: d.id,
       moduleName: "exams",
       description: `${extraction.shortName}: ${extraction.status}`,
       recordCount: 1,
       details: {
-        scope: extraction.scope,
-        organizingBody: extraction.organizingBody,
+        scope: placement.scope,
+        organizingBody,
         applyUrl: extraction.applyUrl,
         source: article.url,
       },
     });
   }
 
-  return { affectedDistricts: targets.length, created, updated, skipped };
+  return { affectedDistricts: place.districts.length, created, updated, skipped };
 }

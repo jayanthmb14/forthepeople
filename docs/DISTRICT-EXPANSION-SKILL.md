@@ -233,15 +233,9 @@ placeholders and fill in as soon as the hourly `scrape-news` cron runs:
 - Per-cron extraction cap: **10 infra extractions / news-cron run**
   (enforced in `news-action-engine`, reset via
   `resetExtractionCounters()`).
-- New-district onboarding (optional top-up):
-  ```bash
-  npx tsx -e "
-    import './_env';
-    import { onboardDistrictExams } from '@/lib/exam-onboard';
-    // If you also want a bulk national-project clone, add a similar
-    // infra-onboard helper or just wait one news-cron cycle.
-  "
-  ```
+- New-district onboarding: nothing to copy. National and state exams are
+  shared rows (see the Exams Tracker below); infrastructure arrives with
+  the district's own news.
 - Manual admin editing: available in the admin Content Editor
   (CONTENT_MODULES["infrastructure"]). Each admin save writes an
   `InfraUpdate` row with `updateType="ADMIN_EDIT"` so the public
@@ -254,16 +248,22 @@ placeholders and fill in as soon as the hourly `scrape-news` cron runs:
 ### Exams Tracker (`/exams`)
 - Schema: `GovernmentExam` (extended with news-driven fields).
 - Pipeline: NewsItem classified `module="exams"` →
-  `extractExamFromNews()` → `syncExamFromNews()` fuzzy upsert by
-  `shortName` + first-three-word title match.
-- NATIONAL exams (UPSC, SSC, IBPS, RRB) fan out to every active
-  district.
+  `extractExamFromNews()` → `syncExamFromNews()` upsert matched by the
+  canonical exam key (`src/lib/dedupe/keys.ts`: "NEET 2026" = "NEET (UG)
+  2026" = "NEET UG 2026"). Only government / statutory organisers
+  (`classifyExamBody()` in `src/lib/dedupe/exam-rules.ts`).
+- Storage (Sept 2026): a NATIONAL exam is ONE row (districtId and stateId
+  null); a STATE exam one row per state (districtId null); only DISTRICT
+  exams carry a districtId. `/api/data/exams` reads national + the
+  district's state + the district's own rows, one per exam.
 - Daily status cron: `/api/cron/update-exams` advances status from
   calendar dates (APPLICATIONS_OPEN when within window, ADMIT_CARD_OUT,
   etc.) and flags `needsVerification=true` on rows stale >30 days.
-- New-district onboarding: `onboardDistrictExams(districtId)` clones
-  NATIONAL + matching STATE exams from other districts (deduped by
-  `shortName`).
+- New-district onboarding: none needed — a new district reads the shared
+  national and state rows. (The old `onboardDistrictExams()` clone was
+  removed in Sept 2026; it was a source of per-district duplicates.)
+- Duplicates: `/api/cron/dedupe-data` merges exact duplicates daily
+  (`src/lib/dedupe/guard.ts`).
 - Backfill: `npx tsx scripts/backfill-exams-from-news.ts --limit 10 [--dry-run]`
 
 ### AI cost guardrails (applies to BOTH modules)

@@ -28,6 +28,7 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { collectOfficialExams } from "@/scraper/jobs/exams";
+import { examStatusRank } from "@/lib/dedupe/keys";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -38,25 +39,10 @@ const STALE_DAYS = 30;
 const OFFICIAL_PASS_BUDGET_MS = 70_000;
 const OPEN_STATUSES = ["open", "APPLICATIONS_OPEN"];
 
-// Status precedence so we never downgrade.
-const RANK: Record<string, number> = {
-  upcoming: 0,
-  NOTIFICATION_OUT: 1,
-  open: 3,
-  APPLICATIONS_OPEN: 3,
-  closed: 4,
-  APPLICATIONS_CLOSED: 4,
-  ADMIT_CARD_OUT: 5,
-  EXAM_SCHEDULED: 5,
-  RESULT_PENDING: 6,
-  results: 7,
-  RESULT_OUT: 7,
-  COMPLETED: 8,
-};
-
+// Status precedence so we never downgrade: examStatusRank() in
+// src/lib/dedupe/keys.ts (legacy words like "upcoming"/"results" included).
 function rank(s: string | null | undefined): number {
-  if (!s) return -1;
-  return RANK[s] ?? -1;
+  return examStatusRank(s);
 }
 
 function computeStatusFromDates(e: {

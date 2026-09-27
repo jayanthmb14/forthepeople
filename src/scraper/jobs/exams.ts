@@ -25,10 +25,17 @@
 // State commissions (KPSC etc.) are not automated yet: kpsc.kar.nic.in
 // answers with a malformed HTTP header. News-driven updates stay in
 // src/lib/exam-sync.ts.
+//
+// An exam is matched to its stored row by the canonical exam key
+// (src/lib/dedupe/keys.ts), so "SSC CPO 2026" from the news and SSC's
+// "Sub-Inspector in Delhi Police and CAPF Examination, 2026" are one row,
+// stored once as a national row (districtId null).
 // ═══════════════════════════════════════════════════════════
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { canonicalExamStatus, examStatusRank, sameExam } from "@/lib/dedupe/keys";
+import { correctPlacement, examBucket, pickBestExam } from "@/lib/dedupe/exam-rules";
 import {
   SSC_LIVE_EXAMS_URL,
   UPSC_ACTIVE_EXAMS_URL,
@@ -47,24 +54,9 @@ const UPSC_CONCURRENCY = 4;
 /** Exams whose exam date is further back than this are not refreshed. */
 const STALE_EXAM_DAYS = 180;
 
-// Status order so an official update never moves an exam backwards
-// (mirrors exam-sync.ts; legacy lowercase words included).
-const RANK: Record<string, number> = {
-  UNVERIFIED: -1,
-  upcoming: 0,
-  NOTIFICATION_OUT: 1,
-  open: 3,
-  APPLICATIONS_OPEN: 3,
-  closed: 4,
-  APPLICATIONS_CLOSED: 4,
-  ADMIT_CARD_OUT: 5,
-  EXAM_SCHEDULED: 5,
-  RESULT_PENDING: 6,
-  results: 7,
-  RESULT_OUT: 7,
-  COMPLETED: 8,
-};
-const rank = (s: string | null | undefined) => (s ? (RANK[s] ?? -1) : -1);
+// Status order so an official update never moves an exam backwards:
+// examStatusRank() in src/lib/dedupe/keys.ts (legacy words included).
+const rank = (s: string | null | undefined) => examStatusRank(s);
 
 async function getText(url: string, headers: Record<string, string> = {}): Promise<string> {
   const res = await fetch(url, {
@@ -115,15 +107,12 @@ export interface OfficialExamsResult extends ScraperResult {
 /** Write one official exam: update every national row for it, or create one. */
 async function upsertOfficialExam(e: OfficialExam, nowMs: number): Promise<"created" | "updated" | "unchanged"> {
   const status = officialExamStatus(e, nowMs);
-  const existing = await prisma.governmentExam.findMany({
-    where: {
-      level: "national",
-      OR: [
-        { shortName: { equals: e.shortName, mode: "insensitive" } },
-        { title: { equals: e.title, mode: "insensitive" } },
-      ],
-    },
+  const identity = { title: e.title, shortName: e.shortName, organizingBody: e.body };
+  const national = await prisma.governmentExam.findMany({
+    where: { OR: [{ level: "national" }, { scope: "NATIONAL", stateId: null }] },
+    take: 2000,
   });
+  const existing = national.filter((r) => examBucket(r) === "N" && sameExam(r, identity));
 
   const official = {
     title: e.title,
@@ -174,16 +163,23 @@ async function upsertOfficialExam(e: OfficialExam, nowMs: number): Promise<"crea
     return "created";
   }
 
+  // Every stored copy gets the official facts; the best one also becomes
+  // the single national row (a legacy per-district copy loses its district).
+  // The duplicate guard merges the other copies into it.
+  const best = pickBestExam(existing);
   for (const row of existing) {
     const urls = Array.isArray(row.sourceUrls) ? (row.sourceUrls as unknown[]).filter((u): u is string => typeof u === "string") : [];
+    const current = canonicalExamStatus(row.status, row.title);
     const statusPatch =
-      status && (rank(status) >= rank(row.status) || rank(row.status) < 0) ? { status } : {};
+      status && (rank(status) >= rank(current) || rank(current) < 0) ? { status } : current !== row.status ? { status: current } : {};
+    const fix = correctPlacement(row);
     await prisma.governmentExam.update({
       where: { id: row.id },
       data: {
         ...official,
         ...published,
         ...statusPatch,
+        ...(row.id === best.id && fix.misplaced ? fix.placement : {}),
         sourceUrls: (urls.includes(e.pageUrl) ? urls : [...urls, e.pageUrl]) as Prisma.InputJsonValue,
       },
     });
