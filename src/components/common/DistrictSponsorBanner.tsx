@@ -6,34 +6,50 @@
 
 "use client";
 
-// ═══════════════════════════════════════════════════════════
-//  DistrictSponsorBanner — "Backed by" block at the end of the district
-//  overview (Design v3, CONCEPT-v3 §5 step 4).
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+//  DistrictSponsorBanner — "Supported by", low on the district overview
+// ═══════════════════════════════════════════════════════════════════════
 //
-//  Three quiet rows — All India · <State> · <District> — each listing the
-//  people who support that level with a monthly contribution. When a row
-//  is empty it shows a plain link inviting the first supporter.
+//   Supported by                                            See all
+//   All India   [★ Micah Alex · Founding Builder] [Asha · All-India Patron]
+//   Karnataka   [Ravi]
+//   Mandya      [Preethaam] [+3 more]  and 2 people who chose not to show their name
+//   ─────────────────────────────────────────────────────────────────
+//   Support Mandya: ₹99 a month
+//   Or all of Karnataka for ₹999 a month, or all of India for ₹9,999 a month.
 //
-//  v2 scrolled these rows sideways like a ticker. Design v3 allows no
-//  decorative motion, so rows now simply wrap and show the first few
-//  names, with "View all" linking to the contributors page.
+//  v5 (Sept 2026):
+//  • Placement is by tier or amount (placement.ts), the same rule the API
+//    uses — not "monthly subscribers only". The old filter hid the one
+//    Founding Builder (a one-time gift), so every district said "All India —
+//    Be the first" although the support page promises the founder "first
+//    place everywhere". The Founding Builder is now listed first, in a soft
+//    gold chip.
+//  • Rows with nobody are not drawn; there is one quiet invitation at the
+//    bottom instead of three "Be the first" links.
+//  • The same name twice on a row is shown once; anonymous supporters are
+//    counted, not listed.
+//  • Every word comes from "page_support" (banner_* keys) in en/hi/kn.
 //
-//  Data: the same /api/data/contributors request as before (recurring
-//  supporters only). Prices come from TIER_CONFIG, never typed by hand.
+//  Data: /api/data/contributors?district=&state= (the same request and
+//  React Query key as before; SupportCheckout invalidates it after a payment).
+//  Prices come from TIER_CONFIG, never typed by hand.
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Github, HandHeart, Instagram, Linkedin, Twitter } from "lucide-react";
-import { getContributorLabel } from "@/lib/contributor-label";
+import { useTranslations } from "next-intl";
+import { HandHeart } from "lucide-react";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
-import { normalizeSocialLink } from "@/lib/social-link";
 import { Card } from "@/components/district/ui";
+import { useFormat } from "@/i18n/client";
+import SupporterChip from "@/components/support/SupporterChip";
+import { isFoundingBuilder, placeSupporters, type PlacedRow } from "@/components/support/placement";
 
 interface Sponsor {
   id: string;
   name: string;
   tier: string;
+  amount: number | null;
   badgeType: string | null;
   badgeLevel: string | null;
   socialLink: string | null;
@@ -53,97 +69,46 @@ interface DistrictSponsorBannerProps {
   locale?: string;
 }
 
-/** How many names to show per row before "View all". */
+/** How many names to show per row before "+N more". */
 const MAX_PER_ROW = 8;
 
-const SOCIAL_ICONS: Record<string, typeof Instagram> = {
-  instagram: Instagram,
-  linkedin: Linkedin,
-  github: Github,
-  twitter: Twitter,
-  website: ExternalLink,
-};
-
-const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
-/** One supporter: initials circle + name (+ social icon when linked). */
-function Chip({ s }: { s: Sponsor }) {
-  const SocialIcon = s.socialPlatform ? SOCIAL_ICONS[s.socialPlatform] : null;
-  const initials = s.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const label = getContributorLabel(s.tier, s.districtName, s.stateName);
-  const title = `${s.name} · ${label}${s.monthsActive ? ` · ${s.monthsActive}mo` : ""}${s.message ? `\n"${s.message}"` : ""}`;
-  const href = normalizeSocialLink(s.socialLink);
-
-  const inner = (
-    <>
-      <span
-        aria-hidden
-        className="ftp-num"
-        style={{
-          width: 20, height: 20, borderRadius: "50%",
-          background: "var(--ftp-surface-2)", color: "var(--ftp-text-2)",
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          fontSize: 9, flexShrink: 0,
-        }}
-      >
-        {initials}
-      </span>
-      <span style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", whiteSpace: "nowrap" }}>{s.name}</span>
-      {SocialIcon && <SocialIcon size={11} aria-hidden style={{ color: "var(--ftp-text-2)" }} />}
-    </>
-  );
-
-  const style: React.CSSProperties = {
-    display: "inline-flex", alignItems: "center", gap: 6, minHeight: 32,
-    padding: "0 10px 0 4px", borderRadius: "var(--ftp-radius-pill)",
-    border: "1px solid var(--ftp-border)", background: "var(--ftp-surface)",
-    textDecoration: "none", color: "inherit",
-  };
-
-  return href ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" title={title} style={style}>
-      {inner}
-    </a>
-  ) : (
-    <span title={title} style={style}>{inner}</span>
-  );
-}
-
-/** One level (India / state / district): label on the left, names wrapping on the right. */
 function Row({
   label,
-  sponsors,
-  emptyCta,
+  row,
   viewAllHref,
+  tagFor,
 }: {
   label: string;
-  sponsors: Sponsor[];
-  emptyCta: { text: string; href: string };
+  row: PlacedRow<Sponsor>;
   viewAllHref: string;
+  tagFor?: (s: Sponsor) => { tag?: string; founder?: boolean };
 }) {
-  const shown = sponsors.slice(0, MAX_PER_ROW);
-  const more = sponsors.length - shown.length;
+  const t = useTranslations("page_support");
+  const { number } = useFormat();
+  if (row.named.length === 0 && row.anonymous === 0) return null;
+  const shown = row.named.slice(0, MAX_PER_ROW);
+  const more = row.named.length - shown.length;
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", padding: "6px 0" }}>
-      <span className="ftp-label" style={{ width: 120, flexShrink: 0 }}>{label}</span>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1, minWidth: 0 }}>
-        {sponsors.length === 0 ? (
-          <Link href={emptyCta.href} style={{ fontSize: 13, color: "var(--ftp-text-2)", textDecoration: "none", minHeight: 32, display: "inline-flex", alignItems: "center" }}>
-            {emptyCta.text}
-          </Link>
-        ) : (
-          <>
-            {shown.map((s) => (
-              <Chip key={s.id} s={s} />
-            ))}
-            {more > 0 && (
-              <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 32, display: "inline-flex", alignItems: "center" }}>
-                +<span className="ftp-num">{more}</span>&nbsp;more
-              </Link>
-            )}
-          </>
+    <div style={{ display: "flex", alignItems: "baseline", gap: "4px 12px", flexWrap: "wrap", padding: "8px 0" }}>
+      <span style={{ width: 120, flexShrink: 0, fontSize: 13, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text-2)" }}>{label}</span>
+      <ul style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, flex: "1 1 240px", minWidth: 0, margin: 0, padding: 0 }}>
+        {shown.map((s) => {
+          const extra = tagFor?.(s) ?? {};
+          return <SupporterChip key={s.id} s={s} tag={extra.tag} founder={extra.founder} profileLabel={t("wallProfile", { name: s.name })} />;
+        })}
+        {more > 0 && (
+          <li style={{ listStyle: "none" }}>
+            <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 36, display: "inline-flex", alignItems: "center" }}>
+              {t("banner_more", { n: number(more) })}
+            </Link>
+          </li>
         )}
-      </div>
+        {row.anonymous > 0 && (
+          <li style={{ listStyle: "none", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+            {row.named.length > 0 ? t("banner_anonAnd", { n: row.anonymous }) : t("banner_anon", { n: row.anonymous })}
+          </li>
+        )}
+      </ul>
     </div>
   );
 }
@@ -155,6 +120,9 @@ export default function DistrictSponsorBanner({
   districtName,
   locale = "en",
 }: DistrictSponsorBannerProps) {
+  const t = useTranslations("page_support");
+  const { number } = useFormat();
+  const inr = (n: number) => `₹${number(n)}`;
   const { data } = useQuery<{ contributors: Sponsor[] }>({
     queryKey: ["district-sponsors", district, state],
     queryFn: () =>
@@ -163,61 +131,47 @@ export default function DistrictSponsorBanner({
     refetchInterval: 120_000,
   });
 
-  const allSponsors = (data?.contributors ?? []).filter((c) => c.isRecurring);
-  const indiaLine = allSponsors.filter((s) => s.tier === "founder" || s.tier === "patron");
-  const stateLine = allSponsors.filter((s) => s.tier === "state");
-  const districtLine = allSponsors.filter((s) => s.tier === "district");
+  const rows = placeSupporters(data?.contributors ?? []);
+  const total = rows.india.named.length + rows.india.anonymous + rows.state.named.length + rows.state.anonymous + rows.district.named.length + rows.district.anonymous;
 
   const dName = districtName ?? district;
   const sName = stateName ?? state;
   const viewAllHref = `/${locale}/${state}/${district}/contributors`;
   const supportHref = `/${locale}/support?tier=district&state=${state}&district=${district}`;
 
+  const indiaTag = (s: Sponsor) =>
+    isFoundingBuilder(s) ? { tag: t("banner_founder"), founder: true } : { tag: t("banner_patron") };
+
   return (
     <Card as="section" aria-labelledby="ftp-backed-by" className="ftp-supported-by-card">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <h2 id="ftp-backed-by" className="ftp-title">Backed by</h2>
-        <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          View all
-        </Link>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <h2 id="ftp-backed-by" className="ftp-title" style={{ fontWeight: 600 }}>{t("banner_title")}</h2>
+        {total > 0 && (
+          <Link href={viewAllHref} style={{ fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+            {t("banner_seeAll")}
+          </Link>
+        )}
       </div>
 
-      <Row
-        label="All India"
-        sponsors={indiaLine}
-        viewAllHref={viewAllHref}
-        emptyCta={{ text: `Be the first — ${inr(TIER_CONFIG.patron.amount)}/mo`, href: `/${locale}/support?tier=patron` }}
-      />
-      <Row
-        label={sName}
-        sponsors={stateLine}
-        viewAllHref={viewAllHref}
-        emptyCta={{ text: `Sponsor ${sName} — ${inr(TIER_CONFIG.state.amount)}/mo`, href: `/${locale}/support?tier=state&state=${state}` }}
-      />
-      <Row
-        label={dName}
-        sponsors={districtLine}
-        viewAllHref={viewAllHref}
-        emptyCta={{ text: `Champion ${dName} — ${inr(TIER_CONFIG.district.amount)}/mo`, href: supportHref }}
-      />
+      {data && total === 0 && (
+        <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("banner_none", { district: dName })}</p>
+      )}
+      <Row label={t("banner_india")} row={rows.india} viewAllHref={viewAllHref} tagFor={indiaTag} />
+      <Row label={sName} row={rows.state} viewAllHref={viewAllHref} />
+      <Row label={dName} row={rows.district} viewAllHref={viewAllHref} />
 
-      {/* Sponsor call to action — a quiet link, not a banner. */}
-      <div
-        style={{
-          marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ftp-border)",
-          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-        }}
-      >
+      {/* One quiet invitation — a link, not a banner. */}
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ftp-border)" }}>
         <Link
           href={supportHref}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-support)", textDecoration: "none" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, fontSize: 14, fontWeight: 600, color: "var(--ftp-brand)", textDecoration: "none" }}
         >
           <HandHeart size={16} aria-hidden />
-          Sponsor {dName} — {inr(TIER_CONFIG.district.amount)}/mo
+          {t("banner_cta", { district: dName, amount: inr(TIER_CONFIG.district.amount) })}
         </Link>
-        <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-          or: {sName} {inr(TIER_CONFIG.state.amount)}/mo · All India {inr(TIER_CONFIG.patron.amount)}/mo
-        </span>
+        <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
+          {t("banner_ctaOr", { state: sName, stateAmount: inr(TIER_CONFIG.state.amount), indiaAmount: inr(TIER_CONFIG.patron.amount) })}
+        </p>
       </div>
     </Card>
   );

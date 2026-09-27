@@ -154,5 +154,17 @@
   "co_tryAgain": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
   "co_decrease": "ಮೊತ್ತವನ್ನು {amount} ಕಡಿಮೆ ಮಾಡಿ",
   "co_increase": "ಮೊತ್ತವನ್ನು {amount} ಹೆಚ್ಚಿಸಿ",
-  "co_amountAria": "{tier}: ರೂಪಾಯಿಗಳಲ್ಲಿ ಮೊತ್ತ"
+  "co_amountAria": "{tier}: ರೂಪಾಯಿಗಳಲ್ಲಿ ಮೊತ್ತ",
+  "banner_title": "ಇವರ ಬೆಂಬಲದಿಂದ",
+  "banner_seeAll": "ಎಲ್ಲವನ್ನೂ ನೋಡಿ",
+  "banner_india": "ಅಖಿಲ ಭಾರತ",
+  "banner_founder": "ಸ್ಥಾಪಕ ನಿರ್ಮಾತೃ",
+  "banner_patron": "ಅಖಿಲ ಭಾರತ ಪೋಷಕ",
+  "banner_more": "+{n} ಇನ್ನಷ್ಟು",
+  "banner_anon": "{n, plural, one {ಹೆಸರು ತೋರಿಸದ # ವ್ಯಕ್ತಿ} other {ಹೆಸರು ತೋರಿಸದ # ಜನರು}}",
+  "banner_anonAnd": "ಮತ್ತು {n, plural, one {ಹೆಸರು ತೋರಿಸದ # ವ್ಯಕ್ತಿ} other {ಹೆಸರು ತೋರಿಸದ # ಜನರು}}",
+  "banner_none": "{district} ಗೆ ಇನ್ನೂ ಯಾರ ಬೆಂಬಲವೂ ಇಲ್ಲ.",
+  "banner_cta": "{district} ಗೆ ಬೆಂಬಲ ನೀಡಿ: ತಿಂಗಳಿಗೆ {amount}",
+  "banner_ctaOr": "ಅಥವಾ ಇಡೀ {state} ಗೆ ತಿಂಗಳಿಗೆ {stateAmount}, ಅಥವಾ ಇಡೀ ಭಾರತಕ್ಕೆ ತಿಂಗಳಿಗೆ {indiaAmount}.",
+  "national_title": "ಭಾರತದಾದ್ಯಂತ ಇವರ ಬೆಂಬಲದಿಂದ"
 }

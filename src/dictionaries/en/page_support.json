@@ -154,5 +154,17 @@
   "co_tryAgain": "Try again",
   "co_decrease": "Decrease amount by {amount}",
   "co_increase": "Increase amount by {amount}",
-  "co_amountAria": "Amount in rupees for {tier}"
+  "co_amountAria": "Amount in rupees for {tier}",
+  "banner_title": "Supported by",
+  "banner_seeAll": "See all",
+  "banner_india": "All India",
+  "banner_founder": "Founding Builder",
+  "banner_patron": "All-India Patron",
+  "banner_more": "+{n} more",
+  "banner_anon": "{n, plural, one {# person who chose not to show their name} other {# people who chose not to show their names}}",
+  "banner_anonAnd": "and {n, plural, one {# person who chose not to show their name} other {# people who chose not to show their names}}",
+  "banner_none": "No one supports {district} yet.",
+  "banner_cta": "Support {district}: {amount} a month",
+  "banner_ctaOr": "Or all of {state} for {stateAmount} a month, or all of India for {indiaAmount} a month.",
+  "national_title": "Supported across India by"
 }
