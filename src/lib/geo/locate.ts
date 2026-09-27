@@ -4,6 +4,8 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+import { INDIA_STATE_NAME_TO_SLUG } from "./aliases";
+
 // ═══════════════════════════════════════════════════════════════════════
 //  locate.ts — pure geometry helpers for "Your district" (CONCEPT-v3 §5)
 // ═══════════════════════════════════════════════════════════════════════
@@ -98,54 +100,10 @@ export function findStateForPoint(lng: number, lat: number, geojson: GeoFeatureC
 
 /**
  * State name (as written in the GeoJSON files) → registry slug used in
- * src/lib/constants/districts.ts. Mirrors GEO_NAME_TO_SLUG in
- * src/components/map/DrillDownMap.tsx and adds the spellings used by
- * public/geo/india-states.json.
+ * src/lib/constants/districts.ts. One shared table for every map and for
+ * location lookup: src/lib/geo/aliases.ts.
  */
-export const STATE_NAME_TO_SLUG: Record<string, string> = {
-  "Andaman & Nicobar Island": "andaman-nicobar",
-  "Andaman and Nicobar": "andaman-nicobar",
-  "Andaman & Nicobar": "andaman-nicobar",
-  "Andhra Pradesh": "andhra-pradesh",
-  "Arunachal Pradesh": "arunachal-pradesh",
-  "Assam": "assam",
-  "Bihar": "bihar",
-  "Chandigarh": "chandigarh",
-  "Chhattisgarh": "chhattisgarh",
-  "Dadra and Nagar Haveli": "dadra-nagar-haveli",
-  "Daman and Diu": "dadra-nagar-haveli",
-  "Dadra and Nagar Haveli and Daman and Diu": "dadra-nagar-haveli",
-  "NCT of Delhi": "delhi",
-  "Delhi": "delhi",
-  "Goa": "goa",
-  "Gujarat": "gujarat",
-  "Haryana": "haryana",
-  "Himachal Pradesh": "himachal-pradesh",
-  "Jammu & Kashmir": "jammu-kashmir",
-  "Jammu and Kashmir": "jammu-kashmir",
-  "Jharkhand": "jharkhand",
-  "Karnataka": "karnataka",
-  "Kerala": "kerala",
-  "Ladakh": "ladakh",
-  "Lakshadweep": "lakshadweep",
-  "Madhya Pradesh": "madhya-pradesh",
-  "Maharashtra": "maharashtra",
-  "Manipur": "manipur",
-  "Meghalaya": "meghalaya",
-  "Mizoram": "mizoram",
-  "Nagaland": "nagaland",
-  "Odisha": "odisha",
-  "Puducherry": "puducherry",
-  "Punjab": "punjab",
-  "Rajasthan": "rajasthan",
-  "Sikkim": "sikkim",
-  "Tamil Nadu": "tamil-nadu",
-  "Telangana": "telangana",
-  "Tripura": "tripura",
-  "Uttar Pradesh": "uttar-pradesh",
-  "Uttarakhand": "uttarakhand",
-  "West Bengal": "west-bengal",
-};
+export const STATE_NAME_TO_SLUG: Record<string, string> = INDIA_STATE_NAME_TO_SLUG;
 
 /** Registry slug for a GeoJSON state name, or null when unknown. */
 export function stateSlugFromName(name: string | null | undefined): string | null {

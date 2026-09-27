@@ -24,6 +24,7 @@ import {
   ZoomableGroup,
 } from "react-simple-maps";
 import { INDIA_DESIGN } from "@/lib/india/india-design";
+import { INDIA_STATE_NAME_TO_SLUG } from "@/lib/geo/aliases";
 import {
   type StateMetricValue,
   getMockMetric,
@@ -33,46 +34,7 @@ import {
 
 // Map GeoJSON `name` properties → our state slugs. Same map as
 // DrillDownMap.tsx — names that the india-states.json file uses.
-const GEO_NAME_TO_SLUG: Record<string, string> = {
-  "Andaman & Nicobar Island": "andaman-nicobar",
-  "Andhra Pradesh": "andhra-pradesh",
-  "Arunachal Pradesh": "arunachal-pradesh",
-  Assam: "assam",
-  Bihar: "bihar",
-  Chandigarh: "chandigarh",
-  Chhattisgarh: "chhattisgarh",
-  "Dadra and Nagar Haveli": "dadra-nagar-haveli",
-  "Daman and Diu": "dadra-nagar-haveli",
-  "NCT of Delhi": "delhi",
-  Delhi: "delhi",
-  Goa: "goa",
-  Gujarat: "gujarat",
-  Haryana: "haryana",
-  "Himachal Pradesh": "himachal-pradesh",
-  "Jammu & Kashmir": "jammu-kashmir",
-  Jharkhand: "jharkhand",
-  Karnataka: "karnataka",
-  Kerala: "kerala",
-  Ladakh: "ladakh",
-  Lakshadweep: "lakshadweep",
-  "Madhya Pradesh": "madhya-pradesh",
-  Maharashtra: "maharashtra",
-  Manipur: "manipur",
-  Meghalaya: "meghalaya",
-  Mizoram: "mizoram",
-  Nagaland: "nagaland",
-  Odisha: "odisha",
-  Puducherry: "puducherry",
-  Punjab: "punjab",
-  Rajasthan: "rajasthan",
-  Sikkim: "sikkim",
-  "Tamil Nadu": "tamil-nadu",
-  Telangana: "telangana",
-  Tripura: "tripura",
-  "Uttar Pradesh": "uttar-pradesh",
-  Uttarakhand: "uttarakhand",
-  "West Bengal": "west-bengal",
-};
+const GEO_NAME_TO_SLUG = INDIA_STATE_NAME_TO_SLUG;
 
 interface Props {
   metricKey: string;

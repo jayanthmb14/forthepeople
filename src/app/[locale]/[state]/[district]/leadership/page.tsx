@@ -364,7 +364,7 @@ function LeadershipPageInner({
   // Used for the election-period top banner + per-card "Election period" badge.
   const { data: electionsData } = useQuery<{ data: ElectionEvent[] }>({
     queryKey: ["elections", state],
-    queryFn: () => fetch(`/api/data/elections?state=${state}`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/data/election-events?state=${state}`).then((r) => r.json()),
     staleTime: 5 * 60_000,
   });
   const liveElection = findActiveElection(electionsData?.data);

@@ -16,7 +16,17 @@
     "title": "ಭಾರತ — ನಿಮ್ಮ ಜಿಲ್ಲೆ ಆಯ್ಕೆ ಮಾಡಿ",
     "comingSoon": "ಶೀಘ್ರದಲ್ಲೇ",
     "activeState": "ಸಕ್ರಿಯ",
-    "selectDistrict": "ಅನ್ವೇಷಿಸಲು ಜಿಲ್ಲೆ ಆಯ್ಕೆ ಮಾಡಿ"
+    "selectDistrict": "ಅನ್ವೇಷಿಸಲು ಜಿಲ್ಲೆ ಆಯ್ಕೆ ಮಾಡಿ",
+    "explore": "ನೋಡಿ →",
+    "legendActive": "ಸಕ್ರಿಯ",
+    "legendSoon": "ಶೀಘ್ರದಲ್ಲೇ",
+    "preview": "ಮುನ್ನೋಟ",
+    "notYet": "ಇನ್ನೂ ಸೈಟ್‌ನಲ್ಲಿ ಇಲ್ಲ",
+    "clickDistrict": "ನೋಡಲು ಜಿಲ್ಲೆಯ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ",
+    "loadingMap": "ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+    "credit": "ನಕ್ಷೆ ಡೇಟಾ © DataMeet Contributors · CC-BY 4.0",
+    "clickTaluk": "ನೋಡಲು ತಾಲೂಕಿನ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ",
+    "schematic": "ಆಕಾರಗಳು ಅಂದಾಜು ಮಾತ್ರ, ಅಧಿಕೃತ ಗಡಿಗಳಲ್ಲ."
   },
   "district": {
     "overview": "ಅವಲೋಕನ",

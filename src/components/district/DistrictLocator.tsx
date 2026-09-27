@@ -20,6 +20,12 @@ import { computeCenter, computeScale } from "@/components/map/GenericStateMap";
 import { DISTRICT_ICONS } from "@/components/district/icons";
 import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
 import { getDistrictCentroid } from "@/lib/geo/district-centroids";
+import { geoToRegistrySlug } from "@/lib/geo/aliases";
+
+// Shapes use 2011 names (and Mumbai is two shapes), so compare registry slugs.
+function isDistrictShape(stateSlug: string, districtSlug: string, geoSlug: unknown): boolean {
+  return typeof geoSlug === "string" && geoToRegistrySlug(stateSlug, geoSlug) === districtSlug;
+}
 
 type Geo = { type: string; features: Array<{ properties: Record<string, unknown>; geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> };
 
@@ -63,7 +69,10 @@ export default function DistrictLocator({
 
   const center = useMemo(() => (geo ? computeCenter(geo) : ([78, 22] as [number, number])), [geo]);
   const scale = useMemo(() => (geo ? computeScale(geo) : 2000), [geo]);
-  const found = useMemo(() => Boolean(geo?.features.some((f) => f.properties?.slug === districtSlug)), [geo, districtSlug]);
+  const found = useMemo(
+    () => Boolean(geo?.features.some((f) => isDistrictShape(stateSlug, districtSlug, f.properties?.slug))),
+    [geo, stateSlug, districtSlug],
+  );
 
   if (failed || (geo && !found)) return null;
 
@@ -95,7 +104,7 @@ export default function DistrictLocator({
             <Geographies geography={geo}>
               {({ geographies }: { geographies: Array<{ rsmKey: string; properties: Record<string, unknown> }> }) =>
                 geographies.map((g) => {
-                  const mine = g.properties?.slug === districtSlug;
+                  const mine = isDistrictShape(stateSlug, districtSlug, g.properties?.slug);
                   return (
                     <Geography
                       key={g.rsmKey}

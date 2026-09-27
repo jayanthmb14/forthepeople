@@ -23,6 +23,7 @@
 
 import type React from "react";
 import { Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /** Mix a CSS colour with transparency — e.g. tint("var(--ftp-map-live)", 18). */
 export function tint(color: string, pct: number): string {
@@ -97,7 +98,7 @@ export function MapTooltip({
   x,
   y,
   maxLeft = 240,
-  lockedHint = "Coming soon",
+  lockedHint,
 }: {
   name: string;
   active: boolean;
@@ -106,6 +107,7 @@ export function MapTooltip({
   maxLeft?: number;
   lockedHint?: string;
 }) {
+  const t = useTranslations("map");
   return (
     <div
       style={{
@@ -131,9 +133,9 @@ export function MapTooltip({
       {!active && <Lock size={12} aria-hidden style={{ color: "var(--ftp-text-2)" }} />}
       {name}
       {active ? (
-        <span style={{ color: "var(--ftp-brand)" }}>Explore →</span>
+        <span style={{ color: "var(--ftp-brand)" }}>{t("explore")}</span>
       ) : (
-        <span style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{lockedHint}</span>
+        <span style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{lockedHint ?? t("legendSoon")}</span>
       )}
     </div>
   );
@@ -155,13 +157,14 @@ function LegendRow({ swatch, border, label }: { swatch: string; border: string; 
  */
 export function MapLegend({
   solid = false,
-  liveLabel = "Active",
-  lockedLabel = "Coming soon",
+  liveLabel,
+  lockedLabel,
 }: {
   solid?: boolean;
   liveLabel?: string;
   lockedLabel?: string;
 }) {
+  const t = useTranslations("map");
   return (
     <div
       style={{
@@ -184,9 +187,9 @@ export function MapLegend({
       <LegendRow
         swatch={solid ? "var(--ftp-map-live)" : tint("var(--ftp-map-live)", 18)}
         border="var(--ftp-map-live)"
-        label={liveLabel}
+        label={liveLabel ?? t("legendActive")}
       />
-      <LegendRow swatch="var(--ftp-map-locked)" border="var(--ftp-border-strong)" label={lockedLabel} />
+      <LegendRow swatch="var(--ftp-map-locked)" border="var(--ftp-border-strong)" label={lockedLabel ?? t("legendSoon")} />
     </div>
   );
 }

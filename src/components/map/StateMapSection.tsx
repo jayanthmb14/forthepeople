@@ -10,6 +10,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 
 const KarnatakaMap = dynamic(() => import("@/components/map/KarnatakaMap"), {
   ssr: false,
@@ -23,6 +24,7 @@ const GenericStateMap = dynamic(() => import("@/components/map/GenericStateMap")
 
 /** Flat placeholder while the map code loads (no shimmer). */
 function MapSkeleton() {
+  const t = useTranslations("map");
   return (
     <div
       className="ftp-skeleton"
@@ -34,7 +36,7 @@ function MapSkeleton() {
         justifyContent: "center",
       }}
     >
-      <span style={{ color: "var(--ftp-text-2)", fontSize: 13 }}>Loading map…</span>
+      <span style={{ color: "var(--ftp-text-2)", fontSize: 13 }}>{t("loadingMap")}</span>
     </div>
   );
 }
@@ -46,6 +48,7 @@ interface StateMapSectionProps {
 }
 
 export default function StateMapSection({ locale, stateSlug, activeDistrictSlugs }: StateMapSectionProps) {
+  const t = useTranslations("map");
   return (
     // No border or background here: the page wraps this in a kit <Card>.
     // The map frame has a fixed, width-aware height and the SVG fits inside
@@ -54,7 +57,7 @@ export default function StateMapSection({ locale, stateSlug, activeDistrictSlugs
     // which hid the southern districts.)
     <div>
       <div style={{ padding: "10px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
-        <span className="ftp-label">Click a district to explore</span>
+        <span className="ftp-label">{t("clickDistrict")}</span>
       </div>
       <div style={{ height: "clamp(300px, 55vw, 460px)", padding: "8px 16px" }}>
         {stateSlug === "karnataka" ? (
@@ -64,7 +67,7 @@ export default function StateMapSection({ locale, stateSlug, activeDistrictSlugs
         )}
       </div>
       <div style={{ padding: "0 16px 6px", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-        Map data © DataMeet Contributors · CC-BY 4.0
+        {t("credit")}
       </div>
     </div>
   );

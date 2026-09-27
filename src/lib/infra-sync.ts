@@ -364,13 +364,12 @@ export async function verifyInfraExtraction(
 // ═══════════════════════════════════════════════════════════
 
 async function findTargetDistricts(extraction: InfraExtraction, sourceDistrictId: string) {
-  if (extraction.scope === "NATIONAL") {
-    const rows = await prisma.district.findMany({
-      where: { active: true },
-      select: { id: true, slug: true, stateId: true, state: { select: { slug: true } } },
-    });
-    return rows.map((r) => ({ id: r.id, slug: r.slug, stateId: r.stateId }));
-  }
+  // NATIONAL projects are not written to any district. The old fan-out
+  // copied them onto EVERY active district (Sept 2026 audit: a Delhi project
+  // was listed on all ten district pages, an RRTS line on nine). A national
+  // project that runs through a district is re-extracted from that
+  // district's own news with scope DISTRICT.
+  if (extraction.scope === "NATIONAL") return [];
   if (extraction.scope === "STATE") {
     const src = await prisma.district.findUnique({
       where: { id: sourceDistrictId },

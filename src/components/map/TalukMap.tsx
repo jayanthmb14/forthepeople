@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, Annotation } from "react-simple-maps";
+import { useTranslations } from "next-intl";
 import { MapTooltip, tint } from "@/components/map/mapTheme";
 import type { Hue } from "@/lib/design/hues";
 
@@ -106,6 +107,7 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
 
   const proj = DISTRICT_PROJECTION[district] ?? DEFAULT_PROJECTION;
 
+  const t = useTranslations("map");
   return (
     <div style={{ position: "relative", width: "100%", minHeight: 300 }}>
       <ComposableMap
@@ -202,8 +204,21 @@ export default function TalukMap({ locale, state, district, taluks = [] }: Taluk
         }}
       >
         <span className="ftp-emoji" aria-hidden>👆</span>
-        Click a taluk to explore
+        {t("clickTaluk")}
       </div>
+
+      {/* The taluk files in public/geo are simple boxes, not surveyed
+          borders (Sept 2026 audit). Say so until real polygons replace them. */}
+      <p
+        style={{
+          position: "absolute", top: 6, left: 8, margin: 0, maxWidth: "70%",
+          fontSize: 11, lineHeight: "15px", color: "var(--ftp-text-2)",
+          background: "color-mix(in srgb, var(--ftp-surface) 85%, transparent)",
+          borderRadius: 6, padding: "2px 6px", pointerEvents: "none",
+        }}
+      >
+        {t("schematic")}
+      </p>
     </div>
   );
 }

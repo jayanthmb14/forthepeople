@@ -16,7 +16,17 @@
     "title": "India — Select Your District",
     "comingSoon": "Coming Soon",
     "activeState": "Active",
-    "selectDistrict": "Select a district to explore"
+    "selectDistrict": "Select a district to explore",
+    "explore": "Explore →",
+    "legendActive": "Active",
+    "legendSoon": "Coming soon",
+    "preview": "Preview",
+    "notYet": "Not on the site yet",
+    "clickDistrict": "Click a district to explore",
+    "loadingMap": "Loading map…",
+    "credit": "Map data © DataMeet Contributors · CC-BY 4.0",
+    "clickTaluk": "Click a taluk to explore",
+    "schematic": "Shapes are approximate, not official borders."
   },
   "district": {
     "overview": "Overview",

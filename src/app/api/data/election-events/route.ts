@@ -1,7 +1,11 @@
 /**
  * ForThePeople.in — Election events API.
  *
- * GET /api/data/elections?state=<slug>
+ * GET /api/data/election-events?state=<slug>
+ *
+ * Renamed from /api/data/elections (Sept 2026): that static route shadowed
+ * the [module] route's "elections" case, so the Elections page received
+ * this calendar instead of ElectionResult rows and rendered empty.
  *   Returns ALL elections relevant to a state: national (state IS NULL)
  *   plus state-level rows for that state, ordered by urgency (live →
  *   upcoming → past). When called without ?state, returns national rows
@@ -47,7 +51,7 @@ function urgencyMs(e: { pollingDate: Date | null; nextExpected: Date | null; res
 
 export async function GET(req: NextRequest) {
   const stateSlug = req.nextUrl.searchParams.get("state");
-  const key = cacheKey(stateSlug ?? "national", "elections");
+  const key = cacheKey(stateSlug ?? "national", "election-events");
   const cached = await cacheGet<{ data: ElectionPayload[] }>(key);
   if (cached) return NextResponse.json({ ...cached, meta: { fromCache: true } });
 
@@ -56,7 +60,7 @@ export async function GET(req: NextRequest) {
   // undefined. Return an empty list with a clear log line instead of a
   // 500 — the page just shows no banner until the dev server restarts.
   if (typeof (prisma as unknown as { electionEvent?: unknown }).electionEvent !== "object") {
-    console.warn("[api/data/elections] prisma.electionEvent missing — restart dev server after `prisma generate`");
+    console.warn("[api/data/election-events] prisma.electionEvent missing — restart dev server after `prisma generate`");
     return NextResponse.json({ data: [], meta: { fromCache: false, count: 0, warning: "prisma_client_stale" } });
   }
 
@@ -99,7 +103,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data, meta: { fromCache: false, count: data.length } });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[api/data/elections] query failed:", msg);
+    console.error("[api/data/election-events] query failed:", msg);
     return NextResponse.json(
       { data: [], meta: { fromCache: false, count: 0, error: msg } },
       { status: 200 }, // 200 with empty array — never blank the page on a backend hiccup

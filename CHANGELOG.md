@@ -130,6 +130,28 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 - 2026-09-27: The India map shows live districts as landmark badges in each district's colour, and
   nearby pins fan out with leader lines. The district overview has a "Where is {district}?" locator map.
 
+### Fixed — district data and maps (Sept 2026 backend audit, branch `redesign-v4`)
+- 2026-09-27: **Infrastructure shows only the district's own projects.** STATE and NATIONAL rows were
+  copied onto many districts; one Delhi project appeared on all ten district pages. District pages,
+  the report card and insights now use DISTRICT and CITY projects only (`src/lib/data-filters.ts`),
+  and the sync no longer fans NATIONAL projects out to every district.
+- 2026-09-27: The Police, Leadership and Power pages no longer show rows guessed from news headlines.
+  Examples were "Prime Minister of India" stored as a leader's name, any number in a headline stored
+  as an NCRB count, and "Factories go fully solar" stored as an outage. The news engine now sends
+  these three modules to the admin review queue instead of writing them.
+- 2026-09-27: **The Elections page shows results again.** A static calendar route at
+  `/api/data/elections` shadowed the module route. The calendar moved to
+  `/api/data/election-events`.
+- 2026-09-27: Maps.
+  - Telangana has its own map (split from the pre-2014 Andhra Pradesh file).
+  - Map names now match district pages (`src/lib/geo/aliases.ts`): Mumbai Suburban → Mumbai,
+    Haora → Howrah, Gurgaon → Gurugram, Delhi's districts, and others.
+  - Clicking a map shape that has no page no longer opens a 404.
+  - Andaman and Nicobar, Jammu and Kashmir, and Dadra and Nagar Haveli and Daman and Diu are no
+    longer blank on the India maps.
+  - Map labels are translated.
+  - Taluk maps say their shapes are approximate, and the false OpenStreetMap credit is removed.
+
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked
   `.v1/.v2/.v3` snapshot files and the permanently redirected `india-detail` page.
@@ -174,6 +196,17 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   `supporter-message`, `contribution-expiry`, `badge-level`, `social-detect`).
 
 ### Manual actions (only the owner can do these)
+- **Data cleanup (optional, pages already hide these rows):** run
+  `npx tsx scripts/cleanup-news-derived-2026-09.ts` (dry run). If the list looks right, re-run it with
+  `--confirm`. It removes 26 NATIONAL infra copies, 260 news-derived crime rows and 25 fake outages,
+  and deactivates 162 news-derived leaders.
+- **Seeded random numbers still in the database** (not touched by any script):
+  - 24 TrafficCollection rows with fractional-rupee amounts (Mandya, Bengaluru, Lucknow)
+  - 4 SugarFactorySeason `totalArrears`
+  - 120 RainfallHistory rows for Mandya and Bengaluru Urban (2020–2024), labelled KSNDMC / IMD
+
+  They came from `Math.random()` in `prisma/seed*.ts`. Decide whether to delete them or label them
+  as estimates.
 - **Translation backend:** run `npm run db:push` once to create `ContentTranslation`, then add ONE
   provider key to Vercel (`BHASHINI_USER_ID` + `BHASHINI_API_KEY`, or `GOOGLE_TRANSLATE_API_KEY`, or
   `SARVAM_API_KEY`). Optional: `TRANSLATION_MONTHLY_CHAR_LIMIT`. Then call

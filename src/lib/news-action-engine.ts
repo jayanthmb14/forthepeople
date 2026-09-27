@@ -122,6 +122,13 @@ Use "news" module if it doesn't clearly fit another. confidence = how certain yo
   }
 }
 
+// Modules where a news article must NEVER write straight to the page.
+// The Sept 2026 audit found the auto-applied rows were wrong: "Prime
+// Minister of India" stored as a leader's name, any number in a headline
+// stored as an NCRB crime count, "Factories go fully solar" stored as a
+// power outage. These always go to the admin review queue now.
+const REVIEW_ONLY_MODULES = new Set(["police", "leaders", "power"]);
+
 // ── Execute DB mutation based on module ──────────────────────
 export async function executeNewsAction(
   classification: NewsClassification
@@ -134,8 +141,8 @@ export async function executeNewsAction(
     return;
   }
 
-  // Mid confidence: queue for admin review
-  if (confidence < 0.85) {
+  // Mid confidence, or a review-only module: queue for admin review
+  if (confidence < 0.85 || REVIEW_ONLY_MODULES.has(targetModule)) {
     await prisma.newsActionQueue.create({
       data: {
         districtId,

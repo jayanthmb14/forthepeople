@@ -35,7 +35,7 @@ export default function LiveElectionBanner({
 }) {
   const { data } = useQuery<{ data: ElectionEvent[] }>({
     queryKey: ["elections", stateSlug],
-    queryFn: () => fetch(`/api/data/elections?state=${stateSlug}`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/data/election-events?state=${stateSlug}`).then((r) => r.json()),
     staleTime: 5 * 60_000,
   });
 

@@ -48,6 +48,7 @@ import { useMyDistrict } from "@/hooks/useMyDistrict";
 import type { MyDistrict } from "@/hooks/useMyDistrict";
 import DistrictPopup from "./DistrictPopup";
 import styles from "./home.module.css";
+import { geoToRegistrySlug } from "@/lib/geo/aliases";
 
 export { useMyDistrict } from "@/hooks/useMyDistrict";
 
@@ -92,8 +93,9 @@ async function districtByBoundary(stateSlug: string, lng: number, lat: number): 
   if (!shapes) return null;
   for (const f of shapes.features) {
     if (pointInPolygon(lng, lat, f.geometry)) {
-      const slug = (f.properties as Record<string, unknown> | null)?.slug;
-      if (typeof slug === "string" && getState(stateSlug)?.districts.some((d) => d.slug === slug)) return slug;
+      const raw = (f.properties as Record<string, unknown> | null)?.slug;
+      const slug = typeof raw === "string" ? geoToRegistrySlug(stateSlug, raw) : null;
+      if (slug && getState(stateSlug)?.districts.some((d) => d.slug === slug)) return slug;
     }
   }
   return null;

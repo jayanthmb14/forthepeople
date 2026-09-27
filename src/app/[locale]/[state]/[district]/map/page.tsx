@@ -229,7 +229,7 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
         }
         backHref={base}
         accent="blue"
-        source={{ label: "OpenStreetMap", href: "https://www.openstreetmap.org/copyright" }}
+        source={{ label: "ForThePeople.in (approximate shapes)" }}
       />
       {isLoading && <LoadingShell rows={4} />}
 
@@ -328,11 +328,13 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
         </>
       )}
 
-      {/* Taluk boundaries are built from OpenStreetMap (scripts/build-mandya-taluks.mjs).
-          If a district's boundary file comes from elsewhere, add it here. */}
+      {/* The taluk shapes (public/geo/<district>-taluks.json) are approximate
+          boxes, NOT OpenStreetMap boundaries — the old credit here was wrong.
+          Credit the real source once scripts/build-mandya-taluks.mjs (or
+          DataMeet) produces surveyed polygons. */}
       <SourcesFooter
         sources={[
-          { name: "OpenStreetMap contributors (taluk boundaries)", url: "https://www.openstreetmap.org/copyright", licence: "ODbL" },
+          { name: "Taluk list: district administration and Census of India; map shapes are approximate" },
         ]}
       />
       <Toolbar>

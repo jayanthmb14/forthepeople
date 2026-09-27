@@ -9,7 +9,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import { useTranslations } from "next-intl";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
+import { getState } from "@/lib/constants/districts";
+import { geoToRegistrySlug } from "@/lib/geo/aliases";
 
 interface GenericStateMapProps {
   locale: string;
@@ -67,7 +70,14 @@ export function computeScale(geojson: { features: Array<{ geometry: { coordinate
 
 export default function GenericStateMap({ locale, stateSlug, activeDistricts }: GenericStateMapProps) {
   const router = useRouter();
-  const [tooltip, setTooltip] = useState<{ name: string; active: boolean; x: number; y: number } | null>(null);
+  const t = useTranslations("map");
+  // Districts that have a page (live or preview). Shapes outside the
+  // registry are shown but not clickable — they used to open a 404.
+  const registered = useMemo(
+    () => new Set(getState(stateSlug)?.districts.map((d) => d.slug) ?? []),
+    [stateSlug],
+  );
+  const [tooltip, setTooltip] = useState<{ name: string; active: boolean; hint: string; x: number; y: number } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [geoData, setGeoData] = useState<any>(null);
   const [failed, setFailed] = useState(false);
@@ -102,29 +112,32 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
           <Geographies geography={geoData}>
             {({ geographies }: { geographies: Array<{ rsmKey: string; properties: Record<string, string> }> }) =>
               geographies.map((geo) => {
-                const slug = geo.properties?.slug ?? "";
+                // Map shapes use 2011 names; the registry uses current ones.
+                const slug = geoToRegistrySlug(stateSlug, geo.properties?.slug ?? "");
                 const name = geo.properties?.name ?? "";
                 const isActive = activeDistricts.has(slug);
+                const hasPage = registered.has(slug);
+                const hint = hasPage ? t("preview") : t("notYet");
 
                 return (
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
                     onClick={() => {
-                      router.push(`/${locale}/${stateSlug}/${slug}`);
+                      if (hasPage) router.push(`/${locale}/${stateSlug}/${slug}`);
                     }}
                     onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => {
                       const rect = (e.target as SVGElement).closest("svg")?.getBoundingClientRect();
-                      if (rect) setTooltip({ name, active: isActive, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                      if (rect) setTooltip({ name, active: isActive, hint, x: e.clientX - rect.left, y: e.clientY - rect.top });
                     }}
                     onMouseMove={(e: React.MouseEvent<SVGPathElement>) => {
                       const rect = (e.target as SVGElement).closest("svg")?.getBoundingClientRect();
                       if (rect) setTooltip((t) => t ? { ...t, x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    // Colours from the shared map theme; locked districts still
-                    // open a preview page, so they keep a pointer cursor.
-                    style={geoStyle(isActive, false, true)}
+                    // Colours from the shared map theme. Locked districts with
+                    // a preview page keep a pointer cursor; the rest don't.
+                    style={geoStyle(isActive, false, hasPage)}
                   />
                 );
               })
@@ -134,10 +147,10 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
       </ComposableMap>
 
       {tooltip && (
-        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} lockedHint="Preview" />
+        <MapTooltip name={tooltip.name} active={tooltip.active} x={tooltip.x} y={tooltip.y} maxLeft={260} lockedHint={tooltip.hint} />
       )}
 
-      <MapLegend liveLabel="Active" lockedLabel="Coming soon" />
+      <MapLegend />
     </div>
   );
 }

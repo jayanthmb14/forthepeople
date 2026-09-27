@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
+import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
@@ -114,10 +115,10 @@ async function fetchModule(
         where: { id: did },
         include: {
           taluks: { select: { id: true, name: true, nameLocal: true, slug: true } },
-          leaders: { orderBy: { tier: "asc" } },
+          leaders: { where: { active: true, ...NOT_FROM_NEWS_OPTIONAL }, orderBy: { tier: "asc" } },
           _count: {
             select: {
-              infraProjects: true,
+              infraProjects: { where: LOCAL_INFRA },
               schemes: true,
               policeStations: true,
               schools: true,
@@ -146,6 +147,7 @@ async function fetchModule(
           source, "lastVerifiedAt", active, "roleDescription"
         FROM "Leader"
         WHERE "districtId" = ${did} AND active = true
+          AND (source IS NULL OR source NOT LIKE 'http%')
         ORDER BY LOWER("name"), LOWER("role"), id DESC
       `;
       const data = raw.map(r => ({
@@ -275,7 +277,7 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "infrastructure": {
       const data = await prisma.infraProject.findMany({
-        where: { districtId: did },
+        where: { districtId: did, ...LOCAL_INFRA },
         include: {
           updates: {
             orderBy: { date: "desc" },
@@ -335,7 +337,7 @@ async function fetchModule(
           orderBy: { name: "asc" },
         }),
         prisma.crimeStat.findMany({
-          where: { districtId: did },
+          where: { districtId: did, ...NOT_FROM_NEWS },
           orderBy: [{ year: "desc" }, { category: "asc" }],
         }),
         prisma.trafficCollection.findMany({
@@ -445,7 +447,7 @@ async function fetchModule(
     // ══════════════════════════════════════════════════
     case "power": {
       const data = await prisma.powerOutage.findMany({
-        where: { districtId: did },
+        where: { districtId: did, ...NOT_FROM_NEWS },
         orderBy: { startTime: "desc" },
         take: 30,
       });

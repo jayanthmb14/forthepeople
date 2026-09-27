@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
+import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 
 const WEIGHTS = {
   governance: 15,
@@ -90,7 +91,7 @@ async function calcGovernance(districtId: string): Promise<CategoryResult> {
   }
 
   // Leadership completeness
-  const leaders = await prisma.leader.findMany({ where: { districtId } });
+  const leaders = await prisma.leader.findMany({ where: { districtId, active: true, ...NOT_FROM_NEWS_OPTIONAL } });
   const expectedMin = 30;
   sub.leadershipCompleteness = {
     value: leaders.length, max: expectedMin,
@@ -181,7 +182,7 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
 async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  const projects = await prisma.infraProject.findMany({ where: { districtId } });
+  const projects = await prisma.infraProject.findMany({ where: { districtId, ...LOCAL_INFRA } });
   if (projects.length > 0) {
     const completed = projects.filter((p) => p.status === "Completed").length;
     const compRate = (completed / projects.length) * 100;
@@ -206,7 +207,7 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
 
   // Power outage frequency (lower is better)
   const outages = await prisma.powerOutage.count({
-    where: { districtId, createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
+    where: { districtId, ...NOT_FROM_NEWS, createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
   });
   const outageScore = Math.max(0, 100 - outages * 5);
   sub.powerReliability = { value: outages, max: 0, score: outageScore, label: "Power Outages (last 30 days, lower is better)" };
@@ -298,7 +299,7 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
   const district = await prisma.district.findFirst({ where: { id: districtId } });
   const pop = district?.population ?? 1000000;
   const crimes = await prisma.crimeStat.findMany({
-    where: { districtId, year: new Date().getFullYear() - 1 },
+    where: { districtId, ...NOT_FROM_NEWS, year: new Date().getFullYear() - 1 },
   });
   if (crimes.length > 0) {
     const totalCrimes = crimes.reduce((s, c) => s + c.count, 0);

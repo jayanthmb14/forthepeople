@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
+import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 import {
   INSIGHT_TEMPLATES,
   damInsightLevel,
@@ -166,17 +167,17 @@ async function generateTemplateInsight(
       }
 
       case "leadership": {
-        const total = await prisma.leader.count({ where: { districtId } });
+        const total = await prisma.leader.count({ where: { districtId, active: true, ...NOT_FROM_NEWS_OPTIONAL } });
         if (!total) return INSIGHT_TEMPLATES.leadership.none();
         return INSIGHT_TEMPLATES.leadership.filled(total, total);
       }
 
       case "infrastructure": {
         const onTrack = await prisma.infraProject.count({
-          where: { districtId, status: { in: ["ongoing", "completed"] } },
+          where: { districtId, ...LOCAL_INFRA, status: { in: ["ongoing", "completed"] } },
         });
         const delayed = await prisma.infraProject.count({
-          where: { districtId, status: "delayed" },
+          where: { districtId, ...LOCAL_INFRA, status: "delayed" },
         });
         if (delayed > 0) return INSIGHT_TEMPLATES.infrastructure.delayed(delayed);
         if (onTrack > 0) return INSIGHT_TEMPLATES.infrastructure.onTrack(onTrack);
