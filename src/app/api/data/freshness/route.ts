@@ -29,6 +29,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import {
   DATASETS,
+  electionResultsBehind,
   fyStartDate,
   isPrimary,
   judgeDataset,
@@ -87,7 +88,7 @@ interface Row {
   rtitpl_rows: number;
   rti_year: number | null; rti_rows: number;
   leaders_date: Date | null; leaders_rows: number;
-  elections_year: number | null; elections_rows: number;
+  elections_year: number | null; elections_rows: number; elections_held: Date | null;
   courts_source: string | null; courts_rows: number;
   crime_year: number | null; crime_rows: number;
   traffic_date: Date | null; traffic_checked: Date | null; traffic_rows: number;
@@ -143,6 +144,11 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT count(*) FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE 'http%'))::int AS leaders_rows,
       (SELECT max(x.year) FROM "ElectionResult" x WHERE x."districtId" = d.id) AS elections_year,
       (SELECT count(*) FROM "ElectionResult" x WHERE x."districtId" = d.id)::int AS elections_rows,
+      (SELECT max(COALESCE(e."resultDate", e."pollingDate", e."lastHeld")) FROM "ElectionEvent" e
+        WHERE e."isActive" AND e.type IN ('LOK_SABHA', 'STATE_ASSEMBLY')
+          AND (e.state IS NULL OR e.state = (SELECT s.slug FROM "State" s WHERE s.id = d."stateId"))
+          AND (e.district IS NULL OR e.district = d.slug)
+          AND COALESCE(e."resultDate", e."pollingDate", e."lastHeld") <= now()) AS elections_held,
       (SELECT max(x.source) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE}) AS courts_source,
       (SELECT count(*) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE})::int AS courts_rows,
       (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%') AS crime_year,
@@ -235,6 +241,8 @@ async function queryRow(districtId: string): Promise<Row | null> {
 
 interface Raw {
   rows: number;
+  /** Days the data is behind a newer event (elections), whatever its age. */
+  behindDays?: number | null;
   date?: Date | null;
   checked?: Date | null;
   period?: string | null;
@@ -283,7 +291,14 @@ function rawFacts(r: Row, x: Extra): Record<string, Raw> {
     rtiTemplates: { rows: r.rtitpl_rows },
     rti: { rows: r.rti_rows, date: year(r.rti_year), period: r.rti_year ? String(r.rti_year) : null, periodKind: "year" },
     leaders: { rows: r.leaders_rows, date: r.leaders_date, checked: r.leaders_date },
-    elections: { rows: r.elections_rows, date: year(r.elections_year), period: r.elections_year ? String(r.elections_year) : null, periodKind: "year" },
+    elections: {
+      rows: r.elections_rows,
+      date: year(r.elections_year),
+      period: r.elections_year ? String(r.elections_year) : null,
+      periodKind: "year",
+      // Results of a newer Lok Sabha / Assembly election are not in yet.
+      behindDays: electionResultsBehind(r.elections_year, r.elections_held),
+    },
     panchayats: x.nrega
       ? { rows: x.gp.rows + 1, date: x.nrega.date, checked: x.nrega.checked }
       : { rows: x.gp.rows, date: x.gp.date, checked: x.gp.date },
@@ -348,7 +363,8 @@ function buildDatasets(r: Row, now: Date, extra: Extra): DatasetFreshness[] {
     const f = facts[key] ?? { rows: 0 };
     const rule = ruleFor(key);
     const date = f.date ?? null;
-    const j = judgeDataset({ rows: f.rows, dataDate: date, rule, notCollected: f.notCollected, now });
+    let j = judgeDataset({ rows: f.rows, dataDate: date, rule, notCollected: f.notCollected, now });
+    if (f.behindDays && j.status !== "not_collected") j = { ...j, status: "late", lateByDays: f.behindDays };
     return {
       module,
       key,
