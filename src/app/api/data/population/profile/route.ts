@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { censusOnlyProfile, pickCensus2011, reconcileCensusProfile } from "@/lib/census-2011";
 
 export const revalidate = 86400;
 
@@ -39,13 +40,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "District not found" }, { status: 404 });
   }
 
-  const allDatasets = await prisma.demographicProfile.findMany({
-    where: { districtId: district.id },
-    select: { year: true, dataset: true },
-    orderBy: [{ year: "desc" }, { dataset: "asc" }],
-  });
+  const [allDatasets, history] = await Promise.all([
+    prisma.demographicProfile.findMany({
+      where: { districtId: district.id },
+      select: { year: true, dataset: true },
+      orderBy: [{ year: "desc" }, { dataset: "asc" }],
+    }),
+    prisma.populationHistory.findMany({
+      where: { districtId: district.id, year: 2011 },
+      select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
+    }),
+  ]);
+  // The checked Census 2011 row (PopulationHistory). Its core numbers win
+  // over the hand-seeded profile's (Sept 2026 audit, src/lib/census-2011.ts).
+  const census = pickCensus2011(history);
 
-  if (allDatasets.length === 0) {
+  if (allDatasets.length === 0 && !census) {
     return NextResponse.json({
       data: null,
       allDatasets: [],
@@ -92,11 +102,22 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // No Census 2011 profile row but a checked Census row (Pune): build the
+  // core Census profile from it rather than falling back to another
+  // dataset or saying "not available".
+  let data: ReturnType<typeof censusOnlyProfile> | NonNullable<typeof primary> | null = primary;
+  const noCensusProfile = explicitYear == null && !explicitDataset && primary?.dataset !== "Census 2011";
+  if (census && noCensusProfile) {
+    data = censusOnlyProfile(district.id, census);
+    if (!allDatasets.some((d) => d.dataset === "Census 2011")) allDatasets.push({ year: 2011, dataset: "Census 2011" });
+  } else if (primary) {
+    data = reconcileCensusProfile(primary, census);
+  }
+
   // Overlay economicClass from the latest NITI MPI profile so the page's
   // MPI section renders even when the primary row is Census 2011.
   // Only overlay when no explicit filter was given (we want /profile?dataset=X
   // to return exactly that row without mutation).
-  let data = primary;
   if (data && explicitYear == null && !explicitDataset) {
     const mpi = await prisma.demographicProfile.findFirst({
       where: { districtId: district.id, dataset: "NITI MPI 2023" },
@@ -107,7 +128,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const publishedAt = data?.publishedAt ?? data?.retrievedAt;
+  const publishedAt = data?.publishedAt ?? data?.retrievedAt ?? null;
   const dataAgeDays = publishedAt
     ? Math.floor((Date.now() - publishedAt.getTime()) / 86_400_000)
     : null;
