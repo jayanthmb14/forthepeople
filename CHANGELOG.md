@@ -10,6 +10,61 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Changed — v5 "Calm": quieter design, honest dates, cleanup (branches `v5/*`, 2026-09-27)
+The owner found v4 "cartoonish". Nine parallel work-streams moved the site to a calm, pastel,
+blue-based look, made every date honest and cleared out dead files. Nothing here is deployed
+until the owner reviews and pushes.
+- **Design system v5 "Calm"** (`docs/DESIGN-SYSTEM.md`): a soft blue-white page, white cards, one
+  blue for actions, support as a soft rose tint. The 14 module hues are pastel and used only as
+  identity; no saturated gradient bands. Plus Jakarta Sans everywhere (Bricolage only for a page
+  H1). Emoji only as module identity (sidebar item, module chip, overview tile); the kit draws
+  Lucide icons where pages still pass an emoji. Subtle motion; the home intro splash is gone.
+  Token contrast is unit-tested.
+- **Honest dates**: every dataset carries its own date, with realistic expected ages
+  (`/api/data/freshness`, `src/lib/freshness.ts`). Old data gets a calm amber notice under the
+  title ("This data is N days old … we could not find newer data"); undated data says "date not
+  published by the source". Every district page ends with one "Check this data" panel: source,
+  data date, when we last checked, on time or late, how we get it, a link to check it yourself
+  and one "report a mistake" button.
+  - AI cards hide when they are older than 30 days or older than the page's data.
+  - Weather, dam and mandi rows carry their reading date; headers no longer say "right now" or
+    "updated daily".
+  - Exams show "open" and countdowns only for confirmed dates. Empty states say what is missing
+    instead of promising a collector.
+- **Home and header**: a one-row header with a district finder. The home page is search, "Use my
+  location" and **Explore all of India** (the primary action), then the live districts, India at a
+  glance, prices today and one support line. "Latest data", "Built with citizens" and "Remember my
+  district" are gone. A light footer carries a ForThePeople Connect "coming soon" note.
+  `Permissions-Policy` now allows geolocation for the site itself (it was blocked, so "Use my
+  location" never asked).
+- **District pages**: one sticky district bar instead of three stacked bars, a glance row of key
+  facts, a calm overview (name, glance, basics, then topics), and a sidebar and drawer that say
+  "coming soon" where a module has no data.
+- **Module pages**: calm headers and flat pastel fills, no decorative emoji, one stale notice and
+  one sources block per page, no repeated footers or links, the answer first. Per-district state
+  config (Pune no longer inherits Mumbai's). "Where our data comes from" says how each dataset
+  really arrives and how old it is; the update log is grouped by day in plain words.
+- **Support, supporters and prices**: a simple support page (plans, how to subscribe,
+  supporters). Supporters are placed by tier or amount, so the Founding Builder shows first
+  everywhere (district pages said "All India — be the first" because only recurring gifts
+  counted). New `/[locale]/prices`: gold, silver, the rupee, crude oil, Sensex and Nifty with
+  3-month trends from IBJA and Yahoo Finance, and no fallback prices.
+- **Backend**: an AI model chain with live-checked ids, a reachable paid backstop, JSON mode and an
+  expiry guard; AI JSON goes through `callAIJSON`; news-intelligence makes one AI call per
+  district, only for new news, inside a time budget. Collection jobs never invent a figure when a
+  source field is missing, and every cron run writes one `ScraperLog` row.
+- **Cleanup and docs**: 21 dead source files, 13 duplicate or boilerplate static files and 55
+  one-off or risky scripts removed (git history keeps them); 14 provenance scripts moved to
+  `scripts/archive/`; stale docs, completed prompts and the broken Docker files moved to
+  `docs/archive/`. `docs/BLUEPRINT-UNIFIED.md` is rewritten as the current overview (the old one is
+  `docs/archive/BLUEPRINT-UNIFIED-2026-06.md`); `public/llms.txt` now lists the ten live districts,
+  36 modules and en + hi + kn; `CLAUDE.md` points at the current docs.
+- Every new string ships in English, Hindi and Kannada.
+- Owner actions from the cleanup (local, not in git): move anything still needed from the 13
+  `.env*` backup copies into the password manager and delete them; delete the merged `ui-backup-*`,
+  `backend-backup-*` and `session-*` branches; remove the stray `.vercel/` link in the parent
+  folder.
+
 ### Fixed — data, crons and AI
 - Cron endpoints now accept the `Authorization: Bearer <CRON_SECRET>` header the way Vercel actually
   sends it (two crons had never run from the scheduler because of the wrong header / HTTP method).
@@ -43,72 +98,17 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   build container could no longer fetch Google Fonts, so every build of `main` failed from
   2026-09-26. All eight families are SIL OFL 1.1. No visitor IPs are sent to Google any more.
 
-### Changed — Design v3 "Civic Ledger" (every citizen-facing page)
-- One design system for the whole site: `--ftp-*` tokens on `:root`, one 1200 px / 12-column
-  container, a five-step type scale (Plus Jakarta Sans 400/500, 600 only for a page H1), numbers in
-  JetBrains Mono, one card / tile / pill spec, no shadows or gradients, Lucide icons instead of emoji.
-  Reference: `docs/DESIGN-SYSTEM.md`.
-- Shared kit rewritten in place (`src/components/district/ui.tsx`): PageHeader, FreshnessPill,
-  SourcePill, StatTile/StatStrip, Section, Card, Pill, Chips, SourcesFooter, Toolbar, KpiRing,
-  EmptyState. Old export names still work as thin wrappers.
-- Homepage rebuilt: one-line disclaimer band, 56 px header, market ticker with "As of" time,
-  **"Find my district"** strip (one tap finds the visitor's district from the browser's location;
-  if it is live it opens it, if not it says so, shows the vote count and the nearest live district;
-  optional "Remember my district" switch; coordinates never leave the browser), hero, four stat
-  tiles, map + live-districts list, latest data (only modules with data under 30 days old),
-  how it works, supporters and top votes, support line, honest footer.
-- District overview rebuilt: identity card (local-script name, tagline chips, health-score ring,
-  Census stats with source), "Today in <district>" tiles that show an honest empty line instead of
-  stale numbers, all modules grouped into five cards with freshness dots. Locked-district preview
-  and state pages use the same identity card.
-- Left rail regrouped into five groups (Civic duty, Money & resources, Daily services,
-  Accountability, Community & people) with freshness dots.
-- All module pages (crops to tenders) moved onto the module template: header with local-script
-  title, freshness and source pills, stat strip, sections, empty states, sources footer, share and
-  compare toolbar. The 1,180-line infrastructure page was split into components.
-- India pages aligned to the same chrome; support, about, features, vote, compare, feedback and
-  legal pages restyled with every flow (Razorpay checkout, votes, feedback) unchanged.
-- Honest cadence copy: water now says "checked every 6 hours"; the leadership page has its own
-  sources entry.
-- Old homepage components (`src/components/home/redesign-v2/*`) deleted.
-
-- Finishing pass: kit gains PrimaryButton, 44 px buttons on phones, "As of Census 2011"-style period
-  labels and a freshness threshold on PageHeader; the disclaimer is one line (phones: one truncated
-  line + "More"); district contributors, elections, the idea form, the feedback button, error and
-  offline screens restyled; dead CSS and unused emoji/colour data removed.
-- Offices "Open now" now uses Indian Standard Time and the same hours the page shows (it used the
-  visitor's own clock and different hours). Each office card shows Open / Lunch break / Closed.
-- Tenders copy no longer promises refresh intervals that no scheduled job delivers.
-- Infrastructure analysis card no longer hard-codes an AI model name.
-- India live strip counts come from the module and source registries (no placeholder numbers).
-- The compare page honours `?module=` from every module page's Compare button.
-- All-India Patron copy computes "N districts. M dashboards." (was a stale 22,620).
-- Phones: tapping a district or state in the breadcrumb bottom sheet navigates again (the sheet was
-  closing on touch-down before the link could fire).
-- Homepage map re-centred so all of India, including the south and the islands, is visible.
-- `scripts/fix-district-local-names.ts`: dry-run fixer for districts whose local-script name is
-  just the English name (Pune → पुणे). Run with `--confirm` against prod, then bust caches.
-- 2026-09-27 review pass (local production build, every page captured at 1440 px and 390 px):
-  - District card, state page: population now comes from the sourced Census 2011 rows in the
-    database. The registry mixed census counts with later estimates but was labelled "Census
-    2011"; figures without a census row now say "Latest available estimate".
-  - Homepage "Latest data": schemes and budget are yearly reference data, so they skip the
-    30-day freshness gate and carry their period ("Updated Mar 2026", "For FY 2025-26"). The
-    grid sizes itself to the number of cards; rupee figures are digit-grouped.
-  - Local names that just repeat the English name are hidden; Pune shows पुणे from the registry.
-  - Tagline chips: a badge that repeats the tagline is dropped. Source pills use the text face.
-  - Finance: the sector chart labels every sector, sizes to its data and has a legend; headline
-    figures are digit-grouped.
-  - Weather: repeated 5-minute readings collapse into one row; every row shows date and time.
-  - State map: the SVG fits a fixed-height frame, so the whole state (and its live districts) is
-    visible instead of being cropped at 400 px.
-  - India page: the phone carousel dots were stuck at opacity 0; now visible.
-  - AI analysis older than 45 days is folded behind "An AI analysis from <date> is available. It
-    may not match the figures on this page." Credit line reads "Written by", not "Source-verified by".
-  - Support: one supporter count everywhere (the banner used a different total); five tiers laid
-    out 5 / 3+2 / 2 / 1 with no lone card; the amount box fits five digits.
-  - Copy: "next Census is expected in 2031" → Census 2027 is under way; the demographics
-    disclaimer no longer names the company.
+### Changed — Design v3 "Civic Ledger" (built, then replaced before release)
+- v3 was built on this branch and replaced by v4 "Rang" and then v5 "Calm" before it was ever
+  deployed, so its design notes are dropped here. Fixes from that pass that still stand:
+  - Offices "Open now" uses Indian Standard Time and the hours the page shows.
+  - Tenders and water copy promise only cadences that a scheduled job delivers.
+  - District cards and state pages take population from sourced Census 2011 rows; other figures
+    say "Latest available estimate". Local names that repeat the English name are hidden.
+  - Weather collapses repeated readings into one row with date and time; the finance sector chart
+    labels every sector; state maps fit their frame.
+  - The compare page honours `?module=`; phone breadcrumb-sheet links navigate again.
+  - `scripts/fix-district-local-names.ts`: dry-run fixer for local-script names (see Manual actions).
 
 ### Changed — Design v4 "Rang", languages and location (branch `redesign-v4`)
 - 2026-09-27: English is always the default language. Browser-language detection and the locale
