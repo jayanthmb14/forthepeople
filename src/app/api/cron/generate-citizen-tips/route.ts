@@ -16,12 +16,19 @@
 // POST only, so every Sunday run got a 405 before the handler ran and the
 // Citizen Corner page said "next tips in 1 day" forever. GET now delegates
 // to POST. Run state is recorded in Redis "ftp:cron:generate-citizen-tips".
+//
+// v5: the answer is parsed by callAIJSON ({"tips":[…]} or a list) and each
+// tip is validated; when a district gets no tips this week, LAST week's tips
+// are kept (with their own date) instead of being overwritten by an empty
+// list for 7 days. No new district starts after 240 s.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
-import { callAI } from "@/lib/ai-provider";
+import { cacheGet, cacheSet } from "@/lib/cache";
+import { callAIJSON } from "@/lib/ai-provider";
+import { alertCronFailed } from "@/lib/admin-alerts";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { normalizeCitizenTips, tipsToStore, type CitizenTip, type StoredTips } from "@/lib/citizen-tips";
 
 export const runtime = "nodejs";
 // 10 districts × (AI call + 2 s pause) comfortably fits; cap at 5 min.
@@ -29,22 +36,7 @@ export const maxDuration = 300;
 const CRON_NAME = "generate-citizen-tips";
 
 const TIPS_TTL = 7 * 24 * 60 * 60; // 7 days
-
-interface CitizenTip {
-  category: string;
-  icon: string;
-  title: string;
-  description: string;
-  urgency: "now" | "soon" | "general";
-}
-
-interface TipsResponse {
-  tips: CitizenTip[];
-  month: number;
-  year: number;
-  generatedAt: string;
-  generatedBy: "cron";
-}
+const BUDGET_MS = 240_000;
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -76,7 +68,8 @@ async function generateTipsForDistrict(
   weather?: { temperature: number | null; conditions: string | null; rainfall: number | null },
   alerts?: Array<{ title: string; type: string; severity: string }>,
   schemes?: Array<{ name: string }>,
-): Promise<CitizenTip[]> {
+  deadlineAt?: number,
+): Promise<{ tips: CitizenTip[]; error?: string }> {
   const monthName = MONTHS[month - 1];
   const season = getSeason(month);
 
@@ -101,38 +94,42 @@ async function generateTipsForDistrict(
 
 Current district context: ${contextData}
 
-Respond ONLY with a valid JSON array (no markdown, no extra text):
-[
-  {
-    "category": "Agriculture|Health|Finance|Water|Rights|Safety|Education|Environment",
-    "icon": "single emoji",
-    "title": "short action title (max 8 words)",
-    "description": "2-3 sentences of specific, practical advice relevant to ${districtName} citizens in ${monthName}",
-    "urgency": "now|soon|general"
-  }
-]
+Respond ONLY with a valid JSON object (no markdown, no extra text):
+{
+  "tips": [
+    {
+      "category": "Agriculture|Health|Finance|Water|Rights|Safety|Education|Environment",
+      "title": "short action title (max 8 words)",
+      "description": "2-3 sentences of specific, practical advice relevant to ${districtName} citizens in ${monthName}",
+      "urgency": "now|soon|general"
+    }
+  ]
+}
 
 Guidelines:
 - Mix categories: 2 agriculture, 1 health, 1 government scheme, 1 safety/emergency, 1 civic duty
 - Be hyper-local — mention ${districtName}-specific context where possible
 - urgency "now" = must do this week, "soon" = this month, "general" = evergreen advice
 - Write for ordinary citizens, not experts
-- Use Indian context (schemes, government portals, local practices)`;
+- Use Indian context (schemes, government portals, local practices)
+- Never invent phone numbers, dates, amounts or website addresses`;
 
   try {
-    const response = await callAI({
+    const { data } = await callAIJSON({
       systemPrompt: `You are a civic advisor for ${districtName} district, ${stateName}, India.`,
       userPrompt: prompt,
       purpose: "summarize",
-      jsonMode: true,
+      jsonShape: "object",
+      maxTokens: 2048,
+      timeoutMs: 45_000,
+      deadlineAt,
     });
-
-    const text = response.text.trim();
-    const jsonStr = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-    return JSON.parse(jsonStr) as CitizenTip[];
+    const tips = normalizeCitizenTips(data);
+    return tips.length > 0 ? { tips } : { tips, error: "answer had no complete tips" };
   } catch (err) {
-    console.error(`[citizen-tips cron] Failed for ${districtName}:`, err);
-    return [];
+    const error = err instanceof Error ? err.message : String(err);
+    console.error(`[citizen-tips cron] Failed for ${districtName}:`, error.slice(0, 300));
+    return { tips: [], error };
   }
 }
 
@@ -152,7 +149,9 @@ export async function POST(req: NextRequest) {
   const nextRefreshDate = new Date(now.getTime() + TIPS_TTL * 1000);
   const nextRefreshDays = 7;
 
-  const results: { district: string; ok: boolean; count: number }[] = [];
+  const results: { district: string; ok: boolean; count: number; keptPrevious?: boolean; error?: string }[] = [];
+  const deadlineAt = runStart + BUDGET_MS;
+  const notReached: string[] = [];
 
   try {
     // Get all active districts
@@ -164,6 +163,10 @@ export async function POST(req: NextRequest) {
     console.log(`[citizen-tips cron] Generating tips for ${districts.length} districts...`);
 
     for (const district of districts) {
+      if (Date.now() >= deadlineAt) {
+        notReached.push(district.slug);
+        continue;
+      }
       // Gather context (lightweight)
       const [weather, alerts, schemes] = await Promise.all([
         prisma.weatherReading.findFirst({
@@ -183,7 +186,7 @@ export async function POST(req: NextRequest) {
         }),
       ]);
 
-      const tips = await generateTipsForDistrict(
+      const { tips, error } = await generateTipsForDistrict(
         district.name,
         district.id,
         district.state.name,
@@ -192,21 +195,24 @@ export async function POST(req: NextRequest) {
         weather ?? undefined,
         alerts,
         schemes,
+        deadlineAt,
       );
 
       const cacheKey = `ftp:ai:citizen-tips:${district.slug}`;
-      const payload: TipsResponse = {
-        tips,
-        month,
-        year,
-        generatedAt,
-        generatedBy: "cron",
-      };
+      const fresh: StoredTips = { tips, month, year, generatedAt, generatedBy: "cron" };
 
-      // Store for 7 days
-      await cacheSet(cacheKey, payload, TIPS_TTL);
+      // Never overwrite good tips with an empty list: keep last week's.
+      const previous = tips.length > 0 ? null : await cacheGet<StoredTips>(cacheKey);
+      const toStore = tipsToStore(fresh, previous);
+      if (toStore) await cacheSet(cacheKey, toStore.payload, TIPS_TTL);
 
-      results.push({ district: district.slug, ok: tips.length > 0, count: tips.length });
+      results.push({
+        district: district.slug,
+        ok: tips.length > 0,
+        count: tips.length,
+        keptPrevious: toStore?.kept || undefined,
+        error: error?.slice(0, 200),
+      });
 
       // Rate limit: 2s between districts to avoid API limits
       await sleep(2000);
@@ -217,14 +223,24 @@ export async function POST(req: NextRequest) {
 
     // If not a single district got tips, the AI layer is almost certainly
     // down — record the run as an error so /api/health goes "degraded".
+    const attempted = results.length;
+    const allFailed = attempted > 0 && okCount === 0;
+    const firstError = results.find((r) => r.error)?.error;
+    const errorText = allFailed
+      ? `0 of ${attempted} districts received tips. ${firstError ?? ""}`.trim()
+      : notReached.length > 0
+        ? `time budget used; not reached: ${notReached.join(", ")}`
+        : undefined;
     await cronFinished(CRON_NAME, runStart, {
-      status: okCount > 0 || districts.length === 0 ? "ok" : "error",
+      status: allFailed ? "error" : "ok",
       count: okCount,
-      error: okCount === 0 && districts.length > 0 ? "0 districts received tips" : undefined,
+      error: errorText,
     });
+    if (allFailed && errorText) alertCronFailed(CRON_NAME, errorText).catch(() => {});
 
     return NextResponse.json({
-      success: true,
+      success: !allFailed,
+      notReached,
       generatedAt,
       nextRefreshInDays: nextRefreshDays,
       nextRefreshDate: nextRefreshDate.toISOString(),
