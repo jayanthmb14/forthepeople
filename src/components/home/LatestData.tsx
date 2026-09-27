@@ -40,6 +40,7 @@ import type { LucideIcon } from "lucide-react";
 import { AsOfText, Chips, Section, SourcePill } from "@/components/district/ui";
 import { ageInDays } from "@/lib/utils/timeAgo";
 import styles from "./home.module.css";
+import { NUMBER_LOCALE } from "@/i18n/languages";
 
 interface ActiveDistrict {
   slug: string;
@@ -376,7 +377,7 @@ function summarizeBudget(raw: unknown, t: T, intl: string): ModuleCard | null {
   const newestAt = newestOf(entries.map((e) => e.fetchedAt));
   if (!newestAt) return null;
   // Budget values are stored in Rupees (CLAUDE.md) — format to Cr / L here.
-  const oneDp = (n: number) => n.toLocaleString(intl, { maximumFractionDigits: 1 });
+  const oneDp = (n: number) => n.toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 });
   const fmt = (n: number) =>
     n >= 10_000_000 ? `₹${oneDp(n / 10_000_000)} Cr` : n >= 100_000 ? `₹${oneDp(n / 100_000)} L` : inr(n);
   const year = entries[0]?.fiscalYear;

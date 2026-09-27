@@ -77,7 +77,19 @@ export function getLanguage(code: string | null | undefined): Language {
   return LANGUAGES.find((l) => l.code === code) ?? LANGUAGES[0];
 }
 
-/** Intl locale for formatting numbers and dates in a UI language. */
+/**
+ * Intl locale for dates, relative times and lists in a UI language, with
+ * Latin digits forced (-u-nu-latn): CLDR would print Marathi and Bengali
+ * dates in native digits and Urdu in Arabic digits (docs/I18N.md §4).
+ */
 export function intlLocale(code: string | null | undefined): string {
-  return getLanguage(code).intl;
+  return `${getLanguage(code).intl}-u-nu-latn`;
 }
+
+/**
+ * Locale for NUMBERS in every language: Indian grouping (12,34,567) and
+ * Latin digits, so tables stay comparable across languages. CLDR gives
+ * Kannada western grouping (12,345,678) and Marathi/Bengali/Urdu native
+ * digits; "en-IN" gives the same figures everywhere ("12L" when compact).
+ */
+export const NUMBER_LOCALE = "en-IN";

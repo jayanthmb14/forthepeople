@@ -14,7 +14,7 @@
  * translated unit, e.g. 47.6 + "lakh_crore_inr" → "₹47.6" + "lakh crore".
  */
 
-import { intlLocale } from "@/i18n/languages";
+import { intlLocale, NUMBER_LOCALE } from "@/i18n/languages";
 import type { Tr } from "./i18n";
 
 export function fmtNumber(
@@ -22,7 +22,7 @@ export function fmtNumber(
   n: number,
   opts?: Intl.NumberFormatOptions,
 ): string {
-  return n.toLocaleString(intlLocale(locale), opts);
+  return n.toLocaleString(NUMBER_LOCALE, opts);
 }
 
 /** Up to `max` decimals, fewer when the number is whole. */

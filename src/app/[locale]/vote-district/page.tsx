@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import VoteDistrictPage from "@/components/vote-district/VoteDistrictPage";
 import { getPlatformFacts } from "@/lib/platform-facts";
-import { intlLocale } from "@/i18n/languages";
+import { NUMBER_LOCALE } from "@/i18n/languages";
 import { languageAlternates } from "@/i18n/seo";
 
 interface Props {
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { comingDistricts } = getPlatformFacts();
   return {
     title: t("metaTitle"),
-    description: t("metaDescription", { n: new Intl.NumberFormat(intlLocale(locale)).format(comingDistricts) }),
+    description: t("metaDescription", { n: new Intl.NumberFormat(NUMBER_LOCALE).format(comingDistricts) }),
     alternates: languageAlternates("/vote-district", locale),
   };
 }

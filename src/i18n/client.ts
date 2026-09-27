@@ -11,7 +11,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { intlLocale } from "./languages";
+import { intlLocale, NUMBER_LOCALE } from "./languages";
 import { SIDEBAR_MODULES, tierFromPriority, type TierLabel } from "@/lib/constants/sidebar-modules";
 import { INDIA_STATES, getDistrict } from "@/lib/constants/districts";
 import { scriptLang } from "@/lib/utils/script-lang";
@@ -31,7 +31,7 @@ export function useFormat() {
   return {
     locale,
     intl,
-    number: (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleString(intl, opts),
+    number: (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleString(NUMBER_LOCALE, opts),
     date: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) =>
       new Date(d).toLocaleDateString(intl, { timeZone: "Asia/Kolkata", ...opts }),
     time: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) =>

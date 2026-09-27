@@ -40,7 +40,7 @@ import { getState } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { prisma } from "@/lib/db";
 import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
-import { intlLocale } from "@/i18n/languages";
+import { NUMBER_LOCALE } from "@/i18n/languages";
 import { languageAlternates } from "@/i18n/seo";
 import { scriptLang } from "@/lib/utils/script-lang";
 import StateMapSection from "@/components/map/StateMapSection";
@@ -150,7 +150,7 @@ export default async function StatePage({ params }: Props) {
     getTranslations({ locale, namespace: "placeLabels" }),
     getTranslations({ locale, namespace: "subUnits" }),
   ]);
-  const nf = new Intl.NumberFormat(intlLocale(locale));
+  const nf = new Intl.NumberFormat(NUMBER_LOCALE);
   const fmt = (n: number) => nf.format(n);
   const b = (c: React.ReactNode) => <strong>{c}</strong>;
 

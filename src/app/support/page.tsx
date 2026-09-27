@@ -53,7 +53,7 @@ import SupporterQuotes from "@/components/support/SupporterQuotes";
 import styles from "./support.module.css";
 import { prisma } from "@/lib/db";
 import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem, type SupportPageContent } from "@/lib/support-defaults";
-import { intlLocale } from "@/i18n/languages";
+import { NUMBER_LOCALE } from "@/i18n/languages";
 import { languageAlternates } from "@/i18n/seo";
 
 export const revalidate = 60; // content rarely changes; 60s cache is enough
@@ -161,7 +161,7 @@ export default async function SupportPage({ params }: Props) {
   const locale = (await params).locale ?? "en";
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "page_support" });
-  const nf = new Intl.NumberFormat(intlLocale(locale));
+  const nf = new Intl.NumberFormat(NUMBER_LOCALE);
   const fmt = (n: number) => nf.format(n);
   const inr = (n: number) => `₹${fmt(n)}`;
   const usd = (n: number) => `$${fmt(n)}`;
