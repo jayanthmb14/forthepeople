@@ -148,7 +148,6 @@
   "officialSite": "ಅಧಿಕೃತ ಜಾಲತಾಣ",
   "openPage": "{page} ತೆರೆಯಿರಿ",
   "rightsNote": "ಇದು ಸರಳ ಕಿರು ಮಾರ್ಗದರ್ಶಿ, ಕಾನೂನು ಸಲಹೆ ಅಲ್ಲ. ನಿಯಮಗಳು ರಾಜ್ಯದಿಂದ ರಾಜ್ಯಕ್ಕೆ ಸ್ವಲ್ಪ ಬದಲಾಗಬಹುದು.",
-  "sourceHelplines": "ಸಹಾಯವಾಣಿ ಸಂಖ್ಯೆಗಳು: ಭಾರತ ಸರ್ಕಾರದ ರಾಷ್ಟ್ರೀಯ ಸಹಾಯವಾಣಿಗಳು",
   "tileTips": "ನಾಗರಿಕ ಸಲಹೆಗಳು",
   "tileTipsFor": "{period} ತಿಂಗಳಿಗೆ",
   "tileTipsWeekly": "ಪ್ರತಿ ವಾರ ಬರೆಯಲಾಗುತ್ತದೆ",
@@ -193,16 +192,8 @@
   },
   "emergencyLine": "ಯಾವುದೇ ತುರ್ತು ಸಂದರ್ಭಕ್ಕೆ ಒಂದೇ ಸಂಖ್ಯೆ. ಕರೆ ಮಾಡಲು ಒತ್ತಿ.",
   "callAria": "{name} ಗೆ ಕರೆ ಮಾಡಿ: {number}",
-  "share": "ಹಂಚಿಕೊಳ್ಳಿ",
-  "linkCopied": "ಲಿಂಕ್ ನಕಲಿಸಲಾಗಿದೆ",
-  "compare": "ಇನ್ನೊಂದು ಜಿಲ್ಲೆಯೊಂದಿಗೆ ಹೋಲಿಸಿ",
-  "toolbar": "ಪುಟದ ಕ್ರಿಯೆಗಳು",
-  "freq": {
-    "weekly": "ಪ್ರತಿ ವಾರ"
-  },
   "sourceNames": {
-    "districtAdministration": "ಜಿಲ್ಲಾ ಆಡಳಿತ",
-    "citizenFeedback": "ನಾಗರಿಕರ ಅಭಿಪ್ರಾಯ"
+    "districtAdministration": "ಜಿಲ್ಲಾ ಆಡಳಿತ"
   },
   "helplinesTitle": "ತುರ್ತು ಮತ್ತು ಪ್ರಮುಖ ಸಹಾಯವಾಣಿಗಳು",
   "rightsTitle": "ನಿಮ್ಮ ಹಕ್ಕುಗಳನ್ನು ತಿಳಿಯಿರಿ",

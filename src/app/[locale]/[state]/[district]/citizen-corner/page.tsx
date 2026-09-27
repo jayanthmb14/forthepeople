@@ -17,8 +17,10 @@
 //  button (sheet: when to call, what to say, Call) → rights as picture
 //  cards (sheet: what it means, 3 steps to use it, the law, the official
 //  website and our related page) → this month's AI civic tips (topics ring
-//  + cards) → sources → news → toolbar. No tabs: everything is on the
-//  page, one scroll away.
+//  + cards) → news → Share / Compare. No tabs: everything is on the page,
+//  one scroll away. The civic tips are this page's only AI block (no second
+//  AI card); no emoji — the needs and rights use plain Lucide pictures;
+//  sources are in the layout's verification panel.
 //
 //  Tips come from /api/ai/citizen-tips (written weekly by AI, marked so).
 //  Text: "page_citizen-corner" namespace; tip titles and descriptions are
@@ -27,7 +29,7 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { GitCompare, Handshake, RefreshCw, Share2, Sparkles } from "lucide-react";
+import { Handshake, PhoneCall, RefreshCw, Sparkles } from "lucide-react";
 import {
   Card,
   EmptyState,
@@ -36,11 +38,8 @@ import {
   PageHeader,
   Pill,
   Section,
-  SourcesFooter,
   StatStrip,
   StatTile,
-  Toolbar,
-  ToolbarButton,
 } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
 import { ChartCard, Explainer } from "@/components/district/visuals";
@@ -56,55 +55,20 @@ import {
   type HelplineKind,
   type Right,
 } from "@/components/district/civic/CitizenParts";
-import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
 import { useFormat, useModuleText } from "@/i18n/client";
-import { getModuleSources } from "@/lib/constants/state-config";
+import { IconChip, PageActions } from "@/components/district/page-kit";
 
 // Urgency → Pill tone (colour appears only as the pill's text/dot).
 const URGENCY_TONE: Record<string, Tone> = { now: "danger", soon: "warn", general: "neutral" };
-/** One emoji per tip category (cards and the topics ring). */
-const CAT_EMOJI: Record<string, string> = {
-  agriculture: "🌾",
-  health: "🩺",
-  finance: "💰",
-  water: "💧",
-  rights: "⚖️",
-  safety: "🛡️",
-  education: "🎓",
-  environment: "🌳",
-};
-
-/** Source names and update frequencies from getModuleSources() that have a translation. */
-const SOURCE_KEY: Record<string, string> = { "District Administration": "districtAdministration", "Citizen feedback": "citizenFeedback" };
-const FREQ_KEY: Record<string, string> = { Weekly: "weekly" };
 
 interface CitizenTip {
   category: string;
-  /** Emoji from the AI pipeline — kept in the data; cards use the category emoji. */
+  /** Emoji from the AI pipeline — kept in the data, not shown. */
   icon: string;
   title: string;
   description: string;
   urgency: "now" | "soon" | "general";
-}
-
-/** Share button: the phone's share sheet when available, else copy the link. */
-function SharePageButton() {
-  const t = useTranslations("page_citizen-corner");
-  const [copied, setCopied] = useState(false);
-  function share() {
-    const url = window.location.href;
-    if (navigator.share) {
-      navigator.share({ title: document.title, url }).catch(() => {});
-    } else {
-      navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
-    }
-  }
-  return (
-    <ToolbarButton icon={Share2} onClick={share}>
-      {copied ? t("linkCopied") : t("share")}
-    </ToolbarButton>
-  );
 }
 
 /** The big tap-to-call 112 card (right half of the picture row). */
@@ -126,20 +90,19 @@ function EmergencyCallCard() {
         minHeight: 200,
         textAlign: "center",
         textDecoration: "none",
-        color: "#fff",
+        color: "var(--hue-deep)",
         borderRadius: "var(--ftp-radius-card)",
-        background: "radial-gradient(260px 160px at 85% 0%, rgba(255,255,255,0.25), transparent 70%), linear-gradient(135deg, var(--hue) 0%, var(--hue-deep) 100%)",
-        boxShadow: "0 18px 36px -22px color-mix(in srgb, var(--hue) 85%, transparent)",
+        background: "var(--hue-tint)",
+        border: "1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+        boxShadow: "var(--ftp-shadow-1)",
       }}
     >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 36 }}>
-        🆘
-      </span>
+      <PhoneCall size={34} strokeWidth={1.75} aria-hidden />
       <span className="ftp-bignum" style={{ fontSize: 64, lineHeight: 1 }}>
         112
       </span>
       <span style={{ fontSize: 16, lineHeight: "22px", fontWeight: 700 }}>{name}</span>
-      <span style={{ fontSize: 14, lineHeight: "20px", opacity: 0.92 }}>{t("emergencyLine")}</span>
+      <span style={{ fontSize: 14, lineHeight: "20px", color: "var(--ftp-text)" }}>{t("emergencyLine")}</span>
     </a>
   );
 }
@@ -182,9 +145,7 @@ function HelplineKinds({ onPick }: { onPick: (kind: HelplineKind) => void }) {
                   color: "var(--ftp-text)",
                 }}
               >
-                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 13 }}>
-                  {k.emoji}
-                </span>
+                <IconChip icon={k.icon} size={44} />
                 <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                   <span className="ftp-bignum" style={{ fontSize: 24, lineHeight: 1, color: "var(--hue-deep)" }}>
                     {f.number(n)}
@@ -212,7 +173,7 @@ function TopicsRing({ tips, period }: { tips: CitizenTip[]; period: string | nul
     return t.has(`categories.${k}`) ? t(`categories.${k}`) : cat;
   };
   const slices = [...counts.entries()]
-    .map(([cat, value]) => ({ key: cat, label: topic(cat), value, emoji: CAT_EMOJI[cat.toLowerCase()] ?? "💡" }))
+    .map(([cat, value]) => ({ key: cat, label: topic(cat), value }))
     .sort((a, b) => b.value - a.value);
   const total = tips.length;
   const top = slices[0];
@@ -227,7 +188,6 @@ function TopicsRing({ tips, period }: { tips: CitizenTip[]; period: string | nul
   return (
     <ChartCard
       title={t("topicsTitle")}
-      emoji="🧭"
       units={t("topicsUnits")}
       simple={simple}
       asOfPeriod={period ?? undefined}
@@ -261,7 +221,6 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
   const closeRight = useCallback(() => setRight(null), []);
 
   const tipsLoading = loadedFor !== district;
-  const sources = getModuleSources("citizen-corner", state);
   const rights = getRights(state);
   const emergencyCount = HELPLINES.filter((h) => h.kind === "emergency").length;
 
@@ -299,14 +258,13 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
         source={{ label: t("sourceNames.districtAdministration") }}
       />
 
-      <Explainer emoji="📞">{t.rich("simple", { helplines: HELPLINES.length, rights: rights.length, b })}</Explainer>
+      <Explainer>{t.rich("simple", { helplines: HELPLINES.length, rights: rights.length, b })}</Explainer>
 
       <StatStrip cols={4}>
-        <StatTile emoji="📞" label={t("tileHelplines")} value={f.number(HELPLINES.length)} sub={t("tileHelplinesSub")} />
-        <StatTile emoji="🚨" label={t("tileEmergency")} value={f.number(emergencyCount)} sub={t("tileEmergencySub")} />
-        <StatTile emoji="⚖️" label={t("tileRights")} value={f.number(rights.length)} sub={t("tileRightsSub")} />
+        <StatTile label={t("tileHelplines")} value={f.number(HELPLINES.length)} sub={t("tileHelplinesSub")} />
+        <StatTile label={t("tileEmergency")} value={f.number(emergencyCount)} sub={t("tileEmergencySub")} />
+        <StatTile label={t("tileRights")} value={f.number(rights.length)} sub={t("tileRightsSub")} />
         <StatTile
-          emoji="💡"
           label={t("tileTips")}
           value={tipsLoading ? "—" : f.number(tips.length)}
           sub={tipsPeriod ? t("tileTipsFor", { period: tipsPeriod }) : t("tileTipsWeekly")}
@@ -320,16 +278,14 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       </div>
 
       {/* Helplines, grouped by need: tap the card to call, "i" for when to call. */}
-      <Section title={t("helplinesTitle")} emoji="☎️">
+      <Section title={t("helplinesTitle")}>
         <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
           {t("helplinesLead")}
         </p>
         {KINDS.map((k) => (
           <div key={k.id} id={`helplines-${k.id}`} style={{ marginBottom: 20, scrollMarginTop: 80 }}>
             <h3 className="ftp-title" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 650, fontSize: 16, margin: "0 0 10px" }}>
-              <span className="ftp-emoji" aria-hidden>
-                {k.emoji}
-              </span>
+              <k.icon size={18} strokeWidth={1.75} aria-hidden style={{ color: "var(--hue)" }} />
               {t(`kinds.${k.id}`)}
             </h3>
             <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px", gap: 12 } as React.CSSProperties}>
@@ -342,7 +298,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       </Section>
 
       {/* Rights, as picture cards; tap for the plain-language explanation. */}
-      <Section title={t("rightsTitle")} emoji="⚖️">
+      <Section title={t("rightsTitle")}>
         <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
           {t("rightsLead")}
         </p>
@@ -354,11 +310,10 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       </Section>
 
       {/* This month's civic tips (AI-written, marked so). */}
-      <Section title={t("tipsTitle")} emoji="💡">
+      <Section title={t("tipsTitle")}>
         {tipsLoading && <LoadingShell rows={3} />}
         {!tipsLoading && tips.length === 0 && (
           <EmptyState
-            emoji="💡"
             title={t("emptyTitle")}
             body={nextRefreshDays != null ? t("emptyNext", { n: nextRefreshDays }) : t("emptyNextWeek")}
             action={
@@ -382,9 +337,6 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
               {tips.map((tip, i) => (
                 <Card key={i} as="article" tinted={tip.urgency === "now"}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
-                    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
-                      {CAT_EMOJI[tip.category.toLowerCase()] ?? "💡"}
-                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
                         <Pill>{categoryLabel(tip.category)}</Pill>
@@ -408,7 +360,6 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
               <TopicsRing tips={tips} period={tipsPeriod} />
               <Card tinted padding={18}>
                 <p className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650 }}>
-                  <span aria-hidden>🤖 </span>
                   {t("aboutTipsTitle")}
                 </p>
                 <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("tipsNote")}</p>
@@ -418,26 +369,10 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
         )}
       </Section>
 
-      <div style={{ marginTop: 16 }}>
-        <AIInsightCard module="citizen-corner" district={district} />
-      </div>
-
-      <SourcesFooter
-        sources={[
-          ...sources.sources.map((name) => ({
-            name: SOURCE_KEY[name] ? t(`sourceNames.${SOURCE_KEY[name]}`) : name,
-            frequency: FREQ_KEY[sources.frequency] ? t(`freq.${FREQ_KEY[sources.frequency]}`) : sources.frequency,
-          })),
-          { name: t("sourceHelplines") },
-        ]}
-      />
       <ModuleNews district={district} state={state} locale={locale} module="citizen-corner" />
-      <Toolbar label={t("toolbar")}>
-        <SharePageButton />
-        <ToolbarButton icon={GitCompare} href={`/${locale}/compare?module=citizen-corner&a=${district}`}>
-          {t("compare")}
-        </ToolbarButton>
-      </Toolbar>
+      <div style={{ marginTop: 28 }}>
+        <PageActions locale={locale} district={district} moduleSlug="citizen-corner" />
+      </div>
 
       <HelplineSheet h={helpline} onClose={closeHelpline} />
       <RightSheet r={right} onClose={closeRight} base={base} />
