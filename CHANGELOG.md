@@ -10,6 +10,37 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — v5.2 wiring: verified or hidden (branch `v52/wiring`, 2026-09-28)
+Backend wiring after the v5.1 merge. Rule: a value that is unverified, invented, seeded or
+estimated is not shown as fact. No database writes; the clean-ups below need the owner.
+- **Courts**: NJDG collector is the only source shown — freshness rule (daily, 3 days),
+  data-sources page ("collected automatically"), dataset dates (snapshot read time), compare /
+  AI insights (`/api/data/courts`) and the report card use only `NJDG district dashboard …` rows
+  (`NJDG_COURTSTAT`). The Railway scheduler uses `scrapeCourtsNjdg`; `jobs/courts.ts` removed.
+- **Seeded rows hidden at the API** (`src/lib/data-filters.ts`): tap water shows only the JJM
+  dashboard's district total (`JJM_DISTRICT_TOTAL`, never added to the 18 seeded rows, out of the
+  water-test figures); estimated crime and traffic rows (`SHOWN_CRIME`, `SHOWN_TRAFFIC`); seeded
+  village councils (`VERIFIED_PANCHAYAT`). Applied in the data API, freshness, dataset dates,
+  report card, AI insight templates and the home data-point count.
+- **Collectors**: schools and village-council pages read the UDISE+ and MGNREGA snapshots (new
+  MGNREGA section; counts printed as 0.00 lakh read "fewer than 1,000"). JJM, schools and
+  village councils are listed as collected automatically, matching `PORTAL_COLLECTORS` (tested).
+- **Verification**: `/api/admin/cleanup-news` keeps `verify-*` items; new read-only admin page
+  **News & Check Queue** (`/admin/news-queue`).
+- **News pipeline**: no headline can create a Leader, CrimeStat or PowerOutage row; generic
+  "news" items and police items that are not crimes (transfers, reshuffles…) are no longer queued
+  (`src/lib/news-action-rules.ts`).
+- **Weather**: OpenWeather is asked by the district HQ's lat/lon (same point as the forecast).
+- **Glance row**: "being built" counts only projects at the building stage (= Projects page).
+- **Privacy**: supporter APIs never send a phone number or e-mail as a name (shared rule
+  `src/lib/supporter-name.ts`, cache keys bumped in `src/lib/supporter-cache.ts`); the Razorpay
+  webhook no longer uses the payer's contact as the name. `/api/payment/contributors` adds
+  `oneTimeCount` / `oneTimeRupees`.
+- **Owner clean-ups (not run)**: 44 hand-seeded `CourtStat` rows; 18 seeded `JJMStatus` rows; 18
+  estimated `CrimeStat` + 12 estimated `TrafficCollection` rows; 8 seeded `GramPanchayat` rows;
+  482 pending generic "news" + 23 non-crime "police" `NewsActionQueue` items; 35 `Supporter` names
+  that are phone numbers (`scripts/anonymize-supporter-names.ts`, dry run first).
+
 ### Changed — v5 "Calm": quieter design, honest dates, cleanup (branches `v5/*`, 2026-09-27)
 The owner found v4 "cartoonish". Nine parallel work-streams moved the site to a calm, pastel,
 blue-based look, made every date honest and cleared out dead files. Nothing here is deployed
