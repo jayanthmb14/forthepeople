@@ -5,14 +5,19 @@ Production (`main`) is unchanged; the branch goes to a Vercel preview first.
 
 ## 1. Review and ship
 
-1. **Look at the Vercel preview.** The branch `redesign-v4` is pushed to
-   GitHub, so Vercel builds a preview link (the link is in the final note and
-   under Deployments in Vercel). It uses the live database. Scheduled jobs
+1. **Look at the Vercel preview:**
+   https://forthepeople-git-redesign-v4-zurvoapps-projects.vercel.app
+   (it always shows the latest push of `redesign-v4`; Vercel may ask you to
+   log in because previews are protected). It uses the live database. Scheduled jobs
    do not run on previews, only on production.
 2. **Ship it** when you are happy: open a pull request from `redesign-v4`
    into `main` and merge it. Production deploys when `main` changes. Run
    `npm run db:push` first if the note says a table is new.
-3. **Approve one security-header change.** `Permissions-Policy` now allows
+3. **GitHub dependency alerts.** GitHub reports 106 known vulnerabilities in
+   `main`'s dependencies (2 critical, 42 high). Never run `npm audit fix`;
+   bump the flagged packages one at a time (Dependabot has open pull requests
+   for many of them).
+4. **Approve one security-header change.** `Permissions-Policy` now allows
    location for our own site (`geolocation=(self)`). Before this, "Use my
    location" could never work.
 
