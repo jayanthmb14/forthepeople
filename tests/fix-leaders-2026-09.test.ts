@@ -55,8 +55,10 @@ describe("leaders fix plan (Sept 2026)", () => {
     expect(PLAN.every((op) => ["add", "update", "deactivate"].includes(op.kind))).toBe(true);
   });
 
-  it("uses only https sources that exist", () => {
+  it("uses only https sources, and lists no source it does not use", () => {
     for (const s of Object.values(SOURCES)) expect(s.url).toMatch(/^https:\/\//);
+    const used = new Set(PLAN.flatMap((op) => op.sources));
+    expect(Object.keys(SOURCES).filter((k) => !used.has(k as keyof typeof SOURCES))).toEqual([]);
   });
 });
 
