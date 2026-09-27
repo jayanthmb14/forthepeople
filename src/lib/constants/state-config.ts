@@ -79,6 +79,18 @@ export interface StateConfig {
   gramPanchayatApplicable: boolean;
   jjmApplicable: boolean;
   municipalBody?: string;
+  /** Set when a district is split between several local bodies (New Delhi:
+   *  NDMC, MCD, Delhi Cantonment Board): the rights card names them all. */
+  municipalBodies?: string[];
+  /**
+   * Usual working days and hours of state government offices, for offices
+   * that list no hours of their own (offices page). Set ONLY from an official
+   * order or a reputed report of one, with the source in a comment. Absent →
+   * the offices page makes no claim about usual hours ("call first").
+   * days / someDays: 0 = Sunday … 6 = Saturday; someDays = open on some of
+   * these days only (e.g. not the 2nd and 4th Saturdays).
+   */
+  officeHours?: { days: number[]; someDays: number[]; open: string; close: string };
   waterBoard?: string;
   stateHealthScheme?: string;
   lastElectionYear?: number;
@@ -120,6 +132,11 @@ const KARNATAKA: StateConfig = {
   gramPanchayatApplicable: true,
   jjmApplicable: true,
   stateHealthScheme: "Arogya Karnataka",
+  // 10:00–17:30 Mon–Sat; 2nd and 4th Saturdays are holidays (Govt of
+  // Karnataka holiday notification DPAR 16 HHL 2024, lists "All Second
+  // Saturdays, Fourth Saturdays, Sundays"; hours per Deccan Herald on the
+  // summer-hours order: "changed from 10 am-5.30 pm"). Checked 28 Sep 2026.
+  officeHours: { days: [1, 2, 3, 4, 5], someDays: [6], open: "10:00", close: "17:30" },
   lastElectionYear: 2023,
   lastElectionType: "Karnataka assembly",
   dataSources: [
@@ -262,6 +279,11 @@ const MAHARASHTRA: StateConfig = {
   gramPanchayatApplicable: true,
   jjmApplicable: true,
   stateHealthScheme: "MJPJAY",
+  // Five-day week since 29 Feb 2020: Mon–Fri 9:45 am – 6:15 pm, closed on
+  // Saturdays (state cabinet decision, Feb 2020; Free Press Journal, "New
+  // working hours for govt employees across the state: 9.45am to 6.15pm").
+  // Checked 28 Sep 2026.
+  officeHours: { days: [1, 2, 3, 4, 5], someDays: [], open: "09:45", close: "18:15" },
   lastElectionYear: 2024,
   lastElectionType: "Maharashtra assembly",
   dataSources: [
@@ -470,8 +492,20 @@ const DISTRICT_OVERRIDES: Record<string, DistrictOverride> = {
     discomPortalUrl: "https://cescmysore.karnataka.gov.in",
     municipalBody: "Mysuru City Corporation",
   },
+  // BBMP was dissolved on 2 Sep 2025: the Greater Bengaluru Authority (GBA)
+  // and five city corporations (Central, North, South, East, West) replaced
+  // it (Greater Bengaluru Governance Act, 2024; final notification 2 Sep
+  // 2025). Checked 28 Sep 2026.
   "karnataka/bengaluru-urban": {
-    municipalBody: "BBMP",
+    municipalBody: "Greater Bengaluru Authority (GBA)",
+  },
+  // New Delhi district spans three local bodies: the New Delhi Municipal
+  // Council, parts of the Municipal Corporation of Delhi, and the Delhi
+  // Cantonment Board (en.wikipedia.org/wiki/New_Delhi_district). "MCD" alone
+  // was wrong for most of the district (Sept 2026 audit).
+  "delhi/new-delhi": {
+    municipalBody: "NDMC / MCD / Delhi Cantonment Board",
+    municipalBodies: ["New Delhi Municipal Council (NDMC)", "Municipal Corporation of Delhi (MCD)", "Delhi Cantonment Board"],
   },
 };
 
@@ -483,14 +517,14 @@ export const UNIVERSAL_DATA_SOURCES: DataSourceEntry[] = [
   { module: "Elections", source: "Election Commission of India (ECI)", type: "Static", frequency: "Post-election", url: "https://eci.gov.in", status: "static" },
   { module: "Schemes", source: "MyScheme.gov.in / State scheme portals", type: "API", frequency: "Weekly", url: "https://myscheme.gov.in", status: "static" },
   { module: "Courts", source: "NJDG (National Judicial Data Grid)", type: "API", frequency: "Daily", url: "https://njdg.ecourts.gov.in/njdg_v3/", status: "live" },
-  { module: "Police / Crime", source: "NCRB (National Crime Records Bureau) / data.gov.in", type: "Collected", frequency: "Annual", url: "https://ncrb.gov.in", status: "static" },
+  { module: "Police stations", source: "State police websites", type: "Collected", frequency: "On-change", url: null, status: "static" },
   { module: "Infrastructure", source: "PMGSY / State PWD Portal", type: "Collected", frequency: "Monthly", url: null, status: "static" },
   { module: "Jal Jeevan Mission", source: "JJM National Dashboard (eJalShakti)", type: "API", frequency: "Daily", url: "https://ejalshakti.gov.in/jjmreport/JJMIndia.aspx", status: "live" },
   { module: "Housing", source: "AwaasSoft (PMAY Dashboard)", type: "API", frequency: "Monthly", url: "https://pmayg.nic.in", status: "live" },
-  { module: "Population", source: "Census of India 2011 + NFHS-5 (2019-21) + NITI MPI 2023 + SRS 2023 + PLFS (latest)", type: "Collected", frequency: "Census: decadal (2027 upcoming) · NFHS: 5-yearly · PLFS: quarterly · SRS: annual · BBMP municipal: ad-hoc", url: "https://censusindia.gov.in", status: "static" },
+  { module: "Population", source: "Census of India 2011 + NFHS-5 (2019-21) + NITI MPI 2023 + SRS 2023 + PLFS (latest)", type: "Collected", frequency: "Census: decadal (2027 upcoming) · NFHS: 5-yearly · PLFS: quarterly · SRS: annual · GBA municipal: ad-hoc", url: "https://censusindia.gov.in", status: "static" },
   { module: "Panchayats", source: "MGNREGA “At a glance” (NREGASoft)", type: "API", frequency: "Daily", url: "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx", status: "live" },
   { module: "News", source: "Google News RSS / Regional news aggregation", type: "RSS", frequency: "Daily", url: null, status: "live" },
-  { module: "Leaders", source: "Lok Sabha / State Legislature / District Administration", type: "Collected", frequency: "On-change", url: null, status: "static" },
+  { module: "Leaders", source: "Wikipedia / IndiaVotes / News reports / District NIC Portal", type: "Collected", frequency: "On-change", url: null, status: "static" },
   { module: "Famous Personalities", source: "Wikipedia (CC-BY-SA licensed)", type: "Static", frequency: "Static", url: null, status: "static" },
   { module: "Offices", source: "District NIC Portal / State Government Directory", type: "Collected", frequency: "Quarterly", url: null, status: "static" },
   { module: "Government Exams", source: "UPSC / SSC / State PSC / Recruitment Boards", type: "Collected", frequency: "As announced", url: null, status: "static" },
@@ -541,17 +575,20 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     water:             { sources: [config ? `${config.waterPortalName} / India-WRIS` : "India-WRIS (Water Resources Information System)"], frequency: "Every 6 hours", isLive: true },
     power:             { sources: [config?.discomFullName ?? "State Power Distribution Company"], frequency: "When the source publishes" },
     budget:            { sources: ["PFMS (Public Financial Management System)", "State Treasury / eGramSwaraj"], frequency: "When the source publishes" },
-    police:            { sources: ["NCRB (National Crime Records Bureau)", "data.gov.in"], frequency: "Annual" },
+    // The police page lists stations typed in by hand from state police
+    // websites (scripts/fix-records-2026-09/police.ts cites ksp.karnataka.gov.in,
+    // mysurucitypolice…). NCRB publishes crime counts, not station lists or
+    // traffic fines, and no NCRB figures are shown today (Sept 2026 audit).
+    police:            { sources: ["State police websites"], frequency: "When the source publishes" },
     schools:           { sources: ["UDISE+ (Unified District Information System for Education)"], frequency: "Weekly", isLive: true },
     elections:         { sources: ["Election Commission of India (ECI)"], frequency: "Post-election" },
     // Leadership page (MP, MLAs, DC, SP …). Positions change on elections,
     // transfers and reshuffles, so there is no fixed schedule.
+    // Sept 2026 audit: the rows cite Wikipedia, IndiaVotes, news reports and
+    // district NIC pages (Leader.source), not ECI or the assemblies, so the
+    // panel names those. The page header names the exact outlets per district.
     leadership:        {
-      sources: [
-        "Election Commission of India (ECI)",
-        config ? `${config.name} Legislative Assembly` : "State Legislative Assembly",
-        "District Administration",
-      ],
+      sources: ["Wikipedia", "IndiaVotes", "News reports", "District NIC Portal"],
       frequency: "When the source publishes",
       isLive: false,
     },

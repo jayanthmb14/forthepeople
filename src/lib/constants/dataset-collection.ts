@@ -132,7 +132,9 @@ export const DATASETS: readonly DatasetInfo[] = [
     maxAgeHours: 3 * DAY,
     url: NJDG_DISTRICT_BASE,
   },
-  { key: "police", slug: "police", collection: "hand", dateKind: "period", url: "https://ncrb.gov.in" },
+  // Police stations typed in by hand from state police websites; NCRB lists
+  // no stations, so no single source page is named (Sept 2026 audit).
+  { key: "police", slug: "police", collection: "hand", dateKind: "period" },
   // Money & projects
   { key: "budget", slug: "finance", collection: "hand", dateKind: "period" },
   { key: "infrastructure", slug: "infrastructure", collection: "hand", dateKind: "checked", maxAgeHours: 60 * DAY },

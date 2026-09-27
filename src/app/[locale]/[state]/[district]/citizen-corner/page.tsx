@@ -29,7 +29,7 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Handshake, PhoneCall, RefreshCw, Sparkles } from "lucide-react";
+import { Handshake, PhoneCall, Sparkles } from "lucide-react";
 import {
   Card,
   EmptyState,
@@ -215,7 +215,6 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [tipsMonth, setTipsMonth] = useState<number | null>(null);
   const [tipsYear, setTipsYear] = useState<number | null>(null);
-  const [nextRefreshDays, setNextRefreshDays] = useState<number | null>(null);
   const [helpline, setHelpline] = useState<Helpline | null>(null);
   const [right, setRight] = useState<Right | null>(null);
   const closeHelpline = useCallback(() => setHelpline(null), []);
@@ -233,7 +232,6 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
         setTips(json.tips ?? []);
         setTipsMonth(json.month ?? null);
         setTipsYear(json.year ?? null);
-        setNextRefreshDays(json.nextRefreshDays ?? null);
         setLoadedFor(district);
       })
       .catch(() => setLoadedFor(district));
@@ -269,7 +267,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
         <StatTile
           label={t("tileTips")}
           value={tipsLoading ? "—" : f.number(tips.length)}
-          sub={tipsPeriod ? t("tileTipsFor", { period: tipsPeriod }) : t("tileTipsWeekly")}
+          sub={tips.length > 0 && tipsPeriod ? t("tileTipsFor", { period: tipsPeriod }) : t("tileTipsNone")}
         />
       </StatStrip>
 
@@ -315,15 +313,8 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
       <Section title={t("tipsTitle")}>
         {tipsLoading && <LoadingShell rows={3} />}
         {!tipsLoading && tips.length === 0 && (
-          <EmptyState
-            title={t("emptyTitle")}
-            body={nextRefreshDays != null ? t("emptyNext", { n: nextRefreshDays }) : t("emptyNextWeek")}
-            action={
-              <Pill tone="warn" icon={RefreshCw}>
-                {t("emptyPill")}
-              </Pill>
-            }
-          />
+          // No date is promised: the weekly writer has not run since Aug 2026 (Sept 2026 audit).
+          <EmptyState title={t("emptyTitle")} body={t("emptyNextWeek")} />
         )}
         {!tipsLoading && tips.length > 0 && (
           <>

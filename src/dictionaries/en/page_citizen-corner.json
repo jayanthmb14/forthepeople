@@ -95,14 +95,14 @@
       "step3": "Refused admission, or asked for money? Complain to the Block Education Officer.",
       "law": "Right of Children to Free and Compulsory Education Act, 2009"
     },
-    "mgnrega": {
-      "title": "MGNREGA (work guarantee)",
-      "desc": "100 days of guaranteed paid work a year for every rural household that asks for it.",
-      "more": "Every rural household can ask for up to 100 days of paid work a year. If work is not given within 15 days, you are owed an unemployment allowance.",
-      "step1": "Get a job card from your gram panchayat. It is free.",
+    "ruralWork": {
+      "title": "Rural work guarantee (VB-G RAM G)",
+      "desc": "125 days of guaranteed paid work a year for every rural household that asks for it.",
+      "more": "From 1 July 2026 the VB-G RAM G Act replaced MGNREGA. Every rural household whose adult members ask for unskilled manual work can get up to 125 days of paid work in a financial year. If work is not given in the set time, you are owed an unemployment allowance.",
+      "step1": "Use your MGNREGA job card: it stays valid until the new Gramin Rozgar Guarantee Card is issued. No card? Register at your gram panchayat.",
       "step2": "Ask for work in writing, and keep the dated receipt.",
-      "step3": "Wages must reach your bank account within 15 days. If they are late, you are owed extra money for the delay.",
-      "law": "Mahatma Gandhi National Rural Employment Guarantee Act, 2005"
+      "step3": "Wages go straight to your bank or post office account, weekly or within 15 days of the muster roll closing. If they are late, you are owed extra money for the delay.",
+      "law": "Viksit Bharat – Guarantee for Rozgar and Ajeevika Mission (Gramin) Act, 2025 (VB-G RAM G)"
     },
     "gramSabha": {
       "title": "Gram Sabha",
@@ -131,6 +131,15 @@
       "step3": "Ask for the ward's list of works and what was spent on them.",
       "law": "Your state's municipal law (74th Amendment to the Constitution)"
     },
+    "localBodies": {
+      "title": "Your local council",
+      "desc": "Your street is looked after by one of these: {body}. Take local problems to the one that covers it.",
+      "more": "This district is split between more than one local body: {body}. Each has its own offices, works and complaint desks, so first find out which one covers your street.",
+      "step1": "Find out which body covers your street: ask at the nearest civic office or check a recent property-tax or water bill.",
+      "step2": "Go with your problem written down: roads, drains, garbage, street lights.",
+      "step3": "Ask for the list of works in your area and what was spent on them.",
+      "law": "New Delhi Municipal Council Act, 1994; Delhi Municipal Corporation Act, 1957; Cantonments Act, 2006"
+    },
     "consumer": {
       "title": "Consumer rights",
       "desc": "File a consumer complaint online at consumerhelpline.gov.in.",
@@ -151,9 +160,10 @@
   "tileTips": "Civic tips",
   "tileTipsFor": "For {period}",
   "tileTipsWeekly": "Written every week",
-  "emptyTitle": "Citizen tips are written every week",
+  "tileTipsNone": "None right now",
+  "emptyTitle": "No civic tips for this district right now",
   "emptyNext": "{n, plural, =0 {New tips are due today.} one {New tips are due in # day.} other {New tips are due in # days.}}",
-  "emptyNextWeek": "New tips will be written automatically next week.",
+  "emptyNextWeek": "Tips appear here when they are written. Until then, use the helplines and rights above.",
   "emptyPill": "Written automatically every Sunday",
   "tipsFor": "AI-written tips for {period}",
   "updatedWeekly": "Updated weekly",
