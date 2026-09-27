@@ -2,7 +2,11 @@
   "description": "Warnings in force for the district, colour-coded, with what to do",
   "empty": {
     "title": "No active warnings for {district} right now.",
-    "body": "Warnings from IMD, the district administration and NDMA appear here when they are published."
+    "body": "Warnings from IMD, the district administration and NDMA appear here when they are published.",
+    "staleTitle": "We have not been able to check for official warnings for {district} since {date}.",
+    "uncheckedTitle": "We could not check for official warnings for {district}.",
+    "staleBody": "So we cannot say whether any warning is in force right now. Check the official alerts from IMD and NDMA on SACHET before you rely on this page.",
+    "staleLink": "Official alerts on SACHET (NDMA)"
   },
   "call": {
     "title": "Emergency numbers",
