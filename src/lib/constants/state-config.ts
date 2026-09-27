@@ -454,6 +454,17 @@ export function getModuleSources(moduleName: string, stateSlug: string): ModuleS
     police:            { sources: ["NCRB (National Crime Records Bureau)", "data.gov.in"], frequency: "Annual" },
     schools:           { sources: ["UDISE+ (Unified District Information System for Education)"], frequency: "Annual" },
     elections:         { sources: ["Election Commission of India (ECI)"], frequency: "Post-election" },
+    // Leadership page (MP, MLAs, DC, SP …). Positions change on elections,
+    // transfers and reshuffles, so there is no fixed schedule.
+    leadership:        {
+      sources: [
+        "Election Commission of India (ECI)",
+        config ? `${config.name} Legislative Assembly` : "State Legislative Assembly",
+        "District Administration",
+      ],
+      frequency: "When the source publishes",
+      isLive: false,
+    },
     transport:         { sources: [config?.stateTransportFullName ?? "State Transport Corporation", "IRCTC"], frequency: "Monthly" },
     rti:               { sources: [config?.stateInformationCommission ?? "State Information Commission", "RTI Online Portal"], frequency: "When the source publishes" },
     courts:            { sources: ["NJDG (National Judicial Data Grid)"], frequency: "When the source publishes" },

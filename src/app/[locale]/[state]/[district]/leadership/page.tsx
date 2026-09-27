@@ -11,6 +11,12 @@
  * tier-to-people mapping is hardcoded in the UI — anything tagged tier=N
  * lands in the corresponding section. Adding a district just means seeding
  * leaders with the right tier numbers.
+ *
+ * Design v3 "Civic Ledger" (CONCEPT-v3 §5): PageHeader → notes → StatStrip
+ * → one Section per tier → elections → SourcesFooter → ModuleNews →
+ * Toolbar. Party colour appears only as a 6 px dot inside a neutral pill;
+ * cards carry no coloured stripes or shadows. All copy and data logic are
+ * unchanged from v2.
  */
 
 "use client";
@@ -19,15 +25,30 @@ import { use, useState } from "react";
 import Image from "next/image";
 import {
   Users, Phone, Mail, Info, Flag, Landmark, Building2, Vote, Briefcase,
+  AlertTriangle, ChevronDown, ChevronRight, MapPin, Download, Share2, ArrowLeftRight,
 } from "lucide-react";
-import type { ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 import { useLeaders, useAIInsight } from "@/hooks/useRealtimeData";
 import type { Leader } from "@/hooks/useRealtimeData";
-import { ModuleHeader, LoadingShell, ErrorBlock, AIInsightBanner } from "@/components/district/ui";
+import {
+  PageHeader,
+  StatStrip,
+  StatTile,
+  Section,
+  Card,
+  Pill,
+  LoadingShell,
+  ErrorBlock,
+  EmptyState,
+  AIInsightBanner,
+  SourcesFooter,
+  Toolbar,
+  ToolbarButton,
+} from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
 import ModuleDisclaimer from "@/components/common/ModuleDisclaimer";
 import { getModuleSources } from "@/lib/constants/state-config";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import { getRoleDescription } from "@/lib/constants/role-descriptions";
 import ElectionSection, { findActiveElection, type ElectionEvent } from "@/components/district/ElectionSection";
@@ -35,25 +56,27 @@ import LiveElectionBanner from "@/components/district/LiveElectionBanner";
 import ModuleNews from "@/components/district/ModuleNews";
 import MobileHint from "@/components/common/MobileHint";
 import { useQuery } from "@tanstack/react-query";
+import knDict from "@/dictionaries/kn.json";
 
-type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
+/** Official websites for the sources named by getModuleSources("leadership"). */
+const SOURCE_URLS: Record<string, string> = {
+  "Election Commission of India (ECI)": "https://eci.gov.in",
+};
 
 interface TierMeta {
   label: string;
-  emoji: string;
-  Icon: LucideCmp;
-  accent: string;
+  Icon: LucideIcon;
   hint: string;
 }
 const TIER_META: Record<number, TierMeta> = {
-  1: { label: "National Leadership", emoji: "🇮🇳", Icon: Flag,     accent: "#1E3A8A", hint: "Heads of state and government" },
-  2: { label: "State Leadership",    emoji: "🏳",  Icon: Landmark, accent: "#7C3AED", hint: "Governor, Chief Minister and key state ministers" },
-  3: { label: "District Administration", emoji: "🏢", Icon: Building2, accent: "#0EA5E9", hint: "IAS / IPS officers running the district day-to-day" },
-  4: { label: "Elected Representatives", emoji: "🗳", Icon: Vote, accent: "#16A34A", hint: "MP and MLAs elected by citizens of this district" },
-  5: { label: "Municipal & Department Heads", emoji: "🏛", Icon: Briefcase, accent: "#D97706", hint: "Mayor, municipal commissioner and department officers" },
+  1: { label: "National Leadership", Icon: Flag, hint: "Heads of state and government" },
+  2: { label: "State Leadership", Icon: Landmark, hint: "Governor, Chief Minister and key state ministers" },
+  3: { label: "District Administration", Icon: Building2, hint: "IAS / IPS officers running the district day-to-day" },
+  4: { label: "Elected Representatives", Icon: Vote, hint: "MP and MLAs elected by citizens of this district" },
+  5: { label: "Municipal & Department Heads", Icon: Briefcase, hint: "Mayor, municipal commissioner and department officers" },
 };
 function tierMeta(t: number): TierMeta {
-  return TIER_META[t] ?? { label: `Tier ${t}`, emoji: "•", Icon: Users, accent: "#6B7280", hint: "" };
+  return TIER_META[t] ?? { label: `Tier ${t}`, Icon: Users, hint: "" };
 }
 
 function formatVerifiedDate(iso: string | null | undefined): string | null {
@@ -74,24 +97,39 @@ function leaderProvenance(l: { source?: string | null; lastVerifiedAt?: string |
 
 const ATTRIBUTION_TOOLTIP = "As last reported in news media. Political positions and party affiliations change frequently — verify on the official district website.";
 
+/** Turn rows into a CSV file and start a download in the browser. */
+function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.map(esc).join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function RoleDescription({ text }: { text: string }) {
   // Tap to toggle full text on mobile; desktop also gets clickable expand
   // for accessibility (the title attribute is kept as a hover affordance).
   const [open, setOpen] = useState(false);
+  const Chevron = open ? ChevronDown : ChevronRight;
   return (
     <button
       type="button"
       onClick={() => setOpen((o) => !o)}
       title={text}
       style={{
-        background: "transparent", border: "none", padding: 0, margin: "3px 0 0",
-        textAlign: "left", cursor: "pointer", color: "#9CA3AF", font: "inherit",
-        fontSize: 11, lineHeight: 1.4, width: "100%",
+        background: "transparent", border: "none", padding: 0, margin: "4px 0 0",
+        textAlign: "left", cursor: "pointer", color: "var(--ftp-text-2)", font: "inherit",
+        fontSize: 11, lineHeight: "16px", width: "100%",
         display: "flex", alignItems: "flex-start", gap: 4,
       }}
       aria-expanded={open}
     >
-      <span aria-hidden style={{ flexShrink: 0, fontSize: 9, color: "#9CA3AF", marginTop: 2 }}>{open ? "▾" : "▸"}</span>
+      <Chevron size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
       <span
         style={open ? undefined : {
           display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 1,
@@ -104,25 +142,21 @@ function RoleDescription({ text }: { text: string }) {
   );
 }
 
-function LeaderAvatar({
-  name, photoUrl, accent,
-}: {
-  name: string;
-  photoUrl?: string | null;
-  accent: string;
-}) {
+/** Photo when we have one; otherwise the person's initials on a quiet disc. */
+function LeaderAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
   const [imgError, setImgError] = useState(false);
   const isPlaceholder = name.startsWith("[");
   const initials = isPlaceholder
     ? "?"
     : name.split(/\s+/).map((w) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
 
+  const ring: React.CSSProperties = {
+    width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
+    overflow: "hidden", border: "1px solid var(--ftp-border)",
+  };
   if (photoUrl && !imgError) {
     return (
-      <div style={{
-        width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
-        overflow: "hidden", border: `2px solid ${accent}40`,
-      }}>
+      <div style={ring}>
         <Image src={photoUrl} alt={name} width={56} height={56}
           onError={() => setImgError(true)}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -132,81 +166,64 @@ function LeaderAvatar({
     );
   }
   return (
-    <div style={{
-      width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
-      background: `${accent}18`, border: `2px solid ${accent}40`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: isPlaceholder ? 22 : 18, fontWeight: 700, color: accent,
-    }}>
+    <div
+      aria-hidden
+      style={{
+        ...ring,
+        background: "var(--ftp-surface-2)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 18, fontWeight: 500, color: "var(--ftp-text-2)",
+      }}
+    >
       {initials}
     </div>
   );
 }
 
-function LeaderCard({ l, tierAccent, inElectionPeriod }: { l: Leader; tierAccent: string; inElectionPeriod?: boolean }) {
-  // Party-coloured border for political tiers; tier-coloured for bureaucratic.
+function LeaderCard({ l, inElectionPeriod }: { l: Leader; inElectionPeriod?: boolean }) {
   const tone = getPartyColor(l.party);
-  const isPolitical = !!l.party;
-  const accent = isPolitical ? tone.border : tierAccent;
   const isPlaceholderName = l.name.startsWith("[");
+  const desc = l.roleDescription ?? getRoleDescription(l.role);
 
   return (
-    <div
-      style={{
-        background: "#FFF",
-        border: `1px solid ${isPolitical ? tone.border : "#E8E8E4"}`,
-        borderTop: `3px solid ${accent}`,
-        borderRadius: 12,
-        padding: "16px 16px 12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        display: "flex", flexDirection: "column", gap: 8,
-        minHeight: 0,
-      }}
-    >
+    <Card as="article" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <LeaderAvatar name={l.name} photoUrl={l.photoUrl} accent={accent} />
+        <LeaderAvatar name={l.name} photoUrl={l.photoUrl} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: isPlaceholderName ? "#9B9B9B" : "#1A1A1A", lineHeight: 1.25, fontStyle: isPlaceholderName ? "italic" : "normal" }}>
+          <h3
+            className="ftp-title"
+            style={{
+              color: isPlaceholderName ? "var(--ftp-text-2)" : "var(--ftp-text)",
+              fontStyle: isPlaceholderName ? "italic" : "normal",
+            }}
+          >
             {l.name}
-          </div>
+          </h3>
           {l.nameLocal && !isPlaceholderName && (
-            <div style={{ fontSize: 12, color: "#9B9B9B", fontFamily: "var(--font-regional)", marginTop: 1 }}>
+            <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)" }}>
               {l.nameLocal}
             </div>
           )}
-          <div style={{ fontSize: 12, color: "#4B5563", marginTop: 3, lineHeight: 1.35 }}>{l.role}</div>
-          {(() => {
-            const desc = l.roleDescription ?? getRoleDescription(l.role);
-            if (!desc) return null;
-            return <RoleDescription text={desc} />;
-          })()}
+          <div className="ftp-body" style={{ color: "var(--ftp-text)", marginTop: 2 }}>{l.role}</div>
+          {desc && <RoleDescription text={desc} />}
           {l.constituency && (
-            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>📍 {l.constituency}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 4 }}>
+              <MapPin size={12} aria-hidden /> {l.constituency}
+            </div>
           )}
           {l.party && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-              <div
-                style={{
-                  display: "inline-flex", alignItems: "center",
-                  fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                  color: tone.text, background: tone.bg, border: `1px solid ${tone.border}`,
-                }}
-              >
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+              {/* Party colour appears only as the 6 px dot. */}
+              <Pill>
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: tone.border, flexShrink: 0 }} />
                 <MobileHint hint={ATTRIBUTION_TOOLTIP}>
                   <span>{l.party}</span>
                 </MobileHint>
-              </div>
+              </Pill>
               {inElectionPeriod && (
-                <div
-                  title="Active election period — affiliations may change after results"
-                  style={{
-                    display: "inline-flex", alignItems: "center",
-                    fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                    color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A",
-                  }}
-                >
-                  ⚠ Election period
-                </div>
+                <Pill tone="warn" icon={AlertTriangle} title="Active election period — affiliations may change after results">
+                  Election period
+                </Pill>
               )}
             </div>
           )}
@@ -214,67 +231,54 @@ function LeaderCard({ l, tierAccent, inElectionPeriod }: { l: Leader; tierAccent
       </div>
 
       {(l.phone || l.email) && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", paddingTop: 8, borderTop: "1px solid #F5F5F0" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", paddingTop: 8, borderTop: "1px solid var(--ftp-border)" }}>
           {l.phone && (
-            <a href={`tel:${l.phone}`} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#2563EB", textDecoration: "none" }}>
-              <Phone size={11} /> {l.phone}
+            <a href={`tel:${l.phone}`} className="ftp-chip" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}>
+              <Phone size={14} aria-hidden /> <span className="ftp-num">{l.phone}</span>
             </a>
           )}
           {l.email && (
-            <a href={`mailto:${l.email}`} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#2563EB", textDecoration: "none" }}>
-              <Mail size={11} /> Email
+            <a href={`mailto:${l.email}`} className="ftp-chip" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ftp-brand)", textDecoration: "none" }}>
+              <Mail size={14} aria-hidden /> Email
             </a>
           )}
         </div>
       )}
 
-      <div style={{ marginTop: "auto", paddingTop: 6, fontSize: 10, color: "#9B9B9B", fontStyle: "italic" }}>
+      <div style={{ marginTop: "auto", paddingTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
         {leaderProvenance(l)}
       </div>
-    </div>
+    </Card>
   );
 }
 
-function TierSection({ tier, leaders, isLast, inElectionPeriod }: { tier: number; leaders: Leader[]; isLast: boolean; inElectionPeriod?: boolean }) {
+function TierSection({ tier, leaders, inElectionPeriod }: { tier: number; leaders: Leader[]; inElectionPeriod?: boolean }) {
   const meta = tierMeta(tier);
   const TierIcon = meta.Icon;
   return (
-    <section style={{ position: "relative", marginBottom: isLast ? 0 : 28 }}>
-      {/* Tier header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <span style={{ fontSize: 18 }}>{meta.emoji}</span>
-        <TierIcon size={16} style={{ color: meta.accent }} />
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: meta.accent, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+    <div style={{ marginTop: 24 }}>
+      <Section
+        title={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <TierIcon size={18} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
             {meta.label}
-          </div>
-          {meta.hint && <div style={{ fontSize: 11, color: "#9B9B9B" }}>{meta.hint}</div>}
-        </div>
-        <div style={{ flex: 1, height: 1, background: `${meta.accent}30`, marginLeft: 8 }} />
-      </div>
-
-      {/* Card grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 12,
-        }}
+          </span>
+        }
       >
-        {leaders.map((l) => <LeaderCard key={l.id} l={l} tierAccent={meta.accent} inElectionPeriod={inElectionPeriod} />)}
-      </div>
-
-      {/* Vertical connector to next tier (skipped on last tier) */}
-      {!isLast && (
+        {meta.hint && (
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-4px 0 12px" }}>{meta.hint}</p>
+        )}
         <div
-          aria-hidden
           style={{
-            position: "absolute", left: 18, bottom: -22, width: 2, height: 22,
-            background: `${meta.accent}40`,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
+            gap: 12,
           }}
-        />
-      )}
-    </section>
+        >
+          {leaders.map((l) => <LeaderCard key={l.id} l={l} inElectionPeriod={inElectionPeriod} />)}
+        </div>
+      </Section>
+    </div>
   );
 }
 
@@ -288,6 +292,7 @@ function LeadershipPageInner({
   const { data, isLoading, error } = useLeaders(district, state);
   const { data: aiInsight } = useAIInsight(district, "leadership");
   const leaders: Leader[] = data?.data ?? [];
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
   // Used for the election-period top banner + per-card "Election period" badge.
   const { data: electionsData } = useQuery<{ data: ElectionEvent[] }>({
@@ -339,67 +344,95 @@ function LeadershipPageInner({
   const tiers = Object.keys(byTier).map(Number).sort((a, b) => a - b);
   for (const t of tiers) byTier[t].sort((a, b) => rank(a.role) - rank(b.role) || a.name.localeCompare(b.name));
 
-  const lastTier = tiers[tiers.length - 1];
+  // Freshness = the most recent "last verified" date across all leaders.
+  const asOf = leaders.reduce<string | null>(
+    (best, l) => (l.lastVerifiedAt && (!best || l.lastVerifiedAt > best) ? l.lastVerifiedAt : best),
+    null
+  );
+  const src = getModuleSources("leadership", state);
+  // Local-script title comes from the dictionary (Kannada only for now).
+  const titleLocal = state === "karnataka" ? knDict.modules.leadership : undefined;
+
+  const onShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "District Leadership", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareNote("Link copied");
+        setTimeout(() => setShareNote(null), 2000);
+      }
+    } catch {
+      /* The visitor closed the share sheet — nothing to do. */
+    }
+  };
+
+  const onCsv = () =>
+    downloadCsv(
+      `${district}-leadership.csv`,
+      deduped.map((l) => ({
+        tier: tierMeta(l.tier).label,
+        name: l.name,
+        role: l.role,
+        party: l.party ?? "",
+        constituency: l.constituency ?? "",
+        last_verified: l.lastVerifiedAt ?? "",
+      }))
+    );
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader
+    <div className="module-page" style={{ padding: 24, maxWidth: "var(--ftp-reading-max)" }}>
+      <PageHeader
         icon={Users}
+        accent={getModuleAccent("leadership")}
         title="District Leadership"
+        titleLocal={titleLocal}
         description="Who governs this district — from the President down to your MLA"
         backHref={base}
+        freshness={asOf ? { asOf } : undefined}
+        source={{ label: "ECI", href: SOURCE_URLS["Election Commission of India (ECI)"] }}
       />
       {aiInsight && (
-        <AIInsightBanner
-          headline={aiInsight.headline}
-          summary={aiInsight.summary}
-          sentiment={aiInsight.sentiment}
-          confidence={aiInsight.confidence}
-          sourceUrls={aiInsight.sourceUrls}
-          createdAt={aiInsight.createdAt}
-        />
+        <div style={{ marginBottom: 16 }}>
+          <AIInsightBanner
+            headline={aiInsight.headline}
+            summary={aiInsight.summary}
+            sentiment={aiInsight.sentiment}
+            confidence={aiInsight.confidence}
+            sourceUrls={aiInsight.sourceUrls}
+            createdAt={aiInsight.createdAt}
+          />
+        </div>
       )}
-      {(() => { const _src = getModuleSources("leaders", state); return <DataSourceBanner moduleName="leaders" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
 
       <ModuleDisclaimer
         text="Leader information is sourced from publicly available government records (Election Commission of India, state assembly websites, and district administration portals) and may have delays. For official verification, always refer to the original source."
       />
 
-      <div
-        role="note"
-        style={{
-          display: "flex", alignItems: "flex-start", gap: 10,
-          background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1E40AF",
-          borderRadius: 8, padding: "10px 14px", marginBottom: 14,
-          fontSize: 12, lineHeight: 1.55,
-        }}
-      >
-        <Info size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+      <p role="note" className="ftp-body" style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "var(--ftp-text-2)", marginBottom: 16 }}>
+        <Info size={14} aria-hidden style={{ flexShrink: 0, marginTop: 3 }} />
         <span>
           Leadership data reflects the latest available information. Political positions and party affiliations change frequently. Verify current officeholders at the official district administration website.
         </span>
-      </div>
+      </p>
 
       <LiveElectionBanner stateSlug={state} leadershipHref={base + "/leadership"} />
 
       {inElectionPeriod && liveElection && (
-        <div
-          role="alert"
-          style={{
-            display: "flex", alignItems: "flex-start", gap: 10,
-            background: "#FEF2F2", border: "1px solid #FCA5A5", color: "#991B1B",
-            borderRadius: 8, padding: "10px 14px", marginBottom: 14,
-            fontSize: 12, lineHeight: 1.55, fontWeight: 500,
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>⚠</span>
-          <span>
-            <strong>ELECTION PERIOD:</strong>{" "}
-            This district is currently in an active election period ({liveElection.label}).
-            Leadership positions and party affiliations may change following the election results
-            {liveElection.resultDate ? ` on ${new Date(liveElection.resultDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}` : ""}.
-            ForThePeople.in is not affiliated with any political party and does not endorse any candidate.
-          </span>
+        <div role="alert" style={{ marginBottom: 16 }}>
+          <Card padding={14}>
+            <div className="ftp-body" style={{ display: "flex", alignItems: "flex-start", gap: 10, color: "var(--ftp-text)" }}>
+              <AlertTriangle size={16} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0, marginTop: 2 }} />
+              <span>
+                <span style={{ fontWeight: 500, color: "var(--ftp-danger)" }}>ELECTION PERIOD:</span>{" "}
+                This district is currently in an active election period ({liveElection.label}).
+                Leadership positions and party affiliations may change following the election results
+                {liveElection.resultDate ? ` on ${new Date(liveElection.resultDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}` : ""}.
+                ForThePeople.in is not affiliated with any political party and does not endorse any candidate.
+              </span>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -407,42 +440,62 @@ function LeadershipPageInner({
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && leaders.length === 0 && (
-        <div style={{ textAlign: "center", padding: "56px 24px", background: "#F9F9F7", border: "1px dashed #D0D0CC", borderRadius: 12 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6B6B", marginBottom: 6 }}>No leadership data yet</div>
-          <div style={{ fontSize: 13, color: "#9B9B9B", lineHeight: 1.6, maxWidth: 320, margin: "0 auto" }}>
-            Data on elected representatives and officials for this district will be updated soon.
-          </div>
-        </div>
+        <EmptyState
+          title="No leadership data yet"
+          body="Data on elected representatives and officials for this district will be updated soon."
+        />
+      )}
+
+      {deduped.length > 0 && (
+        <StatStrip cols={3}>
+          <StatTile label="People listed" value={deduped.length} asOf={asOf} />
+          <StatTile label="Elected representatives" value={byTier[4]?.length ?? 0} sub="MP and MLAs" asOf={asOf} />
+          <StatTile label="District officers" value={byTier[3]?.length ?? 0} sub="IAS / IPS" asOf={asOf} />
+        </StatStrip>
       )}
 
       {tiers.map((t) => (
-        <TierSection key={t} tier={t} leaders={byTier[t]} isLast={t === lastTier} inElectionPeriod={inElectionPeriod} />
+        <TierSection key={t} tier={t} leaders={byTier[t]} inElectionPeriod={inElectionPeriod} />
       ))}
 
       <ElectionSection stateSlug={state} />
 
-      <ModuleNews district={district} state={state} locale={locale} module="leaders" />
-
       {leaders.length > 0 && (
-        <div
-          role="note"
-          style={{
-            background: "#F9F9F7", border: "1px solid #E8E8E4", borderRadius: 8,
-            padding: 16, marginTop: 28,
-            fontSize: 12, color: "#4B5563", lineHeight: 1.6,
-          }}
-        >
-          <strong style={{ color: "#1A1A1A" }}>Note on political affiliations:</strong>{" "}
-          Political party affiliations shown are as last reported and may not reflect current affiliations due to party
-          changes, cabinet reshuffles, or elections. Government officers (IAS, IPS) carry no party. ForThePeople.in does
-          not endorse or oppose any political party or individual.
-          <br /><br />
-          <strong style={{ color: "#1A1A1A" }}>On bureaucrat names:</strong>{" "}
-          IAS/IPS officer names change with transfers and may not reflect the most recent postings. Verify current
-          district officers at the official district website.
+        <div role="note" style={{ marginTop: 28 }}>
+          <Card>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+              <span style={{ fontWeight: 500, color: "var(--ftp-text)" }}>Note on political affiliations:</span>{" "}
+              Political party affiliations shown are as last reported and may not reflect current affiliations due to party
+              changes, cabinet reshuffles, or elections. Government officers (IAS, IPS) carry no party. ForThePeople.in does
+              not endorse or oppose any political party or individual.
+            </p>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 12 }}>
+              <span style={{ fontWeight: 500, color: "var(--ftp-text)" }}>On bureaucrat names:</span>{" "}
+              IAS/IPS officer names change with transfers and may not reflect the most recent postings. Verify current
+              district officers at the official district website.
+            </p>
+          </Card>
         </div>
       )}
+
+      <SourcesFooter sources={src.sources.map((name) => ({ name, url: SOURCE_URLS[name], frequency: src.frequency }))} />
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
+        ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India&apos;s Open Data Policy (NDSAP).
+      </p>
+
+      <ModuleNews district={district} state={state} locale={locale} module="leaders" />
+
+      <Toolbar>
+        <ToolbarButton icon={Download} onClick={onCsv} disabled={deduped.length === 0}>
+          Download CSV
+        </ToolbarButton>
+        <ToolbarButton icon={Share2} onClick={onShare}>
+          {shareNote ?? "Share"}
+        </ToolbarButton>
+        <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=leadership&a=${district}`}>
+          Compare with another district
+        </ToolbarButton>
+      </Toolbar>
     </div>
   );
 }
