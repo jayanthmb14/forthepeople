@@ -5,16 +5,19 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Government Schemes — module page (Design v3 "Civic Ledger", CONCEPT-v3 §5)
+//  Government Schemes — module page (Design v4 "Rang", docs/DESIGN-SYSTEM.md)
 // ═══════════════════════════════════════════════════════════════════════
-//  PageHeader → StatStrip → category Chips → scheme cards → SourcesFooter
-//  → ModuleNews → Toolbar. Data still comes from useSchemes(); only the
-//  look changed. Categories are neutral Pills (no per-category colours —
-//  colour is reserved for meaning, not decoration).
+//  PageHeader → emoji StatStrip → the picture (explainer + a pictogram of
+//  schemes with an online apply link) → schemes-by-category ChartCard →
+//  category Chips → scheme cards → SourcesFooter → ModuleNews → Toolbar.
+//  Data still comes from useSchemes(); only the look changed. Every
+//  number in the picture and chart is counted from the same scheme rows
+//  as the tiles. Category tags and the apply button use the module hue.
 "use client";
 
 import { use, useState } from "react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { ArrowLeftRight, Download, ExternalLink, ScrollText, Share2 } from "lucide-react";
 import { useSchemes } from "@/hooks/useRealtimeData";
 import {
@@ -24,7 +27,6 @@ import {
   Section,
   Card,
   Chips,
-  Pill,
   LoadingShell,
   ErrorBlock,
   EmptyState,
@@ -33,6 +35,7 @@ import {
   ToolbarButton,
 } from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
+import { ChartCard, ChartGradients, Explainer, Pictogram, CHART_AXIS, chartTooltipStyle } from "@/components/district/visuals";
 import { getModuleSources } from "@/lib/constants/state-config";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -79,6 +82,18 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
 
   const asOf = latestUpdatedAt(schemes as Array<{ updatedAt?: string | null }>);
   const withApplyLink = schemes.filter((s) => !!s.applyUrl).length;
+
+  // The picture: of every 10 schemes listed, how many have an online apply link.
+  const applyOf10 = schemes.length > 0 ? (withApplyLink / schemes.length) * 10 : 0;
+  // Chart rows: schemes per category, largest first.
+  const categoryChart = categories
+    .filter((c) => c !== "all")
+    .map((c) => ({
+      name: c,
+      label: c.length > 22 ? c.slice(0, 21) + "…" : c,
+      count: schemes.filter((s) => s.category === c).length,
+    }))
+    .sort((a, b) => b.count - a.count);
   const src = getModuleSources("schemes", state);
   // Local-script title comes from the dictionary (Kannada only for now).
   const titleLocal = state === "karnataka" ? knDict.modules.schemes : undefined;
@@ -130,6 +145,7 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
       {error && <ErrorBlock />}
       {!isLoading && !error && schemes.length === 0 && (
         <EmptyState
+          emoji="📋"
           title="No schemes data yet for this district."
           body="We add schemes as MyScheme.gov.in and the state scheme portals publish them."
         />
@@ -137,15 +153,75 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
 
       {!isLoading && schemes.length > 0 && (
         <>
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 16 }}>
             <StatStrip cols={3}>
-              <StatTile label="Schemes listed" value={schemes.length} asOf={asOf} />
-              <StatTile label="Categories" value={categories.length - 1} asOf={asOf} />
-              <StatTile label="With apply link" value={withApplyLink} sub={`of ${schemes.length}`} asOf={asOf} />
+              <StatTile emoji="📋" label="Schemes listed" value={schemes.length} asOf={asOf} />
+              <StatTile emoji="🗂️" label="Categories" value={categories.length - 1} asOf={asOf} />
+              <StatTile emoji="🔗" label="With apply link" value={withApplyLink} sub={`of ${schemes.length}`} asOf={asOf} />
             </StatStrip>
           </div>
 
-          <Section title="Schemes">
+          {/* The picture: out of every 10 schemes, how many you can apply
+              for online from here. Needs at least two schemes. */}
+          {schemes.length >= 2 && (
+            <Card tinted padding={18}>
+              <Explainer>
+                This page lists <strong className="ftp-num">{schemes.length}</strong> government schemes in{" "}
+                <strong className="ftp-num">{categories.length - 1}</strong>{" "}
+                {categories.length - 1 === 1 ? "category" : "categories"}.{" "}
+                <strong className="ftp-num">{withApplyLink}</strong> of them have a link where you can apply online.
+              </Explainer>
+              <Pictogram
+                filled={applyOf10}
+                emoji="📝"
+                label={
+                  withApplyLink === 0
+                    ? "None of the schemes listed here has an online apply link yet."
+                    : `About ${Math.round(applyOf10)} of every 10 schemes listed here have an online apply link.`
+                }
+              />
+            </Card>
+          )}
+
+          {/* Schemes by category — only when there is more than one category. */}
+          {categoryChart.length >= 2 && (
+            <div style={{ marginTop: 24 }}>
+              <ChartCard
+                title="Schemes by category"
+                emoji="📊"
+                units="Number of schemes listed in each category"
+                simple={
+                  <>
+                    The biggest category is <strong>{categoryChart[0].name}</strong>:{" "}
+                    <span className="ftp-num">{categoryChart[0].count}</span> of{" "}
+                    <span className="ftp-num">{schemes.length}</span> schemes.
+                  </>
+                }
+                legend={[{ label: "Schemes", swatch: "var(--hue)" }]}
+                source={{ label: "MyScheme", href: SOURCE_URLS["MyScheme.gov.in"] }}
+                asOf={asOf}
+                table={categoryChart.map((r) => ({ label: r.name, value: r.count.toLocaleString("en-IN") }))}
+              >
+                <ResponsiveContainer width="100%" height={Math.max(160, categoryChart.length * 36 + 40)}>
+                  <BarChart data={categoryChart} layout="vertical" margin={{ top: 5, right: 16, bottom: 8, left: 0 }}>
+                    <ChartGradients />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" horizontal={false} />
+                    <XAxis type="number" tick={CHART_AXIS} allowDecimals={false} />
+                    <YAxis type="category" dataKey="label" tick={CHART_AXIS} width={150} interval={0} />
+                    <Tooltip
+                      formatter={(v) => [Number(v).toLocaleString("en-IN"), "Schemes"]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.name ?? ""}
+                      contentStyle={chartTooltipStyle}
+                      cursor={{ fill: "var(--hue-tint)" }}
+                    />
+                    <Bar dataKey="count" fill="url(#ftpHueFillH)" radius={[0, 6, 6, 0]} name="Schemes" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+          )}
+
+          <Section title="Schemes" emoji="📋">
             <div style={{ marginBottom: 16 }}>
               <Chips
                 label="Filter schemes by category"
@@ -166,12 +242,30 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
                     <div style={{ minWidth: 0 }}>
                       <h3 className="ftp-title" style={{ marginBottom: 4 }}>{s.name}</h3>
                       {s.nameLocal && (
-                        <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)", marginBottom: 6 }}>
+                        <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)", fontFamily: "var(--font-regional)", marginBottom: 6 }}>
                           {s.nameLocal}
                         </div>
                       )}
                     </div>
-                    <Pill>{s.category}</Pill>
+                    {/* Category tag in the module hue. */}
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        height: 24,
+                        padding: "0 8px",
+                        flexShrink: 0,
+                        borderRadius: "var(--ftp-radius-pill)",
+                        background: "var(--hue-tint)",
+                        color: "var(--hue-deep)",
+                        fontSize: 11,
+                        lineHeight: "16px",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {s.category}
+                    </span>
                   </div>
 
                   {s.eligibility && (
@@ -183,13 +277,13 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
                   {s.amount && (
                     <div style={{ marginTop: 10, display: "flex", gap: 16, flexWrap: "wrap" }}>
                       <div>
-                        <div className="ftp-label">Benefit Amount</div>
-                        <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>₹{s.amount.toLocaleString("en-IN")}</div>
+                        <div className="ftp-label">Benefit amount</div>
+                        <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: "var(--hue-deep)" }}>₹{s.amount.toLocaleString("en-IN")}</div>
                       </div>
                       {s.beneficiaryCount && (
                         <div>
                           <div className="ftp-label">Beneficiaries</div>
-                          <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>{s.beneficiaryCount.toLocaleString("en-IN")}</div>
+                          <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: "var(--hue-deep)" }}>{s.beneficiaryCount.toLocaleString("en-IN")}</div>
                         </div>
                       )}
                     </div>
@@ -212,20 +306,21 @@ function SchemesPageInner({ params }: { params: Promise<{ locale: string; state:
                         alignItems: "center",
                         gap: 6,
                         marginTop: 12,
-                        padding: "0 14px",
-                        background: "var(--ftp-brand)",
-                        color: "var(--ftp-surface)",
-                        borderRadius: "var(--ftp-radius-tile)",
+                        padding: "0 16px",
+                        background: "linear-gradient(135deg, var(--hue) 0%, var(--hue-deep) 100%)",
+                        color: "#fff",
+                        borderRadius: "var(--ftp-radius-pill)",
+                        boxShadow: "0 8px 16px -10px color-mix(in srgb, var(--hue) 80%, transparent)",
                         fontSize: 13,
-                        fontWeight: 500,
+                        fontWeight: 600,
                         textDecoration: "none",
                       }}
                     >
-                      Apply Online <ExternalLink size={14} aria-hidden />
+                      Apply online <ExternalLink size={14} aria-hidden />
                     </a>
                   ) : (
                     <div className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 12 }}>
-                      Link unavailable
+                      No apply link listed yet
                     </div>
                   )}
                 </Card>
