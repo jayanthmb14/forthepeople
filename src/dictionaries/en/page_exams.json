@@ -89,7 +89,7 @@
     "banking": "Banks (IBPS, SBI)"
   },
   "comingTitle": "Coming up",
-  "comingIntro": "Soonest first. The bar fills up as the date comes closer; 📍 shows where today is.",
+  "comingIntro": "Soonest first. These dates were checked against an official notice in the last 30 days. The bar fills up as the date comes closer.",
   "waitingTitle": "Dates not announced yet",
   "waitingIntro": "These exams are on, but the board has not given the next date yet.",
   "finishedTitle": "Finished",
@@ -111,13 +111,13 @@
   "staffingTitle": "Government posts in {name}",
   "staffingUnits": "Posts the government approved, and how many have someone working",
   "staffingSentence": "Of the <b>{sanctioned}</b> government posts listed here, <b>{working}</b> have someone working in them and <b>{vacant}</b> are empty.",
-  "source": "Official data",
+  "source": "Source",
   "tableFilled": "{working} of {sanctioned} filled",
   "gaugeLabel": "Posts filled",
   "gaugeCaption": "Posts filled, across {n, plural, one {# role} other {# roles}}",
   "ringAria": "{role}: {pct} of approved posts filled",
   "rowCounts": "{working} working, {vacant} empty",
-  "sourcePill": "UPSC, SSC, state PSC",
+  "sourcePill": "Recruitment boards and news reports",
   "frequency": "Daily",
   "sourceBoards": "State PSC and recruitment boards",
   "sourceNews": "News reports about exam dates",
@@ -148,5 +148,27 @@
     "rowAria": "{role}: {pct} of approved posts filled",
     "rowCounts": "{working} working, {vacant} empty",
     "source": "Official data"
+  },
+  "v5": {
+    "notConfirmed": "Dates not confirmed",
+    "unconfirmedHint": "Not re-checked against an official notice in the last 30 days. Check the board's website before you apply or pay.",
+    "neverChecked": "Not checked against an official notice yet",
+    "checked": "Last checked {n, plural, =0 {today} one {# day ago} other {# days ago}}",
+    "noOfficialLink": "no official link yet",
+    "noticeLink": "Notice (not an official site)",
+    "datesAsStored": "These are the dates we last saw. We could not re-check them in the last 30 days, so we show no countdown. Check the official notice before you apply or pay a fee.",
+    "unconfirmedTitle": "Dates not confirmed",
+    "unconfirmedIntro": "These exams are on our list, but we could not re-check their dates against an official notice in the last 30 days. So we do not show them as open and we show no countdown. Check the board's website before you apply.",
+    "explainerNone": "We list <b>{total}</b> {total, plural, one {exam} other {exams}}. None of the ones still running was re-checked against an official notice in the last 30 days, so we do not show any as open. Check the board's website before you apply.",
+    "explainerSome": "<b>{n}</b> more {n, plural, one {exam is} other {exams are}} listed with dates we could not confirm.",
+    "statOpenSub": "Dates confirmed in the last 30 days",
+    "statUnconfirmedSub": "Check the official website",
+    "bar": {
+      "title": "How sure are these dates?",
+      "confirmed": "confirmed in the last 30 days",
+      "unconfirmed": "not confirmed",
+      "finished": "finished",
+      "aria": "{confirmed} exams with dates confirmed in the last 30 days, {unconfirmed} not confirmed, {finished} finished."
+    }
   }
 }

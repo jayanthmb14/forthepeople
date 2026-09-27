@@ -7,16 +7,16 @@
 // ═══════════════════════════════════════════════════════════
 // ExamStepper — an exam's six dates, with a "Today" marker
 // ═══════════════════════════════════════════════════════════
-//   📢 Notification → 📝 Applications open → ⏰ Last date → 🎫 Admit card
-//   → ✍️ Exam → 🏆 Result
+//   Notification → Applications open → Last date → Admit card → Exam → Result
 //
-// Two looks (Design v4, page hue):
-//   compact  a row of six dots with the step emoji under each and a 📍
-//            "Today" pin on the line where today falls. Fits a 280 px card;
-//            the whole row is one picture with a sentence for screen readers.
-//   full     a vertical list for the detail sheet: each step with its date
-//            (or "Not announced yet") and "Done" / "Today" / "In 12 days",
-//            and a "Today" row between what has happened and what is next.
+// Two looks (v5, page hue, no emoji):
+//   compact  a row of six dots with a "Today" mark on the line where today
+//            falls, and the same meaning in one visible sentence under it
+//            ("3 of 6 steps done. Next: Exam on 12 Oct"). Fits a 280 px card.
+//   full     a vertical list for the detail sheet: each step with a small
+//            line icon, its date (or "Not announced yet") and "Done" /
+//            "Today" / "In 12 days", and a "Today" row between what has
+//            happened and what is next.
 //
 // Dates are the boards' dates as stored (never guessed); days are counted
 // in India time. Text: page_exams.stepper; dates via useFormat().
@@ -24,14 +24,27 @@
 "use client";
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Check } from "lucide-react";
+import { Award, CalendarClock, Check, FileText, MapPin, Megaphone, PenLine, Ticket } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useFormat } from "@/i18n/client";
-import { examSteps, STEP_EMOJI, type ExamDates, type ExamStep } from "@/components/community/examTimeline";
+import { examSteps, type ExamDates, type ExamStep, type ExamStepKey } from "@/components/community/examTimeline";
+
+/** A small line icon per step (full list only). */
+const STEP_ICON: Record<ExamStepKey, LucideIcon> = {
+  notification: Megaphone,
+  applyOpen: PenLine,
+  lastDate: CalendarClock,
+  admitCard: Ticket,
+  exam: FileText,
+  result: Award,
+};
 
 interface ExamStepperProps extends ExamDates {
   /** Milliseconds "now" (one value per page, see useNow). */
   now: number;
   variant?: "compact" | "full";
+  /** Show "In 12 days" beside future dates (full list). Off for dates that are not confirmed. */
+  relative?: boolean;
 }
 
 /** Index after which the "Today" marker sits (−1 = before the first step), or null with no dates. */
@@ -51,7 +64,7 @@ const DOT: Record<ExamStep["state"], React.CSSProperties> = {
   tba: { background: "var(--ftp-surface-2)", border: "2px dashed var(--ftp-border-strong)", color: "var(--ftp-text-2)" },
 };
 
-export default function ExamStepper({ now, variant = "compact", ...dates }: ExamStepperProps) {
+export default function ExamStepper({ now, variant = "compact", relative = true, ...dates }: ExamStepperProps) {
   const t = useTranslations("page_exams.stepper");
   const f = useFormat();
   const steps = examSteps(dates, now);
@@ -81,12 +94,8 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
           if (row.kind === "today") {
             return (
               <li key="today" style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
-                <span
-                  aria-hidden
-                  className="ftp-emoji"
-                  style={{ width: 36, display: "inline-flex", justifyContent: "center", fontSize: 18, flexShrink: 0 }}
-                >
-                  📍
+                <span aria-hidden style={{ width: 36, display: "inline-flex", justifyContent: "center", flexShrink: 0, color: "var(--hue-deep)" }}>
+                  <MapPin size={18} />
                 </span>
                 <span
                   style={{
@@ -112,7 +121,9 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
               ? t("done")
               : s.state === "tba"
                 ? t("tba")
-                : t("when", { n: s.days ?? 0 });
+                : relative
+                  ? t("when", { n: s.days ?? 0 })
+                  : "";
           return (
             <li key={s.key} style={{ display: "flex", gap: 10, position: "relative", paddingBottom: last ? 0 : 10 }}>
               {!last && (
@@ -130,7 +141,6 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
               )}
               <span
                 aria-hidden
-                className="ftp-emoji"
                 style={{
                   position: "relative",
                   width: 36,
@@ -145,9 +155,7 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
                   ...(s.state === "done" ? { background: "var(--hue-tint)", color: "var(--hue-deep)" } : {}),
                 }}
               >
-                <span style={{ filter: s.state === "tba" ? "grayscale(1)" : undefined, opacity: s.state === "tba" ? 0.55 : 1 }}>
-                  {STEP_EMOJI[s.key]}
-                </span>
+                {React.createElement(STEP_ICON[s.key], { size: 16, style: { opacity: s.state === "tba" ? 0.55 : 1 } })}
                 {s.state === "done" && (
                   <span
                     style={{
@@ -192,7 +200,7 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
     );
   }
 
-  // Compact: dots + lines, the step emoji under each dot, a 📍 pin for today.
+  // Compact: dots + lines, a "Today" mark, and the same meaning as a sentence.
   const segment = (after: number, key: string, grow = true) => {
     const isToday = slot === after;
     const doneLine = after >= 0 && after < steps.length - 1 && steps[after].state === "done" && steps[after + 1].state === "done";
@@ -212,14 +220,6 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
               background: "var(--hue-deep)",
             }}
           />
-        )}
-        {isToday && (
-          <span
-            className="ftp-emoji"
-            style={{ position: "absolute", left: "50%", top: -17, transform: "translateX(-50%)", fontSize: 13, lineHeight: "14px" }}
-          >
-            📍
-          </span>
         )}
         {isToday && (
           <span
@@ -243,7 +243,8 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
   };
 
   return (
-    <div role="img" aria-label={summary} style={{ paddingTop: slot === null ? 0 : 16, paddingBottom: 14 }}>
+    <div style={{ paddingTop: 4, paddingBottom: 2 }}>
+    <div role="img" aria-label={summary} style={{ paddingBottom: slot === null ? 0 : 14 }}>
       <div style={{ display: "flex", alignItems: "flex-start" }}>
         {slot === -1 && segment(-1, "lead", false)}
         {steps.map((s, i) => (
@@ -263,18 +264,16 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
               >
                 {s.state === "done" && <Check size={12} strokeWidth={3} />}
               </span>
-              <span
-                className="ftp-emoji"
-                style={{ fontSize: 14, lineHeight: "16px", filter: s.state === "tba" ? "grayscale(1)" : undefined, opacity: s.state === "tba" ? 0.5 : 1 }}
-              >
-                {STEP_EMOJI[s.key]}
-              </span>
             </div>
             {i < steps.length - 1 && segment(i, `seg-${s.key}`)}
           </React.Fragment>
         ))}
         {slot === steps.length - 1 && segment(steps.length - 1, "tail", false)}
       </div>
+    </div>
+    <p aria-hidden style={{ margin: "6px 0 0", fontSize: 12, lineHeight: "17px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
+      {summary}
+    </p>
     </div>
   );
 }

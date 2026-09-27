@@ -6,13 +6,20 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  Exam timeline — the six dates every government exam goes through
 // ═══════════════════════════════════════════════════════════════════════
-//    📢 notification → 📝 applications open → ⏰ last date to apply
-//    → 🎫 admit card → ✍️ exam → 🏆 result
+//    notification → applications open → last date to apply → admit card
+//    → exam → result
 //
 //  Pure helpers (no React) used by the Exams page, its detail sheet and
-//  ExamStepper. Dates are the boards' published dates as stored; a missing
-//  date stays missing ("not announced"), never guessed. Days are counted in
-//  India time (IST), so "today" matches the reader's calendar.
+//  ExamStepper (tests/exam-timeline.test.ts). Dates are the boards'
+//  published dates as stored; a missing date stays missing ("not
+//  announced"), never guessed. Days are counted in India time (IST), so
+//  "today" matches the reader's calendar.
+//
+//  Honesty (v5): examConfirmation() says whether an exam's dates count as
+//  CONFIRMED — re-checked within CONFIRM_DAYS days AND backed by an
+//  official link (a .gov.in / .nic.in / .gov site or a named recruiter's
+//  own site). Only confirmed exams may be shown as "open" or get a
+//  countdown; the rest say "Dates not confirmed".
 
 export interface ExamDates {
   status: string;
@@ -28,27 +35,9 @@ export interface ExamDates {
 export const EXAM_STEPS = ["notification", "applyOpen", "lastDate", "admitCard", "exam", "result"] as const;
 export type ExamStepKey = (typeof EXAM_STEPS)[number];
 
-export const STEP_EMOJI: Record<ExamStepKey, string> = {
-  notification: "📢",
-  applyOpen: "📝",
-  lastDate: "⏰",
-  admitCard: "🎫",
-  exam: "✍️",
-  result: "🏆",
-};
-
 /** Where an exam is now. Order matters: it is the order of the steps. */
 export const EXAM_PHASES = ["announced", "applyOpen", "applyClosed", "examSoon", "resultWait", "done"] as const;
 export type ExamPhase = (typeof EXAM_PHASES)[number];
-
-export const PHASE_EMOJI: Record<ExamPhase, string> = {
-  announced: "📢",
-  applyOpen: "📝",
-  applyClosed: "⏳",
-  examSoon: "🎫",
-  resultWait: "✍️",
-  done: "🏆",
-};
 
 const IST_OFFSET_MS = 5.5 * 3_600_000;
 const DAY_MS = 86_400_000;
@@ -156,4 +145,60 @@ export function examPhase(e: ExamDates, now: number): ExamPhase {
 /** True while people can still apply or the notice is just out. */
 export function canApply(phase: ExamPhase): boolean {
   return phase === "announced" || phase === "applyOpen";
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Honesty: are this exam's dates confirmed?
+// ─────────────────────────────────────────────────────────────────────
+
+/** Dates re-checked longer ago than this are "not confirmed". */
+export const CONFIRM_DAYS = 30;
+
+/** Government sites (.gov.in, .nic.in, .gov) … */
+const OFFICIAL_TLD = /(^|\.)(gov\.in|nic\.in|gov)$/i;
+/** … and recruiters whose own sites are not on a government domain. */
+const OFFICIAL_HOSTS = new Set(["ibps.in", "sbi.co.in", "rbi.org.in", "opportunities.rbi.org.in", "wbbpe.org"]);
+
+export interface ExamLinks {
+  notificationUrl?: string | null;
+  applyUrl?: string | null;
+  lastVerifiedAt?: string | null;
+}
+
+function hostOf(raw: string): string | null {
+  const s = raw.trim();
+  if (!s) return null;
+  try {
+    return new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/** True when the link is on a government domain or a named recruiter's own site (not a news site). */
+export function isOfficialUrl(raw: string | null | undefined): boolean {
+  const h = raw ? hostOf(raw) : null;
+  return !!h && (OFFICIAL_TLD.test(h) || OFFICIAL_HOSTS.has(h));
+}
+
+/** The exam's official link: the notice first, else the apply page. Null when neither is official. */
+export function officialLink(e: ExamLinks): string | null {
+  if (isOfficialUrl(e.notificationUrl)) return e.notificationUrl as string;
+  if (isOfficialUrl(e.applyUrl)) return e.applyUrl as string;
+  return null;
+}
+
+export interface ExamConfirmation {
+  /** Re-checked within CONFIRM_DAYS days AND has an official link. */
+  confirmed: boolean;
+  officialUrl: string | null;
+  /** Whole days since the last check, or null when never checked. */
+  checkedDays: number | null;
+}
+
+export function examConfirmation(e: ExamLinks, now: number): ExamConfirmation {
+  const ms = validMs(e.lastVerifiedAt ?? null);
+  const checkedDays = ms === null ? null : Math.max(0, istDay(now) - istDay(ms));
+  const officialUrl = officialLink(e);
+  return { confirmed: checkedDays !== null && checkedDays <= CONFIRM_DAYS && officialUrl !== null, officialUrl, checkedDays };
 }
