@@ -15,7 +15,16 @@ export type FixTable =
   | "PoliceStation"
   | "GovOffice"
   | "Scheme"
-  | "DamReading";
+  | "DamReading"
+  | "CrimeStat"
+  | "CourtStat"
+  | "RtiStat"
+  | "PowerOutage"
+  | "TrafficCollection"
+  | "CanalRelease"
+  | "JJMStatus"
+  | "HousingScheme"
+  | "AgriAdvisory";
 
 export type FieldValue = string | number | boolean | null;
 

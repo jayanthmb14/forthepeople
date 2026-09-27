@@ -33,11 +33,14 @@ import { POLICE_FIXES } from "./fix-records-2026-09/police";
 import { INFRA_FIXES } from "./fix-records-2026-09/infra";
 import { FRESHNESS_FIXES } from "./fix-records-2026-09/freshness";
 import { INDIA_FIXES } from "./fix-records-2026-09/india";
+import { SCHEME_FIXES } from "./fix-records-2026-09/schemes";
+import { SEEDED_FIXES } from "./fix-records-2026-09/seeded";
+import { OFFICE_FIXES } from "./fix-records-2026-09/offices";
 
 const CONFIRM = process.argv.includes("--confirm");
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length) ?? null;
 
-const ALL_FIXES: Fix[] = [...INFRA_FIXES, ...POPULATION_FIXES, ...INDIA_FIXES, ...POLICE_FIXES, ...FRESHNESS_FIXES];
+const ALL_FIXES: Fix[] = [...INFRA_FIXES, ...POPULATION_FIXES, ...INDIA_FIXES, ...POLICE_FIXES, ...SCHEME_FIXES, ...OFFICE_FIXES, ...FRESHNESS_FIXES, ...SEEDED_FIXES];
 
 /** Prisma delegate name for a table ("InfraProject" → "infraProject"). */
 const delegateName = (table: string) => table[0].toLowerCase() + table.slice(1);

@@ -1152,11 +1152,9 @@ directories when they can be read.
 
 ---
 
-## 6. Government offices — opening hours (GovOffice)
+## 6. Government offices (GovOffice) — hours, phones: verified or hidden
 
-No hours were invented and none were added: the official pages that
-could be opened do not state office-specific hours, and the web-search
-quota ran out before each office's own page could be looked up.
+**Hours.** None were invented. Before this pass:
 
 | District | Offices | With hours | Without hours | Other gaps |
 |---|---|---|---|---|
@@ -1171,12 +1169,38 @@ quota ran out before each office's own page could be looked up.
 | Lucknow | 10 | 0 | **10** | 10 without website |
 | New Delhi | 10 | 10 | **0** | 3 without website |
 
-Districts with **no hours at all**: Chennai, Hyderabad, Kolkata, Lucknow,
-Mumbai, Mysuru, Pune. Bengaluru Urban has hours for 7 of 57; Mandya (4/4)
-and New Delhi (10/10) are complete (those existing hours were not
-re-checked). Also noted: Kolkata still lists **Writers' Building** as an
-office although the state secretariat moved to Nabanna in 2013 (Nabanna is
-also listed) — worth removing or marking inactive once confirmed.
+
+Under the verified-or-hidden rule the **20 offices that had hours lose
+them**: they were seed values (e.g. Karnataka offices "10:00–17:30, lunch
+13:00–14:00", while the state's official lunch hour is 13:30–14:30) and no
+official page states hours for these specific offices. After the fix **no
+office shows opening hours** until they are filled from an official page.
+
+**Phones.** The office numbers follow the police seed pattern: unrelated
+offices share one number (080-22253800 for BMTC, the Minorities Commission
+and the Labour Commissioner; 080-22221100 for BESCOM and Fire Services;
+BBMP's 080-22660000 also on the Seva Sindhu centre), Mysuru's CESC office
+has the invented police number 0821-2440100, and Kolkata's Writers' Building
+has 033-22141234. **128 numbers are set to null — hidden: unverifiable.**
+Kept: the national lines 1947 (UIDAI) and 1800-258-1800 (Passport Seva).
+
+**Verified and corrected:**
+
+| Office | Was | Now | Source |
+|---|---|---|---|
+| Mandya · Office of Deputy Commissioner | 08232-222104 | **08232-224600** | [mandya.nic.in/en/contact-us](https://mandya.nic.in/en/contact-us/) |
+| Bengaluru Urban · Office of the Deputy Commissioner | 080-22375144, "Ragigudda Road, Jayanagar 4th Block - 560041", dc.bangaloreurban@karnataka.gov.in | **080-22211292**, "Deputy Commissioner Office, Bengaluru Urban, Bengaluru 560009", **dcurban@nic.in** | [bengaluruurban.nic.in/en/contact-us](https://bengaluruurban.nic.in/en/contact-us/) |
+
+**Deleted:** a second Bengaluru Urban DC-office row (invented Hudson Circle
+address and number), duplicate BBMP Head Office and BDA rows (the BDA row
+at Kumara Park West is kept; the "Domlur Flyover" one is deleted), and
+**Writers' Building** (the West Bengal secretariat moved to Nabanna in 2013;
+Nabanna is listed).
+
+**Not checked — needs its own pass:** the 144 remaining office
+**addresses** are seed values too (the Bengaluru DC office's was wrong).
+They could not be verified without web search; re-check them against each
+office's own site, or hide the ones that cannot be confirmed.
 
 ---
 
@@ -1259,6 +1283,86 @@ is static helplines and schemes).
 - **Kolkata:** crop prices 22 Jun 2026; no crime rows; 2026 assembly results missing; scheme list predates the 2026 assembly election; Writers' Building still listed as an office.
 - **Lucknow:** crop prices 22 Jun 2026; alerts stop 22 Aug; all police numbers were invented (now hidden).
 - **New Delhi:** crop prices 22 Jun 2026; alerts stop 14 Jun 2026; RTI Jan 2024.
+
+### Hidden under the verified-or-hidden rule (module tables)
+
+**Schemes (`Scheme`)** — 8 rows deleted, 28 fields cleared. Standard
+entitlements that match the scheme rules (PM-KISAN ₹6,000/yr, PM-JAY ₹5
+lakh, Ujjwala ₹1,600, Kalyana Lakshmi ₹1,00,116, Ladki Bahin ₹1,500,
+Kanyashree ₹25,000, APY ₹5,000 …) are kept; the Mudra ceiling was updated to
+₹20 lakh (above). Every beneficiary count had no source and is cleared.
+
+| Row | Change | Why |
+|---|---|---|
+| Bengaluru Urban · Smart Cities Mission | **deleted** | the Smart Cities Mission's term ended on 31 Mar 2025; an open-ended 'active' listing is stale. |
+| Chennai · TN Free Laptop Scheme | **deleted** | the Tamil Nadu free-laptop scheme is not known to be running now and could not be confirmed. |
+| Lucknow · Samajwadi Pension Yojana (Old Age/Widow) | **deleted** | the Samajwadi Pension Yojana is not known to be running now and could not be confirmed. |
+| Lucknow · UP Berojgari Bhatta (Unemployment Allowance) | **deleted** | no current UP unemployment-allowance scheme paying Rs 1,500 could be confirmed. |
+| Mandya · Mangala Bhagya | **deleted** | no Karnataka scheme called 'Mangala Bhagya' paying Rs 3,000 could be found. |
+| Mysuru · Aarogyasri Health Insurance | **deleted** | 'Aarogyasri' is the Telangana/Andhra Pradesh health scheme, not Karnataka's; the 2,18,000 beneficiaries have no source. |
+| Mysuru · Mysuru Heritage Tourism Grant | **deleted** | no 'Mysuru Heritage Tourism Grant' could be found; the Rs 2 lakh amount and 1,200 beneficiaries have no source. |
+| Mysuru · Mysuru Smart City Scheme | **deleted** | Mysuru is not one of the 100 Smart Cities; the 9,20,000 beneficiaries have no source. |
+| Bengaluru Urban · Anna Bhagya (Free Rice) | cleared amount: 0 | Rs 0 is not an entitlement amount (Anna Bhagya gives free rice plus cash in lieu); the current amount was not confirmed. |
+| Bengaluru Urban · PMAY-Urban (Housing for All) | cleared amount: 150000 | PMAY-U amounts changed under PMAY-U 2.0; Rs 1.5 lakh could not be confirmed. |
+| New Delhi · PMAY-Urban (Housing for All) | cleared amount: 150000 | PMAY-U amounts changed under PMAY-U 2.0; Rs 1.5 lakh could not be confirmed. |
+| Chennai · Pradhan Mantri Awas Yojana — Urban (PMAY-U) | cleared amount: 267000 | Rs 2.67 lakh was the old CLSS interest subsidy (closed 2022); the current PMAY-U 2.0 amount was not confirmed. |
+| Mumbai · Pradhan Mantri Awas Yojana — Urban (PMAY-U) | cleared amount: 267000 | Rs 2.67 lakh was the old CLSS interest subsidy (closed 2022); the current PMAY-U 2.0 amount was not confirmed. |
+| Pune · Pradhan Mantri Awas Yojana — Urban (PMAY-U) | cleared amount: 267000 | Rs 2.67 lakh was the old CLSS interest subsidy (closed 2022); the current PMAY-U 2.0 amount was not confirmed. |
+| Bengaluru Urban · Rajiv Gandhi Gruha Nirmana Nigama (RGRHCL) — Urban | cleared amount: 150000 | Rs 1.5 lakh could not be confirmed. |
+| Mandya · Rajiv Gandhi Gruha Nirmana Nigama (RGRHCL) | cleared amount: 150000 | Rs 1.5 lakh could not be confirmed. |
+| Hyderabad · Aasara Pensions | cleared amount: 24192 | Rs 24,192 a year (Rs 2,016 a month) may be outdated; the current pension amount was not confirmed. |
+| Hyderabad · KCR Kit — Maternity Benefit | cleared amount: 12000 | the scheme's current name and Rs 12,000 amount could not be confirmed after the 2023 change of government. |
+| Lucknow · Kanya Sumangala Yojana | cleared amount: 15000 | Rs 15,000 may be outdated (the amount was reported raised in 2024); not confirmed. |
+| Mumbai · Maharashtra Gharkul Yojana | cleared amount: 250000 | Rs 2.5 lakh could not be confirmed. |
+| Pune · Maharashtra Gharkul Yojana | cleared amount: 250000 | Rs 2.5 lakh could not be confirmed. |
+| Mumbai · Ramai Awas Gharkul Yojana | cleared amount: 250000 | Rs 2.5 lakh could not be confirmed. |
+| Pune · Ramai Awas Gharkul Yojana | cleared amount: 250000 | Rs 2.5 lakh could not be confirmed. |
+| Mysuru · PM Awas Yojana (Gramin) | cleared amount: 130000, beneficiaryCount: 22000 | Rs 1.3 lakh differs from the plain-area PMAY-G amount and 22,000 beneficiaries have no source. |
+| Mysuru · Sericulture Subsidy Scheme | cleared amount: 50000, beneficiaryCount: 28000 | Rs 50,000 and 28,000 beneficiaries have no source. |
+| Mysuru · Anna Bhagya | cleared amount: 0, beneficiaryCount: 248000 | Rs 0 is not an amount and 2,48,000 beneficiaries have no source. |
+| Mysuru · MGNREGA Mysuru | cleared amount: 0, beneficiaryCount: 68000 | Rs 0 is not an amount and 68,000 beneficiaries have no source. |
+| Mysuru · Shakti Free Bus Pass | cleared amount: 0, beneficiaryCount: 182000 | Rs 0 is not an amount and 1,82,000 beneficiaries have no source. |
+| Mysuru · Gruha Lakshmi | cleared beneficiaryCount: 8530 | 8,530 beneficiaries is implausibly low for Gruha Lakshmi in Mysuru district and could not be confirmed. |
+| Mysuru · Yuva Nidhi | cleared beneficiaryCount: 581 | 581 beneficiaries could not be confirmed. |
+| New Delhi · Ladli Yojana (Girl Child) | cleared amount: 100000 | Rs 1 lakh could not be confirmed. |
+| New Delhi · PM-SVANidhi (Street Vendor) | cleared amount: 10000 | PM-SVANidhi loan slabs were revised; Rs 10,000 may be outdated and was not confirmed. |
+| Kolkata · Kanyashree Prakalpa | cleared beneficiaryCount: 50000 | 50,000 beneficiaries has no source. |
+| Kolkata · Lakshmir Bhandar | cleared beneficiaryCount: 200000 | 2,00,000 beneficiaries has no source. |
+| Kolkata · Swasthya Sathi | cleared beneficiaryCount: 100000 | 1,00,000 beneficiaries has no source. |
+| Chennai · Kalaignar Magalir Urimai Thogai (Women's Right Grant) | cleared beneficiaryCount: 10000000 | 1,00,00,000 is a statewide order of magnitude stored on the Chennai district row; no source. |
+
+Not changed but worth a look: the Tamil Nadu and West Bengal state-scheme
+lists after the April–May 2026 elections; Delhi's "Free Bus for Women (Pink
+Pass)" (reported replaced by a Saheli smart card — not confirmed).
+
+**Seeded rows deleted from smaller module tables** (all typed in by hand at
+set-up; round numbers, "estimated" labels or dates frozen in March 2025/2026;
+none traceable to a published figure). The pages fall back to their empty
+states; real collectors (NJDG courts, scrape-dams, mandi, weather, news) are
+untouched:
+
+| Table | Rows deleted | By district |
+|---|---|---|
+| CrimeStat | 45 | mandya 5, bengaluru-urban 8, hyderabad 18, new-delhi 6, lucknow 8 |
+| CourtStat | 24 | mandya 11, bengaluru-urban 8, new-delhi 5 |
+| RtiStat | 14 | new-delhi 5, mandya 4, bengaluru-urban 5 |
+| PowerOutage | 14 | bengaluru-urban 8, mysuru 6 |
+| TrafficCollection | 12 | hyderabad 12 |
+| CanalRelease | 3 | mysuru 3 |
+| JJMStatus | 18 | mysuru 7, mandya 7, bengaluru-urban 4 |
+| HousingScheme | 10 | mysuru 3, mandya 2, bengaluru-urban 3, hyderabad 2 |
+| AgriAdvisory | 2 | mandya 2 |
+
+(CrimeStat: e.g. Hyderabad's 18 rows are literally labelled "NCRB Crime in
+India Report (estimated)"; Bengaluru "Traffic Violations 2,840,000". RtiStat:
+department-wise monthly counts credited to the information commissions,
+which do not publish such figures. CourtStat: only the 24 rows with no
+source; the 20 NJDG rows stay.)
+
+**Still to do under the same rule (not reached):** schools and school
+results, bus routes and trains, local industries and sugar factories, gram
+panchayats, famous personalities, election results, service guides and the
+"My Responsibility" statistics — each needs a verified-or-hidden pass.
 
 ### Current official figures added to the fix script
 
