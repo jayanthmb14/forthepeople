@@ -4,20 +4,58 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Crop Prices — Design v3 module page (CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Data: useCropPrices() → up to 100 AGMARKNET rows, newest date first.
+//  Page order: header → summary → AI insight → unit + commodity chips →
+//  latest price per commodity (StatTiles) → trend chart → full table →
+//  sources → news → CSV / Share / Compare.
+//
+//  Prices arrive in ₹ per quintal (100 kg). The Kg/Quintal chips only
+//  change how we DISPLAY them (÷100 for kg); CSV exports stay per quintal.
 "use client";
-import { use, useState } from "react";
+
+import { use, useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Wheat, TrendingUp, TrendingDown, Download } from "lucide-react";
+import { Wheat } from "lucide-react";
 import { useCropPrices } from "@/hooks/useRealtimeData";
-import { ModuleHeader, SectionLabel, LoadingShell, ErrorBlock, LiveBadge, DataTable, LastUpdatedBadge } from "@/components/district/ui";
+import type { CropPrice } from "@/hooks/useRealtimeData";
+import {
+  PageHeader,
+  Section,
+  Card,
+  Chips,
+  StatTile,
+  StatStrip,
+  DataTable,
+  LoadingShell,
+  ErrorBlock,
+} from "@/components/district/ui";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
 import NoDataCard from "@/components/common/NoDataCard";
-import { getModuleSources } from "@/lib/constants/state-config";
-import ShareButtons from "@/components/common/ShareButtons";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
+import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar, ChartLegend } from "@/components/district/daily-services/ModuleShell";
+import { CHART, CHART_TOOLTIP } from "@/components/district/daily-services/chart-tokens";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 import { downloadCSV, todayISO } from "@/lib/csv";
+
+/** Commodity names sometimes differ only by case/spaces between mandis. */
+function commodityKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/** "12 Sep" — short date for axis ticks and table cells. */
+function shortDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+}
+
+/** Calendar day of a row, used to compare "same day" vs "earlier day". */
+function dayOf(iso: string): string {
+  return iso.slice(0, 10);
+}
 
 function CropsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
@@ -26,14 +64,51 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const [selected, setSelected] = useState<string | null>(null);
   const [unit, setUnit] = useState<"kg" | "quintal">("kg");
 
+  // Display helper: ₹/quintal → ₹/kg when the Kg chip is on.
   const dp = (price: number) => Math.round(unit === "kg" ? price / 100 : price);
   const unitLabel = unit === "kg" ? "/kg" : "/q";
 
-  const prices = data?.data ?? [];
-  const commodities = Array.from(new Set(prices.map((p) => p.commodity)));
-  const activeCrop = selected ?? commodities[0] ?? null;
-  const cropPrices = activeCrop ? prices.filter((p) => p.commodity === activeCrop) : [];
-  const latestByCrop = commodities.map((c) => prices.find((p) => p.commodity === c)!).filter(Boolean);
+  const prices = useMemo(() => data?.data ?? [], [data]);
+
+  // Newest row per commodity (rows arrive newest-first, so the first one
+  // we meet for each commodity is the latest). This also removes duplicate
+  // commodity names that differ only by case or spacing.
+  const latestByCrop = useMemo(() => {
+    const seen = new Map<string, CropPrice>();
+    for (const p of prices) {
+      const k = commodityKey(p.commodity);
+      if (!seen.has(k)) seen.set(k, p);
+    }
+    return Array.from(seen.values());
+  }, [prices]);
+
+  const activeKey = selected ?? (latestByCrop[0] ? commodityKey(latestByCrop[0].commodity) : null);
+  const activeLatest = latestByCrop.find((p) => commodityKey(p.commodity) === activeKey) ?? null;
+
+  // Trend series for the chosen commodity: one point per day. We prefer the
+  // same market as the latest price so the line compares like with like;
+  // if that market has fewer than two days, we fall back to all markets.
+  const trend = useMemo(() => {
+    if (!activeLatest) return [];
+    const rows = prices.filter((p) => commodityKey(p.commodity) === activeKey);
+    const onePerDay = (list: CropPrice[]) => {
+      const byDay = new Map<string, CropPrice>();
+      for (const p of list) if (!byDay.has(dayOf(p.date))) byDay.set(dayOf(p.date), p);
+      return Array.from(byDay.values()).reverse(); // oldest → newest for the chart
+    };
+    const sameMarket = onePerDay(rows.filter((p) => p.market === activeLatest.market));
+    return sameMarket.length > 1 ? sameMarket : onePerDay(rows);
+  }, [prices, activeKey, activeLatest]);
+
+  /** Previous day's price for the same commodity and market (for the trend arrow). */
+  function previousOf(p: CropPrice): CropPrice | undefined {
+    return prices.find(
+      (x) =>
+        commodityKey(x.commodity) === commodityKey(p.commodity) &&
+        x.market === p.market &&
+        dayOf(x.date) < dayOf(p.date),
+    );
+  }
 
   function handleDownload() {
     const rows = prices.slice(0, 100).map((p) => ({
@@ -52,17 +127,25 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
     : `Crop prices data for ${district}`;
 
   return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Wheat} title="Crop Prices" description="Live mandi prices from AGMARKNET — updated daily" backHref={base} liveTag>
-        <LastUpdatedBadge lastUpdated={data?.meta?.lastUpdated } />
-      </ModuleHeader>
+    <ModulePage>
+      <PageHeader
+        icon={Wheat}
+        title="Crop Prices"
+        description="Mandi prices from AGMARKNET, updated daily"
+        backHref={base}
+        accent={getModuleAccent("crops")}
+        freshness={{ asOf: data?.meta?.lastUpdated }}
+        source={{ label: "AGMARKNET", href: "https://agmarknet.gov.in" }}
+      />
 
+      {/* Plain-language summary — also what search engines and AI crawlers read. */}
+      <ModuleSummary>
+        This page shows the latest agricultural mandi prices for this district, sourced daily from AGMARKNET
+        (Agricultural Marketing Information Network), India&apos;s official government portal for regulated market
+        prices. Prices can be viewed per Kg or per quintal. Data covers all commodities traded at APMC (Agricultural
+        Produce Market Committee) mandis in the district.
+      </ModuleSummary>
 
-      {/* AI-crawler readable summary */}
-      <p style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.7, marginBottom: 16, padding: "12px 16px", background: "#FAFAF8", borderRadius: 8, borderLeft: "3px solid #16A34A" }}>
-        This page shows live agricultural mandi prices for this district, sourced daily from AGMARKNET (Agricultural Marketing Information Network), India&apos;s official government portal for regulated market prices. Prices can be viewed per Kg or per quintal. Data covers all commodities traded at APMC (Agricultural Produce Market Committee) mandis in the district.
-      </p>
-      {(() => { const _src = getModuleSources("crops", state); return <DataSourceBanner moduleName="crops" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
       <AIInsightCard module="crops" district={district} />
 
       {isLoading && <LoadingShell rows={5} />}
@@ -74,130 +157,121 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
 
       {!isLoading && latestByCrop.length > 0 && (
         <>
-          {/* Kg / Quintal toggle */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-            <div className="crop-toggle" style={{ display: "inline-flex", background: "#F5F5F0", borderRadius: 100, padding: 3, gap: 2 }}>
-              {(["kg", "quintal"] as const).map((u) => (
-                <button key={u} onClick={() => setUnit(u)} style={{
-                  padding: "6px 14px", borderRadius: 100, fontSize: 13, fontWeight: 500,
-                  border: "none", cursor: "pointer",
-                  background: unit === u ? "#FFF" : "transparent",
-                  color: unit === u ? "#1A1A1A" : "#9B9B9B",
-                  boxShadow: unit === u ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-                }}>
-                  per {u === "kg" ? "Kg" : "Quintal"}
-                </button>
-              ))}
-            </div>
+          {/* Controls: unit and commodity. Chips are 44 px tall on phones. */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+            <Chips
+              label="Price unit"
+              value={unit}
+              onChange={(v) => setUnit(v as "kg" | "quintal")}
+              items={[
+                { value: "kg", label: "per Kg" },
+                { value: "quintal", label: "per Quintal" },
+              ]}
+            />
+            <Chips
+              label="Commodity"
+              value={activeKey ?? ""}
+              onChange={(v) => setSelected(v)}
+              items={latestByCrop.map((p) => ({ value: commodityKey(p.commodity), label: p.commodity }))}
+            />
           </div>
 
-          {/* Commodity selector */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-            {commodities.map((c) => (
-              <button key={c} onClick={() => setSelected(c)} style={{
-                padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: "pointer",
-                background: activeCrop === c ? "#16A34A" : "#F5F5F0",
-                color: activeCrop === c ? "#FFF" : "#6B6B6B",
-                border: activeCrop === c ? "1px solid #16A34A" : "1px solid #E8E8E4",
-              }}>
-                {c}
-              </button>
-            ))}
-          </div>
+          {/* Latest modal price per commodity, each with its market and date. */}
+          <Section title="Latest price per commodity">
+            <StatStrip cols={4}>
+              {latestByCrop.map((p) => {
+                const prev = previousOf(p);
+                const change = prev ? p.modalPrice - prev.modalPrice : 0;
+                const changeText = prev
+                  ? change !== 0
+                    ? ` · ${change > 0 ? "+" : "−"}₹${dp(Math.abs(change)).toLocaleString("en-IN")} vs ${shortDay(prev.date)}`
+                    : ` · no change vs ${shortDay(prev.date)}`
+                  : "";
+                return (
+                  <StatTile
+                    key={p.id}
+                    label={p.commodity}
+                    value={`₹${dp(p.modalPrice).toLocaleString("en-IN")}`}
+                    unit={unitLabel}
+                    sub={`${p.market}${changeText}`}
+                    trend={prev ? (change > 0 ? "up" : change < 0 ? "down" : "neutral") : undefined}
+                    asOf={p.date}
+                  />
+                );
+              })}
+            </StatStrip>
+          </Section>
 
-          {/* Latest prices summary cards */}
-          <SectionLabel action={<LiveBadge />}>Today&apos;s Prices</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 24 }}>
-            {latestByCrop.map((p) => {
-              const prev = prices.filter((x) => x.commodity === p.commodity)[1];
-              const change = prev ? p.modalPrice - prev.modalPrice : 0;
-              return (
-                <div key={p.id} style={{
-                  background: "#FFF", border: activeCrop === p.commodity ? "1.5px solid #16A34A" : "1px solid #E8E8E4",
-                  borderRadius: 12, padding: "14px 16px", cursor: "pointer",
-                }} onClick={() => setSelected(p.commodity)}>
-                  <div style={{ fontSize: 12, color: "#6B6B6B", marginBottom: 6 }}>{p.commodity}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)", color: "#1A1A1A", letterSpacing: "-0.5px" }}>
-                    ₹{dp(p.modalPrice).toLocaleString("en-IN")}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 2 }}>{unitLabel} · {p.market}</div>
-                  {prev && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 12, color: change > 0 ? "#16A34A" : change < 0 ? "#DC2626" : "#9B9B9B" }}>
-                      {change > 0 ? <TrendingUp size={12} /> : change < 0 ? <TrendingDown size={12} /> : null}
-                      {change !== 0 ? `₹${dp(Math.abs(change)).toLocaleString("en-IN")} ${unitLabel}` : "No change"}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Price trend chart for selected crop */}
-          {activeCrop && cropPrices.length > 1 && (
-            <div style={{ marginBottom: 24 }}>
-              <SectionLabel>{activeCrop} — Price Trend</SectionLabel>
-              <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16 }}>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={[...cropPrices].reverse()} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
-                    <XAxis dataKey="date" tickFormatter={(d) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} tick={{ fontSize: 10, fill: "#9B9B9B" }} />
-                    <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} tickFormatter={(v) => `₹${dp(Number(v))}`} />
+          {/* Price trend for the selected commodity. */}
+          {activeLatest && trend.length > 1 && (
+            <Section title={`${activeLatest.commodity} price trend`}>
+              <Card>
+                <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 8px" }}>
+                  {trend.every((p) => p.market === activeLatest.market) ? `${activeLatest.market} mandi` : "All mandis in the district"} · ₹{unitLabel}
+                </p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={trend} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                    <XAxis dataKey="date" tickFormatter={shortDay} tick={CHART.tick} stroke={CHART.axis} />
+                    <YAxis tick={CHART.tick} stroke={CHART.axis} width={52} tickFormatter={(v) => `₹${dp(Number(v))}`} />
                     <Tooltip
-                      formatter={(v) => [`₹${dp(Number(v)).toLocaleString("en-IN")}${unitLabel}`, ""]}
+                      {...CHART_TOOLTIP}
+                      formatter={(v, name) => [`₹${dp(Number(v)).toLocaleString("en-IN")}${unitLabel}`, name]}
                       labelFormatter={(d) => new Date(d).toLocaleDateString("en-IN")}
                     />
-                    <Line type="monotone" dataKey="minPrice" stroke="#9B9B9B" strokeWidth={1} dot={false} name="Min" />
-                    <Line type="monotone" dataKey="modalPrice" stroke="#16A34A" strokeWidth={2.5} dot={{ r: 3 }} name="Modal" />
-                    <Line type="monotone" dataKey="maxPrice" stroke="#2563EB" strokeWidth={1} dot={false} name="Max" strokeDasharray="4 2" />
+                    <Line type="monotone" dataKey="modalPrice" stroke={CHART.primary} strokeWidth={2} dot={{ r: 2 }} name="Modal" />
+                    <Line type="monotone" dataKey="minPrice" stroke={CHART.secondary} strokeWidth={1} dot={false} name="Min" />
+                    <Line type="monotone" dataKey="maxPrice" stroke={CHART.tertiary} strokeWidth={1} dot={false} name="Max" strokeDasharray="4 2" />
                   </LineChart>
                 </ResponsiveContainer>
-                <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 8 }}>
-                  {[["Modal (green)", "#16A34A"], ["Min (gray)", "#9B9B9B"], ["Max (blue)", "#2563EB"]].map(([l, c]) => (
-                    <div key={l} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B6B6B" }}>
-                      <div style={{ width: 20, height: 2, background: c }} />
-                      {l}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+                <ChartLegend
+                  entries={[
+                    { label: "Modal price", color: CHART.primary },
+                    { label: "Min price", color: CHART.secondary },
+                    { label: "Max price", color: CHART.tertiary, dashed: true },
+                  ]}
+                />
+              </Card>
+            </Section>
           )}
 
-          {/* Full price table + actions */}
-          <SectionLabel action={
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <button
-                onClick={handleDownload}
-                aria-label="Download crop prices as CSV"
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: "1px solid #E8E8E4", borderRadius: 8, background: "#FAFAF8", color: "#6B6B6B", fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-              >
-                <Download size={13} aria-hidden="true" /> CSV
-              </button>
-              <ShareButtons text={shareText} district={district} module="Crop Prices" />
-            </div>
-          }>All Prices</SectionLabel>
-          <DataTable
-            columns={[
-              { key: "date", label: "Date" },
-              { key: "commodity", label: "Commodity" },
-              { key: "market", label: "Market" },
-              { key: "min", label: `Min ₹${unitLabel}`, mono: true, align: "right" },
-              { key: "modal", label: `Modal ₹${unitLabel}`, mono: true, align: "right" },
-              { key: "max", label: `Max ₹${unitLabel}`, mono: true, align: "right" },
-            ]}
-            rows={prices.slice(0, 30).map((p) => ({
-              date: new Date(p.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-              commodity: p.commodity,
-              market: p.market,
-              min: dp(p.minPrice).toLocaleString("en-IN"),
-              modal: <strong style={{ color: "#16A34A" }}>{dp(p.modalPrice).toLocaleString("en-IN")}</strong>,
-              max: dp(p.maxPrice).toLocaleString("en-IN"),
-            }))}
-          />
+          {/* Every row we hold (newest 30), for people who want the detail. */}
+          <Section title="All prices">
+            <DataTable
+              caption={`Mandi prices in ${district}, ₹${unitLabel}`}
+              columns={[
+                { key: "date", label: "Date" },
+                { key: "commodity", label: "Commodity" },
+                { key: "market", label: "Market" },
+                { key: "min", label: `Min ₹${unitLabel}`, numeric: true },
+                { key: "modal", label: `Modal ₹${unitLabel}`, numeric: true },
+                { key: "max", label: `Max ₹${unitLabel}`, numeric: true },
+              ]}
+              rows={prices.slice(0, 30).map((p) => ({
+                date: shortDay(p.date),
+                commodity: p.commodity,
+                market: p.market,
+                min: dp(p.minPrice).toLocaleString("en-IN"),
+                modal: dp(p.modalPrice).toLocaleString("en-IN"),
+                max: dp(p.maxPrice).toLocaleString("en-IN"),
+              }))}
+            />
+          </Section>
         </>
       )}
+
+      <ModuleSources module="crops" state={state} />
       <ModuleNews district={district} state={state} locale={locale} module="crops" />
-    </div>
+      <ModuleToolbar
+        locale={locale}
+        district={district}
+        moduleSlug="crops"
+        moduleLabel="Crop Prices"
+        shareText={shareText}
+        onCsv={prices.length > 0 ? handleDownload : undefined}
+        csvLabel="Download crop prices as CSV"
+      />
+    </ModulePage>
   );
 }
 
