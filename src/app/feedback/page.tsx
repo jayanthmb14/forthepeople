@@ -5,17 +5,55 @@
  */
 
 "use client";
+
+// ═══════════════════════════════════════════════════════════════════════
+//  /feedback — full-page feedback form (POST /api/feedback)
+//
+//  Design v3 (2026-09-27): PageHeader, Card, token colours, Lucide icons
+//  for the feedback types (no emoji), 44 px inputs. The submit logic and
+//  the request body are unchanged.
+// ═══════════════════════════════════════════════════════════════════════
 import { useState } from "react";
 import Link from "next/link";
-import { MessageSquare, CheckCircle } from "lucide-react";
+import { AlertCircle, BarChart3, Bug, CheckCircle, Heart, Lightbulb, MessageCircle, MessageSquare } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Card, PageHeader } from "@/components/district/ui";
 
-const FEEDBACK_TYPES = [
-  { value: "bug", label: "Bug Report", emoji: "🐛", desc: "Something isn't working" },
-  { value: "wrong_data", label: "Wrong Data", emoji: "📊", desc: "Incorrect government data" },
-  { value: "suggestion", label: "Suggestion", emoji: "💡", desc: "Feature or improvement idea" },
-  { value: "praise", label: "Praise", emoji: "🙏", desc: "Something you love" },
-  { value: "other", label: "Other", emoji: "💬", desc: "General feedback" },
+const FEEDBACK_TYPES: { value: string; label: string; icon: LucideIcon; desc: string }[] = [
+  { value: "bug", label: "Bug Report", icon: Bug, desc: "Something isn't working" },
+  { value: "wrong_data", label: "Wrong Data", icon: BarChart3, desc: "Incorrect government data" },
+  { value: "suggestion", label: "Suggestion", icon: Lightbulb, desc: "Feature or improvement idea" },
+  { value: "praise", label: "Praise", icon: Heart, desc: "Something you love" },
+  { value: "other", label: "Other", icon: MessageCircle, desc: "General feedback" },
 ];
+
+/** Shared input look: 44 px tall, 1 px border, 8 px radius, tokens only. */
+const INPUT: React.CSSProperties = {
+  width: "100%",
+  minHeight: 44,
+  padding: "10px 12px",
+  border: "1px solid var(--ftp-border)",
+  borderRadius: "var(--ftp-radius-tile)",
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  fontSize: 15,
+  lineHeight: "22px",
+  outline: "none",
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+};
+
+/** Field label (13 px, weight 500). */
+const LABEL: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: "20px",
+  fontWeight: 500,
+  color: "var(--ftp-text)",
+  display: "block",
+  marginBottom: 6,
+};
+
+const OPTIONAL: React.CSSProperties = { fontSize: 11, fontWeight: 400, color: "var(--ftp-text-2)" };
 
 export default function FeedbackPage() {
   const [type, setType] = useState("suggestion");
@@ -52,13 +90,11 @@ export default function FeedbackPage() {
 
   if (submitted) {
     return (
-      <main style={{ minHeight: "calc(100vh - 56px)", background: "#FAFAF8", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ textAlign: "center", maxWidth: 480 }}>
-          <CheckCircle size={56} style={{ color: "#16A34A", marginBottom: 16 }} />
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 }}>
-            Thank you for your feedback!
-          </h1>
-          <p style={{ fontSize: 14, color: "#6B6B6B", lineHeight: 1.7, marginBottom: 24 }}>
+      <main style={{ minHeight: "calc(100vh - 56px)", background: "var(--ftp-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px" }}>
+        <div role="status" style={{ textAlign: "center", maxWidth: 480 }}>
+          <CheckCircle size={40} aria-hidden style={{ color: "var(--ftp-live)", margin: "0 auto 16px", display: "block" }} />
+          <h1 className="ftp-h2" style={{ marginBottom: 8 }}>Thank you for your feedback!</h1>
+          <p className="ftp-body" style={{ fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", marginBottom: 24 }}>
             Every message helps make ForThePeople.in better for all citizens.
             We read every submission personally.
           </p>
@@ -66,17 +102,20 @@ export default function FeedbackPage() {
             <Link
               href="/en"
               style={{
-                padding: "10px 20px", background: "#2563EB", color: "#fff",
-                borderRadius: 8, textDecoration: "none", fontSize: 14, fontWeight: 600,
+                display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 20px",
+                background: "var(--ftp-brand)", color: "var(--ftp-surface)",
+                borderRadius: "var(--ftp-radius-tile)", textDecoration: "none", fontSize: 13, fontWeight: 500,
               }}
             >
               Back to Home
             </Link>
             <button
+              type="button"
               onClick={() => { setSubmitted(false); setSubject(""); setMessage(""); }}
+              className="ftp-btn-secondary"
               style={{
-                padding: "10px 20px", background: "#F5F5F0", color: "#6B6B6B",
-                border: "1px solid #E8E8E4", borderRadius: 8, fontSize: 14, cursor: "pointer",
+                minHeight: 44, padding: "0 20px", background: "var(--ftp-surface)", color: "var(--ftp-text)",
+                border: "1px solid var(--ftp-border)", borderRadius: "var(--ftp-radius-tile)", fontSize: 13, fontWeight: 500, cursor: "pointer",
               }}
             >
               Submit Another
@@ -88,167 +127,152 @@ export default function FeedbackPage() {
   }
 
   return (
-    <main style={{ minHeight: "calc(100vh - 56px)", background: "#FAFAF8", paddingBottom: 64 }}>
-      {/* Hero */}
-      <section
-        style={{
-          background: "linear-gradient(180deg, #FFFFFF 0%, #FAFAF8 100%)",
-          borderBottom: "1px solid #E8E8E4",
-          padding: "40px 24px 32px",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
-          <MessageSquare size={40} style={{ color: "#2563EB", marginBottom: 12 }} />
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.5px", marginBottom: 8 }}>
-            Share Your Feedback
-          </h1>
-          <p style={{ fontSize: 15, color: "#6B6B6B", lineHeight: 1.7 }}>
-            Found wrong data? Have a suggestion? Love something?
-            Your feedback makes this platform better for every Indian citizen.
+    <main style={{ minHeight: "calc(100vh - 56px)", background: "var(--ftp-bg)", paddingBottom: 64 }}>
+      <div className="ftp-container" style={{ paddingTop: 32 }}>
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader
+            icon={MessageSquare}
+            title="Share Your Feedback"
+            description="Found wrong data? Have a suggestion? Love something? Your feedback makes this platform better for every Indian citizen."
+          />
+
+          <Card padding={20}>
+            <form onSubmit={handleSubmit}>
+              {/* Feedback type — a radio group drawn as cards */}
+              <fieldset style={{ border: "none", padding: 0, margin: "0 0 24px" }}>
+                <legend style={{ ...LABEL, marginBottom: 10 }}>What kind of feedback?</legend>
+                <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 150px), 1fr))", gap: 8 }}>
+                  {FEEDBACK_TYPES.map((t) => {
+                    const active = type === t.value;
+                    const Icon = t.icon;
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setType(t.value)}
+                        style={{
+                          padding: "12px 14px",
+                          minHeight: 44,
+                          border: `1px solid ${active ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
+                          borderRadius: "var(--ftp-radius-tile)",
+                          background: active ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        <Icon size={18} aria-hidden style={{ color: active ? "var(--ftp-brand)" : "var(--ftp-text-2)", marginBottom: 6, display: "block" }} />
+                        <span style={{ display: "block", fontSize: 13, lineHeight: "20px", fontWeight: 500, color: active ? "var(--ftp-brand-deep)" : "var(--ftp-text)" }}>
+                          {t.label}
+                        </span>
+                        <span style={{ display: "block", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>{t.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {/* Subject */}
+              <div style={{ marginBottom: 16 }}>
+                <label htmlFor="fb-subject" style={LABEL}>
+                  Subject <span style={{ color: "var(--ftp-danger)" }}>*</span>
+                </label>
+                <input
+                  id="fb-subject"
+                  type="text"
+                  required
+                  maxLength={200}
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Brief summary of your feedback"
+                  style={INPUT}
+                />
+              </div>
+
+              {/* Message */}
+              <div style={{ marginBottom: 16 }}>
+                <label htmlFor="fb-message" style={LABEL}>
+                  Message <span style={{ color: "var(--ftp-danger)" }}>*</span>
+                </label>
+                <textarea
+                  id="fb-message"
+                  required
+                  maxLength={2000}
+                  rows={5}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Please describe in detail. For data errors, mention the specific district, module, and what the correct value should be."
+                  style={{ ...INPUT, resize: "vertical" }}
+                />
+                <div className="ftp-num" style={{ fontSize: 11, color: "var(--ftp-text-2)", marginTop: 4, textAlign: "right" }}>
+                  {message.length}/2000
+                </div>
+              </div>
+
+              {/* Optional contact info (stacks on phones) */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 12, marginBottom: 24 }}>
+                <div>
+                  <label htmlFor="fb-name" style={LABEL}>
+                    Your Name <span style={OPTIONAL}>(optional)</span>
+                  </label>
+                  <input
+                    id="fb-name"
+                    type="text"
+                    maxLength={100}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="How should we address you?"
+                    style={INPUT}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="fb-email" style={LABEL}>
+                    Email <span style={OPTIONAL}>(optional)</span>
+                  </label>
+                  <input
+                    id="fb-email"
+                    type="email"
+                    maxLength={200}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="If you want a response"
+                    style={INPUT}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <p role="alert" className="ftp-body" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, color: "var(--ftp-danger)" }}>
+                  <AlertCircle size={14} aria-hidden /> {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  width: "100%",
+                  minHeight: 48,
+                  background: submitting ? "var(--ftp-border-strong)" : "var(--ftp-brand)",
+                  color: submitting ? "var(--ftp-text-2)" : "var(--ftp-surface)",
+                  border: "none",
+                  borderRadius: "var(--ftp-radius-tile)",
+                  fontSize: 15,
+                  fontWeight: 500,
+                  cursor: submitting ? "not-allowed" : "pointer",
+                }}
+              >
+                {submitting ? "Submitting…" : "Submit Feedback"}
+              </button>
+            </form>
+          </Card>
+
+          <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", textAlign: "center", marginTop: 20 }}>
+            All feedback is read personally. We may reach out if you provided an email.
+            Thank you for helping improve India&apos;s citizen transparency platform.
           </p>
         </div>
-      </section>
-
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px 0" }}>
-        <form onSubmit={handleSubmit}>
-          {/* Feedback type */}
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", display: "block", marginBottom: 10 }}>
-              What kind of feedback?
-            </label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
-              {FEEDBACK_TYPES.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setType(t.value)}
-                  style={{
-                    padding: "12px 14px",
-                    border: type === t.value ? "2px solid #2563EB" : "1px solid #E8E8E4",
-                    borderRadius: 10,
-                    background: type === t.value ? "#EFF6FF" : "#FFFFFF",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{t.emoji}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: type === t.value ? "#2563EB" : "#1A1A1A" }}>
-                    {t.label}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 2 }}>{t.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Subject */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", display: "block", marginBottom: 6 }}>
-              Subject <span style={{ color: "#DC2626" }}>*</span>
-            </label>
-            <input
-              type="text"
-              required
-              maxLength={200}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Brief summary of your feedback"
-              style={{
-                width: "100%", padding: "10px 12px",
-                border: "1px solid #E8E8E4", borderRadius: 8,
-                fontSize: 14, outline: "none", boxSizing: "border-box",
-              }}
-            />
-          </div>
-
-          {/* Message */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", display: "block", marginBottom: 6 }}>
-              Message <span style={{ color: "#DC2626" }}>*</span>
-            </label>
-            <textarea
-              required
-              maxLength={2000}
-              rows={5}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Please describe in detail. For data errors, mention the specific district, module, and what the correct value should be."
-              style={{
-                width: "100%", padding: "10px 12px",
-                border: "1px solid #E8E8E4", borderRadius: 8,
-                fontSize: 14, outline: "none", resize: "vertical",
-                fontFamily: "var(--font-sans)", lineHeight: 1.6,
-                boxSizing: "border-box",
-              }}
-            />
-            <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 4, textAlign: "right" }}>
-              {message.length}/2000
-            </div>
-          </div>
-
-          {/* Optional contact info */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", display: "block", marginBottom: 6 }}>
-                Your Name <span style={{ fontSize: 11, color: "#9B9B9B" }}>(optional)</span>
-              </label>
-              <input
-                type="text"
-                maxLength={100}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="How should we address you?"
-                style={{
-                  width: "100%", padding: "10px 12px",
-                  border: "1px solid #E8E8E4", borderRadius: 8,
-                  fontSize: 14, outline: "none", boxSizing: "border-box",
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", display: "block", marginBottom: 6 }}>
-                Email <span style={{ fontSize: 11, color: "#9B9B9B" }}>(optional)</span>
-              </label>
-              <input
-                type="email"
-                maxLength={200}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="If you want a response"
-                style={{
-                  width: "100%", padding: "10px 12px",
-                  border: "1px solid #E8E8E4", borderRadius: 8,
-                  fontSize: 14, outline: "none", boxSizing: "border-box",
-                }}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ padding: "10px 14px", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#DC2626" }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              width: "100%", padding: "13px 0",
-              background: submitting ? "#93C5FD" : "#2563EB",
-              color: "#fff", border: "none", borderRadius: 10,
-              fontSize: 15, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
-            }}
-          >
-            {submitting ? "Submitting…" : "Submit Feedback"}
-          </button>
-        </form>
-
-        <p style={{ fontSize: 12, color: "#9B9B9B", textAlign: "center", marginTop: 20 }}>
-          All feedback is read personally. We may reach out if you provided an email.
-          Thank you for helping improve India&apos;s citizen transparency platform. 🙏
-        </p>
       </div>
     </main>
   );
