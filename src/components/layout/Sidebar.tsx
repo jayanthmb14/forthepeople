@@ -15,7 +15,8 @@
 //    with native title tooltips.
 //  • Nine groups from the registry (docs/MODULE-MAP.md), each headed by its
 //    emoji and translated name (`moduleGroups.<key>`).
-//  • Items are 36 px tall with the module emoji in a hue-tinted chip
+//  • Items are at least 36 px tall (long names wrap, never cut off) with
+//    the module emoji in a hue-tinted chip
 //    (Design v4). Active = the module's hue tint + a 3 px hue bar.
 //  • A 6 px freshness dot on modules that have a live feed (weather,
 //    crops, water, news), fed by useFreshness — one request per district,
@@ -116,18 +117,22 @@ function rowStyle(collapsed: boolean, active: boolean, color?: string): CSSPrope
     alignItems: "center",
     justifyContent: collapsed ? "center" : "flex-start",
     gap: 10,
-    height: ITEM_HEIGHT,
+    // Collapsed: a fixed 36 px icon row. Expanded: at least 36 px, and a
+    // long name ("Ask the government (RTI)", or longer in Kannada) wraps
+    // onto a second line instead of being cut off (docs/I18N.md §4).
+    height: collapsed ? ITEM_HEIGHT : undefined,
+    minHeight: ITEM_HEIGHT,
     margin: "0 8px",
-    padding: collapsed ? 0 : "0 10px",
+    padding: collapsed ? 0 : "6px 10px",
     borderRadius: "var(--ftp-radius-tile)",
     textDecoration: "none",
     background: active ? "var(--ftp-brand-tint)" : "transparent",
     color: active ? "var(--ftp-brand)" : (color ?? "var(--ftp-text-2)"),
     fontFamily: "var(--ftp-font-sans)",
     fontSize: 13,
-    lineHeight: "20px",
+    lineHeight: "18px",
     fontWeight: active ? 500 : 400,
-    whiteSpace: "nowrap",
+    whiteSpace: collapsed ? "nowrap" : "normal",
     overflow: "hidden",
   };
 }
@@ -148,7 +153,7 @@ function UtilityLink({
   return (
     <Link href={href} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} className="ftp-rail-item" style={rowStyle(collapsed, false, color)}>
       <Icon size={ICON_SIZE} aria-hidden style={{ flexShrink: 0 }} />
-      {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>}
+      {!collapsed && <span style={{ flex: 1, minWidth: 0 }}>{label}</span>}
     </Link>
   );
 }
@@ -214,7 +219,7 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         >
           {mod.emoji}
         </span>
-        {!collapsed && <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{mt.label(slug)}</span>}
+        {!collapsed && <span style={{ flex: 1, minWidth: 0 }}>{mt.label(slug)}</span>}
         {hasFeed && (
           <span
             aria-hidden
