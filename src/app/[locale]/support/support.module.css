@@ -1,8 +1,48 @@
-/* /support — Design v5 "calm". Colours come from tokens only. */
+/* /support — Design v5.1 "Warm Calm". Colours come from tokens, the plan
+   hue classes (tier-look.ts) and the gold family on `.metal`
+   (src/components/support/look.module.css) only. */
 
-/* Five plans. The column count avoids one card alone on a row:
+/* ── Hero: a soft rose-and-blue wash, with three plan pictures ─────────── */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px 0 8px;
+  padding: 4px 20px 0;
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 150% at 0% 0%, var(--ftp-support-tint) 0%, transparent 55%),
+    radial-gradient(110% 140% at 100% 10%, var(--ftp-brand-tint) 0%, transparent 60%),
+    var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+}
+.hero > header { flex: 1 1 auto; min-width: 0; }
+.heroArt {
+  display: none;
+  flex-shrink: 0;
+  align-items: flex-end;
+  padding-right: 8px;
+}
+.heroArtItem {
+  display: inline-flex;
+  margin-left: -14px;
+  border-radius: 20px;
+  box-shadow: 0 0 0 4px var(--ftp-surface), var(--ftp-shadow-1);
+  transform: rotate(calc((var(--i) - 1) * 7deg));
+}
+.heroArtItem:nth-child(2) { position: relative; z-index: 1; transform: translateY(-10px); }
+@media (min-width: 768px) {
+  .heroArt { display: flex; }
+}
+@media (max-width: 639px) {
+  .hero { padding: 0 14px; border-radius: 18px; }
+}
+
+/* ── Five plans. The column count avoids one card alone on a row:
    5 across on wide screens, 3 + 2 on laptops and tablets, 2-up on large
-   phones, then one column. */
+   phones, then one column. ─────────────────────────────────────────── */
 .tierGrid {
   display: grid;
   gap: 16px;
@@ -18,38 +58,104 @@
   .tierGrid { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Each card wears its plan colour: a pastel wash at the top fading to
+   white, a thin colour line along the top edge, the price in the deep tone. */
 .tierCard {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  padding: 16px;
-  background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
+  padding: 18px 16px 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hue-tint) 92%, var(--ftp-surface)) 0px, var(--ftp-surface) 150px);
+  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
   border-radius: var(--ftp-radius-card);
+  box-shadow: var(--ftp-shadow-1);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.tierCard::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--hue-pop), color-mix(in srgb, var(--hue) 55%, var(--hue-pop)), var(--hue-pop));
+}
+.tierCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ftp-shadow-2);
+}
+
+/* The Founding Builder: soft gold, a gold edge and a warm glow. */
+.tierCard[data-tier="founder"] {
+  background: linear-gradient(180deg, var(--sup-gold-tint) 0px, var(--ftp-surface) 160px);
+  border-color: color-mix(in srgb, var(--sup-gold) 45%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1), 0 12px 28px -18px color-mix(in srgb, var(--sup-gold) 80%, transparent);
+}
+.tierCard[data-tier="founder"]::before {
+  background: linear-gradient(90deg, var(--sup-gold-soft), var(--sup-gold), var(--sup-gold-soft));
+}
+
+.tierHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
 }
 
 .tierName {
   margin: 0;
   font-size: 17px;
   line-height: 1.35;
-  font-weight: 650;
+  font-weight: 700;
   color: var(--ftp-text);
 }
 
-/* "Monthly" / "One time": the soft support rose, as a small tag. */
+/* "Monthly" / "One time": a small white tag in the plan colour. */
 .planChip {
-  align-self: flex-start;
+  flex-shrink: 0;
   padding: 2px 10px;
   border-radius: var(--ftp-radius-pill);
-  background: var(--ftp-support-tint);
-  color: var(--ftp-support);
+  background: var(--ftp-surface);
+  border: 1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border));
+  color: var(--hue-deep);
   font-size: 12px;
   line-height: 18px;
-  font-weight: 600;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
-/* How to subscribe: three numbered steps, side by side from tablet up. */
+.price {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.priceNum {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 750;
+  color: var(--hue-deep);
+}
+.tierCard[data-tier="founder"] .priceNum { color: var(--sup-gold-deep); }
+.priceUnit {
+  font-size: 14px;
+  color: var(--ftp-text-2);
+}
+
+.tierAction {
+  margin-top: auto;
+  padding-top: 8px;
+}
+/* Placeholder while the amount row + button load (44 + 10 + 48 px). */
+.actionSkeleton {
+  height: 102px;
+  border-radius: var(--ftp-radius-tile);
+}
+
+/* ── How to subscribe: three coloured steps, side by side from tablet up ── */
 .steps {
   list-style: none;
   margin: 0;
@@ -60,27 +166,45 @@
 }
 .step {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
   padding: 16px;
-  background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--hue-tint) 80%, var(--ftp-surface)) 0%, var(--ftp-surface) 75%);
+  border: 1px solid color-mix(in srgb, var(--hue) 16%, var(--ftp-border));
   border-radius: var(--ftp-radius-card);
 }
-.stepNum {
-  width: 32px;
-  height: 32px;
+.stepBadge {
+  position: relative;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
-  font-size: 15px;
+  background: var(--ftp-surface);
+  border: 1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border));
+  color: var(--hue);
+}
+.stepNum {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hue);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--ftp-surface);
 }
 
-/* Closed-by-default sections ("Where the money goes", "Why this exists"). */
+/* ── Closed-by-default sections ("Where the money goes", "Why this exists") ── */
 .disclosure {
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
@@ -103,6 +227,9 @@
 .summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: var(--ftp-radius-card); }
 .chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform 150ms ease; }
 .disclosure[open] .chevron { transform: rotate(180deg); }
+
 @media (prefers-reduced-motion: reduce) {
   .chevron { transition: none; }
+  .tierCard { transition: none; }
+  .tierCard:hover { transform: none; }
 }

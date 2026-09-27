@@ -32,17 +32,23 @@
 //  also the Razorpay description), and `?tier=&state=&district=` still opens
 //  the right form.
 //
-//  Colour: the page runs in the brand-blue hue (buttons, focus); the support
-//  rose appears only as the small plan chips.
+//  Colour (v5.1 "Warm Calm"): the page runs in the brand-blue hue, over a
+//  soft rose-and-blue wash at the top. Each plan card carries its own
+//  pastel colour and a small drawn picture (TierArt): one-time rose,
+//  District blue, State teal, All-India violet, Founding Builder gold
+//  (tier-look.ts). The same colours follow a supporter onto the wall.
 
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronDown, ExternalLink, MousePointerClick, PenLine, ShieldCheck } from "lucide-react";
 import SupportCheckout from "@/components/support/SupportCheckout";
 import ContributorWallClient from "@/components/support/ContributorWallClient";
 import NationalSupporters from "@/components/support/NationalSupporters";
+import TierArt from "@/components/support/TierArt";
+import { tierHueClass, tierKeyOf, type TierKey } from "@/components/support/tier-look";
+import look from "@/components/support/look.module.css";
 import FeedbackModal from "@/components/common/FeedbackModal";
 import { ModulePage, Section } from "@/components/district/ui";
 import PlainPageHeader from "@/components/site/PlainPageHeader";
@@ -128,6 +134,9 @@ function Disclosure({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+/** Each "where the money goes" bar gets its own soft colour. */
+const COST_HUES = ["ftp-hue-blue", "ftp-hue-teal", "ftp-hue-violet", "ftp-hue-rose", "ftp-hue-yellow", "ftp-hue-sky"];
+
 const TEXT_LINK: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
@@ -157,17 +166,29 @@ export default async function SupportPage({ params }: Props) {
   const costRows = content.costBreakdown.filter((c) => c.pct > 0);
   const tierValues = { districts: nf.format(FACTS.totalIndiaDistricts), dashboards: nf.format(FACTS.totalIndiaDistricts * FACTS.modulesPerDistrict) };
 
+  // Three steps, three soft colours (rose → blue → gold), one small icon each.
   const steps = [
-    { title: t("how1Title"), body: t("how1Body") },
-    { title: t("how2Title"), body: t("how2Body") },
-    { title: t("how3Title"), body: t("how3Body") },
+    { title: t("how1Title"), body: t("how1Body"), icon: MousePointerClick, hue: "ftp-hue-rose" },
+    { title: t("how2Title"), body: t("how2Body"), icon: PenLine, hue: "ftp-hue-blue" },
+    { title: t("how3Title"), body: t("how3Body"), icon: ShieldCheck, hue: "ftp-hue-yellow" },
   ];
+  // The hero shows three of the plan pictures, overlapping (laptop and up).
+  const heroArt: TierKey[] = ["custom", "district", "founder"];
 
   return (
-    <main className="ftp-hue-blue" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
+    <main className={`ftp-hue-blue ${look.metal}`} style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
       <ModulePage>
         {/* ── 1. What support does ─────────────────────────────────── */}
-        <PlainPageHeader title={t("title")} description={t("lead")} backHref={`/${locale}`} />
+        <div className={styles.hero}>
+          <PlainPageHeader title={t("title")} description={t("lead")} backHref={`/${locale}`} />
+          <div className={styles.heroArt} aria-hidden>
+            {heroArt.map((k, i) => (
+              <span key={k} className={`${tierHueClass(k)} ${styles.heroArtItem}`} style={{ ["--i" as string]: i } as React.CSSProperties}>
+                <TierArt tier={k} size={i === 1 ? 84 : 68} />
+              </span>
+            ))}
+          </div>
+        </div>
 
         {/* ── 2. The plans ─────────────────────────────────────────── */}
         <Section title={t("tiersTitle")} id="tiers">
@@ -175,24 +196,27 @@ export default async function SupportPage({ params }: Props) {
             {TIER_ORDER.map((key) => {
               const tier = TIER_CONFIG[key];
               const isCustom = key === "custom";
+              const plan = tierKeyOf(key);
               const name = t.has(`tier_${key}_name`) ? t(`tier_${key}_name`) : tier.name;
               const desc = t.has(`tier_${key}_desc`) ? t(`tier_${key}_desc`, tierValues) : tier.description;
               return (
-                <article key={key} aria-label={name} className={styles.tierCard}>
-                  <span className={styles.planChip}>{tier.isRecurring ? t("pillMonthly") : t("pillOneTime")}</span>
+                <article key={key} aria-label={name} className={`${styles.tierCard} ${tierHueClass(plan)}`} data-tier={plan}>
+                  <div className={styles.tierHead}>
+                    <TierArt tier={plan} size={64} />
+                    <span className={styles.planChip}>{tier.isRecurring ? t("pillMonthly") : t("pillOneTime")}</span>
+                  </div>
                   <h3 className={styles.tierName}>{name}</h3>
-                  <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-                    <span className="ftp-num" style={{ fontSize: 28, lineHeight: "34px", fontWeight: 700, color: "var(--ftp-text)" }}>
-                      {inr(tier.amount)}
-                    </span>
-                    <span style={{ fontSize: 14, color: "var(--ftp-text-2)" }}>
+                  <p className={styles.price}>
+                    <span className={`ftp-num ${styles.priceNum}`}>{inr(tier.amount)}</span>
+                    <span className={styles.priceUnit}>
                       {tier.isRecurring ? t("priceMonthly") : t("priceOnce", { min: inr(tier.minAmount) })}
                     </span>
                   </p>
                   <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text)" }}>{desc}</p>
                   {tier.isRecurring && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("noteMonthly")}</p>}
-                  <div style={{ marginTop: "auto", paddingTop: 8 }}>
-                    <Suspense>
+                  <div className={styles.tierAction}>
+                    {/* Same height as the amount row + button, so nothing jumps when it loads. */}
+                    <Suspense fallback={<div aria-hidden className={`ftp-skeleton ${styles.actionSkeleton}`} />}>
                       <SupportCheckout
                         tier={{
                           emoji: tier.emoji,
@@ -222,8 +246,11 @@ export default async function SupportPage({ params }: Props) {
         <Section title={t("howTitle")} id="how">
           <ol className={styles.steps}>
             {steps.map((s, i) => (
-              <li key={i} className={styles.step}>
-                <span aria-hidden className={`ftp-num ${styles.stepNum}`}>{i + 1}</span>
+              <li key={i} className={`${styles.step} ${s.hue}`}>
+                <span aria-hidden className={styles.stepBadge}>
+                  <s.icon size={20} />
+                  <span className={`ftp-num ${styles.stepNum}`}>{i + 1}</span>
+                </span>
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: "block", fontSize: 15, lineHeight: 1.45, fontWeight: 600, color: "var(--ftp-text)" }}>{s.title}</span>
                   <span style={{ display: "block", marginTop: 2, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{s.body}</span>
@@ -258,14 +285,14 @@ export default async function SupportPage({ params }: Props) {
               <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("moneyNote")}</p>
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
                 {/* Admin-written labels, shown as stored. */}
-                {costRows.map((item) => (
-                  <li key={item.label} lang={locale === "en" ? undefined : "en"}>
+                {costRows.map((item, i) => (
+                  <li key={item.label} lang={locale === "en" ? undefined : "en"} className={COST_HUES[i % COST_HUES.length]}>
                     <span style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, lineHeight: 1.5, color: "var(--ftp-text)" }}>
                       <span>{item.label}</span>
                       <span className="ftp-num">{item.pct}%</span>
                     </span>
                     <span aria-hidden style={{ display: "block", height: 6, borderRadius: 999, background: "var(--ftp-surface-2)", marginTop: 4, overflow: "hidden" }}>
-                      <span style={{ display: "block", height: "100%", width: `${Math.min(100, item.pct)}%`, background: "var(--ftp-brand)", borderRadius: 999 }} />
+                      <span style={{ display: "block", height: "100%", width: `${Math.min(100, item.pct)}%`, background: "var(--hue)", borderRadius: 999 }} />
                     </span>
                   </li>
                 ))}
