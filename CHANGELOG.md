@@ -80,6 +80,34 @@ until the owner reviews and pushes.
   screens read the model list from `src/lib/ai-models.ts`. `/prices` is in the sitemap. Unused intro,
   feedback-button, growth-chart and shim files were removed.
 
+### Fixed — data records checked by hand, "verified or hidden" (branch `v51/records`, 2026-09-27)
+Every value below was checked against a named source (government portals first, reputed news only
+where nothing official exists); a value that looked wrong, invented or stale and could not be
+confirmed is hidden. Full table with sources: `docs/DATA-FIXES-2026-09.md`.
+- **Fix script** `scripts/fix-records-2026-09.ts` (data in `scripts/fix-records-2026-09/`): dry run
+  by default, `--confirm` applies all 1,179 changes in one transaction, rows matched by id, skips
+  anything changed since the check. Not yet applied — the owner runs it.
+  - Infrastructure: stale statuses fixed (New Parliament and Bharat Mandapam completed 2023,
+    Hyderabad Metro Phase 1 completed 2020, Mumbai Metro 3, Namo Bharat, Navi Mumbai airport …),
+    Pharma City and SRDP budgets from the sanctioned figures, duplicates (Atal Setu, AIIMS, Joka,
+    Blue Line) and non-projects (maintenance block, renamings, policies) removed, and the unsourced
+    spring-2026 seed rows hidden (Bengaluru Urban 161 → 25 rows, Mysuru 83 → 18).
+  - Population: the fake "2021 census" rows and unsourced projections removed; Census 2011/2001
+    values corrected; unverifiable pre-2001 rows removed.
+  - India dashboard: foodgrain 12.7 → 376.6 Mt (3rd AE 2025-26), 88 figures updated with their real
+    dates, 64 unverifiable seed values hidden; no more "as of 1 May".
+  - Police: real numbers for Mysuru, Mandya and Bengaluru from the official police directories;
+    invented numbers elsewhere hidden; invented and duplicate stations deleted.
+  - Offices: invented phone numbers and seeded hours hidden; DC offices corrected.
+  - Schemes and small modules: unsourced counts and stale amounts hidden; 142 hand-typed rows in
+    crime, courts, RTI, power, traffic, canal, JJM, housing and agri-advisory tables deleted.
+- **Code:** helplines — women 181, NHAI 1033 instead of 1073, 1064 only in Telangana/Maharashtra,
+  consumer 1915, Delhi ambulance 102, police 100 and the old NHH line removed; "My Responsibility"
+  numbers that could not be confirmed removed; India KPI tiles (population 1.46 bn, GDP $3.92 tn),
+  world ranks (economy #6) and state rank order corrected. Strings in en + hi + kn.
+- **Still to do under the same rule:** office addresses, schools, transport, industries, gram
+  panchayats, famous personalities, election results and the "My Responsibility" statistics.
+
 ### Fixed — data, crons and AI
 - Cron endpoints now accept the `Authorization: Bearer <CRON_SECRET>` header the way Vercel actually
   sends it (two crons had never run from the scheduler because of the wrong header / HTTP method).

@@ -3,10 +3,13 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * Fix wrong or outdated data records found in the September 2026 audit.
- * Every change was checked by hand against a named source (official
- * .gov.in / .nic.in / PIB pages first, reputed news only when nothing
- * official exists). The reviewed list lives in scripts/fix-records-2026-09/;
- * the plain-English table is docs/DATA-FIXES-2026-09.md.
+ * Rule: verified or hidden. Every new value was checked by hand against a
+ * named source (official .gov.in / .nic.in / PIB pages first, reputed news
+ * only when nothing official exists); a displayed value that looked wrong,
+ * invented or stale and could not be confirmed is cleared (null) or its row
+ * deleted when the whole row was unfounded. The reviewed list lives in
+ * scripts/fix-records-2026-09/ (one file per area); the plain-English table
+ * is docs/DATA-FIXES-2026-09.md.
  *
  * DRY RUN by default: prints every change (table, id, field, old → new,
  * source) and exits. Pass --confirm to apply, all in one transaction.
@@ -20,8 +23,10 @@
  * field changed since the check date (neither the old value we saw nor
  * the new one), that fix is skipped and reported — look at it by hand.
  *
- * Deleting an InfraProject also deletes its InfraUpdate timeline rows
- * (onDelete: Cascade in prisma/schema.prisma). The Leader table is never
+ * Updates run one by one; deletes run as one deleteMany per table and the
+ * whole run rolls back if any table deletes a different number of rows than
+ * planned. Deleting an InfraProject also deletes its InfraUpdate timeline
+ * rows (onDelete: Cascade in prisma/schema.prisma). The Leader table is never
  * touched here.
  */
 import { PrismaClient } from "../src/generated/prisma";
@@ -168,17 +173,28 @@ async function main() {
       console.log("Nothing to do.");
       return;
     }
+    type Delegate = {
+      update: (a: unknown) => Promise<unknown>;
+      deleteMany: (a: unknown) => Promise<{ count: number }>;
+    };
+    const deletesByTable = new Map<string, string[]>();
+    for (const { fix } of plan) {
+      if (fix.op !== "delete") continue;
+      deletesByTable.set(fix.table, [...(deletesByTable.get(fix.table) ?? []), fix.id]);
+    }
     await p.$transaction(
       async (tx) => {
+        const model = (table: string) => (tx as unknown as Record<string, Delegate>)[delegateName(table)];
         for (const { fix, data } of plan) {
-          const delegate = (tx as unknown as Record<string, { update: (a: unknown) => Promise<unknown>; delete: (a: unknown) => Promise<unknown> }>)[
-            delegateName(fix.table)
-          ];
-          if (fix.op === "delete") await delegate.delete({ where: { id: fix.id } });
-          else await delegate.update({ where: { id: fix.id }, data });
+          if (fix.op === "update") await model(fix.table).update({ where: { id: fix.id }, data });
+        }
+        // Deletes in one statement per table; any count mismatch rolls the whole run back.
+        for (const [table, ids] of deletesByTable) {
+          const { count } = await model(table).deleteMany({ where: { id: { in: ids } } });
+          if (count !== ids.length) throw new Error(`${table}: expected to delete ${ids.length} rows, deleted ${count} — rolled back`);
         }
       },
-      { timeout: 120_000, maxWait: 20_000 },
+      { timeout: 600_000, maxWait: 30_000 },
     );
     console.log(`\nDone: applied ${plan.length} changes in one transaction.`);
     console.log("Clear the Redis caches (admin → Cache) so pages pick this up at once.");

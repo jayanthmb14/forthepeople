@@ -26,6 +26,26 @@ skipped). If a field was changed by someone else after 27 Sep, that fix is
 skipped and flagged "CHANGED SINCE CHECK". After applying, clear the Redis
 caches (admin → Cache). The Leader table is not touched.
 
+
+## Summary of the fix script (1,179 changes, dry-run checked 27–28 Sep 2026)
+
+| Table | Updated | Deleted | What |
+|---|---|---|---|
+| InfraProject | 149 | 305 | 139 verified (statuses, completion dates, sanctioned costs), 10 news rows with wrong-looking figures cleared; 102 non-projects/duplicates/invented, 203 unsourced seed or wrong-district rows hidden |
+| PopulationHistory | 19 | 26 | Census 2011/2001 values corrected; fake "2021 census", unsourced projections and unverifiable pre-2001 rows removed |
+| IndiaIndicator | 172 | 0 | 88 new official figures, 20 confirmed with a real date, 64 hidden (value → null, page shows "—") |
+| PoliceStation | 166 | 29 | 70 real numbers from official police sites, 96 invented numbers hidden, 29 invented/duplicate/wrong-district stations deleted |
+| GovOffice | 130 | 4 | 2 DC offices corrected, 128 invented phones and 20 seeded hour sets hidden, duplicates and Writers' Building deleted |
+| Scheme | 29 | 8 | Mudra ₹20 lakh; stale amounts and every unsourced beneficiary count hidden; wrong/discontinued-looking rows deleted |
+| CrimeStat, CourtStat, RtiStat, PowerOutage, TrafficCollection, CanalRelease, JJMStatus, HousingScheme, AgriAdvisory | 0 | 142 | hand-typed seed rows (round numbers, "estimated", frozen dates) |
+
+Code changes (committed on this branch, en + hi + kn where text changed):
+helplines (women 181, highway 1033, 1064 state-only, consumer 1915, Delhi
+ambulance 102, police 100 and the old NHH line removed), "My
+Responsibility" phone numbers and census literacy, India KPI tiles
+(population 1.46 bn, GDP $3.92 tn), India-in-the-world ranks and notes,
+state rank order in three India bands, and the "3rd advance estimate" label.
+
 ---
 
 ## 1. Infrastructure projects (InfraProject) — verified or hidden
@@ -1205,6 +1225,11 @@ office's own site, or hide the ones that cannot be confirmed.
 ---
 
 ## 7. Freshness report (27 Sep 2026)
+
+This is the state **before** the fixes. The script deletes the seeded
+power-outage, canal, RTI, crime, JJM, housing and agri-advisory rows and
+the unsourced population projections listed in this report, so those
+modules will show their empty states until a real collector fills them.
 
 Newest date and row count per module and district, from read-only
 queries. "—" = no rows. Dates are the newest *data* date where the table
