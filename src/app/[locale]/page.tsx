@@ -3,22 +3,25 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * Home page — Design v4 "Rang".
+ * Home page — Design v5 "calm".
  *
  * The disclaimer line, header and footer come from [locale]/layout.tsx.
  * This page renders, top to bottom:
  *
- *   0. IntroSplash         — 2 s opening, once per session (skippable)
- *   1. MarketTicker        — markets line, "As of HH:MM IST"
- *   2. HomeHero            — the ONE <h1>, "Go to my location", four
- *                            numbers, and the India map on the right
- *   3. LiveDistrictsCard   — colourful grid of live districts + vote card
- *   4. The rest            — Latest data, How it works, Built with
- *                            citizens, support band
+ *   1. HomeHero           — kicker, the ONE <h1> (a task), sources line,
+ *                           district search, "Explore all of India"
+ *                           (primary) and "Use my location", one stats
+ *                           line; the India map on the right (tablet, PC)
+ *   2. LiveDistrictsCard  — the live districts as equal cards + a small
+ *                           "Is your district next?" card
+ *   3. IndiaGlance        — "India at a glance": headline national
+ *                           figures, each with source and date
+ *   4. PricesToday        — gold, silver, Sensex, Nifty, US dollar
+ *   5. SupportLine        — one quiet line
  *
- * Numbers: district counts come from the DB / registry (never typed by
- * hand); the data-point total carries an "As of" date from the newest
- * record. If homepage-stats is unreachable the total shows "—", never 0.
+ * Numbers: district and state counts come from the registry
+ * (getPlatformFacts), national figures from IndiaIndicator rows. Nothing
+ * is typed by hand; a missing row simply leaves its figure out.
  */
 
 import type { Metadata } from "next";
@@ -28,41 +31,87 @@ import { languageAlternates } from "@/i18n/seo";
 import { routing } from "@/i18n/routing";
 import { getPlatformFacts } from "@/lib/platform-facts";
 
-import MarketTicker from "@/components/home/MarketTicker";
-import IntroSplash from "@/components/home/IntroSplash";
 import HomeHero from "@/components/home/HomeHero";
-import IndiaMapCard from "@/components/home/IndiaMapCard";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
-import LatestData from "@/components/home/LatestData";
-import HowItWorks from "@/components/home/HowItWorks";
-import BuiltWithCitizens from "@/components/home/BuiltWithCitizens";
+import IndiaGlance, { type GlanceFigure } from "@/components/home/IndiaGlance";
+import PricesToday from "@/components/home/PricesToday";
 import SupportLine from "@/components/home/SupportLine";
 import styles from "@/components/home/home.module.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
-interface HomepageStats {
-  activeDistricts: number;
-  totalDataPoints: number;
-  mostRecentAt: string | null;
-}
+// District rows and national figures change rarely; refresh hourly.
+export const revalidate = 3600;
 
-/** Cached (5 min) platform totals. Null when the endpoint is unreachable. */
-async function fetchHomepageStats(): Promise<HomepageStats | null> {
+/** The IndiaIndicator rows behind "India at a glance". */
+const GLANCE_ROWS = [
+  { moduleSlug: "demographics-population", metricKey: "population_total" },
+  { moduleSlug: "economy-gdp", metricKey: "gdp_nominal_usd_trillion" },
+  { moduleSlug: "budget-union", metricKey: "total_outlay_inr_lakh_crore" },
+  { moduleSlug: "national-snapshot", metricKey: "states_count" },
+  { moduleSlug: "national-snapshot", metricKey: "uts_count" },
+] as const;
+
+type IndicatorRow = {
+  moduleSlug: string;
+  metricKey: string;
+  numericValue: unknown;
+  source: string;
+  sourceUrl: string;
+  asOfDate: Date;
+};
+
+/** Up to four headline figures, in a fixed order, from whatever rows exist. */
+async function loadGlanceFigures(): Promise<GlanceFigure[]> {
+  let rows: IndicatorRow[] = [];
   try {
-    const res = await fetch(`${BASE_URL}/api/data/homepage-stats`, {
-      next: { revalidate: 300 },
+    rows = await prisma.indiaIndicator.findMany({
+      where: { OR: GLANCE_ROWS.map((r) => ({ moduleSlug: r.moduleSlug, metricKey: r.metricKey })) },
+      select: { moduleSlug: true, metricKey: true, numericValue: true, source: true, sourceUrl: true, asOfDate: true },
     });
-    if (!res.ok) return null;
-    const json = (await res.json()) as Partial<HomepageStats>;
-    return {
-      activeDistricts: json.activeDistricts ?? 0,
-      totalDataPoints: json.totalDataPoints ?? 0,
-      mostRecentAt: json.mostRecentAt ?? null,
-    };
   } catch {
-    return null;
+    return []; // the band still shows its text and the India link
   }
+  const get = (metricKey: string) => {
+    const r = rows.find((x) => x.metricKey === metricKey);
+    const value = r && r.numericValue != null ? Number(r.numericValue) : NaN;
+    return r && Number.isFinite(value) ? { ...r, value } : null;
+  };
+  const link = (url: string | null | undefined) => (url && url.startsWith("https://") ? url : null);
+
+  const out: GlanceFigure[] = [];
+  const pop = get("population_total");
+  if (pop) {
+    out.push({
+      labelKey: "figPopulation",
+      valueKey: "figPopulationValue",
+      values: { n: Math.round(pop.value / 1e7) / 100 }, // people → billions, 2 decimals
+      source: pop.source,
+      sourceUrl: link(pop.sourceUrl),
+      asOf: pop.asOfDate.toISOString(),
+    });
+  }
+  const gdp = get("gdp_nominal_usd_trillion");
+  if (gdp) {
+    out.push({ labelKey: "figGdp", valueKey: "figGdpValue", values: { n: gdp.value }, source: gdp.source, sourceUrl: link(gdp.sourceUrl), asOf: gdp.asOfDate.toISOString() });
+  }
+  const budget = get("total_outlay_inr_lakh_crore");
+  if (budget) {
+    out.push({ labelKey: "figBudget", valueKey: "figBudgetValue", values: { n: budget.value }, source: budget.source, sourceUrl: link(budget.sourceUrl), asOf: budget.asOfDate.toISOString() });
+  }
+  const states = get("states_count");
+  const uts = get("uts_count");
+  if (states && uts) {
+    out.push({
+      labelKey: "figStates",
+      valueKey: "figStatesValue",
+      values: { a: states.value, b: uts.value },
+      source: states.source,
+      sourceUrl: link(states.sourceUrl),
+      asOf: (states.asOfDate > uts.asOfDate ? states.asOfDate : uts.asOfDate).toISOString(),
+    });
+  }
+  return out;
 }
 
 export async function generateMetadata({
@@ -102,8 +151,7 @@ export default async function HomePage({
   // Static rendering with translations: the page names its locale.
   setRequestLocale(locale);
 
-  // Server-side fetch (single round trip) — feeds the body components.
-  const [activeRows, statsFromApi] = await Promise.all([
+  const [activeRows, glance] = await Promise.all([
     prisma.district.findMany({
       where: { active: true },
       select: {
@@ -116,7 +164,7 @@ export default async function HomePage({
       },
       orderBy: { name: "asc" },
     }),
-    fetchHomepageStats(),
+    loadGlanceFigures(),
   ]);
 
   const activeDistricts = activeRows.map((d) => ({
@@ -129,51 +177,26 @@ export default async function HomePage({
     goLiveDate: d.goLiveDate ? d.goLiveDate.toISOString() : null,
   }));
 
-  // Totals: DB / registry first, homepage-stats for what only it knows.
+  // Counts from the registry (the same flags the rest of the site uses).
   const facts = getPlatformFacts();
-  const activeCount = statsFromApi?.activeDistricts || activeRows.length;
-  const comingDistricts = Math.max(0, facts.totalIndiaDistricts - activeCount);
-  const totalDataPoints = statsFromApi && statsFromApi.totalDataPoints > 0 ? statsFromApi.totalDataPoints : null;
-  const mostRecentAt = statsFromApi?.mostRecentAt ?? null;
 
   return (
-    <main role="main" className="ftp-home">
-      {/* Once-per-session opening (Design v4). Off for reduced motion / no JS. */}
-      <IntroSplash />
-
-      <MarketTicker />
-
-      <div className={styles.flow}>
-        {/* 1. Hero: the one <h1>, "Go to my location", numbers, India map */}
-        <div className={`${styles.band} ${styles.bandHero}`}>
-          <div className="ftp-container">
-            <HomeHero
-              locale={locale}
-              activeStates={facts.activeStates}
-              modulesPerDistrict={facts.modulesPerDistrict}
-              activeCount={activeCount}
-              totalDataPoints={totalDataPoints}
-              mostRecentAt={mostRecentAt}
-              comingDistricts={comingDistricts}
-            >
-              <IndiaMapCard locale={locale} />
-            </HomeHero>
-          </div>
-        </div>
-
-        {/* 2. Live districts: a colourful grid, newest first */}
-        <div className={`${styles.band} ${styles.bandDistricts}`}>
-          <LiveDistrictsCard locale={locale} districts={activeDistricts} />
-        </div>
-
-        {/* 3. The rest of the page */}
-        <div className={`${styles.band} ${styles.bandRest}`}>
-          <LatestData locale={locale} districts={activeDistricts} />
-          <HowItWorks />
-          <BuiltWithCitizens locale={locale} />
-          <SupportLine locale={locale} />
+    <main role="main" className={styles.home}>
+      <div className={styles.heroBand}>
+        <div className="ftp-container">
+          <HomeHero
+            locale={locale}
+            activeDistricts={facts.activeDistricts}
+            activeStates={facts.activeStates}
+            modulesPerDistrict={facts.modulesPerDistrict}
+          />
         </div>
       </div>
+
+      <LiveDistrictsCard locale={locale} districts={activeDistricts} />
+      <IndiaGlance locale={locale} figures={glance} />
+      <PricesToday />
+      <SupportLine locale={locale} />
     </main>
   );
 }

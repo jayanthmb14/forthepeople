@@ -51,6 +51,8 @@ export default function LocateResult({ status, floating = false, onClose, onRetr
   const locale = useLocale();
   const place = usePlaceText();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // A heading of its own when floating; under the sheet's title inline.
+  const Heading = floating ? "h2" : "h3";
 
   // Floating card: focus its heading and let Escape close it.
   useEffect(() => {
@@ -80,14 +82,14 @@ export default function LocateResult({ status, floating = false, onClose, onRetr
           </span>
           <div style={{ minWidth: 0 }}>
             <p className={s.resultEyebrow}>{tp("youAreIn")}</p>
-            <h2 ref={headingRef} tabIndex={-1} className={s.resultTitle}>
+            <Heading ref={headingRef} tabIndex={-1} className={s.resultTitle}>
               <span lang={pair?.primaryLang}>{title}</span>
               {pair?.secondary && (
                 <span className={s.resultLocal} lang={pair.secondaryLang}>
                   {pair.secondary}
                 </span>
               )}
-            </h2>
+            </Heading>
             {stateLabel && <p className={s.resultState}>{stateLabel}</p>}
           </div>
         </div>
@@ -132,9 +134,9 @@ export default function LocateResult({ status, floating = false, onClose, onRetr
           <span className={`${s.resultBadge} ${s.resultBadgeWarn}`} aria-hidden>
             <LocateFixed size={22} />
           </span>
-          <h2 ref={headingRef} tabIndex={-1} className={s.resultTitle}>
+          <Heading ref={headingRef} tabIndex={-1} className={s.resultTitle}>
             {denied ? t("deniedTitle") : t("errorTitle")}
-          </h2>
+          </Heading>
         </div>
         {denied ? (
           <>

@@ -18,6 +18,13 @@
   flex-direction: column;
   gap: 18px;
 }
+/* Phones and tablets: a steady sheet height while typing (the bottom
+   sheet sizes itself to its content). */
+@media (max-width: 1023px) {
+  .finder {
+    min-height: min(62vh, 560px);
+  }
+}
 
 .searchLabel {
   display: block;
@@ -409,7 +416,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 10px;
-  font-size: 21px;
+  font-size: 19px;
   line-height: 1.35;
   font-weight: 700;
   color: var(--ftp-text);

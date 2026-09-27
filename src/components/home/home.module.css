@@ -3,968 +3,672 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * home.module.css — the home page (/en) sections, Design v3 "Civic Ledger".
+ * home.module.css — the home page, Design v5 "calm".
  *
- * Rules (docs/DESIGN-SYSTEM.md): colours via var(--ftp-*) only; no hex,
- * shadows or gradients; weights 400/500 (600 only on the H1); numbers in
- * mono (.ftp-num); 44 px touch targets and a single column on phones.
+ * Soft blue-white page, white cards with a thin border, one brand blue
+ * for actions, pastel-blue tints for selection and the India band. No
+ * gradients, no emoji, sentence case. Phone first:
+ *   phone   < 640   one column, 2 district cards per row, no map
+ *   tablet  640+    3 cards per row; the map sits beside the hero from 768
+ *   laptop  1024+   4 cards per row, 5 prices in a row
+ * Touch targets 44 px or more. Indic headings keep line-height >= 1.35.
+ * Colours come from --ftp-* tokens (globals.css).
  */
 
-/* ───────────────────────── Market ticker (32 px) ───────────────────────── */
-
-.ticker {
-  background: var(--ftp-surface);
-  border-bottom: 1px solid var(--ftp-border);
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ftp-text-2);
-}
-.tickerRow {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.tickerViewport {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-.tickerTrack {
-  display: inline-flex;
-  white-space: nowrap;
-  will-change: transform;
-  animation: ftp-ticker-scroll 90s linear infinite;
-}
-.ticker:hover .tickerTrack {
-  animation-play-state: paused;
-}
-@keyframes ftp-ticker-scroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.tickerSet {
-  display: inline-flex;
-  gap: 24px;
-  padding-right: 24px;
-}
-.tickerItem {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.tickerLabel {
-  color: var(--ftp-text);
-  font-weight: 500;
-}
-.up   { color: var(--ftp-live-text); }
-.down { color: var(--ftp-danger); }
-.flat { color: var(--ftp-text-2); }
-.tickerMuted { color: var(--ftp-text-2); }
-.tickerAsOf {
-  flex-shrink: 0;
-  white-space: nowrap;
-  font-size: 11px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tickerTrack { animation: none; }
-  .tickerCopy { display: none; }
-  .tickerViewport { overflow-x: auto; scrollbar-width: none; }
-}
-/* Phones: static, swipeable row; no scrolling on its own. */
-@media (max-width: 767px) {
-  .tickerTrack { animation: none; }
-  .tickerCopy { display: none; }
-  .tickerViewport {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .tickerViewport::-webkit-scrollbar { display: none; }
-  .tickerAsOf { display: none; }
-}
-
-/* ───────────────────────── Page flow + phone order ─────────────────────────
- * Desktop order (source order):  strip · hero · stats · map+list · rest
- * Phone order (CONCEPT §5):      hero · strip · list · map · stats · rest
- * Each block is a direct child of .flow so `order` can move it on phones.
- */
-.flow {
-  display: flex;
-  flex-direction: column;
-}
-.band {
-  width: 100%;
-}
-.bandHero      { padding-top: 36px; padding-bottom: 12px; }
-.bandDistricts { padding-top: 40px; }
-.bandStats  { padding-top: 24px; }
-.bandMap    { padding-top: 24px; }
-@media (max-width: 767px) {
-  .bandHero      { padding-top: 20px; }
-  .bandDistricts { padding-top: 28px; }
-}
-
-/* ───────────────────────── Your district strip (56 px) ───────────────────────── */
-
-.strip {
-  background: var(--ftp-surface);
-  border-bottom: 1px solid var(--ftp-border);
-}
-.stripRow {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding-top: 8px;
+.home {
   padding-bottom: 8px;
 }
-.stripStatus {
-  flex: 1;
-  min-width: 240px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.stripRemember {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-@media (max-width: 767px) {
-  .strip { border-top: 1px solid var(--ftp-border); }
-  .stripRow { gap: 10px; }
-  .stripStatus { min-width: 0; flex-basis: 100%; }
-  /* Kit buttons (ToolbarButton) grow to 44 px on phones by themselves via
-     `.ftp-btn` in globals.css — no override needed here any more. */
-  .stripRemember { min-height: 44px; }
-}
 
-/* ───────────────────────── Hero ───────────────────────── */
+/* ───────────── Hero ───────────── */
 
+.heroBand {
+  padding: 24px 0 4px;
+}
 .hero {
-  max-width: 720px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
 }
-.heroLead {
-  margin: 12px 0 0;
-  font-size: 15px;
-  line-height: 22px;
+.heroText {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.kicker {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ftp-brand-deep);
+}
+.title {
+  margin: 0;
+  max-width: 17em;
+  font-family: var(--ftp-font-display);
+  font-size: clamp(28px, 4.4vw, 46px);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ftp-text);
+  text-wrap: balance;
+}
+:global([lang="hi"]) .title,
+:global([lang="kn"]) .title {
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.lead {
+  margin: 0;
+  max-width: 38em;
+  font-size: 16px;
+  line-height: 25px;
   color: var(--ftp-text-2);
 }
-.heroActions {
+.actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 10px;
 }
-
-/* Buttons (primary + secondary). 40 px, 44 px on phones. */
-.button {
+.btnPrimary,
+.btnOutline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 16px;
-  border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-tile);
-  background: var(--ftp-surface);
-  color: var(--ftp-text);
+  min-height: 50px;
+  padding: 0 22px;
+  border-radius: 14px;
   font-family: var(--ftp-font-sans);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
+  font-size: 16px;
+  line-height: 22px;
+  text-align: center;
   text-decoration: none;
-  white-space: nowrap;
   cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
-.button:hover {
-  border-color: var(--ftp-border-strong);
-  background: var(--ftp-surface-2);
-}
-.buttonPrimary {
-  border-color: var(--ftp-brand);
+.btnPrimary {
+  border: 1px solid var(--ftp-brand);
   background: var(--ftp-brand);
-  color: var(--ftp-surface);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 18px -12px rgba(37, 99, 235, 0.8);
 }
-.buttonPrimary:hover {
+.btnPrimary:hover {
   border-color: var(--ftp-brand-deep);
   background: var(--ftp-brand-deep);
 }
-@media (max-width: 767px) {
-  .button { height: 44px; flex: 1 1 auto; }
-}
-
-/* ───────────────────────── Map + districts (7 / 5 columns) ───────────────────────── */
-
-.mapGrid {
-  align-items: stretch;
-}
-.mapCol {
-  grid-column: 1 / span 7;
-  min-width: 0;
-  display: flex;
-}
-.listCol {
-  grid-column: 8 / span 5;
-  min-width: 0;
-}
-@media (max-width: 1023px) {
-  .mapCol,
-  .listCol { grid-column: 1 / -1; }
-}
-@media (max-width: 767px) {
-  /* List first, then the map. */
-  .listCol { order: -1; }
-}
-
-.mapFrame {
-  position: relative;
-  flex: 1;
-  margin: 0;
-  min-height: 420px;
-  background: var(--ftp-surface-2);
-  border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-card);
-  overflow: hidden;
-  touch-action: pinch-zoom;
-}
-.mapCanvas {
-  position: absolute;
-  inset: 0;
-}
-.mapLoading {
-  width: 100%;
-  height: 100%;
-  background: var(--ftp-surface-2);
-}
-/* DrillDownMap's own frame (inline surface-2 background, 8 px radius,
-   420 px min-height) is replaced by .mapFrame above, so flatten it here.
-   Its state colours already come from the tokens via
-   src/components/map/mapTheme.tsx (--ftp-map-live / --ftp-map-locked),
-   so no colour overrides are needed on the home page. */
-.mapCanvas > div {
-  background: transparent !important;
-  border-radius: 0 !important;
-  min-height: 0 !important;
-}
-.mapCanvas svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-/* DrillDownMap's own legend is its last child; ours replaces it. */
-.mapCanvas > div > div:last-child {
-  display: none !important;
-}
-.mapLegend {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
+.btnOutline {
+  border: 1px solid var(--ftp-border-strong);
   background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-tile);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--ftp-brand-deep);
+  font-weight: 600;
+}
+.btnOutline:hover {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand-tint);
+}
+.btnOutline:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+.btnPrimary:focus-visible,
+.btnOutline:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.stats {
+  margin: 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ftp-text-2);
+}
+
+/* Search box with its result list */
+.search {
+  position: relative;
+}
+.searchField {
+  position: relative;
+}
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--ftp-text-2);
   pointer-events: none;
 }
-.legendRow {
+.searchInput {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px 0 48px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 14px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 17px;
+  line-height: 24px;
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.04);
+}
+.searchInput::placeholder {
+  color: var(--ftp-text-2);
+}
+.searchInput:focus {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 1px;
+  border-color: var(--ftp-brand);
+}
+.searchResults {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(60vh, 440px);
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
+  box-shadow: 0 18px 44px -22px rgba(15, 27, 45, 0.35), 0 2px 6px rgba(15, 27, 45, 0.05);
+}
+.searchEmpty {
+  margin: 0;
+  padding: 8px;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ftp-text-2);
+}
+
+/* Map (tablet and PC) */
+.heroMap {
+  display: none;
+}
+.map {
+  position: relative;
+  margin: 0;
+  padding: 12px 12px 6px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 20px;
+  background: var(--ftp-surface);
+}
+.mapSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 440px;
+  margin: 0 auto;
+}
+.mapLoading {
+  width: 100%;
+  aspect-ratio: 8 / 9;
+  max-height: 480px;
+  border-radius: 20px;
+  background: var(--ftp-surface-2);
+}
+.pin {
+  cursor: pointer;
+  outline: none;
+}
+.pinHalo {
+  fill: var(--ftp-brand);
+  opacity: 0.16;
+  transition: opacity 150ms ease;
+}
+.pinDot {
+  fill: var(--ftp-brand);
+  stroke: var(--ftp-surface);
+  stroke-width: 2.5;
+}
+.pin:hover .pinHalo,
+.pin:focus-visible .pinHalo {
+  opacity: 0.38;
+}
+.pin:focus-visible .pinHalo {
+  stroke: var(--ftp-brand-deep);
+  stroke-width: 2;
+}
+.mapTip {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ftp-text);
+  color: var(--ftp-surface);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.mapLegend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  padding: 6px 0 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+}
+.legendItem {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 .legendSwatch {
-  width: 12px;
-  height: 8px;
-  border-radius: 2px;
-}
-.legendLive   { background: var(--ftp-map-live); }
-.legendLocked { background: var(--ftp-map-locked); }
-@media (max-width: 767px) {
-  .mapFrame { min-height: 0; aspect-ratio: 4 / 3; flex: none; width: 100%; }
-}
-
-/* Districts card */
-.districtsCard {
-  background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-card);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.districtsHead {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--ftp-border);
-}
-.districtsSort {
-  margin-left: auto;
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--ftp-text-2);
-}
-.districtsList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  /* 10 rows x 56 px; more districts scroll inside the card. */
-  max-height: 560px;
-  overflow-y: auto;
-  flex: 1;
-}
-.districtsList li + li {
-  border-top: 1px solid var(--ftp-border);
-}
-.districtRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 56px;
-  padding: 0 16px;
-  color: var(--ftp-text);
-  text-decoration: none;
-  transition: background-color 150ms ease;
-}
-.districtRow:hover {
-  background: var(--ftp-surface-2);
-}
-.districtMain {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-.districtLine1 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.districtName {
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.districtLocal {
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ftp-text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.districtLine2 {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ftp-text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.districtTemp {
-  flex-shrink: 0;
-  font-size: 13px;
-  color: var(--ftp-text);
-}
-.districtsFoot {
-  padding: 12px 16px;
-  border-top: 1px solid var(--ftp-border);
-  font-size: 13px;
-  line-height: 20px;
-}
-@media (max-width: 767px) {
-  .districtsList { max-height: none; }
-}
-
-/* A plain inline link with a trailing arrow. */
-.inlineLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  color: var(--ftp-brand-deep);
-  text-decoration: none;
-}
-.inlineLink:hover {
-  text-decoration: underline;
-}
-@media (max-width: 767px) {
-  .inlineLink { min-height: 44px; }
-}
-
-/* ───────────────────────── Latest data ───────────────────────── */
-
-.bandRest {
-  padding-top: 16px;
-}
-.latestGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-/* Column count follows the number of cards, so three cards never leave an
-   empty fourth slot and two never stretch across four columns. */
-.latestGrid[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.latestGrid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.latestGrid[data-count="1"] { grid-template-columns: minmax(0, 560px); }
-@media (max-width: 1023px) {
-  .latestGrid, .latestGrid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 767px) {
-  .latestGrid, .latestGrid[data-count] { grid-template-columns: minmax(0, 1fr); }
-}
-.latestCard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  padding: 16px;
-  background: var(--ftp-surface);
-  border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-card);
-}
-.latestTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 4px;
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ftp-text-2);
-}
-.latestIcon {
-  color: var(--ftp-brand);
+  width: 10px;
+  height: 10px;
   flex-shrink: 0;
 }
-.latestTitleLink {
-  color: inherit;
-  text-decoration: none;
+.legendLive {
+  border-radius: 50%;
+  background: var(--ftp-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-brand) 20%, transparent);
 }
-.latestTitleLink:hover {
-  color: var(--ftp-brand-deep);
-  text-decoration: underline;
+.legendLand {
+  border-radius: 3px;
+  border: 1px solid var(--ftp-border-strong);
+  background: var(--ftp-map-land, #E3EAF4);
 }
-/* Makes the whole card clickable through the title link, without
-   nesting the SourcePill link inside another link. */
-.latestCard {
-  position: relative;
+
+/* ───────────── Sections ───────────── */
+
+.section {
+  margin-top: 40px;
 }
-.latestTitleLink::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--ftp-radius-card);
-}
-.latestMeta {
-  position: relative; /* sits above the stretched title link */
-  z-index: 1;
+.sectionHead {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.sectionHeadRow {
+  display: flex;
   flex-wrap: wrap;
-  margin-top: auto;
-  padding-top: 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
 }
-.latestHeadline {
+.h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ftp-text);
+}
+.sectionNote {
   margin: 0;
   font-size: 15px;
   line-height: 22px;
-  font-weight: 500;
-  color: var(--ftp-text);
-  overflow-wrap: anywhere;
-}
-.latestSupport {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ftp-text-2);
-  overflow-wrap: anywhere;
-}
-.latestSkeleton {
-  height: 44px;
-  border-radius: var(--ftp-radius-tile);
-}
-.latestNone {
-  margin: 16px 0 0;
-  font-size: 13px;
-  line-height: 20px;
   color: var(--ftp-text-2);
 }
-.latestNone a {
-  color: var(--ftp-brand-deep);
-}
-
-/* ───────────────────────── How it works ───────────────────────── */
-
-.howGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-@media (max-width: 767px) {
-  .howGrid { grid-template-columns: minmax(0, 1fr); }
-}
-.howHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.howNum {
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--ftp-text-2);
-}
-.howIcon {
-  color: var(--ftp-brand);
-}
-.howBody {
-  margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ftp-text-2);
-}
-.howSources {
+.sectionFoot {
   margin: 12px 0 0;
   font-size: 12px;
   line-height: 18px;
   color: var(--ftp-text-2);
 }
-.howSources a {
-  color: var(--ftp-brand-deep);
-}
-
-/* ───────────────────────── Built with citizens ───────────────────────── */
-
-.communityGrid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--ftp-gutter);
-}
-.communityMain { grid-column: span 7; display: flex; flex-direction: column; gap: 8px; }
-.communitySide { grid-column: span 5; display: flex; flex-direction: column; gap: 8px; }
-@media (max-width: 1023px) {
-  .communityMain,
-  .communitySide { grid-column: 1 / -1; }
-}
-.communityNote {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ftp-text-2);
-}
-.communityLinks {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 20px;
-  margin-top: auto;
-  padding-top: 8px;
-}
-.supList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-.supPill {
+.textLink {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-pill);
-  background: var(--ftp-surface);
-  color: var(--ftp-text);
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--ftp-brand-deep);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
   text-decoration: none;
 }
-.supPillLink:hover {
-  border-color: var(--ftp-border-strong);
-  background: var(--ftp-surface-2);
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.supPlace {
-  color: var(--ftp-text-2);
+.textLink:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
-.voteList {
+
+/* ───────────── Live districts ───────────── */
+
+.districtGrid {
   list-style: none;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.districtCard {
+  height: 100%;
   display: flex;
   flex-direction: column;
-}
-.voteList li + li {
-  border-top: 1px solid var(--ftp-border);
-}
-.voteRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
+  gap: 3px;
+  padding: 14px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
   color: var(--ftp-text);
   text-decoration: none;
-  font-size: 13px;
-  line-height: 20px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
-.voteRow:hover .voteTitle {
-  text-decoration: underline;
+.districtCard:hover {
+  border-color: color-mix(in srgb, var(--ftp-brand) 45%, transparent);
+  box-shadow: 0 10px 22px -16px rgba(37, 99, 235, 0.55);
 }
-.voteCount {
-  flex-shrink: 0;
-  min-width: 48px;
-  height: 24px;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--ftp-radius-pill);
-  background: var(--ftp-features-tint);
-  color: var(--ftp-features);
-  font-size: 12px;
+.districtCard:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
 }
-.voteTitle {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.shareForm {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--ftp-border);
-}
-.shareHead {
+.districtTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 8px;
 }
-
-/* ───────────────────────── Support line ───────────────────────── */
-
-.supportLine {
-  display: flex;
+.districtArt {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand);
+}
+.newTag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+.districtName {
+  display: flex;
   flex-wrap: wrap;
-  margin-top: 32px;
-  padding: 16px 20px;
-  background: var(--ftp-support-tint);
+  align-items: baseline;
+  gap: 0 6px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.districtLocal {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.districtState {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.districtTag {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.voteCard {
+  justify-content: center;
+  border-style: dashed;
+  border-color: var(--ftp-border-strong);
+  background: var(--ftp-surface-2);
+}
+.voteTitle {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+}
+.voteBody {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+.voteLink {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ftp-brand-deep);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+/* ───────────── India at a glance ───────────── */
+
+.india {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--ftp-brand) 16%, transparent);
+  border-radius: 20px;
+  background: var(--ftp-brand-tint);
+}
+.indiaText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.indiaBody {
+  margin: 0;
+  max-width: 34em;
+  font-size: 15px;
+  line-height: 23px;
+  color: var(--ftp-text);
+}
+.indiaFigures {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
   border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-card);
+  border-radius: 14px;
+  background: var(--ftp-surface);
+}
+.figureLabel {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.figureValue {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.35;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ftp-text);
+}
+.figureSource {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.figureSource a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.figureSource a:hover {
+  color: var(--ftp-brand-deep);
+}
+
+/* ───────────── Prices today ───────────── */
+
+.prices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.price {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  min-height: 90px;
+  padding: 12px 14px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 14px;
+  background: var(--ftp-surface);
+}
+.priceLoading {
+  border-color: transparent;
+  background: var(--ftp-surface-2);
+}
+.priceLabel {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.priceValue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  font-size: 19px;
+  line-height: 1.35;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ftp-text);
+}
+.priceUnit {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.priceUp,
+.priceDown {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+.priceUp {
+  color: var(--ftp-live-text);
+}
+.priceDown {
+  color: var(--ftp-danger);
+}
+
+/* ───────────── Support line ───────────── */
+
+.support {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 12px 18px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
 }
 .supportHeart {
-  color: var(--ftp-support);
   flex-shrink: 0;
+  color: var(--ftp-support-text, #B4234F);
 }
 .supportText {
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 240px;
   margin: 0;
   font-size: 15px;
   line-height: 22px;
   color: var(--ftp-text);
 }
-.supportLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 16px;
-  border: 1px solid var(--ftp-border-strong);
-  border-radius: var(--ftp-radius-tile);
-  background: var(--ftp-surface);
-  color: var(--ftp-text);
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
+
+/* ───────────── Wider screens ───────────── */
+
+@media (min-width: 640px) {
+  .districtGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .prices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .india {
+    padding: 24px;
+  }
+  .figureValue {
+    font-size: 21px;
+  }
 }
-.supportLink:hover {
-  background: var(--ftp-surface-2);
+@media (min-width: 768px) {
+  .heroBand {
+    padding: 32px 0 8px;
+  }
+  .hero {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 32px;
+  }
+  .heroMap {
+    display: block;
+    min-width: 0;
+    min-height: 380px;
+  }
 }
-@media (max-width: 767px) {
-  .supportLink { min-height: 44px; width: 100%; justify-content: center; }
+@media (min-width: 1024px) {
+  .heroBand {
+    padding: 44px 0 12px;
+  }
+  .hero {
+    gap: 48px;
+  }
+  .section {
+    margin-top: 56px;
+  }
+  .districtGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .prices {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .india {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: center;
+    gap: 32px;
+    padding: 28px 32px;
+  }
+}
+@media (max-width: 479px) {
+  /* Phones: both hero buttons fill the row, one above the other. */
+  .actions > * {
+    flex: 1 1 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .button,
-  .districtRow { transition: none; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════
-   Design v4 — hero, map frame, live-district grid
-   ═══════════════════════════════════════════════════════════════════ */
-.heroV4 {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 32px;
-  align-items: stretch;
-}
-@media (max-width: 1023px) {
-  .heroV4 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-}
-.heroLeft { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.heroRight { display: flex; min-width: 0; min-height: 520px; }
-@media (max-width: 1023px) { .heroRight { min-height: 420px; } }
-@media (max-width: 767px) { .heroRight { min-height: 340px; } }
-
-.heroPill {
-  align-self: flex-start;
-  display: inline-flex; align-items: center; gap: 8px;
-  margin: 0; padding: 6px 14px 6px 10px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid var(--ftp-border);
-  box-shadow: var(--ftp-shadow-1);
-  font-size: 13px; font-weight: 600; color: var(--ftp-text);
-}
-.heroTitle {
-  margin: 0;
-  display: flex; flex-direction: column; gap: 4px;
-  font-family: var(--ftp-font-display);
-  font-weight: 750;
-  font-size: clamp(40px, 5.6vw, 66px);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
-  color: var(--ftp-text);
-}
-.heroLine { display: inline-flex; align-items: center; gap: 14px; }
-.heroMark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 1.25em; height: 1.25em; flex-shrink: 0;
-  border-radius: 0.34em;
-  font-size: 0.62em;
-  background: var(--hue-tint);
-  border: 1.5px solid color-mix(in srgb, var(--hue) 30%, transparent);
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-}
-.heroLeadV4 { margin: 0; max-width: 560px; font-size: 17px; line-height: 27px; color: var(--ftp-text-2); }
-
-/* "Go to my location" card */
-.heroLocate {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
-  padding: 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #FFF4E8 0%, #FFFFFF 55%, #EAF7EC 100%);
-  border: 1px solid #F1DEC8;
-  box-shadow: var(--ftp-shadow-1);
-}
-.heroLocateBtn {
-  display: inline-flex; align-items: center; gap: 10px;
-  height: 48px; padding: 0 20px;
-  border: none; border-radius: 14px;
-  /* orange-700 → 800: white text stays above 4.5:1 across the gradient */
-  background: linear-gradient(135deg, #C2410C 0%, #9A3412 100%);
-  color: #fff; font-family: var(--ftp-font-sans); font-size: 16px; font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 10px 22px -10px rgba(194, 65, 12, 0.8);
-  transition: transform 180ms var(--ftp-ease-out), box-shadow 180ms var(--ftp-ease-out);
-}
-.heroLocateBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 28px -12px rgba(234, 88, 12, 0.85); }
-.heroLocateBtn:disabled { opacity: 0.75; cursor: progress; }
-.heroLocateStatus { flex: 1 1 220px; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-
-.heroActionsV4 { display: flex; flex-wrap: wrap; gap: 10px; }
-.heroBtnDark, .heroBtnGhost {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 44px; padding: 0 18px; border-radius: 12px;
-  font-family: var(--ftp-font-sans); font-size: 15px; font-weight: 600;
-  text-decoration: none; cursor: pointer;
-  transition: transform 180ms var(--ftp-ease-out), background-color 150ms ease, border-color 150ms ease;
-}
-.heroBtnDark { background: #2563EB; color: #fff; border: 1px solid #2563EB; box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.85); }
-.heroBtnDark:hover { background: #1E40AF; border-color: #1E40AF; transform: translateY(-1px); }
-.heroBtnGhost { background: #fff; color: var(--ftp-text); border: 1px solid var(--ftp-border-strong); }
-.heroBtnGhost:hover { border-color: #2563EB; color: #1E3A8A; }
-@media (max-width: 767px) {
-  .heroBtnDark, .heroBtnGhost, .heroLocateBtn { flex: 1 1 auto; justify-content: center; }
-}
-
-.heroStats { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 0; }
-.heroStat {
-  position: relative; display: flex; flex-direction: column; gap: 2px;
-  padding: 12px 12px 12px;
-  border-radius: 16px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--hue) 12%, #fff) 0%, #fff 70%);
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1);
-}
-.heroStatEmoji { font-size: 20px; line-height: 1; margin-bottom: 4px; }
-.heroStatValue { font-family: var(--ftp-font-display); font-weight: 700; font-size: 28px; line-height: 32px; letter-spacing: -0.02em; color: var(--hue-deep); font-variant-numeric: tabular-nums; }
-.heroStatLabel { font-size: 13px; line-height: 17px; font-weight: 600; color: var(--ftp-text-2); }
-.heroStatAsOf { margin-top: 2px; }
-@media (max-width: 1180px) and (min-width: 1024px) { .heroStats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 639px) { .heroStats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-/* Map frame (v4): sky wash, soft depth. Overrides the v3 .mapFrame. */
-.heroRight .mapFrame {
-  min-height: 0;
-  border-radius: 24px;
-  border: 1px solid #D9E6F7;
-  background:
-    radial-gradient(520px 320px at 30% 20%, rgba(37, 99, 235, 0.10), transparent 70%),
-    linear-gradient(180deg, #F4F8FE 0%, #FFFFFF 100%);
-  box-shadow: var(--ftp-shadow-1);
-}
-
-/* ── Live districts grid ───────────────────────────────────────────── */
-.gridHead { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; margin-bottom: 16px; }
-.gridHeadNote { margin-left: auto; font-size: 13px; color: var(--ftp-text-2); }
-@media (max-width: 767px) { .gridHeadNote { margin-left: 0; flex-basis: 100%; } }
-.districtGrid {
-  list-style: none; margin: 0; padding: 0;
-  display: grid; gap: 12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-@media (max-width: 1023px) { .districtGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 767px)  { .districtGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
-.districtTile {
-  display: flex; flex-direction: column; gap: 4px; height: 100%;
-  padding: 14px 14px 16px;
-  border-radius: 18px;
-  text-decoration: none; color: inherit;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 11%, #fff) 0%, #fff 62%);
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1);
-}
-.districtTileTop { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.districtArt {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 48px; height: 48px; border-radius: 14px;
-  background: #fff; color: var(--hue);
-  border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
-  box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--hue) 90%, transparent);
-}
-.districtWeather {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 8px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85); border: 1px solid var(--ftp-border);
-  font-size: 13px; color: var(--ftp-text);
-}
-.districtTileName {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px;
-  font-family: var(--ftp-font-display); font-size: 19px; line-height: 24px; font-weight: 650; color: var(--ftp-text);
-}
-.districtTileLocal { font-family: var(--ftp-font-sans); font-size: 14px; font-weight: 500; color: var(--hue-deep); }
-.districtTileState { font-size: 13px; line-height: 18px; color: var(--ftp-text-2); }
-.districtTileTag {
-  align-self: flex-start; margin-top: 6px;
-  padding: 3px 9px; border-radius: 999px;
-  background: var(--hue-tint); color: var(--hue-deep);
-  font-size: 12px; font-weight: 600; line-height: 18px;
-}
-.voteTile { grid-column: span 2; }
-@media (max-width: 1023px) and (min-width: 768px) { .voteTile { grid-column: span 2; } }
-.voteTileLink {
-  display: flex; align-items: center; gap: 14px; height: 100%;
-  padding: 16px 18px; border-radius: 18px;
-  text-decoration: none; color: var(--ftp-text);
-  background: linear-gradient(135deg, #FFF7DB 0%, #FFFFFF 70%);
-  border: 1.5px dashed color-mix(in srgb, var(--hue) 45%, transparent);
-}
-.voteTileTitle { display: block; font-family: var(--ftp-font-display); font-size: 18px; font-weight: 650; }
-.voteTileBody { display: block; margin-top: 2px; font-size: 13px; line-height: 19px; color: var(--ftp-text-2); }
-
-/* ── v4: How it works (numbered, joined steps) ─────────────────────── */
-.howGrid { position: relative; gap: 16px; }
-.howStep {
-  position: relative;
-  padding: 18px;
-  border-radius: 20px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 12%, #fff) 0%, #fff 65%);
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1);
-}
-@media (min-width: 768px) {
-  /* dotted connector between step cards */
-  .howStep:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    top: 42px;
-    right: -16px;
-    width: 16px;
-    border-top: 2px dotted color-mix(in srgb, var(--hue) 55%, transparent);
+  .btnPrimary,
+  .btnOutline,
+  .districtCard,
+  .pinHalo {
+    transition: none;
   }
 }
-.howHead { justify-content: flex-start; gap: 12px; margin-bottom: 12px; }
-.howEmoji {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 48px; height: 48px; border-radius: 16px; font-size: 26px;
-  background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
-  box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--hue) 90%, transparent);
-}
-.howNum { font-size: 12px; font-weight: 700; color: var(--hue-deep); background: var(--hue-tint); padding: 3px 10px; border-radius: 999px; }
-.howTitle { margin: 0; font-family: var(--ftp-font-display); font-size: 20px; line-height: 26px; font-weight: 650; color: var(--ftp-text); }
-.howBody { font-size: 14px; line-height: 21px; }
-
-/* ── v4: Support band (warm, never hot pink — vault note) ──────────── */
-.supportLine {
-  gap: 16px;
-  margin-top: 40px;
-  padding: 20px 22px;
-  background:
-    radial-gradient(420px 160px at 0% 0%, rgba(255, 153, 51, 0.16), transparent 70%),
-    #F5F0EB;
-  border: 1px solid #EADFD2;
-  border-radius: 22px;
-}
-.supportEmoji { font-size: 34px; line-height: 1; }
-.supportText strong { font-weight: 700; }
-.supportLink {
-  border: none;
-  border-radius: 12px;
-  background: #15171C;
-  color: #fff;
-  font-weight: 600;
-  transition: transform 180ms var(--ftp-ease-out), background-color 150ms ease;
-}
-.supportLink:hover { background: #2B2F38; transform: translateY(-1px); }
-
-/* ── v4: Latest data cards (each in its module's hue) ─────────────── */
-.latestCard {
-  border-radius: 20px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 10%, #fff) 0%, #fff 60%);
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1);
-  padding: 18px;
-}
-.latestTitle { gap: 10px; font-family: var(--ftp-font-display); font-size: 16px; font-weight: 650; color: var(--hue-deep); text-transform: none; letter-spacing: 0; }
-.latestTitleLink { color: var(--hue-deep); }
-.latestEmoji {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: 12px; font-size: 19px;
-  background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
-}
-.latestHeadline { font-family: var(--ftp-font-display); font-size: 20px; line-height: 26px; font-weight: 650; color: var(--ftp-text); }
-
-/* ── v4: citizens section ─────────────────────────────────────────── */
-.voteMedal { font-size: 20px; line-height: 1; flex-shrink: 0; }
-.voteCount { background: var(--hue-tint) !important; color: var(--hue-deep) !important; }
-.supPill { background: #fff; border-color: color-mix(in srgb, var(--hue) 25%, var(--ftp-border)) !important; }
