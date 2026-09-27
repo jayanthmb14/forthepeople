@@ -9,7 +9,23 @@
 import { useState, useEffect, useMemo, useRef, useContext } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Instagram, Linkedin, Github, Twitter, ExternalLink } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  Github,
+  Instagram,
+  Linkedin,
+  Lock,
+  Minus,
+  Plus,
+  Share2,
+  Twitter,
+  XCircle,
+} from "lucide-react";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { validateSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
@@ -23,6 +39,13 @@ declare global {
   }
 }
 
+// Design v3 note: this component's LOOK uses --ftp-* tokens only. Two props
+// are kept for compatibility but are no longer drawn:
+//   • `emoji`  — v3 has no emoji in chrome.
+//   • `accent` — still passed to Razorpay as `theme.color` (Razorpay needs a
+//                real colour string, not a CSS variable); on-page buttons use
+//                the brand token instead.
+// The payment flow itself (create → Razorpay → verify) is unchanged.
 export interface TierConfig {
   emoji: string;
   label: string;
@@ -368,42 +391,37 @@ export default function SupportCheckout({ tier }: Props) {
       : "/en";
 
     return (
-      <div style={{ textAlign: "center", padding: "24px 16px" }}>
-        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#e1f5ee", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 28 }}>✅</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A1A", marginBottom: 6 }}>
-          Thank You!
-        </div>
-        <div style={{ fontSize: 14, color: "#4B4B4B", lineHeight: 1.7, marginBottom: 6 }}>
+      <div role="status" style={{ textAlign: "center", padding: "16px 0" }}>
+        <CheckCircle2 size={32} aria-hidden style={{ color: "var(--ftp-live)", margin: "0 auto 8px", display: "block" }} />
+        <p className="ftp-title" style={{ marginBottom: 6 }}>Thank you!</p>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 12 }}>
           {tier.isMonthly
             ? `Your ₹${paidAmount.toLocaleString("en-IN")}/month subscription is now active.`
             : `Your ₹${paidAmount.toLocaleString("en-IN")} contribution helps keep ForThePeople.in running.`}
-        </div>
-        <div style={{ fontSize: 12, color: "#16A34A", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "8px 12px", marginBottom: 10, lineHeight: 1.6 }}>
+        </p>
+        <p className="ftp-body" style={{ ...NOTE, color: "var(--ftp-live-text)", marginBottom: 8 }}>
           Your name will appear on the contributors page within a minute.
-        </div>
-        <div style={{ fontSize: 11, color: "#6B6B6B", background: "#FAFAF8", border: "1px solid #E8E8E4", borderRadius: 8, padding: "8px 12px", marginBottom: 16, lineHeight: 1.6 }}>
+        </p>
+        <p style={{ ...NOTE, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginBottom: 16 }}>
           Want to update your social link or display name later? Email{" "}
-          <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB", textDecoration: "none", fontWeight: 600 }}>
+          <a href="mailto:support@forthepeople.in" style={{ color: "var(--ftp-brand)", textDecoration: "none", fontWeight: 500 }}>
             support@forthepeople.in
           </a>
-        </div>
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
-          <a href={whatsappHref} target="_blank" rel="noopener noreferrer"
-            style={{ padding: "9px 18px", background: "#25D366", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-            Share on WhatsApp
+        </p>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
+          <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={SECONDARY_BTN}>
+            <Share2 size={14} aria-hidden /> Share on WhatsApp
           </a>
-          <a href={twitterHref} target="_blank" rel="noopener noreferrer"
-            style={{ padding: "9px 18px", background: "#1DA1F2", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-            Share on X
+          <a href={twitterHref} target="_blank" rel="noopener noreferrer" className="ftp-btn-secondary" style={SECONDARY_BTN}>
+            <Twitter size={14} aria-hidden /> Share on X
           </a>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href={contributorsUrl}
-            style={{ fontSize: 13, color: "#2563EB", textDecoration: "none", fontWeight: 600 }}>
-            View Contributors →
+          <Link href={contributorsUrl} style={{ ...TEXT_LINK, color: "var(--ftp-brand)" }}>
+            View contributors <ArrowRight size={14} aria-hidden />
           </Link>
-          <Link href="/en" style={{ fontSize: 13, color: "#9B9B9B", textDecoration: "none" }}>
-            Back to Homepage
+          <Link href="/en" style={{ ...TEXT_LINK, color: "var(--ftp-text-2)" }}>
+            Back to homepage
           </Link>
         </div>
       </div>
@@ -413,123 +431,136 @@ export default function SupportCheckout({ tier }: Props) {
   // ── FORM STEP ─────────────────────────────────────────────
   if (step === "form" || step === "processing") {
     const isLoading = step === "processing";
+    const lockedDistrictPicked =
+      !!selectedDistrict && !!districtOptions.find((d) => d.slug === selectedDistrict && !d.active);
     return (
-      <div ref={containerRef} style={{ paddingTop: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#6B6B6B", marginBottom: 12 }}>
+      <div ref={containerRef} style={{ paddingTop: 4 }}>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginBottom: 12 }}>
           Almost there — just your name!
-        </div>
+        </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <input
-            type="text" placeholder="Your Name *" value={name}
+            type="text" placeholder="Your Name *" value={name} aria-label="Your name (required)"
             onChange={(e) => setName(e.target.value)} maxLength={40}
-            style={{
-              padding: "9px 12px",
-              border: `1px solid ${nameError ? "#D4523A" : "#E8E8E4"}`,
-              borderRadius: 8, fontSize: 13, outline: "none", background: "#FAFAF8",
-            }}
+            aria-invalid={!!nameError}
+            style={{ ...INPUT, borderColor: nameError ? "var(--ftp-danger)" : "var(--ftp-border)" }}
           />
-          {nameError && (
-            <div style={{ fontSize: 11, color: "#D4523A", marginTop: -4, marginBottom: 2 }}>
-              {nameError}
-            </div>
-          )}
+          {nameError && <FieldError>{nameError}</FieldError>}
           <input
-            type="email" placeholder="Email (optional — for receipt)" value={email}
+            type="email" placeholder="Email (optional — for receipt)" value={email} aria-label="Email (optional)"
             onChange={(e) => setEmail(e.target.value)}
-            style={{ padding: "9px 12px", border: "1px solid #E8E8E4", borderRadius: 8, fontSize: 13, outline: "none", background: "#FAFAF8" }}
+            style={INPUT}
           />
 
           {/* NPCI UPI AutoPay cap is ₹15,000 per debit. For higher subscription
               amounts (Founder tier is ₹50k+), users must use card or netbanking. */}
           {tier.isMonthly && amount > 15000 && (
-            <div
-              style={{
-                fontSize: 11,
-                color: "#92400E",
-                background: "#FFFBEB",
-                border: "1px solid #FDE68A",
-                borderRadius: 8,
-                padding: "8px 12px",
-                lineHeight: 1.55,
-              }}
-            >
-              <strong>Note:</strong> NPCI caps UPI AutoPay at ₹15,000 per debit.
-              For this amount, please use <strong>Card</strong> or <strong>Netbanking</strong>
-              at checkout. UPI will not work for recurring debits above ₹15,000.
+            <div style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
+              <AlertTriangle size={14} aria-hidden style={{ color: "var(--ftp-warn)", flexShrink: 0, marginTop: 1 }} />
+              <span>
+                <strong style={{ fontWeight: 500 }}>Note:</strong> NPCI caps UPI AutoPay at ₹15,000 per debit.
+                For this amount, please use <strong style={{ fontWeight: 500 }}>Card</strong> or{" "}
+                <strong style={{ fontWeight: 500 }}>Netbanking</strong> at checkout. UPI will not work for recurring
+                debits above ₹15,000.
+              </span>
             </div>
           )}
 
           {/* Phone — required for subscriptions (UPI AutoPay / bank e-mandate),
               optional for one-time contributions. Auto-fills Razorpay checkout. */}
-          <div style={{ position: "relative" }}>
+          <div>
             <input
               type="tel"
               inputMode="numeric"
               placeholder={phoneRequired ? "Phone (10-digit) *" : "Phone (optional — for payment receipt)"}
+              aria-label={phoneRequired ? "Phone number (required)" : "Phone number (optional)"}
               value={phone}
               onChange={(e) => setPhone(e.target.value.slice(0, 14))}
+              aria-invalid={phoneRequired && !!phone && !phoneValid}
               style={{
+                ...INPUT,
                 width: "100%",
-                padding: "9px 12px",
-                border: `1px solid ${phoneRequired && phone && !phoneValid ? "#DC2626" : "#E8E8E4"}`,
-                borderRadius: 8,
-                fontSize: 13,
-                outline: "none",
-                background: "#FAFAF8",
-                boxSizing: "border-box",
+                borderColor: phoneRequired && phone && !phoneValid ? "var(--ftp-danger)" : "var(--ftp-border)",
               }}
             />
             {phoneRequired && phone && !phoneValid && (
-              <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4 }}>
-                Enter a valid 10-digit Indian mobile number.
-              </div>
+              <FieldError>Enter a valid 10-digit Indian mobile number.</FieldError>
             )}
             {phoneRequired && !phone && (
-              <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 4 }}>
-                Required for monthly subscriptions (UPI AutoPay / bank e-mandate).
-              </div>
+              <p style={HINT}>Required for monthly subscriptions (UPI AutoPay / bank e-mandate).</p>
             )}
           </div>
 
           {/* Social link */}
-          <div style={{ fontSize: 12, fontWeight: 500, color: "#6B6B6B", marginTop: 2 }}>Social media link (optional)</div>
+          <label htmlFor={`social-${tier.tierKey}`} className="ftp-body" style={{ color: "var(--ftp-text-2)", fontWeight: 500, marginTop: 2 }}>
+            Social media link (optional)
+          </label>
           <div style={{ position: "relative" }}>
             <input
+              id={`social-${tier.tierKey}`}
               type="url" placeholder="Your profile URL or @handle" value={socialLink}
               onChange={(e) => setSocialLink(e.target.value)}
-              style={{ padding: "9px 12px", paddingRight: SocialIcon ? 36 : 12, border: "1px solid #E8E8E4", borderRadius: 8, fontSize: 13, outline: "none", background: "#FAFAF8", width: "100%", boxSizing: "border-box" }}
+              style={{ ...INPUT, paddingRight: SocialIcon ? 36 : 12, width: "100%" }}
             />
             {SocialIcon && (
               <SocialIcon
                 size={16}
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#6B6B6B" }}
+                aria-hidden
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ftp-text-2)" }}
               />
             )}
           </div>
-          <div style={{ fontSize: 11, marginTop: -6, paddingLeft: 2, color: isVerified ? "#16A34A" : hasWarning ? "#D97706" : !socialDetect.valid ? "#DC2626" : "#9B9B9B" }}>
-            {isVerified && detectedPlatform
-              ? `✓ ${detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1)} link detected — will be shown next to your name`
-              : hasWarning
-                ? `⚠ ${socialDetect.warning}`
-                : !socialDetect.valid
-                  ? "✗ Invalid link format"
-                  : "Your link will be displayed next to your name. Works with Instagram, LinkedIn, GitHub, Twitter, or any website."}
-          </div>
+          <p
+            style={{
+              ...HINT,
+              marginTop: -6,
+              display: "flex",
+              gap: 4,
+              alignItems: "flex-start",
+              color: isVerified
+                ? "var(--ftp-live-text)"
+                : hasWarning
+                  ? "var(--ftp-warn)"
+                  : !socialDetect.valid
+                    ? "var(--ftp-danger)"
+                    : "var(--ftp-text-2)",
+            }}
+          >
+            {isVerified && detectedPlatform ? (
+              <>
+                <CheckCircle2 size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+                {`${detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1)} link detected — will be shown next to your name`}
+              </>
+            ) : hasWarning ? (
+              <>
+                <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+                {socialDetect.warning}
+              </>
+            ) : !socialDetect.valid ? (
+              <>
+                <XCircle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} />
+                Invalid link format
+              </>
+            ) : (
+              "Your link will be displayed next to your name. Works with Instagram, LinkedIn, GitHub, Twitter, or any website."
+            )}
+          </p>
 
           {/* Helper text explaining required fields for this tier */}
           {districtRequired && (
-            <div style={{ fontSize: 11, color: "#2563EB", background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "8px 12px", borderRadius: 8, lineHeight: 1.5 }}>
+            <p style={{ ...NOTE, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
               Please pick the state and district you want to sponsor — your name will be featured on that district&apos;s page.
-            </div>
+            </p>
           )}
 
           {/* State selector (for district/state tiers, optional for others) */}
           {showStateSelector && (
             <select
               value={selectedState}
+              aria-label={stateRequired ? "State (required)" : "State (optional)"}
               onChange={(e) => { setSelectedState(e.target.value); setSelectedDistrict(""); }}
-              style={{ padding: "9px 12px", border: "1px solid #E8E8E4", borderRadius: 8, fontSize: 13, outline: "none", background: "#FAFAF8", color: selectedState ? "#1A1A1A" : "#9B9B9B" }}
+              style={{ ...INPUT, color: selectedState ? "var(--ftp-text)" : "var(--ftp-text-2)" }}
             >
               <option value="">{stateRequired ? "Select State *" : "Associate with a state (optional)"}</option>
               {stateOptions.map((s) => (
@@ -542,13 +573,13 @@ export default function SupportCheckout({ tier }: Props) {
           {showDistrictSelector && (
             <select
               value={selectedDistrict}
+              aria-label={districtRequired ? "District (required)" : "District (optional)"}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={!selectedState}
               style={{
-                padding: "9px 12px", border: "1px solid #E8E8E4", borderRadius: 8,
-                fontSize: 13, outline: "none",
-                background: !selectedState ? "#F0F0EC" : "#FAFAF8",
-                color: selectedDistrict ? "#1A1A1A" : "#9B9B9B",
+                ...INPUT,
+                background: !selectedState ? "var(--ftp-surface-2)" : "var(--ftp-surface)",
+                color: selectedDistrict ? "var(--ftp-text)" : "var(--ftp-text-2)",
                 cursor: !selectedState ? "not-allowed" : "pointer",
               }}
             >
@@ -559,68 +590,64 @@ export default function SupportCheckout({ tier }: Props) {
                     ? "Select District *"
                     : "Select District (optional)"}
               </option>
+              {/* Plain-text markers only: ● live, ○ coming soon (no emoji). */}
               {selectedState && districtOptions.map((d) => (
                 <option key={d.slug} value={d.slug}>
-                  {d.active ? "● " : "🔒 "}{d.name}{!d.active ? " (coming soon)" : ""}
+                  {d.active ? "● " : "○ "}{d.name}{!d.active ? " (coming soon)" : ""}
                 </option>
               ))}
             </select>
           )}
 
           {/* Show message for locked districts */}
-          {selectedDistrict && districtOptions.find((d) => d.slug === selectedDistrict && !d.active) && (
-            <div style={{ fontSize: 12, color: "#1E40AF", background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6 }}>
-              🔒 This district isn&apos;t live yet. Your sponsorship will activate the moment we launch it — your name will be the first on the page.
-            </div>
+          {lockedDistrictPicked && (
+            <p style={{ ...NOTE, display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ftp-text)" }} className="ftp-body">
+              <Lock size={14} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0, marginTop: 3 }} />
+              <span>
+                This district isn&apos;t live yet. Your sponsorship will activate the moment we launch it — your name will be
+                the first on the page.
+              </span>
+            </p>
           )}
 
           <input
-            type="text" placeholder="Message (optional, max 280 chars)" value={message}
+            type="text" placeholder="Message (optional, max 280 chars)" value={message} aria-label="Message (optional)"
             onChange={(e) => setMessage(e.target.value.slice(0, 280))}
-            style={{
-              padding: "9px 12px",
-              border: `1px solid ${messageError ? "#D4523A" : "#E8E8E4"}`,
-              borderRadius: 8, fontSize: 13, outline: "none", background: "#FAFAF8",
-            }}
+            aria-invalid={!!messageError}
+            style={{ ...INPUT, borderColor: messageError ? "var(--ftp-danger)" : "var(--ftp-border)" }}
           />
-          {messageError && (
-            <div style={{ fontSize: 11, color: "#D4523A", marginTop: -4 }}>
-              {messageError}
-            </div>
-          )}
+          {messageError && <FieldError>{messageError}</FieldError>}
 
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
-            <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: "#6B6B6B", lineHeight: 1.5 }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", minHeight: 44 }}>
+            <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, width: 16, height: 16 }} />
+            <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text)" }}>
               Show my contribution publicly<br />
-              <span style={{ color: "#9B9B9B" }}>(unchecked = shown as &quot;Anonymous&quot;)</span>
+              <span style={{ color: "var(--ftp-text-2)" }}>(unchecked = shown as &quot;Anonymous&quot;)</span>
             </span>
           </label>
         </div>
 
         {tier.isMonthly && (
-          <div style={{ fontSize: 11, color: "#9B9B9B", marginTop: 8, lineHeight: 1.5 }}>
-            Auto-debits monthly via UPI/Card. Cancel anytime.
-          </div>
+          <p style={{ ...HINT, marginTop: 8 }}>Auto-debits monthly via UPI/Card. Cancel anytime.</p>
         )}
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
           <button
+            type="button"
             onClick={() => setStep("idle")} disabled={isLoading}
-            style={{ padding: "10px 14px", background: "#F5F5F0", border: "1px solid #E8E8E4", borderRadius: 8, fontSize: 12, color: "#6B6B6B", cursor: "pointer", flexShrink: 0 }}>
-            ← Back
+            className="ftp-btn-secondary"
+            style={{ ...SECONDARY_BTN, flexShrink: 0 }}>
+            <ArrowLeft size={14} aria-hidden /> Back
           </button>
           <button
+            type="button"
             onClick={handlePay}
             disabled={!canSubmit || isLoading}
-            style={{
-              flex: 1, padding: "10px", background: !canSubmit || isLoading ? "#9B9B9B" : tier.accent,
-              color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600,
-              cursor: !canSubmit || isLoading ? "default" : "pointer", transition: "background 150ms ease",
-            }}>
+            style={{ ...primaryBtn(!canSubmit || isLoading), flex: 1 }}>
             {isLoading ? "Opening payment…" : tier.isMonthly
-              ? `Subscribe ₹${amount.toLocaleString("en-IN")}/month →`
-              : `Contribute ₹${amount.toLocaleString("en-IN")} →`}
+              ? `Subscribe ₹${amount.toLocaleString("en-IN")}/month`
+              : `Contribute ₹${amount.toLocaleString("en-IN")}`}
+            {!isLoading && <ArrowRight size={14} aria-hidden />}
           </button>
         </div>
       </div>
@@ -630,12 +657,11 @@ export default function SupportCheckout({ tier }: Props) {
   // ── ERROR STEP ────────────────────────────────────────────
   if (step === "error") {
     return (
-      <div style={{ textAlign: "center", paddingTop: 8 }}>
-        <div style={{ fontSize: 13, color: "#DC2626", marginBottom: 12 }}>
-          Payment failed or was cancelled.
-        </div>
-        <button onClick={() => setStep("idle")}
-          style={{ padding: "9px 20px", background: tier.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+      <div role="alert" style={{ textAlign: "center", paddingTop: 4 }}>
+        <p className="ftp-body" style={{ color: "var(--ftp-danger)", marginBottom: 12, display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
+          <AlertCircle size={14} aria-hidden /> Payment failed or was cancelled.
+        </p>
+        <button type="button" onClick={() => setStep("idle")} style={{ ...primaryBtn(false), width: "100%" }}>
           Try again
         </button>
       </div>
@@ -643,32 +669,46 @@ export default function SupportCheckout({ tier }: Props) {
   }
 
   // ── IDLE STEP (amount input + contribute button) ───────────
+  const atMin = amount <= tier.minAmount;
+  const atMax = amount >= tier.maxAmount;
   return (
     <div>
-      {/* Editable amount row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-        <button onClick={() => adjust(-tier.step)} disabled={amount <= tier.minAmount}
-          style={{ width: 28, height: 28, border: "1px solid #E8E8E4", borderRadius: 6, background: "#F5F5F0", cursor: amount <= tier.minAmount ? "not-allowed" : "pointer", fontSize: 16, color: "#6B6B6B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: amount <= tier.minAmount ? 0.5 : 1 }}>
-          −
+      {/* Editable amount row: [−] ₹ [amount] [+] — 44 px targets for thumbs */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <button
+          type="button"
+          onClick={() => adjust(-tier.step)} disabled={atMin}
+          aria-label={`Decrease amount by ₹${tier.step}`}
+          className="ftp-btn-secondary"
+          style={{ ...STEPPER_BTN, cursor: atMin ? "not-allowed" : "pointer", opacity: atMin ? 0.5 : 1 }}>
+          <Minus size={16} aria-hidden />
         </button>
-        <div style={{ display: "flex", alignItems: "center", flex: 1, background: "#FAFAF8", border: "1px solid #E8E8E4", borderRadius: 8, padding: "6px 10px" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: tier.accent, marginRight: 4 }}>₹</span>
+        <div style={{ ...INPUT, display: "flex", alignItems: "center", flex: 1, padding: "0 10px", minWidth: 0 }}>
+          <span className="ftp-num" style={{ fontSize: 15, color: "var(--ftp-text-2)", marginRight: 4 }}>₹</span>
           <input
             type="number" min={tier.minAmount} max={tier.maxAmount} step={tier.step} value={amountStr}
+            aria-label={`Amount in rupees for ${tier.label}`}
             onChange={(e) => setAmountStr(e.target.value)}
             onBlur={handleAmountBlur}
-            style={{ flex: 1, border: "none", background: "transparent", fontSize: 16, fontWeight: 800, color: "#1A1A1A", fontFamily: "var(--font-mono, monospace)", outline: "none", minWidth: 0 }}
+            className="ftp-num"
+            style={{ flex: 1, border: "none", background: "transparent", fontSize: 16, color: "var(--ftp-text)", outline: "none", minWidth: 0, height: 42 }}
           />
-          {tier.isMonthly && <span style={{ fontSize: 11, color: "#9B9B9B" }}>/mo</span>}
+          {tier.isMonthly && <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>/mo</span>}
         </div>
-        <button onClick={() => adjust(tier.step)} disabled={amount >= tier.maxAmount}
-          style={{ width: 28, height: 28, border: "1px solid #E8E8E4", borderRadius: 6, background: "#F5F5F0", cursor: amount >= tier.maxAmount ? "not-allowed" : "pointer", fontSize: 16, color: "#6B6B6B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: amount >= tier.maxAmount ? 0.5 : 1 }}>
-          +
+        <button
+          type="button"
+          onClick={() => adjust(tier.step)} disabled={atMax}
+          aria-label={`Increase amount by ₹${tier.step}`}
+          className="ftp-btn-secondary"
+          style={{ ...STEPPER_BTN, cursor: atMax ? "not-allowed" : "pointer", opacity: atMax ? 0.5 : 1 }}>
+          <Plus size={16} aria-hidden />
         </button>
       </div>
 
-      <button onClick={() => setStep("form")} disabled={!scriptReady}
-        style={{ display: "block", width: "100%", textAlign: "center", padding: "10px", background: tier.accent, color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none", transition: "opacity 150ms ease", opacity: scriptReady ? 1 : 0.7 }}>
+      <button
+        type="button"
+        onClick={() => setStep("form")} disabled={!scriptReady}
+        style={{ ...primaryBtn(false), width: "100%", opacity: scriptReady ? 1 : 0.7 }}>
         {tier.isMonthly
           ? `Subscribe ₹${amount.toLocaleString("en-IN")}/mo`
           : `Contribute ₹${amount.toLocaleString("en-IN")}`}
@@ -676,6 +716,110 @@ export default function SupportCheckout({ tier }: Props) {
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────
+//  Presentation helpers (Design v3 tokens only — no hex colours here)
+// ─────────────────────────────────────────────────────────────────────
+
+/** Text inputs and selects: 44 px tall, 1 px border, 8 px radius. */
+const INPUT: React.CSSProperties = {
+  minHeight: 44,
+  padding: "10px 12px",
+  border: "1px solid var(--ftp-border)",
+  borderRadius: "var(--ftp-radius-tile)",
+  fontSize: 13,
+  lineHeight: "20px",
+  outline: "none",
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  boxSizing: "border-box",
+};
+
+/** Quiet grey note box (surface-2, no coloured border). */
+const NOTE: React.CSSProperties = {
+  margin: 0,
+  padding: "8px 12px",
+  background: "var(--ftp-surface-2)",
+  borderRadius: "var(--ftp-radius-tile)",
+};
+
+/** 11 px helper line under a field. */
+const HINT: React.CSSProperties = {
+  margin: "4px 0 0",
+  fontSize: 11,
+  lineHeight: "16px",
+  color: "var(--ftp-text-2)",
+};
+
+/** Secondary (quiet) button: bordered surface, 44 px tall. */
+const SECONDARY_BTN: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  minHeight: 44,
+  padding: "0 14px",
+  background: "var(--ftp-surface)",
+  border: "1px solid var(--ftp-border)",
+  borderRadius: "var(--ftp-radius-tile)",
+  fontSize: 13,
+  fontWeight: 500,
+  color: "var(--ftp-text)",
+  textDecoration: "none",
+  cursor: "pointer",
+};
+
+/** Square 44 px −/+ buttons beside the amount. */
+const STEPPER_BTN: React.CSSProperties = {
+  ...SECONDARY_BTN,
+  width: 44,
+  padding: 0,
+  flexShrink: 0,
+  color: "var(--ftp-text-2)",
+};
+
+/** Plain text link with a 44 px hit area. */
+const TEXT_LINK: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  minHeight: 44,
+  fontSize: 13,
+  fontWeight: 500,
+  textDecoration: "none",
+};
+
+/**
+ * Primary (filled) button in the brand colour. Text uses --ftp-surface so it
+ * stays readable in dark mode too (brand turns light there).
+ */
+function primaryBtn(disabled: boolean): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 44,
+    padding: "0 14px",
+    background: disabled ? "var(--ftp-border-strong)" : "var(--ftp-brand)",
+    color: disabled ? "var(--ftp-text-2)" : "var(--ftp-surface)",
+    border: "none",
+    borderRadius: "var(--ftp-radius-tile)",
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: disabled ? "default" : "pointer",
+  };
+}
+
+/** Red 11 px validation message under a field. */
+function FieldError({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" style={{ ...HINT, marginTop: -4, color: "var(--ftp-danger)" }}>
+      {children}
+    </p>
+  );
+}
+
 
 // Export timeAgo for use in ContributorWall
 export function timeAgo(iso: string): string {

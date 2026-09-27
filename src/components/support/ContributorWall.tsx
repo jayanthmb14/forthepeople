@@ -6,27 +6,25 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════════════════
+//  ContributorWall — the two supporter strips on /support
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  1. Active supporters (monthly subscribers, from /api/data/contributors)
+//  2. One-time contributions (from /api/payment/contributors)
+//
+//  Design v3: the old auto-scrolling marquee is gone (no motion in chrome).
+//  Each strip is now a row of small Cards the visitor can swipe / scroll
+//  sideways. Tier emoji are replaced by a Pill with the tier name.
+//  Data fetching (React Query keys, refetch timings, caps) is unchanged —
+//  SupportCheckout invalidates these same query keys after a payment.
+//
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Instagram, Linkedin, Github, Twitter, ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink, Github, Instagram, Linkedin, Twitter } from "lucide-react";
 import type { ContributorsResponse, ContributorItem } from "@/app/api/payment/contributors/route";
 import { normalizeSocialLink } from "@/lib/social-link";
-
-const TIER_EMOJI: Record<string, string> = {
-  chai: "☕",
-  supporter: "🙏",
-  monthly: "🙏",
-  district: "🏛️",
-  state: "🇮🇳",
-  patron: "🌟",
-  custom: "💝",
-  "Buy me a Chai": "☕",
-  "Monthly Supporter": "🙏",
-  "District Sponsor": "🏛️",
-  "District Champion": "🏛️",
-  "State Champion": "🇮🇳",
-  "All-India Patron": "🌟",
-};
+import { Card, EmptyState, Pill, SectionHeader } from "@/components/district/ui";
 
 const SOCIAL_ICONS: Record<string, typeof Instagram> = {
   instagram: Instagram,
@@ -46,88 +44,96 @@ interface SubscriberItem {
   monthsActive: number;
 }
 
-function ContributorCard({ item }: { item: ContributorItem }) {
-  const emoji = (item.tier && TIER_EMOJI[item.tier]) || "💝";
+/** Shared style: one-line text that ends in "…" when too long. */
+const ELLIPSIS: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+
+/** Horizontal strip that scrolls sideways on its own (never the page). */
+function Strip({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <div
-      style={{
-        width: 120, minWidth: 120, background: "#FFFFFF",
-        border: "1px solid #E8E8E4", borderRadius: 12,
-        padding: "14px 12px", flexShrink: 0,
-      }}
+    <ul
+      aria-label={label}
+      style={{ display: "flex", gap: 12, overflowX: "auto", margin: 0, padding: "0 0 8px", listStyle: "none", scrollSnapType: "x proximity" }}
     >
-      <div style={{ fontSize: 22, marginBottom: 6 }}>{emoji}</div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {item.displayName}
-      </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#2563EB", marginBottom: 4, letterSpacing: "-0.2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {item.tierLabel}
+      {children}
+    </ul>
+  );
+}
+
+function ContributorCard({ item }: { item: ContributorItem }) {
+  return (
+    <Card as="li" padding={12} style={{ width: 160, minWidth: 160, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
+      <p className="ftp-title" style={{ ...ELLIPSIS, fontSize: 13, lineHeight: "20px" }}>{item.displayName}</p>
+      <div style={{ margin: "4px 0 6px", maxWidth: "100%", overflow: "hidden" }}>
+        <Pill tone="support" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{item.tierLabel}</Pill>
       </div>
       {item.message && (
-        <div style={{ fontSize: 10, color: "#6B6B6B", lineHeight: 1.4, marginBottom: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "0 0 4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
           &ldquo;{item.message.slice(0, 30)}{item.message.length > 30 ? "…" : ""}&rdquo;
-        </div>
+        </p>
       )}
-      <div style={{ fontSize: 10, color: "#9B9B9B" }}>{item.timeAgo}</div>
-    </div>
+      <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{item.timeAgo}</p>
+    </Card>
   );
 }
 
 function SubscriberCard({ item }: { item: SubscriberItem }) {
-  const emoji = TIER_EMOJI[item.tier] || "🙏";
   const safeLink = normalizeSocialLink(item.socialLink);
   // Even when platform is missing we still render the ExternalLink icon as
   // long as we have a usable URL — keeps bare-domain entries clickable.
   const SocialIcon =
     (item.socialPlatform ? SOCIAL_ICONS[item.socialPlatform] : null) ?? (safeLink ? ExternalLink : null);
   return (
-    <div
-      style={{
-        width: 130, minWidth: 130, background: "#FFFFFF",
-        border: "1px solid #E8E8E4", borderRadius: 12,
-        padding: "12px", flexShrink: 0,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-        <span style={{ fontSize: 18 }}>{emoji}</span>
-        {item.badgeLevel && (
-          <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 4px", borderRadius: 3, background: "#FEF3C7", color: "#92400E", textTransform: "uppercase" }}>
-            {item.badgeLevel}
-          </span>
-        )}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 2 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-          {item.name}
-        </span>
+    <Card as="li" padding={12} style={{ width: 160, minWidth: 160, flexShrink: 0, listStyle: "none", scrollSnapAlign: "start" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span className="ftp-title" style={{ ...ELLIPSIS, fontSize: 13, lineHeight: "20px", flex: 1 }}>{item.name}</span>
         {SocialIcon && safeLink && (
           <a
             href={safeLink}
             target="_blank"
             rel="noopener noreferrer"
             title={safeLink}
-            style={{ color: "#2563EB", lineHeight: 0, flexShrink: 0 }}
+            aria-label={`${item.name}'s profile`}
+            style={{ color: "var(--ftp-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0 }}
           >
-            <SocialIcon size={12} />
+            <SocialIcon size={12} aria-hidden />
           </a>
         )}
       </div>
-      {item.monthsActive > 0 && (
-        <div style={{ fontSize: 10, color: "#9B9B9B" }}>{item.monthsActive}mo active</div>
+      {item.badgeLevel && (
+        <div style={{ marginTop: 4 }}>
+          <Pill tone="warn">{item.badgeLevel}</Pill>
+        </div>
       )}
-    </div>
+      {item.monthsActive > 0 && (
+        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "4px 0 0" }}>
+          <span className="ftp-num">{item.monthsActive}</span>mo active
+        </p>
+      )}
+    </Card>
   );
 }
 
+/** Flat placeholder card while the list loads (no shimmer gradient). */
 function SkeletonCard() {
   return (
-    <div style={{ width: 120, minWidth: 120, background: "#F5F5F0", borderRadius: 12, padding: "14px 12px", flexShrink: 0 }}>
-      {[22, 40, 14, 10].map((h, i) => (
-        <div key={i} style={{ height: h, background: "#E8E8E4", borderRadius: 4, marginBottom: 6, animation: "pulse 1.5s ease-in-out infinite" }} />
-      ))}
-    </div>
+    <div
+      aria-hidden
+      className="ftp-skeleton"
+      style={{ width: 160, minWidth: 160, height: 88, borderRadius: "var(--ftp-radius-card)", flexShrink: 0 }}
+    />
   );
 }
+
+const TEXT_LINK: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  minHeight: 44,
+  fontSize: 13,
+  fontWeight: 500,
+  color: "var(--ftp-brand)",
+  textDecoration: "none",
+};
 
 export default function ContributorWall() {
   // Existing one-time contributors (from Contribution model)
@@ -138,7 +144,7 @@ export default function ContributorWall() {
     staleTime: 50_000,
   });
 
-  // Active subscribers (from Supporter model) — capped at 30 for the scrolling wall
+  // Active subscribers (from Supporter model) — capped at 30 for the wall
   const { data: subData } = useQuery<{ subscribers: SubscriberItem[]; subscribersTotal?: number }>({
     queryKey: ["contributors-wall-subs"],
     queryFn: () => fetch("/api/data/contributors?limit=30").then((r) => r.json()),
@@ -150,114 +156,82 @@ export default function ContributorWall() {
   const oneTimeTotal = allContributors.length;
   const subscribers = (subData?.subscribers ?? []).slice(0, 30);
   const subscribersTotal = subData?.subscribersTotal ?? subscribers.length;
-  const shouldScroll = contributors.length >= 4;
-  const shouldScrollSubs = subscribers.length >= 4;
 
   return (
-    <>
-      <style>{`
-        @keyframes wall-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .wall-track {
-          animation: wall-scroll 180s linear infinite;
-        }
-        .wall-track:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-
-      <div style={{ marginTop: 48 }}>
-        {/* ── Active Subscribers Ticker ── */}
-        {subscribers.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.3px", margin: 0 }}>
-                🙏 Active Supporters {subscribersTotal > subscribers.length && (
-                  <span style={{ fontSize: 12, color: "#9B9B9B", fontWeight: 500 }}>
-                    {" "}· {subscribersTotal.toLocaleString("en-IN")} total
+    <div>
+      {/* ── Active supporters (monthly) ── */}
+      {subscribers.length > 0 && (
+        <section>
+          <SectionHeader
+            title={
+              <>
+                Active supporters
+                {subscribersTotal > subscribers.length && (
+                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)", fontWeight: 400 }}>
+                    {" "}· <span className="ftp-num">{subscribersTotal.toLocaleString("en-IN")}</span> total
                   </span>
                 )}
-              </h2>
-              <Link href="/en/contributors" style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", fontWeight: 600 }}>
-                View all →
+              </>
+            }
+            action={
+              <Link href="/en/contributors" style={TEXT_LINK}>
+                View all <ArrowRight size={14} aria-hidden />
               </Link>
-            </div>
-            <div style={{ background: "#FAFAF8", border: "1px solid #E8E8E4", borderRadius: 14, padding: "16px", overflow: "hidden" }}>
-              <div style={{ overflow: "hidden" }}>
-                <div
-                  className={shouldScrollSubs ? "wall-track" : undefined}
-                  style={{ display: "flex", gap: 12, width: shouldScrollSubs ? "max-content" : undefined }}
-                >
-                  {(shouldScrollSubs ? [...subscribers, ...subscribers] : subscribers).map((item, i) => (
-                    <SubscriberCard key={`${item.id}-${i}`} item={item} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+            }
+          />
+          <Strip label="Active supporters">
+            {subscribers.map((item) => (
+              <SubscriberCard key={item.id} item={item} />
+            ))}
+          </Strip>
+        </section>
+      )}
 
-        {/* ── One-Time Contributions ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.3px", margin: 0 }}>
-            🎉 {subscribers.length > 0 ? "One-Time Contributions" : "Live Contributions"}
-          </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {!isLoading && data && data.count > 0 && (
-              <div style={{ fontSize: 12, color: "#6B6B6B" }}>
-                <span style={{ fontWeight: 700, color: "#2563EB", fontFamily: "var(--font-mono, monospace)" }}>
-                  ₹{data.totalRupees.toLocaleString("en-IN")}
+      {/* ── One-time contributions ── */}
+      <section>
+        <SectionHeader
+          title={subscribers.length > 0 ? "One-time contributions" : "Contributions"}
+          action={
+            <>
+              {!isLoading && data && data.count > 0 && (
+                <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>₹{data.totalRupees.toLocaleString("en-IN")}</span>
+                  {" "}from{" "}
+                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{data.count}</span>
+                  {" "}supporter{data.count !== 1 ? "s" : ""}
                 </span>
-                {" "}from{" "}
-                <span style={{ fontWeight: 700, color: "#1A1A1A" }}>{data.count}</span>
-                {" "}supporter{data.count !== 1 ? "s" : ""}
-              </div>
-            )}
-            {oneTimeTotal > 50 && (
-              <Link href="/en/contributors?filter=one-time" style={{ fontSize: 12, color: "#2563EB", textDecoration: "none", fontWeight: 600 }}>
-                View all {oneTimeTotal.toLocaleString("en-IN")} →
-              </Link>
-            )}
-          </div>
-        </div>
+              )}
+              {oneTimeTotal > 50 && (
+                <Link href="/en/contributors?filter=one-time" style={TEXT_LINK}>
+                  View all <span className="ftp-num">{oneTimeTotal.toLocaleString("en-IN")}</span> <ArrowRight size={14} aria-hidden />
+                </Link>
+              )}
+            </>
+          }
+        />
 
-        <div style={{ background: "#FAFAF8", border: "1px solid #E8E8E4", borderRadius: 14, padding: "16px", overflow: "hidden", position: "relative" }}>
-          {isLoading ? (
-            <div style={{ display: "flex", gap: 12 }}>
-              {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : contributors.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "32px 16px" }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>💝</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1A1A", marginBottom: 6 }}>
-                Be the first to support ForThePeople.in!
-              </div>
-              <div style={{ fontSize: 13, color: "#6B6B6B" }}>Your name will appear here.</div>
-            </div>
-          ) : (
-            <div style={{ overflow: "hidden" }}>
-              <div
-                className={shouldScroll ? "wall-track" : undefined}
-                style={{ display: "flex", gap: 12, width: shouldScroll ? "max-content" : undefined }}
-              >
-                {(shouldScroll ? [...contributors, ...contributors] : contributors).map((item, i) => (
-                  <ContributorCard key={`${item.displayName}-${i}`} item={item} />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Summary bar */}
-        {!isLoading && data && data.count > 0 && (
-          <div style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "#6B6B6B" }}>
-            ₹{data.totalRupees.toLocaleString("en-IN")} contributed by{" "}
-            <strong style={{ color: "#1A1A1A" }}>{data.count}</strong> supporters — Thank you! 🙏
+        {isLoading ? (
+          <div style={{ display: "flex", gap: 12, overflow: "hidden" }}>
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
+        ) : contributors.length === 0 ? (
+          <EmptyState title="Be the first to support ForThePeople.in!" body="Your name will appear here." />
+        ) : (
+          <Strip label="One-time contributions">
+            {contributors.map((item, i) => (
+              <ContributorCard key={`${item.displayName}-${i}`} item={item} />
+            ))}
+          </Strip>
         )}
-      </div>
-    </>
+
+        {/* Summary line */}
+        {!isLoading && data && data.count > 0 && (
+          <p className="ftp-body" style={{ textAlign: "center", marginTop: 12, color: "var(--ftp-text-2)" }}>
+            <span className="ftp-num">₹{data.totalRupees.toLocaleString("en-IN")}</span> contributed by{" "}
+            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{data.count}</span> supporters — thank you!
+          </p>
+        )}
+      </section>
+    </div>
   );
 }

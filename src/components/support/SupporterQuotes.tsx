@@ -6,8 +6,13 @@
 
 "use client";
 
+// Up to three supporter messages on /support. Renders nothing when no
+// supporter has left a public message. Design v3: Cards + a tier Pill.
+// The quotes themselves are user-written, shown exactly as submitted.
+
 import { useState, useEffect } from "react";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+import { Card, Pill, Section } from "@/components/district/ui";
 
 interface Contributor {
   name: string;
@@ -34,33 +39,23 @@ export default function SupporterQuotes() {
   if (quotes.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 40 }}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", marginBottom: 16, letterSpacing: "-0.3px" }}>
-        💬 What Supporters Say
-      </h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+    <Section title="What supporters say">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 220px), 1fr))", gap: 12 }}>
         {quotes.map((q, i) => {
           const tierConf = TIER_CONFIG[q.tier];
           return (
-            <div
-              key={i}
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8E8E4",
-                borderRadius: 12,
-                padding: "16px 18px",
-              }}
-            >
-              <div style={{ fontSize: 14, color: "#4B4B4B", lineHeight: 1.7, fontStyle: "italic", marginBottom: 10 }}>
+            <Card key={i} as="article" padding={16} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <blockquote style={{ margin: 0, fontSize: 15, lineHeight: "22px", color: "var(--ftp-text)" }}>
                 &ldquo;{q.message}&rdquo;
+              </blockquote>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
+                <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>— {q.name}</span>
+                <Pill tone="support">{tierConf?.name ?? q.tier}</Pill>
               </div>
-              <div style={{ fontSize: 12, color: "#9B9B9B" }}>
-                — {q.name}, {tierConf?.emoji ?? "💝"} {tierConf?.name ?? q.tier}
-              </div>
-            </div>
+            </Card>
           );
         })}
       </div>
-    </div>
+    </Section>
   );
 }
