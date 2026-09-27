@@ -53,7 +53,7 @@ import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import StaffingSection, { useStaffing } from "@/components/district/daily-services/StaffingSection";
-import { TapCard, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, TagList, matches, mapsUrl, telHref, useNow, usePlaceName } from "@/components/services-1/kit";
+import { fitGrid, TapCard, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, TagList, matches, mapsUrl, telHref, useNow, usePlaceName } from "@/components/services-1/kit";
 import PageEnd from "@/components/services-1/PageEnd";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
@@ -289,7 +289,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
       </Explainer>
 
       {/* The two numbers everyone should know, as big call buttons. */}
-      <div className="ftp-grid" role="group" aria-label={t("emergency.aria")} style={{ ["--ftp-grid-min" as string]: "220px" }}>
+      <div role="group" aria-label={t("emergency.aria")} style={fitGrid(220)}>
         {urgent.map((h) => {
           const name = t(`helplines.${h.id}`);
           return <HelplineCard key={h.id} emoji={h.emoji} number={h.number} name={name} ariaLabel={t("helplines.call", { name, number: h.number })} urgent />;
@@ -479,7 +479,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
 
       {/* 7. More helplines — each card is a tel: link. */}
       <Section title={t("helplines.title")} emoji="📞">
-        <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "220px" }}>
+        <div style={fitGrid(220)}>
           {others.map((h) => {
             const name = t(`helplines.${h.id}`);
             return <HelplineCard key={h.id} emoji={h.emoji} number={h.number} name={name} ariaLabel={t("helplines.call", { name, number: h.number })} />;

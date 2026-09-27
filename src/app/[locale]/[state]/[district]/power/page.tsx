@@ -57,7 +57,7 @@ import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { RankBars } from "@/components/district/daily-services/BreakdownVisuals";
-import { TapCard, SearchBox, MoreButton, ActionLink, SheetNote, matches, useNow, usePlaceName } from "@/components/services-1/kit";
+import { fitGrid, TapCard, SearchBox, MoreButton, ActionLink, SheetNote, matches, useNow, usePlaceName } from "@/components/services-1/kit";
 import PageEnd from "@/components/services-1/PageEnd";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
@@ -432,7 +432,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
 
           {/* 5. Charts, two to a row on wide screens. */}
           {(longest.length >= 2 || (repeated.length >= 2)) && (
-            <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "380px", marginTop: 28 }}>
+            <div style={fitGrid(340, 28)}>
               {longest.length >= 2 && (
                 <ChartCard
                   title={t("longest.title")}

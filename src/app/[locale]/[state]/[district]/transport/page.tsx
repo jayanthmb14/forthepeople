@@ -49,7 +49,7 @@ import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { HueDonut, topWithOther } from "@/components/district/daily-services/BreakdownVisuals";
-import { TapCard, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, matches, mapsUrl, usePlaceName } from "@/components/services-1/kit";
+import { fitGrid, TapCard, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, matches, mapsUrl, usePlaceName } from "@/components/services-1/kit";
 import PageEnd from "@/components/services-1/PageEnd";
 import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
 import { hueClass } from "@/lib/design/hues";
@@ -508,7 +508,7 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
 
           {/* 5. Charts, two to a row on wide screens. */}
           {((typeItems.length >= 2 && topType) || (trains.length >= 2 && dayMax > 0)) && (
-            <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "380px", marginTop: 28 }}>
+            <div style={fitGrid(340, 28)}>
               {typeItems.length >= 2 && topType && (
                 <ChartCard
                   title={t("types.title")}

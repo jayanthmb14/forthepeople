@@ -196,6 +196,8 @@ export function SearchBox({
           placeholder={placeholder}
           autoComplete="off"
           style={{
+            appearance: "none",
+            WebkitAppearance: "none",
             width: "100%",
             minHeight: 44,
             boxSizing: "border-box",
@@ -378,6 +380,20 @@ export function TagList({ items, lang }: { items: string[]; lang?: string }) {
 // ─────────────────────────────────────────────────────────────────────
 //  Helpers
 // ─────────────────────────────────────────────────────────────────────
+
+/**
+ * A grid for a few wide things (2–4 charts, the emergency numbers): like
+ * .ftp-grid but auto-FIT, so two charts on a wide PC stretch to fill the
+ * row instead of leaving an empty third column. Card lists keep .ftp-grid.
+ */
+export function fitGrid(min = 340, marginTop = 0): React.CSSProperties {
+  return {
+    display: "grid",
+    gap: 16,
+    gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`,
+    marginTop,
+  };
+}
 
 /** Google Maps search link: a point when we have one, else the place's name and address. */
 export function mapsUrl(query: string, lat?: number | null, lng?: number | null): string {

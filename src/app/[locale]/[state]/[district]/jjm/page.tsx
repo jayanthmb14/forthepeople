@@ -52,7 +52,7 @@ import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { HueDonut, OTHER_SHADE } from "@/components/district/daily-services/BreakdownVisuals";
-import { TapCard, CardBar, SearchBox, MoreButton, ActionLink, SheetNote, matches, usePlaceName } from "@/components/services-1/kit";
+import { fitGrid, TapCard, CardBar, SearchBox, MoreButton, ActionLink, SheetNote, matches, usePlaceName } from "@/components/services-1/kit";
 import PageEnd from "@/components/services-1/PageEnd";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -362,7 +362,7 @@ function JJMPageInner({ params }: { params: Promise<{ locale: string; state: str
 
           {/* 5. Charts, two to a row on wide screens. */}
           {(tested > 0 || stillWaiting.length >= 2) && (
-            <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "380px", marginTop: 28 }}>
+            <div style={fitGrid(340, 28)}>
               {tested > 0 && (
                 <ChartCard
                   title={t("quality.title")}

@@ -55,7 +55,7 @@ import NoDataCard from "@/components/common/NoDataCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import StaffingSection from "@/components/district/daily-services/StaffingSection";
 import { HueDonut, MiniRing, topWithOther } from "@/components/district/daily-services/BreakdownVisuals";
-import { TapCard, CardBar, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, matches, mapsUrl, usePlaceName } from "@/components/services-1/kit";
+import { fitGrid, TapCard, CardBar, SearchBox, MoreButton, ActionLink, SheetNote, SheetHeading, matches, mapsUrl, usePlaceName } from "@/components/services-1/kit";
 import PageEnd from "@/components/services-1/PageEnd";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
@@ -385,7 +385,7 @@ function SchoolsPageInner({ params }: { params: Promise<{ locale: string; state:
 
           {/* 5. Charts, two to a row on wide screens. */}
           {((typeItems.length >= 2 && topType) || (passChart.length > 1 && firstPoint && lastPoint)) && (
-            <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "380px", marginTop: 28 }}>
+            <div style={fitGrid(340, 28)}>
               {typeItems.length >= 2 && topType && (
                 <ChartCard
                   title={t("types.title")}
