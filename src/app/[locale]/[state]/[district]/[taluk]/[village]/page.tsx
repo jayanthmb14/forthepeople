@@ -5,20 +5,26 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Village page — Design v4 "Rang"
+//  Village page — Design v4.1 (docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Breadcrumb (district › taluk › village) → SiteHeader band in the
-//  district's hue (village name + local-script name, PIN as a pill) →
-//  StatStrip of emoji tiles (population, households) → the pictures:
+//  The question it answers: "How big is my village, and where do I find
+//  the help and data that reach it?"
+//
+//  <ModulePage> frame in the district's hue: breadcrumb (district › taluk
+//  › village) → SiteHeader band (village name + local-script name, PIN as
+//  a pill) → the answer in one sentence (Explainer) → StatStrip of emoji
+//  tiles (people, homes, people per home, rank in the taluk — only the
+//  ones on record) → the pictures:
 //     • people per home, only when both numbers exist;
 //     • this village's share of its taluk's people (a ring) and how it
 //       compares with the taluk's average and biggest village (bars), from
 //       the taluk's village rows — only when the village and at least one
 //       other village have a population on record;
 //  → "View on maps" link → quick links into the district's modules
-//  (registry emoji, module hues, translated module names) → a "File an RTI"
-//  card in the RTI colour. Text: "page_village" messages.
+//  (.ftp-grid; registry emoji, module hues, translated module names) → a
+//  "File an RTI" card in the RTI colour → sources footer. A village that
+//  cannot be found gets an honest empty state. Text: "page_village".
 //
 "use client";
 import { use } from "react";
@@ -30,7 +36,7 @@ import { getDistrictHue, getModuleMeta, hueClass } from "@/lib/design/hues";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { useTaluks } from "@/hooks/useRealtimeData";
 import { useFormat, useModuleText } from "@/i18n/client";
-import { StatStrip, StatTile, Section, Card, Pill, LoadingShell } from "@/components/district/ui";
+import { StatStrip, StatTile, Section, Card, EmptyState, ModulePage, Pill, LoadingShell, SourcesFooter } from "@/components/district/ui";
 import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
 import { BarList, RingStat } from "@/components/site/SiteVisuals";
@@ -87,7 +93,7 @@ export default function VillagePage({
   const { number } = useFormat();
   const mt = useModuleText();
   const b = (c: React.ReactNode) => <strong>{c}</strong>;
-  const { data, isLoading } = useVillage(villageId);
+  const { data, isLoading, isError } = useVillage(villageId);
   const { data: taluksData } = useTaluks(district, state);
 
   const village = data?.data;
@@ -124,11 +130,11 @@ export default function VillagePage({
     minHeight: 32,
   };
 
+  const notFound = !isLoading && (isError || !village);
+
   return (
-    <div
-      className={`ftp-container ftp-hue-${getDistrictHue(district)}`}
-      style={{ maxWidth: "var(--ftp-reading-max)", margin: 0, paddingTop: 24, paddingBottom: 48 }}
-    >
+    <div className={`ftp-hue-${getDistrictHue(district)}`}>
+      <ModulePage>
       {/* Breadcrumb */}
       <nav aria-label={t("breadcrumb")} style={{ marginBottom: 8 }}>
         <ol style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", flexWrap: "wrap", listStyle: "none", margin: 0, padding: 0 }}>
@@ -144,6 +150,22 @@ export default function VillagePage({
         <>
           <h1 className="sr-only">{t("village")}</h1>
           <LoadingShell rows={3} />
+        </>
+      )}
+
+      {notFound && (
+        <>
+          <h1 className="sr-only">{t("village")}</h1>
+          <EmptyState
+            emoji="🧭"
+            title={t("notFoundTitle")}
+            body={t("notFoundBody")}
+            action={
+              <Link href={talukBase} className="ftp-btn ftp-btn-secondary" style={{ ...crumbLink, minHeight: 44, color: "var(--hue-deep)", fontWeight: 600 }}>
+                {t("backToTaluk", { taluk: talukRow?.name ?? talukSlug, unit: subUnit })}
+              </Link>
+            }
+          />
         </>
       )}
 
@@ -163,14 +185,42 @@ export default function VillagePage({
             ) : null}
           </SiteHeader>
 
+          {/* The answer in one sentence — only from numbers on record */}
+          {perHome !== null ? (
+            <Explainer emoji="🏠">
+              {t.rich("simpleHomes", {
+                pop: number(village.population!),
+                homes: number(village.households!),
+                name: village.name,
+                per: number(perHome, { maximumFractionDigits: 1 }),
+                b,
+              })}
+            </Explainer>
+          ) : village.population ? (
+            <Explainer emoji="👥">
+              {t.rich("simplePeople", { pop: number(village.population), name: village.name, b })}
+            </Explainer>
+          ) : null}
+
           {/* Key stats (only the ones we have — never a fake zero) */}
           {Boolean(village.population || village.households) && (
-            <StatStrip cols={2}>
+            <StatStrip>
               {Boolean(village.population) && (
                 <StatTile emoji="👥" label={t("tilePopulation")} value={number(village.population!)} />
               )}
               {Boolean(village.households) && (
                 <StatTile emoji="🏠" label={t("tileHouseholds")} value={number(village.households!)} />
+              )}
+              {perHome !== null && (
+                <StatTile emoji="🧑" label={t("tilePerHome")} value={number(perHome, { maximumFractionDigits: 1 })} countUp={false} />
+              )}
+              {showShare && (
+                <StatTile
+                  emoji="🏆"
+                  label={t("tileRank", { taluk: village.taluk.name })}
+                  value={number(rankIndex + 1)}
+                  sub={t("tileRankSub", { total: peers.length })}
+                />
               )}
             </StatStrip>
           )}
@@ -179,23 +229,14 @@ export default function VillagePage({
           {(perHome !== null || showShare) && (
             <div className={perHome !== null && showShare ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
               {perHome !== null && (
-                <Card tinted padding={18}>
-                  <Explainer emoji="🏠">
-                    {t.rich("simpleHomes", {
-                      pop: number(village.population!),
-                      homes: number(village.households!),
-                      name: village.name,
-                      per: number(perHome, { maximumFractionDigits: 1 }),
-                      b,
-                    })}
-                  </Explainer>
+                <ChartCard title={t("pictoTitle")} emoji="🧑" units={t("pictoUnits")}>
                   <Pictogram
                     filled={perHome}
                     total={Math.min(12, Math.max(5, Math.ceil(perHome)))}
                     emoji="🧑"
                     label={t("pictoLabel", { n: Math.round(perHome) })}
                   />
-                </Card>
+                </ChartCard>
               )}
               {showShare && myPop && biggestPeer && (
                 <ChartCard
@@ -263,7 +304,7 @@ export default function VillagePage({
 
           {/* Quick access to district data — each card in its module colour */}
           <Section title={t("sectionDistrict")} emoji="🔎">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))", gap: 10 }}>
+            <div className="ftp-grid" style={{ gap: 10, ["--ftp-grid-min" as string]: "220px" } as React.CSSProperties}>
               {QUICK_LINKS.map(({ slug, fallbackEmoji }) => {
                 const meta = getModuleMeta(slug);
                 return (
@@ -312,8 +353,11 @@ export default function VillagePage({
               </div>
             </Card>
           </div>
+
+          <SourcesFooter sources={[{ name: mt.label("data-sources"), url: `${districtBase}/data-sources` }]} />
         </>
       )}
+      </ModulePage>
     </div>
   );
 }

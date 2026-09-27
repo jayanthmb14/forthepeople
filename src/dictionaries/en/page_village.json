@@ -7,6 +7,12 @@
   "tileHouseholds": "Households",
   "simpleHomes": "<b>{pop}</b> people live in <b>{homes}</b> homes in {name}. That is about <b>{per}</b> people in each home.",
   "pictoLabel": "About {n} people live in each home.",
+  "simplePeople": "About <b>{pop}</b> people live in {name}.",
+  "tilePerHome": "People per home",
+  "tileRank": "Rank in {taluk}",
+  "tileRankSub": "By people, out of {total}",
+  "pictoTitle": "People in each home",
+  "pictoUnits": "One symbol is one person",
   "shareTitle": "{name}'s share of {taluk} {unit}",
   "shareUnits": "People on record",
   "shareSimple": "About <b>{pct}%</b> of the people in {taluk} {unit} live here. By people, {name} is number <b>{rank}</b> of {total}.",
@@ -27,5 +33,8 @@
   "desc_citizen-corner": "Helplines and emergency numbers",
   "rtiTitle": "Something missing from your village?",
   "rtiBody": "File an RTI to get official information.",
-  "rtiButton": "File an RTI"
+  "rtiButton": "File an RTI",
+  "notFoundTitle": "We could not find this village.",
+  "notFoundBody": "The link may be old. Go back and pick the village from the list.",
+  "backToTaluk": "Back to {taluk} {unit}"
 }
