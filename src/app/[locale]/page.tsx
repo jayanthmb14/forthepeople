@@ -9,7 +9,7 @@
  * This page renders, top to bottom (desktop):
  *
  *   1. MarketTicker        — 32 px markets line, "As of HH:MM IST"
- *   2. YourDistrictStrip   — "Find my district" row (added in the next step)
+ *   2. YourDistrictStrip   — "Find my district" row (via YourDistrictBand)
  *   3. HomeHero            — the page's ONE <h1>, one sentence, two buttons
  *   4. Stats               — 4 StatTiles (registry + /api/data/homepage-stats)
  *   5. Map (cols 1–7) + LiveDistrictsCard (cols 8–12)
@@ -30,6 +30,7 @@ import { getCoveragePhrase, getPlatformFacts } from "@/lib/platform-facts";
 import { StatStrip, StatTile } from "@/components/district/ui";
 
 import MarketTicker from "@/components/home/MarketTicker";
+import YourDistrictBand from "@/components/home/YourDistrictBand";
 import HomeHero from "@/components/home/HomeHero";
 import IndiaMapCard from "@/components/home/IndiaMapCard";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
@@ -131,6 +132,11 @@ export default async function HomePage({
       <MarketTicker />
 
       <div className={styles.flow}>
+        {/* 2. Your district — locate, remember, open or vote */}
+        <div className={`${styles.band} ${styles.bandStrip}`}>
+          <YourDistrictBand locale={locale} />
+        </div>
+
         {/* 3. Hero — the one <h1> on the page */}
         <div className={`${styles.band} ${styles.bandHero}`}>
           <div className="ftp-container">

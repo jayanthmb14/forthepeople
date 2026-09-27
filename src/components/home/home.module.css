@@ -107,6 +107,45 @@
   .bandRest     { order: 5; }
 }
 
+/* ───────────────────────── Your district strip (56 px) ───────────────────────── */
+
+.strip {
+  background: var(--ftp-surface);
+  border-bottom: 1px solid var(--ftp-border);
+}
+.stripRow {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.stripStatus {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.stripRemember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .strip { border-top: 1px solid var(--ftp-border); }
+  .stripRow { gap: 10px; }
+  .stripStatus { min-width: 0; flex-basis: 100%; }
+  /* The kit's quiet button is 32 px; phones need 44 px touch targets. */
+  .strip :global(.ftp-btn-secondary) { height: 44px !important; }
+  .stripRemember { min-height: 44px; }
+}
+
 /* ───────────────────────── Hero ───────────────────────── */
 
 .hero {

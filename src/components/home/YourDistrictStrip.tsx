@@ -29,9 +29,10 @@
 //
 //  States: idle · locating · found-live · found-coming · denied · error
 //
-//  NOT MOUNTED YET — the home page wires it in the next phase:
-//    import YourDistrictStrip from "@/components/home/YourDistrictStrip";
-//    <YourDistrictStrip locale={locale} />
+//  Mounted on the home page through YourDistrictBand.tsx, which supplies
+//  the vote counts and the "C+ 54 · 31°C" extras from the shared home
+//  fetches (home-data.ts). On phones every control is 44 px tall
+//  (home.module.css → .strip).
 //
 "use client";
 
@@ -44,6 +45,7 @@ import type { DistrictCandidate, GeoFeatureCollection, NearestResult } from "@/l
 import { buildCandidates } from "@/lib/geo/district-centroids";
 import { useMyDistrict } from "@/hooks/useMyDistrict";
 import type { MyDistrict } from "@/hooks/useMyDistrict";
+import styles from "./home.module.css";
 
 export { useMyDistrict } from "@/hooks/useMyDistrict";
 
@@ -257,25 +259,15 @@ export default function YourDistrictStrip({ locale, votes, extras }: YourDistric
   }
 
   return (
-    <section aria-label="Your district" style={{ borderBottom: "1px solid var(--ftp-border)", background: "var(--ftp-surface)" }}>
-      <div
-        className="ftp-container"
-        style={{
-          minHeight: 56,
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "wrap",
-          padding: "8px var(--ftp-gutter)",
-        }}
-      >
+    <section aria-label="Your district" className={styles.strip}>
+      <div className={`ftp-container ${styles.stripRow}`}>
         {/* Left: the one button */}
         <ToolbarButton icon={LocateFixed} onClick={locate} disabled={status.kind === "locating"} ariaLabel="Find my district using your location">
           Find my district
         </ToolbarButton>
 
         {/* Centre: status */}
-        <div style={{ flex: 1, minWidth: 240, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className={styles.stripStatus}>
           {my.district && status.kind === "idle" && (
             <Pill tone="brand" icon={MapPin} title={PRIVACY_NOTE}>
               My district: {my.district.name}
@@ -285,10 +277,7 @@ export default function YourDistrictStrip({ locale, votes, extras }: YourDistric
         </div>
 
         {/* Right: remember switch */}
-        <label
-          title={PRIVACY_NOTE}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", ...mutedStyle, whiteSpace: "nowrap" }}
-        >
+        <label title={PRIVACY_NOTE} className={styles.stripRemember} style={mutedStyle}>
           <span>Remember my district</span>
           <button
             type="button"
