@@ -885,114 +885,168 @@
   border-radius: 6px;
 }
 
-/* ───────────── Live districts ───────────── */
+/* ───────────── Live districts (compact chips) ───────────── */
 
-.districtGrid {
+.countPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  margin-left: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-size: 13px;
+  font-weight: 800;
+  vertical-align: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.liveLegend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+}
+.liveLegend .legendDot + .legendDot,
+.liveLegend .legendDot:not(:first-child) {
+  margin-left: 8px;
+}
+.legendDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ftp-live);
+}
+.legendDot[data-fresh="false"] {
+  background: var(--ftp-warn);
+}
+.chips {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
-.districtCard {
+.chip {
   height: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 14px;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 8px 10px;
   border: 1px solid var(--ftp-border);
-  border-radius: 16px;
+  border-left: 3px solid var(--hue-pop);
+  border-radius: 14px;
   background: var(--ftp-surface);
   color: var(--ftp-text);
   text-decoration: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
-.districtCard:hover {
-  border-color: color-mix(in srgb, var(--ftp-brand) 45%, transparent);
-  box-shadow: 0 10px 22px -16px rgba(37, 99, 235, 0.55);
+.chip:hover {
+  border-color: color-mix(in srgb, var(--hue, var(--ftp-brand)) 40%, var(--ftp-border));
+  border-left-color: var(--hue, var(--ftp-brand));
+  box-shadow: var(--ftp-shadow-2);
+  transform: translateY(-1px);
 }
-.districtCard:focus-visible {
+.chip:focus-visible {
   outline: 2px solid var(--ftp-brand);
   outline-offset: 2px;
 }
-.districtTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.districtArt {
-  width: 44px;
-  height: 44px;
+.chipArt {
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand);
+  border-radius: 11px;
+  background: var(--hue-tint);
+  color: var(--hue);
 }
-.newTag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
+.chipText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
-.districtName {
+.chipName {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0 6px;
-  font-size: 16px;
-  line-height: 22px;
+  gap: 0 5px;
+  font-size: 15px;
+  line-height: 20px;
   font-weight: 700;
 }
-.districtLocal {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ftp-text-2);
-}
-.districtState {
+.chipLocal {
   font-size: 13px;
-  line-height: 18px;
+  font-weight: 600;
+  color: var(--hue-deep);
+}
+.chipMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 5px;
+  font-size: 12.5px;
+  line-height: 17px;
   color: var(--ftp-text-2);
 }
-.districtTag {
-  margin-top: 6px;
+.chipMeta .legendDot {
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+}
+.chipAgo {
+  white-space: nowrap;
+}
+.chipGrade {
+  flex-shrink: 0;
+  min-width: 30px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
   font-size: 13px;
-  line-height: 18px;
-  color: var(--ftp-text-2);
+  font-weight: 800;
+  text-align: center;
 }
-.voteCard {
-  justify-content: center;
+.newTag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ftp-live-tint);
+  color: var(--ftp-live-text);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+.voteChip {
   border-style: dashed;
+  border-left-width: 1px;
   border-color: var(--ftp-border-strong);
   background: var(--ftp-surface-2);
 }
-.voteTitle {
-  font-size: 15px;
-  line-height: 21px;
-  font-weight: 700;
-}
-.voteBody {
-  font-size: 13px;
-  line-height: 19px;
-  color: var(--ftp-text-2);
-}
-.voteLink {
-  margin-top: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--ftp-brand-deep);
+.voteChip .chipName {
   font-size: 14px;
-  line-height: 20px;
+}
+.voteChip .chipMeta {
+  color: var(--ftp-brand-deep);
   font-weight: 600;
+}
+.voteArrow {
+  flex-shrink: 0;
+  color: var(--ftp-brand-deep);
 }
 
 /* ───────────── Explore all of India (IndiaGlance) ───────────── */
@@ -1230,9 +1284,8 @@
 /* ───────────── Wider screens ───────────── */
 
 @media (min-width: 640px) {
-  .districtGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+  .chips {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   }
   .prices {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1273,9 +1326,7 @@
   .section {
     margin-top: 56px;
   }
-  .districtGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+
   .prices {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
@@ -1298,11 +1349,12 @@
 @media (prefers-reduced-motion: reduce) {
   .btnPrimary,
   .btnOutline,
-  .districtCard,
+  .chip,
   .tickItem {
     transition: none;
   }
-  .btnPrimary:hover {
+  .btnPrimary:hover,
+  .chip:hover {
     transform: none;
   }
 }

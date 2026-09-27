@@ -85,5 +85,10 @@
     },
     "areaUnit": "lakh sq km",
     "checked": "checked {date}"
+  },
+  "live": {
+    "title": "Live districts",
+    "legendFresh": "new data in the last day",
+    "legendOld": "older"
   }
 }

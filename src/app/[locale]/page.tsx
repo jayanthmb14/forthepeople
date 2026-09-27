@@ -130,7 +130,7 @@ export default async function HomePage({
       </div>
 
       <IndiaGlance locale={locale} figures={glance} />
-      <LiveDistrictsCard locale={locale} districts={activeDistricts} />
+      <LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />
       <PricesToday />
       <SupportLine locale={locale} />
     </main>
