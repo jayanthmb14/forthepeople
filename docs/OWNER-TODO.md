@@ -1,91 +1,79 @@
 # What Jayanth needs to do (as of 27 Sep 2026, branch `redesign-v4`)
 
-Everything below needs your account, your money, your judgement or a
-database write. Nothing on this branch has been pushed or deployed.
+Everything below needs your account, your money or your judgement.
+Production (`main`) is unchanged; the branch goes to a Vercel preview first.
 
 ## 1. Review and ship
 
-1. **Look at it locally.** The production build runs with:
-
-   ```bash
-   npm run build && npm run start -- -p 3000
-   ```
-
-   Then open http://localhost:3000. For each language use `/en`, `/hi` or
-   `/kn`. Check it on your phone, tablet, laptop and PC.
-2. **Push the branch** and open a pull request into `main`. The site deploys
-   when `main` changes. Nothing is live until then.
+1. **Look at the Vercel preview.** The branch `redesign-v4` is pushed to
+   GitHub, so Vercel builds a preview link (the link is in the final note and
+   under Deployments in Vercel). It uses the live database. Scheduled jobs
+   do not run on previews, only on production.
+2. **Ship it** when you are happy: open a pull request from `redesign-v4`
+   into `main` and merge it. Production deploys when `main` changes. Run
+   `npm run db:push` first if the note says a table is new.
 3. **Approve one security-header change.** `Permissions-Policy` now allows
    location for our own site (`geolocation=(self)`). Before this, "Use my
    location" could never work.
 
-## 2. Accounts and keys (Vercel environment variables, names only)
+## 2. Accounts and keys
 
-- **`AI_PAID_FALLBACK=1`.** This allows the cheap paid backstop model when
-  the free ones fail.
-- **Top up OpenRouter.** About $4.93 of credit is left, and the cap is
-  $10 a month. AI has been down in production since 22 Aug because every
-  model it called was retired. The fixed model list is in
-  `src/lib/ai-models.ts`.
-- **Optional: a translation key**, so news and AI insights appear in Hindi
-  and Kannada. Set one of:
-  - `BHASHINI_USER_ID` + `BHASHINI_API_KEY`
-  - `GOOGLE_TRANSLATE_API_KEY`
-  - `SARVAM_API_KEY`
-- **Neon.** Run `npx neon@latest login` once. After that, work can use a
-  copy (a Neon branch) of the database instead of production.
+Done for you on 27 Sep (with your permission):
+- Vercel: `AI_PAID_FALLBACK=1` added for all environments.
+- Neon: backup branch `backup-2026-09-27-pre-cleanup` (a full copy of the
+  database from before the clean-ups below). It never auto-deletes; delete it
+  in the Neon console once you are happy with the site.
+- OpenRouter: key checked (works; $4.93 credit, $10/month key limit). The AI
+  models were re-chosen from a test on 28 real headlines — see
+  `docs/RUNBOOKS/ai-models.md`. Jev Router is first (free today).
 
-## 3. Database (you run these, with production credentials)
+Still yours:
+- **Sarvam (accepted into their Startup Program).** Fill in their onboarding
+  form, then in Vercel add `SARVAM_API_KEY` (Production and Preview). With
+  the key set and `npm run db:push` done, news and AI insights are
+  translated into Hindi and Kannada once and stored. Optional:
+  `TRANSLATION_PROVIDER=sarvam` to force it.
+- **`VOTE_IP_SALT`** is missing in Vercel. Add any long random string
+  (Production and Preview). Votes and rate limits currently use a built-in
+  default salt.
+- **Vercel says "Needs Attention"** on `DATABASE_URL`, `REDIS_URL`,
+  `REDIS_TOKEN`, `RESEND_API_KEY`, `OPENWEATHER_API_KEY`,
+  `DATA_GOV_API_KEY`: they are stored as plain config. Rotate them and
+  re-add them as "Secret" when convenient.
+- **OpenRouter:** watch Activity once a month. Jev Router is free while it
+  routes to a preview model; if it starts routing to paid models, the $10
+  key limit caps the spend.
+- **Cloudflare Project Galileo:** moving DNS from Hostinger to Cloudflare is
+  your step (registrar login). Plan and day-1 settings are in vault note 33.
+  Keep SSL on "Full (strict)" and never cache `/api/cron`, `/api/admin`,
+  `/api/payment`.
 
-1. `npm run db:push` creates the `ContentTranslation` table (translation
-   backend).
-2. `npx tsx scripts/cleanup-news-derived-2026-09.ts` shows what it would
-   remove (a dry run). If the list looks right, re-run it with `--confirm`.
-   It removes:
-   - national project copies
-   - crime numbers taken from headlines
-   - fake outages
-   - leaders guessed from news
-3. **Rows the site now hides because they were invented.** Delete them when
-   convenient:
-   - seeded random rainfall (Mandya, Bengaluru Urban, New Delhi, 2020–24)
-   - traffic fines with fractional rupees
-   - sugar arrears with fractional rupees
-   - about 14 hard-coded exam rows
-   - hand-entered March dam readings (including the Mysuru row dated 2025)
-4. **Election results are withheld.** The stored rows were seeded, not taken
-   from ECI; for example, the 2024 Mandya winner is wrong. Reload them from
+## 3. Database
+
+Done on 27 Sep (dry run shown first, backup branch above):
+- Removed 26 national project copies, 260 crime numbers taken from
+  headlines, 25 fake power cuts; hid 162 leaders guessed from news
+  (`scripts/cleanup-news-derived-2026-09.ts`).
+- Removed 144 seeded rainfall rows, 24 invented traffic-fine rows, 14
+  hard-coded exams, 8 hand-entered dam readings; blanked 4 invented
+  sugar-arrears figures (`scripts/cleanup-seeded-2026-09.ts`).
+
+Being fixed now by research (official sources, dry-run scripts applied after
+review): wrong leaders (incl. Karnataka CM D. K. Shivakumar), project
+statuses and duplicates, helplines, the "2021 Census" row, India dashboard
+numbers, invented police phone numbers. See `docs/DATA-FIXES-2026-09.md` and
+`docs/LEADERS-VERIFIED-2026-09.md` when they land.
+
+Still yours:
+1. **Mysuru rainfall 2023–24 ("IMD Mysuru", 24 rows)** were typed by hand in
+   `prisma/seed-mysuru-data.ts`; they are hidden on the site. Delete them
+   if you agree (they were not in the dry run you approved, so I did not).
+2. **Election results are withheld.** The stored rows were seeded, not taken
+   from ECI (e.g. the 2024 Mandya winner is wrong). Reload them from
    results.eci.gov.in.
-5. **Fix wrong records:**
-   - **Leaders:**
-     - placeholder names ("[Verify at mandya.nic.in]", "Unnamed Collector",
-       "[Name Not Available]")
-     - Hyderabad has only 1 district officer and no Chief Minister
-   - **Infrastructure:**
-     - **Not projects:** "Donald Trump Avenue Renaming" (now hidden) and
-       "Western Railway Maintenance Block".
-     - **Wrong status:** Delhi's New Parliament and G20 show as proposed (both
-       finished in 2023), and Hyderabad Metro shows as "under construction".
-     - **Duplicates:** Metro Phase II vs Phase 2, Atal Setu vs Sewri–Nhava
-       Sheva, Delhi AIIMS and Metro Phase 4, Kolkata Joka.
-     - **Budget clashes:** Pharma City and SRDP.
-     - **Taluk missing:** only 49 of 420 projects have one.
-   - **Population:** Mandya has a "2021 Census" row, but no census was held
-     in 2021.
-   - **India dashboard:**
-     - foodgrain output shows 12.7 million tonnes, which is impossible
-     - the seed dates show "as of 1 May"
-   - **Helplines:**
-     - Women Helpline is shown as 1091; the national number is 181
-     - 1064 and 1073 are not national numbers
-   - **Mysuru police phone numbers** follow a pattern
-     (…3344, …3355, …3366) and look invented.
-   - **Offices:** most have no stored hours, so "open now" is a guess.
-6. **Housekeeping:**
-   - Clear about 10.8k per-reading weather rows in `UpdateLog`.
-   - Add a retention rule for `ScraperLog` (about 150 rows a day).
-   - Review the 999 AI change suggestions waiting in the queue, and the
-     phone numbers the AI wrote.
+3. **Housekeeping:** clear ~10.8k per-reading weather rows in `UpdateLog`;
+   add a retention rule for `ScraperLog` (~150 rows a day); review the
+   queued AI change suggestions and AI-written phone numbers.
 
 ## 4. Support page (admin panel)
 
@@ -126,6 +114,5 @@ database write. Nothing on this branch has been pushed or deployed.
   from "beta" to "live".
 - **ForThePeople Connect** appears as a "coming soon" line in the footer.
   Tell me if you want it elsewhere.
-- **Optional: Jev AI** (TypeSafe's typed-decision model) could make news
-  sorting cheaper. It needs a Jev account key. It does not reduce Claude's
-  own tokens.
+- **Jev Router** is now the first AI model for news sorting (free today).
+  If you want a different default, say which.
