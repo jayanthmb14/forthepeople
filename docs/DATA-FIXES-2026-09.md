@@ -792,3 +792,129 @@ Doddaballapur stations, which are in Bengaluru Rural district; Mysuru's
 "Nagarahole Forest", "Bogadi", "Chamundipuram", "K.R. Nagar Town" and
 "Rural Police Station Mysuru" rows match no official station (numbers
 removed, rows kept for the owner to decide).
+
+---
+
+## 6. Government offices — opening hours (GovOffice)
+
+No hours were invented and none were added: the official pages that
+could be opened do not state office-specific hours, and the web-search
+quota ran out before each office's own page could be looked up.
+
+| District | Offices | With hours | Without hours | Other gaps |
+|---|---|---|---|---|
+| Bengaluru U | 57 | 7 | **50** | 53 without website |
+| Mysuru | 20 | 0 | **20** | 20 without website |
+| Mandya | 4 | 4 | **0** | 3 without website |
+| Hyderabad | 11 | 0 | **11** | 11 without website |
+| Chennai | 10 | 0 | **10** | 10 without website |
+| Mumbai | 10 | 0 | **10** | 10 without website |
+| Pune | 8 | 0 | **8** | all 8 have no phone |
+| Kolkata | 8 | 0 | **8** | 8 without website |
+| Lucknow | 10 | 0 | **10** | 10 without website |
+| New Delhi | 10 | 10 | **0** | 3 without website |
+
+Districts with **no hours at all**: Chennai, Hyderabad, Kolkata, Lucknow,
+Mumbai, Mysuru, Pune. Bengaluru Urban has hours for 7 of 57; Mandya (4/4)
+and New Delhi (10/10) are complete (those existing hours were not
+re-checked). Also noted: Kolkata still lists **Writers' Building** as an
+office although the state secretariat moved to Nabanna in 2013 (Nabanna is
+also listed) — worth removing or marking inactive once confirmed.
+
+---
+
+## 7. Freshness report (27 Sep 2026)
+
+Newest date and row count per module and district, from read-only
+queries. "—" = no rows. Dates are the newest *data* date where the table
+has one (reading time, crop-price date, fiscal-year start, result year),
+otherwise the row's `updatedAt`.
+
+| Module | Bengaluru U | Mysuru | Mandya | Hyderabad | Chennai | Mumbai | Pune | Kolkata | Lucknow | New Delhi |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Weather (WeatherReading.recordedAt) | 2026-09-27 (48) | 2026-09-27 (48) | 2026-09-27 (48) | 2026-09-27 (48) | 2026-09-27 (48) | 2026-09-27 (48) | 2026-09-27 (1) | 2026-09-27 (48) | 2026-09-27 (48) | 2026-09-27 (48) |
+| Crop prices (CropPrice.date) | 2026-04-21 (100) | 2026-04-21 (100) | 2026-06-22 (87) | 2026-06-22 (100) | — | 2026-06-22 (100) | 2026-06-22 (100) | 2026-06-22 (100) | 2026-06-22 (100) | 2026-06-22 (100) |
+| Dams (DamReading.recordedAt) | 2026-09-27 (1) | 2026-09-27 (2) | 2026-09-27 (2) | — | — | — | — | — | — | — |
+| Canal releases | — | 2025-03-20 (3) | — | — | — | — | — | — | — | — |
+| Rainfall (RainfallHistory year-month) | — | 2024-12-01 (24) | — | — | — | — | — | — | — | — |
+| Budget (BudgetEntry fiscal year start) | 2025-04-01 (38) | 2025-04-01 (26) | 2024-04-01 (8) | 2026-04-01 (10) | 2025-04-01 (8) | 2025-04-01 (10) | 2026-04-01 (5) | 2025-04-01 (8) | 2025-04-01 (10) | 2025-04-01 (12) |
+| Budget allocations | 2024-04-01 (6) | — | 2024-04-01 (6) | — | — | — | 2026-04-01 (5) | — | — | 2025-04-01 (6) |
+| Revenue | — | — | — | — | — | — | — | — | — | — |
+| Schemes (updatedAt) | 2026-03-18 (12) | 2026-06-21 (10) | 2026-03-17 (8) | 2026-04-10 (11) | 2026-04-01 (10) | 2026-04-01 (10) | 2026-04-24 (10) | 2026-04-10 (8) | 2026-04-10 (10) | 2026-04-10 (12) |
+| Infrastructure (updatedAt) | 2026-06-07 (161) | 2026-06-15 (83) | 2026-05-25 (25) | 2026-07-07 (32) | 2026-08-20 (22) | 2026-06-12 (33) | 2026-05-09 (28) | 2026-08-08 (42) | 2026-07-20 (16) | 2026-06-22 (36) |
+| Crime (CrimeStat year) | 2023-12-31 (8) | — | 2023-12-31 (5) | 2023-12-31 (18) | — | — | — | — | 2023-12-31 (8) | 2023-12-31 (6) |
+| Police stations (no date column) | n/a (65) | n/a (25) | n/a (7) | n/a (16) | n/a (20) | n/a (20) | — | n/a (20) | n/a (15) | n/a (7) |
+| Traffic fines | — | — | — | 2025-12-14 (12) | — | — | — | — | — | — |
+| Schools (updatedAt) | 2026-03-18 (106) | 2026-03-18 (25) | 2026-03-17 (4) | 2026-04-09 (12) | 2026-04-01 (20) | 2026-04-01 (20) | 2026-04-24 (12) | 2026-04-01 (20) | 2026-04-10 (15) | 2026-03-31 (11) |
+| School results | — | — | — | — | — | — | — | — | — | — |
+| Elections (ElectionResult year) | 2024-06-01 (37) | 2024-06-01 (12) | 2024-06-01 (3) | 2024-06-01 (16) | 2024-06-01 (8) | 2024-06-01 (10) | — | 2024-06-01 (8) | 2024-06-01 (10) | 2025-06-01 (3) |
+| Power outages (startTime) | 2025-03-27 (8) | 2025-03-26 (6) | — | — | — | — | — | — | — | — |
+| Bus routes (no date) | n/a (56) | n/a (15) | n/a (5) | n/a (6) | n/a (8) | n/a (8) | n/a (8) | n/a (8) | n/a (8) | n/a (5) |
+| Trains (no date) | n/a (6) | n/a (6) | n/a (4) | n/a (6) | n/a (10) | n/a (10) | n/a (6) | n/a (10) | n/a (8) | n/a (8) |
+| Population (newest year) | 2021-01-01 (4) | 2024-01-01 (4) | 2021-01-01 (4) | 2024-01-01 (4) | 2026-01-01 (8) | 2026-01-01 (8) | 2021-01-01 (4) | 2011-01-01 (3) | 2024-01-01 (4) | 2024-01-01 (3) |
+| Leaders (lastVerifiedAt) — other agent | 2026-06-06 (65) | 2026-07-12 (55) | 2026-08-09 (22) | 2026-07-29 (44) | 2026-08-11 (62) | 2026-07-18 (63) | 2026-06-08 (43) | 2026-08-18 (83) | 2026-08-22 (20) | 2026-06-22 (66) |
+| JJM (updatedAt) | 2026-03-18 (4) | 2026-03-18 (7) | 2026-03-17 (7) | — | — | — | — | — | — | — |
+| Housing (updatedAt) | 2026-03-18 (3) | 2026-03-18 (3) | 2026-03-17 (2) | 2026-04-10 (2) | — | — | 2026-04-24 (1) | — | — | — |
+| Courts (year) | 2024-12-31 (8) | — | 2024-12-31 (11) | 2025-12-31 (3) | 2025-12-31 (5) | 2025-12-31 (5) | — | 2025-12-31 (4) | 2025-12-31 (3) | 2024-12-31 (5) |
+| RTI (year-month) | 2024-01-01 (5) | — | 2024-01-01 (4) | — | — | — | — | — | — | 2024-01-01 (5) |
+| Agri advisory (weekOf) | — | — | 2026-03-17 (2) | — | — | — | — | — | — | — |
+| Alerts (createdAt) | 2026-07-20 (33) | 2026-08-08 (112) | 2026-08-07 (170) | 2026-09-27 (60) | 2026-09-27 (82) | 2026-09-27 (129) | 2026-06-08 (14) | 2026-09-27 (437) | 2026-08-22 (38) | 2026-06-14 (100) |
+| News (publishedAt) | 2026-09-27 (48) | 2026-09-27 (49) | 2026-09-27 (50) | 2026-09-27 (50) | 2026-09-27 (50) | 2026-09-27 (48) | 2026-09-26 (50) | 2026-09-27 (49) | 2026-09-27 (49) | 2026-09-27 (50) |
+| Offices (updatedAt) | 2026-03-18 (57) | 2026-03-18 (20) | 2026-03-17 (4) | 2026-04-09 (11) | 2026-04-01 (10) | 2026-04-01 (10) | 2026-04-24 (8) | 2026-04-01 (8) | 2026-04-10 (10) | 2026-03-31 (10) |
+
+Also: `GovernmentExam` (national/state) — 95 rows, refreshed 26 Sep 2026,
+only 2 open for applications. `ElectionEvent` — last edited 14 Apr 2026;
+the **Tamil Nadu and West Bengal rows still show the April–May 2026
+assembly elections as upcoming** (polling/result dates set, `lastHeld`
+still 2021, no `nextExpected`), and `ElectionResult` has no 2026 assembly
+results for Chennai or Kolkata. Health has no database module (the page
+is static helplines and schemes).
+
+### What is older than it should be
+
+| Module | Expected | Problem |
+|---|---|---|
+| Crop prices | daily (mandi) | Newest 22 Jun 2026 everywhere (~3 months); Bengaluru Urban and Mysuru stop at 21 Apr 2026; Chennai has none. The mandi-price collector has not written since June. |
+| Rainfall | monthly | Effectively no rainfall data: only Mysuru's hand-typed 2020–2024 rows, which the API hides. |
+| Dams | daily | Fresh for the 3 Karnataka districts (today). Hyderabad, Mumbai, Pune, Chennai have city reservoirs but no dam rows. |
+| Budget | yearly (Feb–Mar) | FY 2026-27 budgets are out; only Hyderabad and Pune have them. Mandya's newest is **FY 2024-25**; allocations for Bengaluru Urban and Mandya stop at FY 2024-25. |
+| Power outages | live | Bengaluru Urban and Mysuru stop in **March 2025** (18 months); no other district has any. |
+| Elections | after each poll | Tamil Nadu and West Bengal assembly polls (Apr–May 2026) — no results loaded, event rows still "upcoming". |
+| Crime | yearly (NCRB) | Newest is 2023 for five districts; Chennai, Kolkata, Mumbai, Pune, Mysuru have none. Check whether NCRB *Crime in India 2024* is out. |
+| RTI | monthly/yearly | Newest January 2024. |
+| Canal releases (Mysuru) | seasonal | March 2025. |
+| Agri advisory (Mandya only) | weekly | March 2026. |
+| Traffic fines (Hyderabad only) | monthly | December 2025. |
+| Schemes, schools, JJM, housing, offices | yearly | Seeded Mar–Apr 2026 and not refreshed since; scheme beneficiary counts have no source (Mysuru's look made up; see below). Tamil Nadu and West Bengal held assembly elections in April–May 2026, so their state-scheme lists need a re-check. |
+| Alerts | daily | Bengaluru Urban last 20 Jul 2026, New Delhi 14 Jun, Pune 8 Jun, Mandya 7 Aug, Mysuru 8 Aug, Lucknow 22 Aug — the alert collector is only writing for Chennai, Hyderabad, Kolkata and Mumbai. |
+| Leaders | on change | Handled by the other agent (not touched here). |
+| Weather, news, exams, infrastructure | daily | Fresh. |
+
+### Top freshness problems per district
+
+- **Bengaluru Urban:** crop prices stop 21 Apr 2026; power outages stop Mar 2025; budget allocations FY 2024-25; alerts stop 20 Jul 2026; all 65 police numbers were invented (now null).
+- **Mysuru:** crop prices stop 21 Apr 2026; power outages Mar 2025; canal releases Mar 2025; rainfall only hidden seed rows; scheme beneficiary counts unsourced (e.g. "Aarogyasri" is a Telangana/AP scheme name, and "Mysuru Smart City Scheme" — Mysuru is not in the Smart Cities Mission).
+- **Mandya:** budget FY 2024-25 (two years old); crop prices 22 Jun 2026; agri advisory Mar 2026; only 4 schools and 4 offices.
+- **Hyderabad:** crop prices 22 Jun 2026; no dam rows (Osman Sagar/Himayat Sagar); traffic fines Dec 2025.
+- **Chennai:** no crop prices, no crime, no dams; election results missing the 2026 assembly poll; scheme list predates the April–May 2026 assembly election.
+- **Mumbai:** crop prices 22 Jun 2026; no dams (the seven lakes), no crime rows.
+- **Pune:** crop prices 22 Jun 2026; no elections, crime or dams; alerts stop 8 Jun 2026; offices have no phone numbers.
+- **Kolkata:** crop prices 22 Jun 2026; no crime rows; 2026 assembly results missing; scheme list predates the 2026 assembly election; Writers' Building still listed as an office.
+- **Lucknow:** crop prices 22 Jun 2026; alerts stop 22 Aug; all police numbers were invented (now null).
+- **New Delhi:** crop prices 22 Jun 2026; alerts stop 14 Jun 2026; RTI Jan 2024.
+
+### Current official figures added to the fix script
+
+Only one figure could be confirmed on an official page today (web
+search was exhausted): **Mudra loan ceiling ₹20 lakh** (Tarun Plus) on the
+Mumbai "PMMY" scheme row, which said ₹10 lakh —
+[mudra.org.in](https://www.mudra.org.in/). Dam storage is already written
+daily by the scrape-dams cron (today's readings present), so nothing was
+hand-entered there.
+
+**Scheme rows left alone (unverified):** PMAY-U amounts (₹2.67 lakh is the
+old CLSS subsidy that closed in 2022; PMAY-U 2.0 has different amounts —
+the guideline PDF could not be read); Delhi "Pink Pass" (reported replaced
+by a Saheli smart card in 2025 — not confirmed); every `beneficiaryCount`
+(none has a source).
+
