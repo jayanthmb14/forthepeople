@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 // NJDG API endpoint for district court statistics
 const NJDG_API = "https://njdg.ecourts.gov.in/njdgnew/api/index.php";
@@ -41,12 +42,15 @@ export async function scrapeCourts(ctx: JobContext): Promise<ScraperResult> {
       const data = json?.data ?? json?.result ?? {};
 
       for (const [courtName, stats] of Object.entries(data)) {
-        const s = stats as Record<string, number>;
-        const filed = s.inst ?? s.filed ?? 0;
-        const disposed = s.disp ?? s.disposed ?? 0;
-        const pending = s.pend ?? s.pending ?? 0;
-
-        if (!filed && !pending) continue;
+        // All three counts must be published — a missing one is never 0.
+        const s = stats as Record<string, unknown>;
+        const filedRaw = firstAmount(s, ["inst", "filed"]);
+        const disposedRaw = firstAmount(s, ["disp", "disposed"]);
+        const pendingRaw = firstAmount(s, ["pend", "pending"]);
+        if (filedRaw === null || disposedRaw === null || pendingRaw === null) continue;
+        const filed = Math.round(filedRaw);
+        const disposed = Math.round(disposedRaw);
+        const pending = Math.round(pendingRaw);
 
         const existing = await prisma.courtStat.findFirst({
           where: { districtId: ctx.districtId, year, courtName },

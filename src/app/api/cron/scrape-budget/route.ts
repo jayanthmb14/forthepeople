@@ -21,6 +21,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { scrapeBudget, hasAnyLiveBudgetSource } from "@/scraper/jobs/budget";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { runOutcome } from "@/scraper/lib/run-log";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   if (!hasAnyLiveBudgetSource()) {
     const reason =
       "No data.gov.in budget resource id configured for any state (STATE_BUDGET_RESOURCES all null)";
-    await cronFinished(CRON_NAME, runStart, { status: "ok", count: 0 });
+    await cronFinished(CRON_NAME, runStart, { status: "skipped", count: 0, error: reason });
     return NextResponse.json({ ok: true, skipped: true, reason, timestamp: new Date().toISOString() });
   }
 
@@ -73,8 +74,17 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 3000));
     }
 
-    const total = results.reduce((s, r) => s + r.new + r.updated, 0);
-    await cronFinished(CRON_NAME, runStart, { status: "ok", count: total });
+    const totalNew = results.reduce((s, r) => s + r.new, 0);
+    const totalUpdated = results.reduce((s, r) => s + r.updated, 0);
+    const total = totalNew + totalUpdated;
+    const failures = results.filter((r) => r.error).map((r) => ({ district: r.district, error: r.error }));
+    await cronFinished(CRON_NAME, runStart, {
+      status: runOutcome({ attempted: results.length, failed: failures.length }),
+      count: totalNew,
+      updated: totalUpdated,
+      failures,
+      attempted: results.length,
+    });
 
     return NextResponse.json({
       success: true,

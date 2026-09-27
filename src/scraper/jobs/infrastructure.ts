@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 const PMGSY_RESOURCE = "9c6bfbde-23d9-4d1e-a1d4-c9c5b4f11a7e"; // PMGSY road projects
@@ -39,9 +40,17 @@ export async function scrapeInfrastructure(ctx: JobContext): Promise<ScraperResu
       if (!name) continue;
 
       const category = "Roads";
-      const budget = parseFloat(rec.sanctioned_amount ?? rec.budget ?? 0);
-      const progressPct = parseFloat(rec.physical_progress ?? rec.progress_pct ?? 0);
-      const status = rec.status ?? rec.Status ?? (progressPct >= 100 ? "Completed" : "In Progress");
+      // Only what the source published: a missing amount stays null. (The
+      // old code stored "funds released = 80% of the budget" when the field
+      // was absent — an invented figure.)
+      const budget = firstAmount(rec, ["sanctioned_amount", "budget"]);
+      const fundsReleased = firstAmount(rec, ["funds_released", "amount_released", "expenditure"]);
+      const rawProgress = firstAmount(rec, ["physical_progress", "progress_pct"]);
+      const progressPct = rawProgress !== null && rawProgress <= 100 ? rawProgress : null;
+      const status =
+        (rec.status ?? rec.Status ?? "").trim() ||
+        (progressPct === null ? null : progressPct >= 100 ? "Completed" : "In Progress");
+      if (!status) continue; // no status and no progress → nothing trustworthy to store
 
       const existing = await prisma.infraProject.findFirst({
         where: { districtId: ctx.districtId, name },
@@ -53,15 +62,15 @@ export async function scrapeInfrastructure(ctx: JobContext): Promise<ScraperResu
             districtId: ctx.districtId,
             name,
             category,
-            budget: isNaN(budget) ? null : budget,
-            fundsReleased: isNaN(budget) ? null : budget * 0.8,
-            progressPct: isNaN(progressPct) ? null : progressPct,
+            budget,
+            fundsReleased,
+            progressPct,
             status,
             source: "PMGSY / data.gov.in",
           },
         });
         newCount++;
-      } else if (Math.abs((existing.progressPct ?? 0) - progressPct) > 1) {
+      } else if (progressPct !== null && Math.abs((existing.progressPct ?? 0) - progressPct) > 1) {
         await prisma.infraProject.update({
           where: { id: existing.id },
           data: { progressPct, status, source: "PMGSY / data.gov.in" },

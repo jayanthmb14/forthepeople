@@ -18,14 +18,20 @@
 //
 // Districts are processed in small parallel batches so 10-30 districts
 // finish well inside maxDuration = 60 even if a few time out.
+//
+// Sept 2026 (v5): Open-Meteo is the fallback source (no key), so a missing
+// OPENWEATHER_API_KEY no longer stops the run. The job no longer writes an
+// UpdateLog row per reading; this route writes ONE summary row per run.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
-import { scrapeWeather } from "@/scraper/jobs/weather";
+import { collectWeather } from "@/scraper/jobs/weather";
+import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { runOutcome } from "@/scraper/lib/run-log";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
@@ -45,19 +51,13 @@ export async function GET(request: Request) {
 
   const runStart = await cronStarted(CRON_NAME);
 
-  if (!process.env.OPENWEATHER_API_KEY) {
-    const reason = "OPENWEATHER_API_KEY is not set in the environment";
-    await cronFinished(CRON_NAME, runStart, { status: "error", error: reason });
-    return NextResponse.json({ ok: false, skipped: true, reason }, { status: 500 });
-  }
-
   const districts = await prisma.district.findMany({
     where: { active: true },
     select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
     orderBy: { name: "asc" },
   });
 
-  const results: Array<{ district: string; success: boolean; error?: string }> = [];
+  const results: Array<{ district: string; success: boolean; stored: boolean; source?: string; error?: string }> = [];
   let partial = false;
 
   for (let i = 0; i < districts.length; i += BATCH_SIZE) {
@@ -79,14 +79,20 @@ export async function GET(request: Request) {
           stateName: d.state?.name ?? "Karnataka",
           log: (msg) => logs.push(msg),
         };
-        const result = await scrapeWeather(ctx);
+        const result = await collectWeather(ctx);
         console.log(`[scrape-weather/${d.slug}] ${result.success ? "ok" : "fail"} | ${logs.join(" | ")}`);
 
         // Bust the district's cached weather so the page shows the new reading.
-        if (result.success && redis) {
+        if (result.recordsNew > 0 && redis) {
           await redis.del(cacheKey(d.slug, "weather")).catch(() => {});
         }
-        return { district: d.slug, success: result.success, error: result.error };
+        return {
+          district: d.slug,
+          success: result.success,
+          stored: result.recordsNew > 0,
+          source: result.source,
+          error: result.error,
+        };
       }),
     );
 
@@ -99,6 +105,7 @@ export async function GET(request: Request) {
         results.push({
           district: batch[j].slug,
           success: false,
+          stored: false,
           error: s.reason instanceof Error ? s.reason.message : String(s.reason),
         });
       }
@@ -106,11 +113,33 @@ export async function GET(request: Request) {
   }
 
   const succeeded = results.filter((r) => r.success).length;
-  const allFailed = results.length > 0 && succeeded === 0;
+  const stored = results.filter((r) => r.stored).length;
+
+  // ONE "What changed and when" row per run (it used to be one per reading).
+  if (stored > 0) {
+    const bySource = new Map<string, number>();
+    for (const r of results) if (r.stored && r.source) bySource.set(r.source, (bySource.get(r.source) ?? 0) + 1);
+    const sources = Array.from(bySource, ([name, n]) => `${name} ${n}`).join(", ");
+    await logUpdate({
+      source: "cron",
+      actorLabel: "cron",
+      tableName: "WeatherReading",
+      recordId: `scrape-weather:${new Date(runStart).toISOString()}`,
+      action: "create",
+      moduleName: "weather",
+      description: `Weather readings for ${stored} of ${districts.length} districts (${sources})`,
+      recordCount: stored,
+      details: { districts: results.filter((r) => r.stored).map((r) => r.district), bySource: Object.fromEntries(bySource) },
+    });
+  }
+  const failures = results.filter((r) => !r.success).map((r) => ({ district: r.district, error: r.error }));
+  const outcome = runOutcome({ attempted: results.length, failed: failures.length, budgetExhausted: partial });
+  const allFailed = outcome === "error";
   await cronFinished(CRON_NAME, runStart, {
-    status: allFailed ? "error" : "ok",
-    count: succeeded,
-    error: allFailed ? `all ${results.length} districts failed: ${results[0]?.error ?? "unknown"}` : undefined,
+    status: outcome,
+    count: stored,
+    failures,
+    attempted: results.length,
   });
 
   return NextResponse.json({
@@ -118,6 +147,7 @@ export async function GET(request: Request) {
     partial,
     districts: results.length,
     succeeded,
+    stored,
     durationMs: Date.now() - runStart,
     results,
   });

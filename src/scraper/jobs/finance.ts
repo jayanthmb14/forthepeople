@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import { firstAmount } from "../lib/sanity";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 // Karnataka district-wise plan expenditure
@@ -39,42 +40,54 @@ export async function scrapeFinance(ctx: JobContext): Promise<ScraperResult> {
     const json = await res.json();
     const records: Record<string, string>[] = json?.records ?? [];
 
+    let skippedIncomplete = 0;
     for (const rec of records) {
       const sector = (rec.sector ?? rec.department ?? rec.head ?? "").trim();
       if (!sector) continue;
 
-      const allocated = parseFloat(rec.allocated ?? rec.approved ?? 0);
-      const released = parseFloat(rec.released ?? rec.disbursed ?? allocated * 0.85);
-      const spent = parseFloat(rec.spent ?? rec.utilized ?? released * 0.9);
+      // Only figures the source actually published. The old code filled a
+      // missing "released" with allocated × 0.85 and a missing "spent" with
+      // released × 0.9 — invented numbers shown as government data.
+      const allocated = firstAmount(rec, ["allocated", "approved"]);
+      const released = firstAmount(rec, ["released", "disbursed"]);
+      const spent = firstAmount(rec, ["spent", "utilized"]);
 
       const existing = await prisma.budgetEntry.findFirst({
         where: { districtId: ctx.districtId, fiscalYear, sector },
       });
 
       if (!existing) {
+        // BudgetEntry needs all three figures; a row with a gap is skipped.
+        if (allocated === null || released === null || spent === null) {
+          skippedIncomplete++;
+          continue;
+        }
         await prisma.budgetEntry.create({
           data: {
             districtId: ctx.districtId,
             fiscalYear,
             sector,
-            allocated: isNaN(allocated) ? 0 : allocated,
-            released: isNaN(released) ? 0 : released,
-            spent: isNaN(spent) ? 0 : spent,
+            allocated,
+            released,
+            spent,
             source: "Karnataka Finance Dept / data.gov.in",
           },
         });
         newCount++;
       } else {
+        const patch: { released?: number; spent?: number } = {};
+        if (released !== null) patch.released = released;
+        if (spent !== null) patch.spent = spent;
+        if (Object.keys(patch).length === 0) continue;
         await prisma.budgetEntry.update({
           where: { id: existing.id },
-          data: {
-            released: isNaN(released) ? existing.released : released,
-            spent: isNaN(spent) ? existing.spent : spent,
-            source: "Karnataka Finance Dept / data.gov.in",
-          },
+          data: { ...patch, source: "Karnataka Finance Dept / data.gov.in" },
         });
         updatedCount++;
       }
+    }
+    if (skippedIncomplete > 0) {
+      ctx.log(`Finance: skipped ${skippedIncomplete} record(s) with a missing figure (nothing invented)`);
     }
 
     // If no results from API, sectors may not be in this resource yet

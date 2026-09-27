@@ -5,87 +5,303 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Job: Alerts — Auto-generated from Google News RSS
-// Schedule: Every 2 hours
+// Job: Official disaster alerts — NDMA SACHET (CAP)
+// Schedule: every 30 min via /api/cron/scrape-alerts (vercel.json).
+//
+// Sept 2026 (v5): this replaces the old job, which turned any Google News
+// headline containing "water supply", "strike" or "flood" into an alert
+// (and had no fetch timeout). Alerts now come only from NDMA's SACHET
+// feed, where IMD, CWC and the State Disaster Management Authorities
+// publish official warnings. Parsers and district matching:
+// src/scraper/lib/sachet.ts.
+//
+// Per run:
+//   1. read the all-India RSS (one item per alert thread);
+//   2. fetch the CAP message of each item from the last 48 h that we have
+//      not already checked at the same pubDate (Redis hash
+//      "ftp:sachet:checked", 3-day TTL), within a time budget;
+//   3. match it to districts (state named + district named, or district
+//      HQ inside the alert polygon) and upsert one LocalAlert per district,
+//      keyed by the CAP link (sourceUrl), with the CAP expiry as endDate;
+//   4. auto-expire: SACHET alerts past their endDate, cancelled threads,
+//      and (if a message had no expiry) alerts older than 24 h go inactive.
 // ═══════════════════════════════════════════════════════════
-import * as cheerio from "cheerio";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { JobContext, ScraperResult } from "../types";
+import { alertDistrictNames } from "../lib/district-aliases";
+import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
+import {
+  SACHET_CAP_URL,
+  SACHET_POLYGON_URL,
+  SACHET_RSS_URL,
+  SACHET_SOURCE_PREFIX,
+  alertNamesState,
+  capAlertType,
+  capSeverity,
+  englishInfo,
+  isLiveAlert,
+  localInfo,
+  matchAlertToDistrict,
+  parseCapAlert,
+  parsePolygons,
+  parseSachetRss,
+  needsPolygon,
+  type CapAlert,
+  type DistrictForMatch,
+} from "../lib/sachet";
 
-const ALERT_PATTERNS: Array<{ regex: RegExp; type: string; severity: string }> = [
-  { regex: /flood|flash flood|inundation/i, type: "flood", severity: "critical" },
-  { regex: /road block|road closed|traffic block/i, type: "road_closure", severity: "medium" },
-  { regex: /power cut|power outage|electricity failure/i, type: "power_outage", severity: "medium" },
-  { regex: /water supply|water shortage|water cut/i, type: "water_supply", severity: "medium" },
-  { regex: /storm|cyclone|heavy rain|rainfall warning/i, type: "weather", severity: "high" },
-  { regex: /fire accident|building collapse/i, type: "emergency", severity: "critical" },
-  { regex: /strike|bandh|shutdown/i, type: "strike", severity: "high" },
-  { regex: /land ?slide|earth ?quake/i, type: "natural_disaster", severity: "critical" },
-];
+const UA = "ForThePeople.in alerts (https://forthepeople.in)";
+const RECENT_MS = 48 * 3600_000;
+const NO_EXPIRY_MAX_AGE_MS = 24 * 3600_000;
+// Polite limits: SACHET sits behind a WAF that answers 403 to bursts. The
+// "checked" cache means only new or changed threads are fetched after the
+// first run, so a small per-run cap clears the backlog within a few runs.
+const MAX_CAP_FETCHES = 40;
+const MAX_POLYGON_FETCHES = 4;
+const CAP_CONCURRENCY = 3;
+const BATCH_PAUSE_MS = 400;
+const CHECKED_KEY = "ftp:sachet:checked";
+const CHECKED_TTL_S = 3 * 86_400;
 
+export interface AlertDistrict extends DistrictForMatch {
+  id: string;
+}
+
+export interface AlertsRunResult extends ScraperResult {
+  itemsInFeed: number;
+  capFetched: number;
+  capFailed: number;
+  expired: number;
+  /** New or changed alerts per district slug (for cache busting). */
+  changedBy: Record<string, number>;
+  /** New alert threads per district slug (for the "What changed" log). */
+  createdBy: Record<string, number>;
+}
+
+async function getText(url: string, timeoutMs: number): Promise<string> {
+  const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`${new URL(url).pathname.split("/").pop()} HTTP ${res.status}`);
+  return res.text();
+}
+
+/** Build the matching list from DB district rows (name aliases + HQ point). */
+export function toAlertDistricts(
+  rows: Array<{ id: string; slug: string; name: string; state: { slug: string; name: string } | null }>,
+): AlertDistrict[] {
+  return rows
+    .filter((d) => d.state)
+    .map((d) => ({
+      id: d.id,
+      slug: d.slug,
+      stateName: d.state!.name,
+      names: alertDistrictNames(d.slug, d.name),
+      hq: DISTRICT_CENTROIDS[`${d.state!.slug}/${d.slug}`] ?? null,
+    }));
+}
+
+/** Write (or refresh) one district's copy of an alert. Returns true when something changed. */
+async function upsertAlert(cap: CapAlert, guid: string, districtId: string): Promise<boolean> {
+  const en = englishInfo(cap);
+  if (!en) return false;
+  const local = localInfo(cap);
+  const hasEnglish = /^en\b/i.test(en.language);
+  const title = (en.headline ?? local?.headline ?? "").slice(0, 500);
+  if (!title) return false;
+
+  const sourceUrl = SACHET_CAP_URL(guid);
+  const data = {
+    type: capAlertType(en.event, en.category),
+    title,
+    titleLocal: hasEnglish && local?.headline ? local.headline.slice(0, 500) : null,
+    description: (en.description ?? en.headline ?? title).slice(0, 2000),
+    // SACHET often repeats the English description in the local block.
+    descriptionLocal:
+      hasEnglish && local?.description && local.description !== en.description ? local.description.slice(0, 2000) : null,
+    location: en.areaDescs.join("; ").slice(0, 300) || null,
+    severity: capSeverity(en.severity),
+    startDate: en.onset ?? en.effective ?? cap.sent,
+    endDate: en.expires,
+    active: true,
+    sourceUrl,
+    autoGenerated: false,
+  };
+
+  const existing = await prisma.localAlert.findFirst({ where: { districtId, sourceUrl } });
+  if (!existing) {
+    await prisma.localAlert.create({ data: { districtId, ...data } });
+    return true;
+  }
+  const changed =
+    existing.title !== data.title ||
+    existing.severity !== data.severity ||
+    existing.active !== data.active ||
+    (existing.endDate?.getTime() ?? 0) !== (data.endDate?.getTime() ?? 0) ||
+    existing.description !== data.description;
+  if (changed) await prisma.localAlert.update({ where: { id: existing.id }, data });
+  return changed;
+}
+
+/**
+ * Collect SACHET alerts for the given districts. Never throws for a single
+ * bad message; throws only when the RSS feed itself cannot be read.
+ */
+export async function collectSachetAlerts(
+  districts: AlertDistrict[],
+  opts: {
+    deadlineMs: number;
+    log: (m: string) => void;
+    /** Use/update the shared "already checked" cache (off for one-district runs). */
+    useCheckedCache?: boolean;
+  },
+): Promise<AlertsRunResult> {
+  const { deadlineMs, log } = opts;
+  const useCache = opts.useCheckedCache !== false && !!redis;
+  const now = Date.now();
+  const items = parseSachetRss(await getText(SACHET_RSS_URL, 15_000));
+  const recent = items.filter((it) => it.pubDate && now - it.pubDate.getTime() <= RECENT_MS);
+
+  let checked: Record<string, string> = {};
+  if (useCache && redis) {
+    try {
+      checked = ((await redis.hgetall<Record<string, string>>(CHECKED_KEY)) ?? {}) as Record<string, string>;
+      // Prune threads older than the TTL so the hash does not grow forever
+      // (its TTL is renewed on every write).
+      const stale = Object.entries(checked)
+        .filter(([, iso]) => now - Date.parse(String(iso)) > CHECKED_TTL_S * 1000)
+        .map(([guid]) => guid);
+      if (stale.length > 0) await redis.hdel(CHECKED_KEY, ...stale.slice(0, 500));
+    } catch {
+      checked = {};
+    }
+  }
+  const todo = recent.filter((it) => checked[it.guid] !== it.pubDate!.toISOString()).slice(0, MAX_CAP_FETCHES);
+  log(`feed: ${items.length} items, ${recent.length} from the last 48 h, ${todo.length} to check`);
+
+  const changedBy: Record<string, number> = {};
+  const createdBy: Record<string, number> = {};
+  const newlyChecked: Record<string, string> = {};
+  const cancelled: string[] = [];
+  let capFetched = 0;
+  let capFailed = 0;
+  let polygonFetches = 0;
+  let created = 0;
+  let updated = 0;
+
+  for (let i = 0; i < todo.length; i += CAP_CONCURRENCY) {
+    if (Date.now() > deadlineMs) {
+      log(`time budget reached; ${todo.length - i} message(s) left for the next run`);
+      break;
+    }
+    const batch = todo.slice(i, i + CAP_CONCURRENCY);
+    const settled = await Promise.allSettled(batch.map((it) => getText(SACHET_CAP_URL(it.guid), 8_000)));
+
+    for (let j = 0; j < batch.length; j++) {
+      const item = batch[j];
+      const s = settled[j];
+      if (s.status === "rejected") {
+        capFailed++;
+        continue; // not marked as checked → retried next run
+      }
+      capFetched++;
+      const cap = parseCapAlert(s.value);
+      const info = cap ? englishInfo(cap) : null;
+      if (!cap || !isLiveAlert(cap, info, Date.now())) {
+        if (cap && /^cancel$/i.test(cap.msgType)) cancelled.push(item.guid);
+        newlyChecked[item.guid] = item.pubDate!.toISOString();
+        continue;
+      }
+
+      // Polygons only for non-English alerts that name one of our states
+      // (English alerts are matched by name; see sachet.ts).
+      let polygons: Array<Array<[number, number]>> = [];
+      const inOurStates = needsPolygon(cap) && districts.some((d) => d.hq && alertNamesState(cap, d.stateName));
+      if (inOurStates && info?.polygonUrl && polygonFetches < MAX_POLYGON_FETCHES && Date.now() < deadlineMs) {
+        polygonFetches++;
+        try {
+          polygons = parsePolygons(await getText(SACHET_POLYGON_URL(item.guid), 10_000));
+        } catch (err) {
+          log(`polygon ${item.guid}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+
+      for (const d of districts) {
+        const how = matchAlertToDistrict(cap, d, polygons);
+        if (!how) continue;
+        try {
+          const existed = await prisma.localAlert.count({ where: { districtId: d.id, sourceUrl: SACHET_CAP_URL(item.guid) } });
+          if (await upsertAlert(cap, item.guid, d.id)) {
+            changedBy[d.slug] = (changedBy[d.slug] ?? 0) + 1;
+            if (existed) updated++;
+            else {
+              created++;
+              createdBy[d.slug] = (createdBy[d.slug] ?? 0) + 1;
+            }
+            log(`${d.slug} (${how}): ${info?.event ?? "alert"} — ${(info?.headline ?? "").slice(0, 80)}`);
+          }
+        } catch (err) {
+          log(`${d.slug}: write failed for ${item.guid}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+      newlyChecked[item.guid] = item.pubDate!.toISOString();
+    }
+    if (i + CAP_CONCURRENCY < todo.length) await new Promise((r) => setTimeout(r, BATCH_PAUSE_MS));
+  }
+
+  if (useCache && redis && Object.keys(newlyChecked).length > 0) {
+    try {
+      await redis.hset(CHECKED_KEY, newlyChecked);
+      await redis.expire(CHECKED_KEY, CHECKED_TTL_S);
+    } catch {
+      /* the cache only saves requests */
+    }
+  }
+
+  // ── Auto-expire ──
+  const ids = districts.map((d) => d.id);
+  const nowDate = new Date();
+  const expiredRes = await prisma.localAlert.updateMany({
+    where: {
+      districtId: { in: ids },
+      active: true,
+      sourceUrl: { startsWith: SACHET_SOURCE_PREFIX },
+      OR: [
+        { endDate: { lt: nowDate } },
+        { endDate: null, createdAt: { lt: new Date(Date.now() - NO_EXPIRY_MAX_AGE_MS) } },
+        ...(cancelled.length > 0 ? [{ sourceUrl: { in: cancelled.map(SACHET_CAP_URL) } }] : []),
+      ],
+    },
+    data: { active: false },
+  });
+
+  return {
+    success: true,
+    recordsNew: created,
+    recordsUpdated: updated,
+    itemsInFeed: items.length,
+    capFetched,
+    capFailed,
+    expired: expiredRes.count,
+    changedBy,
+    createdBy,
+  };
+}
+
+/** ScraperJob signature kept for the old scheduler: one district, 45 s budget. */
 export async function scrapeAlerts(ctx: JobContext): Promise<ScraperResult> {
   try {
-    const topics = ["road closure", "power cut", "water supply", "flood", "strike"];
-    let newCount = 0;
-
-    for (const topic of topics) {
-      const query = encodeURIComponent(`${ctx.districtSlug} ${topic}`);
-      const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-IN&gl=IN&ceid=IN:en`;
-
-      await new Promise((r) => setTimeout(r, 2000)); // polite delay
-
-      const res = await fetch(rssUrl, {
-        headers: { "User-Agent": "ForThePeople.in Alerts Aggregator" },
-      });
-      if (!res.ok) continue;
-
-      const xml = await res.text();
-      const $ = cheerio.load(xml, { xmlMode: true });
-
-      for (const item of $("item").toArray().slice(0, 5)) {
-        const title = $(item).find("title").text().replace(/ - .*$/, "").trim();
-        const dateStr = $(item).find("pubDate").text().trim();
-        const publishedAt = new Date(dateStr || Date.now());
-
-        // Only last 7 days
-        if (Date.now() - publishedAt.getTime() > 7 * 24 * 3600_000) continue;
-
-        const matched = ALERT_PATTERNS.find((p) => p.regex.test(title));
-        if (!matched) continue;
-
-        const existing = await prisma.localAlert.findFirst({
-          where: { districtId: ctx.districtId, title },
-        });
-        if (existing) continue;
-
-        await prisma.localAlert.create({
-          data: {
-            districtId: ctx.districtId,
-            type: matched.type,
-            severity: matched.severity,
-            title,
-            description: title,
-            active: true,
-            createdAt: publishedAt,
-          },
-        });
-        newCount++;
-      }
-    }
-
-    // Expire old alerts (>3 days)
-    await prisma.localAlert.updateMany({
-      where: {
-        districtId: ctx.districtId,
-        active: true,
-        createdAt: { lt: new Date(Date.now() - 3 * 24 * 3600_000) },
-      },
-      data: { active: false },
+    const district = await prisma.district.findUnique({
+      where: { id: ctx.districtId },
+      select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
     });
-
-    ctx.log(`Alerts: ${newCount} new`);
-    return { success: true, recordsNew: newCount, recordsUpdated: 0 };
-  } catch (err: unknown) {
+    if (!district) return { success: false, recordsNew: 0, recordsUpdated: 0, error: "district not found" };
+    const r = await collectSachetAlerts(toAlertDistricts([district]), {
+      deadlineMs: Date.now() + 45_000,
+      log: ctx.log,
+      useCheckedCache: false,
+    });
+    return { success: r.success, recordsNew: r.recordsNew, recordsUpdated: r.recordsUpdated };
+  } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     ctx.log(`Error: ${msg}`);
     return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };

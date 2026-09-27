@@ -15,14 +15,19 @@
 // only live source is the Karnataka Water Resources portal (see
 // src/scraper/jobs/dams.ts); districts without a dam config are skipped
 // by the job itself, so it is safe to loop every active district.
+//
+// Sept 2026 (v5): only districts with a live feed are run (hasLiveDamSource);
+// the rest are listed as "notCovered" in the response instead of being
+// counted as successful runs. Revised same-day readings count as updates.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
-import { scrapeDams } from "@/scraper/jobs/dams";
+import { hasLiveDamSource, scrapeDams } from "@/scraper/jobs/dams";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { runOutcome } from "@/scraper/lib/run-log";
 import type { JobContext } from "@/scraper/types";
 
 export const runtime = "nodejs";
@@ -40,13 +45,15 @@ export async function GET(request: Request) {
 
   const runStart = await cronStarted(CRON_NAME);
 
-  const districts = await prisma.district.findMany({
+  const active = await prisma.district.findMany({
     where: { active: true },
     select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
     orderBy: { name: "asc" },
   });
+  const districts = active.filter((d) => hasLiveDamSource(d.state?.slug ?? "", d.slug));
+  const notCovered = active.filter((d) => !districts.includes(d)).map((d) => d.slug);
 
-  const results: Array<{ district: string; success: boolean; newCount: number; error?: string }> = [];
+  const results: Array<{ district: string; success: boolean; newCount: number; updatedCount: number; error?: string }> = [];
   let partial = false;
 
   for (const d of districts) {
@@ -68,28 +75,38 @@ export async function GET(request: Request) {
 
     try {
       const result = await scrapeDams(ctx);
-      results.push({ district: d.slug, success: result.success, newCount: result.recordsNew, error: result.error });
-      console.log(`[scrape-dams/${d.slug}] ${result.success ? "ok" : "fail"}, ${result.recordsNew} new | ${logs.join(" | ")}`);
-      if (result.success && result.recordsNew > 0 && redis) {
+      results.push({
+        district: d.slug,
+        success: result.success,
+        newCount: result.recordsNew,
+        updatedCount: result.recordsUpdated,
+        error: result.error,
+      });
+      console.log(`[scrape-dams/${d.slug}] ${result.success ? "ok" : "fail"}, ${result.recordsNew} new, ${result.recordsUpdated} revised | ${logs.join(" | ")}`);
+      if (result.success && result.recordsNew + result.recordsUpdated > 0 && redis) {
         await redis.del(cacheKey(d.slug, "dam")).catch(() => {});
         await redis.del(cacheKey(d.slug, "water")).catch(() => {});
       }
     } catch (err) {
       Sentry.captureException(err);
       const msg = err instanceof Error ? err.message : String(err);
-      results.push({ district: d.slug, success: false, newCount: 0, error: msg });
+      results.push({ district: d.slug, success: false, newCount: 0, updatedCount: 0, error: msg });
       console.error(`[scrape-dams/${d.slug}] threw: ${msg}`);
     }
   }
 
   const totalNew = results.reduce((s, r) => s + r.newCount, 0);
-  const failed = results.filter((r) => !r.success);
-  const allFailed = results.length > 0 && failed.length === results.length;
+  const totalUpdated = results.reduce((s, r) => s + r.updatedCount, 0);
+  const failures = results.filter((r) => !r.success).map((r) => ({ district: r.district, error: r.error }));
+  const outcome = runOutcome({ attempted: results.length, failed: failures.length, budgetExhausted: partial });
+  const allFailed = outcome === "error";
 
   await cronFinished(CRON_NAME, runStart, {
-    status: allFailed ? "error" : "ok",
+    status: outcome,
     count: totalNew,
-    error: allFailed ? `all ${results.length} districts failed: ${failed[0]?.error ?? "unknown"}` : undefined,
+    updated: totalUpdated,
+    failures,
+    attempted: results.length,
   });
 
   return NextResponse.json({
@@ -97,6 +114,8 @@ export async function GET(request: Request) {
     partial,
     districts: results.length,
     totalNewRecords: totalNew,
+    totalRevisedRecords: totalUpdated,
+    notCovered,
     durationMs: Date.now() - runStart,
     results,
   });

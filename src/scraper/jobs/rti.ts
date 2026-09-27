@@ -52,7 +52,8 @@ export async function scrapeRTI(ctx: JobContext): Promise<ScraperResult> {
       const disposed = parseInt($(cells[2]).text().trim().replace(/,/g, ""), 10);
       const pending = parseInt($(cells[3]).text().trim().replace(/,/g, ""), 10);
 
-      if (!dept || isNaN(filed)) return;
+      // All three counts must be published; a missing one is never filled in.
+      if (!dept || isNaN(filed) || isNaN(disposed) || isNaN(pending)) return;
 
       prisma.rtiStat
         .findFirst({ where: { districtId: ctx.districtId, year, month, department: dept } })
@@ -66,8 +67,8 @@ export async function scrapeRTI(ctx: JobContext): Promise<ScraperResult> {
                   month,
                   department: dept,
                   filed,
-                  disposed: isNaN(disposed) ? 0 : disposed,
-                  pending: isNaN(pending) ? filed : pending,
+                  disposed,
+                  pending,
                   source: "Karnataka Information Commission",
                 },
               })
