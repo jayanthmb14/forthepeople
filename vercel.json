@@ -103,6 +103,10 @@
     {
       "path": "/api/cron/dedupe-data",
       "schedule": "15 7 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-fuel",
+      "schedule": "0 7,14 * * *"
     }
   ]
 }
