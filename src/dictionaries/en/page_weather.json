@@ -104,5 +104,129 @@
   "end": {
     "csv": "Download rain data (CSV)"
   },
-  "rainShortPast": "Rain in {period}: <b>{pct}</b> of normal. We could not find newer monthly rain figures."
+  "rainShortPast": "Rain in {period}: <b>{pct}</b> of normal. We could not find newer monthly rain figures.",
+  "forecast": {
+    "title": "Next 7 days",
+    "hint": "Tap a day to see all its details.",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "tomorrowIn": "Tomorrow in {district}",
+    "explain": "Tomorrow in {district}: <b>{max} / {min}</b>, {chance} chance of rain.",
+    "explainNoChance": "Tomorrow in {district}: <b>{max} / {min}</b>.",
+    "deg": "{v}°",
+    "high": "High",
+    "low": "Low",
+    "chance": "{pct} chance of rain",
+    "amount": "about {mm} of rain",
+    "windUpTo": "Wind up to {v} km/h",
+    "band": {
+      "unlikely": "Rain unlikely",
+      "possible": "Some chance of rain",
+      "likely": "Rain likely",
+      "veryLikely": "Rain very likely"
+    },
+    "tip": {
+      "storm": "Thunderstorms are expected. When you hear thunder, go indoors and stay away from trees and open fields.",
+      "heavyRain": "Heavy rain is expected. Avoid low roads and underpasses that flood.",
+      "umbrella": "Carry an umbrella or a raincoat.",
+      "heat": "It will be very hot. Drink water often and stay in the shade in the afternoon.",
+      "wind": "Strong wind is expected. Tie down loose things on roofs and balconies.",
+      "cold": "The morning will be cold. Wear something warm."
+    },
+    "kind": {
+      "clear": "Sunny",
+      "mostlyClear": "Mostly sunny",
+      "partly": "Sun and clouds",
+      "cloudy": "Cloudy",
+      "fog": "Foggy",
+      "haze": "Hazy",
+      "drizzle": "Light drizzle",
+      "rain": "Rain",
+      "showers": "Rain showers",
+      "heavyRain": "Heavy rain",
+      "thunder": "Thunderstorm",
+      "snow": "Snow",
+      "unknown": "Not known"
+    },
+    "kindNight": {
+      "clear": "Clear night",
+      "mostlyClear": "Mostly clear night",
+      "partly": "Some clouds"
+    },
+    "source": "Forecast from <a>{source}</a> ({license}), fetched {time} IST.",
+    "sourcePlain": "Forecast from <a>{source}</a>, fetched {time} IST.",
+    "checkAgree": "Checked with a second source, {source}: {max} / {min}. The two agree within 3°.",
+    "checkDiffer": "A second source, {source}, says {max} / {min}. They differ by more than 3°, so take this as a rough guide.",
+    "checkOne": "Only one forecast source answered for this day.",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "uv": "Sun strength (UV)",
+    "uvLevel": {
+      "low": "low",
+      "moderate": "moderate",
+      "high": "high",
+      "veryHigh": "very high",
+      "extreme": "extreme"
+    },
+    "uvValue": "{v} ({level})",
+    "sheet": {
+      "sky": "Sky",
+      "max": "Warmest",
+      "min": "Coolest",
+      "chance": "Chance of rain",
+      "amount": "Rain expected",
+      "wind": "Strongest wind",
+      "second": "Second source ({source})",
+      "secondValue": "{max} / {min}, {chance} chance of rain",
+      "secondValueNoChance": "{max} / {min}",
+      "source": "Source",
+      "fetched": "Fetched",
+      "note": "A forecast is the weather service's best estimate. It can change, so check again on the day."
+    },
+    "loading": "Getting the forecast…",
+    "empty": "The forecast service did not answer just now. Please try again in a few minutes.",
+    "stripAria": "Forecast for the next {n, plural, one {# day} other {# days}}",
+    "dayAria": "{day}: {sky}. High {max}, low {min}. {chance}",
+    "dayAriaNoChance": "{day}: {sky}. High {max}, low {min}.",
+    "dash": "—",
+    "details": "See all details for tomorrow",
+    "dayDetails": "Details"
+  },
+  "now": {
+    "title": "Right now",
+    "live": "Current value from <a>{source}</a> for {time} IST.",
+    "stored": "Measured {time} IST by {source}.",
+    "oldStored": "Our last stored reading is from {date} ({n, plural, one {# day} other {# days}} old), so the current value from the forecast service is shown instead.",
+    "todayRange": "Today",
+    "rainToday": "Rain today",
+    "rainTodayValue": "{mm} ({pct})",
+    "sky": {
+      "clear": "the sky is clear",
+      "mostlyClear": "the sky is mostly clear",
+      "partly": "there are some clouds",
+      "cloudy": "it is cloudy",
+      "fog": "it is foggy",
+      "haze": "it is hazy",
+      "drizzle": "there is light drizzle",
+      "rain": "it is raining",
+      "showers": "there are rain showers",
+      "heavyRain": "it is raining heavily",
+      "thunder": "there is a thunderstorm",
+      "snow": "it is snowing",
+      "unknown": "the sky is not known"
+    },
+    "explain": "Right now it is <b>{temp}</b> and {sky}."
+  },
+  "readingsOld": {
+    "summary": "Show the older readings we stored (newest from {date})",
+    "hint": "These came from our own weather collector, which has not stored a new reading since {date}. The weather above comes from the forecast service."
+  },
+  "shareTomorrow": "{district} tomorrow: {max} / {min}, {chance} chance of rain",
+  "tile": {
+    "aria": "Weather in {district}: open the full forecast",
+    "nowAt": "Now · {time} IST",
+    "old": "Our last weather reading is from {date} ({n, plural, one {# day} other {# days}} old).",
+    "source": "{source} · fetched {time} IST",
+    "link": "Full forecast"
+  }
 }
