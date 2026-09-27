@@ -40,7 +40,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, BookOpen, CloudSun, ExternalLink, MapPin, Wheat } from "lucide-react";
+import { AlertTriangle, BookOpen, ExternalLink, MapPin, Wheat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useFormat, useModuleText } from "@/i18n/client";
 import { placeName, placeNamePair } from "@/i18n/place-name";
@@ -48,8 +48,9 @@ import { getDistrict } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { getGroupedModules } from "@/lib/constants/sidebar-modules";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
-import { ageInDays, isWithinMinutes } from "@/lib/utils/timeAgo";
-import { useAlerts, useCropPrices, useExams, useNews, useWeather } from "@/hooks/useRealtimeData";
+import { ageInDays } from "@/lib/utils/timeAgo";
+import { useAlerts, useCropPrices, useExams, useNews } from "@/hooks/useRealtimeData";
+import TodayWeatherTile from "@/components/district/TodayWeatherTile";
 import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
 import { Card, ModulePage, Section } from "@/components/district/ui";
@@ -89,9 +90,8 @@ interface Props {
   };
 }
 
-// Weather counts as "now" for 24 hours, mandi prices for 7 days, a
-// headline for 30 days. Older ones are named with their age instead.
-const WEATHER_MAX_MINUTES = 24 * 60;
+// Mandi prices count as "now" for 7 days, a headline for 30 days. Older
+// ones are named with their age instead. (Weather: TodayWeatherTile.)
 const MANDI_MAX_DAYS = 7;
 const NEWS_MAX_DAYS = 30;
 const SERIOUS = new Set(["critical", "high", "severe"]);
@@ -153,7 +153,6 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
   const displayName = placeName({ name: districtData.name, nameLocal: districtData.nameLocal, names: reg?.names }, locale);
 
   // ── Data (existing hooks; React Query shares them with other components) ──
-  const { data: weather } = useWeather(districtSlug, stateSlug);
   const { data: crops } = useCropPrices(districtSlug, stateSlug);
   const { data: alerts } = useAlerts(districtSlug, stateSlug);
   const { data: newsData, isLoading: newsLoading } = useNews(districtSlug, stateSlug);
@@ -169,8 +168,6 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
     return age !== null && age <= NEWS_MAX_DAYS;
   }).slice(0, 3);
   const nextExam = pickNextExam(examsData?.data);
-  const latestWeather = weather?.data?.[0];
-  const weatherFresh = latestWeather ? isWithinMinutes(latestWeather.recordedAt, WEATHER_MAX_MINUTES) : false;
   const latestCrop = crops?.data?.[0];
   const cropAge = latestCrop ? ageInDays(latestCrop.date) : null;
   const cropFresh = cropAge !== null && cropAge <= MANDI_MAX_DAYS;
@@ -269,17 +266,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                   : to("v5.examApply", { title: nextExam.exam.title, date: day(nextExam.date) })}
               </NoticeLine>
             )}
-            {latestWeather && (
-              <NoticeLine href={`${base}/weather`} module="weather" icon={CloudSun}>
-                {weatherFresh
-                  ? to("v5.weatherNow", {
-                      temp: latestWeather.temperature != null ? Math.round(latestWeather.temperature) : "—",
-                      conditions: latestWeather.conditions ?? "",
-                      when: f.ago(latestWeather.recordedAt),
-                    })
-                  : to("v5.weatherOld", { date: day(latestWeather.recordedAt), n: Math.floor(ageInDays(latestWeather.recordedAt) ?? 0) })}
-              </NoticeLine>
-            )}
+            {/* Today + tomorrow from the forecast service (falls back to the stored reading, labelled with its age). */}
+            <TodayWeatherTile locale={locale} state={stateSlug} district={districtSlug} />
             {latestCrop && (
               <NoticeLine href={`${base}/crops`} module="crops" icon={Wheat}>
                 {cropFresh

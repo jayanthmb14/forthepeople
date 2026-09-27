@@ -34,6 +34,7 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, X } from "lucide-react";
 import { getDistrict, getState } from "@/lib/constants/districts";
 import { getModule } from "@/lib/constants/sidebar-modules";
+import { OPEN_REPORT_EVENT } from "@/components/district/shell/ReportMistake";
 import s from "./ReportButton.module.css";
 
 type Kind = "wrong_data" | "bug" | "other";
@@ -180,6 +181,12 @@ export default function ReportButton() {
         aria-expanded={open}
         aria-label={t("buttonAria")}
         onClick={() => {
+          // District pages have their own form that already knows the
+          // district and module: open that one instead of a second form.
+          if (document.documentElement.dataset.ftpReport === "district") {
+            window.dispatchEvent(new Event(OPEN_REPORT_EVENT));
+            return;
+          }
           // A fresh form after a report was sent.
           if (phase === "done") {
             setMessage("");
