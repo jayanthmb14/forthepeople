@@ -20,12 +20,20 @@
 //
 //  Anchor #verify: the district bar's freshness link and the stale notice's
 //  "How we check" link jump here. Facts from /api/data/freshness.
+//
+//  v5.1 double-verification: when /api/data/verification answers, each
+//  dataset card also says whether a second source was compared —
+//  "Double-checked" (with each source that agreed or not, and when),
+//  "One source only", "Sources disagree" or "Not double-checked yet" — and
+//  the overview adds a summary line and a column. While that API or its
+//  table is missing (404 / 500), nothing extra shows: the old panel.
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ExternalLink, ShieldCheck } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CircleDashed, CircleHelp, Check, ExternalLink, ShieldCheck, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useFreshness, type DatasetFreshness } from "@/hooks/useFreshness";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { useSourceText } from "@/components/money/useMoney";
@@ -36,6 +44,14 @@ import { placeName } from "@/i18n/place-name";
 import { districtRoute } from "./path";
 import { modulePortal, moduleSourceNames } from "./sources";
 import ReportMistake from "./ReportMistake";
+import { useVerification } from "./useVerification";
+import {
+  newestCheck,
+  summariseVerification,
+  verificationFor,
+  type DatasetVerification,
+  type VerificationStatus,
+} from "./verification";
 
 type Tv = ReturnType<typeof useTranslations>;
 
@@ -46,6 +62,60 @@ function StatusPill({ d, tv }: { d: DatasetFreshness; tv: Tv }) {
     <span className="ftp-verify-pill" data-status={d.status}>
       {label}
     </span>
+  );
+}
+
+const V_ICON: Record<VerificationStatus, LucideIcon> = {
+  verified: BadgeCheck,
+  "single-source": CircleDashed,
+  disagreement: AlertTriangle,
+  unchecked: CircleHelp,
+};
+
+/** "Double-checked" / "One source only" / "Sources disagree" / "Not double-checked yet". */
+function VerifyChip({ v, td }: { v: DatasetVerification; td: Tv }) {
+  const Icon = V_ICON[v.status];
+  return (
+    <span className="ftp-vchip" data-status={v.status}>
+      <Icon size={13} aria-hidden />
+      {td(`verify.chip.${v.status}`)}
+    </span>
+  );
+}
+
+/** The double-check block under a dataset card (module pages). */
+function DoubleCheck({ v, td }: { v: DatasetVerification; td: Tv }) {
+  const f = useFormat();
+  const day = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
+  const agreed = v.checks.filter((c) => c.agreed).length;
+  const newest = newestCheck(v);
+  const text =
+    v.status === "verified"
+      ? agreed >= 2
+        ? td("verify.text.verified", { n: agreed })
+        : td("verify.text.verifiedGeneric")
+      : td(`verify.text.${v.status}`);
+  return (
+    <div className="ftp-vblock" data-status={v.status}>
+      <div className="ftp-vblock-head">
+        <VerifyChip v={v} td={td} />
+        {newest && <span className="ftp-vblock-when">{td("verify.lastCompared", { date: day(newest) })}</span>}
+      </div>
+      <p className="ftp-vblock-text">{text}</p>
+      {v.checks.length > 0 && (
+        <ul className="ftp-vchecks">
+          {v.checks.map((c, i) => (
+            <li key={`${c.source}-${i}`} data-agreed={c.agreed ? "true" : "false"}>
+              {c.agreed ? <Check size={14} aria-hidden /> : <X size={14} aria-hidden />}
+              <span>
+                {c.agreed ? td("verify.agrees", { source: c.source }) : td("verify.disagrees", { source: c.source })}
+                {c.checkedAt && <span className="ftp-vchecks-when"> · {td("verify.checkedOn", { date: day(c.checkedAt) })}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -70,6 +140,7 @@ export default function VerifyPanel({
   variant?: "overview";
 }) {
   const tv = useTranslations("page_verify");
+  const td = useTranslations("page_district-shell");
   const mt = useModuleText();
   const f = useFormat();
   const src = useSourceText();
@@ -77,6 +148,7 @@ export default function VerifyPanel({
   const pathname = usePathname();
   const route = districtRoute(pathname);
   const fresh = useFreshness(stateSlug, districtSlug);
+  const verification = useVerification(stateSlug, districtSlug);
   const districtName = useDistrictName(stateSlug, districtSlug);
   const dateText = useDateText();
 
@@ -103,6 +175,9 @@ export default function VerifyPanel({
     ? SIDEBAR_MODULES.map((m) => fresh.primary(m.slug)).filter((x): x is DatasetFreshness => Boolean(x))
     : [];
   const count = (s: DatasetFreshness["status"]) => topics.filter((x) => x.status === s).length;
+  // Double-check summary over every dataset of the district (overview only).
+  const vSummary = isOverview && verification ? summariseVerification(fresh.datasets.map((d) => verificationFor(verification, d))) : null;
+  const vTotal = vSummary ? vSummary.verified + vSummary["single-source"] + vSummary.disagreement + vSummary.unchecked : 0;
 
   return (
     <section id="verify" className="ftp-verify" aria-labelledby="ftp-verify-title">
@@ -150,6 +225,10 @@ export default function VerifyPanel({
                   <dd>{methodText(d)}</dd>
                 </div>
               </dl>
+              {(() => {
+                const v = verificationFor(verification, d);
+                return v ? <DoubleCheck v={v} td={td} /> : null;
+              })()}
             </article>
           ))}
         </div>
@@ -168,6 +247,22 @@ export default function VerifyPanel({
               .filter(Boolean)
               .join(" · ")}
           </p>
+          {vSummary && vTotal > 0 && (
+            <div className="ftp-vsummary">
+              <span className="ftp-vsummary-title">{td("verify.summaryTitle")}</span>
+              {(["verified", "single-source", "disagreement", "unchecked"] as const)
+                .filter((k) => vSummary[k] > 0)
+                .map((k) => (
+                  <span key={k} className="ftp-vchip" data-status={k}>
+                    {(() => {
+                      const Icon = V_ICON[k];
+                      return <Icon size={13} aria-hidden />;
+                    })()}
+                    {td(`verify.summary.${k}`, { n: vSummary[k] })}
+                  </span>
+                ))}
+            </div>
+          )}
           <details className="ftp-verify-details">
             <summary>{tv("showAll")}</summary>
             <table className="ftp-verify-table">
@@ -177,6 +272,7 @@ export default function VerifyPanel({
                   <th scope="col">{tv("col.date")}</th>
                   <th scope="col">{tv("col.every")}</th>
                   <th scope="col">{tv("col.status")}</th>
+                  {verification && <th scope="col">{td("verify.col")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -187,9 +283,17 @@ export default function VerifyPanel({
                     </th>
                     <td data-label={tv("col.date")}>{dateText(d)}</td>
                     <td data-label={tv("col.every")}>{tv(`every.${d.every}`)}</td>
-                    <td data-label={tv("col.status")}>
+                    <td data-label={tv("col.status")} data-plain="true">
                       <StatusPill d={d} tv={tv} />
                     </td>
+                    {verification && (
+                      <td data-label={td("verify.col")}>
+                        {(() => {
+                          const v = verificationFor(verification, d);
+                          return v ? <VerifyChip v={v} td={td} /> : <span className="ftp-verify-none">{tv("none")}</span>;
+                        })()}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

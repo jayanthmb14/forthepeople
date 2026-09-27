@@ -12,6 +12,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_crops",
   "page_data-sources",
   "page_disclaimer",
+  "page_district-shell",
   "page_elections",
   "page_exams",
   "page_famous-personalities",

@@ -25,14 +25,23 @@
 //  This file holds the ONLY <h1> of the page it is used on.
 //
 //  v5 (calm): the overview shows only the name block — no census tiles
-//  (the glance row and the People card carry them), no "📍 state
-//  district" chip (the district bar shows the state) and no health ring
+//  (the glance tiles and the People card carry them) and no health ring
 //  (the report card sits lower down). The locked-district preview keeps
 //  the tiles. Stat tiles carry no emoji.
+//
+//  v5.1 "Warm Calm" hero: a pastel sky in the district's own colours with a
+//  soft sun glow, a band of hills along the bottom and the district's
+//  hand-drawn landmark (or a generic landscape when it has none) large on
+//  the right — at full strength on a laptop, as a picture along the bottom
+//  on a phone. A small kicker names the state (and, on the overview, how
+//  many taluks the district has). Decoration only: text stays navy on a
+//  near-white wash, so contrast never depends on the picture.
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { MapPin } from "lucide-react";
 import { SourcePill, StatStrip, StatTile } from "@/components/district/ui";
+import { HeroLandscape } from "@/components/district/shell/overview-art";
 import { DEFAULT_PALETTE, DistrictSVG, PALETTES } from "@/components/district/DistrictHeroIllustration";
 import { getDistrictHue, hueClass } from "@/lib/design/hues";
 import { useFormat, usePlaceText } from "@/i18n/client";
@@ -72,7 +81,7 @@ export interface DistrictIdentityCardProps {
   children?: React.ReactNode;
   /** v5: show the four census tiles (default true; the overview turns them off). */
   showStats?: boolean;
-  /** v5: show the "<state> district" chip above the name (default true). */
+  /** Show the state kicker above the name (default true). */
   showStateChip?: boolean;
 }
 
@@ -110,59 +119,50 @@ export default function DistrictIdentityCard({
   const pair = placeNamePair({ name, nameLocal, names }, locale);
   const palette = PALETTES[slug] ?? DEFAULT_PALETTE;
   const hasArt = Boolean(PALETTES[slug]);
+  const tk2 = useTranslations("page_district-shell");
+  const stateLabel = place.state(stateName, stateName);
+  // Overview (no census tiles): "Karnataka · 7 taluks". Locked preview
+  // (tiles show the count): "Karnataka district".
+  const kicker =
+    !showStats && subUnitCount
+      ? tk2("hero.kicker", { state: stateLabel, n: subUnitCount, units: subUnitLabel.toLocaleLowerCase(locale) })
+      : t("districtOf", { state: stateLabel });
   return (
     <section
       aria-labelledby="district-title"
-      className={`${hueClass(getDistrictHue(slug))} ftp-rise`}
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 24,
-        border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
-        // v5: a pastel wash of the district's colour into the surface.
-        background: `linear-gradient(135deg, rgb(${palette.gradientBase}) 0%, var(--ftp-surface) 62%)`,
-        boxShadow: "var(--ftp-shadow-1)",
-      }}
+      className={`${hueClass(getDistrictHue(slug))} ftp-hero ftp-rise`}
+      // The district's own pastel (registry palette) tints the sky.
+      style={{ ["--hero-base" as string]: `rgb(${palette.gradientBase})` }}
     >
-      {hasArt && (
-        <div aria-hidden className="ftp-hero-art">
-          <DistrictSVG slug={slug} p={palette} />
-        </div>
-      )}
-      <div style={{ position: "relative", padding: "clamp(18px, 3vw, 28px)" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ minWidth: 0, flex: "1 1 260px" }}>
+      <div aria-hidden className="ftp-hero-sky" />
+      <div aria-hidden className="ftp-hero-art">
+        {hasArt ? <DistrictSVG slug={slug} p={palette} /> : <HeroLandscape />}
+      </div>
+      <svg aria-hidden focusable="false" className="ftp-hero-hills" viewBox="0 0 1200 80" preserveAspectRatio="none">
+        <path d="M0 52c150-30 300-34 460-14s330 22 480-6 190-24 260-18v66H0Z" className="ftp-hero-hill-back" />
+        <path d="M0 66c200-22 380-20 560-6s360 14 520-4c50-6 90-6 120-4v28H0Z" className="ftp-hero-hill-front" />
+      </svg>
+      <div className="ftp-hero-body">
+        <div className="ftp-hero-row">
+          <div className="ftp-hero-text">
             {showStateChip && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "3px 10px",
-                  borderRadius: 999,
-                  background: "var(--ftp-surface)",
-                  border: "1px solid var(--ftp-border)",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--ftp-text-2)",
-                  marginBottom: 10,
-                }}
-              >
-                {t("districtOf", { state: place.state(stateName, stateName) })}
+              <span className="ftp-hero-kicker">
+                <MapPin size={13} aria-hidden />
+                {kicker}
               </span>
             )}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-              <h1 id="district-title" className="ftp-display" style={{ margin: 0, fontSize: "clamp(34px, 5vw, 48px)", lineHeight: 1.02, fontWeight: 750, color: "var(--ftp-text)", textWrap: "balance" }}>
+            <div className="ftp-hero-names">
+              <h1 id="district-title" className="ftp-hero-name">
                 <span lang={pair.primaryLang}>{pair.primary}</span>
               </h1>
               {pair.secondary && (
-                <span lang={pair.secondaryLang} style={{ fontSize: "clamp(20px, 2.6vw, 26px)", lineHeight: 1.2, fontWeight: 600, color: "var(--hue-deep)" }}>
+                <span lang={pair.secondaryLang} className="ftp-hero-local">
                   {pair.secondary}
                 </span>
               )}
             </div>
             {(tagline || (badges && badges.length > 0)) && (
-              <div style={{ marginTop: 12, maxWidth: 560 }}>
+              <div className="ftp-hero-tags">
                 <DistrictBadges tagline={tagline} badges={badges} />
               </div>
             )}

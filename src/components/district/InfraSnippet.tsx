@@ -9,11 +9,14 @@
  * Design v3: kit Card + title row, status counts with 6 px dots,
  * thin kit ProgressBars, and a "Checked <date>" line (newest
  * lastVerifiedAt / lastNewsAt across the projects).
+ *
+ * v5.1 "Warm Calm": OverviewCard frame with the drawn crane mark; the
+ * status counts become one coloured bar (being built on time · delayed ·
+ * completed) with a legend underneath, so the mix is visible at a glance.
  */
 
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useFormat } from "@/i18n/client";
@@ -24,7 +27,9 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
-import { AsOfText, Card, ProgressBar } from "@/components/district/ui";
+import { AsOfText, ProgressBar } from "@/components/district/ui";
+import OverviewCard from "@/components/district/shell/OverviewCard";
+import { ProjectsMark } from "@/components/district/shell/overview-art";
 
 type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
 
@@ -92,6 +97,7 @@ export default function InfraSnippet({
   });
 
   const t = useTranslations("page_snippets");
+  const td = useTranslations("page_district-shell.cards.projects");
   const f = useFormat();
   const projects = data?.data ?? [];
   if (projects.length === 0) return null; // no shell when no data
@@ -111,6 +117,16 @@ export default function InfraSnippet({
     completed: projects.filter(isCompleted).length,
     delayed: projects.filter(isDelayed).length,
   };
+  // The bar: being built (not late) · being built but late · completed.
+  // The legend counts all projects being built (the glance tile's number)
+  // and says how many of them are late.
+  const delayedActive = projects.filter((p) => !isCancelled(p) && !isCompleted(p) && isDelayed(p)).length;
+  const segments = [
+    { key: "building", n: counts.active - delayedActive },
+    { key: "delayed", n: delayedActive },
+    { key: "done", n: counts.completed },
+  ].filter((x) => x.n > 0);
+  const barTotal = segments.reduce((sum, x) => sum + x.n, 0);
   const totalBudget = projects.reduce(
     (s, p) => s + (p.revisedBudget ?? p.originalBudget ?? p.budget ?? 0),
     0
@@ -134,32 +150,31 @@ export default function InfraSnippet({
     .pop() ?? null;
 
   return (
-    <Card as="section" aria-label={t("infra.aria")} className="ftp-hue-orange" tinted>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--hue-deep)" }}><HardHat size={16} /></span>
-          <h3 className="ftp-title" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)" }}>{t("infra.title")}</h3>
-        </span>
-        <Link href={`${base}/infrastructure`} style={{ fontSize: 13, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-          {t("infra.viewAll")}
-        </Link>
-      </div>
-
-      {/* Counts row — semantic colour only as a 6 px dot. */}
-      <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0, display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
-        <li className="ftp-num">{t("infra.projects", { n: counts.total })}</li>
-        <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-warn)" }} />
-          <span className="ftp-num">{t("infra.active", { n: f.number(counts.active) })}</span>
-        </li>
-        <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)" }} />
-          <span className="ftp-num">{t("infra.completed", { n: f.number(counts.completed) })}</span>
-        </li>
-        <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: counts.delayed > 0 ? "var(--ftp-danger)" : "var(--ftp-border-strong)" }} />
-          <span className="ftp-num">{t("infra.delayed", { n: f.number(counts.delayed) })}</span>
-        </li>
+    <OverviewCard
+      hue="orange"
+      mark={<ProjectsMark size={36} />}
+      title={t("infra.title")}
+      ariaLabel={t("infra.aria")}
+      href={`${base}/infrastructure`}
+      linkText={t("infra.viewAll")}
+    >
+      {/* One bar for the mix of statuses, then a legend with the counts. */}
+      <p className="ftp-ovi-total">{t("infra.projects", { n: counts.total })}</p>
+      {barTotal > 0 && (
+        <div
+          className="ftp-ovi-bar"
+          role="img"
+          aria-label={td("barAria", { building: counts.active, delayed: delayedActive, done: counts.completed })}
+        >
+          {segments.map((x, i) => (
+            <span key={x.key} className="ftp-ovi-seg ftp-grow-x" data-seg={x.key} style={{ flexGrow: x.n, ["--i" as string]: i }} />
+          ))}
+        </div>
+      )}
+      <ul className="ftp-ovi-legend">
+        <li data-seg="building"><span aria-hidden /> {td("building", { n: f.number(counts.active) })}</li>
+        {delayedActive > 0 && <li data-seg="delayed"><span aria-hidden /> {td("delayed", { n: f.number(delayedActive) })}</li>}
+        <li data-seg="done"><span aria-hidden /> {td("done", { n: f.number(counts.completed) })}</li>
       </ul>
 
       {/* Top 3 projects */}
@@ -218,6 +233,6 @@ export default function InfraSnippet({
         ) : <span />}
         <AsOfText asOf={asOf} prefix={t("infra.checked")} />
       </div>
-    </Card>
+    </OverviewCard>
   );
 }
