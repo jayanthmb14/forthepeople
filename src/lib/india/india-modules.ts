@@ -82,6 +82,13 @@ export interface IndiaModuleDef {
   tagline: string;
   /** Longer description for the Coming Soon card and module deep-link page. */
   description: string;
+  /**
+   * "live" only when the module shows at least one published figure
+   * (an IndiaIndicator row with a value); a data module with none is
+   * "coming_soon". Sept 2026 audit: 7 "live" modules showed nothing and 8
+   * "coming soon" ones showed figures. Check after every data change:
+   *   npx tsx scripts/check-india-module-status.ts   (read-only)
+   */
   status: IndiaModuleStatus;
   /** Top-to-bottom order on /[locale]/india. Lower = higher on the page. */
   displayOrder: number;
@@ -185,10 +192,12 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     contentType: "data",
     title: "Population & Demographics",
     icon: "👥",
-    tagline: "Population, fertility, life expectancy from SRS and Census.",
+    tagline: "Population, yearly growth and density, from UN and World Bank figures.",
+    // Sept 2026 audit: describe what is shown (UN WPP 2024, World Bank WDI),
+    // not the SRS/Census series this module does not show yet.
     description:
-      "Annual SRS bulletin and decennial Census aggregates. SRS releases CBR, " +
-      "CDR, IMR, life expectancy each year; Census provides full age-sex pyramid.",
+      "India's population, how fast it is growing and how many people live " +
+      "per square km, from the UN World Population Prospects 2024 and World Bank data.",
     status: "live",
     displayOrder: 4,
     sources: [
@@ -268,7 +277,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Periodic Labour Force Survey monthly bulletin — LFPR, WPR, " +
       "unemployment rate by Current Weekly Status (CWS).",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 3,
     sources: [{ sourceKey: "MoSPI", type: "Collected", refresh: "Monthly" }],
     componentName: "EconomyEmploymentModule",
@@ -431,7 +440,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Department of Fisheries annual data — production by state, exports, " +
       "PMMSY beneficiaries.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 5,
     sources: [{ sourceKey: "DAFW", type: "Collected", refresh: "Annual" }],
     componentName: "LivestockFisheriesModule",
@@ -504,7 +513,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Wildlife Institute of India database of all protected areas, plus " +
       "Ramsar wetland designations and biosphere reserves.",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 3,
     sources: [{ sourceKey: "WII", type: "Collected", refresh: "Quarterly" }],
     componentName: "WildlifeProtectedAreasModule",
@@ -554,7 +563,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Annual yearbook from Indian Railways — track km, electrification, " +
       "passenger originating, freight originating tonnes.",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 2,
     sources: [{ sourceKey: "RAILWAYS", type: "Collected", refresh: "Annual" }],
     componentName: "InfraRailwaysModule",
@@ -745,10 +754,12 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     subGroup: "HEALTH",
     title: "Health Indicators",
     icon: "🏥",
-    tagline: "Headline NFHS-5 indicators and NHM coverage.",
+    tagline: "Life expectancy and infant deaths, from the Sample Registration System.",
+    // Sept 2026 audit: the figures shown are ORGI SRS (and one World Bank /
+    // UN change figure), not NFHS-5.
     description:
-      "NFHS-5 anthropometrics, child mortality, immunisation coverage. " +
-      "Aggregate national values — state breakdowns inside.",
+      "Life expectancy and infant deaths from the Sample Registration System " +
+      "(Registrar General of India), with the states that lead. National totals.",
     status: "live",
     displayOrder: 1,
     sources: [
@@ -782,7 +793,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "NHA monthly dashboard — total Ayushman cards issued, empanelled " +
       "hospitals, hospitalisation events authorised.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 2,
     sources: [{ sourceKey: "NHA_PMJAY", type: "Collected", refresh: "Monthly" }],
     componentName: "HealthPmJayModule",
@@ -803,7 +814,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Universal immunisation registry numbers — cumulative beneficiaries, " +
       "doses administered, antigen-wise coverage.",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 3,
     sources: [{ sourceKey: "UWIN", type: "Collected", refresh: "Monthly" }],
     componentName: "HealthImmunisationModule",
@@ -943,7 +954,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Annual report data from listed Defence PSUs (HAL, BEL, Mazagon, " +
       "Cochin Shipyard, etc.) — revenue, profit, order book.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 10,
     sources: [{ sourceKey: "MOD", type: "Collected", refresh: "Annual" }],
     componentName: "DefenceDpsuModule",
@@ -962,11 +973,13 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     subGroup: "JUSTICE",
     title: "Court Pendency",
     icon: "⚖️",
-    tagline: "Aggregate case pendency from NJDG.",
+    tagline: "Pending cases in district courts, from NJDG.",
+    // Sept 2026 audit: the 5.21 crore figure is district and subordinate
+    // courts only (NJDG), not high courts or the Supreme Court.
     description:
-      "National Judicial Data Grid weekly snapshot — total pending cases " +
-      "across district, high, and supreme courts. Aggregate only.",
-    status: "coming_soon",
+      "Pending cases in district and subordinate courts, from the National " +
+      "Judicial Data Grid (NJDG). Totals only.",
+    status: "live",
     displayOrder: 1,
     sources: [{ sourceKey: "NJDG", type: "Collected", refresh: "Weekly" }],
     componentName: "JusticePendencyModule",
@@ -1015,7 +1028,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Bureau of Police Research and Development annual data on " +
       "police organisations — strength, vacancies, ratio per lakh population.",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 3,
     sources: [{ sourceKey: "BPRD", type: "Collected", refresh: "Annual" }],
     componentName: "JusticePoliceModule",
@@ -1060,7 +1073,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Election Commission of India data on the current Lok Sabha — " +
       "party-wise seat tally, vacancies, by-election results.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 5,
     sources: [{ sourceKey: "ECI", type: "Collected", refresh: "Event-driven" }],
     componentName: "ElectionsLokSabhaModule",
@@ -1082,7 +1095,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Rajya Sabha membership and composition — party-wise strength, " +
       "elected vs nominated, vacancies.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 6,
     sources: [
       { sourceKey: "RAJYA_SABHA", type: "Collected", refresh: "Monthly" },
@@ -1230,7 +1243,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Department of Commerce QuickEstimates — monthly merchandise exports, " +
       "imports, services trade, trade balance.",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 5,
     sources: [
       { sourceKey: "COMMERCE", type: "Collected", refresh: "Monthly" },
@@ -1273,7 +1286,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     tagline: "Remittance inflows, diaspora estimates.",
     description:
       "RBI annual remittance data, MEA diaspora estimates by country.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 7,
     sources: [{ sourceKey: "RBI", type: "Collected", refresh: "Annual" }],
     componentName: "TradeDiasporaModule",
@@ -1295,7 +1308,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Foreign Tourist Arrivals and Foreign Exchange Earnings — monthly " +
       "bulletin from the Ministry of Tourism.",
-    status: "live",
+    status: "coming_soon",
     displayOrder: 2,
     sources: [{ sourceKey: "TOURISM", type: "Collected", refresh: "Monthly" }],
     componentName: "TourismOverviewModule",
@@ -1343,7 +1356,7 @@ export const INDIA_MODULES: IndiaModuleDef[] = [
     description:
       "Office of the Controller General of Patents GI registry — total " +
       "tags, by category, by state.",
-    status: "coming_soon",
+    status: "live",
     displayOrder: 5,
     sources: [{ sourceKey: "IPINDIA", type: "Collected", refresh: "Annual" }],
     componentName: "TourismGiTagsModule",
