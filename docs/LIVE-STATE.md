@@ -219,7 +219,7 @@ Off main → `BUG-TRACKER.md` + the `BLUEPRINT`/`LIVE-STATE` top entries union-c
 - Hindi + other non-en/kn locales
 
 ### In-repo reference
-`docs/HOMEPAGE-REDESIGN-V5-SLIM.md` — full layout map · tier color reference · animation table · mobile breakpoints · endpoint inventory · `/public/districts/` SVG slot pattern · deferred backlog.
+`docs/archive/HOMEPAGE-REDESIGN-2026-04.md` — full layout map · tier color reference · animation table · mobile breakpoints · endpoint inventory · `/public/districts/` SVG slot pattern · deferred backlog.
 
 ---
 
@@ -347,7 +347,7 @@ reconciliation prompt.
 - **AGMARKNET (data.gov.in) crops:** API returns 200 with records, but data hasn't been updated since 2026-04-21. Verified via Phase 4 `[scrape-debug]` instrumentation across all 10 districts: every record returned has `arrival_date="21/04/2026"`, identical to existing rows → dedup correctly skips.
 - **Mandya / Bengaluru-urban RSS:** sparse, 24-72h cycle (genuinely low publication frequency).
 
-#### 🚨 External issues (manual action required — see docs/41-Session10-Manual-Actions-Required.md)
+#### 🚨 External issues (manual action required — see docs/archive/41-Session10-Manual-Actions-Required.md)
 - **Railway scraper container:** trial expires in 2 days. Last successful deploy Apr 22. Causes weather/dam/traffic frozen since Apr 21. Upgrade to Hobby ($5/mo) — one click.
 - **Sentry SDK:** `@sentry/nextjs ^10.48.0` installed and `Sentry.captureException` used in 7+ places, BUT `instrumentation.ts` is missing → SDK never initialized → 0 events received in console. Also: `next.config.ts` `org/project` (`forthepeople/forthepeople-web`) doesn't match Jayanth's dashboard (`forthepeoplein/javascript-nextjs`). Both need clarification before fix.
 - **RESEND_API_KEY:** key is valid + restricted-scope (send-only). Vercel "Needs Attention" badge most likely about domain verification — Jayanth must visually check resend.com/domains.
@@ -355,7 +355,7 @@ reconciliation prompt.
 ### What changed this session
 - **`src/app/api/data/homepage-stats/route.ts`** — `mostRecentAt` now reads `newsItem.fetchedAt` + `infraUpdate.createdAt` + `localAlert.createdAt` instead of the two upstream-stale sources (`cropPrice.fetchedAt`, `weatherReading.recordedAt`). `CACHE_KEY` bumped `v2 → v3` to force Redis cache eviction on next deploy.
 - **`src/app/api/data/homepage-stats/route.v2.ts`** — pre-edit snapshot.
-- **`docs/41-Session10-Manual-Actions-Required.md`** — Railway, Razorpay, RESEND, Sentry handoff.
+- **`docs/archive/41-Session10-Manual-Actions-Required.md`** — Railway, Razorpay, RESEND, Sentry handoff.
 
 ### Phase 1 cleanup
 The Session-10-FIX Phase 3 `[scrape-debug]` instrumentation in `crops.ts`/`news.ts` was reverted via `git checkout HEAD -- ...` before any new work. Zero refs remain in src/.

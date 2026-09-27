@@ -150,8 +150,9 @@ display data without a citation back to one of these entries.
   - **geohacker/india** (CC-BY) — https://github.com/geohacker/india
 - **Taluk polygons per district:** `public/geo/{district-slug}-taluks.json`.
   Existing coverage: bengaluru-urban, chennai, kolkata, lucknow, mandya,
-  mumbai, mysuru, new-delhi, and karnataka-mysuru. Provenance inline only
-  on new files going forward.
+  mumbai, mysuru, new-delhi, pune. The map loaders fetch only
+  `/geo/<district-slug>-taluks.json`. Provenance inline only on new files
+  going forward.
 - **Pune (added 2026-04-23 as district #10):**
   - District polygon already present in `maharashtra-districts.json`
     (feature `{name: "Pune", slug: "pune", stateSlug: "maharashtra"}`);
