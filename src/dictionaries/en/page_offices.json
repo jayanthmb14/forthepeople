@@ -6,8 +6,9 @@
   "now": {
     "open": "It is {day}, {time} in India: most offices are usually <b>open</b> now ({hours}).",
     "closed": "It is {day}, {time} in India: most offices are usually <b>closed</b> now. They usually open {hours}.",
-    "someSat": "It is {day}, {time} in India. <b>Some offices open on Saturdays</b>, so call before you go.",
-    "sunday": "It is {day} in India: Govt offices are <b>closed</b> on Sundays."
+    "someSat": "It is {day}, {time} in India. <b>Offices open on some Saturdays only</b>, so call before you go.",
+    "sunday": "It is {day} in India: Govt offices are <b>closed</b> on Sundays.",
+    "closedDay": "It is {day} in India: Govt offices are usually <b>closed</b> today."
   },
   "tiles": {
     "offices": "Offices",
@@ -18,6 +19,7 @@
     "phoneSub": "Out of {total}",
     "now": "Right now",
     "nowSub": "Usual hours, India time",
+    "nowSubNone": "Hours differ by office",
     "usuallyOpen": "Usually open",
     "usuallyClosed": "Usually closed",
     "callFirst": "Call first",
@@ -25,8 +27,8 @@
   },
   "week": {
     "title": "A usual office week",
-    "aria": "Usually open {hours}. Some offices open on Saturdays. Closed on Sundays.",
-    "caption": "Coloured days: usually open, {hours}, India time. Pale day: some offices open on Saturdays. Closed on Sundays and public holidays. The ringed day is today."
+    "aria": "Usually open {hours}.{some, select, yes { Open on some Saturdays only.} other {}} Closed on other days and public holidays.",
+    "caption": "Coloured days: usually open, {hours}, India time.{some, select, yes { Pale day: open on some Saturdays only.} other {}} Grey days: closed, as on public holidays. The ringed day is today."
   },
   "list": {
     "title": "Find an office",
@@ -77,6 +79,7 @@
       "closedToday": "<b>Closed today.</b>"
     },
     "noHours": "This office has not listed its hours. Most Govt offices are open <b>{hours}</b>, India time. Call before you go.",
+    "noHoursUnknown": "This office has not listed its hours, and we have no official timings for Govt offices in this state. Call before you go.",
     "department": "Department",
     "type": "Kind of office",
     "head": "Head of office",
