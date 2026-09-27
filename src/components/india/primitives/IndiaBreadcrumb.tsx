@@ -5,13 +5,17 @@
  *
  * File 48 §4.7.1 + Section 1 (functional dropdown) + Section 2 (sticky + inline pill).
  *
- * Layout: [🏠 Home] › [📍 India] › [Select module ▾]   (all inline, no auto margin)
+ * Layout: [Home] › [India] › [Select module ▾]   (all inline, no auto margin)
  *
  * Position: sticky at top:41px so the breadcrumb butts cleanly against the
  * bottom of the global header (Step 26 fix — was top:56px which left a 15 px
  * transparent strip visible while scrolling). The page-level scroll-progress
  * bar lives directly below this breadcrumb (sticky at top:100px, z-index one
  * less than the breadcrumb).
+ *
+ * Design v3 alignment (2026-09-27): colours are --ftp-* tokens, the row
+ * sits on the same 16/24 px gutter as .ftp-container, icons are 14 px
+ * Lucide. Height is unchanged (the sticky offsets below depend on it).
  */
 
 import * as React from "react";
@@ -52,35 +56,37 @@ export function IndiaBreadcrumb({
         position: "sticky",
         top: "41px",
         zIndex: 40,
-        background: "var(--color-background)",
-        borderBottom: "0.5px solid var(--color-border-tertiary)",
+        background: "var(--ftp-bg)",
+        borderBottom: "1px solid var(--ftp-border)",
         display: "flex",
         alignItems: "center",
         gap: "8px",
         fontSize: "13px",
-        color: "var(--color-text-tertiary)",
-        padding: "8px 14px",
+        lineHeight: "20px",
+        color: "var(--ftp-text-2)",
+        padding: "8px clamp(16px, 4vw, 24px)", // 16 px on phones → 24 px, like .ftp-container
       }}
     >
       <Link
         href={`/${locale}`}
         style={{
-          color: "var(--color-text-secondary)",
+          color: "var(--ftp-text-2)",
           textDecoration: "none",
           display: "flex",
           alignItems: "center",
           gap: "4px",
         }}
       >
-        <Home size={12} />
+        <Home size={14} aria-hidden />
         {t.home}
       </Link>
 
-      <ChevronRight size={12} style={{ opacity: 0.4 }} />
+      <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
 
       <span
+        aria-current="page"
         style={{
-          color: "var(--color-text-primary)",
+          color: "var(--ftp-text)",
           fontWeight: 500,
           fontSize: "13px",
           display: "inline-flex",
@@ -88,11 +94,11 @@ export function IndiaBreadcrumb({
           gap: "4px",
         }}
       >
-        <MapPin size={12} style={{ opacity: 0.7 }} />
+        <MapPin size={14} aria-hidden style={{ color: "var(--ftp-brand)" }} />
         {t.india}
       </span>
 
-      <ChevronRight size={12} style={{ opacity: 0.4 }} />
+      <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
 
       <ModuleSelectorDropdown
         locale={locale}
