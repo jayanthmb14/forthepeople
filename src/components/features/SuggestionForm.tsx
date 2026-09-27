@@ -8,6 +8,8 @@
  * <label htmlFor> tied to its input, inputs and the submit button are 44 px
  * tall (comfortable touch targets on phones), the chevron is a Lucide icon
  * and the submit button uses a Lucide icon instead of an emoji.
+ * Design v4: the submit button takes the surrounding hue (violet on
+ * /features and in the home page's ideas card; brand blue elsewhere).
  *
  * UNCHANGED: the validation rules (name validator, 5–120 char title,
  * 20–2000 char details), the request body, the success reset and the
@@ -210,8 +212,8 @@ export default function SuggestionForm({ onSuccess }: { onSuccess?: () => void }
           padding: "0 18px",
           borderRadius: "var(--ftp-radius-tile)",
           border: "1px solid transparent",
-          background: canSubmit ? "var(--ftp-brand)" : "var(--ftp-surface-2)",
-          color: canSubmit ? "var(--ftp-surface)" : "var(--ftp-text-2)",
+          background: canSubmit ? "var(--hue)" : "var(--ftp-surface-2)",
+          color: canSubmit ? "#fff" : "var(--ftp-text-2)",
           borderColor: canSubmit ? "transparent" : "var(--ftp-border)",
           fontFamily: "var(--ftp-font-sans)",
           fontWeight: 500,
