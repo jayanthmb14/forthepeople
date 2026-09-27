@@ -104,6 +104,15 @@ local/legacy runner for the same job modules, not part of the deployed system.
 Model names live in that one file (and the `AIProviderSettings` row the admin
 can edit); do not copy them into docs.
 
+**Translation of live text** (news, AI insights) is separate from `callAI`.
+`src/lib/translation/` translates each new item **once** into every
+switched-on language through a translation provider (Bhashini, Google or
+Sarvam, chosen by env key), and stores the result in `ContentTranslation`.
+The data APIs take `?locale=` and swap in the stored text with one DB read.
+A page request never calls a provider, so switching language costs nothing.
+Writers: `scrape-news`, `generate-insights`, and the catch-up cron
+`translate-content`. Details: `docs/I18N.md` §3.
+
 ## 5. Authentication and security
 
 - **Admin sessions** (`src/lib/admin-auth.ts`): login = password + TOTP. A

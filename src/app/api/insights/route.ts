@@ -6,6 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { contentLocale } from "@/lib/translation/content";
+import { localizeRow } from "@/lib/translation/overlay";
 
 // GET /api/insights?district=mandya&module=leadership
 // Returns the latest approved AI insight for a given district + module
@@ -13,6 +15,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const district = searchParams.get("district");
   const moduleSlug = searchParams.get("module");
+  // ?locale=kn → stored translation of the headline/summary (no API call).
+  const locale = contentLocale(searchParams.get("locale"));
 
   if (!district || !moduleSlug) {
     return NextResponse.json({ insight: null });
@@ -37,7 +41,7 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(
-    { insight },
+    { insight: await localizeRow("insight", insight, locale) },
     {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",

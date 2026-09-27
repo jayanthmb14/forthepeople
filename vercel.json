@@ -29,6 +29,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/translate-content",
+      "schedule": "20 */3 * * *"
+    },
+    {
       "path": "/api/cron/scrape-crops",
       "schedule": "30 3 * * *"
     },

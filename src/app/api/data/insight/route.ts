@@ -13,21 +13,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
+import { contentLocale } from "@/lib/translation/content";
+import { localizeRow } from "@/lib/translation/overlay";
 
 const CACHE_TTL = 5 * 60; // 5 minutes
 
 export const runtime = "nodejs";
 
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const moduleSlug = sp.get("module") ?? "";
   const districtSlug = sp.get("district") ?? "";
+  // ?locale=kn → stored translation of opinion/recommendation (no API call).
+  const locale = contentLocale(sp.get("locale"));
 
   if (!moduleSlug || !districtSlug) {
     return NextResponse.json({ error: "module and district required" }, { status: 400 });
   }
 
-  const cacheKey = `ftp:insight:${districtSlug}:${moduleSlug}`;
+  const cacheKey = `ftp:insight:${districtSlug}:${moduleSlug}${locale ? `@${locale}` : ""}`;
 
   // 1. Redis cache hit
   const cached = await cacheGet(cacheKey);
@@ -51,6 +56,7 @@ export async function GET(req: NextRequest) {
     const row = await prisma.aIModuleInsight.findUnique({
       where: { districtId_module: { districtId: district.id, module: moduleSlug } },
       select: {
+        id: true,
         severity: true,
         opinion: true,
         recommendation: true,
@@ -65,10 +71,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ insight: null });
     }
 
+    const text = await localizeRow("moduleInsight", row, locale);
     const insight = {
       severity: row.severity,
-      opinion: row.opinion,
-      recommendation: row.recommendation,
+      opinion: text?.opinion ?? row.opinion,
+      recommendation: text?.recommendation ?? row.recommendation,
+      lang: text?.lang ?? "en",
       aiProvider: row.aiProvider,
       aiModel: row.aiModel,
       generatedAt: row.generatedAt.toISOString(),

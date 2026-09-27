@@ -16,7 +16,7 @@
 //  Next refresh in 5h", or "Will refresh when data changes" for old ones).
 // ═══════════════════════════════════════════════════════════
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useFormat } from "@/i18n/client";
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Clock, Sparkles } from "lucide-react";
@@ -34,6 +34,8 @@ interface ModuleInsight {
   fromCache?: boolean;
   aiProvider?: string;
   aiModel?: string;
+  /** Language of opinion/recommendation: the page language once translated, else "en". */
+  lang?: string;
 }
 
 type Tr = (key: string, values?: Record<string, string | number>) => string;
@@ -99,14 +101,16 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
   // The answer is stored together with the module/district it belongs to,
   // so switching page shows the skeleton again without a synchronous
   // setState inside the effect (React Compiler rule).
-  const requestKey = `${module}|${district}`;
+  const locale = useLocale();
+  const requestKey = `${module}|${district}|${locale}`;
   const [result, setResult] = useState<{ key: string; insight: ModuleInsight | null } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [showOld, setShowOld] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/data/insight?module=${module}&district=${district}`)
+    // Stored translation for this language (translated once in the backend).
+    fetch(`/api/data/insight?module=${module}&district=${district}&locale=${locale}`)
       .then((r) => r.json())
       .then((json) => {
         if (!cancelled) setResult({ key: requestKey, insight: json.insight ?? null });
@@ -116,7 +120,7 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
       });
 
     return () => { cancelled = true; };
-  }, [module, district, requestKey]);
+  }, [module, district, locale, requestKey]);
 
   const loading = result?.key !== requestKey;
   const insight = loading ? null : result.insight;
@@ -179,7 +183,7 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
       </div>
 
       {/* Opinion text */}
-      <p className="ftp-body" style={{ margin: 0 }}>{insight.opinion}</p>
+      <p className="ftp-body" lang={insight.lang ?? "en"} style={{ margin: 0 }}>{insight.opinion}</p>
 
       {/* Recommendation (expandable) */}
       <button
@@ -207,7 +211,7 @@ export default function AIInsightCard({ module, district }: AIInsightCardProps) 
       </button>
 
       {expanded && (
-        <p className="ftp-body" style={{ margin: "0 0 4px", paddingLeft: 18, color: "var(--ftp-text)" }}>
+        <p className="ftp-body" lang={insight.lang ?? "en"} style={{ margin: "0 0 4px", paddingLeft: 18, color: "var(--ftp-text)" }}>
           {insight.recommendation}
         </p>
       )}

@@ -24,6 +24,7 @@ import { MODULE_INSIGHT_CONFIGS } from "@/lib/insight-config";
 import { generateInsight, hasDataChanged } from "@/lib/insight-generator";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { selectProjectsNeedingAnalysis, generateInfraAnalysis } from "@/lib/infra-analysis";
+import { translatePendingContent } from "@/lib/translation/job";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 
 const INFRA_ANALYSIS_CAP_PER_RUN = 10;
@@ -156,12 +157,21 @@ export async function POST(req: NextRequest) {
       error: allFailed ? `${failed} insight(s) attempted, 0 succeeded` : undefined,
     });
 
+    // Translate the new insights once into every switched-on language
+    // (stored; see src/lib/translation). Leftovers go to translate-content.
+    let translation: Awaited<ReturnType<typeof translatePendingContent>> | null = null;
+    const timeLeft = 270_000 - (Date.now() - startTime);
+    if (succeeded > 0 && timeLeft > 20_000) {
+      translation = await translatePendingContent({ budgetMs: timeLeft - 10_000 }).catch(() => null);
+    }
+
     return NextResponse.json({
       ok: true,
       processed: results.length,
       succeeded,
       failed,
       infra: { analysed: infraAnalysed, failed: infraFailed, cap: INFRA_ANALYSIS_CAP_PER_RUN },
+      translation,
       durationMs: Date.now() - startTime,
     });
   } catch (err) {

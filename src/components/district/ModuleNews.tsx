@@ -36,6 +36,8 @@ interface NewsItem {
   category: string;
   publishedAt: string;
   targetModule?: string | null;
+  /** Language of headline/summary: the page language once translated, else "en". */
+  lang?: string;
 }
 
 /**
@@ -71,7 +73,8 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/data/news?district=${district}&state=${state}`)
+    // Stored translations for this language (translated once in the backend).
+    fetch(`/api/data/news?district=${district}&state=${state}&locale=${locale}`)
       .then((r) => r.json())
       .then((json) => {
         const items: NewsItem[] = json.data ?? [];
@@ -82,7 +85,7 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-  }, [district, state, module, limit]);
+  }, [district, state, locale, module, limit]);
 
   // Nothing tagged for this module (or still loading) → render nothing.
   if (!loaded || news.length === 0) return null;
@@ -114,7 +117,7 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
                     {f.ago(n.publishedAt)}
                   </time>
                 </p>
-                <p className="ftp-title" style={{ fontSize: 13, lineHeight: "20px", marginTop: 2 }}>
+                <p className="ftp-title" lang={n.lang ?? "en"} style={{ fontSize: 13, lineHeight: "20px", marginTop: 2 }}>
                   {cleanHtml(n.headline)}
                 </p>
               </div>

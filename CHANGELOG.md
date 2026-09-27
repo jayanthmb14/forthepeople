@@ -119,6 +119,14 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   - Districts that aren't live yet show the vote count and the nearest live district.
 - 2026-09-27: The language menu lists all 22 Indian languages. The ones not yet available are shown
   locked with their native names.
+- 2026-09-27: Live text (news, AI insights) is translated **once** in the backend and stored, in a new
+  `ContentTranslation` table. Switching language only reads stored rows and never spends
+  translation credits.
+  - Providers: Bhashini, Google Cloud Translation or Sarvam, picked by env key.
+  - Hooked into `scrape-news` and `generate-insights`, with a catch-up cron `translate-content`
+    (every 3 h, `?dry=1` to test a key).
+  - Spend caps per run and per month.
+  - It is off until a key is added and `npm run db:push` has created the table.
 - 2026-09-27: The India map shows live districts as landmark badges in each district's colour, and
   nearby pins fan out with leader lines. The district overview has a "Where is {district}?" locator map.
 
@@ -166,6 +174,10 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
   `supporter-message`, `contribution-expiry`, `badge-level`, `social-detect`).
 
 ### Manual actions (only the owner can do these)
+- **Translation backend:** run `npm run db:push` once to create `ContentTranslation`, then add ONE
+  provider key to Vercel (`BHASHINI_USER_ID` + `BHASHINI_API_KEY`, or `GOOGLE_TRANSLATE_API_KEY`, or
+  `SARVAM_API_KEY`). Optional: `TRANSLATION_MONTHLY_CHAR_LIMIT`. Then call
+  `/api/cron/translate-content?dry=1` with the cron secret to confirm the key works.
 - Vercel: the 13 Sep "Account is blocked" status is already cleared (a probe deploy was created on
   2026-09-26). Push this branch so Vercel builds a preview: that build proves the font fix below.
   Until this branch is merged, any push to `main` fails on Vercel (`next/font/google` cannot

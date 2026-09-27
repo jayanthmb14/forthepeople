@@ -11,6 +11,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import { useDistrictData } from "./useDistrictData";
 
 // ── Types ────────────────────────────────────────────────
@@ -856,13 +857,17 @@ export interface AIInsight {
   confidence: number;
   sourceUrls: string[];
   createdAt: string;
+  /** Language of headline/summary: the page language once translated, else "en". */
+  lang?: string;
 }
 
 export function useAIInsight(district: string, module: string) {
+  const locale = useLocale();
   return useQuery<AIInsight | null>({
-    queryKey: ["ai-insight", district, module],
+    queryKey: ["ai-insight", district, module, locale],
     queryFn: async () => {
-      const res = await fetch(`/api/insights?district=${district}&module=${module}`);
+      // Stored translation for this language (translated once in the backend).
+      const res = await fetch(`/api/insights?district=${district}&module=${module}&locale=${locale}`);
       if (!res.ok) return null;
       const json = await res.json();
       return json.insight ?? null;

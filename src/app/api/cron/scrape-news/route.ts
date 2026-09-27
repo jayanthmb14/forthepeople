@@ -18,6 +18,8 @@ import { redis } from "@/lib/redis";
 import { scrapeNews } from "@/scraper/jobs/news";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { resetExtractionCounters } from "@/lib/news-action-engine";
+import { translationTargets } from "@/lib/translation/content";
+import { translatePendingContent } from "@/lib/translation/job";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import type { JobContext } from "@/scraper/types";
 
@@ -132,6 +134,7 @@ export async function GET(request: Request) {
     // Invalidate news cache for this district
     if (result.success && redis) {
       await redis.del(cacheKey(slug, "news"));
+      for (const loc of translationTargets()) await redis.del(`${cacheKey(slug, "news")}@${loc}`);
       await redis.del(cacheKey(slug, "overview"));
     }
   }
@@ -149,5 +152,17 @@ export async function GET(request: Request) {
     error: allFailed ? `all ${results.length} districts failed: ${failedDistricts[0]?.error ?? "unknown"}` : undefined,
   });
 
-  return NextResponse.json({ ok: true, totalNew, totalDedup, totalAlertsExpired, results });
+  // Translate the new articles once, now, into every switched-on language
+  // (stored; visitors switching language never trigger a translation).
+  // Whatever doesn't fit in the time left is picked up by translate-content.
+  let translation: Awaited<ReturnType<typeof translatePendingContent>> | null = null;
+  const timeLeft = 270_000 - (Date.now() - runStart);
+  if (totalNew > 0 && timeLeft > 20_000) {
+    translation = await translatePendingContent({ budgetMs: timeLeft - 10_000 }).catch((err) => {
+      console.warn("[scrape-news] translation step failed:", err instanceof Error ? err.message : err);
+      return null;
+    });
+  }
+
+  return NextResponse.json({ ok: true, totalNew, totalDedup, totalAlertsExpired, results, translation });
 }

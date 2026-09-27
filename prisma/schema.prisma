@@ -2517,3 +2517,26 @@ model IndiaAnalysis {
 
   @@index([moduleSlug])
 }
+
+// ═══ CONTENT TRANSLATIONS ═════════════════════════════════
+// Stored translations of LIVE text (news titles and summaries, AI insights)
+// into the routed Indian languages. Written ONCE by the translate-content
+// job (src/lib/translation/), read by the data APIs. Switching language on
+// the site never calls a translation API — it only reads these rows.
+// `sourceHash` is a hash of the English text; when the English changes, the
+// row is stale and gets re-translated on the next run.
+model ContentTranslation {
+  id         String   @id @default(cuid())
+  entityType String // "news" | "insight" | "moduleInsight" | "indiaNews"
+  entityId   String
+  field      String // "title" | "summary" | "headline" | "opinion" | "recommendation"
+  locale     String // registry code, e.g. "kn"
+  text       String   @db.Text
+  sourceHash String
+  provider   String // "bhashini" | "google" | "sarvam" | "manual"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([entityType, entityId, field, locale])
+  @@index([entityType, locale])
+}

@@ -13,6 +13,12 @@ import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
+import { contentLocale } from "@/lib/translation/content";
+import { localizeRows } from "@/lib/translation/overlay";
+
+// Modules whose payload carries live text with stored translations
+// (src/lib/translation). Every other module ignores ?locale=.
+const LOCALIZED_MODULES = new Set(["news"]);
 
 // ── Params type (Next.js 15+) ───────────────────────────
 type RouteContext = { params: Promise<{ module: string }> };
@@ -23,13 +29,16 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const districtSlug = sp.get("district") ?? "";
   const stateSlug = sp.get("state") ?? "";
   const talukSlug = sp.get("taluk") ?? "";
+  // ?locale=kn → overlay STORED translations of live text (no API calls).
+  const locale = LOCALIZED_MODULES.has(module) ? contentLocale(sp.get("locale")) : null;
 
   if (!districtSlug) {
     return NextResponse.json({ error: "district param required" }, { status: 400 });
   }
 
   // ── Cache check ──────────────────────────────────────
-  const key = cacheKey(districtSlug, module + (talukSlug ? `:${talukSlug}` : ""));
+  const baseKey = cacheKey(districtSlug, module + (talukSlug ? `:${talukSlug}` : ""));
+  const key = locale ? `${baseKey}@${locale}` : baseKey;
   const cached = await cacheGet<{ data: unknown; meta: Record<string, unknown> }>(key);
   if (cached) {
     const ttl = getModuleTTL(module);
@@ -40,8 +49,16 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 
   // ── Fetch ────────────────────────────────────────────
   try {
-    const result = await fetchModule(module, districtSlug, stateSlug, talukSlug);
-    await cacheSet(key, result, getModuleTTL(module));
+    let result = locale ? await cacheGet<{ data: unknown; meta: Record<string, unknown> }>(baseKey) : null;
+    if (!result) {
+      result = await fetchModule(module, districtSlug, stateSlug, talukSlug);
+      await cacheSet(baseKey, result, getModuleTTL(module));
+    }
+    if (locale) {
+      result = await localizeModule(module, result, locale);
+      // Short TTL so translations written by the job show up within minutes.
+      await cacheSet(key, result, Math.min(getModuleTTL(module), 600));
+    }
     const ttl = getModuleTTL(module);
     const resp = NextResponse.json(result);
     resp.headers.set("Cache-Control", `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`);
@@ -51,6 +68,19 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     console.error(`[API] ${module} error:`, err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+// ── Live-text overlay ────────────────────────────────────
+async function localizeModule(
+  module: string,
+  result: { data: unknown; meta: Record<string, unknown> },
+  locale: string,
+): Promise<{ data: unknown; meta: Record<string, unknown> }> {
+  if (module === "news" && Array.isArray(result.data)) {
+    const rows = await localizeRows("news", result.data as { id: string; title: string }[], locale);
+    return { ...result, data: rows.map((r) => ({ ...r, headline: r.title })), meta: { ...result.meta, locale } };
+  }
+  return result;
 }
 
 // ── Module resolver ──────────────────────────────────────
