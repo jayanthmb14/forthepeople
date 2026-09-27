@@ -111,11 +111,16 @@ export default async function StatePage({ params }: Props) {
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-            <Pill tone="live" icon={CheckCircle2}>
-              <span className="ftp-num">{live.length}</span>&nbsp;live
+            {/* Icons go in as children, not via the `icon` prop: this is a
+                server component and a component function cannot be passed
+                as a prop to the (client) kit Pill. */}
+            <Pill tone="live">
+              <CheckCircle2 size={12} aria-hidden />
+              <span><span className="ftp-num">{live.length}</span>&nbsp;live</span>
             </Pill>
-            <Pill tone="neutral" icon={Clock}>
-              <span className="ftp-num">{coming.length}</span>&nbsp;coming
+            <Pill tone="neutral">
+              <Clock size={12} aria-hidden />
+              <span><span className="ftp-num">{coming.length}</span>&nbsp;coming</span>
             </Pill>
             {stateData.capital && <Pill tone="neutral">Capital: {stateData.capital}</Pill>}
           </div>
@@ -227,7 +232,7 @@ export default async function StatePage({ params }: Props) {
                           <span lang="und" style={{ display: "block", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{d.nameLocal}</span>
                         )}
                       </span>
-                      <Pill tone="neutral" icon={Lock}>COMING</Pill>
+                      <Pill tone="neutral"><Lock size={12} aria-hidden />COMING</Pill>
                     </span>
                   </Card>
                 </li>
