@@ -97,7 +97,7 @@ export function HueDonut({
   // A hair of space between segments, only when there is more than one.
   const gap = shown.length > 1 ? Math.min(3, c * 0.01) : 0;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
       <div role="img" aria-label={ariaLabel} style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
           <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} />
@@ -147,7 +147,7 @@ export function HueDonut({
           </div>
         )}
       </div>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 180 }}>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8, flex: "1 1 240px", minWidth: 0, maxWidth: 440 }}>
         {segments.map((s, i) => (
           <li key={s.key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, lineHeight: "20px" }}>
             <span
