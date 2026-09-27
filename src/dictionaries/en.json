@@ -908,6 +908,10 @@
     "stateNotLive": "No district in {state} is live yet.",
     "asked": "{count} people have asked for it.",
     "vote": "Vote for {name}",
-    "nearest": "Nearest live: {name}, {km} km"
+    "nearest": "Nearest live: {name}, {km} km",
+    "grade": "Report card {grade} · {score}/100",
+    "gradeOnly": "Report card {grade}",
+    "temp": "{temp}°C",
+    "weatherAsOf": "Weather as of {date}"
   }
 }

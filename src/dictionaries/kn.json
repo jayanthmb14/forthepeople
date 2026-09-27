@@ -912,6 +912,10 @@
     "stateNotLive": "{state}ದ ಯಾವುದೇ ಜಿಲ್ಲೆ ಇನ್ನೂ ಲೈವ್ ಆಗಿಲ್ಲ.",
     "asked": "{count} ಜನರು ಇದನ್ನು ಕೇಳಿದ್ದಾರೆ.",
     "vote": "{name}ಗೆ ಮತ ನೀಡಿ",
-    "nearest": "ಹತ್ತಿರದ ಲೈವ್ ಜಿಲ್ಲೆ: {name}, {km} ಕಿ.ಮೀ."
+    "nearest": "ಹತ್ತಿರದ ಲೈವ್ ಜಿಲ್ಲೆ: {name}, {km} ಕಿ.ಮೀ.",
+    "grade": "ವರದಿ ಕಾರ್ಡ್ {grade} · {score}/100",
+    "gradeOnly": "ವರದಿ ಕಾರ್ಡ್ {grade}",
+    "temp": "{temp}°C",
+    "weatherAsOf": "ಹವಾಮಾನ, {date} ರಂತೆ"
   }
 }

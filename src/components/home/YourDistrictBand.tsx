@@ -23,12 +23,15 @@
 import { useMemo } from "react";
 import YourDistrictStrip from "./YourDistrictStrip";
 import type { MyDistrict } from "@/hooks/useMyDistrict";
-import { asOfLabel } from "@/lib/utils/timeAgo";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/i18n/client";
 import { slugifyDistrictName, usePreview, useTopVotes } from "./home-data";
 
 export default function YourDistrictBand({ locale, variant = "strip" }: { locale: string; variant?: "strip" | "hero" }) {
   const preview = usePreview();
   const { votes } = useTopVotes();
+  const t = useTranslations("popup");
+  const f = useFormat();
 
   const voteMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -36,33 +39,36 @@ export default function YourDistrictBand({ locale, variant = "strip" }: { locale
     return map;
   }, [votes]);
 
-  /** "C+ 54 · 31°C" — only the parts we actually have. */
+  /** "📋 Report card C+ · 54/100" and "🌡️ 31°C" chips — only the parts we actually have. */
   function extras(d: MyDistrict): React.ReactNode {
     const p = preview[d.slug];
     if (!p) return null;
     const parts: React.ReactNode[] = [];
     if (p.healthGrade) {
       parts.push(
-        <span key="grade" title="District health score">
-          <span className="ftp-num">{p.healthGrade}</span>
-          {p.healthScore !== null && <span className="ftp-num"> {p.healthScore}</span>}
+        <span key="grade" className="ftp-popup-chip">
+          <span className="ftp-emoji" aria-hidden>📋</span>
+          {p.healthScore !== null
+            ? t("grade", { grade: p.healthGrade, score: p.healthScore })
+            : t("gradeOnly", { grade: p.healthGrade })}
         </span>,
       );
     }
     if (p.weather?.temp !== null && p.weather?.temp !== undefined) {
+      const at = p.weather.recordedAt;
       parts.push(
-        <span key="temp" className="ftp-num" title={asOfLabel(p.weather.recordedAt ?? null, { prefix: "Weather as of" }) || undefined}>
-          {p.weather.temp}°C
+        <span
+          key="temp"
+          className="ftp-popup-chip ftp-num"
+          title={at ? t("weatherAsOf", { date: f.date(at, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) }) : undefined}
+        >
+          <span className="ftp-emoji" aria-hidden>🌡️</span>
+          {t("temp", { temp: p.weather.temp })}
         </span>,
       );
     }
     if (parts.length === 0) return null;
-    return parts.map((part, i) => (
-      <span key={i}>
-        {i > 0 && " · "}
-        {part}
-      </span>
-    ));
+    return parts;
   }
 
   return <YourDistrictStrip locale={locale} votes={voteMap} extras={extras} variant={variant} />;

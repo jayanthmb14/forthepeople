@@ -1134,7 +1134,13 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-popup-local { font-family: var(--ftp-font-sans); font-size: 17px; font-weight: 600; color: var(--hue-deep); }
 .ftp-popup-state { margin: 2px 0 0; font-size: 13px; color: var(--ftp-text-2); }
 .ftp-popup-tag { margin: 0; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: var(--hue-tint); color: var(--hue-deep); font-size: 13px; font-weight: 600; }
-.ftp-popup-extras { font-size: 14px; color: var(--ftp-text); }
+.ftp-popup-extras { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; color: var(--ftp-text); }
+.ftp-popup-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--hue-tint, #F1F5F9); color: var(--hue-deep, var(--ftp-text));
+  font-weight: 600; font-size: 13px; line-height: 18px;
+}
 .ftp-popup-body { margin: 0; font-size: 14px; line-height: 21px; color: var(--ftp-text); }
 .ftp-popup-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 14px; background: var(--hue); color: #fff; font-weight: 700; font-size: 15px; text-decoration: none; }
 .ftp-popup-cta:hover { background: var(--hue-deep); }
