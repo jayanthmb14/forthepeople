@@ -22,7 +22,7 @@ import { Pill, ProgressBar } from "@/components/district/ui";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { hueClass } from "@/lib/design/hues";
 import { SheetHighlight, SheetLink, SheetSection, hostOf, safeUrl } from "@/components/money/TapCard";
-import type { ProjectPoint } from "@/lib/civic/project-facts";
+import { ownSourceLinks, type ProjectPoint } from "@/lib/civic/project-facts";
 import { hasCourtMention, kindOf, stageOf } from "./infra-utils";
 import { useInfraText } from "./infra-i18n";
 import { PointList } from "./ProjectCard";
@@ -61,9 +61,10 @@ export default function ProjectSheet({
     const url = NOT_NEWS.has(u.newsUrl) ? null : safeUrl(u.newsUrl);
     if (url && !links.has(url)) links.set(url, u.newsSource ?? hostOf(url) ?? url);
   }
-  for (const raw of p.sourceUrls ?? []) {
-    const url = safeUrl(raw);
-    if (url && !links.has(url)) links.set(url, hostOf(url) ?? url);
+  // sourceUrls is a list of links or (hand-researched rows) { primary: { url, publication }, … }.
+  for (const l of ownSourceLinks(p)) {
+    const url = safeUrl(l.url);
+    if (url && !links.has(url)) links.set(url, l.name ?? hostOf(url) ?? url);
   }
   const first = p.originalBudget ?? p.budget ?? null;
   const now = budgetOf(p);

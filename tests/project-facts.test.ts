@@ -123,3 +123,14 @@ describe("projectPoints", () => {
     expect(t).toBe(new Date("2026-04-01").getTime());
   });
 });
+
+describe("ownSourceLinks", () => {
+  it("reads both shapes of sourceUrls", async () => {
+    const { ownSourceLinks, sourceCount } = await import("@/lib/civic/project-facts");
+    expect(ownSourceLinks({ sourceUrls: ["https://a.in/1", "not a url"] })).toEqual([{ url: "https://a.in/1", name: null }]);
+    const obj = { primary: { url: "https://b.in/x", publication: "Paper B" }, secondary: { url: "https://c.in/y", publication: "Paper C" }, disclaimer: "text", subJudice: false };
+    expect(ownSourceLinks({ sourceUrls: obj }).map((l) => l.name)).toEqual(["Paper B", "Paper C"]);
+    expect(sourceCount({ name: "x", sourceUrls: obj, updates: [{ newsUrl: "https://b.in/x" }] })).toBe(2);
+    expect(ownSourceLinks({ sourceUrls: null })).toEqual([]);
+  });
+});

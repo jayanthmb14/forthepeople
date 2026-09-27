@@ -216,11 +216,33 @@ export function budgetChangePct(p: ProjectLike): number | null {
   return ((now - first) / first) * 100;
 }
 
+/**
+ * The row's own source links. `sourceUrls` comes in two shapes: a list of
+ * URLs, or (hand-researched rows) an object such as
+ * { primary: { url, publication }, secondary: { url, publication }, … }.
+ */
+export function ownSourceLinks(p: Pick<ProjectLike, "sourceUrls">): Array<{ url: string; name: string | null }> {
+  const out: Array<{ url: string; name: string | null }> = [];
+  const add = (url: unknown, name: unknown) => {
+    if (typeof url === "string" && /^https?:\/\//i.test(url.trim())) out.push({ url: url.trim(), name: typeof name === "string" && name.trim() ? name.trim() : null });
+  };
+  const raw = p.sourceUrls;
+  if (Array.isArray(raw)) {
+    for (const e of raw) {
+      if (typeof e === "string") add(e, null);
+      else if (e && typeof e === "object") add((e as { url?: unknown }).url, (e as { publication?: unknown; name?: unknown }).publication ?? (e as { name?: unknown }).name);
+    }
+  } else if (raw && typeof raw === "object") {
+    for (const v of Object.values(raw as Record<string, unknown>)) {
+      if (v && typeof v === "object" && !Array.isArray(v)) add((v as { url?: unknown }).url, (v as { publication?: unknown }).publication);
+    }
+  }
+  return out;
+}
+
 /** Distinct source links for a row: its own list plus every news update's link. */
 export function sourceCount(p: ProjectLike): number {
-  const urls = new Set<string>();
-  const own = Array.isArray(p.sourceUrls) ? (p.sourceUrls as unknown[]) : [];
-  for (const u of own) if (typeof u === "string" && /^https?:\/\//i.test(u.trim())) urls.add(u.trim());
+  const urls = new Set<string>(ownSourceLinks(p).map((l) => l.url));
   for (const u of p.updates ?? []) if (u.newsUrl && /^https?:\/\//i.test(u.newsUrl)) urls.add(u.newsUrl);
   return urls.size;
 }
