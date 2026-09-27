@@ -42,6 +42,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_police",
   "page_population",
   "page_power",
+  "page_prices",
   "page_privacy",
   "page_responsibility",
   "page_rti",
