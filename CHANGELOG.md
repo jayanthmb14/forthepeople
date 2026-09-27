@@ -10,6 +10,28 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — national audit: India dashboard, prices, About (branch `v54/fix-national`, 2026-09-28)
+Rule: verified or hidden; each fix is in the code that made the error. Not deployed; the data
+script is a dry run until the owner runs it with `--confirm`.
+- **Brent crude** reads the named front-month contract (e.g. `BZX26.NYM`), not Yahoo's rolling
+  `BZ=F`, whose contract roll showed a fake −8.6 % day on 25 Sep (real: 104.32, −2.1 %).
+- **Mandi prices** under ₹50 a quintal (per-bunch rates filed as per quintal) are rejected by the
+  collector and hidden by the APIs (`PLAUSIBLE_CROP_PRICE`).
+- **Goal gauges** compare like with like: 500 GW = non-fossil (renewables + hydro + nuclear, 61 %);
+  NFP 1988 = forest + tree cover (76 %). Top-state bars show a published rank or no number.
+- **Dates**: standing facts (seats, states, targets) say "checked", never drive "Data as of" or the
+  updates feed; band figures over 18 months old show their year; the population card's sources
+  line names its own rows only; life expectancy no longer shows a World Bank gain under SRS.
+- **Module status** follows the figures shown (15 labels corrected) — `scripts/check-india-module-status.ts`.
+- **Module pages** list the sources of the figures shown; population/health/court descriptions match.
+- **World ranks** name the body that publishes them; railway-employer and internet-users ranks hidden.
+- **District total** 784 from LGD (was 780, "2024 Census", "MHA"); vote page counts its own list.
+- **Copy**: About/India/site no longer claim ".gov.in / NDSAP only" or 24-hour freshness; About
+  source cards list the real collectors; FBIL (not RBI) for the dollar rate; privacy lists the
+  supporter phone number; no hard-typed "2024" on India page labels.
+- **Data script** `scripts/fix-audit-2026-09-national.ts`: 12 updates (tigers 2018 = 2,967 and
+  state date 29 Jul 2023, TRAI label, GST Aug 2026, life-expectancy gain 13.6, seat sources).
+
 ### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
 Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed
 or applied to the database yet.
