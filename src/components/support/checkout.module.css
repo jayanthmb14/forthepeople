@@ -61,7 +61,7 @@
 }
 .legend {
   padding: 0;
-  margin: 0 0 2px;
+  margin: 0 0 10px;
   font-size: 16px;
   line-height: 22px;
   font-weight: 700;
@@ -170,6 +170,20 @@ textarea.input {
   color: var(--ftp-danger);
 }
 .error > svg { flex-shrink: 0; margin-top: 2px; }
+
+/* The polite live region for screen readers: out of the layout, so it
+   takes no room while empty. The visible summary is a separate element. */
+.srLive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* "Almost there. Please check …" — a calm amber note, not a red alarm. */
 .errorSummary {

@@ -107,7 +107,9 @@ export function checkCheckout(f: CheckoutFields, rules: CheckoutRules): Checkout
   }
 
   if (rules.stateRequired && !f.state) out.state = { kind: "required" };
-  if (rules.districtRequired && !f.district) out.district = { kind: "required" };
+  // The district list opens once a state is chosen; until then the state's
+  // own message covers it.
+  if (rules.districtRequired && f.state && !f.district) out.district = { kind: "required" };
 
   return out;
 }

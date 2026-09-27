@@ -58,7 +58,8 @@ describe("checkCheckout", () => {
     const p = checkCheckout({ ...blank, name: "Asha" }, districtPlan);
     expect(p.phone).toEqual({ kind: "required" });
     expect(p.state).toEqual({ kind: "required" });
-    expect(p.district).toEqual({ kind: "required" });
+    expect(p.district).toBeUndefined(); // asked for once a state is chosen
+    expect(checkCheckout({ ...blank, name: "Asha", state: "karnataka" }, districtPlan).district).toEqual({ kind: "required" });
     expect(checkCheckout({ ...blank, name: "Asha", phone: "98765" }, districtPlan).phone).toEqual({ kind: "phone" });
     expect(
       checkCheckout({ ...blank, name: "Asha", phone: "+91 98765 43210", state: "karnataka", district: "mandya" }, districtPlan),

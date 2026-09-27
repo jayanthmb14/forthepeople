@@ -716,15 +716,17 @@ export default function SupportCheckout({ tier }: Props) {
           )}
         </div>
 
-        {/* Polite summary, read out when Continue finds something to fix. */}
-        <div aria-live="polite">
-          {submitted && problemCount > 0 && (
-            <p className={css.errorSummary}>
-              <AlertCircle size={16} aria-hidden />
-              {t("co_errSummary", { n: problemCount })}
-            </p>
-          )}
-        </div>
+        {/* Polite summary when Continue finds something to fix: shown on
+            screen, and read out once by the (hidden) live region. */}
+        <p aria-live="polite" className={css.srLive}>
+          {submitted && problemCount > 0 ? t("co_errSummary", { n: problemCount }) : ""}
+        </p>
+        {submitted && problemCount > 0 && (
+          <p className={css.errorSummary} aria-hidden>
+            <AlertCircle size={16} aria-hidden />
+            {t("co_errSummary", { n: problemCount })}
+          </p>
+        )}
 
         {/* 2. Where the name goes — only for plans tied to a place */}
         {showPlace && (
