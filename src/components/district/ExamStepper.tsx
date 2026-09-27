@@ -215,6 +215,14 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
         )}
         {isToday && (
           <span
+            className="ftp-emoji"
+            style={{ position: "absolute", left: "50%", top: -17, transform: "translateX(-50%)", fontSize: 13, lineHeight: "14px" }}
+          >
+            📍
+          </span>
+        )}
+        {isToday && (
+          <span
             style={{
               position: "absolute",
               left: "50%",
@@ -235,7 +243,7 @@ export default function ExamStepper({ now, variant = "compact", ...dates }: Exam
   };
 
   return (
-    <div role="img" aria-label={summary} style={{ paddingBottom: 14 }}>
+    <div role="img" aria-label={summary} style={{ paddingTop: slot === null ? 0 : 16, paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "flex-start" }}>
         {slot === -1 && segment(-1, "lead", false)}
         {steps.map((s, i) => (

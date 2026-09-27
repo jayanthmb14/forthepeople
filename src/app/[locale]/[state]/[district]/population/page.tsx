@@ -342,6 +342,7 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
 
       {!isLoading && hasAnyData && (
         <>
+          {(headlinePopulation || simpleKey) && (
           <Explainer emoji="👥">
             {headlinePopulation && (
               <>
@@ -358,6 +359,7 @@ function PopulationPageInner({ params }: { params: Promise<{ locale: string; sta
                 b: boldNum,
               })}
           </Explainer>
+          )}
           {/* How old the Census is: Census 2011 is the baseline until 2027. */}
           <p className="ftp-prose" style={{ color: "var(--ftp-text-2)", margin: "-8px 0 16px", fontSize: 13, lineHeight: "20px" }}>
             <span className="ftp-emoji" aria-hidden>📅 </span>
