@@ -25,7 +25,10 @@
 //  dashboard. Neither is built, so both are labelled "Coming soon" and are
 //  not links.
 //
-"use client";
+//  No "use client" on purpose: the footer (a server component) reads
+//  PRODUCTS and draws ProductMark on the server; the header's menus
+//  (client components) import the same file into the browser bundle.
+//
 
 import Link from "next/link";
 import { useId } from "react";

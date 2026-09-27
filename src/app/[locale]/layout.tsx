@@ -81,7 +81,7 @@ export default async function LocaleLayout({
           <MigrationBanner />
           <HeaderBar locale={locale} githubStars={githubStars} />
           {children}
-          <Footer locale={locale} />
+          <Footer locale={locale} githubStars={githubStars} />
           <ReportButton />
         </QueryProvider>
       </div>

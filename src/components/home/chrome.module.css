@@ -620,6 +620,15 @@
   }
 }
 @media (max-width: 1279px) {
+  /* GitHub: icon + star count; the word stays for screen readers. */
+  .githubWord {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
   .searchBtn {
     width: 44px;
     height: 44px;
@@ -708,13 +717,34 @@
 /* ───────────────────────── Footer ───────────────────────── */
 
 .footer {
+  position: relative;
   margin-top: 56px;
-  padding: 36px 0 20px;
+  padding: 38px 0 22px;
   border-top: 1px solid var(--ftp-border);
-  background: var(--ftp-surface);
+  /* Light, with a soft blue wash in one corner. */
+  background:
+    radial-gradient(900px 260px at 100% 100%, color-mix(in srgb, var(--ftp-brand-tint) 80%, transparent), transparent 70%),
+    radial-gradient(600px 220px at 0% 0%, color-mix(in srgb, var(--ftp-features-tint) 55%, transparent), transparent 70%),
+    var(--ftp-surface);
   color: var(--ftp-text-2);
   font-size: 14px;
   line-height: 21px;
+}
+/* The same pastel ribbon as under the header, along the top edge. */
+.footer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--ftp-map-live-fill) 0%,
+    color-mix(in srgb, var(--ftp-features) 30%, var(--ftp-surface)) 35%,
+    color-mix(in srgb, var(--ftp-live) 28%, var(--ftp-surface)) 68%,
+    color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-surface)) 100%
+  );
 }
 .footerGrid {
   display: grid;
@@ -741,14 +771,14 @@
 }
 .footerTagline {
   margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
   color: var(--ftp-brand-deep);
 }
 .footerNote {
   margin: 0;
-  max-width: 400px;
+  max-width: 420px;
   font-size: 13px;
   line-height: 20px;
   color: var(--ftp-text-2);
@@ -759,32 +789,67 @@
   margin-top: 4px;
 }
 .footerIcon {
-  width: 44px;
+  min-width: 44px;
   height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--ftp-border);
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--hue-pop) 80%, transparent);
   border-radius: 12px;
-  background: var(--ftp-surface);
-  color: var(--ftp-text-2);
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+  text-decoration: none;
+}
+.footerIconWide {
+  padding: 0 12px;
 }
 .footerIcon:hover {
-  border-color: var(--ftp-brand);
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
+  border-color: var(--hue);
+}
+.footerStars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 999px;
+  background: var(--ftp-surface);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.footerIcon .footerStars {
+  margin-left: 0;
 }
 .footerCols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 22px;
 }
 .footerColTitle {
-  margin: 0 0 6px;
-  font-size: 13px;
-  line-height: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 700;
   color: var(--ftp-text);
+}
+.footerColIcon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue-pop) 70%, transparent);
 }
 .footerColList {
   list-style: none;
@@ -801,7 +866,7 @@
   text-decoration: none;
 }
 .footerColList a:hover {
-  color: var(--ftp-brand-deep);
+  color: var(--hue-deep);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -812,38 +877,44 @@
   outline-offset: 2px;
   border-radius: 6px;
 }
-.connect {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-  margin: 24px 0 0;
-  padding: 12px 14px;
-  border: 1px dashed var(--ftp-border-strong);
-  border-radius: 14px;
-  font-size: 13px;
+
+/* "Coming soon from ForThePeople": Connect and Jobs */
+.soon {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--ftp-border-strong);
+}
+.soonTitle {
+  margin: 0 0 10px;
+  font-size: 14px;
   line-height: 20px;
-  color: var(--ftp-text-2);
-}
-.connect strong {
-  color: var(--ftp-text);
   font-weight: 700;
+  color: var(--ftp-text);
 }
-.connectTag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-  white-space: nowrap;
+.soonList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* auto-fit: the two cards share the row on wide screens. */
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 10px;
 }
+.soonCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--hue-pop) 75%, transparent);
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--hue-tint), var(--ftp-surface) 75%);
+}
+
 .footerBottom {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 20px;
-  margin-top: 18px;
+  margin-top: 20px;
   padding-top: 14px;
   border-top: 1px solid var(--ftp-border);
   font-size: 12px;
@@ -868,6 +939,10 @@
 @media (max-width: 639px) {
   .footerColList a {
     min-height: 44px;
+  }
+  /* Room for the floating "Report a problem" button at the very end. */
+  .footer {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 }
 

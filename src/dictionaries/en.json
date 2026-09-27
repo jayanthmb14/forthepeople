@@ -554,7 +554,8 @@
     "connectSoon": "Coming soon",
     "connectBody": "report local problems like potholes and garbage.",
     "builtBy": "Built by Jayanth M B in Mandya",
-    "article": "Free expression under Article 19(1)(a)"
+    "article": "Free expression under Article 19(1)(a)",
+    "comingSoonTitle": "Coming soon from ForThePeople"
   },
   "errors": {
     "notFoundTitle": "We couldn't find that page",
