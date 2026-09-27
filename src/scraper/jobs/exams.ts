@@ -5,417 +5,246 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Job: Government Exams — KPSC + UPSC + SSC + NIC portals
-// Schedule: Every 12 hours (via scheduler)
-// Sources: kpsc.karnataka.gov.in, upscrecruitment.gov.in,
-//          ssc.nic.in, karnataka.gov.in NIC districts
+// Job: Government exams — from the commissions' own sites only
+// Schedule: daily, as the first pass of /api/cron/update-exams.
+//
+// Sept 2026 (v5): this file used to ship HARD-CODED exam lists (UPSC CSE,
+// SSC CGL "open, 18,000 posts", KSP, KEA KAS …) with invented vacancies
+// and dates, linked to dead hosts (upscrecruitment.gov.in, ssc.nic.in),
+// and scraped kpsc.karnataka.gov.in (does not resolve). All of that is
+// gone. Exams are now created or updated only from:
+//   - UPSC's "Active Examinations" page and each exam's own page
+//     (notice PDF, notification date, last date, exam date, admit card,
+//     results), and
+//   - SSC's live-exams feed (the JSON ssc.gov.in loads: application
+//     start/end dates, fee, age limits).
+// Parsers and the status rule: src/scraper/lib/exam-sources.ts. An exam
+// is marked "APPLICATIONS_OPEN" only between an opening date and a
+// closing date that the source itself published.
+//
+// State commissions (KPSC etc.) are not automated yet: kpsc.kar.nic.in
+// answers with a malformed HTTP header. News-driven updates stay in
+// src/lib/exam-sync.ts.
 // ═══════════════════════════════════════════════════════════
+import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
+import {
+  SSC_LIVE_EXAMS_URL,
+  UPSC_ACTIVE_EXAMS_URL,
+  isCurrentExamTitle,
+  officialExamStatus,
+  parseSscLiveExams,
+  parseUpscActiveList,
+  parseUpscExamPage,
+  type OfficialExam,
+} from "../lib/exam-sources";
 
-interface ExamRecord {
-  title: string;
-  department: string;
-  vacancies?: number;
-  qualification?: string;
-  ageLimit?: string;
-  applicationFee?: string;
-  selectionProcess?: string;
-  payScale?: string;
-  applyUrl?: string;
-  notificationUrl?: string;
-  syllabusUrl?: string;
-  status: string;
-  announcedDate?: Date;
-  startDate?: Date;
-  endDate?: Date;
-  admitCardDate?: Date;
-  examDate?: Date;
-  resultDate?: Date;
+const BROWSER_UA =
+  "Mozilla/5.0 (compatible; ForThePeople.in/1.0; +https://forthepeople.in) AppleWebKit/537.36 (KHTML, like Gecko)";
+const FETCH_TIMEOUT_MS = 12_000;
+const UPSC_CONCURRENCY = 4;
+/** Exams whose exam date is further back than this are not refreshed. */
+const STALE_EXAM_DAYS = 180;
+
+// Status order so an official update never moves an exam backwards
+// (mirrors exam-sync.ts; legacy lowercase words included).
+const RANK: Record<string, number> = {
+  UNVERIFIED: -1,
+  upcoming: 0,
+  NOTIFICATION_OUT: 1,
+  open: 3,
+  APPLICATIONS_OPEN: 3,
+  closed: 4,
+  APPLICATIONS_CLOSED: 4,
+  ADMIT_CARD_OUT: 5,
+  EXAM_SCHEDULED: 5,
+  RESULT_PENDING: 6,
+  results: 7,
+  RESULT_OUT: 7,
+  COMPLETED: 8,
+};
+const rank = (s: string | null | undefined) => (s ? (RANK[s] ?? -1) : -1);
+
+async function getText(url: string, headers: Record<string, string> = {}): Promise<string> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": BROWSER_UA, ...headers },
+    redirect: "manual", // upsc.gov.in answers moved pages with a redirect to its home page
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (res.status !== 200) throw new Error(`${new URL(url).host} HTTP ${res.status}`);
+  return res.text();
 }
 
-// ── KPSC (Karnataka PSC) — state-level exams ─────────────────────
-async function scrapeKPSC(ctx: JobContext): Promise<ExamRecord[]> {
-  const exams: ExamRecord[] = [];
-  const KPSC_HOME = "https://kpsc.karnataka.gov.in";
-
-  try {
-    // KPSC typically lists recruitment notifications
-    const res = await fetch(KPSC_HOME, {
-      headers: { "User-Agent": "ForThePeople.in/1.0" },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) return exams;
-
-    const text = await res.text();
-    // Extract notification links and titles from KPSC homepage
-    // Look for common exam notification patterns
-    const notificationPatterns = [
-      /(?:Advertisement|Notification|Recruitment)[^\n]*(?:KAS|KPS|FDA|SDA|Group\s*[ABC])\s*[^\n]*/gi,
-      /(?:ಅಧಿಸೂಚನೆ|ನೇಮಕ)[^\n]*/gi,
-    ];
-
-    for (const pattern of notificationPatterns) {
-      const matches = text.match(pattern);
-      if (!matches) continue;
-      for (const match of matches) {
-        const title = match.trim().slice(0, 200);
-        if (title.length < 10) continue;
-
-        exams.push({
-          title,
-          department: "Karnataka Administrative Service / KPSC",
-          status: guessStatusFromTitle(title),
-          applyUrl: KPSC_HOME,
-          notificationUrl: KPSC_HOME,
-        });
-      }
-    }
-  } catch {
-    // KPSC may block scrapers — that's fine, try other sources
-  }
-
-  return exams;
-}
-
-// ── UPSC / Central exams — state-level for all districts ──────────
-async function scrapeCentralExams(): Promise<ExamRecord[]> {
-  const exams: ExamRecord[] = [];
-  const UPSC = "https://upscrecruitment.gov.in";
-  const SSC = "https://ssc.nic.in";
-
-  // Known central government exams — these apply to all states
-  const knownCentralExams = [
-    {
-      title: "UPSC Civil Services Examination (CSE) 2026",
-      department: "Union Public Service Commission",
-      vacancies: 1000,
-      qualification: "Graduate (any discipline)",
-      ageLimit: "32 yrs (General)",
-      applicationFee: "₹100 + ₹25 (Gen), Nil (SC/ST/PwBD)",
-      selectionProcess: "Prelims → Mains → Interview",
-      payScale: "Level 10: ₹56,100 – ₹1,32,000",
-      applyUrl: `${UPSC}/`,
-      notificationUrl: `${UPSC}/`,
-      status: guessStatusFromDate("2026-05-30"), // Prelims date
-    },
-    {
-      title: "UPSC Engineering Services Examination (ESE) 2026",
-      department: "Union Public Service Commission",
-      vacancies: 150,
-      qualification: "B.E./B.Tech (Engineering)",
-      ageLimit: "30 yrs (General)",
-      applicationFee: "₹200 + ₹25 (Gen)",
-      selectionProcess: "Prelims → Mains → Interview",
-      payScale: "Level 7: ₹44,900 – ₹1,42,400",
-      applyUrl: `${UPSC}/`,
-      notificationUrl: `${UPSC}/`,
-      status: guessStatusFromDate("2026-02-15"),
-    },
-    {
-      title: "SSC Combined Graduate Level (CGL) Examination 2026",
-      department: "Staff Selection Commission",
-      vacancies: 18000,
-      qualification: "Graduate",
-      ageLimit: "18-32 yrs",
-      applicationFee: "₹100 (Gen), Nil (SC/ST/PwBD)",
-      selectionProcess: "Tier 1 → Tier 2 → Tier 3 → Document Verification",
-      payScale: "Level 6: ₹35,400 – ₹1,12,400",
-      applyUrl: `${SSC}/`,
-      notificationUrl: `${SSC}/`,
-      status: guessStatusFromDate("2026-06-01"),
-    },
-    {
-      title: "SSC Junior Engineer (JE) Examination 2026",
-      department: "Staff Selection Commission",
-      vacancies: 5000,
-      qualification: "B.E./B.Tech (Civil/Electrical/Mechanical)",
-      ageLimit: "18-32 yrs",
-      applicationFee: "₹100 (Gen), Nil (SC/ST)",
-      selectionProcess: "Paper 1 (CBT) → Paper 2 (CBT) → Document Verification",
-      payScale: "Level 6: ₹35,400 – ₹1,12,400",
-      applyUrl: `${SSC}/`,
-      notificationUrl: `${SSC}/`,
-      status: guessStatusFromDate("2026-03-15"),
-    },
-    {
-      title: "UPSC NDA & NA Examination 2026",
-      department: "Union Public Service Commission",
-      vacancies: 400,
-      qualification: "12th Pass (Science for IMA/AFA, any stream for INA)",
-      ageLimit: "16.5-19.5 yrs",
-      applicationFee: "₹100 + ₹25 (Gen)",
-      selectionProcess: "Written Test → SSB Interview → Medical",
-      payScale: "Level 10 (after training)",
-      applyUrl: `${UPSC}/`,
-      notificationUrl: `${UPSC}/`,
-      status: guessStatusFromDate("2026-04-27"),
-    },
-    {
-      title: "SSC Multi Tasking Staff (MTS) Examination 2026",
-      department: "Staff Selection Commission",
-      vacancies: 9500,
-      qualification: "Matriculation (10th Pass)",
-      ageLimit: "18-27 yrs",
-      applicationFee: "₹100 (Gen), Nil (SC/ST/PwBD)",
-      selectionProcess: "Paper 1 (CBT) → Paper 2 (Descriptive)",
-      payScale: "Level 1: ₹18,000 – ₹56,900",
-      applyUrl: `${SSC}/`,
-      notificationUrl: `${SSC}/`,
-      status: guessStatusFromDate("2026-07-01"),
-    },
-  ];
-
-  return knownCentralExams;
-}
-
-// ── Karnataka State exams ──────────────────────────────────────────
-async function scrapeKarnatakaStateExams(ctx: JobContext): Promise<ExamRecord[]> {
-  const exams: ExamRecord[] = [];
-  const today = new Date();
-
-  // KSP (Karnataka State Police) recruitment
-  exams.push({
-    title: "KSP Armed Police Constable Recruitment 2026",
-    department: "Karnataka State Police",
-    vacancies: 2000,
-    qualification: "PUC (10+2)",
-    ageLimit: "18-25 yrs (Gen)",
-    applicationFee: "₹400 (Gen/OBC), Nil (SC/ST)",
-    selectionProcess: "Written Test → Physical Test → Medical → Document Verification",
-    payScale: "Level 3: ₹21,400 – ₹42,000",
-    applyUrl: "https://ksp.karnataka.gov.in",
-    notificationUrl: "https://ksp.karnataka.gov.in",
-    status: today < new Date("2026-04-01") ? "upcoming" : today < new Date("2026-06-01") ? "open" : "closed",
-    startDate: new Date("2026-03-15"),
-    endDate: new Date("2026-05-15"),
-    examDate: new Date("2026-06-15"),
-  });
-
-  // KEA (Karnataka Examination Authority) — DC/PD/AAO
-  exams.push({
-    title: "KEA Gazetted Probationers (KAS) Examination 2026",
-    department: "Karnataka Administrative Service",
-    vacancies: 150,
-    qualification: "Graduate",
-    ageLimit: "21-35 yrs (Gen)",
-    applicationFee: "₹500 (Gen), ₹250 (OBC), Nil (SC/ST)",
-    selectionProcess: "Prelims → Mains → Interview",
-    payScale: "Level 10: ₹56,100 – ₹1,32,000",
-    applyUrl: "https://kea.karnataka.gov.in",
-    notificationUrl: "https://kea.karnataka.gov.in",
-    status: today < new Date("2026-06-01") ? "upcoming" : today < new Date("2026-08-01") ? "open" : "closed",
-    announcedDate: new Date("2026-05-01"),
-    startDate: new Date("2026-06-15"),
-    endDate: new Date("2026-07-31"),
-    examDate: new Date("2026-09-15"),
-  });
-
-  // First Division/Second Division Assistants
-  exams.push({
-    title: "KEA FDA (First Division Assistant) Recruitment 2026",
-    department: "Karnataka Government",
-    vacancies: 500,
-    qualification: "Graduation",
-    ageLimit: "18-36 yrs",
-    applicationFee: "₹300 (Gen), Nil (SC/ST)",
-    selectionProcess: "Written Exam → Typing Test → Document Verification",
-    payScale: "Level 5: ₹29,200 – ₹62,000",
-    applyUrl: "https://kea.karnataka.gov.in",
-    notificationUrl: "https://kea.karnataka.gov.in",
-    status: today < new Date("2026-05-01") ? "upcoming" : today < new Date("2026-07-01") ? "open" : "closed",
-    startDate: new Date("2026-05-15"),
-    endDate: new Date("2026-06-30"),
-    examDate: new Date("2026-08-10"),
-  });
-
-  // Gram Panchayat Secretary
-  exams.push({
-    title: "ZP/GP Secretary (Panchayat Secretary) Recruitment 2026",
-    department: "Rural Development & Panchayat Raj",
-    vacancies: 300,
-    qualification: "Graduate",
-    ageLimit: "18-40 yrs",
-    applicationFee: "₹350 (Gen), Nil (SC/ST/PwBD)",
-    selectionProcess: "Written Test → Document Verification",
-    payScale: "Level 6: ₹35,400 – ₹1,12,400",
-    applyUrl: "https://rdpr.karnataka.gov.in",
-    notificationUrl: "https://rdpr.karnataka.gov.in",
-    status: "upcoming",
-    announcedDate: new Date("2026-07-01"),
-  });
-
-  // Sub-Inspector (KSP)
-  exams.push({
-    title: "KSP Sub-Inspector (Civil) Recruitment 2026",
-    department: "Karnataka State Police",
-    vacancies: 800,
-    qualification: "Graduate",
-    ageLimit: "21-28 yrs (Gen)",
-    applicationFee: "₹500 (Gen), Nil (SC/ST)",
-    selectionProcess: "Written Test → Physical Test → Interview",
-    payScale: "Level 6: ₹35,400 – ₹1,12,400",
-    applyUrl: "https://ksp.karnataka.gov.in",
-    notificationUrl: "https://ksp.karnataka.gov.in",
-    status: today < new Date("2026-04-15") ? "upcoming" : today < new Date("2026-06-15") ? "open" : "closed",
-    startDate: new Date("2026-04-15"),
-    endDate: new Date("2026-06-15"),
-    examDate: new Date("2026-07-20"),
-  });
-
-  return exams;
-}
-
-// ── Status guess helpers ─────────────────────────────────────────
-function guessStatusFromTitle(title: string): string {
-  const t = title.toLowerCase();
-  if (t.includes("result") || t.includes("ಫಲಿತಾಂಶ")) return "results";
-  if (t.includes("apply") && t.includes("link")) return "open";
-  if (t.includes("upcoming") || t.includes("ಮುಂಬರುವ")) return "upcoming";
-  return "upcoming";
-}
-
-function guessStatusFromDate(examDateStr: string): string {
-  const examDate = new Date(examDateStr);
+/** UPSC active exams with the facts from each exam's page. */
+async function collectUpsc(log: (m: string) => void, deadlineMs: number): Promise<OfficialExam[]> {
+  const list = parseUpscActiveList(await getText(UPSC_ACTIVE_EXAMS_URL));
   const now = new Date();
-  const daysUntil = Math.floor((examDate.getTime() - now.getTime()) / 86_400_000);
-  if (daysUntil < -30) return "results";
-  if (daysUntil > 60) return "upcoming";
-  if (daysUntil > 0) return "open";
-  return "closed";
-}
+  const current = list.filter((x) => isCurrentExamTitle(x.title, now));
+  log(`UPSC: ${list.length} active exams listed, ${current.length} current`);
 
-// ── Upsert exam into DB ──────────────────────────────────────────
-async function upsertExam(
-  exam: ExamRecord,
-  level: "state" | "district",
-  ctx: JobContext
-): Promise<boolean> {
-  const titlePrefix = exam.title.split(" ").slice(0, 5).join(" ");
-  const state = await prisma.state.findUnique({ where: { slug: ctx.stateSlug } });
-  if (!state) return false;
-
-  const district = await prisma.district.findUnique({
-    where: { stateId_slug: { stateId: state.id, slug: ctx.districtSlug } },
-  });
-  if (!district) return false;
-
-  const whereClause: Record<string, unknown> = level === "state"
-    ? { stateId: state.id, title: { contains: titlePrefix, mode: "insensitive" } }
-    : { districtId: district.id, title: { contains: titlePrefix, mode: "insensitive" } };
-
-  const existing = await prisma.governmentExam.findFirst({ where: whereClause });
-
-  const data = {
-    level,
-    stateId: level === "state" ? state.id : null,
-    districtId: level === "district" ? district.id : null,
-    title: exam.title,
-    department: exam.department,
-    vacancies: exam.vacancies ?? null,
-    qualification: exam.qualification ?? null,
-    ageLimit: exam.ageLimit ?? null,
-    applicationFee: exam.applicationFee ?? null,
-    selectionProcess: exam.selectionProcess ?? null,
-    payScale: exam.payScale ?? null,
-    applyUrl: exam.applyUrl ?? null,
-    notificationUrl: exam.notificationUrl ?? null,
-    syllabusUrl: exam.syllabusUrl ?? null,
-    status: exam.status,
-    announcedDate: exam.announcedDate ?? null,
-    startDate: exam.startDate ?? null,
-    endDate: exam.endDate ?? null,
-    admitCardDate: exam.admitCardDate ?? null,
-    examDate: exam.examDate ?? null,
-    resultDate: exam.resultDate ?? null,
-  };
-
-  if (existing) {
-    await prisma.governmentExam.update({ where: { id: existing.id }, data });
-    return false; // updated
-  } else {
-    await prisma.governmentExam.create({ data });
-    return true; // new
+  const out: OfficialExam[] = [];
+  for (let i = 0; i < current.length; i += UPSC_CONCURRENCY) {
+    if (Date.now() > deadlineMs) {
+      log(`UPSC: time budget reached, ${current.length - i} exam page(s) left for tomorrow`);
+      break;
+    }
+    const batch = current.slice(i, i + UPSC_CONCURRENCY);
+    const settled = await Promise.allSettled(
+      batch.map(async (x) => parseUpscExamPage(await getText(x.url), x.url, x.title)),
+    );
+    settled.forEach((s, j) => {
+      if (s.status === "fulfilled") out.push(s.value);
+      else log(`UPSC: "${batch[j].title}" page failed: ${s.reason instanceof Error ? s.reason.message : String(s.reason)}`);
+    });
   }
+  return out;
 }
 
-// ── Upsert national exam (no stateId, level=national) ───────────
-async function upsertNationalExam(exam: ExamRecord): Promise<boolean> {
-  const titlePrefix = exam.title.split(" ").slice(0, 5).join(" ");
-  const existing = await prisma.governmentExam.findFirst({
-    where: { level: "national", title: { contains: titlePrefix, mode: "insensitive" } },
+/** SSC exams taking applications now (SSC's own feed). */
+async function collectSsc(): Promise<OfficialExam[]> {
+  const body = await getText(SSC_LIVE_EXAMS_URL, { Referer: "https://ssc.gov.in/", Accept: "application/json" });
+  return parseSscLiveExams(JSON.parse(body));
+}
+
+export interface OfficialExamsResult extends ScraperResult {
+  /** Per-source outcome, for the run log. */
+  sources: Array<{ source: string; ok: boolean; exams: number; error?: string }>;
+}
+
+/** Write one official exam: update every national row for it, or create one. */
+async function upsertOfficialExam(e: OfficialExam, nowMs: number): Promise<"created" | "updated" | "unchanged"> {
+  const status = officialExamStatus(e, nowMs);
+  const existing = await prisma.governmentExam.findMany({
+    where: {
+      level: "national",
+      OR: [
+        { shortName: { equals: e.shortName, mode: "insensitive" } },
+        { title: { equals: e.title, mode: "insensitive" } },
+      ],
+    },
   });
 
-  const data = {
-    level: "national" as const,
-    stateId: null,
-    districtId: null,
-    title: exam.title,
-    department: exam.department,
-    vacancies: exam.vacancies ?? null,
-    qualification: exam.qualification ?? null,
-    ageLimit: exam.ageLimit ?? null,
-    applicationFee: exam.applicationFee ?? null,
-    selectionProcess: exam.selectionProcess ?? null,
-    payScale: exam.payScale ?? null,
-    applyUrl: exam.applyUrl ?? null,
-    notificationUrl: exam.notificationUrl ?? null,
-    syllabusUrl: exam.syllabusUrl ?? null,
-    status: exam.status,
-    announcedDate: exam.announcedDate ?? null,
-    startDate: exam.startDate ?? null,
-    endDate: exam.endDate ?? null,
-    admitCardDate: exam.admitCardDate ?? null,
-    examDate: exam.examDate ?? null,
-    resultDate: exam.resultDate ?? null,
+  const official = {
+    title: e.title,
+    shortName: e.shortName,
+    department: e.department,
+    organizingBody: e.body,
+    category: "CENTRAL",
+    scope: "NATIONAL",
+    applyUrl: e.pageUrl,
+    lastVerifiedAt: new Date(nowMs),
+    needsVerification: false,
   };
+  // Dates and links only when the source published them (never cleared).
+  const published: {
+    notificationUrl?: string;
+    notificationDate?: Date;
+    startDate?: Date;
+    endDate?: Date;
+    examDate?: Date;
+    admitCardDate?: Date;
+    resultDate?: Date;
+    ageLimit?: string;
+    applicationFee?: string;
+  } = {};
+  if (e.notificationUrl) published.notificationUrl = e.notificationUrl;
+  if (e.notificationDate) published.notificationDate = e.notificationDate;
+  if (e.startDate) published.startDate = e.startDate;
+  if (e.endDate) published.endDate = e.endDate;
+  if (e.examDate) published.examDate = e.examDate;
+  if (e.admitCardDate) published.admitCardDate = e.admitCardDate;
+  if (e.resultDate) published.resultDate = e.resultDate;
+  if (e.ageLimit) published.ageLimit = e.ageLimit;
+  if (e.applicationFee) published.applicationFee = e.applicationFee;
 
-  if (existing) {
-    await prisma.governmentExam.update({ where: { id: existing.id }, data });
-    return false;
-  } else {
-    await prisma.governmentExam.create({ data });
-    return true;
+  if (existing.length === 0) {
+    await prisma.governmentExam.create({
+      data: {
+        level: "national",
+        stateId: null,
+        districtId: null,
+        ...official,
+        ...published,
+        status: status ?? "NOTIFICATION_OUT",
+        announcedDate: e.notificationDate ?? e.startDate ?? null,
+        sourceUrls: [e.pageUrl] as Prisma.InputJsonValue,
+      },
+    });
+    return "created";
   }
+
+  for (const row of existing) {
+    const urls = Array.isArray(row.sourceUrls) ? (row.sourceUrls as unknown[]).filter((u): u is string => typeof u === "string") : [];
+    const statusPatch =
+      status && (rank(status) >= rank(row.status) || rank(row.status) < 0) ? { status } : {};
+    await prisma.governmentExam.update({
+      where: { id: row.id },
+      data: {
+        ...official,
+        ...published,
+        ...statusPatch,
+        sourceUrls: (urls.includes(e.pageUrl) ? urls : [...urls, e.pageUrl]) as Prisma.InputJsonValue,
+      },
+    });
+  }
+  return "updated";
 }
 
-// ── Main job ─────────────────────────────────────────────────────
+/**
+ * Collect UPSC + SSC exams and write them as national GovernmentExam rows.
+ * A source that fails is reported; the other still runs.
+ */
+export async function collectOfficialExams(
+  log: (m: string) => void,
+  opts: { deadlineMs?: number } = {},
+): Promise<OfficialExamsResult> {
+  const deadlineMs = opts.deadlineMs ?? Date.now() + 60_000;
+  const sources: OfficialExamsResult["sources"] = [];
+  const exams: OfficialExam[] = [];
+
+  for (const [source, run] of [
+    ["upsc.gov.in", () => collectUpsc(log, deadlineMs)],
+    ["ssc.gov.in", collectSsc],
+  ] as const) {
+    try {
+      const got = await run();
+      exams.push(...got);
+      sources.push({ source, ok: true, exams: got.length });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log(`${source}: ${msg}`);
+      sources.push({ source, ok: false, exams: 0, error: msg });
+    }
+  }
+
+  const nowMs = Date.now();
+  let created = 0;
+  let updated = 0;
+  for (const e of exams) {
+    if (e.examDate && nowMs - e.examDate.getTime() > STALE_EXAM_DAYS * 86_400_000 && !e.resultOut) continue;
+    try {
+      const r = await upsertOfficialExam(e, nowMs);
+      if (r === "created") created++;
+      else if (r === "updated") updated++;
+    } catch (err) {
+      log(`write failed for "${e.shortName}": ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  const failed = sources.filter((s) => !s.ok);
+  log(`official exams: ${created} new, ${updated} updated (${sources.map((s) => `${s.source} ${s.ok ? s.exams : "failed"}`).join(", ")})`);
+  return {
+    success: failed.length < sources.length,
+    recordsNew: created,
+    recordsUpdated: updated,
+    error: failed.length ? failed.map((s) => `${s.source}: ${s.error}`).join("; ") : undefined,
+    sources,
+  };
+}
+
+/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
 export async function scrapeExams(ctx: JobContext): Promise<ScraperResult> {
-  try {
-    let newCount = 0;
-    let updatedCount = 0;
-
-    ctx.log(`Scraping exams for ${ctx.districtName}, ${ctx.stateName}`);
-
-    // ── 1. State-level exams (only for Karnataka currently) ──
-    if (ctx.stateSlug === "karnataka") {
-      const karnatakaExams = await scrapeKarnatakaStateExams(ctx);
-      for (const exam of karnatakaExams) {
-        const isNew = await upsertExam(exam, "state", ctx);
-        if (isNew) newCount++; else updatedCount++;
-      }
-
-      // KPSC homepage scrape (Karnataka-specific notifications)
-      const kpscExams = await scrapeKPSC(ctx);
-      for (const exam of kpscExams) {
-        const isNew = await upsertExam(exam, "state", ctx);
-        if (isNew) newCount++; else updatedCount++;
-      }
-    }
-    // TODO: Add state exam scrapers for telangana (TSPSC), delhi (DSSSB), etc.
-
-    // ── 2. Central/national exams (run once, not per-state) ─────────
-    const centralExams = await scrapeCentralExams();
-    for (const exam of centralExams) {
-      const isNew = await upsertNationalExam(exam);
-      if (isNew) newCount++; else updatedCount++;
-    }
-
-    ctx.log(`Exams: ${newCount} new, ${updatedCount} updated`);
-    return { success: true, recordsNew: newCount, recordsUpdated: updatedCount };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    ctx.log(`Error: ${msg}`);
-    return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };
-  }
+  const { success, recordsNew, recordsUpdated, error } = await collectOfficialExams(ctx.log);
+  return { success, recordsNew, recordsUpdated, error };
 }
