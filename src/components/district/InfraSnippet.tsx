@@ -13,6 +13,14 @@
  * v5.1 "Warm Calm": OverviewCard frame with the drawn crane mark; the
  * status counts become one coloured bar (being built on time · delayed ·
  * completed) with a legend underneath, so the mix is visible at a glance.
+ *
+ * v5.4 (Sept 2026 audit): the counts use the SAME rule as the glance tile
+ * and the Projects page — projectStage() in src/lib/civic/project-facts.ts
+ * ("being built" = under construction / ongoing only; announced, approved
+ * and stalled work is not), and rows that are not building work
+ * (isNonProject) are left out. Each project's line says its stage; a
+ * project being built with no progress figure says "progress not
+ * reported" (it used to say "Not started · Under construction").
  */
 
 "use client";
@@ -29,8 +37,8 @@ import type { ComponentType } from "react";
 import type { InfraProject } from "@/hooks/useRealtimeData";
 import { AsOfText, ProgressBar } from "@/components/district/ui";
 import OverviewCard from "@/components/district/shell/OverviewCard";
-import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 import { ProjectsMark } from "@/components/district/shell/overview-art";
+import { STAGE_ORDER, isNonProject, projectStage } from "@/lib/civic/project-facts";
 
 type LucideCmp = ComponentType<{ size?: number | string; style?: React.CSSProperties; className?: string }>;
 
@@ -68,25 +76,14 @@ function normalizeStatus(s: string | null | undefined): string {
   return s.trim().toUpperCase().replace(/[\s-]+/g, "_");
 }
 
-// Status keys with a translated label in page_snippets.infra.status.
-const STATUS_KEY: Record<string, string> = {
-  PROPOSED: "PROPOSED", APPROVED: "APPROVED", TENDER_ISSUED: "TENDER_ISSUED",
-  UNDER_CONSTRUCTION: "UNDER_CONSTRUCTION", IN_PROGRESS: "UNDER_CONSTRUCTION", ONGOING: "UNDER_CONSTRUCTION",
-  ON_TRACK: "ON_TRACK", DELAYED: "DELAYED", STALLED: "STALLED", COMPLETED: "COMPLETED",
-  CANCELLED: "CANCELLED", OPERATIONAL: "OPERATIONAL",
-};
-
 // Stages come from the same rule as the glance tile and the Projects page
 // (projectStage in src/lib/civic/project-facts.ts), so "being built" here is
 // the tile's number. Sept 2026 audit: this card used to count every
 // not-finished project (proposed, approved, announced) as being built.
-function isCompleted(p: InfraProject) { return projectStage(p.status) === "completed"; }
-function isCancelled(p: InfraProject) { return projectStage(p.status) === "cancelled"; }
-function isBuilding(p: InfraProject) { return projectStage(p.status) === "building"; }
-function isDelayed(p: InfraProject) {
-  const s = normalizeStatus(p.status);
-  return s === "DELAYED" || s === "STALLED" || (p.delayMonths ?? 0) > 0;
-}
+const isBuilding = (p: InfraProject) => projectStage(p.status) === "building";
+const isCompleted = (p: InfraProject) => projectStage(p.status) === "completed";
+/** Being built, but reported late (status DELAYED or months of delay). */
+const isLate = (p: InfraProject) => isBuilding(p) && (normalizeStatus(p.status) === "DELAYED" || (p.delayMonths ?? 0) > 0);
 
 
 interface ApiResponse { data: InfraProject[]; meta?: unknown }
@@ -104,8 +101,10 @@ export default function InfraSnippet({
 
   const t = useTranslations("page_snippets");
   const td = useTranslations("page_district-shell.cards.projects");
+  const ts = useTranslations("page_infrastructure.v5");
   const f = useFormat();
-  // Real projects only (not scheme announcements), as the glance tile counts them.
+  // Same rows as the glance tile: real projects only — news items and scheme
+  // announcements that are not building work are left out.
   const projects = (data?.data ?? []).filter((p) => !isNonProject({ name: p.name ?? "" }));
   if (projects.length === 0) return null; // no shell when no data
 
@@ -122,12 +121,11 @@ export default function InfraSnippet({
     total: projects.length,
     active: projects.filter(isBuilding).length,
     completed: projects.filter(isCompleted).length,
-    delayed: projects.filter(isDelayed).length,
   };
   // The bar: being built (not late) · being built but late · completed.
   // The legend counts all projects being built (the glance tile's number)
   // and says how many of them are late.
-  const delayedActive = projects.filter((p) => isBuilding(p) && isDelayed(p)).length;
+  const delayedActive = projects.filter(isLate).length;
   const segments = [
     { key: "building", n: counts.active - delayedActive },
     { key: "delayed", n: delayedActive },
@@ -139,14 +137,16 @@ export default function InfraSnippet({
     0
   );
 
-  // Pick top 3 to feature: prefer in-progress ordered by progress desc;
-  // fall back to completed if no in-progress; final fallback: any.
-  const inProgress = projects
-    .filter((p) => !isCompleted(p) && !isCancelled(p))
-    .sort((a, b) => (b.progressPct ?? 0) - (a.progressPct ?? 0));
-  const completed = projects.filter(isCompleted);
-  const top: InfraProject[] = (inProgress.length > 0 ? inProgress : completed).slice(0, 3);
-  if (top.length < 3) top.push(...projects.filter((p) => !top.includes(p)).slice(0, 3 - top.length));
+  // Pick top 3 to feature: projects being built first (most progress
+  // first), then by stage like the Projects page (stalled, approved,
+  // announced, completed, cancelled).
+  const top: InfraProject[] = [...projects]
+    .sort(
+      (a, b) =>
+        STAGE_ORDER[projectStage(a.status)] - STAGE_ORDER[projectStage(b.status)] ||
+        (b.progressPct ?? 0) - (a.progressPct ?? 0),
+    )
+    .slice(0, 3);
 
   // Newest date anyone checked or reported on a project — the honest
   // "as of" for this whole card.
@@ -188,9 +188,11 @@ export default function InfraSnippet({
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         {top.map((p) => {
           const Icon = CATEGORY_ICON[normalizeCategory(p.category)] ?? HardHat;
-          const status = normalizeStatus(p.status);
-          const statusLabel = t(`infra.status.${STATUS_KEY[status] ?? "OTHER"}`);
-          const completedRow = isCompleted(p);
+          const stage = projectStage(p.status);
+          const stageLabel = ts(`stage.${stage}`);
+          const completedRow = stage === "completed";
+          const building = stage === "building";
+          // 0 % on a project being built means "not reported", not "not started".
           const progress = p.progressPct ?? (completedRow ? 100 : 0);
           const shortDesc = p.description && p.description.length > 60
             ? p.description.trim().slice(0, 60).replace(/\s+\S*$/, "") + "…"
@@ -207,9 +209,11 @@ export default function InfraSnippet({
                   <span style={{ fontSize: 11, color: "var(--ftp-text-2)", flexShrink: 0 }}>
                     {completedRow
                       ? t("infra.done")
-                      : progress > 0
-                        ? <span className="ftp-num">{t("infra.progress", { pct: progress, status: statusLabel })}</span>
-                        : t("infra.notStarted", { status: statusLabel })}
+                      : building && progress > 0
+                        ? <span className="ftp-num">{t("infra.progress", { pct: progress, status: stageLabel })}</span>
+                        : building
+                          ? t("infra.progressUnknown", { status: stageLabel })
+                          : stageLabel}
                   </span>
                 </div>
                 {shortDesc && (
@@ -221,7 +225,7 @@ export default function InfraSnippet({
                     {shortDesc}
                   </div>
                 )}
-                {!completedRow && (
+                {building && progress > 0 && (
                   <div style={{ marginTop: 4 }}>
                     <ProgressBar value={Math.max(0.5, Math.min(100, progress))} max={100} height={4} tone="amber" />
                   </div>

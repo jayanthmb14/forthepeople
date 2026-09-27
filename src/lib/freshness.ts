@@ -188,6 +188,23 @@ export function judgeDataset({
   return { status: "current", ageDays, ageHours, lateByDays: null };
 }
 
+/**
+ * Election results are behind when a Lok Sabha or Assembly election has
+ * declared results AFTER the newest result year we hold (Sept 2026 audit:
+ * Kolkata and Chennai said "2024 · On time" although both states voted in
+ * April 2026). Returns the whole days since that result date (at least 1),
+ * or null when the results we hold are not behind.
+ */
+export function electionResultsBehind(
+  newestResultYear: number | null,
+  lastResultDate: Date | null,
+  now: Date = new Date(),
+): number | null {
+  if (!lastResultDate || lastResultDate.getTime() > now.getTime()) return null;
+  if (newestResultYear !== null && lastResultDate.getUTCFullYear() <= newestResultYear) return null;
+  return Math.max(1, Math.floor((now.getTime() - lastResultDate.getTime()) / 86_400_000));
+}
+
 /** Live-feed summary for the district bar: how many of the fast feeds are current. */
 export function liveFeedSummary(datasets: readonly DatasetFreshness[]): { current: number; total: number } {
   const feeds = datasets.filter((d) => LIVE_FEED_KEYS.includes(d.key) && d.status !== "not_collected");

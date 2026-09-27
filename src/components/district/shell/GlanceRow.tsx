@@ -181,7 +181,11 @@ export default function GlanceRow({ stateSlug, districtSlug }: { stateSlug: stri
         dataset: "elections",
         module: "elections",
         art: <ElectionMark size={34} />,
-        label: t("glance.nextVote"),
+        // The events table holds Lok Sabha and Assembly polls; municipal and
+        // panchayat polls are not tracked yet, so the tile says which kind it
+        // means (Sept 2026 audit: Kolkata's corporation poll comes before
+        // the 2029 Lok Sabha election).
+        label: data.election.type === "LOK_SABHA" || data.election.type === "STATE_ASSEMBLY" ? t("glance.nextBigVote") : t("glance.nextVote"),
         value: type,
         sub: `${data.election.approximate ? td("tiles.about", { date }) : date} · ${countdown(data.election.date)}`,
         href: `${base}/elections`,

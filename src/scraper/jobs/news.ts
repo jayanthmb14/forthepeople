@@ -29,19 +29,21 @@ import {
 } from "@/lib/news-keywords";
 import { JobContext, ScraperResult } from "../types";
 import { findCanonicalStory, titleKey, type StoredStory } from "@/lib/news-dedupe";
+import { cleanHeadline, isPromotional, stripFeedSuffix } from "@/lib/news-quality";
 import { urlKey } from "@/lib/dedupe/keys";
 
 // Keyword-matcher categories that still benefit from AI-driven data extraction
-// (because we act on them downstream — create Infrastructure projects, alerts,
-// exam records, etc.). Purely informational categories skip the AI round-trip.
+// (because we act on them downstream — create Infrastructure projects, exam
+// records, etc.). Purely informational categories skip the AI round-trip.
+// v5.4: "alerts" and "health" left the list — news no longer writes
+// LocalAlert rows (src/lib/news-action-engine.ts), so there is nothing to
+// extract for them.
 const ACTIONABLE_MODULES = [
   "infrastructure",
-  "alerts",
   "exams",
   "staffing",
   "leaders",
   "police",
-  "health",
   "power",
   "schemes",
 ];
@@ -128,7 +130,9 @@ async function fetchStaticRSSItems(
 
   return $("item").toArray()
     .map((item) => ({
-      headline: $(item).find("title").text().replace(/ - .*$/, "").trim(),
+      // The Hindu's own feeds carry no " - Publisher" suffix (v5.4: the old
+      // "cut at the first ' - '" also cut headlines that contain a dash).
+      headline: cleanHeadline($(item).find("title").text(), sourceName),
       url: $(item).find("link").text().trim() || $(item).find("guid").text().trim(),
       summary: $(item).find("description").text().replace(/<[^>]+>/g, "").slice(0, 300).trim(),
       source: sourceName,
@@ -156,13 +160,18 @@ async function fetchRSSItems(query: string): Promise<Array<{
   const xml = await res.text();
   const $ = cheerio.load(xml, { xmlMode: true });
 
-  return $("item").toArray().map((item) => ({
-    headline: $(item).find("title").text().replace(/ - .*$/, "").trim(),
-    url: $(item).find("link").text().trim() || $(item).find("guid").text().trim(),
-    summary: $(item).find("description").text().replace(/<[^>]+>/g, "").slice(0, 300).trim(),
-    source: $(item).find("source").text().trim() || "Google News",
-    publishedAt: parseRSSDate($(item).find("pubDate").text().trim()),
-  })).filter((item) => isArticleFresh(item.publishedAt));
+  return $("item").toArray().map((item) => {
+    const source = $(item).find("source").text().trim();
+    return {
+      // Only the trailing " - <Publisher>" goes, then publisher tags and
+      // invisible characters (src/lib/news-quality.ts).
+      headline: cleanHeadline(stripFeedSuffix($(item).find("title").text(), source), source),
+      url: $(item).find("link").text().trim() || $(item).find("guid").text().trim(),
+      summary: $(item).find("description").text().replace(/<[^>]+>/g, "").slice(0, 300).trim(),
+      source: source || "Google News",
+      publishedAt: parseRSSDate($(item).find("pubDate").text().trim()),
+    };
+  }).filter((item) => isArticleFresh(item.publishedAt));
 }
 
 /** At most this many AI classifications per district per run, so one busy
@@ -213,6 +222,11 @@ export async function scrapeNews(
         if (!item.headline || item.headline.length < 5) continue;
         if (!item.url) continue;
         if (seenUrls.has(urlKey(item.url))) continue;
+        // Advertorials, price pages, listicles: not civic news (v5.4).
+        if (isPromotional(item.headline)) {
+          ctx.log(`[News] SKIPPED (promotion): "${item.headline.slice(0, 60)}"`);
+          continue;
+        }
         // Date freshness check (defensive — already filtered at fetch time)
         if (!isArticleFresh(item.publishedAt)) {
           ctx.log(`[News] SKIPPED (old): "${item.headline}" — ${item.publishedAt.toISOString()}`);
@@ -257,6 +271,16 @@ export async function scrapeNews(
             item.publishedAt,
             { stateName: ctx.stateName, summary: item.summary, deadlineAt: opts.deadlineAt },
           ).catch(() => null);
+        }
+
+        // The place had to be checked but the AI gave no answer (every model
+        // failed): same as no time left — leave it for the next run rather
+        // than save it unchecked (v5.4; such rows put Karnataka stories in
+        // the New Delhi feed).
+        if (needsPlaceCheck && !aiClassification) {
+          seenUrls.delete(urlKey(item.url));
+          placeCheckDeferred++;
+          continue;
         }
 
         // The AI read it and says it is about another district/state: do not

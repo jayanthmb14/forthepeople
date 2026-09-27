@@ -11,7 +11,15 @@
 
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { INDIA_STATES } from "../src/lib/constants/districts";
+import { INDIA_STATES, SUB_UNIT_CHECKS, shownSubUnits, type District } from "../src/lib/constants/districts";
+
+// Official count only (Sept 2026 audit): a district checked in
+// SUB_UNIT_CHECKS gets the portal's count (null where our units were
+// invented), never the length of an invented taluk list.
+function talukCountFor(stateSlug: string, district: District): number | null {
+  if (`${stateSlug}/${district.slug}` in SUB_UNIT_CHECKS) return shownSubUnits(stateSlug, district).count;
+  return district.talukCount ?? district.taluks.length;
+}
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -56,7 +64,7 @@ async function main() {
               tagline: district.tagline ?? null,
               population: district.population ?? null,
               area: district.area ?? null,
-              talukCount: district.talukCount ?? (district.subUnitsUnchecked ? null : district.taluks.length),
+              talukCount: talukCountFor(state.slug, district),
               literacy: district.literacy ?? null,
               sexRatio: district.sexRatio ?? null,
               // Only upgrade to active, never downgrade
@@ -98,7 +106,7 @@ async function main() {
               active: district.active,
               population: district.population ?? null,
               area: district.area ?? null,
-              talukCount: district.talukCount ?? (district.subUnitsUnchecked ? null : district.taluks.length),
+              talukCount: talukCountFor(state.slug, district),
               literacy: district.literacy ?? null,
               sexRatio: district.sexRatio ?? null,
             },
@@ -148,7 +156,7 @@ async function main() {
             active: district.active,
             population: district.population ?? null,
             area: district.area ?? null,
-            talukCount: district.talukCount ?? (district.subUnitsUnchecked ? null : district.taluks.length),
+            talukCount: talukCountFor(state.slug, district),
             literacy: district.literacy ?? null,
             sexRatio: district.sexRatio ?? null,
           },

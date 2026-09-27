@@ -196,11 +196,13 @@ export async function executeNewsAction(
       case "alerts":
       case "health":
       case "elections": {
-        // Sept 2026 audit: a news story is not an official warning. These
-        // used to become LocalAlert rows — "warnings in force" on the
-        // alerts page: an advert for a scan centre, political allegations,
-        // "Chief Minister Mamata Banerjee" months after she left office, the
-        // same incident twice under two headlines. Official warnings come
+        // Sept 2026 audit: news never writes LocalAlert — a news story is not
+        // an official warning. Every health or election story used to become
+        // a "warning in force" (an advertorial for a scan centre, "Organ
+        // donation saves lives", "SIR deadline extended", political
+        // allegations, "Chief Minister Mamata Banerjee" months after she left
+        // office, the same incident twice under two headlines), and the
+        // overview counted them under "Warnings now". Official warnings come
         // only from NDMA SACHET (src/scraper/jobs/alerts.ts; the alerts API
         // shows OFFICIAL_ALERTS only). The story stays on the news page.
         console.log(`[NewsAction] News is not an official warning — no LocalAlert: ${articleTitle.slice(0, 60)}`);

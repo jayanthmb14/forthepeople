@@ -29,6 +29,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import {
   DATASETS,
+  electionResultsBehind,
   fyStartDate,
   isPrimary,
   judgeDataset,
@@ -42,7 +43,14 @@ import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapsho
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
-import { ELECTION_RESULTS_WITHHELD, SEEDED_RAINFALL_LAST_YEAR, SEEDED_RAINFALL_SOURCES, VERIFIED_PANCHAYAT, shownCropPrices } from "@/lib/data-filters";
+import {
+  COLLECTED_BUDGET_SOURCES,
+  ELECTION_RESULTS_WITHHELD,
+  SEEDED_RAINFALL_LAST_YEAR,
+  SEEDED_RAINFALL_SOURCES,
+  VERIFIED_PANCHAYAT,
+  shownCropPrices,
+} from "@/lib/data-filters";
 import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
 import { getCronRun } from "@/lib/cron-auth";
 
@@ -52,6 +60,8 @@ export const runtime = "nodejs";
 const NJDG_COURTSTAT_LIKE = `${COURTSTAT_SOURCE_PREFIX}%`;
 /** LIKE pattern for LocalAlert rows the NDMA SACHET collector wrote (OFFICIAL_ALERTS). */
 const SACHET_ALERT_LIKE = `${SACHET_SOURCE_PREFIX}%`;
+/** SHOWN_BUDGET_ENTRY's `startsWith: "data.gov.in ("` as a LIKE pattern (collector rows only). */
+const DATA_GOV_BUDGET_LIKE = "data.gov.in (%";
 
 const CACHE_SECONDS = 300;
 
@@ -85,13 +95,13 @@ function formatAge(ageMinutes: number | null): string {
 interface Row {
   tenders_active: boolean;
   news_date: Date | null; news_checked: Date | null; news_rows: number;
-  alerts_date: Date | null; alerts_rows: number; alerts_active: number;
+  alerts_date: Date | null; alerts_rows: number; alerts_active: number; alerts_checked: Date | null;
   weather_date: Date | null; weather_rows: number;
   rain_year: number | null; rain_rows: number;
   rtitpl_rows: number;
   rti_year: number | null; rti_rows: number;
   leaders_date: Date | null; leaders_rows: number;
-  elections_year: number | null; elections_rows: number;
+  elections_year: number | null; elections_rows: number; elections_held: Date | null;
   courts_source: string | null; courts_rows: number;
   crime_year: number | null; crime_rows: number;
   traffic_date: Date | null; traffic_checked: Date | null; traffic_rows: number;
@@ -123,7 +133,8 @@ interface Row {
 
 async function queryRow(districtId: string): Promise<Row | null> {
   // Filters match what the pages show (src/lib/data-filters.ts):
-  // NOT_FROM_NEWS (source not a URL), LOCAL_INFRA (DISTRICT/CITY scope),
+  // NOT_FROM_NEWS (source not a URL), SHOWN_BUDGET_ENTRY (collector rows only —
+  // never the seeded budgets), LOCAL_INFRA (DISTRICT/CITY scope),
   // NJDG_COURTSTAT, JJM_DISTRICT_TOTAL, SHOWN_CRIME / SHOWN_TRAFFIC (no
   // estimates), news without duplicates, active leaders / industries / people,
   // OFFICIAL_ALERTS (SACHET rows only), NOT_SEEDED_RAINFALL.
@@ -136,6 +147,7 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT max(x."updatedAt") FROM "LocalAlert" x WHERE x."districtId" = d.id AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE}) AS alerts_date,
       (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE})::int AS alerts_rows,
       (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x.active AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE})::int AS alerts_active,
+      (SELECT max(x."completedAt") FROM "ScraperLog" x WHERE x."jobName" = 'alerts' AND x.status IN ('success', 'partial')) AS alerts_checked,
       (SELECT max(x."recordedAt") FROM "WeatherReading" x WHERE x."districtId" = d.id) AS weather_date,
       (SELECT count(*) FROM "WeatherReading" x WHERE x."districtId" = d.id)::int AS weather_rows,
       (SELECT max(x.year) FROM "RainfallHistory" x WHERE x."districtId" = d.id
@@ -149,6 +161,11 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT count(*) FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE 'http%'))::int AS leaders_rows,
       (SELECT max(x.year) FROM "ElectionResult" x WHERE x."districtId" = d.id) AS elections_year,
       (SELECT count(*) FROM "ElectionResult" x WHERE x."districtId" = d.id)::int AS elections_rows,
+      (SELECT max(COALESCE(e."resultDate", e."pollingDate", e."lastHeld")) FROM "ElectionEvent" e
+        WHERE e."isActive" AND e.type IN ('LOK_SABHA', 'STATE_ASSEMBLY')
+          AND (e.state IS NULL OR e.state = (SELECT s.slug FROM "State" s WHERE s.id = d."stateId"))
+          AND (e.district IS NULL OR e.district = d.slug)
+          AND COALESCE(e."resultDate", e."pollingDate", e."lastHeld") <= now()) AS elections_held,
       (SELECT max(x.source) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE}) AS courts_source,
       (SELECT count(*) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE})::int AS courts_rows,
       (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%') AS crime_year,
@@ -157,13 +174,13 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT max(x."fetchedAt") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%') AS traffic_checked,
       (SELECT count(*) FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%')::int AS traffic_rows,
       (SELECT count(*) FROM "PoliceStation" x WHERE x."districtId" = d.id)::int AS stations_rows,
-      (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id) AS budget_fy,
-      (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id) AS budget_checked,
-      (SELECT count(*) FROM "BudgetEntry" x WHERE x."districtId" = d.id)::int AS budget_rows,
+      (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})) AS budget_fy,
+      (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})) AS budget_checked,
+      (SELECT count(*) FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE}))::int AS budget_rows,
       EXISTS (
         SELECT 1 FROM "BudgetEntry" x
-        WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%'
-          AND x."fiscalYear" = (SELECT max(y."fiscalYear") FROM "BudgetEntry" y WHERE y."districtId" = d.id)
+        WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%' AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})
+          AND x."fiscalYear" = (SELECT max(y."fiscalYear") FROM "BudgetEntry" y WHERE y."districtId" = d.id AND (y.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR y.source LIKE ${DATA_GOV_BUDGET_LIKE}))
       ) AS budget_estimate,
       (SELECT max(x."lastVerifiedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY'))) AS infra_date,
       (SELECT max(x."updatedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY'))) AS infra_checked,
@@ -242,6 +259,8 @@ async function queryRow(districtId: string): Promise<Row | null> {
 
 interface Raw {
   rows: number;
+  /** Days the data is behind a newer event (elections), whatever its age. */
+  behindDays?: number | null;
   date?: Date | null;
   checked?: Date | null;
   period?: string | null;
@@ -285,14 +304,17 @@ function rawFacts(r: Row, x: Extra): Record<string, Raw> {
   const year = (y: number | null): Raw["date"] => yearEndDate(y);
   return {
     news: { rows: r.news_rows, date: r.news_date, checked: r.news_checked },
-    // Alerts: "no warning" is an answer too, so the dataset is as fresh as
-    // the last good read of the SACHET feed, not the newest alert row
-    // (Sept 2026 audit: "No active warnings right now" under a feed last
-    // read 35 days earlier). A good read with no alert counts as data.
+    // Official warnings only (OFFICIAL_ALERTS in src/lib/data-filters.ts:
+    // NDMA SACHET rows) — never news stories. "No warning" is an answer too,
+    // so the dataset is as fresh as the last good read of the SACHET feed,
+    // not the newest alert row (Sept 2026 audit: "No active warnings right
+    // now" under a feed last read 35 days earlier; a quiet spell is not
+    // "late"). A good read is either the cron's run record (Redis) or the
+    // collector's ScraperLog "alerts" row — the newer one counts.
     alerts: {
-      rows: r.alerts_rows > 0 ? r.alerts_rows : x.alertsCheckedAt ? 1 : 0,
-      date: newer(x.alertsCheckedAt, r.alerts_date),
-      checked: newer(x.alertsCheckedAt, r.alerts_date),
+      rows: r.alerts_rows > 0 ? r.alerts_rows : newer(x.alertsCheckedAt, r.alerts_checked) ? 1 : 0,
+      date: newer(newer(x.alertsCheckedAt, r.alerts_checked), r.alerts_date),
+      checked: newer(newer(x.alertsCheckedAt, r.alerts_checked), r.alerts_date),
     },
     weather: { rows: r.weather_rows, date: r.weather_date, checked: r.weather_date },
     rainfall: { rows: r.rain_rows, date: year(r.rain_year), period: r.rain_year ? String(r.rain_year) : null, periodKind: "year" },
@@ -302,7 +324,14 @@ function rawFacts(r: Row, x: Extra): Record<string, Raw> {
     // Results withheld (ELECTION_RESULTS_WITHHELD): nothing is shown, so nothing is "on time".
     elections: ELECTION_RESULTS_WITHHELD
       ? { rows: 0 }
-      : { rows: r.elections_rows, date: year(r.elections_year), period: r.elections_year ? String(r.elections_year) : null, periodKind: "year" },
+      : {
+          rows: r.elections_rows,
+          date: year(r.elections_year),
+          period: r.elections_year ? String(r.elections_year) : null,
+          periodKind: "year",
+          // Results of a newer Lok Sabha / Assembly election are not in yet.
+          behindDays: electionResultsBehind(r.elections_year, r.elections_held),
+        },
     panchayats: x.nrega
       ? { rows: x.gp.rows + 1, date: x.nrega.date, checked: x.nrega.checked }
       : { rows: x.gp.rows, date: x.gp.date, checked: x.gp.date },
@@ -370,7 +399,8 @@ function buildDatasets(r: Row, now: Date, extra: Extra): DatasetFreshness[] {
     const f = facts[key] ?? { rows: 0 };
     const rule = ruleFor(key);
     const date = f.date ?? null;
-    const j = judgeDataset({ rows: f.rows, dataDate: date, rule, notCollected: f.notCollected, now });
+    let j = judgeDataset({ rows: f.rows, dataDate: date, rule, notCollected: f.notCollected, now });
+    if (f.behindDays && j.status !== "not_collected") j = { ...j, status: "late", lateByDays: f.behindDays };
     return {
       module,
       key,

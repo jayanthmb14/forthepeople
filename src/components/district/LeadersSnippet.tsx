@@ -1,11 +1,19 @@
 /**
  * ForThePeople.in — Compact leadership snippet for the district overview.
  *
- * Shows the four key positions citizens look for first:
- *   Collector  (T3 District Collector / Deputy Commissioner)
- *   SP         (T3 Superintendent of Police / Commissioner of Police)
+ * Shows the key positions citizens look for first:
+ *   Collector  (Collector / District Collector / Deputy Commissioner /
+ *               District Magistrate — src/lib/leader-roles.ts)
+ *   SP         (Superintendent of Police) and/or Police Commissioner
+ *              (Commissioner of Police), each under its own label
  *   MP         (T4 row whose role mentions MP / Member of Parliament)
- *   MLAs       (count + per-party tally for T4 rows whose role starts MLA)
+ *   MLAs       (how many we list + per-party tally; never presented as the
+ *               district's total number of seats)
+ *
+ * v5.4 (Sept 2026 audit): the Collector rule matches the glance tile's
+ * (Hyderabad, Mumbai and Lucknow said "Name not published yet" although the
+ * name was in the data), a Commissioner of Police is labelled as one (seven
+ * districts showed "SP <Commissioner>"), and the MLA count says "listed".
  *
  * Renders nothing if the district has zero leaders, so empty districts
  * don't show a hollow shell. Links to /leadership for the full hierarchy.
@@ -27,15 +35,13 @@ import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import OverviewCard from "@/components/district/shell/OverviewCard";
 import { LeadersMark } from "@/components/district/shell/overview-art";
+import { isCollectorRole, isPoliceCommissionerRole, isSPRole } from "@/lib/leader-roles";
 
 interface ApiResponse { data: Leader[]; meta?: unknown }
 
-function isCollector(l: Leader): boolean {
-  return /^(district collector|deputy commissioner)\b/i.test(l.role);
-}
-function isSP(l: Leader): boolean {
-  return /^(superintendent of police|commissioner of police)\b/i.test(l.role);
-}
+const isCollector = (l: Leader) => isCollectorRole(l.role);
+const isSP = (l: Leader) => isSPRole(l.role);
+const isCP = (l: Leader) => isPoliceCommissionerRole(l.role);
 function isMP(l: Leader): boolean {
   return /\bmp\b|member of parliament|union minister/i.test(l.role);
 }
@@ -88,8 +94,12 @@ export default function LeadersSnippet({
   const leaders = data?.data ?? [];
   if (leaders.length === 0) return null;
 
-  const collector = leaders.find(isCollector);
+  // Mumbai has two Collectors (City, Suburban); Pune two Commissioners of Police.
+  const collectors = leaders.filter(isCollector);
+  const collector = collectors[0];
   const sp = leaders.find(isSP);
+  const cps = leaders.filter(isCP);
+  const cp = cps[0];
   // Some districts have several MPs (Pune: 4); list them all.
   const mps = leaders.filter(isMP);
   const mlas = leaders.filter(isMLA);
@@ -106,9 +116,14 @@ export default function LeadersSnippet({
   // Bureaucrat names that are placeholders (e.g. "[Verify at mandya.nic.in]")
   // render in italic grey so users see the action item, not a fake person.
   const named = (l: Leader | undefined): l is Leader => Boolean(l && !l.name.startsWith("["));
-  const renderName = (l: Leader | undefined, pending: string) => {
+  const renderName = (l: Leader | undefined, pending: string, others = 0) => {
     if (!named(l)) return <Pending>{pending}</Pending>;
-    return <span lang="en" style={{ fontWeight: 600 }}>{l.name}</span>;
+    return (
+      <>
+        <span lang="en" style={{ fontWeight: 600 }}>{l.name}</span>
+        {others > 0 && <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}> {t("more", { n: others })}</span>}
+      </>
+    );
   };
   const mp = mps[0];
 
@@ -123,11 +138,20 @@ export default function LeadersSnippet({
     >
       <ul className="ftp-ovl-list">
         <Row badge={named(collector) ? initials(collector.name) : null} role={t("collector")}>
-          {renderName(collector, t("collectorPending"))}
+          {renderName(collector, t("collectorPending"), collectors.length - 1)}
         </Row>
-        <Row badge={named(sp) ? initials(sp.name) : null} role={t("sp")}>
-          {renderName(sp, t("spPending"))}
-        </Row>
+        {/* A district SP and a city Police Commissioner are different posts:
+            each shows under its own label (Mysuru and Pune have both). */}
+        {(sp || !cp) && (
+          <Row badge={named(sp) ? initials(sp.name) : null} role={t("sp")}>
+            {renderName(sp, t("spPending"))}
+          </Row>
+        )}
+        {cp && (
+          <Row badge={named(cp) ? initials(cp.name) : null} role={t("cp")}>
+            {renderName(cp, t("spPending"), cps.length - 1)}
+          </Row>
+        )}
         <Row badge={named(mp) ? initials(mp.name) : null} role={mps.length > 1 ? t("mps") : t("mp")}>
           {named(mp) ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -148,7 +172,8 @@ export default function LeadersSnippet({
         <Row badge={mlas.length > 0 ? <Vote size={15} /> : null} role={t("mlas")}>
           {mlas.length > 0 ? (
             <>
-              <span className="ftp-num" style={{ fontSize: 15 }}>{mlas.length}</span>
+              {/* "14 listed": the MLAs we hold, not the district's number of seats. */}
+              <span className="ftp-num" style={{ fontSize: 15 }}>{t("mlasListed", { n: mlas.length })}</span>
               {partyLine && <span style={{ color: "var(--ftp-text-2)" }}> ({partyLine})</span>}
             </>
           ) : (

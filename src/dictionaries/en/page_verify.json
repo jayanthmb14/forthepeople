@@ -1,10 +1,11 @@
 {
   "title": "Check this data",
   "intro": "Where the numbers on this page come from, how old they are, and how to check them yourself.",
-  "introOverview": "How fresh each topic's data is for {district}, and where it comes from.",
+  "introOverview": "How fresh each topic's data is for {district}. The sources are listed on the page linked below.",
   "introNone": "This page has no dataset of its own. You can still tell us if something is wrong.",
   "summary": {
     "current": "{n} up to date",
+    "reference": "{n} reference",
     "late": "{n} late",
     "unknown": "{n} without a date",
     "missing": "{n} not collected yet"

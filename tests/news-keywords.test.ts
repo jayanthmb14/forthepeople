@@ -42,7 +42,38 @@ describe("classifyModule (whole words)", () => {
   });
 });
 
+describe("classifyModule — Sept 2026 audit headlines", () => {
+  it("files crimes under police, not where they happened", () => {
+    expect(classifyModule("Man sleeping in auto-rickshaw brutally murdered")).toBe("police");
+    expect(classifyModule("Hyderabad man loses Rs 3.73 crore in fake investment scheme")).toBe("police");
+  });
+
+  it("does not tag money amounts, job candidates or a house as budget / elections / housing", () => {
+    expect(classifyModule("University of Mysore: Rs 150 crore irregularities")).toBe("education");
+    expect(classifyModule("Hyderabad mega job mela on Saturday, SSC candidates eligible")).not.toBe("elections");
+    expect(classifyModule("Youth dies by suicide at relative's house")).toBe("news");
+  });
+
+  it("leaves sport and festival events without a data page", () => {
+    expect(classifyModule("Pune wins historic bid to host UCI Road World Championships 2032")).toBe("news");
+    expect(classifyModule("Mysuru Kambala: 150–160 buffalo pairs to participate")).toBe("news");
+    expect(categorize("Pune wins historic bid to host UCI Road World Championships 2032")).toBe("general");
+  });
+
+  it("whole words: old substring tags do not come back", () => {
+    expect(classifyModule("Students demonstrate scientific temper at Maths Olympiad")).toBe("education");
+    expect(classifyModule("Heavy rain lashes Pune, waterlogs Pimpri Chinchwad localities")).toBe("weather");
+    expect(classifyModule("Lokayukta raids in Mandya, Kalaburagi")).not.toBe("crops");
+    expect(classifyModule("Child Sexual Abuse Cases Can't Be Settled By Victim's Family: Delhi High Court")).toBe("courts");
+  });
+});
+
 describe("categorize", () => {
+  it("a housing market is not farming; a fake scheme is a crime", () => {
+    expect(categorize("MMR overtakes NCR as India's biggest housing market")).not.toBe("agriculture");
+    expect(categorize("Hyderabad man loses Rs 3.73 crore in fake investment scheme")).toBe("crime");
+  });
+
   it("returns a broad category or general", () => {
     expect(categorize("Farmer suicides rise")).toBe("agriculture");
     expect(categorize("Dengue cases at district hospital")).toBe("health");
@@ -67,8 +98,28 @@ describe("district names", () => {
   it("spots stories about another state", () => {
     expect(mentionsOtherState("High Court of Karnataka reserves order", "Telangana")).toBe(true);
     expect(mentionsOtherState("Hyderabad metro phase 2 approved", "Telangana")).toBe(false);
-    expect(mentionsOtherState("Telangana and Karnataka discuss water sharing", "Telangana")).toBe(false);
     expect(mentionsOtherState("Mandya farmers meet", "Karnataka")).toBe(false);
+  });
+
+  it("still spots another state when the own state is named too (Sept 2026 audit)", () => {
+    // Naming Delhi used to switch the check off, so this reached New Delhi's feed.
+    expect(mentionsOtherState("Delhi Confidential: Centre's lawyer defends Karnataka Congress government", "Delhi")).toBe(true);
+    expect(mentionsOtherState("Telangana and Karnataka discuss water sharing", "Telangana")).toBe(true);
+    expect(mentionsOtherState("Delhi govt puts new challan system on hold", "Delhi")).toBe(false);
+  });
+
+  it("New Delhi: Delhi-wide stories count, other Delhi districts do not", () => {
+    expect(mentionsDistrict("Delhi govt puts new challan system on hold", "New Delhi")).toBe(true);
+    expect(mentionsDistrict("Traffic curbs near India Gate in New Delhi", "New Delhi")).toBe(true);
+    expect(mentionsDistrict("Rs 165-crore plan to build pucca schools in 5 areas in NE, east Delhi", "New Delhi")).toBe(false);
+    expect(mentionsDistrict("Delhi Police arrest 379 bad elements in central district", "New Delhi")).toBe(false);
+    expect(mentionsDistrict("Gulbarga Tur Dal flagged off from Karnataka to Maldives", "New Delhi")).toBe(false);
+  });
+
+  it("Bengaluru Urban: other districts named Bengaluru do not count", () => {
+    expect(mentionsDistrict("Lokayukta finds fault with Bengaluru South district administration", "Bengaluru Urban")).toBe(false);
+    expect(mentionsDistrict("Bengaluru Rural farmers protest", "Bengaluru Urban")).toBe(false);
+    expect(mentionsDistrict("Bengaluru South City Corporation clears potholes", "Bengaluru Urban")).toBe(true);
   });
 });
 

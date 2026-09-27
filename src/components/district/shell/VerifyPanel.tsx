@@ -241,7 +241,9 @@ export default function VerifyPanel({
         <>
           <p className="ftp-verify-summary">
             {[
-              tv("summary.current", { n: count("current") + count("reference") }),
+              // Reference guides have no date: counted apart, never as "up to date" (Sept 2026 audit).
+              tv("summary.current", { n: count("current") }),
+              count("reference") > 0 ? tv("summary.reference", { n: count("reference") }) : null,
               count("late") > 0 ? tv("summary.late", { n: count("late") }) : null,
               count("unknown") > 0 ? tv("summary.unknown", { n: count("unknown") }) : null,
               count("not_collected") > 0 ? tv("summary.missing", { n: count("not_collected") }) : null,

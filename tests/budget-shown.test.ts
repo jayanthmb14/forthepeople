@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { hasEstimatedSpend, rowsSource, withPublishedSpend } from "@/lib/money/budget-shown";
-import { COLLECTED_BUDGET_SOURCES, SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
+import { COLLECTED_BUDGET_SOURCES, SEEDED_BUDGET_SOURCES, SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
 
 describe("withPublishedSpend", () => {
   it("blanks spend and release figures the row calls an estimate (Pune, Sept 2026)", () => {
@@ -57,5 +57,20 @@ describe("budget row filters", () => {
   });
   it("shows BudgetAllocation rows only when they link to their source", () => {
     expect(SHOWN_BUDGET_ALLOCATION).toEqual({ sourceUrl: { not: null } });
+  });
+});
+
+// Merge of v54/fix-news into v54/fix-money's rule: the news branch hid the
+// seeded budgets by their exact labels (SEEDED_BUDGET_SOURCES); the queries
+// use SHOWN_BUDGET_ENTRY, which must hide every one of those labels too.
+describe("seeded budget labels (v54/fix-news)", () => {
+  const passesShown = (source: string | null) =>
+    source !== null && (COLLECTED_BUDGET_SOURCES.includes(source) || source.startsWith("data.gov.in ("));
+  it("no seeded label is shown as a district budget", () => {
+    expect(SEEDED_BUDGET_SOURCES.length).toBeGreaterThan(0);
+    for (const label of SEEDED_BUDGET_SOURCES) expect(passesShown(label)).toBe(false);
+  });
+  it("collector labels are not on the seeded list", () => {
+    for (const label of COLLECTED_BUDGET_SOURCES) expect(SEEDED_BUDGET_SOURCES).not.toContain(label);
   });
 });

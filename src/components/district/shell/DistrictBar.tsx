@@ -36,7 +36,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { CalendarDays, ChevronDown } from "lucide-react";
 import DistrictBreadcrumb from "@/components/district/DistrictBreadcrumb";
 import { MobileDistrictDrawer } from "@/components/district/MobileDistrictDrawer";
-import { INDIA_STATES, getDistrict, getState } from "@/lib/constants/districts";
+import { INDIA_STATES, getDistrict, getState, shownSubUnits } from "@/lib/constants/districts";
 import { getStateConfig } from "@/lib/constants/state-config";
 import { placeName } from "@/i18n/place-name";
 import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
@@ -188,7 +188,8 @@ export default function DistrictBar({ locale, stateSlug, districtSlug }: Props) 
   // Lower-casing is a no-op for Indic scripts and gives "All taluks" in English.
   const units = (tu.has(unitsEn) ? tu(unitsEn) : unitsEn).toLocaleLowerCase(lang);
   const taluk = route.taluk ? districtData.taluks.find((x) => x.slug === route.taluk) : undefined;
-  const taluks = districtData.taluks.map((x) => ({ slug: x.slug, name: placeName(x, lang), nameLocal: x.nameLocal }));
+  // The taluk switcher lists only units checked against the district portal (Sept 2026 audit).
+  const taluks = shownSubUnits(stateSlug, districtData).taluks.map((x) => ({ slug: x.slug, name: placeName(x, lang), nameLocal: x.nameLocal }));
   const pageName = taluk ? placeName(taluk, lang) : mt.label(route.module ?? "overview");
 
   return (

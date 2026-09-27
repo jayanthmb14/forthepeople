@@ -11,7 +11,7 @@
 export const revalidate = 300; // ISR: revalidate every 5 minutes
 
 import { notFound } from "next/navigation";
-import { getDistrict, getState } from "@/lib/constants/districts";
+import { getDistrict, getState, shownSubUnits } from "@/lib/constants/districts";
 import OverviewClient from "./OverviewClient";
 import LockedDistrictPreview from "@/components/district/LockedDistrictPreview";
 
@@ -25,6 +25,8 @@ export default async function DistrictPage({
   const stateData = getState(stateSlug);
   const districtData = getDistrict(stateSlug, districtSlug);
   if (!districtData || !stateData) notFound();
+  // Only the sub-district units checked against the district portal (Sept 2026 audit).
+  const subUnits = shownSubUnits(stateSlug, districtData);
 
   // Locked district → show preview page
   if (!districtData.active) {
@@ -39,7 +41,7 @@ export default async function DistrictPage({
         tagline={districtData.tagline}
         population={districtData.population}
         area={districtData.area}
-        talukCount={districtData.talukCount ?? districtData.taluks.length}
+        talukCount={subUnits.count ?? undefined}
         literacy={districtData.literacy}
       />
     );
@@ -57,20 +59,19 @@ export default async function DistrictPage({
         tagline: districtData.tagline,
         population: districtData.population,
         area: districtData.area,
-        // The official count; the list length only when the list is the official one.
-        talukCount: districtData.talukCount ?? (districtData.subUnitsUnchecked ? undefined : districtData.taluks.length),
-        subUnitsUnchecked: districtData.subUnitsUnchecked ?? false,
+        talukCount: subUnits.count ?? undefined,
         villageCount: districtData.villageCount,
         literacy: districtData.literacy,
         sexRatio: districtData.sexRatio,
         active: districtData.active,
         badges: districtData.badges,
-        taluks: districtData.taluks.map((t) => ({
+        taluks: subUnits.taluks.map((t) => ({
           slug: t.slug,
           name: t.name,
           nameLocal: t.nameLocal,
           tagline: t.tagline,
         })),
+        taluksWithoutPage: subUnits.missing,
       }}
       stateName={stateData.name}
     />

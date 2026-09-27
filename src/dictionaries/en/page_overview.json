@@ -107,6 +107,7 @@
     "aria": "Government tenders",
     "tracking": "Tracking",
     "pending": "Update pending",
+    "staleNoCount": "No current count: the tender list has not been updated since the date below.",
     "viewAll": "View all",
     "open": "{n, plural, one {open tender} other {open tenders}}",
     "closing": "{n} closing in 48 hours",
