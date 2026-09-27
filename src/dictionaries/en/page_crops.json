@@ -1,6 +1,5 @@
 {
   "description": "Mandi prices from AGMARKNET, updated daily",
-  "summary": "This page shows the latest mandi prices for this district from AGMARKNET (Agricultural Marketing Information Network), India's official government portal for prices at regulated markets. Prices come in daily and can be viewed per kg or per quintal. They cover every commodity traded at the APMC (Agricultural Produce Market Committee) mandis in the district. We keep the newest 100 prices for each district.",
   "emptyTitle": "No mandi prices for {district} yet.",
   "emptyBody": "Daily prices from AGMARKNET will show here once we start receiving them for the mandis in this district.",
   "answer": "The latest prices are from <b>{date}</b>: {n, plural, one {# crop} other {# crops}} at {markets, plural, one {# mandi} other {# mandis}} in {district}.",
@@ -81,7 +80,6 @@
   "movesSub": "{from} on {date}, latest {to}",
   "movesUp": "Up",
   "movesDown": "Down",
-  "sourceName": "AGMARKNET (Agricultural Marketing Information Network)",
   "share": "Crop prices in {district}: {list}",
   "shareEmpty": "Crop prices for {district}",
   "shareItem": "{crop} {price}",
@@ -91,15 +89,6 @@
   "csvMin": "Lowest price (₹/quintal)",
   "csvModal": "Typical price (₹/quintal)",
   "csvMax": "Highest price (₹/quintal)",
-  "footer": {
-    "aboutTitle": "About this page",
-    "frequency": "Daily",
-    "notOfficial": "ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "csv": "Download CSV",
-    "whatsapp": "Share on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district"
-  }
+  "answerOld": "That is <b>{n, plural, one {# day} other {# days}} ago</b>; we could not find newer prices.",
+  "csvButton": "Download prices (CSV)"
 }

@@ -16,7 +16,13 @@
 //    many crops went up / stayed / went down since their last market day
 //    → one price card per crop (tap → CropSheet: price, week-ago
 //    comparison, trend, each mandi, detail rows) → AI insight → charts
-//    (which crops cost the most · biggest changes) → news → footer.
+//    (which crops cost the most · biggest changes) → news → CSV · Share.
+//
+//  Honesty: the market day of the newest prices sits right above the big
+//  numbers; older than a week (src/lib/constants/dataset-collection.ts) it
+//  turns amber — "N days old; we could not find newer data" — the prices
+//  turn grey, and the simple-words line says so. Sources and "report a
+//  mistake" are in the layout's verification panel.
 //
 //  Data: useCropPrices() → the newest ≤ 100 AGMARKNET rows (the collector
 //  keeps only 100 per district). Prices arrive in ₹ per quintal (100 kg);
@@ -28,7 +34,7 @@
 import { use, useMemo, useState } from "react";
 import type React from "react";
 import { useTranslations } from "next-intl";
-import { Search, Wheat } from "lucide-react";
+import { Equal, Search, TrendingDown, TrendingUp, Wheat } from "lucide-react";
 import { useCropPrices } from "@/hooks/useRealtimeData";
 import type { CropPrice } from "@/hooks/useRealtimeData";
 import { useFormat, useModuleText } from "@/i18n/client";
@@ -48,18 +54,21 @@ import { ChartCard, Explainer } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
-import { cropEmoji, PriceMoves } from "@/components/crops/CropVisuals";
+import { MoveSplit, PriceMoves } from "@/components/crops/CropVisuals";
 import type { PriceMove } from "@/components/crops/CropVisuals";
 import { HueBarList, useDistrictName } from "@/components/land-water/visuals";
-import { fitGrid, Chip, EmojiTile, Sparkline, SplitBar, TapCard, TapHint } from "@/components/land-water/cards";
+import { fitGrid, Chip, Sparkline, TapCard, TapHint } from "@/components/land-water/cards";
 import { CropSheet } from "@/components/land-water/CropSheet";
-import { LandWaterFooter } from "@/components/land-water/PageFooter";
+import { PageActions, ReadingAge, ageInDays, isOlderThan, useClientNow } from "@/components/district/page-kit";
+import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { commodityKey, dailySeries, dayOf, latestPerCrop, latestPerMarket, previousDay } from "@/components/land-water/crop-data";
 import { downloadCSV, todayISO } from "@/lib/csv";
 
 type Unit = "kg" | "quintal";
 
 const AGMARKNET = { label: "AGMARKNET", href: "https://agmarknet.gov.in" };
+/** Mandi prices older than this are not current (src/lib/constants/dataset-collection.ts). */
+const MAX_AGE_HOURS = maxAgeHoursOf("crops") ?? 168;
 
 /** Bold runs inside translated sentences (<b>…</b> in the messages). */
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
@@ -82,6 +91,7 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const [unit, setUnit] = useState<Unit>("kg");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const now = useClientNow();
 
   // Display helpers: ₹/quintal → ₹/kg when the Kg chip is on.
   const dp = (price: number) => Math.round(unit === "kg" ? price / 100 : price);
@@ -110,6 +120,9 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
   const newestDate = latestByCrop.reduce<string | null>((best, p) => (!best || p.date > best ? p.date : best), null);
   const cropsOnNewest = newestDate ? latestByCrop.filter((p) => dayOf(p.date) === dayOf(newestDate)).length : 0;
   const marketsOnNewest = newestDate ? new Set(prices.filter((p) => dayOf(p.date) === dayOf(newestDate)).map((p) => p.market)).size : 0;
+  // Old prices are not today's: the numbers turn grey and carry their date and age.
+  const isOld = newestDate ? isOlderThan(newestDate, MAX_AGE_HOURS, now) : false;
+  const oldDays = newestDate && isOld ? ageInDays(newestDate, now) : 0;
 
   // Chart: latest typical price per crop, dearest first.
   const ladder = [...latestByCrop].sort((a, b) => b.modalPrice - a.modalPrice);
@@ -119,7 +132,6 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
     .map(({ p, prev }) => ({
       key: commodityKey(p.commodity),
       crop: p.commodity,
-      emoji: cropEmoji(p.commodity),
       pct: ((p.modalPrice - prev.modalPrice) / prev.modalPrice) * 100,
       sub: t("movesSub", { from: perUnit(prev.modalPrice), to: perUnit(p.modalPrice), date: shortDay(prev.date) }),
     }))
@@ -169,13 +181,13 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
       {isLoading && <LoadingShell rows={5} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && latestByCrop.length === 0 && (
-        <EmptyState emoji="🧺" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
+        <EmptyState title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} />
       )}
 
       {hasData && newestDate && (
         <>
           {/* 1 · The answer in plain words. */}
-          <Explainer emoji="🌾">
+          <Explainer>
             {t.rich("answer", {
               b: bold,
               date: fullDay(newestDate),
@@ -183,21 +195,23 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
               markets: marketsOnNewest,
               district: districtName,
             })}{" "}
+            {isOld ? <>{t.rich("answerOld", { b: bold, n: oldDays })} </> : null}
             {t("tapHint")}
           </Explainer>
 
-          {/* 2 · The big numbers. */}
+          {/* 2 · The big numbers, with the market day they are from right above them. */}
+          <div style={{ margin: "0 0 10px" }}>
+            <ReadingAge at={newestDate} maxAgeHours={MAX_AGE_HOURS} what="prices" now={now} />
+          </div>
           <StatStrip cols={4}>
-            <StatTile emoji="🧺" label={t("tileCrops")} value={f.number(latestByCrop.length)} asOf={newestDate} />
-            <StatTile emoji="🏪" label={t("tileMarkets")} value={f.number(markets)} sub={t("tileMarketsSub")} />
+            <StatTile label={t("tileCrops")} value={f.number(latestByCrop.length)} />
+            <StatTile label={t("tileMarkets")} value={f.number(markets)} sub={t("tileMarketsSub")} />
             {compared.length > 0 ? (
-              <StatTile emoji="📈" label={t("tileUp")} value={f.number(up)} sub={t("tileMovesSub", { n: compared.length })} />
+              <StatTile label={t("tileUp")} value={f.number(up)} sub={t("tileMovesSub", { n: compared.length })} />
             ) : (
-              <StatTile emoji="📅" label={t("tileLatest")} value={shortDay(newestDate)} countUp={false} />
+              <StatTile label={t("tileLatest")} value={shortDay(newestDate)} countUp={false} />
             )}
-            {compared.length > 0 && (
-              <StatTile emoji="📉" label={t("tileDown")} value={f.number(down)} sub={t("tileMovesSub", { n: compared.length })} />
-            )}
+            {compared.length > 0 && <StatTile label={t("tileDown")} value={f.number(down)} sub={t("tileMovesSub", { n: compared.length })} />}
           </StatStrip>
 
           {/* 3 · The picture: up / same / down since the last market day. */}
@@ -209,20 +223,12 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
                 </p>
                 <p style={{ margin: 0, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("pictureSub")}</p>
               </div>
-              <SplitBar
+              <MoveSplit
+                up={up}
+                same={same}
+                down={down}
+                labels={{ up: t("splitUp"), same: t("splitSame"), down: t("splitDown") }}
                 ariaLabel={t("splitAria", { total: compared.length, up, same, down })}
-                parts={[
-                  { key: "up", emoji: "📈", label: t("splitUp"), value: up, fill: "linear-gradient(90deg, var(--hue), var(--hue-deep))" },
-                  { key: "same", emoji: "➖", label: t("splitSame"), value: same, fill: "var(--hue-pop)", ink: "var(--hue-deep)" },
-                  {
-                    key: "down",
-                    emoji: "📉",
-                    label: t("splitDown"),
-                    value: down,
-                    fill: "color-mix(in srgb, var(--hue-pop) 45%, var(--ftp-surface))",
-                    ink: "var(--hue-deep)",
-                  },
-                ]}
               />
             </Card>
           )}
@@ -230,7 +236,6 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
           {/* 4 · One card per crop. Tap → everything about it. */}
           <Section
             title={t("latestTitle")}
-            emoji="🏷️"
             action={
               <Chips
                 label={t("unitGroup")}
@@ -268,7 +273,7 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
                 />
               </label>
             )}
-            {shownCrops.length === 0 && <EmptyState emoji="🔍" title={t("noMatch", { q: search })} />}
+            {shownCrops.length === 0 && <EmptyState title={t("noMatch", { q: search })} />}
             <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, ["--ftp-grid-min" as string]: "260px" }}>
               {shownCrops.map((p) => (
                 <li key={p.id}>
@@ -276,6 +281,7 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
                     row={p}
                     prices={prices}
                     unit={unit}
+                    old={isOlderThan(p.date, MAX_AGE_HOURS, now)}
                     onOpen={() => setOpenKey(commodityKey(p.commodity))}
                     fmt={{ rupees, dp, perUnit, shortDay }}
                   />
@@ -294,7 +300,6 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
               {showLadder && (
                 <ChartCard
                   title={t("ladderTitle")}
-                  emoji="🏆"
                   units={t("ladderUnits", { unit })}
                   simple={t.rich("ladderSimple", {
                     b: bold,
@@ -314,7 +319,6 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
                     rows={ladder.slice(0, LADDER_MAX).map((p) => ({
                       key: commodityKey(p.commodity),
                       label: p.commodity,
-                      emoji: cropEmoji(p.commodity),
                       value: p.modalPrice,
                       display: perUnit(p.modalPrice),
                       sub: t("ladderSub", { market: p.market, date: shortDay(p.date) }),
@@ -332,7 +336,6 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
               {showMoves && (
                 <ChartCard
                   title={t("movesTitle")}
-                  emoji="↕️"
                   units={t("movesUnits")}
                   simple={t.rich("movesSimple", {
                     b: bold,
@@ -357,16 +360,16 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
 
       <ModuleNews district={district} state={state} locale={locale} module="crops" />
 
-      <LandWaterFooter
-        ns="page_crops"
-        about={t("summary")}
-        sources={[{ name: t("sourceName"), url: AGMARKNET.href, frequency: t("footer.frequency") }]}
-        locale={locale}
-        district={district}
-        moduleSlug="crops"
-        shareText={shareText}
-        onCsv={prices.length > 0 ? handleDownload : undefined}
-      />
+      <div style={{ marginTop: 28 }}>
+        <PageActions
+          locale={locale}
+          district={district}
+          moduleSlug="crops"
+          shareText={shareText}
+          onCsv={prices.length > 0 ? handleDownload : undefined}
+          csvLabel={t("csvButton")}
+        />
+      </div>
 
       <CropSheet crop={openCrop} prices={prices} unit={unit} onClose={() => setOpenKey(null)} />
     </ModulePage>
@@ -374,7 +377,8 @@ function CropsPageInner({ params }: { params: Promise<{ locale: string; state: s
 }
 
 /**
- * One crop's price card: emoji, name, the typical price big, the day's
+ * One crop's price card: name, the typical price big (grey when the
+ * market day is older than the crops max age), the day's
  * low–high, mandi and date, the change since the market day before, and a
  * small line of recent prices. A tap anywhere on the card opens the
  * crop's sheet.
@@ -383,12 +387,14 @@ function PriceCard({
   row,
   prices,
   unit,
+  old,
   onOpen,
   fmt,
 }: {
   row: CropPrice;
   prices: CropPrice[];
   unit: Unit;
+  old: boolean;
   onOpen: () => void;
   fmt: {
     rupees: (n: number) => string;
@@ -406,7 +412,6 @@ function PriceCard({
   return (
     <TapCard onClick={onOpen} label={t("detailsFor", { name: row.commodity })}>
       <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <EmojiTile emoji={cropEmoji(row.commodity)} />
         <span style={{ minWidth: 0, flex: 1 }}>
           <h3 className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650, overflowWrap: "anywhere" }}>
             {row.commodity}
@@ -420,7 +425,7 @@ function PriceCard({
       <span style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
         <span style={{ minWidth: 0 }}>
           <span style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
-            <span className="ftp-bignum" style={{ fontSize: 30, lineHeight: "34px", color: "var(--hue-deep)" }}>
+            <span className="ftp-bignum" style={{ fontSize: 30, lineHeight: "34px", color: old ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
               {fmt.rupees(fmt.dp(row.modalPrice))}
             </span>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ftp-text-2)" }}>{t("unitShort", { unit })}</span>
@@ -435,7 +440,13 @@ function PriceCard({
       <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {prev && (
           <Chip tone={change > 0 && shownChange > 0 ? "hue" : "quiet"}>
-            <span aria-hidden>{change > 0 && shownChange > 0 ? "▲" : change < 0 && shownChange > 0 ? "▼" : "="}</span>
+            {change > 0 && shownChange > 0 ? (
+              <TrendingUp size={13} aria-hidden />
+            ) : change < 0 && shownChange > 0 ? (
+              <TrendingDown size={13} aria-hidden />
+            ) : (
+              <Equal size={13} aria-hidden />
+            )}
             {shownChange === 0
               ? t("cardSame", { date: fmt.shortDay(prev.date) })
               : t(change > 0 ? "cardMore" : "cardLess", { amount: fmt.rupees(shownChange), date: fmt.shortDay(prev.date) })}

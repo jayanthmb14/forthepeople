@@ -26,12 +26,17 @@ import type { CropPrice } from "@/hooks/useRealtimeData";
 import { useFormat } from "@/i18n/client";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { CHART_AXIS, ChartCard, ChartGradients, chartTooltipStyle } from "@/components/district/visuals";
-import { PriceRange, cropEmoji } from "@/components/crops/CropVisuals";
+import { PriceRange } from "@/components/crops/CropVisuals";
+import { SheetNote } from "@/components/services-2/kit";
+import { ReadingAge, isOlderThan, useClientNow } from "@/components/district/page-kit";
+import { maxAgeHoursOf } from "@/lib/constants/dataset-collection";
 import { hueClass } from "@/lib/design/hues";
-import { SheetAction, SheetBlock, SheetNote } from "./cards";
+import { SheetAction, SheetBlock } from "./cards";
 import { dailySeries, latestPerMarket, commodityKey, previousDay, weekBefore } from "./crop-data";
 
 const AGMARKNET = "https://agmarknet.gov.in";
+/** Mandi prices older than this are not current (src/lib/constants/dataset-collection.ts). */
+const MAX_AGE_HOURS = maxAgeHoursOf("crops") ?? 168;
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
 export function CropSheet({
@@ -48,6 +53,7 @@ export function CropSheet({
 }) {
   const t = useTranslations("page_crops");
   const f = useFormat();
+  const now = useClientNow();
   if (!crop) return null;
 
   const dp = (q: number) => Math.round(unit === "kg" ? q / 100 : q);
@@ -57,7 +63,7 @@ export function CropSheet({
   const fullDay = (iso: string) => f.date(iso, { day: "numeric", month: "short", year: "numeric" });
   const pctText = (from: number, to: number) =>
     f.number(Math.abs(to - from) / from, { style: "percent", maximumFractionDigits: 1 });
-  const emoji = cropEmoji(crop.commodity);
+  const isOld = isOlderThan(crop.date, MAX_AGE_HOURS, now);
 
   // ── Compared with about a week ago (same mandi) ──
   const week = weekBefore(prices, crop);
@@ -108,10 +114,9 @@ export function CropSheet({
       onClose={onClose}
       title={crop.commodity}
       subtitle={t("sheetSub", { market: crop.market, date: fullDay(crop.date) })}
-      emoji={emoji}
       hueClassName={hueClass("crops")}
       footer={
-        <SheetAction href={AGMARKNET} emoji="🔗" primary>
+        <SheetAction href={AGMARKNET} primary>
           {t("openAgmarknet")}
         </SheetAction>
       }
@@ -119,7 +124,7 @@ export function CropSheet({
       {/* The price, big, in both units. */}
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-          <span className="ftp-bignum" style={{ fontSize: 40, lineHeight: "44px", color: "var(--hue-deep)" }}>
+          <span className="ftp-bignum" style={{ fontSize: 40, lineHeight: "44px", color: isOld ? "var(--ftp-text-2)" : "var(--hue-deep)" }}>
             {rupees(dp(crop.modalPrice))}
           </span>
           <span style={{ fontSize: 16, fontWeight: 600, color: "var(--ftp-text-2)" }}>{t("unitShort", { unit })}</span>
@@ -131,20 +136,22 @@ export function CropSheet({
           })}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("modalHelp")}</p>
+        <div style={{ marginTop: 10 }}>
+          <ReadingAge at={crop.date} maxAgeHours={MAX_AGE_HOURS} what="prices" now={now} />
+        </div>
       </div>
 
-      <SheetBlock emoji="↔️" title={t("rangeTitle")}>
-        <PriceRange min={dp(crop.minPrice)} modal={dp(crop.modalPrice)} max={dp(crop.maxPrice)} unit={unit} emoji={emoji} />
+      <SheetBlock title={t("rangeTitle")}>
+        <PriceRange min={dp(crop.minPrice)} modal={dp(crop.modalPrice)} max={dp(crop.maxPrice)} unit={unit} />
       </SheetBlock>
 
-      <SheetBlock emoji="🗓️" title={t("weekTitle")}>
-        <SheetNote emoji={week || prev ? "⚖️" : "🌱"}>{compare}</SheetNote>
+      <SheetBlock title={t("weekTitle")}>
+        <SheetNote>{compare}</SheetNote>
       </SheetBlock>
 
       {series.length > 1 && (
         <ChartCard
           title={t("trendTitle", { crop: crop.commodity })}
-          emoji="📈"
           units={oneMarket ? t("trendUnitsOne", { unit, market: crop.market }) : t("trendUnitsAll", { unit })}
           simple={trendSimple}
           source={{ label: "AGMARKNET", href: AGMARKNET }}
@@ -183,7 +190,7 @@ export function CropSheet({
       )}
 
       {markets.length > 1 && (
-        <SheetBlock emoji="🏪" title={t("marketsTitle", { n: markets.length })}>
+        <SheetBlock title={t("marketsTitle", { n: markets.length })}>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             {markets.map((m) => (
               <li
@@ -214,16 +221,16 @@ export function CropSheet({
         </SheetBlock>
       )}
 
-      <SheetBlock emoji="📋" title={t("rowsTitle")}>
+      <SheetBlock title={t("rowsTitle")}>
         <DetailList
           rows={[
-            { emoji: "🏷️", label: t("rowTypical"), value: perUnit(crop.modalPrice) },
-            { emoji: "⬇️", label: t("rowLowest"), value: perUnit(crop.minPrice) },
-            { emoji: "⬆️", label: t("rowHighest"), value: perUnit(crop.maxPrice) },
-            { emoji: "🏪", label: t("rowMarket"), value: crop.market },
-            { emoji: "📅", label: t("rowDate"), value: fullDay(crop.date) },
-            { emoji: "🌱", label: t("rowVariety"), value: crop.variety && crop.variety !== "Other" ? crop.variety : null },
-            { emoji: "📜", label: t("rowSource"), value: crop.source },
+            { label: t("rowTypical"), value: perUnit(crop.modalPrice) },
+            { label: t("rowLowest"), value: perUnit(crop.minPrice) },
+            { label: t("rowHighest"), value: perUnit(crop.maxPrice) },
+            { label: t("rowMarket"), value: crop.market },
+            { label: t("rowDate"), value: fullDay(crop.date) },
+            { label: t("rowVariety"), value: crop.variety && crop.variety !== "Other" ? crop.variety : null },
+            { label: t("rowSource"), value: crop.source },
           ]}
         />
       </SheetBlock>
