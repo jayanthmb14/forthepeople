@@ -31,10 +31,12 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { User } from "lucide-react";
 import { useDistrictData } from "@/hooks/useDistrictData";
 import { useFormat } from "@/i18n/client";
 import { Section, Card, AsOfText, SourcePill } from "@/components/district/ui";
-import { ChartCard, Explainer, Gauge, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer, Gauge } from "@/components/district/visuals";
+import { IconPictogram } from "@/components/district/page-kit";
 import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { RankBars } from "@/components/district/daily-services/BreakdownVisuals";
 import { TapCard, CardBar, ActionLink, SheetNote } from "@/components/services-1/kit";
@@ -87,17 +89,11 @@ export default function StaffingSection({
   module,
   district,
   state,
-  emoji = "🧑‍💼",
-  personEmoji = "🧑",
   picture = false,
 }: {
   module: "health" | "schools";
   district: string;
   state: string;
-  /** Emoji chip before the section heading. */
-  emoji?: string;
-  /** One person, repeated in the picture and on each role card. */
-  personEmoji?: string;
   /** Draw the ten-people picture and the dial. */
   picture?: boolean;
 }) {
@@ -129,7 +125,6 @@ export default function StaffingSection({
   return (
     <Section
       title={t(`${module}.title`)}
-      emoji={emoji}
       action={
         <>
           <AsOfText asOf={s.asOf} />
@@ -137,7 +132,7 @@ export default function StaffingSection({
         </>
       }
     >
-      <Explainer emoji={s.shortage ? "⚠️" : "💡"}>
+      <Explainer>
         {t.rich(`${module}.simple`, { sanctioned: f.number(s.sanctioned), working: f.number(s.working), b: bNum })}
         {s.shortage && <> {t("shortage", { pct: pct(100 - s.filledPct) })}</>}
       </Explainer>
@@ -146,7 +141,7 @@ export default function StaffingSection({
       {picture && s.sanctioned > 0 && (
         <div className="ftp-picture-row" style={{ marginBottom: 16 }}>
           <Card tinted padding={18}>
-            <Pictogram filled={filledOfTen} emoji={personEmoji} label={t("pictogram", { n: f.number(Math.round(filledOfTen)) })} />
+            <IconPictogram icon={User} filled={filledOfTen} label={t("pictogram", { n: f.number(Math.round(filledOfTen)) })} />
           </Card>
           <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Gauge value={s.filledPct} label={t("gauge")} caption={t("gaugeCaption")} />
@@ -159,7 +154,6 @@ export default function StaffingSection({
         <div style={{ marginBottom: 16 }}>
           <ChartCard
             title={t("gaps.title")}
-            emoji="🪑"
             units={t("gaps.units")}
             simple={t.rich("gaps.simple", { role: gaps[0].label, n: f.number(gaps[0].value), b })}
             asOf={s.asOf}
@@ -178,7 +172,6 @@ export default function StaffingSection({
           return (
             <TapCard
               key={r.id}
-              emoji={personEmoji}
               title={r.roleName}
               subtitle={r.department}
               aside={
@@ -203,12 +196,11 @@ export default function StaffingSection({
         open={open !== null}
         onClose={() => setOpenId(null)}
         hueClassName={hueClass(module)}
-        emoji={personEmoji}
         title={open?.roleName ?? ""}
         subtitle={open?.department}
         footer={
           open?.sourceUrl ? (
-            <ActionLink href={open.sourceUrl} emoji="🔗" primary newTab>
+            <ActionLink href={open.sourceUrl} primary newTab>
               {t("sheet.source")}
             </ActionLink>
           ) : undefined
@@ -216,7 +208,7 @@ export default function StaffingSection({
       >
         {open && (
           <>
-            <SheetNote emoji={rowShort(open) ? "⚠️" : "✅"}>
+            <SheetNote>
               {t.rich("sheet.note", {
                 role: open.roleName,
                 sanctioned: f.number(open.sanctionedPosts),
@@ -230,12 +222,11 @@ export default function StaffingSection({
             </div>
             <DetailList
               rows={[
-                { emoji: "🏛️", label: t("sheet.department"), value: open.department },
-                { emoji: "📋", label: t("sheet.sanctioned"), value: f.number(open.sanctionedPosts) },
-                { emoji: personEmoji, label: t("sheet.working"), value: f.number(open.workingStrength) },
-                { emoji: "🪑", label: t("sheet.vacant"), value: f.number(open.vacantPosts) },
+                { label: t("sheet.department"), value: open.department },
+                { label: t("sheet.sanctioned"), value: f.number(open.sanctionedPosts) },
+                { label: t("sheet.working"), value: f.number(open.workingStrength) },
+                { label: t("sheet.vacant"), value: f.number(open.vacantPosts) },
                 {
-                  emoji: "📊",
                   label: t("sheet.filled"),
                   value: (
                     <span style={{ color: rowShort(open) ? "var(--ftp-danger)" : undefined }}>
@@ -244,7 +235,7 @@ export default function StaffingSection({
                     </span>
                   ),
                 },
-                { emoji: "🗓️", label: t("sheet.asOf"), value: f.date(open.asOfDate, { day: "numeric", month: "short", year: "numeric" }) },
+                { label: t("sheet.asOf"), value: f.date(open.asOfDate, { day: "numeric", month: "short", year: "numeric" }) },
               ]}
             />
           </>

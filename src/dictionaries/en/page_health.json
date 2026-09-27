@@ -107,21 +107,6 @@
     "note": "Details are as the government office list gives them. Call before you go: timings can change on holidays."
   },
   "end": {
-    "share": "Hospitals and health help for {district}: ambulance 108, emergency 112",
-    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share this page on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "freq": {
-      "monthly": "Updated monthly",
-      "weekly": "Updated weekly",
-      "daily": "Updated daily",
-      "annual": "Updated once a year",
-      "quarterly": "Updated every three months",
-      "onPublish": "Updated when the source publishes"
-    }
+    "share": "Hospitals and health help for {district}: ambulance 108, emergency 112"
   }
 }

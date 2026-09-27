@@ -97,21 +97,6 @@
   },
   "end": {
     "shareWithData": "Power in {district}: {now, plural, one {# cut on now} other {# cuts on now}}, {soon, plural, one {# planned} other {# planned}}",
-    "shareNoData": "Power cut information for {district}",
-    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
-    "actions": "Page actions",
-    "whatsapp": "WhatsApp",
-    "whatsappAria": "Share this page on WhatsApp",
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "compare": "Compare with another district",
-    "freq": {
-      "monthly": "Updated monthly",
-      "weekly": "Updated weekly",
-      "daily": "Updated daily",
-      "annual": "Updated once a year",
-      "quarterly": "Updated every three months",
-      "onPublish": "Updated when the source publishes"
-    }
+    "shareNoData": "Power cut information for {district}"
   }
 }
