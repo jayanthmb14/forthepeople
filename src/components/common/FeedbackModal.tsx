@@ -5,15 +5,26 @@
  */
 
 "use client";
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FeedbackModal — bottom-sheet feedback form (POST /api/feedback)
+//
+//  Two triggers: `floating` (the "Report Issue" pill on district pages,
+//  via FeedbackFloatingButton) or an inline text button with `label`.
+//  Design v3 (2026-09-27): tokens only, no shadows, kit Chips for the
+//  type picker (no emoji), 44 px targets, role="dialog". The submit logic
+//  and request body are unchanged.
+// ═══════════════════════════════════════════════════════════════════════
 import { useState } from "react";
-import { MessageSquare, X } from "lucide-react";
+import { CheckCircle2, MessageSquare, X } from "lucide-react";
+import { Chips } from "@/components/district/ui";
 
 const TYPES = [
-  { value: "bug", label: "🐛 Bug" },
-  { value: "wrong_data", label: "📊 Wrong Data" },
-  { value: "suggestion", label: "💡 Suggestion" },
-  { value: "praise", label: "🙏 Praise" },
-  { value: "other", label: "💬 Other" },
+  { value: "bug", label: "Bug" },
+  { value: "wrong_data", label: "Wrong Data" },
+  { value: "suggestion", label: "Suggestion" },
+  { value: "praise", label: "Praise" },
+  { value: "other", label: "Other" },
 ];
 
 interface Props {
@@ -76,33 +87,34 @@ export default function FeedbackModal({
     setSubmitting(false);
   }
 
+  // ── Trigger: floating pill (district pages) or an inline text button ──
   const triggerBtn = floating ? (
     <button
+      type="button"
       onClick={() => setOpen(true)}
       title="Report issue or send feedback"
       style={{
         position: "fixed", bottom: 24, right: 24, zIndex: 90,
-        background: "#2563EB", color: "#fff",
-        border: "none", borderRadius: 28,
-        padding: "10px 18px",
-        display: "flex", alignItems: "center", gap: 7,
-        fontSize: 13, fontWeight: 600, cursor: "pointer",
-        boxShadow: "0 4px 18px rgba(37,99,235,0.35)",
-        transition: "opacity 0.15s",
+        background: "var(--ftp-brand)", color: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-brand-deep)", borderRadius: "var(--ftp-radius-pill)",
+        minHeight: 44, padding: "0 16px",
+        display: "flex", alignItems: "center", gap: 6,
+        fontSize: 13, fontWeight: 500, cursor: "pointer",
       }}
     >
-      <MessageSquare size={14} />
+      <MessageSquare size={14} aria-hidden />
       Report Issue
     </button>
   ) : (
     <button
+      type="button"
       onClick={() => setOpen(true)}
       style={{
         background: "none", border: "none",
         padding: 0, cursor: "pointer",
-        color: "#9B9B9B", fontSize: 11,
-        fontFamily: "inherit",
-        textDecoration: "none",
+        color: "var(--ftp-brand)", fontSize: "inherit",
+        fontFamily: "inherit", fontWeight: 500,
+        textDecoration: "underline", textUnderlineOffset: 2,
       }}
     >
       {label}
@@ -118,148 +130,132 @@ export default function FeedbackModal({
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
           style={{
             position: "fixed", inset: 0, zIndex: 1000,
-            background: "rgba(0,0,0,0.45)",
+            // Scrim behind the sheet (a neutral dim, not a brand colour).
+            background: "rgba(0, 0, 0, 0.45)",
             display: "flex", alignItems: "flex-end", justifyContent: "center",
           }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-modal-title"
             style={{
-              background: "#fff",
-              borderRadius: "18px 18px 0 0",
+              background: "var(--ftp-surface)",
+              color: "var(--ftp-text)",
+              border: "1px solid var(--ftp-border)",
+              borderBottom: "none",
+              borderRadius: "var(--ftp-radius-card) var(--ftp-radius-card) 0 0",
               width: "100%", maxWidth: 520,
-              padding: "24px 24px 36px",
-              boxShadow: "0 -8px 40px rgba(0,0,0,0.15)",
+              padding: "16px 20px 32px",
               maxHeight: "90vh",
               overflowY: "auto",
+              textAlign: "left",
             }}
           >
-            {/* Drag handle */}
-            <div style={{ width: 36, height: 4, background: "#E8E8E4", borderRadius: 2, margin: "0 auto 20px" }} />
+            {/* Drag handle (decorative) */}
+            <div aria-hidden style={{ width: 36, height: 4, background: "var(--ftp-border-strong)", borderRadius: "var(--ftp-radius-pill)", margin: "0 auto 16px" }} />
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>Send Feedback</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 id="feedback-modal-title" className="ftp-title" style={{ fontSize: 17 }}>Send Feedback</h2>
               <button
+                type="button"
                 onClick={() => setOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#9B9B9B", padding: 4 }}
+                aria-label="Close feedback form"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ftp-text-2)", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", marginRight: -12 }}
               >
-                <X size={18} />
+                <X size={18} aria-hidden />
               </button>
             </div>
 
             {success ? (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <div style={{ fontSize: 44, marginBottom: 14 }}>🙏</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#16A34A", marginBottom: 6 }}>Thank you!</div>
-                <div style={{ fontSize: 13, color: "#6B6B6B" }}>Your feedback has been received and will be reviewed.</div>
+              <div role="status" style={{ textAlign: "center", padding: "32px 0" }}>
+                <CheckCircle2 size={36} aria-hidden style={{ color: "var(--ftp-live)", margin: "0 auto 12px", display: "block" }} />
+                <p className="ftp-title" style={{ color: "var(--ftp-live-text)", marginBottom: 6 }}>Thank you!</p>
+                <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>Your feedback has been received and will be reviewed.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {/* Type pills */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {TYPES.map((t) => (
-                    <button
-                      key={t.value} type="button"
-                      onClick={() => setType(t.value)}
-                      style={{
-                        padding: "5px 13px", borderRadius: 20, fontSize: 12, fontWeight: 500,
-                        border: `1.5px solid ${type === t.value ? "#2563EB" : "#E8E8E4"}`,
-                        background: type === t.value ? "#EFF6FF" : "#FAFAF8",
-                        color: type === t.value ? "#2563EB" : "#6B6B6B",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
+                {/* Feedback type */}
+                <Chips
+                  label="Feedback type"
+                  items={TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                  value={type}
+                  onChange={setType}
+                />
 
                 <input
                   required maxLength={200}
                   placeholder="Subject *"
+                  aria-label="Subject (required)"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  style={{
-                    padding: "9px 12px", border: "1px solid #E8E8E4",
-                    borderRadius: 8, fontSize: 13, outline: "none",
-                    fontFamily: "inherit",
-                  }}
+                  style={FIELD}
                 />
 
                 <textarea
                   required maxLength={2000}
                   placeholder="Describe the issue or suggestion… (max 2000 chars)"
+                  aria-label="Message (required)"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
-                  style={{
-                    padding: "9px 12px", border: "1px solid #E8E8E4",
-                    borderRadius: 8, fontSize: 13, outline: "none",
-                    resize: "vertical", fontFamily: "inherit",
-                  }}
+                  style={{ ...FIELD, resize: "vertical" }}
                 />
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 600, display: "block", marginBottom: 3 }}>
-                        Your Name (optional)
-                      </label>
+                  {/* Two columns on wider sheets, stacked on phones */}
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 180px" }}>
+                      <label htmlFor="fm-name" style={FIELD_LABEL}>Your Name (optional)</label>
                       <input
+                        id="fm-name"
                         maxLength={100} placeholder="So we know who to thank"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        style={{
-                          width: "100%", padding: "9px 12px", border: "1px solid #E8E8E4",
-                          borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit",
-                          boxSizing: "border-box",
-                        }}
+                        style={{ ...FIELD, width: "100%" }}
                       />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 600, display: "block", marginBottom: 3 }}>
-                        Your Email (optional)
-                      </label>
+                    <div style={{ flex: "1 1 180px" }}>
+                      <label htmlFor="fm-email" style={FIELD_LABEL}>Your Email (optional)</label>
                       <input
+                        id="fm-email"
                         type="email" maxLength={200} placeholder="Add your email to receive a reply"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        style={{
-                          width: "100%", padding: "9px 12px", border: "1px solid #E8E8E4",
-                          borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit",
-                          boxSizing: "border-box",
-                        }}
+                        style={{ ...FIELD, width: "100%" }}
                       />
                     </div>
                   </div>
                   {name && email ? (
-                    <div style={{ fontSize: 11, color: "#16A34A", fontWeight: 500 }}>
+                    <p style={{ ...HINT, color: "var(--ftp-live-text)", fontWeight: 500 }}>
                       We&apos;ll get back to you!
-                    </div>
+                    </p>
                   ) : !email ? (
-                    <div style={{ fontSize: 11, color: "#9B9B9B" }}>
+                    <p style={HINT}>
                       Without an email, we can&apos;t reply — but we still read every message.
-                    </div>
+                    </p>
                   ) : null}
                 </div>
 
                 {districtSlug && (
-                  <div style={{ fontSize: 11, color: "#9B9B9B", background: "#FAFAF8", padding: "5px 10px", borderRadius: 6 }}>
+                  <p style={{ ...HINT, background: "var(--ftp-surface-2)", padding: "6px 10px", borderRadius: "var(--ftp-radius-tile)" }}>
                     Context: {districtSlug}{module ? ` › ${module}` : ""}
-                  </div>
+                  </p>
                 )}
 
                 {error && (
-                  <div style={{ fontSize: 12, color: "#DC2626" }}>{error}</div>
+                  <p role="alert" style={{ ...HINT, fontSize: 13, color: "var(--ftp-danger)" }}>{error}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={submitting}
                   style={{
-                    padding: "11px 0",
-                    background: submitting ? "#93C5FD" : "#2563EB",
-                    color: "#fff", border: "none", borderRadius: 8,
-                    fontSize: 14, fontWeight: 600,
+                    minHeight: 44,
+                    background: submitting ? "var(--ftp-border-strong)" : "var(--ftp-brand)",
+                    color: submitting ? "var(--ftp-text-2)" : "var(--ftp-surface)",
+                    border: "none", borderRadius: "var(--ftp-radius-tile)",
+                    fontSize: 15, fontWeight: 500,
                     cursor: submitting ? "default" : "pointer",
                   }}
                 >
@@ -273,3 +269,29 @@ export default function FeedbackModal({
     </>
   );
 }
+
+// ── Shared field styles (Design v3 tokens only) ──────────────────────
+const FIELD: React.CSSProperties = {
+  minHeight: 44,
+  padding: "10px 12px",
+  border: "1px solid var(--ftp-border)",
+  borderRadius: "var(--ftp-radius-tile)",
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  fontSize: 15,
+  lineHeight: "22px",
+  outline: "none",
+  fontFamily: "inherit",
+  boxSizing: "border-box",
+};
+
+const FIELD_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  lineHeight: "16px",
+  fontWeight: 500,
+  color: "var(--ftp-text-2)",
+  display: "block",
+  marginBottom: 4,
+};
+
+const HINT: React.CSSProperties = { margin: 0, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" };

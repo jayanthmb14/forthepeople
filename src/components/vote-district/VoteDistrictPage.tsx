@@ -21,15 +21,19 @@
  *   - State select (filters by state)
  *   - Sort select (votes desc · alphabetical)
  *   - Paginated list, 20 per page
- *   - Preselected district (from ?d=<slug>) gets a highlighted ring
+ *   - Preselected district (from ?d=<slug>) gets a brand-tint row
+ *
+ * Design v3 (2026-09-27): PageHeader from the kit, token-only styles,
+ * 44 px targets, Lucide icons, mono vote counts. Vote logic unchanged.
  */
 
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronUp, Lock, Search, Vote } from "lucide-react";
 import { INDIA_STATES } from "@/lib/constants/districts";
+import { getPlatformFacts } from "@/lib/platform-facts";
+import { EmptyState, PageHeader } from "@/components/district/ui";
 
 type LockedDistrict = {
   slug: string;
@@ -213,247 +217,256 @@ export default function VoteDistrictPage({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
+
+  // How many districts are still waiting — from the registry, never typed.
+  const { comingDistricts } = getPlatformFacts();
+
   return (
-    <main className="ftp-vote-page">
+    <main className="ftp-vote-page" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+      {/* Page-scoped styles. Colours are --ftp-* tokens only (Design v3). */}
       <style>{`
-        .ftp-vote-page {
-          max-width: 880px;
-          margin: 0 auto;
-          padding: 24px 16px 56px;
-        }
-        .ftp-back-link {
-          display: inline-block;
-          font-size: 13px;
-          color: #6B7280;
-          text-decoration: none;
-          margin-bottom: 12px;
-        }
-        .ftp-back-link:hover { color: #1A1A1A; }
-        .ftp-vote-h1 {
-          font-size: 28px;
-          font-weight: 600;
-          letter-spacing: -0.015em;
-          margin: 0 0 8px;
-          color: #1A1A1A;
-        }
-        .ftp-vote-sub {
-          font-size: 14px;
-          color: #4B5563;
-          margin: 0 0 20px;
-        }
+        .ftp-vote-inner { max-width: var(--ftp-reading-max); padding-top: 24px; padding-bottom: 56px; }
         .ftp-vote-toolbar {
           display: grid;
           grid-template-columns: 1.5fr 1fr 1fr;
-          gap: 10px;
+          gap: 12px;
           margin-bottom: 16px;
         }
         @media (max-width: 640px) {
           .ftp-vote-toolbar { grid-template-columns: 1fr; }
         }
+        .ftp-vote-field {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .ftp-vote-field svg {
+          position: absolute;
+          left: 12px;
+          color: var(--ftp-text-2);
+          pointer-events: none;
+        }
         .ftp-vote-input,
         .ftp-vote-select {
-          padding: 9px 12px;
-          font-size: 14px;
-          border: 1px solid #E5E7EB;
-          border-radius: 8px;
-          background: #FFFFFF;
-          color: #1A1A1A;
+          width: 100%;
+          min-height: 44px;
+          padding: 10px 12px;
+          font-size: 13px;
+          line-height: 20px;
+          border: 1px solid var(--ftp-border);
+          border-radius: var(--ftp-radius-tile);
+          background: var(--ftp-surface);
+          color: var(--ftp-text);
           outline: none;
+          box-sizing: border-box;
         }
+        .ftp-vote-input { padding-left: 34px; }
         .ftp-vote-input:focus,
-        .ftp-vote-select:focus { border-color: #2563EB; }
+        .ftp-vote-select:focus { border-color: var(--ftp-brand); }
         .ftp-vote-list {
-          display: flex; flex-direction: column;
-          background: #FFFFFF;
-          border: 1px solid #E8E8E4;
-          border-radius: 12px;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          background: var(--ftp-surface);
+          border: 1px solid var(--ftp-border);
+          border-radius: var(--ftp-radius-card);
           overflow: hidden;
         }
         .ftp-vote-row {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          border-bottom: 1px solid #F0F0EC;
-          background: #FFFFFF;
-          transition: background 150ms ease;
+          gap: 4px 12px;
+          padding: 10px 16px;
+          min-height: 56px;
+          border-bottom: 1px solid var(--ftp-border);
         }
         .ftp-vote-row:last-child { border-bottom: none; }
-        .ftp-vote-row:hover { background: #FAFAF8; }
-        .ftp-vote-row-pre {
-          background: #EFF6FF;
-          box-shadow: inset 0 0 0 2px #BFDBFE;
-        }
-        .ftp-vote-lock { color: #9B9B9B; flex-shrink: 0; }
+        .ftp-vote-row-pre { background: var(--ftp-brand-tint); }
         .ftp-vote-row-info {
-          flex: 1; display: flex; align-items: center; gap: 10px;
+          flex: 1 1 180px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
           min-width: 0;
         }
-        .ftp-vote-name { font-size: 14px; font-weight: 500; color: #1A1A1A; }
-        .ftp-vote-state { font-size: 12px; color: #6B7280; }
+        .ftp-vote-name { font-size: 15px; line-height: 22px; font-weight: 500; color: var(--ftp-text); }
+        .ftp-vote-state { font-size: 13px; line-height: 20px; font-weight: 400; color: var(--ftp-text-2); }
         .ftp-vote-btn {
-          background: #FFFFFF;
-          border: 1px solid #2563EB;
-          color: #2563EB;
-          padding: 6px 14px;
-          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 44px;
+          padding: 0 14px;
+          background: var(--ftp-surface);
+          border: 1px solid var(--ftp-brand);
+          color: var(--ftp-brand);
+          border-radius: var(--ftp-radius-pill);
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
-          font-variant-numeric: tabular-nums;
           flex-shrink: 0;
-          min-height: 36px;
-          transition: background 150ms ease, color 150ms ease;
+          transition: background-color 150ms ease;
         }
-        .ftp-vote-btn:hover {
-          background: #2563EB;
-          color: #FFFFFF;
-        }
-        .ftp-vote-btn:active {
-          transform: scale(0.97);
-        }
-        .ftp-vote-empty {
-          padding: 28px;
-          text-align: center;
-          color: #9B9B9B;
-          font-size: 13px;
+        .ftp-vote-btn:hover { background: var(--ftp-brand-tint); }
+        .ftp-vote-error {
+          flex-basis: 100%;
+          font-size: 11px;
+          line-height: 16px;
+          color: var(--ftp-danger);
+          text-align: right;
         }
         .ftp-vote-pagination {
-          display: flex; justify-content: space-between; align-items: center;
-          margin-top: 14px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          margin-top: 16px;
           font-size: 13px;
-          color: #6B7280;
+          color: var(--ftp-text-2);
         }
         .ftp-vote-page-btn {
-          padding: 6px 12px;
-          background: #FFFFFF;
-          border: 1px solid #E5E7EB;
-          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          min-height: 44px;
+          padding: 0 12px;
+          background: var(--ftp-surface);
+          border: 1px solid var(--ftp-border);
+          border-radius: var(--ftp-radius-tile);
           font-size: 13px;
-          color: #1A1A1A;
+          color: var(--ftp-text);
           cursor: pointer;
-          min-height: 36px;
         }
-        .ftp-vote-page-btn:disabled { color: #D1D5DB; cursor: not-allowed; }
-        .ftp-vote-error {
-          font-size: 11px; color: #DC2626; margin-left: 8px;
+        .ftp-vote-page-btn:disabled { color: var(--ftp-text-2); opacity: 0.5; cursor: not-allowed; }
+        @media (prefers-reduced-motion: reduce) {
+          .ftp-vote-btn { transition: none; }
         }
       `}</style>
 
-      <Link href={`/${locale}`} className="ftp-back-link">
-        ← Back to home
-      </Link>
-      <h1 className="ftp-vote-h1">Vote for the next district</h1>
-      <p className="ftp-vote-sub">
-        770 districts waiting. Your vote prioritises which goes live next.
-      </p>
+      <div className="ftp-container">
+        <div className="ftp-vote-inner">
+          <PageHeader
+            icon={Vote}
+            title="Vote for the next district"
+            description={`${comingDistricts.toLocaleString("en-IN")} districts waiting. Your vote prioritises which goes live next.`}
+            backHref={`/${locale}`}
+            backLabel="Back to home"
+          />
 
-      <div className="ftp-vote-toolbar">
-        <input
-          type="search"
-          className="ftp-vote-input"
-          placeholder="🔎 Search any locked district…"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(0);
-          }}
-          aria-label="Search locked districts"
-        />
-        <select
-          className="ftp-vote-select"
-          value={stateFilter}
-          onChange={(e) => {
-            setStateFilter(e.target.value);
-            setPage(0);
-          }}
-          aria-label="Filter by state"
-        >
-          <option value="all">All states</option>
-          {stateOptions.map((s) => (
-            <option key={s.slug} value={s.slug}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="ftp-vote-select"
-          value={sortBy}
-          onChange={(e) => {
-            setSortBy(e.target.value as "votes" | "alpha");
-            setPage(0);
-          }}
-          aria-label="Sort by"
-        >
-          <option value="votes">Sort: most votes</option>
-          <option value="alpha">Sort: alphabetical</option>
-        </select>
-      </div>
-
-      <div className="ftp-vote-list">
-        {pageItems.length === 0 ? (
-          <div className="ftp-vote-empty">
-            No matching districts. Try a different filter.
+          <div className="ftp-vote-toolbar">
+            <label className="ftp-vote-field">
+              <Search size={16} aria-hidden="true" />
+              <input
+                type="search"
+                className="ftp-vote-input"
+                placeholder="Search any locked district…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+                aria-label="Search locked districts"
+              />
+            </label>
+            <select
+              className="ftp-vote-select"
+              value={stateFilter}
+              onChange={(e) => {
+                setStateFilter(e.target.value);
+                setPage(0);
+              }}
+              aria-label="Filter by state"
+            >
+              <option value="all">All states</option>
+              {stateOptions.map((s) => (
+                <option key={s.slug} value={s.slug}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="ftp-vote-select"
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value as "votes" | "alpha");
+                setPage(0);
+              }}
+              aria-label="Sort by"
+            >
+              <option value="votes">Sort: most votes</option>
+              <option value="alpha">Sort: alphabetical</option>
+            </select>
           </div>
-        ) : (
-          pageItems.map((d) => {
-            const isPre = preselected === d.slug;
-            const hadError = errorSlug === d.slug;
-            return (
-              <div
-                key={`${d.stateSlug}-${d.slug}`}
-                id={`vote-row-${d.slug}`}
-                className={`ftp-vote-row${isPre ? " ftp-vote-row-pre" : ""}`}
-              >
-                <div className="ftp-vote-row-info">
-                  <Lock size={14} className="ftp-vote-lock" aria-hidden="true" />
-                  <div style={{ minWidth: 0 }}>
-                    <div className="ftp-vote-name">
-                      {d.name}, <span className="ftp-vote-state">{d.stateName}</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="ftp-vote-btn"
-                  onClick={() => handleVote(d)}
-                  aria-label={`Vote for ${d.name}, ${d.stateName}`}
-                >
-                  ▲ {d.voteCount.toLocaleString("en-IN")} Vote
-                </button>
-                {hadError && (
-                  <span className="ftp-vote-error">
-                    {errorKind === "rate"
-                      ? "slow down — try again in a minute"
-                      : "could not save vote, try again"}
-                  </span>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
 
-      <div className="ftp-vote-pagination">
-        <button
-          type="button"
-          className="ftp-vote-page-btn"
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
-          disabled={safePage === 0}
-        >
-          ← Previous
-        </button>
-        <span>
-          Page {safePage + 1} of {totalPages} · {filteredSorted.length} districts
-        </span>
-        <button
-          type="button"
-          className="ftp-vote-page-btn"
-          onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-          disabled={safePage >= totalPages - 1}
-        >
-          Next →
-        </button>
+          {pageItems.length === 0 ? (
+            <EmptyState title="No matching districts." body="Try a different search or state filter." />
+          ) : (
+            <ul className="ftp-vote-list">
+              {pageItems.map((d) => {
+                const isPre = preselected === d.slug;
+                const hadError = errorSlug === d.slug;
+                return (
+                  <li
+                    key={`${d.stateSlug}-${d.slug}`}
+                    id={`vote-row-${d.slug}`}
+                    className={`ftp-vote-row${isPre ? " ftp-vote-row-pre" : ""}`}
+                    aria-current={isPre ? "true" : undefined}
+                  >
+                    <div className="ftp-vote-row-info">
+                      <Lock size={14} aria-hidden="true" style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
+                      <div style={{ minWidth: 0 }}>
+                        <span className="ftp-vote-name">{d.name}</span>
+                        <span className="ftp-vote-state">, {d.stateName}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="ftp-vote-btn"
+                      onClick={() => handleVote(d)}
+                      aria-label={`Vote for ${d.name}, ${d.stateName}. ${d.voteCount} votes so far.`}
+                    >
+                      <ChevronUp size={16} aria-hidden="true" />
+                      <span className="ftp-num">{d.voteCount.toLocaleString("en-IN")}</span>
+                      Vote
+                    </button>
+                    {hadError && (
+                      <span className="ftp-vote-error" role="alert">
+                        {errorKind === "rate"
+                          ? "slow down — try again in a minute"
+                          : "could not save vote, try again"}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <nav className="ftp-vote-pagination" aria-label="Pages">
+            <button
+              type="button"
+              className="ftp-vote-page-btn"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+            >
+              <ArrowLeft size={14} aria-hidden="true" /> Previous
+            </button>
+            <span style={{ textAlign: "center" }}>
+              Page <span className="ftp-num">{safePage + 1}</span> of <span className="ftp-num">{totalPages}</span> ·{" "}
+              <span className="ftp-num">{filteredSorted.length.toLocaleString("en-IN")}</span> districts
+            </span>
+            <button
+              type="button"
+              className="ftp-vote-page-btn"
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={safePage >= totalPages - 1}
+            >
+              Next <ArrowRight size={14} aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
       </div>
     </main>
   );

@@ -6,28 +6,32 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════════════════
+//  /contributors — "The People Behind the Platform"
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Design v3 (2026-09-27):
+//    • Header + StatStrip instead of the gradient hero; numbers are shown
+//      as they are (the old count-up animation is gone).
+//    • Filter buttons are kit Chips; lists are Cards; ranks are mono
+//      numbers (no medal emoji); NEW / LONGEST are Pills inside the card.
+//    • "Modules per district" and district counts come from
+//      getPlatformFacts() instead of a typed 29.
+//  All queries, filters and pagination behave exactly as before.
+//
 import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Instagram, Linkedin, Github, Twitter, ExternalLink, Lock } from "lucide-react";
-import { BADGE_COLORS } from "@/lib/badge-level";
-import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+import { ArrowLeft, ArrowRight, ExternalLink, Github, Instagram, Linkedin, Lock, Twitter } from "lucide-react";
 import { getContributorLabel } from "@/lib/contributor-label";
 import { normalizeSocialLink } from "@/lib/social-link";
-import BadgeExplainer from "@/components/common/BadgeExplainer";
+import BadgeExplainer, { BADGE_TONE } from "@/components/common/BadgeExplainer";
 import ContributorGrowthChart from "@/components/common/ContributorGrowthChart";
 import { getTotalActiveDistrictCount } from "@/lib/constants/districts";
-import { useCountUp } from "@/lib/hooks/useCountUp";
+import { getPlatformFacts } from "@/lib/platform-facts";
+import { Card, Chips, EmptyState, LoadingShell, Pill, SectionHeader, StatStrip, StatTile } from "@/components/district/ui";
 
-// Session 14 v8.1 Phase G (Fix #12): count-up animation on the
-// "The People Behind the Platform" hero stats. Mirrors the homepage
-// StatsBar behavior — animates 0 → final on scroll-into-view.
-function HeroStatNum({ target }: { target: number }) {
-  const { value, ref } = useCountUp<HTMLSpanElement>(target);
-  return <span ref={ref}>{value.toLocaleString("en-IN")}</span>;
-}
-
-const MODULES_PER_DISTRICT = 29;
+const { modulesPerDistrict: MODULES_PER_DISTRICT, totalIndiaDistricts: TOTAL_INDIA_DISTRICTS } = getPlatformFacts();
 
 interface Contributor {
   id: string;
@@ -72,75 +76,113 @@ const FILTERS = [
   { key: "one-time", label: "One-Time" },
 ] as const;
 
-function ContributorCard({ c, rank, showAmount }: { c: Contributor; rank?: number; showAmount?: boolean }) {
-  const tierConf = TIER_CONFIG[c.tier];
-  const badgeColors = c.badgeLevel ? BADGE_COLORS[c.badgeLevel] : null;
+/** 24 px circle with a mono rank number (replaces the medal emoji). */
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <span
+      className="ftp-num"
+      aria-label={`Rank ${rank}`}
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: "50%",
+        background: rank <= 3 ? "var(--ftp-brand-tint)" : "var(--ftp-surface-2)",
+        color: rank <= 3 ? "var(--ftp-brand-deep)" : "var(--ftp-text-2)",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 11,
+        flexShrink: 0,
+      }}
+    >
+      {rank}
+    </span>
+  );
+}
+
+function ContributorCard({
+  c,
+  rank,
+  showAmount,
+  extra,
+}: {
+  c: Contributor;
+  rank?: number;
+  showAmount?: boolean;
+  /** Extra Pills shown after the name (e.g. NEW, LONGEST). */
+  extra?: React.ReactNode;
+}) {
   const SocialIcon = c.socialPlatform ? SOCIAL_ICONS[c.socialPlatform] : null;
+  const safeLink = normalizeSocialLink(c.socialLink);
   const initials = c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: `1.5px solid ${badgeColors?.border ?? "#E8E8E4"}`,
-        borderRadius: 12,
-        padding: "14px 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-      }}
-    >
-      {rank !== undefined && (
-        <div style={{
-          width: 24, height: 24, borderRadius: "50%",
-          background: rank === 1 ? "#FEF3C7" : rank === 2 ? "#F1F5F9" : rank === 3 ? "#FED7AA" : "#F5F5F0",
-          color: rank === 1 ? "#92400E" : rank === 2 ? "#475569" : rank === 3 ? "#9A3412" : "#6B6B6B",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, fontWeight: 700, flexShrink: 0,
-        }}>
-          {rank}
-        </div>
-      )}
-      <div
+    <Card as="li" padding={14} style={{ display: "flex", alignItems: "center", gap: 10, listStyle: "none" }}>
+      {rank !== undefined && <RankBadge rank={rank} />}
+      <span
+        aria-hidden
         style={{
-          width: 36, height: 36, borderRadius: "50%",
-          background: badgeColors?.bg ?? "#F5F5F0",
-          color: badgeColors?.text ?? "#6B6B6B",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 13, fontWeight: 700, flexShrink: 0,
-          border: badgeColors ? `2px solid ${badgeColors.border}` : "1px solid #E8E8E4",
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          background: "var(--ftp-surface-2)",
+          color: "var(--ftp-text-2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 13,
+          fontWeight: 500,
+          flexShrink: 0,
         }}
       >
         {initials}
-      </div>
+      </span>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{c.name}</span>
-          {SocialIcon && normalizeSocialLink(c.socialLink) && (
-            <a href={normalizeSocialLink(c.socialLink)!} target="_blank" rel="noopener noreferrer" style={{ color: "#6B6B6B", lineHeight: 0 }}>
-              <SocialIcon size={14} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span className="ftp-title" style={{ fontSize: 14, lineHeight: "20px", overflowWrap: "anywhere" }}>{c.name}</span>
+          {SocialIcon && safeLink && (
+            <a
+              href={safeLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${c.name}'s profile`}
+              style={{ color: "var(--ftp-text-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28 }}
+            >
+              <SocialIcon size={14} aria-hidden />
             </a>
           )}
+          {extra}
         </div>
-        <div style={{ fontSize: 11, color: "#6B6B6B", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginTop: 1 }}>
-          <span>{tierConf?.emoji ?? "💝"}</span>
+        <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
           <span>{getContributorLabel(c.tier, c.districtName, c.stateName)}</span>
           {showAmount && c.amount && (
-            <span style={{ fontWeight: 700, color: "#2563EB", fontFamily: "var(--font-mono, monospace)" }}>
-              ₹{c.amount.toLocaleString("en-IN")}
+            <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>₹{c.amount.toLocaleString("en-IN")}</span>
+          )}
+          {c.monthsActive > 0 && (
+            <span>
+              · <span className="ftp-num">{c.monthsActive}</span>mo
             </span>
           )}
-          {c.monthsActive > 0 && <span style={{ color: "#9B9B9B" }}>· {c.monthsActive}mo</span>}
           {c.badgeLevel && (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: badgeColors?.bg, color: badgeColors?.text, textTransform: "uppercase" }}>
+            <Pill tone={BADGE_TONE[c.badgeLevel] ?? "neutral"} style={{ height: 20, textTransform: "capitalize" }}>
               {c.badgeLevel}
-            </span>
+            </Pill>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
+
+/** Grid of contributor cards (one column on phones). */
+const LIST_GRID: React.CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
+  gap: 10,
+};
 
 export default function GlobalContributorsClient({ locale }: { locale: string }) {
   const initialFilter = typeof window !== "undefined"
@@ -231,354 +273,260 @@ export default function GlobalContributorsClient({ locale }: { locale: string })
   const showLeaderboard = filter === "all" || (filter !== "one-time" && filteredLeaders.length > 0);
   const showSubscribers = filter !== "one-time" && filteredSubscribers.length > 0;
   const showOneTime = filter === "all" || filter === "one-time";
-  const MEDAL = ["🥇", "🥈", "🥉"];
+
+  const TEXT_LINK: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 44,
+    fontSize: 13,
+    fontWeight: 500,
+    textDecoration: "none",
+  };
+  const PRIMARY_LINK: React.CSSProperties = {
+    ...TEXT_LINK,
+    padding: "0 20px",
+    background: "var(--ftp-brand)",
+    color: "var(--ftp-surface)",
+    borderRadius: "var(--ftp-radius-tile)",
+  };
 
   return (
-    <main style={{ background: "#FAFAF8", minHeight: "calc(100vh - 56px)", paddingBottom: 80 }}>
-      <style>{`
-        @media (max-width: 600px) {
-          .ftp-hero-stats { gap: 20px !important; }
-          .ftp-hero-stats > div { flex: 1 1 45%; }
-        }
-      `}</style>
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "40px 24px" }}>
-        {/* Hero */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, #FFF7ED 0%, #EFF6FF 50%, #F0FDF4 100%)",
-            borderRadius: 16,
-            padding: "32px 24px",
-            textAlign: "center",
-            marginBottom: 24,
-          }}
-        >
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#1A1A1A", marginBottom: 8, letterSpacing: "-0.5px" }}>
-            The People Behind the Platform
-          </h1>
-          <p style={{ fontSize: 14, color: "#6B6B6B", maxWidth: 500, margin: "0 auto 20px", lineHeight: 1.6 }}>
-            Every name here keeps government data free for 780+ districts.
-            No corporate funding. No ads. Just citizens backing citizens.
-          </p>
-          <div className="ftp-hero-stats" style={{ display: "flex", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#2563EB", fontFamily: "var(--font-mono, monospace)" }}>
-                <HeroStatNum target={totalContributors} />
-              </div>
-              <div style={{ fontSize: 11, color: "#9B9B9B" }}>Total Supporters</div>
+    <main style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 80 }}>
+      <div className="ftp-container" style={{ paddingTop: 32 }}>
+        <div style={{ maxWidth: 860 }}>
+          {/* ── Header ─────────────────────────────────────────────── */}
+          <header style={{ borderBottom: "1px solid var(--ftp-border)", paddingBottom: 24, marginBottom: 24 }}>
+            <h1 className="ftp-h1">The People Behind the Platform</h1>
+            <p style={{ fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", maxWidth: 560, margin: "12px 0 20px" }}>
+              Every name here keeps government data free for {TOTAL_INDIA_DISTRICTS}+ districts.
+              No corporate funding. No ads. Just citizens backing citizens.
+            </p>
+            <StatStrip cols={3}>
+              <StatTile label="Total supporters" value={totalContributors.toLocaleString("en-IN")} />
+              <StatTile label="Active monthly" value={activeSubscribers.toLocaleString("en-IN")} />
+              <StatTile label="Districts sponsored" value={districtsSponsored.toLocaleString("en-IN")} />
+            </StatStrip>
+            <div style={{ marginTop: 16 }}>
+              <Link href={`/${locale}/support`} style={PRIMARY_LINK}>
+                Join the Movement — from ₹99/mo <ArrowRight size={14} aria-hidden />
+              </Link>
             </div>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#16A34A", fontFamily: "var(--font-mono, monospace)" }}>
-                <HeroStatNum target={activeSubscribers} />
-              </div>
-              <div style={{ fontSize: 11, color: "#9B9B9B" }}>Active Monthly</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#D97706", fontFamily: "var(--font-mono, monospace)" }}>
-                <HeroStatNum target={districtsSponsored} />
-              </div>
-              <div style={{ fontSize: 11, color: "#9B9B9B" }}>Districts Sponsored</div>
-            </div>
+          </header>
+
+          {/* ── Why it matters ─────────────────────────────────────── */}
+          <Card padding={20} style={{ marginBottom: 24 }}>
+            <p className="ftp-label" style={{ color: "var(--ftp-brand)", marginBottom: 8 }}>Why it matters</p>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+              ForThePeople.in tracks{" "}
+              <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>
+                <span className="ftp-num">{(activeDistrictCount * MODULES_PER_DISTRICT).toLocaleString("en-IN")}</span>+ data points
+              </span>{" "}
+              across{" "}
+              <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>
+                <span className="ftp-num">{activeDistrictCount}</span> active district{activeDistrictCount === 1 ? "" : "s"}
+              </span>
+              , refreshed every 5–30 minutes from official government portals. Each ₹99/month
+              contribution keeps one district&apos;s{" "}
+              <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>
+                <span className="ftp-num">{MODULES_PER_DISTRICT}</span> dashboards
+              </span>{" "}
+              free — covering crop prices, dam levels, school data, police stats, weather,
+              and {MODULES_PER_DISTRICT - 5} more modules — for every citizen in that district.{" "}
+              <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>Zero ads. Zero paywalls. 100% citizen-funded.</span>
+            </p>
+          </Card>
+
+          <BadgeExplainer />
+
+          {/* ── Filters ────────────────────────────────────────────── */}
+          <div style={{ marginBottom: 8 }}>
+            <Chips
+              label="Filter contributors"
+              items={FILTERS.map((f) => ({ value: f.key, label: f.label }))}
+              value={filter}
+              onChange={setFilter}
+            />
           </div>
-          <Link
-            href={`/${locale}/support`}
-            style={{
-              display: "inline-block",
-              marginTop: 20,
-              padding: "10px 24px",
-              background: "#2563EB",
-              color: "#fff",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Join the Movement — from ₹99/mo →
-          </Link>
-        </div>
 
-        {/* WHY IT MATTERS */}
-        <div
-          style={{
-            background: "#FFFFFF",
-            border: "1px solid #E8E8E4",
-            borderRadius: 12,
-            padding: "16px 20px",
-            marginBottom: 24,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#2563EB", letterSpacing: "0.04em" }}>💡 WHY IT MATTERS</span>
-          </div>
-          <p style={{ fontSize: 13, color: "#4B5563", lineHeight: 1.6, margin: 0 }}>
-            ForThePeople.in tracks{" "}
-            <strong>
-              {(activeDistrictCount * MODULES_PER_DISTRICT).toLocaleString("en-IN")}+ data points
-            </strong>{" "}
-            across{" "}
-            <strong>
-              {activeDistrictCount} active district{activeDistrictCount === 1 ? "" : "s"}
-            </strong>
-            , refreshed every 5–30 minutes from official government portals. Each ₹99/month
-            contribution keeps one district&apos;s <strong>{MODULES_PER_DISTRICT} dashboards</strong>{" "}
-            free — covering crop prices, dam levels, school data, police stats, weather,
-            and {MODULES_PER_DISTRICT - 5} more modules — for every citizen in that district.{" "}
-            <strong>Zero ads. Zero paywalls. 100% citizen-funded.</strong>
-          </p>
-        </div>
+          {/* ── Leaderboard ────────────────────────────────────────── */}
+          {showLeaderboard && (
+            <section>
+              <SectionHeader title="Top contributors by tenure" />
+              {loadingLb ? (
+                <LoadingShell rows={3} />
+              ) : filteredLeaders.length === 0 ? (
+                <EmptyState title="No active subscribers yet." />
+              ) : (
+                <ul style={{ ...LIST_GRID, gridTemplateColumns: "1fr" }}>
+                  {filteredLeaders.map((c, i) => {
+                    const isLongest = c.id === longestId;
+                    const isNew = isRecentlyJoined(c.createdAt);
+                    return (
+                      <ContributorCard
+                        key={c.id}
+                        c={c}
+                        rank={i + 1}
+                        extra={
+                          <>
+                            {isNew && <Pill tone="brand">NEW</Pill>}
+                            {isLongest && <Pill tone="warn">LONGEST</Pill>}
+                          </>
+                        }
+                      />
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
 
-        <BadgeExplainer />
-
-        {/* Filter buttons */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 24 }}>
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 20,
-                border: filter === f.key ? "1.5px solid #2563EB" : "1px solid #E8E8E4",
-                background: filter === f.key ? "#EFF6FF" : "#FFFFFF",
-                color: filter === f.key ? "#2563EB" : "#6B6B6B",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Leaderboard */}
-        {showLeaderboard && (
-          <>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", marginBottom: 12 }}>
-              🏆 Top Contributors by Tenure
-            </h2>
-            {loadingLb ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#9B9B9B" }}>Loading...</div>
-            ) : filteredLeaders.length === 0 ? (
-              <div style={{ padding: 32, textAlign: "center", color: "#9B9B9B" }}>No active subscribers yet.</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 32 }}>
-                {filteredLeaders.map((c, i) => {
-                  const topBorder = i === 0 ? "#FEF3C7" : i === 1 ? "#F1F5F9" : i === 2 ? "#FED7AA" : null;
-                  const isLongest = c.id === longestId;
-                  const isNew = isRecentlyJoined(c.createdAt);
-                  return (
-                    <div
-                      key={c.id}
+          {/* ── Most supported districts ───────────────────────────── */}
+          {filter === "all" && (rankings.length > 0 || awaitingLaunch.length > 0) && (
+            <section>
+              <SectionHeader title="Most supported districts" />
+              <Card padding={16}>
+                <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                  {rankings.map((r, i) => (
+                    <li
+                      key={r.districtSlug}
                       style={{
-                        position: "relative",
-                        borderLeft: topBorder ? `4px solid ${topBorder}` : undefined,
-                        borderRadius: 12,
-                        paddingLeft: topBorder ? 0 : undefined,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        padding: "6px 0",
+                        borderBottom: i < rankings.length - 1 ? "1px solid var(--ftp-border)" : undefined,
                       }}
                     >
-                      <ContributorCard c={c} rank={i + 1} />
-                      {(isNew || isLongest) && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: 6,
-                            right: 8,
-                            display: "flex",
-                            gap: 4,
-                            pointerEvents: "none",
-                          }}
-                        >
-                          {isNew && (
-                            <span
-                              style={{
-                                fontSize: 9,
-                                fontWeight: 700,
-                                padding: "2px 6px",
-                                borderRadius: 999,
-                                background: "#FEE2E2",
-                                color: "#B91C1C",
-                                letterSpacing: "0.04em",
-                              }}
-                            >
-                              🔥 NEW
-                            </span>
-                          )}
-                          {isLongest && (
-                            <span
-                              style={{
-                                fontSize: 9,
-                                fontWeight: 700,
-                                padding: "2px 6px",
-                                borderRadius: 999,
-                                background: "#FEF3C7",
-                                color: "#92400E",
-                                letterSpacing: "0.04em",
-                              }}
-                            >
-                              ⭐ LONGEST
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Most Supported Districts */}
-        {filter === "all" && (rankings.length > 0 || awaitingLaunch.length > 0) && (
-          <div style={{ marginBottom: 32 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", marginBottom: 12 }}>
-              🏆 Most Supported Districts
-            </h2>
-            <div style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "16px 20px" }}>
-              {rankings.map((r, i) => (
-                <div key={r.districtSlug} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < rankings.length - 1 ? "1px solid #F5F5F0" : undefined }}>
-                  <span style={{ fontSize: 16, width: 24, textAlign: "center", flexShrink: 0 }}>
-                    {i < 3 ? MEDAL[i] : `${i + 1}.`}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <Link
-                      href={`/${locale}/${r.stateSlug}/${r.districtSlug}/contributors`}
-                      style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A", textDecoration: "none" }}
-                    >
-                      {r.districtName}, {r.stateName}
-                    </Link>
-                  </div>
-                  <div style={{ fontSize: 12, color: "#6B6B6B", whiteSpace: "nowrap" }}>
-                    {r.count} contributor{r.count !== 1 ? "s" : ""}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#2563EB", fontFamily: "var(--font-mono, monospace)", whiteSpace: "nowrap" }}>
-                    ₹{r.monthlyTotal.toLocaleString("en-IN")}/mo
-                  </div>
-                </div>
-              ))}
-
-              {awaitingLaunch.length > 0 && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #E8E8E4" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#9B9B9B", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
-                    <Lock size={12} /> Awaiting Launch:
-                  </div>
-                  {awaitingLaunch.map((r) => (
-                    <div key={r.districtSlug} style={{ fontSize: 13, color: "#9B9B9B", padding: "4px 0 4px 28px" }}>
-                      🔒 {r.districtName}, {r.stateName} — {r.count} sponsor{r.count !== 1 ? "s" : ""} waiting
-                    </div>
+                      <RankBadge rank={i + 1} />
+                      <Link
+                        href={`/${locale}/${r.stateSlug}/${r.districtSlug}/contributors`}
+                        style={{ flex: "1 1 160px", minWidth: 0, minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 14, fontWeight: 500, color: "var(--ftp-text)", textDecoration: "none" }}
+                      >
+                        {r.districtName}, {r.stateName}
+                      </Link>
+                      <span style={{ fontSize: 13, color: "var(--ftp-text-2)", whiteSpace: "nowrap" }}>
+                        <span className="ftp-num">{r.count}</span> contributor{r.count !== 1 ? "s" : ""}
+                      </span>
+                      <span className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text)", whiteSpace: "nowrap" }}>
+                        ₹{r.monthlyTotal.toLocaleString("en-IN")}/mo
+                      </span>
+                    </li>
                   ))}
-                </div>
+                </ol>
+
+                {awaitingLaunch.length > 0 && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--ftp-border)" }}>
+                    <p className="ftp-label" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                      <Lock size={12} aria-hidden /> Awaiting launch
+                    </p>
+                    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                      {awaitingLaunch.map((r) => (
+                        <li key={r.districtSlug} className="ftp-body" style={{ color: "var(--ftp-text-2)", padding: "4px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                          <Lock size={12} aria-hidden style={{ flexShrink: 0 }} />
+                          <span>
+                            {r.districtName}, {r.stateName} — <span className="ftp-num">{r.count}</span> sponsor{r.count !== 1 ? "s" : ""} waiting
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Card>
+            </section>
+          )}
+
+          {/* ── Active subscribers ─────────────────────────────────── */}
+          {showSubscribers && (
+            <section>
+              <SectionHeader
+                title="Active subscribers"
+                action={
+                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                    <span className="ftp-num">
+                      {filter === "all" ? subscribersTotal.toLocaleString("en-IN") : filteredSubscribers.length.toLocaleString("en-IN")}
+                    </span>{" "}
+                    total
+                  </span>
+                }
+              />
+              <ul style={LIST_GRID}>
+                {filteredSubscribers.map((c) => <ContributorCard key={c.id} c={c} />)}
+              </ul>
+            </section>
+          )}
+
+          {/* ── One-time contributors ──────────────────────────────── */}
+          {showOneTime && (
+            <section>
+              <SectionHeader
+                title="One-time contributors"
+                action={
+                  <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>
+                    <span className="ftp-num">{oneTimeTotal.toLocaleString("en-IN")}</span> total
+                  </span>
+                }
+              />
+              {loadingAll ? (
+                <LoadingShell rows={3} />
+              ) : filteredOneTimers.length === 0 ? (
+                <EmptyState title="No contributions yet. Be the first!" />
+              ) : (
+                <ul style={LIST_GRID}>
+                  {filteredOneTimers.map((c) => <ContributorCard key={c.id} c={c} showAmount />)}
+                </ul>
               )}
+            </section>
+          )}
+
+          {/* ── Load more ──────────────────────────────────────────── */}
+          {canLoadMore && !loadingAll && (
+            <div style={{ textAlign: "center", margin: "24px 0 32px" }}>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                className="ftp-btn-secondary"
+                style={{
+                  ...TEXT_LINK,
+                  padding: "0 20px",
+                  background: "var(--ftp-surface)",
+                  border: "1px solid var(--ftp-border)",
+                  color: "var(--ftp-text)",
+                  borderRadius: "var(--ftp-radius-tile)",
+                  cursor: "pointer",
+                }}
+              >
+                Load more (<span className="ftp-num">{PAGE_SIZE}</span> more) <ArrowRight size={14} aria-hidden />
+              </button>
+              <p style={{ marginTop: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                Showing <span className="ftp-num">{(subscribers.length + oneTimers.length).toLocaleString("en-IN")}</span> of{" "}
+                <span className="ftp-num">{(subscribersTotal + oneTimeTotal).toLocaleString("en-IN")}</span>
+              </p>
             </div>
+          )}
+
+          <div style={{ marginTop: 24 }}>
+            {/* Growth trend (stat line or chart) */}
+            <ContributorGrowthChart />
           </div>
-        )}
 
-        {/* Active Subscribers */}
-        {showSubscribers && (
-          <>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", margin: 0 }}>
-                🙏 Active Subscribers
-              </h2>
-              <span style={{ fontSize: 12, color: "#9B9B9B" }}>
-                {filter === "all" ? subscribersTotal.toLocaleString("en-IN") : filteredSubscribers.length.toLocaleString("en-IN")} total
-              </span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, marginBottom: 32 }}>
-              {filteredSubscribers.map((c) => <ContributorCard key={c.id} c={c} />)}
-            </div>
-          </>
-        )}
+          {/* ── Closing call to action ─────────────────────────────── */}
+          <Card padding={24} style={{ textAlign: "center", marginTop: 8 }}>
+            <h2 className="ftp-h2">Every district needs a champion. Will you be one?</h2>
+            <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "8px 0 16px" }}>
+              ₹99/mo — that&apos;s all it takes to keep an entire district&apos;s data free for every citizen.
+            </p>
+            <Link href={`/${locale}/support`} style={PRIMARY_LINK}>
+              Become a Champion <ArrowRight size={14} aria-hidden />
+            </Link>
+          </Card>
 
-        {/* One-Time Contributors */}
-        {showOneTime && (
-          <>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", margin: 0 }}>
-                💝 One-Time Contributors
-              </h2>
-              <span style={{ fontSize: 12, color: "#9B9B9B" }}>
-                {oneTimeTotal.toLocaleString("en-IN")} total
-              </span>
-            </div>
-            {loadingAll ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#9B9B9B" }}>Loading...</div>
-            ) : filteredOneTimers.length === 0 ? (
-              <div style={{ padding: 32, textAlign: "center", color: "#9B9B9B" }}>No contributions yet. Be the first!</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, marginBottom: 16 }}>
-                {filteredOneTimers.map((c) => <ContributorCard key={c.id} c={c} showAmount />)}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Load more */}
-        {canLoadMore && !loadingAll && (
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              style={{
-                padding: "10px 24px",
-                background: "#FFFFFF",
-                border: "1.5px solid #BFDBFE",
-                color: "#2563EB",
-                borderRadius: 10,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Load more ({PAGE_SIZE} more) →
-            </button>
-            <div style={{ marginTop: 6, fontSize: 11, color: "#9B9B9B" }}>
-              Showing {(subscribers.length + oneTimers.length).toLocaleString("en-IN")} of {(subscribersTotal + oneTimeTotal).toLocaleString("en-IN")}
-            </div>
+          <div style={{ textAlign: "center", marginTop: 24 }}>
+            <Link href={`/${locale}`} style={{ ...TEXT_LINK, color: "var(--ftp-text-2)", fontWeight: 400 }}>
+              <ArrowLeft size={14} aria-hidden /> Back to ForThePeople.in
+            </Link>
           </div>
-        )}
-
-        {/* Growth trend (stat card or chart) */}
-        <ContributorGrowthChart />
-
-        {/* Bottom CTA */}
-        <div
-          style={{
-            background: "#EFF6FF",
-            border: "1px solid #BFDBFE",
-            borderRadius: 14,
-            padding: "28px 24px",
-            textAlign: "center",
-            marginTop: 8,
-          }}
-        >
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 }}>
-            Every district needs a champion. Will you be one?
-          </div>
-          <div style={{ fontSize: 13, color: "#6B6B6B", marginBottom: 16, lineHeight: 1.6 }}>
-            ₹99/mo — that&apos;s all it takes to keep an entire district&apos;s data free for every citizen.
-          </div>
-          <Link
-            href={`/${locale}/support`}
-            style={{
-              display: "inline-block",
-              padding: "10px 28px",
-              background: "#2563EB",
-              color: "#fff",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Become a Champion →
-          </Link>
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 32 }}>
-          <Link href={`/${locale}`} style={{ fontSize: 13, color: "#9B9B9B", textDecoration: "none" }}>
-            ← Back to ForThePeople.in
-          </Link>
         </div>
       </div>
     </main>

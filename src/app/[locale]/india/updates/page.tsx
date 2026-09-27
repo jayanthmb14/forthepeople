@@ -11,7 +11,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import IndiaUpdateLog from "@/components/india/IndiaUpdateLog";
 import { INDIA_DESIGN } from "@/lib/india/india-design";
 
@@ -76,6 +76,7 @@ export default async function IndiaUpdatesPage({
             textDecoration: "none",
             marginLeft: -8,
             padding: "6px 8px",
+            minHeight: 44,
             borderRadius: 6,
           }}
         >
@@ -85,21 +86,28 @@ export default async function IndiaUpdatesPage({
         <div
           style={{
             fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
+            lineHeight: "16px",
+            fontWeight: 500,
+            letterSpacing: "0.04em",
             textTransform: "uppercase",
             color: INDIA_DESIGN.textFaint,
             marginTop: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          🕒 Update Log
+          {/* Design v3: Lucide icon instead of the clock emoji */}
+          <Clock size={14} aria-hidden="true" />
+          Update Log
         </div>
         <h1
           style={{
             fontSize: 28,
-            fontWeight: 800,
+            lineHeight: "32px",
+            fontWeight: 600, // v3: 600 only on the page's single H1
             color: INDIA_DESIGN.textPrimary,
-            letterSpacing: "-0.5px",
+            letterSpacing: "-0.01em",
             margin: "4px 0 6px",
             fontFamily: INDIA_DESIGN.fontDisplay,
           }}

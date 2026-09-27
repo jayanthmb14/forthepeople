@@ -12,12 +12,20 @@
 // thin-bar can deep-link to it). The form lives EXCLUSIVELY here
 // — the homepage VoteFeaturesCTA is a compact thin bar + 3-line
 // list that scrolls visitors to /features#share-idea.
+//
+// Design v3 (2026-09-27): PageHeader + Chips + Card + Pill from the
+// kit, token colours only, Lucide icons only. The per-feature `icon`
+// field (an emoji stored in the DB) is no longer drawn. Voting logic,
+// the API calls and the localStorage "already voted" list are unchanged.
 // ═══════════════════════════════════════════════════════════
 "use client";
 
 import { useEffect, useState } from "react";
-import { ThumbsUp, CheckCircle, Clock, Zap } from "lucide-react";
+import { CheckCircle, Clock, Lightbulb, ThumbsUp, Zap } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import SuggestionForm from "@/components/features/SuggestionForm";
+import { Card, Chips, EmptyState, LoadingShell, PageHeader, Pill } from "@/components/district/ui";
+import type { Tone } from "@/components/district/ui";
 
 interface Feature {
   id: string;
@@ -30,58 +38,42 @@ interface Feature {
   priority: number;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Accessibility:  "#0891B2",
-  Community:      "#16A34A",
-  Data:           "#2563EB",
-  Transparency:   "#DC2626",
-  Expansion:      "#D97706",
-};
-
-const STATUS_CONFIG = {
-  proposed:    { label: "Proposed",    icon: Zap,         color: "#6B6B6B" },
-  "in-progress": { label: "In Progress", icon: Clock,       color: "#D97706" },
-  completed:   { label: "Completed",   icon: CheckCircle, color: "#16A34A" },
+/** Status → Pill tone + icon. Colour shows only as the pill's text/dot. */
+const STATUS_CONFIG: Record<Feature["status"], { label: string; icon: LucideIcon; tone: Tone }> = {
+  proposed: { label: "Proposed", icon: Zap, tone: "neutral" },
+  "in-progress": { label: "In Progress", icon: Clock, tone: "warn" },
+  completed: { label: "Completed", icon: CheckCircle, tone: "live" },
 };
 
 export default function FeaturesPage() {
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 16px 48px" }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🗳️</div>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 }}>
-          Help Shape ForThePeople.in
-        </h1>
-        <p style={{ fontSize: 15, color: "#6B6B6B", lineHeight: 1.6, maxWidth: 500, margin: "0 auto" }}>
-          Vote for the features you want most, or scroll down to share
-          your own idea. The highest-voted features get built first.
-        </p>
+    <main style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48 }}>
+        <div style={{ maxWidth: 800 }}>
+          <PageHeader
+            icon={Lightbulb}
+            accent="purple"
+            title="Help shape ForThePeople.in"
+            description="Vote for the features you want most, or scroll down to share your own idea. The highest-voted features get built first."
+          />
+
+          <VoteSection />
+
+          <section id="share-idea" style={{ marginTop: 48, scrollMarginTop: 80 }}>
+            <Card padding={20}>
+              <h2 className="ftp-h2" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Lightbulb size={20} aria-hidden style={{ color: "var(--ftp-features)" }} />
+                Share your idea
+              </h2>
+              <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "4px 0 16px" }}>
+                Have a feature in mind that&apos;s not listed? Suggest it below — we review every submission.
+              </p>
+              <SuggestionForm />
+            </Card>
+          </section>
+        </div>
       </div>
-
-      <VoteSection />
-
-      <section
-        id="share-idea"
-        style={{
-          marginTop: 48,
-          scrollMarginTop: 80,
-          padding: "20px 22px",
-          background: "#FFFFFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 14,
-        }}
-      >
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-          <span aria-hidden="true">💡</span>
-          Share your idea
-        </h2>
-        <p style={{ fontSize: 13, color: "#6B6B6B", margin: "0 0 16px" }}>
-          Have a feature in mind that&apos;s not listed? Suggest it below — we
-          review every submission.
-        </p>
-        <SuggestionForm />
-      </section>
-    </div>
+    </main>
   );
 }
 
@@ -126,98 +118,92 @@ function VoteSection() {
 
   const categories = ["All", ...Array.from(new Set(features.map((f) => f.category)))];
   const filtered = activeCategory === "All" ? features : features.filter((f) => f.category === activeCategory);
+  const totalVotes = features.reduce((s, f) => s + f.votes, 0);
 
   return (
     <>
       {!loading && (
-        <div style={{ textAlign: "center", fontSize: 13, color: "#9B9B9B", marginBottom: 16 }}>
-          {features.reduce((s, f) => s + f.votes, 0).toLocaleString("en-IN")} total votes across {features.length} ideas
-        </div>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 12 }}>
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{totalVotes.toLocaleString("en-IN")}</span> total votes across{" "}
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{features.length}</span> ideas
+        </p>
       )}
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20, justifyContent: "center" }}>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            style={{
-              padding: "6px 14px", borderRadius: 20,
-              border: `1px solid ${activeCategory === cat ? "#2563EB" : "#E8E8E4"}`,
-              background: activeCategory === cat ? "#EFF6FF" : "#FFFFFF",
-              color: activeCategory === cat ? "#2563EB" : "#6B6B6B",
-              fontSize: 13, fontWeight: activeCategory === cat ? 600 : 400,
-              cursor: "pointer", minHeight: 36,
-            }}
-          >
-            {cat !== "All" && (
-              <span style={{
-                display: "inline-block", width: 8, height: 8, borderRadius: "50%",
-                background: CATEGORY_COLORS[cat] ?? "#9B9B9B", marginRight: 5,
-              }} />
-            )}
-            {cat}
-          </button>
-        ))}
+      <div style={{ marginBottom: 20 }}>
+        <Chips
+          label="Filter ideas by category"
+          items={categories.map((cat) => ({
+            value: cat,
+            label: cat,
+            count: cat === "All" ? undefined : features.filter((f) => f.category === cat).length,
+          }))}
+          value={activeCategory}
+          onChange={setActiveCategory}
+        />
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "#9B9B9B", padding: "48px 0" }}>Loading features…</div>
+        <LoadingShell rows={4} />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No ideas listed yet." body="Be the first — share yours in the form below." />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((feature) => {
             const hasVoted = voted.has(feature.id);
             const isVoting = voting === feature.id;
             const statusConfig = STATUS_CONFIG[feature.status];
-            const StatusIcon = statusConfig.icon;
-            const catColor = CATEGORY_COLORS[feature.category] ?? "#9B9B9B";
+            const cannotVote = hasVoted || feature.status === "completed";
             return (
-              <div key={feature.id} style={{
-                background: "#FFFFFF",
-                border: `1px solid ${hasVoted ? "#BFDBFE" : "#E8E8E4"}`,
-                borderRadius: 14, padding: "16px 20px",
-                display: "flex", alignItems: "flex-start", gap: 16,
-              }}>
-                <div style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>{feature.icon}</div>
+              <Card
+                key={feature.id}
+                as="li"
+                padding={16}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 16,
+                  borderColor: hasVoted ? "var(--ftp-brand)" : "var(--ftp-border)",
+                }}
+              >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: "#1A1A1A" }}>{feature.title}</span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10,
-                      background: `${catColor}15`, color: catColor,
-                    }}>{feature.category}</span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, color: statusConfig.color }}>
-                      <StatusIcon size={11} />
-                      {statusConfig.label}
-                    </span>
+                  <h3 className="ftp-title">{feature.title}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", margin: "6px 0" }}>
+                    <Pill tone="neutral">{feature.category}</Pill>
+                    <Pill tone={statusConfig.tone} icon={statusConfig.icon}>{statusConfig.label}</Pill>
                   </div>
-                  <p style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.5, margin: 0 }}>{feature.description}</p>
+                  <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{feature.description}</p>
                 </div>
-                <div style={{ flexShrink: 0, textAlign: "center" }}>
-                  <button
-                    onClick={() => handleVote(feature.id)}
-                    disabled={hasVoted || feature.status === "completed" || isVoting}
-                    style={{
-                      display: "flex", flexDirection: "column", alignItems: "center",
-                      padding: "10px 14px", borderRadius: 10,
-                      border: `1.5px solid ${hasVoted ? "#2563EB" : "#E8E8E4"}`,
-                      background: hasVoted ? "#EFF6FF" : "#FAFAF8",
-                      color: hasVoted ? "#2563EB" : "#6B6B6B",
-                      cursor: hasVoted || feature.status === "completed" ? "default" : "pointer",
-                      minWidth: 56, minHeight: 56, opacity: isVoting ? 0.7 : 1,
-                    }}
-                  >
-                    <ThumbsUp size={16} fill={hasVoted ? "#2563EB" : "none"} />
-                    <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, fontWeight: 700, marginTop: 4 }}>
-                      {feature.votes}
-                    </span>
-                  </button>
-                </div>
-              </div>
+                <button
+                  type="button"
+                  onClick={() => handleVote(feature.id)}
+                  disabled={cannotVote || isVoting}
+                  aria-pressed={hasVoted}
+                  aria-label={`${hasVoted ? "You voted for" : "Vote for"} ${feature.title}. ${feature.votes} votes.`}
+                  style={{
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    width: 56,
+                    minHeight: 56,
+                    borderRadius: "var(--ftp-radius-tile)",
+                    border: `1px solid ${hasVoted ? "var(--ftp-brand)" : "var(--ftp-border)"}`,
+                    background: hasVoted ? "var(--ftp-brand-tint)" : "var(--ftp-surface)",
+                    color: hasVoted ? "var(--ftp-brand)" : "var(--ftp-text-2)",
+                    cursor: cannotVote ? "default" : "pointer",
+                    opacity: isVoting ? 0.7 : 1,
+                  }}
+                >
+                  <ThumbsUp size={16} aria-hidden fill={hasVoted ? "currentColor" : "none"} />
+                  <span className="ftp-num" style={{ fontSize: 13, lineHeight: "16px" }}>{feature.votes}</span>
+                </button>
+              </Card>
             );
           })}
-        </div>
+        </ul>
       )}
     </>
   );
 }
-

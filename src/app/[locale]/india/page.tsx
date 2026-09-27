@@ -31,7 +31,6 @@ import { InnovationSection } from "@/components/india/sections/Innovation";
 import { CultureSection } from "@/components/india/sections/Culture";
 import { SectionProgressBar } from "@/components/india/primitives/SectionProgressBar";
 import { IndiaBreadcrumb } from "@/components/india/primitives/IndiaBreadcrumb";
-import { PageEntryCurtain } from "@/components/india/primitives/PageEntryCurtain";
 import { ScrollColorShift } from "@/components/india/primitives/ScrollColorShift";
 import { LotusVineGarlandDivider } from "@/components/india/primitives/LotusVineGarlandDivider";
 import { SectionDivider } from "@/components/india/primitives/SectionDivider";
@@ -113,8 +112,8 @@ export default async function IndiaRoute({
         paddingBottom: "3rem",
       }}
     >
-      {/* First-visit-per-session entrance curtain (saffron + green panels). */}
-      <PageEntryCurtain />
+      {/* Design v3 (2026-09-27): the first-visit PageEntryCurtain animation
+          was removed (CONCEPT-v3 §7 — no entrance motion on citizen pages). */}
 
       {/* Invisible client component — listens to which [data-tint-id] section
           is closest to viewport center and swaps --ftp-page-tint accordingly. */}
@@ -125,7 +124,9 @@ export default async function IndiaRoute({
       <IndiaBreadcrumb locale={locale} dict={breadcrumbDict} />
       <SectionProgressBar />
 
-      <div style={{ width: "100%", padding: "1rem 1rem 0" }}>
+      {/* Side gutter matches .ftp-container (24 px, 16 px on phones). The
+          max-width stays with the India layout (wide Phase 4 bands). */}
+      <div className="ftp-container" style={{ maxWidth: "none", width: "100%", paddingTop: 16 }}>
         <LiveStrip />
         <div data-tint-id="hero">
           <IndiaHero locale={locale} dict={heroDict} />

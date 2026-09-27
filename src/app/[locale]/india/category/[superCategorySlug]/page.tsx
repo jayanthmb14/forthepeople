@@ -12,6 +12,7 @@
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ChevronRight, Home } from "lucide-react";
 import {
   getSuperCategoryBySlug,
   getModulesForSuperCategory,
@@ -46,12 +47,14 @@ export default async function IndiaSuperCategoryPage({ params }: PageProps) {
   return (
     <main
       style={{
-        background: "var(--color-background)",
+        background: "var(--ftp-bg)",
         minHeight: "100vh",
-        padding: "1.25rem 1rem 3rem",
+        padding: "1.25rem 0 3rem",
       }}
     >
-      <div style={{ width: "100%" }}>
+      {/* Design v3: side gutter matches .ftp-container (24 px, 16 px on
+          phones); width stays with the India layout. */}
+      <div className="ftp-container" style={{ maxWidth: "none", width: "100%" }}>
         {/* Breadcrumb */}
         <nav
           aria-label="Breadcrumb"
@@ -59,22 +62,23 @@ export default async function IndiaSuperCategoryPage({ params }: PageProps) {
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            fontSize: "12px",
-            color: "var(--color-text-tertiary)",
+            fontSize: "13px",
+            lineHeight: "20px",
+            color: "var(--ftp-text-2)",
             marginBottom: "12px",
             flexWrap: "wrap",
           }}
         >
-          <Link href={`/${locale}`} style={{ color: "var(--color-text-tertiary)" }}>
-            Home
+          <Link href={`/${locale}`} style={{ color: "var(--ftp-text-2)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Home size={14} aria-hidden /> Home
           </Link>
-          <span>›</span>
-          <Link href={`/${locale}/india`} style={{ color: "var(--color-text-tertiary)" }}>
+          <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
+          <Link href={`/${locale}/india`} style={{ color: "var(--ftp-text-2)" }}>
             India
           </Link>
-          <span>›</span>
-          <span style={{ color: "var(--color-text-secondary)" }}>{superCategory.title}</span>
-          <span>›</span>
+          <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
+          <span aria-current="page" style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{superCategory.title}</span>
+          <ChevronRight size={14} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
           <ModuleDropdown
             currentLabel="Select module"
             scope="super-category"

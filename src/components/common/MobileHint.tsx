@@ -8,8 +8,6 @@
  *
  * Use it anywhere we previously relied on `title=""` for explanation.
  *
- * Design v3: Lucide chevrons / info icon and token colours (no glyphs, no hex).
- *
  * Note: this is intentionally CSS-free of `:hover` for the mobile path.
  * `useReducedMotion`-style listeners are not used — the breakpoint check
  * happens once at mount and on resize so the component stays cheap.
@@ -56,6 +54,7 @@ export default function MobileHint({
           aria-expanded={open}
         >
           {children}
+          {/* Design v3: Lucide chevrons + token colour instead of text glyphs/hex */}
           {open ? (
             <ChevronDown size={12} aria-hidden style={{ color: "var(--ftp-text-2)" }} />
           ) : (

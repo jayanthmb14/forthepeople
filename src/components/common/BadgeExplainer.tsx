@@ -6,63 +6,111 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════════════════
+//  BadgeExplainer — "How badges & tiers work" (collapsible)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  Used on /contributors and on each district's contributors page.
+//
+//  Design v3: a plain Card with a real <button> toggle, Lucide icons,
+//  badge levels as Pills (no emoji). Tier names and prices are read from
+//  TIER_CONFIG (the same config the checkout uses) so this list can never
+//  disagree with what a supporter is actually charged.
+//
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import { Card, Pill } from "@/components/district/ui";
+import type { Tone } from "@/components/district/ui";
+import { TIER_CONFIG, TIER_ORDER } from "@/lib/constants/razorpay-plans";
+
+/**
+ * Badge level → Pill tone. Shared with the contributor lists so a badge
+ * looks the same everywhere. (The v2 hex set lives in lib/badge-level.ts
+ * as BADGE_COLORS and is no longer used by v3 pages.)
+ */
+export const BADGE_TONE: Record<string, Tone> = {
+  bronze: "warn",
+  silver: "neutral",
+  gold: "warn",
+  platinum: "features",
+};
+
+/** Badge levels and the continuous-support months that earn them. */
+const BADGE_LEVELS = [
+  { key: "bronze", label: "Bronze", rule: "3+ months of continuous support" },
+  { key: "silver", label: "Silver", rule: "6+ months" },
+  { key: "gold", label: "Gold", rule: "12+ months" },
+  { key: "platinum", label: "Platinum", rule: "24+ months" },
+];
 
 export default function BadgeExplainer() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div
-      style={{
-        background: "#FAFAF8",
-        border: "1px solid #E8E8E4",
-        borderRadius: 12,
-        marginBottom: 24,
-        overflow: "hidden",
-      }}
-    >
+    <Card padding={0} style={{ marginBottom: 24, overflow: "hidden" }}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="badge-explainer-body"
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           width: "100%",
-          padding: "12px 16px",
+          minHeight: 44,
+          padding: "0 16px",
           background: "none",
           border: "none",
           cursor: "pointer",
           fontSize: 13,
-          fontWeight: 600,
-          color: "#6B6B6B",
+          fontWeight: 500,
+          color: "var(--ftp-text)",
           textAlign: "left",
         }}
       >
-        <span>ℹ️ How badges & tiers work</span>
-        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        <Info size={16} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>How badges &amp; tiers work</span>
+        {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
       </button>
 
       {open && (
-        <div style={{ padding: "0 16px 16px", fontSize: 13, color: "#4B4B4B", lineHeight: 1.8 }}>
-          <div style={{ fontWeight: 700, color: "#1A1A1A", marginBottom: 6 }}>CONTRIBUTION TIERS:</div>
-          <div>☕ <strong>Buy me a Chai</strong> — One-time from ₹50</div>
-          <div>🏛️ <strong>District Champion</strong> — ₹200/month · Your name on the district page</div>
-          <div>🇮🇳 <strong>State Champion</strong> — ₹999/month · Your name on all districts in a state</div>
-          <div>🌟 <strong>All-India Patron</strong> — ₹10,000/month · Your name on every page</div>
-          <div>👑 <strong>Founding Builder</strong> — ₹50,000/month · Gold card everywhere, listed first, permanent feature</div>
+        <div id="badge-explainer-body" style={{ padding: "0 16px 16px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
+          <p className="ftp-label" style={{ marginBottom: 6 }}>Contribution tiers</p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
+            {TIER_ORDER.map((key) => {
+              const t = TIER_CONFIG[key];
+              return (
+                <li key={key}>
+                  <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{t.name}</span> —{" "}
+                  {t.isRecurring ? "" : "One-time from "}
+                  <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>
+                    ₹{(t.isRecurring ? t.amount : t.minAmount).toLocaleString("en-IN")}
+                  </span>
+                  {t.isRecurring ? "/month" : ""}
+                  <span style={{ display: "block", fontSize: 11, lineHeight: "16px" }}>{t.description}</span>
+                </li>
+              );
+            })}
+          </ul>
 
-          <div style={{ fontWeight: 700, color: "#1A1A1A", marginTop: 16, marginBottom: 6 }}>BADGE LEVELS (earned automatically by continuous support):</div>
-          <div>🥉 <strong>Bronze</strong> — 3+ months of continuous support</div>
-          <div>🥈 <strong>Silver</strong> — 6+ months</div>
-          <div>🥇 <strong>Gold</strong> — 12+ months</div>
-          <div>💎 <strong>Platinum</strong> — 24+ months</div>
+          <p className="ftp-label" style={{ marginTop: 16, marginBottom: 6 }}>
+            Badge levels (earned automatically by continuous support)
+          </p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+            {BADGE_LEVELS.map((b) => (
+              <li key={b.key} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Pill tone={BADGE_TONE[b.key]}>{b.label}</Pill>
+                <span>{b.rule}</span>
+              </li>
+            ))}
+          </ul>
 
-          <div style={{ marginTop: 12, fontSize: 12, color: "#9B9B9B" }}>
+          <p style={{ marginTop: 12, fontSize: 11, lineHeight: "16px" }}>
             The longer you support, the higher your badge. Badges are shown next to your name on the leaderboard and contributor pages.
-          </div>
+          </p>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

@@ -8,11 +8,16 @@
 // ═══════════════════════════════════════════════════════════
 // ForThePeople.in — District Comparison Page
 // URL: /en/compare?a=mandya&b=mysuru
+//
+// Design v3 (2026-09-27): PageHeader, Card and FreshnessPill from the
+// kit; token colours only; every number in JetBrains Mono. The "better /
+// lower" comparison colours are shown as TEXT colour plus a 6 px dot in
+// the legend (never a filled box). Data hooks and URL handling unchanged.
 // ═══════════════════════════════════════════════════════════
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, use, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, GitCompare, Lock, ChevronDown } from "lucide-react";
+import { ArrowRight, GitCompare, Lock, ChevronDown } from "lucide-react";
+import { Card, FreshnessPill, LoadingShell, PageHeader } from "@/components/district/ui";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { useOverview, useBudget, useWeather } from "@/hooks/useRealtimeData";
 
@@ -26,17 +31,20 @@ const ACTIVE_DISTRICTS = INDIA_STATES.flatMap((s) =>
 );
 
 // ── Metric row component ───────────────────────────────────
+// Three columns: value A (right-aligned) · label · value B.
+// When both values are numbers, the better one is shown in the "live"
+// text colour and the other in the "danger" text colour.
 function MetricRow({
   label,
   valA,
   valB,
   higherIsBetter = true,
-  mono = false,
 }: {
   label: string;
   valA: string | number | null | undefined;
   valB: string | number | null | undefined;
   higherIsBetter?: boolean;
+  /** Kept for older call sites — every value is mono in v3 anyway. */
   mono?: boolean;
 }) {
   const na = valA === null || valA === undefined || valA === "";
@@ -45,28 +53,35 @@ function MetricRow({
   const numB = !nb && typeof valB !== "string" ? valB as number : parseFloat(String(valB));
   const bothNum = !na && !nb && !isNaN(numA) && !isNaN(numB);
 
-  let colorA = "#1A1A1A";
-  let colorB = "#1A1A1A";
+  let colorA = "var(--ftp-text)";
+  let colorB = "var(--ftp-text)";
   if (bothNum && numA !== numB) {
     const aWins = higherIsBetter ? numA > numB : numA < numB;
-    colorA = aWins ? "#16A34A" : "#DC2626";
-    colorB = aWins ? "#DC2626" : "#16A34A";
+    colorA = aWins ? "var(--ftp-live-text)" : "var(--ftp-danger)";
+    colorB = aWins ? "var(--ftp-danger)" : "var(--ftp-live-text)";
   }
 
-  const fontStyle = mono ? { fontFamily: "var(--font-mono)" } : {};
+  const notAvailable = <span style={{ color: "var(--ftp-text-2)", fontSize: 13, fontFamily: "var(--ftp-font-sans)", fontWeight: 400 }}>N/A</span>;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center", padding: "10px 0", borderBottom: "1px solid #F5F5F0" }}>
-      <div style={{ ...fontStyle, fontSize: 15, fontWeight: 600, color: colorA, textAlign: "right" }}>
-        {na ? <span style={{ color: "#9B9B9B", fontSize: 13 }}>N/A</span> : String(valA)}
+    <div className="ftp-compare-row">
+      <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: colorA, textAlign: "right" }}>
+        {na ? notAvailable : String(valA)}
       </div>
-      <div style={{ fontSize: 11, color: "#9B9B9B", textAlign: "center", minWidth: 120, padding: "0 8px" }}>
-        {label}
-      </div>
-      <div style={{ ...fontStyle, fontSize: 15, fontWeight: 600, color: colorB }}>
-        {nb ? <span style={{ color: "#9B9B9B", fontSize: 13 }}>N/A</span> : String(valB)}
+      <div className="ftp-compare-label">{label}</div>
+      <div className="ftp-num" style={{ fontSize: 15, lineHeight: "22px", color: colorB }}>
+        {nb ? notAvailable : String(valB)}
       </div>
     </div>
+  );
+}
+
+/** Small uppercase group heading inside the comparison card. */
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="ftp-label" style={{ padding: "16px 0 4px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      {children}
+    </h2>
   );
 }
 
@@ -75,81 +90,100 @@ function DistrictSelector({
   value,
   onChange,
   label,
+  alignRight = false,
 }: {
   value: string;
   onChange: (slug: string) => void;
   label: string;
+  /** Open the menu towards the left (for the right-hand selector). */
+  alignRight?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = ACTIVE_DISTRICTS.find((x) => x.district.slug === value);
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", maxWidth: "100%" }}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={`${label}: ${selected?.district.name ?? "Select"}`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         style={{
           display: "flex",
           alignItems: "center",
           gap: 8,
-          padding: "10px 14px",
-          background: "#EFF6FF",
-          border: "2px solid #2563EB",
-          borderRadius: 12,
+          minHeight: 44,
+          maxWidth: "100%",
+          padding: "0 14px",
+          background: "var(--ftp-brand-tint)",
+          border: "1px solid var(--ftp-brand)",
+          borderRadius: "var(--ftp-radius-tile)",
           cursor: "pointer",
-          fontWeight: 700,
-          fontSize: 16,
-          color: "#1D4ED8",
+          fontWeight: 500,
+          fontSize: 15,
+          color: "var(--ftp-brand-deep)",
+          textAlign: "left",
         }}
       >
         <span>{selected?.district.name ?? "Select District"}</span>
-        <ChevronDown size={14} aria-hidden="true" />
+        <ChevronDown size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
       </button>
 
       {open && (
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} aria-hidden="true" />
           <div
+            role="listbox"
+            aria-label={label}
             style={{
               position: "absolute",
               top: "calc(100% + 6px)",
-              left: 0,
-              width: 240,
+              ...(alignRight ? { right: 0 } : { left: 0 }),
+              width: 260,
+              maxWidth: "calc(100vw - 32px)",
               maxHeight: 280,
               overflowY: "auto",
-              background: "#FFF",
-              border: "1px solid #E8E8E4",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+              background: "var(--ftp-surface)",
+              border: "1px solid var(--ftp-border-strong)",
+              borderRadius: "var(--ftp-radius-card)",
               zIndex: 50,
             }}
           >
-            {ACTIVE_DISTRICTS.map(({ state, district }) => (
-              <button
-                key={district.slug}
-                onClick={() => { onChange(district.slug); setOpen(false); }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  padding: "9px 14px",
-                  border: "none",
-                  background: district.slug === value ? "#EFF6FF" : "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontSize: 14,
-                  fontWeight: district.slug === value ? 600 : 400,
-                  color: "#1A1A1A",
-                }}
-              >
-                <span>{district.name}</span>
-                <span style={{ fontSize: 12, color: "#9B9B9B" }}>{state.name}</span>
-              </button>
-            ))}
+            {ACTIVE_DISTRICTS.map(({ state, district }) => {
+              const isSel = district.slug === value;
+              return (
+                <button
+                  key={district.slug}
+                  type="button"
+                  role="option"
+                  aria-selected={isSel}
+                  onClick={() => { onChange(district.slug); setOpen(false); }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    width: "100%",
+                    minHeight: 44,
+                    padding: "0 14px",
+                    border: "none",
+                    background: isSel ? "var(--ftp-brand-tint)" : "transparent",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontSize: 13,
+                    fontWeight: isSel ? 500 : 400,
+                    color: "var(--ftp-text)",
+                  }}
+                >
+                  <span>{district.name}</span>
+                  <span style={{ fontSize: 11, color: "var(--ftp-text-2)" }}>{state.name}</span>
+                </button>
+              );
+            })}
             {ACTIVE_DISTRICTS.length === 0 && (
-              <div style={{ padding: 16, fontSize: 13, color: "#9B9B9B", display: "flex", alignItems: "center", gap: 6 }}>
-                <Lock size={13} /> No active districts available
+              <div style={{ padding: 16, fontSize: 13, color: "var(--ftp-text-2)", display: "flex", alignItems: "center", gap: 6 }}>
+                <Lock size={13} aria-hidden="true" /> No active districts available
               </div>
             )}
           </div>
@@ -206,141 +240,171 @@ function CompareContent({ locale }: { locale: string }) {
 
   const isLoading = loA || loB;
 
+  // Honest period label for the budget rows: one FY if both match, else both.
+  const fyLabel = latYrA && latYrB && latYrA !== latYrB ? `FY ${latYrA} vs FY ${latYrB}` : latYrA || latYrB ? `FY ${latYrA ?? latYrB}` : null;
+
   return (
-    <main id="main-content" style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-      {/* Back */}
-      <Link href={`/${locale}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9B9B9B", textDecoration: "none", marginBottom: 20 }}>
-        <ArrowLeft size={13} aria-hidden="true" /> Back to home
-      </Link>
+    <main id="main-content" style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)" }}>
+      {/* Page-scoped layout rules (tokens only). The row grid narrows its
+          centre label on phones so two numbers still fit at 375 px. */}
+      <style>{`
+        .ftp-compare-pickers { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+        .ftp-compare-row {
+          display: grid;
+          grid-template-columns: 1fr minmax(96px, auto) 1fr;
+          gap: 8px;
+          align-items: center;
+          padding: 10px 0;
+          border-bottom: 1px solid var(--ftp-border);
+        }
+        .ftp-compare-label { font-size: 11px; line-height: 16px; color: var(--ftp-text-2); text-align: center; min-width: 120px; padding: 0 8px; }
+        .ftp-compare-body { padding: 0 24px; }
+        @media (max-width: 640px) {
+          .ftp-compare-pickers { grid-template-columns: 1fr; gap: 8px; }
+          .ftp-compare-pickers > div { align-items: flex-start !important; }
+          .ftp-compare-label { min-width: 0; padding: 0 4px; }
+          .ftp-compare-body { padding: 0 16px; }
+        }
+      `}</style>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-        <div style={{ width: 44, height: 44, background: "#EFF6FF", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <GitCompare size={22} style={{ color: "#2563EB" }} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.4px" }}>District Comparison</h1>
-          <p style={{ fontSize: 13, color: "#6B6B6B", marginTop: 2 }}>Compare key metrics side-by-side for any two active districts</p>
+      <div className="ftp-container" style={{ paddingTop: 24, paddingBottom: 48 }}>
+        <div style={{ maxWidth: 900 }}>
+          <PageHeader
+            icon={GitCompare}
+            title="District Comparison"
+            description="Compare key metrics side-by-side for any two active districts"
+            backHref={`/${locale}`}
+            backLabel="Back to home"
+          />
+
+          {/* Selectors */}
+          <Card padding={20} style={{ marginBottom: 24 }}>
+            <div className="ftp-compare-pickers">
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", minWidth: 0 }}>
+                <span className="ftp-label">District A</span>
+                <DistrictSelector value={slugA} onChange={setA} label="District A" />
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ftp-text-2)", textAlign: "center" }}>vs</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", minWidth: 0 }}>
+                <span className="ftp-label">District B</span>
+                <DistrictSelector value={slugB} onChange={setB} label="District B" alignRight />
+              </div>
+            </div>
+          </Card>
+
+          {isLoading && <LoadingShell rows={6} />}
+
+          {!isLoading && dA && dB && (
+            <Card padding={0} style={{ overflow: "hidden" }}>
+              {/* Column headers */}
+              <div className="ftp-compare-body" style={{ background: "var(--ftp-surface-2)", borderBottom: "1px solid var(--ftp-border)" }}>
+                <div className="ftp-compare-row" style={{ borderBottom: "none", padding: "14px 0" }}>
+                  <div style={{ textAlign: "right", minWidth: 0 }}>
+                    <div className="ftp-title">{dA.name}</div>
+                    {dA.nameLocal && <div style={{ fontSize: 13, color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)" }}>{dA.nameLocal}</div>}
+                  </div>
+                  <div className="ftp-compare-label" aria-hidden="true" />
+                  <div style={{ minWidth: 0 }}>
+                    <div className="ftp-title">{dB.name}</div>
+                    {dB.nameLocal && <div style={{ fontSize: 13, color: "var(--ftp-text-2)", fontFamily: "var(--font-regional)" }}>{dB.nameLocal}</div>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="ftp-compare-body">
+                {/* Demographics */}
+                <GroupLabel>Demographics</GroupLabel>
+                <MetricRow label="Population" valA={dA.population?.toLocaleString("en-IN")} valB={dB.population?.toLocaleString("en-IN")} />
+                <MetricRow label="Area (sq km)" valA={dA.area?.toLocaleString("en-IN")} valB={dB.area?.toLocaleString("en-IN")} />
+                <MetricRow label="Density (per sq km)" valA={dA.density} valB={dB.density} />
+                <MetricRow label="Literacy Rate (%)" valA={dA.literacy !== null ? `${dA.literacy}%` : null} valB={dB.literacy !== null ? `${dB.literacy}%` : null} />
+                <MetricRow label="Sex Ratio (F per 1000 M)" valA={dA.sexRatio} valB={dB.sexRatio} />
+                <MetricRow label="Taluks" valA={dA.talukCount ?? dA.taluks?.length} valB={dB.talukCount ?? dB.taluks?.length} />
+                <MetricRow label="Villages" valA={dA.villageCount} valB={dB.villageCount} />
+
+                {/* Infrastructure */}
+                <GroupLabel>Infrastructure</GroupLabel>
+                <MetricRow label="Active Projects" valA={dA._count?.infraProjects} valB={dB._count?.infraProjects} />
+                <MetricRow label="Government Schemes" valA={dA._count?.schemes} valB={dB._count?.schemes} />
+                <MetricRow label="Schools" valA={dA._count?.schools} valB={dB._count?.schools} />
+                <MetricRow label="Police Stations" valA={dA._count?.policeStations} valB={dB._count?.policeStations} />
+
+                {/* Finance */}
+                {(totalBudA > 0 || totalBudB > 0) && (
+                  <>
+                    <GroupLabel>
+                      Finance
+                      {fyLabel && <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>· {fyLabel}</span>}
+                    </GroupLabel>
+                    <MetricRow label="Total Budget (₹ Cr)" valA={totalBudA > 0 ? (totalBudA / 1e7).toFixed(0) : null} valB={totalBudB > 0 ? (totalBudB / 1e7).toFixed(0) : null} />
+                    <MetricRow label="Spent (₹ Cr)" valA={totalSpentA > 0 ? (totalSpentA / 1e7).toFixed(0) : null} valB={totalSpentB > 0 ? (totalSpentB / 1e7).toFixed(0) : null} />
+                    <MetricRow
+                      label="Budget Utilisation (%)"
+                      valA={totalBudA > 0 ? `${Math.round((totalSpentA / totalBudA) * 100)}%` : null}
+                      valB={totalBudB > 0 ? `${Math.round((totalSpentB / totalBudB) * 100)}%` : null}
+                    />
+                  </>
+                )}
+
+                {/* Weather — each side carries the date its reading was taken */}
+                {(weatherReadA || weatherReadB) && (
+                  <>
+                    <GroupLabel>Latest weather reading</GroupLabel>
+                    <div className="ftp-compare-row">
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <FreshnessPill asOf={weatherReadA?.recordedAt} />
+                      </div>
+                      <div className="ftp-compare-label">Recorded</div>
+                      <div style={{ display: "flex" }}>
+                        <FreshnessPill asOf={weatherReadB?.recordedAt} />
+                      </div>
+                    </div>
+                    <MetricRow label="Temperature (°C)" valA={weatherReadA?.temperature} valB={weatherReadB?.temperature} higherIsBetter={false} />
+                    <MetricRow label="Humidity (%)" valA={weatherReadA?.humidity} valB={weatherReadB?.humidity} higherIsBetter={false} />
+                    <MetricRow label="Rainfall today (mm)" valA={weatherReadA?.rainfall} valB={weatherReadB?.rainfall} />
+                  </>
+                )}
+              </div>
+
+              {/* Legend */}
+              <div className="ftp-compare-body" style={{ paddingTop: 16, paddingBottom: 16, borderTop: "1px solid var(--ftp-border)", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ftp-text-2)" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-live)" }} aria-hidden="true" />
+                  Better value
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ftp-text-2)" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ftp-danger)" }} aria-hidden="true" />
+                  Lower value
+                </span>
+                <span style={{ fontSize: 11, color: "var(--ftp-text-2)", marginLeft: "auto" }}>
+                  Data from ForThePeople.in · Updated automatically
+                </span>
+              </div>
+            </Card>
+          )}
+
+          {/* Links to full dashboards */}
+          {!isLoading && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 12, marginTop: 20 }}>
+              {[
+                { href: `/${locale}/${stateA}/${slugA}`, name: dA?.name ?? slugA },
+                { href: `/${locale}/${stateB}/${slugB}`, name: dB?.name ?? slugB },
+              ].map((l) => (
+                <Card
+                  key={l.href}
+                  href={l.href}
+                  padding={12}
+                  style={{ textAlign: "center", minHeight: 44, fontSize: 13, fontWeight: 500, color: "var(--ftp-brand)" }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    View {l.name} dashboard <ArrowRight size={14} aria-hidden="true" />
+                  </span>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Selectors */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
-          gap: 16,
-          marginBottom: 32,
-          background: "#FFFFFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 16,
-          padding: "20px 24px",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>District A</span>
-          <DistrictSelector value={slugA} onChange={setA} label="District A" />
-        </div>
-        <div style={{ fontSize: 22, color: "#9B9B9B", textAlign: "center" }}>vs</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>District B</span>
-          <DistrictSelector value={slugB} onChange={setB} label="District B" />
-        </div>
-      </div>
-
-      {isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#9B9B9B", fontSize: 14 }}>
-          Loading comparison data…
-        </div>
-      )}
-
-      {!isLoading && dA && dB && (
-        <div style={{ background: "#FFFFFF", border: "1px solid #E8E8E4", borderRadius: 16, overflow: "hidden" }}>
-          {/* Column headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", background: "#F8FAFF", borderBottom: "2px solid #E8E8E4", padding: "14px 24px" }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#1D4ED8" }}>{dA.name}</div>
-              {dA.nameLocal && <div style={{ fontSize: 13, color: "#9B9B9B", fontFamily: "var(--font-regional)" }}>{dA.nameLocal}</div>}
-            </div>
-            <div style={{ minWidth: 120 }} />
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#1D4ED8" }}>{dB.name}</div>
-              {dB.nameLocal && <div style={{ fontSize: 13, color: "#9B9B9B", fontFamily: "var(--font-regional)" }}>{dB.nameLocal}</div>}
-            </div>
-          </div>
-
-          <div style={{ padding: "0 24px" }}>
-            {/* Demographics */}
-            <div style={{ padding: "16px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>Demographics</div>
-            <MetricRow label="Population" valA={dA.population?.toLocaleString("en-IN")} valB={dB.population?.toLocaleString("en-IN")} />
-            <MetricRow label="Area (sq km)" valA={dA.area?.toLocaleString("en-IN")} valB={dB.area?.toLocaleString("en-IN")} mono />
-            <MetricRow label="Density (per sq km)" valA={dA.density} valB={dB.density} mono />
-            <MetricRow label="Literacy Rate (%)" valA={dA.literacy !== null ? `${dA.literacy}%` : null} valB={dB.literacy !== null ? `${dB.literacy}%` : null} />
-            <MetricRow label="Sex Ratio (F per 1000 M)" valA={dA.sexRatio} valB={dB.sexRatio} />
-            <MetricRow label="Taluks" valA={dA.talukCount ?? dA.taluks?.length} valB={dB.talukCount ?? dB.taluks?.length} />
-            <MetricRow label="Villages" valA={dA.villageCount} valB={dB.villageCount} />
-
-            {/* Infrastructure */}
-            <div style={{ padding: "16px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>Infrastructure</div>
-            <MetricRow label="Active Projects" valA={dA._count?.infraProjects} valB={dB._count?.infraProjects} />
-            <MetricRow label="Government Schemes" valA={dA._count?.schemes} valB={dB._count?.schemes} />
-            <MetricRow label="Schools" valA={dA._count?.schools} valB={dB._count?.schools} />
-            <MetricRow label="Police Stations" valA={dA._count?.policeStations} valB={dB._count?.policeStations} />
-
-            {/* Finance */}
-            {(totalBudA > 0 || totalBudB > 0) && (
-              <>
-                <div style={{ padding: "16px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>Finance</div>
-                <MetricRow label="Total Budget (₹ Cr)" valA={totalBudA > 0 ? (totalBudA / 1e7).toFixed(0) : null} valB={totalBudB > 0 ? (totalBudB / 1e7).toFixed(0) : null} mono />
-                <MetricRow label="Spent (₹ Cr)" valA={totalSpentA > 0 ? (totalSpentA / 1e7).toFixed(0) : null} valB={totalSpentB > 0 ? (totalSpentB / 1e7).toFixed(0) : null} mono />
-                <MetricRow
-                  label="Budget Utilisation (%)"
-                  valA={totalBudA > 0 ? `${Math.round((totalSpentA / totalBudA) * 100)}%` : null}
-                  valB={totalBudB > 0 ? `${Math.round((totalSpentB / totalBudB) * 100)}%` : null}
-                />
-              </>
-            )}
-
-            {/* Weather */}
-            {(weatherReadA || weatherReadB) && (
-              <>
-                <div style={{ padding: "16px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#9B9B9B" }}>Current Weather</div>
-                <MetricRow label="Temperature (°C)" valA={weatherReadA?.temperature} valB={weatherReadB?.temperature} higherIsBetter={false} mono />
-                <MetricRow label="Humidity (%)" valA={weatherReadA?.humidity} valB={weatherReadB?.humidity} higherIsBetter={false} mono />
-                <MetricRow label="Rainfall today (mm)" valA={weatherReadA?.rainfall} valB={weatherReadB?.rainfall} mono />
-              </>
-            )}
-          </div>
-
-          {/* Legend */}
-          <div style={{ padding: "16px 24px", borderTop: "1px solid #E8E8E4", display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#6B6B6B" }}>
-              <div style={{ width: 12, height: 12, background: "#16A34A", borderRadius: 3 }} aria-hidden="true" />
-              Better value
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#6B6B6B" }}>
-              <div style={{ width: 12, height: 12, background: "#DC2626", borderRadius: 3 }} aria-hidden="true" />
-              Lower value
-            </div>
-            <div style={{ fontSize: 11, color: "#9B9B9B", marginLeft: "auto" }}>
-              Data from ForThePeople.in · Updated automatically
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Links to full dashboards */}
-      {!isLoading && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
-          <Link href={`/${locale}/${stateA}/${slugA}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 20px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#1D4ED8", textDecoration: "none" }}>
-            View {dA?.name ?? slugA} Dashboard →
-          </Link>
-          <Link href={`/${locale}/${stateB}/${slugB}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 20px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#1D4ED8", textDecoration: "none" }}>
-            View {dB?.name ?? slugB} Dashboard →
-          </Link>
-        </div>
-      )}
     </main>
   );
 }
@@ -348,7 +412,13 @@ function CompareContent({ locale }: { locale: string }) {
 export default function ComparePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#9B9B9B" }}>Loading comparison…</div>}>
+    <Suspense
+      fallback={
+        <div className="ftp-container" style={{ paddingTop: 40 }}>
+          <LoadingShell rows={6} />
+        </div>
+      }
+    >
       <CompareContent locale={locale} />
     </Suspense>
   );

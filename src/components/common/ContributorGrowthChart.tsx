@@ -6,8 +6,18 @@
 
 "use client";
 
+// ═══════════════════════════════════════════════════════════════════════
+//  ContributorGrowthChart — cumulative supporters per month
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  With one month of data it shows a single stat line; from two months on
+//  it draws a line/area chart. Design v3: a plain Card, chart colours from
+//  tokens (brand line, flat brand-tint fill — no gradient), mono numbers.
+//
 import { useQuery } from "@tanstack/react-query";
+import { TrendingUp } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Card } from "@/components/district/ui";
 
 interface Point {
   month: string;
@@ -26,6 +36,19 @@ function currentMonthKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** Card title row: icon + H2 on the left, summary on the right. */
+function Title({ children }: { children?: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+      <h2 className="ftp-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <TrendingUp size={16} aria-hidden style={{ color: "var(--ftp-brand)" }} />
+        Contributor growth
+      </h2>
+      {children}
+    </div>
+  );
+}
+
 export default function ContributorGrowthChart() {
   const { data, isLoading } = useQuery<{ points: Point[] }>({
     queryKey: ["contributor-growth"],
@@ -41,76 +64,49 @@ export default function ContributorGrowthChart() {
   const thisMonth = points.find((p) => p.month === currentKey)?.newCount ?? 0;
   const totalCumulative = points[points.length - 1]?.cumulative ?? 0;
 
-  // If we only have one month of data, show a stat card instead of a chart.
+  // If we only have one month of data, show a stat line instead of a chart.
   if (points.length < 2) {
     const only = points[0];
     return (
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #E8E8E4",
-          borderRadius: 14,
-          padding: "20px 24px",
-          marginBottom: 24,
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ fontSize: 32 }}>📊</div>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A", marginBottom: 2 }}>
-            {formatMonth(only.month)}
-          </div>
-          <div style={{ fontSize: 13, color: "#6B6B6B" }}>
-            <strong style={{ color: "#2563EB" }}>{only.newCount}</strong> new contributor{only.newCount === 1 ? "" : "s"} this month ·{" "}
-            <span style={{ color: "#9B9B9B" }}>Tracking since April 2026</span>
-          </div>
-        </div>
-        <div style={{ fontSize: 11, color: "#9B9B9B", fontStyle: "italic" }}>
+      <Card padding={20} style={{ marginBottom: 24 }}>
+        <Title />
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+          <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{formatMonth(only.month)}</span>:{" "}
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{only.newCount}</span> new contributor
+          {only.newCount === 1 ? "" : "s"} this month · Tracking since April 2026
+        </p>
+        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 6 }}>
           Growth chart appears once a second month of data is available.
-        </div>
-      </div>
+        </p>
+      </Card>
     );
   }
 
   const chartData = points.map((p) => ({ ...p, label: formatMonth(p.month) }));
 
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: "1px solid #E8E8E4",
-        borderRadius: 14,
-        padding: "16px 20px",
-        marginBottom: 24,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A", margin: 0 }}>
-          📈 Contributor Growth
-        </h2>
-        <div style={{ fontSize: 12, color: "#6B6B6B" }}>
-          <span style={{ fontWeight: 700, color: "#2563EB" }}>+{thisMonth}</span> new this month
+    <Card padding={20} style={{ marginBottom: 24 }}>
+      <Title>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>+{thisMonth}</span> new this month
           {" · "}
-          <span style={{ fontWeight: 700, color: "#1A1A1A" }}>{totalCumulative.toLocaleString("en-IN")}</span> total
-        </div>
-      </div>
+          <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{totalCumulative.toLocaleString("en-IN")}</span> total
+        </p>
+      </Title>
       <div style={{ width: "100%", height: 200 }}>
         <ResponsiveContainer>
           <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="grow-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2563EB" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#2563EB" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="#F1F5F9" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" stroke="#9B9B9B" fontSize={11} tickLine={false} axisLine={false} />
-            <YAxis stroke="#9B9B9B" fontSize={11} tickLine={false} axisLine={false} width={28} />
+            <CartesianGrid stroke="var(--ftp-surface-2)" vertical={false} />
+            <XAxis dataKey="label" stroke="var(--ftp-text-2)" fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis stroke="var(--ftp-text-2)" fontSize={11} tickLine={false} axisLine={false} width={28} />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E8E8E4" }}
+              contentStyle={{
+                fontSize: 12,
+                borderRadius: "var(--ftp-radius-tile)",
+                border: "1px solid var(--ftp-border)",
+                background: "var(--ftp-surface)",
+                color: "var(--ftp-text)",
+              }}
               formatter={(v) => {
                 const n = typeof v === "number" ? v : Number(v);
                 return [`${n.toLocaleString("en-IN")} total`, "Cumulative"];
@@ -124,13 +120,15 @@ export default function ContributorGrowthChart() {
             <Area
               type="monotone"
               dataKey="cumulative"
-              stroke="#2563EB"
+              stroke="var(--ftp-brand)"
               strokeWidth={2}
-              fill="url(#grow-fill)"
+              fill="var(--ftp-brand-tint)"
+              fillOpacity={1}
+              isAnimationActive={false}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Card>
   );
 }

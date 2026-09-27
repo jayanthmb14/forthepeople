@@ -15,13 +15,19 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://forthepeople.in/en/disclaimer" },
 };
 
-const sectionStyle: React.CSSProperties = { marginBottom: 24 };
-const h2Style: React.CSSProperties = { fontSize: 16, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 };
-const pStyle: React.CSSProperties = { fontSize: 14, color: "#4B4B4B", lineHeight: 1.7, margin: 0 };
+// ── Design v3 (2026-09-27) ──────────────────────────────────────────
+// Presentation only: --ftp-* tokens, v3 type scale (weight 500 headings),
+// .ftp-container for the page gutter. The legal text is unchanged.
+const sectionStyle: React.CSSProperties = { marginBottom: 32 };
+const h2Style: React.CSSProperties = { fontSize: 17, lineHeight: "24px", fontWeight: 500, color: "var(--ftp-text)", marginBottom: 8 };
+const pStyle: React.CSSProperties = { fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", margin: 0 };
+const linkStyle: React.CSSProperties = { color: "var(--ftp-brand)" };
 
 export default function DisclaimerPage() {
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 60px" }}>
+    <main style={{ background: "var(--ftp-bg)", minHeight: "100vh" }}>
+     <div className="ftp-container" style={{ paddingTop: 32, paddingBottom: 64 }}>
+     <div style={{ maxWidth: 720 }}>
       <LegalPageHeader title="Disclaimer" lastUpdated="16 April 2026" />
 
       <section style={sectionStyle}>
@@ -56,7 +62,7 @@ export default function DisclaimerPage() {
         <h2 style={h2Style}>5. References to Public Officials</h2>
         <p style={pStyle}>
           Names, designations, contact details, and public conduct of elected representatives and government officials shown on this platform are sourced from publicly available government records (Election Commission of India, state assembly websites, PIB releases, district administration portals, gazette notifications). This is information that is legally in the public domain. If you are a public official and believe information about your role is outdated or incorrect, please email{" "}
-          <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>
+          <a href="mailto:support@forthepeople.in" style={linkStyle}>
             support@forthepeople.in
           </a>{" "}
           and we will verify and update within 24 hours.
@@ -105,7 +111,7 @@ export default function DisclaimerPage() {
         <h2 style={h2Style}>11. Errors and Corrections</h2>
         <p style={pStyle}>
           If you find incorrect, outdated, or misleading data, please{" "}
-          <Link href="/contribute" style={{ color: "#2563EB" }}>
+          <Link href="/contribute" style={linkStyle}>
             report it here
           </Link>
           . We investigate all reports and typically correct verified errors within 24 hours. Corrections are logged in our public Update Log for transparency.
@@ -131,8 +137,8 @@ export default function DisclaimerPage() {
         <p style={pStyle}>
           For data corrections, takedown requests, or any queries about this platform, please write to:
         </p>
-        <ul style={{ fontSize: 14, color: "#4B4B4B", lineHeight: 1.7, margin: "8px 0 0", paddingLeft: 20 }}>
-          <li>Email: <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>support@forthepeople.in</a></li>
+        <ul style={{ fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", margin: "8px 0 0", paddingLeft: 20 }}>
+          <li>Email: <a href="mailto:support@forthepeople.in" style={linkStyle}>support@forthepeople.in</a></li>
         </ul>
         <p style={{ ...pStyle, marginTop: 8 }}>
           We aim to respond within 7 working days.
@@ -141,22 +147,24 @@ export default function DisclaimerPage() {
 
       <div
         style={{
-          borderTop: "1px solid #E8E8E4",
+          borderTop: "1px solid var(--ftp-border)",
           paddingTop: 16,
           marginTop: 32,
           fontSize: 12,
-          color: "#9B9B9B",
+          color: "var(--ftp-text-2)",
         }}
       >
         See also:{" "}
-        <Link href="/privacy" style={{ color: "#2563EB", textDecoration: "none" }}>
+        <Link href="/privacy" style={{ ...linkStyle, textDecoration: "none" }}>
           Privacy Policy
         </Link>
         {" · "}
-        <Link href="/about" style={{ color: "#2563EB", textDecoration: "none" }}>
+        <Link href="/about" style={{ ...linkStyle, textDecoration: "none" }}>
           About
         </Link>
       </div>
-    </div>
+     </div>
+     </div>
+    </main>
   );
 }

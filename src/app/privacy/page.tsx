@@ -5,6 +5,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { X } from "lucide-react";
 import LegalPageHeader from "@/components/common/LegalPageHeader";
 
 export const metadata: Metadata = {
@@ -14,27 +15,33 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://forthepeople.in/en/privacy" },
 };
 
-const section: React.CSSProperties = { marginBottom: 24 };
+// ── Design v3 (2026-09-27) ──────────────────────────────────────────
+// Presentation only: every colour below is a --ftp-* token, headings use
+// the v3 type scale (weight 500), tables sit in a horizontal-scroll box so
+// the page never scrolls sideways on a phone. The legal text is unchanged.
+const section: React.CSSProperties = { marginBottom: 32 };
 const h2Style: React.CSSProperties = {
-  fontSize: 16, fontWeight: 700, color: "#1A1A1A", marginBottom: 8, marginTop: 0,
+  fontSize: 17, lineHeight: "24px", fontWeight: 500, color: "var(--ftp-text)", marginBottom: 8, marginTop: 0,
 };
-const pStyle: React.CSSProperties = { fontSize: 14, color: "#4B4B4B", lineHeight: 1.7, margin: "0 0 10px" };
+const pStyle: React.CSSProperties = { fontSize: 15, lineHeight: "24px", color: "var(--ftp-text-2)", margin: "0 0 10px" };
 const tableStyle: React.CSSProperties = {
-  width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 12,
+  width: "100%", minWidth: 520, borderCollapse: "collapse", fontSize: 13, lineHeight: "20px", marginBottom: 12,
 };
 const thStyle: React.CSSProperties = {
-  textAlign: "left", padding: "8px 10px", background: "#F5F5F0",
-  fontWeight: 600, color: "#1A1A1A", borderBottom: "1px solid #E8E8E4",
+  textAlign: "left", padding: "8px 10px", background: "var(--ftp-surface-2)",
+  fontWeight: 500, color: "var(--ftp-text)", borderBottom: "1px solid var(--ftp-border)",
 };
 const tdStyle: React.CSSProperties = {
-  padding: "8px 10px", borderBottom: "1px solid #F0F0EC", color: "#3A3A3A",
+  padding: "8px 10px", borderBottom: "1px solid var(--ftp-border)", color: "var(--ftp-text)",
   verticalAlign: "top",
 };
+const linkStyle: React.CSSProperties = { color: "var(--ftp-brand)" };
 
 export default function PrivacyPage() {
   return (
-    <div style={{ background: "#FAFAF8", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 60px" }}>
+    <main style={{ background: "var(--ftp-bg)", minHeight: "100vh" }}>
+      <div className="ftp-container" style={{ paddingTop: 32, paddingBottom: 64 }}>
+       <div style={{ maxWidth: 720 }}>
         <LegalPageHeader title="Privacy Policy" lastUpdated="16 April 2026" />
 
         {/* 1. About */}
@@ -46,7 +53,7 @@ export default function PrivacyPage() {
           <p style={pStyle}>By using this platform, you agree to the practices described below.</p>
           <p style={pStyle}>
             Operator: Jayanth M B, Bengaluru, Karnataka, India<br />
-            Contact: <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>support@forthepeople.in</a>
+            Contact: <a href="mailto:support@forthepeople.in" style={linkStyle}>support@forthepeople.in</a>
           </p>
         </div>
 
@@ -125,10 +132,10 @@ export default function PrivacyPage() {
             "Your contacts, photos, or device storage",
           ].map((item) => (
             <p key={item} style={{ ...pStyle, margin: "0 0 6px" }}>
-              <span style={{ color: "#DC2626", fontWeight: 600 }}>&#x2717;</span>{" "}{item}
+              <X size={14} aria-label="Not collected" style={{ color: "var(--ftp-danger)", verticalAlign: "-2px" }} />{" "}{item}
             </p>
           ))}
-          <p style={{ ...pStyle, marginTop: 10, fontWeight: 600 }}>
+          <p style={{ ...pStyle, marginTop: 10, fontWeight: 500, color: "var(--ftp-text)" }}>
             We do NOT sell, rent, license, or share your data with advertisers or data brokers.
           </p>
         </div>
@@ -194,7 +201,7 @@ export default function PrivacyPage() {
             <li style={{ marginBottom: 6 }}><strong>Right to Nominate:</strong> Nominate another individual to exercise these rights in case of your death or incapacity</li>
           </ul>
           <p style={pStyle}>
-            <strong>How to exercise:</strong> Email <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>support@forthepeople.in</a> with the subject line <strong>&quot;DPDP Data Request&quot;</strong>. We will respond within 30 days. If you are unsatisfied with our response, you have the right to file a complaint with the <strong>Data Protection Board of India</strong>.
+            <strong>How to exercise:</strong> Email <a href="mailto:support@forthepeople.in" style={linkStyle}>support@forthepeople.in</a> with the subject line <strong>&quot;DPDP Data Request&quot;</strong>. We will respond within 30 days. If you are unsatisfied with our response, you have the right to file a complaint with the <strong>Data Protection Board of India</strong>.
           </p>
         </div>
 
@@ -205,7 +212,7 @@ export default function PrivacyPage() {
           <ul style={{ ...pStyle, paddingLeft: 20, margin: "0 0 12px" }}>
             <li style={{ marginBottom: 6 }}><strong>Name:</strong> Jayanth M B</li>
             <li style={{ marginBottom: 6 }}><strong>Role:</strong> Founder &amp; Data Fiduciary Contact</li>
-            <li style={{ marginBottom: 6 }}><strong>Email:</strong> <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>support@forthepeople.in</a></li>
+            <li style={{ marginBottom: 6 }}><strong>Email:</strong> <a href="mailto:support@forthepeople.in" style={linkStyle}>support@forthepeople.in</a></li>
             <li style={{ marginBottom: 6 }}><strong>Response time:</strong> Within 30 days of receipt</li>
           </ul>
         </div>
@@ -214,7 +221,7 @@ export default function PrivacyPage() {
         <div style={section}>
           <h2 style={h2Style}>7. Children&apos;s Data</h2>
           <p style={pStyle}>
-            ForThePeople.in is not directed at children under 18. We do not knowingly collect personal data from minors. Feature voting uses anonymous fingerprints that cannot identify individuals, including minors. If you are a parent or guardian and believe a child has submitted personal data (for example, via the feedback form), please contact us immediately at <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>support@forthepeople.in</a> and we will delete it within 72 hours.
+            ForThePeople.in is not directed at children under 18. We do not knowingly collect personal data from minors. Feature voting uses anonymous fingerprints that cannot identify individuals, including minors. If you are a parent or guardian and believe a child has submitted personal data (for example, via the feedback form), please contact us immediately at <a href="mailto:support@forthepeople.in" style={linkStyle}>support@forthepeople.in</a> and we will delete it within 72 hours.
           </p>
           <p style={pStyle}>
             Under DPDP Act 2023, we do not engage in targeted advertising or behavioural monitoring of children.
@@ -329,37 +336,37 @@ export default function PrivacyPage() {
                 <tr>
                   <td style={tdStyle}>Vercel</td>
                   <td style={tdStyle}>Hosting &amp; deployment</td>
-                  <td style={tdStyle}><a href="https://vercel.com/legal/privacy-policy" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">vercel.com/legal/privacy-policy</a></td>
+                  <td style={tdStyle}><a href="https://vercel.com/legal/privacy-policy" style={linkStyle} target="_blank" rel="noopener noreferrer">vercel.com/legal/privacy-policy</a></td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Razorpay</td>
                   <td style={tdStyle}>Payment processing</td>
-                  <td style={tdStyle}><a href="https://razorpay.com/privacy/" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">razorpay.com/privacy</a></td>
+                  <td style={tdStyle}><a href="https://razorpay.com/privacy/" style={linkStyle} target="_blank" rel="noopener noreferrer">razorpay.com/privacy</a></td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Neon</td>
                   <td style={tdStyle}>Managed PostgreSQL database</td>
-                  <td style={tdStyle}><a href="https://neon.tech/privacy-policy" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">neon.tech/privacy-policy</a></td>
+                  <td style={tdStyle}><a href="https://neon.tech/privacy-policy" style={linkStyle} target="_blank" rel="noopener noreferrer">neon.tech/privacy-policy</a></td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Upstash</td>
                   <td style={tdStyle}>Redis cache</td>
-                  <td style={tdStyle}><a href="https://upstash.com/trust/privacy.pdf" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">upstash.com/trust/privacy.pdf</a></td>
+                  <td style={tdStyle}><a href="https://upstash.com/trust/privacy.pdf" style={linkStyle} target="_blank" rel="noopener noreferrer">upstash.com/trust/privacy.pdf</a></td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Plausible</td>
                   <td style={tdStyle}>Analytics (no personal data)</td>
-                  <td style={tdStyle}><a href="https://plausible.io/data-policy" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">plausible.io/data-policy</a></td>
+                  <td style={tdStyle}><a href="https://plausible.io/data-policy" style={linkStyle} target="_blank" rel="noopener noreferrer">plausible.io/data-policy</a></td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Resend</td>
                   <td style={tdStyle}>Admin emails only</td>
-                  <td style={tdStyle}><a href="https://resend.com/legal/privacy-policy" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">resend.com/legal/privacy-policy</a></td>
+                  <td style={tdStyle}><a href="https://resend.com/legal/privacy-policy" style={linkStyle} target="_blank" rel="noopener noreferrer">resend.com/legal/privacy-policy</a></td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Sentry</td>
                   <td style={tdStyle}>Error logs (no personal data)</td>
-                  <td style={tdStyle}><a href="https://sentry.io/privacy/" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">sentry.io/privacy</a></td>
+                  <td style={tdStyle}><a href="https://sentry.io/privacy/" style={linkStyle} target="_blank" rel="noopener noreferrer">sentry.io/privacy</a></td>
                 </tr>
               </tbody>
             </table>
@@ -378,13 +385,13 @@ export default function PrivacyPage() {
         <div style={section}>
           <h2 style={h2Style}>14. Contact</h2>
           <p style={pStyle}>
-            Email: <a href="mailto:support@forthepeople.in" style={{ color: "#2563EB" }}>support@forthepeople.in</a>
+            Email: <a href="mailto:support@forthepeople.in" style={linkStyle}>support@forthepeople.in</a>
           </p>
           <p style={pStyle}>
-            Platform: <a href="https://forthepeople.in" style={{ color: "#2563EB" }}>forthepeople.in</a>
+            Platform: <a href="https://forthepeople.in" style={linkStyle}>forthepeople.in</a>
           </p>
           <p style={pStyle}>
-            GitHub: <a href="https://github.com/jayanthmb14/forthepeople" style={{ color: "#2563EB" }} target="_blank" rel="noopener noreferrer">github.com/jayanthmb14/forthepeople</a>
+            GitHub: <a href="https://github.com/jayanthmb14/forthepeople" style={linkStyle} target="_blank" rel="noopener noreferrer">github.com/jayanthmb14/forthepeople</a>
           </p>
           <p style={pStyle}>
             Operator: Jayanth M B, Bengaluru, Karnataka, India
@@ -394,23 +401,24 @@ export default function PrivacyPage() {
         {/* Cross-links */}
         <div
           style={{
-            borderTop: "1px solid #E8E8E4",
+            borderTop: "1px solid var(--ftp-border)",
             paddingTop: 16,
             marginTop: 32,
             fontSize: 12,
-            color: "#9B9B9B",
+            color: "var(--ftp-text-2)",
           }}
         >
           See also:{" "}
-          <Link href="/disclaimer" style={{ color: "#2563EB", textDecoration: "none" }}>
+          <Link href="/disclaimer" style={{ ...linkStyle, textDecoration: "none" }}>
             Disclaimer
           </Link>
           {" · "}
-          <Link href="/about" style={{ color: "#2563EB", textDecoration: "none" }}>
+          <Link href="/about" style={{ ...linkStyle, textDecoration: "none" }}>
             About
           </Link>
         </div>
+       </div>
       </div>
-    </div>
+    </main>
   );
 }

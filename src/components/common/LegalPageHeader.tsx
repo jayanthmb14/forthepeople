@@ -1,8 +1,15 @@
 /**
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
+ * https://github.com/jayanthmb14/forthepeople
  */
+
+// Header for the legal pages (Privacy, Disclaimer): back link, the page's
+// one <h1>, and the "Last updated" date. Design v3: token colours, v3 type
+// scale (.ftp-h1), Lucide arrow, 44 px back-link target.
+
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 type Props = {
   title: string;
@@ -12,27 +19,25 @@ type Props = {
 
 export default function LegalPageHeader({ title, lastUpdated, backHref = "/" }: Props) {
   return (
-    <div style={{ marginBottom: 32 }}>
+    <header style={{ marginBottom: 32, paddingBottom: 20, borderBottom: "1px solid var(--ftp-border)" }}>
       <Link
         href={backHref}
-        style={{ fontSize: 12, color: "#2563EB", textDecoration: "none" }}
-      >
-        ← Back to ForThePeople.in
-      </Link>
-      <h1
         style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: "#1A1A1A",
-          letterSpacing: "-0.4px",
-          margin: "16px 0 4px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          minHeight: 44,
+          fontSize: 13,
+          color: "var(--ftp-text-2)",
+          textDecoration: "none",
         }}
       >
-        {title}
-      </h1>
-      <div style={{ fontSize: 12, color: "#9B9B9B" }}>
+        <ArrowLeft size={14} aria-hidden /> Back to ForThePeople.in
+      </Link>
+      <h1 className="ftp-h1" style={{ marginTop: 4 }}>{title}</h1>
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 6 }}>
         Last updated: {lastUpdated}
-      </div>
-    </div>
+      </p>
+    </header>
   );
 }
