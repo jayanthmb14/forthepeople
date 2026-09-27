@@ -129,6 +129,10 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
   const t = useTranslations("overview");
   const th = useTranslations("health");
   const to = useTranslations("page_overview");
+  // Sub-measure names are stored in English by src/lib/health-score.ts; show
+  // them in the reader's language ("health.subLabels", keyed by the English
+  // text), else as stored. Sept 2026 audit: 29 labels stayed English on /hi, /kn.
+  const subLabel = (label: string) => (th.has(`subLabels.${label}`) ? th(`subLabels.${label}`) : label);
   const f = useFormat();
   if (!data) return null;
 
@@ -227,7 +231,7 @@ export function DistrictHealthScoreCard({ districtSlug }: { districtSlug: string
                 {bd?.subMetrics &&
                   Object.entries(bd.subMetrics).map(([key, metric]) => (
                     <div key={key} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, lineHeight: "16px", marginTop: 2 }}>
-                      <span style={{ color: "var(--ftp-text-2)" }}>{metric.label}</span>
+                      <span style={{ color: "var(--ftp-text-2)" }}>{subLabel(metric.label)}</span>
                       <span className="ftp-num" style={{ whiteSpace: "nowrap" }}>
                         {metric.value}
                         {metric.max > 0 ? `/${metric.max}` : ""}
