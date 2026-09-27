@@ -26,7 +26,7 @@ import {
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
 } from "@/lib/data-filters";
-import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
+import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY, VERIFIED_SUGAR_SEASON } from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
@@ -537,10 +537,13 @@ async function fetchModule(
     // 23. FACTORIES (Sugar)
     // ══════════════════════════════════════════════════
     case "factories": {
+      // active=false = retired (not a sugar mill, or not in this district).
+      // Season figures only from a collector that read them (none yet; the
+      // seeded seasons were one invented season for every mill).
       const rows = await prisma.sugarFactory.findMany({
-        where: { districtId: did },
+        where: { districtId: did, active: true },
         include: {
-          seasonData: { orderBy: { season: "desc" }, take: 3 },
+          seasonData: { where: VERIFIED_SUGAR_SEASON, orderBy: { season: "desc" }, take: 3 },
         },
         orderBy: { name: "asc" },
       });

@@ -69,9 +69,14 @@ export function numeric(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** People working there: the reported count, else the estimate. */
+/**
+ * People working there: the reported count only. The seeded
+ * "employmentEstimate" figures (round numbers, no link — the Calcutta Stock
+ * Exchange "5,000 jobs" though it has not traded since 2013) are neither
+ * shown nor added to the district total (Sept 2026 audit).
+ */
 export function jobsOf(p: LocalIndustry): number | null {
-  return numeric(p.details?.employees) ?? numeric(p.details?.employmentEstimate);
+  return numeric(p.details?.employees);
 }
 export function visitorsOf(p: LocalIndustry): number | null {
   return numeric(p.details?.visitorsPerYear) ?? numeric(p.details?.visitors_annual);
@@ -119,6 +124,8 @@ function mapsUrl(lat?: number | null, lng?: number | null): string | null {
 const SKIP_KEYS = new Set([
   "description", "phone", "filledFields", "missingPhones", "createdVia", "patchedFields", "fromTier", "toTier",
   "hasData", "dupeRemoved", "removed", "reason", "missing", "results", "message",
+  // Unsourced seeded estimates (see jobsOf).
+  "employmentEstimate",
 ]);
 
 /** Keys with a translated label (page_industries.dk.<key>). */
@@ -142,7 +149,8 @@ function useDetailRows() {
   return (details: Record<string, unknown> | null | undefined) => {
     const rows: { label: React.ReactNode; value: React.ReactNode; lang?: string }[] = [];
     for (const [k, raw] of Object.entries(details ?? {})) {
-      if (SKIP_KEYS.has(k) || raw === null || raw === undefined || raw === "") continue;
+      // A zero is "not reported", not a figure ("Revenue ₹0 Cr" for Infosys Mysuru).
+      if (SKIP_KEYS.has(k) || raw === null || raw === undefined || raw === "" || raw === 0) continue;
       if (typeof raw === "object" && !Array.isArray(raw)) continue;
       const known = KNOWN_KEYS.has(k);
       const n = typeof raw === "number" ? raw : null;
@@ -170,7 +178,7 @@ export function IndustryCard({ p, onOpen }: { p: LocalIndustry; onOpen: () => vo
   // One headline number: jobs, else visitors, else companies.
   const fact =
     jobs !== null
-      ? { label: numeric(p.details?.employees) !== null ? t("facts.employees") : t("facts.jobsEstimate"), value: m.num(jobs) }
+      ? { label: t("facts.employees"), value: m.num(jobs) }
       : visitors !== null
         ? { label: t("facts.visitors"), value: m.num(visitors) }
         : companies !== null
@@ -398,6 +406,8 @@ export function FactorySheet({ f: fac, onClose }: { f: FactoryRow | null; onClos
                     { label: t("sugar.sheet.cane"), value: s.totalCaneCrushed ? t("units.tonnes", { n: m.num(s.totalCaneCrushed) }) : null },
                     { label: t("sugar.sheet.sugar"), value: s.sugarProduced ? t("units.tonnes", { n: m.num(s.sugarProduced) }) : null },
                     { label: t("sugar.sheet.recovery"), value: s.recoveryPct ? `${fmt.number(s.recoveryPct, { maximumFractionDigits: 2 })}%` : null },
+                    // Rates are per quintal, the unit FRP is fixed in (PIB, 2024-25:
+                    // Rs 340/quintal); the label said "a tonne", 10x too low (Sept 2026 audit).
                     { label: t("sugar.sheet.frp"), value: s.frpRate ? m.rupees(s.frpRate) : null },
                     { label: t("sugar.sheet.sap"), value: s.sapRate ? m.rupees(s.sapRate) : null },
                     {
