@@ -263,6 +263,17 @@ class OpenRouterError extends Error {
   }
 }
 
+/**
+ * Thrown when the caller's deadlineAt left no time to try any model. This is
+ * the caller running out of its own time budget, NOT the AI being down.
+ */
+export class AIDeadlineError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AIDeadlineError";
+  }
+}
+
 /** The model answered, but with nothing usable (empty, reasoning only, or an error finish). */
 class EmptyAnswerError extends Error {
   constructor(message: string) {
@@ -732,6 +743,11 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
   }
 
   // ── Total failure ──
+  const triedAny = attempts.some((a) => !a.endsWith("(skipped: deadline)"));
+  if (deadlineHit && !triedAny) {
+    // Nothing was actually tried: no log row, no degraded flag.
+    throw new AIDeadlineError(`No time left in the caller's budget for purpose "${purpose}"`);
+  }
   const summary = `All ${chain.length} model(s) failed for purpose "${purpose}": ${attempts.join("; ")}`;
   logUsage("openrouter", chain[0], purpose, request.district, undefined, Date.now() - startTime, false, summary);
   prisma.aIProviderSettings

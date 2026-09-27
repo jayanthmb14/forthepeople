@@ -5,53 +5,66 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// ForThePeople.in — AI News Intelligence System
-// Uses Gemini 2.5 Flash to analyze news and generate insights
-// Pipeline: Ingest → Context Fetch → LLM Evaluation → Decision Engine
+// ForThePeople.in — AI News Intelligence (cron: news-intelligence, every 4 h)
+// Pipeline per district: fresh news → context → ONE AI call → insights
+//
+// v5 rework (Sept 2026 audit, backend-ai-news.md §5 items 3–4). Before, a
+// run made 10 AI calls per district (one per module) in alphabetical order
+// with no deadline, so it was killed at 300 s after 1–3 districts, and every
+// AI error was logged as "no relevant news". Now:
+//   - ONE call per district returns every module at once (10× fewer calls)
+//   - a district is analysed only when it has news fetched after its last
+//     successful analysis (most runs have nothing to do and finish fast)
+//   - least-recently-attempted districts go first; no new district starts
+//     after the time budget (default 240 s) is used up
+//   - AI failures are logged as phase=llm status=error and counted, and the
+//     cron is marked failed when every AI call failed
+// Model routing: purpose "news-analysis" = free Tier 1 (src/lib/ai-models.ts).
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
-import { callAI } from "@/lib/ai-provider";
+import { AIDeadlineError, callAIJSON } from "@/lib/ai-provider";
+import {
+  NEWS_INTEL_MODULES,
+  buildNewsIntelPrompt,
+  parseNewsIntelAnswer,
+  planNewsIntelRun,
+  type NewsIntelArticle,
+  type NewsIntelInsight,
+} from "@/lib/news-intel";
 
-// Modules that can have AI insights
-const INSIGHT_MODULES = [
-  "overview", "leadership", "finance", "water", "crops",
-  "weather", "police", "elections", "health", "power",
-];
+const DEFAULT_BUDGET_MS = 240_000;
+/** Do not start a district with less time left than this. */
+const MIN_DISTRICT_MS = 30_000;
+/** Per-model timeout for the one-call-per-district prompt (longer answer). */
+const CALL_TIMEOUT_MS = 45_000;
+const NEWS_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_ARTICLES = 15;
 
 async function log(
   districtId: string,
   phase: string,
-  status: string,
+  status: "success" | "error" | "skipped",
   message?: string,
-  extra?: { tokensUsed?: number; durationMs?: number; itemsProcessed?: number }
+  extra?: {
+    durationMs?: number;
+    itemsProcessed?: number;
+    tokensUsed?: number;
+    aiProvider?: string;
+    aiModel?: string;
+    usedFallback?: boolean;
+  },
 ) {
-  await prisma.newsIntelligenceLog.create({
-    data: { districtId, phase, status, message: message?.slice(0, 500), ...extra },
-  }).catch(() => {}); // non-fatal
+  await prisma.newsIntelligenceLog
+    .create({ data: { districtId, phase, status, message: message?.slice(0, 500), ...extra } })
+    .catch(() => {}); // non-fatal
 }
 
-// ── Phase 1: Ingest recent news ───────────────────────────
-async function ingestNews(districtId: string) {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24h
-  const news = await prisma.newsItem.findMany({
-    where: { districtId, publishedAt: { gte: since } },
-    orderBy: { publishedAt: "desc" },
-    take: 20,
-    select: { id: true, title: true, summary: true, url: true, source: true, publishedAt: true },
-  });
-  return news;
-}
-
-// ── Phase 2: Context fetch ────────────────────────────────
-async function fetchContext(districtId: string) {
-  const [district, leaders, latestCrops, latestWeather, activeAlerts] = await Promise.all([
-    prisma.district.findUnique({
-      where: { id: districtId },
-      select: { name: true, nameLocal: true, population: true },
-    }),
+// ── Context for the prompt ────────────────────────────────
+async function fetchContextLines(districtId: string): Promise<string[]> {
+  const [leaders, latestCrops, latestWeather, activeAlerts] = await Promise.all([
     prisma.leader.findMany({
-      where: { districtId, tier: { lte: 2 } },
-      select: { name: true, role: true, party: true },
+      where: { districtId, tier: { lte: 2 }, active: true },
+      select: { name: true, role: true },
       take: 5,
     }),
     prisma.cropPrice.findMany({
@@ -63,134 +76,53 @@ async function fetchContext(districtId: string) {
     prisma.weatherReading.findFirst({
       where: { districtId },
       orderBy: { recordedAt: "desc" },
-      select: { temperature: true, conditions: true, rainfall: true },
+      select: { temperature: true, conditions: true },
     }),
     prisma.localAlert.findMany({
       where: { districtId, active: true },
       take: 3,
-      select: { title: true, severity: true },
+      select: { title: true },
     }),
   ]);
 
-  return { district, leaders, latestCrops, latestWeather, activeAlerts };
+  return [
+    leaders.length > 0 ? `Key officials: ${leaders.map((l) => `${l.name} (${l.role})`).join(", ")}` : "",
+    latestCrops.length > 0 ? `Crop prices: ${latestCrops.map((c) => `${c.commodity} ₹${c.modalPrice}/q`).join(", ")}` : "",
+    latestWeather ? `Weather: ${latestWeather.conditions}, ${latestWeather.temperature}°C` : "",
+    activeAlerts.length > 0 ? `Active alerts: ${activeAlerts.map((a) => a.title).join("; ")}` : "",
+  ].filter(Boolean);
 }
 
-// ── Phase 3: LLM Evaluation ───────────────────────────────
-interface NewsItem {
-  id: string;
-  title: string;
-  summary?: string | null;
-  url: string;
-  source: string;
-}
-
-async function evaluateWithAI(
-  news: NewsItem[],
-  context: Awaited<ReturnType<typeof fetchContext>>,
-  module: string
-): Promise<{
-  headline: string;
-  summary: string;
-  sentiment: string;
-  confidence: number;
-  relevantNewsIds: string[];
-  aiProvider: string;
-  aiModel: string;
-  usedFallback: boolean;
-} | null> {
-  if (!news.length) return null;
-
-  const districtName = context.district?.name ?? "the district";
-  const newsText = news
-    .slice(0, 10)
-    .map((n, i) => `[${i + 1}] ${n.title}\n${n.summary ?? ""}`)
-    .join("\n\n");
-
-  const contextText = [
-    context.leaders.length > 0 ? `Key officials: ${context.leaders.map((l) => `${l.name} (${l.role})`).join(", ")}` : "",
-    context.latestCrops.length > 0 ? `Crop prices: ${context.latestCrops.map((c) => `${c.commodity} ₹${c.modalPrice}/q`).join(", ")}` : "",
-    context.latestWeather ? `Weather: ${context.latestWeather.conditions}, ${context.latestWeather.temperature}°C` : "",
-    context.activeAlerts.length > 0 ? `Active alerts: ${context.activeAlerts.map((a) => a.title).join("; ")}` : "",
-  ].filter(Boolean).join("\n");
-
-  const systemPrompt = `You are an AI assistant summarizing government/civic news for ${districtName} district, India.`;
-  const userPrompt = `Module focus: ${module}
-
-Recent news articles (last 24 hours):
-${newsText}
-
-Current district context:
-${contextText}
-
-Return ONLY valid JSON:
-{
-  "headline": "Max 100 char headline summarizing key development",
-  "summary": "2-3 sentences explaining the significance for citizens",
-  "sentiment": "positive|negative|neutral",
-  "confidence": 0.0-1.0,
-  "relevantNewsIndices": [1, 2, 3]
-}
-
-If no relevant news for this module, return: {"noRelevantNews": true}`;
-
-  try {
-    const response = await callAI({ systemPrompt, userPrompt, purpose: "news-analysis", jsonMode: true });
-    const text = response.text.trim();
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    if (parsed.noRelevantNews) return null;
-
-    const relevantNewsIds = (parsed.relevantNewsIndices ?? [])
-      .map((idx: number) => news[idx - 1]?.id)
-      .filter(Boolean);
-
-    return {
-      headline: String(parsed.headline ?? "").slice(0, 120),
-      summary: String(parsed.summary ?? "").slice(0, 500),
-      sentiment: ["positive", "negative", "neutral"].includes(parsed.sentiment) ? parsed.sentiment : "neutral",
-      confidence: Math.min(1, Math.max(0, Number(parsed.confidence ?? 0.5))),
-      relevantNewsIds,
-      aiProvider: response.provider,
-      aiModel: response.model,
-      usedFallback: response.usedFallback,
-    };
-  } catch {
-    return null;
-  }
-}
-
-// ── Phase 4: Decision Engine ──────────────────────────────
+// ── Save one insight (replaces the previous one for the module) ──
 async function saveInsight(
   districtId: string,
-  module: string,
-  insight: NonNullable<Awaited<ReturnType<typeof evaluateWithAI>>>,
-  news: NewsItem[]
-) {
-  // Only save if confidence >= 0.5
-  if (insight.confidence < 0.5) return;
+  insight: NewsIntelInsight,
+  articles: NewsIntelArticle[],
+  ai: { provider: string; model: string },
+): Promise<boolean> {
+  // Low-confidence answers are not shown to citizens.
+  if (insight.confidence < 0.5) return false;
 
-  // Upsert insight (replace previous for same district+module)
   const existing = await prisma.aIInsight.findFirst({
-    where: { districtId, module },
+    where: { districtId, module: insight.module },
     orderBy: { createdAt: "desc" },
     select: { id: true },
   });
 
+  const cited = articles.filter((a) => insight.newsIds.includes(a.id));
   const created = await prisma.aIInsight.create({
     data: {
       districtId,
-      module,
+      module: insight.module,
       headline: insight.headline,
       summary: insight.summary,
       sentiment: insight.sentiment,
       confidence: insight.confidence,
-      sourceUrls: news.map((n) => n.url).filter(Boolean),
-      newsItemIds: insight.relevantNewsIds,
-      aiProvider: insight.aiProvider,
-      aiModel: insight.aiModel,
+      // Only the articles the insight is actually based on.
+      sourceUrls: cited.map((a) => a.url).filter(Boolean),
+      newsItemIds: insight.newsIds,
+      aiProvider: ai.provider,
+      aiModel: ai.model,
       approved: insight.confidence >= 0.8, // auto-approve high-confidence insights
     },
   });
@@ -198,78 +130,188 @@ async function saveInsight(
   // Add to review queue if not auto-approved
   if (!created.approved) {
     await prisma.reviewQueue.create({
-      data: {
-        insightId: created.id,
-        districtId,
-        status: "pending",
-      },
+      data: { insightId: created.id, districtId, status: "pending" },
     });
   }
 
-  // Clean up old insight
   if (existing) {
     await prisma.aIInsight.delete({ where: { id: existing.id } }).catch(() => {});
   }
+  return true;
 }
 
 // ── Main runner ───────────────────────────────────────────
-export async function runAIAnalyzer() {
-  console.log("[AI Analyzer] Starting intelligence pipeline…");
-  const start = Date.now();
+export interface AnalyzerStats {
+  districts: number;
+  /** Districts with new news that needed analysis. */
+  needingWork: number;
+  processed: number;
+  skippedNoNewNews: number;
+  /** Districts that needed work but the time budget ran out first. */
+  notReached: number;
+  aiCalls: number;
+  aiFailures: number;
+  insightsSaved: number;
+  stoppedEarly: boolean;
+  /** First few AI error messages (for the cron record and admin email). */
+  errors: string[];
+  durationMs: number;
+}
 
-  const activeDistricts = await prisma.district.findMany({
+export async function runAIAnalyzer(opts: { budgetMs?: number } = {}): Promise<AnalyzerStats> {
+  const start = Date.now();
+  const deadline = start + (opts.budgetMs ?? DEFAULT_BUDGET_MS);
+  const since = new Date(start - NEWS_WINDOW_MS);
+
+  const districts = await prisma.district.findMany({
     where: { active: true },
-    select: { id: true, slug: true, name: true },
+    select: { id: true, slug: true, name: true, state: { select: { name: true } } },
     orderBy: { name: "asc" },
   });
 
-  for (const district of activeDistricts) {
-    const districtSlug = district.slug;
+  const [successRows, attemptRows, newsRows] = await Promise.all([
+    prisma.newsIntelligenceLog.groupBy({
+      by: ["districtId"],
+      where: { phase: "llm", status: "success" },
+      _max: { createdAt: true },
+    }),
+    prisma.newsIntelligenceLog.groupBy({
+      by: ["districtId"],
+      where: { phase: "llm", status: { in: ["success", "error"] } },
+      _max: { createdAt: true },
+    }),
+    prisma.newsItem.groupBy({
+      by: ["districtId"],
+      where: { publishedAt: { gte: since }, duplicateOf: null, districtId: { not: null } },
+      _max: { fetchedAt: true },
+    }),
+  ]);
+
+  const toMap = (rows: Array<{ districtId: string | null; _max: Record<string, Date | null> }>, field: string) => {
+    const m = new Map<string, Date>();
+    for (const r of rows) {
+      const d = r._max[field];
+      if (r.districtId && d) m.set(r.districtId, d);
+    }
+    return m;
+  };
+  const plan = planNewsIntelRun(
+    districts.map((d) => d.id),
+    toMap(newsRows, "fetchedAt"),
+    toMap(successRows, "createdAt"),
+    toMap(attemptRows, "createdAt"),
+  );
+
+  const stats: AnalyzerStats = {
+    districts: districts.length,
+    needingWork: plan.order.length,
+    processed: 0,
+    skippedNoNewNews: plan.noNewNews.length,
+    notReached: 0,
+    aiCalls: 0,
+    aiFailures: 0,
+    insightsSaved: 0,
+    stoppedEarly: false,
+    errors: [],
+    durationMs: 0,
+  };
+  console.log(
+    `[AI Analyzer] ${plan.order.length} of ${districts.length} district(s) have new news; ` +
+      `${plan.noNewNews.length} skipped (nothing new since their last analysis)`,
+  );
+
+  const byId = new Map(districts.map((d) => [d.id, d]));
+  for (let idx = 0; idx < plan.order.length; idx++) {
+    const district = byId.get(plan.order[idx]);
+    if (!district) continue;
+
+    if (deadline - Date.now() < MIN_DISTRICT_MS) {
+      stats.stoppedEarly = true;
+      stats.notReached = plan.order.length - idx;
+      console.log(`[AI Analyzer] Time budget used; ${stats.notReached} district(s) left for the next run`);
+      break;
+    }
+
+    const t0 = Date.now();
+    const articles: NewsIntelArticle[] = await prisma.newsItem.findMany({
+      where: { districtId: district.id, publishedAt: { gte: since }, duplicateOf: null },
+      orderBy: { publishedAt: "desc" },
+      take: MAX_ARTICLES,
+      select: { id: true, title: true, summary: true, url: true },
+    });
+    if (articles.length === 0) continue;
+
+    const contextLines = await fetchContextLines(district.id);
+    const { systemPrompt, userPrompt } = buildNewsIntelPrompt({
+      districtName: district.name,
+      stateName: district.state?.name ?? "",
+      modules: NEWS_INTEL_MODULES,
+      articles,
+      contextLines,
+    });
+
     try {
+      const { data, provider, model, usedFallback } = await callAIJSON({
+        systemPrompt,
+        userPrompt,
+        purpose: "news-analysis",
+        jsonShape: "object",
+        maxTokens: 1800,
+        temperature: 0.2,
+        district: district.slug,
+        timeoutMs: CALL_TIMEOUT_MS,
+        deadlineAt: deadline,
+      });
+      stats.aiCalls++;
 
-      await log(district.id, "ingest", "started");
-
-      // Phase 1: Ingest
-      const news = await ingestNews(district.id);
-      await log(district.id, "ingest", "success", `${news.length} articles`, { itemsProcessed: news.length });
-
-      if (news.length === 0) {
-        await log(district.id, "ingest", "skipped", "No recent news");
-        continue;
-      }
-
-      // Phase 2: Context
-      const context = await fetchContext(district.id);
-      await log(district.id, "context", "success", "Context fetched");
-
-      // Phase 3+4: LLM + Decision (per module)
-      for (const moduleName of INSIGHT_MODULES) {
-        const phaseStart = Date.now();
+      const insights = parseNewsIntelAnswer(
+        data,
+        NEWS_INTEL_MODULES,
+        articles.map((a) => a.id),
+      );
+      let saved = 0;
+      for (const insight of insights) {
         try {
-          const insight = await evaluateWithAI(news, context, moduleName);
-          const durationMs = Date.now() - phaseStart;
-
-          if (insight) {
-            await saveInsight(district.id, moduleName, insight, news);
-            await log(district.id, "llm", "success", `${moduleName}: ${insight.headline.slice(0, 50)}… [${insight.aiProvider}${insight.usedFallback ? " fallback" : ""}]`, { durationMs });
-          } else {
-            await log(district.id, "llm", "skipped", `${moduleName}: no relevant news`, { durationMs });
-          }
+          if (await saveInsight(district.id, insight, articles, { provider, model })) saved++;
         } catch (err) {
-          await log(district.id, "llm", "error", `${moduleName}: ${String(err).slice(0, 200)}`, {
-            durationMs: Date.now() - phaseStart,
-          });
+          console.error(`[AI Analyzer] save failed for ${district.slug}/${insight.module}:`, err instanceof Error ? err.message : err);
         }
-
-        // Rate limiting: 1 req per second
-        await new Promise((r) => setTimeout(r, 1000));
       }
+      stats.insightsSaved += saved;
+      stats.processed++;
 
-      console.log(`[AI Analyzer] ${district.name} processed in ${Date.now() - start}ms`);
+      const modulesText = insights.length
+        ? insights.map((i) => i.module).join(", ")
+        : "no module had relevant news";
+      await log(district.id, "llm", "success", `${articles.length} articles → ${insights.length} insight(s), ${saved} saved (${modulesText})`, {
+        durationMs: Date.now() - t0,
+        itemsProcessed: articles.length,
+        aiProvider: provider,
+        aiModel: model,
+        usedFallback,
+      });
     } catch (err) {
-      console.error(`[AI Analyzer] Error for ${districtSlug}:`, err);
+      if (err instanceof AIDeadlineError) {
+        stats.stoppedEarly = true;
+        stats.notReached = plan.order.length - idx;
+        break;
+      }
+      stats.aiCalls++;
+      stats.aiFailures++;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (stats.errors.length < 3) stats.errors.push(`${district.slug}: ${msg.slice(0, 200)}`);
+      console.error(`[AI Analyzer] AI call failed for ${district.slug}:`, msg);
+      await log(district.id, "llm", "error", `AI call failed: ${msg}`, {
+        durationMs: Date.now() - t0,
+        itemsProcessed: articles.length,
+      });
     }
   }
 
-  console.log(`[AI Analyzer] Pipeline complete in ${Date.now() - start}ms`);
+  stats.durationMs = Date.now() - start;
+  console.log(
+    `[AI Analyzer] Done in ${stats.durationMs}ms: ${stats.processed} processed, ${stats.insightsSaved} insight(s) saved, ` +
+      `${stats.aiFailures}/${stats.aiCalls} AI call(s) failed, ${stats.notReached} not reached`,
+  );
+  return stats;
 }
