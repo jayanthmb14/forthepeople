@@ -3,20 +3,21 @@
  *
  * File 45 §4 Level 2, Design v4: a hue band with the category emoji, the
  * module count, title and tagline; a status ring (how many of the modules
- * are live — counted from the registry, the same numbers the left rail
- * and the footer note use); and up to three headline figures.
+ * are live — counted from the registry, the same numbers the cards and
+ * the footer note use); the "In simple words" line; and up to four
+ * headline figures.
  *
  * Honesty (Sep 2026): the KPI tiles used to print each module's registry
  * `headlineMetric.mockValue` with a "Published" chip. They now show real
  * IndiaIndicator rows only (date + source on each tile) and disappear when
- * no module in the category has one.
+ * no module in the category has one. v4.1: each tile opens a DetailSheet.
  *
  * Server component; strings arrive translated from the page.
  */
 
 import * as React from "react";
-import { StatTile, StatStrip } from "@/components/district/ui";
-import type { HeroTile } from "@/components/india/module-page/ModuleHero";
+import { Explainer } from "@/components/district/visuals";
+import { FigureTiles, type FigureDetail } from "@/components/india/FigureSheet";
 
 export interface SuperCategoryHeroProps {
   emoji: string;
@@ -26,10 +27,28 @@ export interface SuperCategoryHeroProps {
   counts: { total: number; live: number; soon: number };
   ring: { label: string; live: string; legendLive: string; legendSoon: string };
   figuresTitle: string;
-  tiles: HeroTile[];
+  /** Headline figures; each tile opens a DetailSheet. */
+  figures: FigureDetail[];
+  tapHint: string;
+  /** One plain sentence ("In simple words"). */
+  simple: string;
+  /** Hue class for the detail sheet (it opens outside the page's hue scope). */
+  hueClassName: string;
 }
 
-export function SuperCategoryHero({ emoji, title, tagline, countLabel, counts, ring, figuresTitle, tiles }: SuperCategoryHeroProps) {
+export function SuperCategoryHero({
+  emoji,
+  title,
+  tagline,
+  countLabel,
+  counts,
+  ring,
+  figuresTitle,
+  figures,
+  tapHint,
+  simple,
+  hueClassName,
+}: SuperCategoryHeroProps) {
   const size = 132;
   const stroke = 16;
   const r = (size - stroke) / 2;
@@ -120,20 +139,22 @@ export function SuperCategoryHero({ emoji, title, tagline, countLabel, counts, r
         </figure>
       </div>
 
-      {tiles.length > 0 && (
-        <div style={{ position: "relative", marginTop: 20 }}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--hue-deep)" }}>{figuresTitle}</p>
-          <StatStrip cols={tiles.length >= 3 ? 3 : 2}>
-            {tiles.map((k) => (
-              <StatTile key={k.key} label={k.label} value={k.value} unit={k.unit || undefined} emoji={k.emoji} asOf={k.asOf} source={k.source} />
-            ))}
-          </StatStrip>
-        </div>
-      )}
+      <div style={{ position: "relative", marginTop: 20 }}>
+        <Explainer>{simple}</Explainer>
+        {figures.length > 0 && (
+          <>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "4px 12px", flexWrap: "wrap", margin: "0 0 10px" }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: "var(--hue-deep)" }}>{figuresTitle}</p>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--ftp-text-2)" }}>{tapHint}</p>
+            </div>
+            <FigureTiles figures={figures} hueClassName={hueClassName} />
+          </>
+        )}
+      </div>
 
       <style>{`
         .sc-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; }
-        @media (max-width: 640px) { .sc-hero-grid { grid-template-columns: minmax(0, 1fr); } }
+        @media (max-width: 639px) { .sc-hero-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; } .sc-hero-grid > :first-child { justify-self: stretch; } }
       `}</style>
     </section>
   );
