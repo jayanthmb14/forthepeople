@@ -314,7 +314,7 @@ export default async function StatePage({ params }: Props) {
                           <span lang="und" style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{d.nameLocal}</span>
                         )}
                       </span>
-                      <Pill tone="neutral"><Lock size={12} aria-hidden />Coming soon</Pill>
+                      <Pill tone="neutral"><Lock size={12} aria-hidden />Soon</Pill>
                     </span>
                   </Card>
                 </li>
