@@ -530,8 +530,8 @@ npx tsx prisma/seed-features.ts
 - [x] Static constants updated
 - [x] Weather/crop overrides configured
 - [x] New Delhi district: full data seeded
-- [x] Activation script created (scripts/activate-delhi-districts.ts)
-- [x] Other 10 districts: light data seeded (scripts/seed-delhi-other-districts.ts)
+- [x] Activation script created (scripts/activate-delhi-districts.ts) — one-off, removed 2026-09 (git history)
+- [x] Other 10 districts: light data seeded (scripts/seed-delhi-other-districts.ts) — one-off, removed 2026-09 (git history)
 - [ ] Local testing verified
 - [ ] Production deployment
 - [ ] Remaining 10 districts activated
@@ -555,7 +555,7 @@ npx tsx prisma/seed-features.ts
 - [x] Weather/crop overrides configured
 - [x] Telugu font imported (Noto Sans Telugu)
 - [x] Hyderabad district: full data seeded (leadership, budget, infra, schools, police, schemes, elections, courts, RTI, offices, transport, industries, famous, services)
-- [x] Activation script created (scripts/activate-telangana-districts.ts)
+- [x] Activation script created (scripts/activate-telangana-districts.ts) — one-off, removed 2026-09 (git history)
 - [x] Multi-state scalability overhaul (state-config.ts, DataSourceBanner, NoDataCard)
 - [x] Scrapers made state-aware (power, dams, transport — graceful skip for non-Karnataka)
 - [x] Exams dedup + state filtering fix
