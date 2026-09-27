@@ -511,7 +511,10 @@
     "connectName": "ForThePeople Connect:",
     "connectSoon": "जल्द आ रहा है",
     "connectBody": "गड्ढे और कचरे जैसी स्थानीय समस्याओं की शिकायत करें।",
-    "builtBy": "मंड्या में जयंत एम बी द्वारा बनाया गया",
+    "builtBy": "<link>जयंत एम बी</link> द्वारा बनाया गया",
+    "linkedinNote": "(लिंक्डइन, नए टैब में खुलता है)",
+    "more": "और देखें",
+    "less": "कम दिखाएँ",
     "article": "अनुच्छेद 19(1)(क) के तहत अभिव्यक्ति की स्वतंत्रता",
     "comingSoonTitle": "ForThePeople की ओर से जल्द आ रहा है"
   },

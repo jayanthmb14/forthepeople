@@ -19,8 +19,8 @@
 //    full advice, crop, topic, week, source, Kisan Call Centre) → soil
 //    cards (tap → SoilSheet: pH sentence, N/P/K meters, date, source) →
 //    AI insight → charts (soil nutrients · what the advice is about) →
-//    news → Share. Sources and "report a mistake" are in the layout's
-//    verification panel.
+//    news → Share. Sources are in the layout's verification panel; reports
+//    go through the site-wide "Report a problem" button.
 //
 //  Data: useSoil() → { soil (≤ 20 village reports), advisories (≤ 10
 //  newest KVK / ICAR advisories) }. Every advisory shows its week and

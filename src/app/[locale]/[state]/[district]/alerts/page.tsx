@@ -20,8 +20,9 @@
 //  tap-to-call emergency numbers → kinds of warning (ring) → AI insight →
 //  news → Share. With no warning the page says so and still shows the
 //  emergency numbers. The level colour is a plain dot (the words say it
-//  too); no emoji. Sources, "report a mistake" and the weather link are
-//  left to the layout (verification panel, "See also").
+//  too); no emoji. Sources and the weather link are left to the layout
+//  (verification panel, "See also"); reports go through the site-wide
+//  "Report a problem" button.
 //
 //  Colours follow the IMD idea: red = act now, orange = be ready, yellow =
 //  stay alert, green = low risk, blue = for your information. Each card is

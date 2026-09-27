@@ -92,7 +92,7 @@ export async function RelevantNewsSection({ moduleSlug, locale, className }: Rel
               <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>{fmtDate(locale, n.publishedAt)}</span>
             </div>
             <div lang={n.lang}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.45 }}>{n.headline}</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 550, margin: "0 0 4px", lineHeight: 1.45 }}>{n.headline}</h3>
               <p style={{ fontSize: 13, color: "var(--ftp-text-2)", lineHeight: 1.6, margin: "0 0 8px" }}>{n.summary}</p>
             </div>
             <a href={n.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "var(--hue-deep)", fontWeight: 600 }}>

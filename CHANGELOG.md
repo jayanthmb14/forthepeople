@@ -120,6 +120,24 @@ before. Numbers as in `docs/OWNER-TODO.md` §3.
   Neon one; the rest fail. It redeploys whenever `main` changes. Stop it before merging to `main`
   (steps in `docs/OWNER-TODO.md` §2).
 
+### Changed — v5.3 UI chrome: one report button, slim footer, quieter news (branch `v53/ui-chrome`, 2026-09-28)
+Owner feedback on the v5.1 chrome. New strings in en + hi + kn.
+- **One report button**: the floating "Report a problem" is the only report form; "Report a
+  mistake" is gone from "Check this data" (`ReportMistake.tsx`, its event / hash hand-off and the
+  `page_shell.report` strings removed). The floating form still sends state, district and module
+  (and names the taluk on a taluk page).
+- **Slim footer** on district pages and India module pages: one line (logo mark, "Built by
+  Jayanth M B", About · Privacy · Disclaimer, "More") that opens the full footer in place
+  (`FooterFrame.tsx`, rule in `footer-mode.ts`, test `tests/footer-mode.test.ts`). Other pages keep
+  the full footer.
+- **Footer credit**: "Built by Jayanth M B" (no "in Mandya"); the name links to LinkedIn. The
+  footer's bottom rule now lines up with the columns above it.
+- **News**: story headlines 15 px regular weight (14 px on phones) on calmer cards
+  (`TapCard density="compact"`), smaller topic headings, tiles and sheet title; lighter headline
+  weight in the overview and India news lists.
+- **Alignment**: the district bar and its phone/tablet line follow the header's 12 / 20 / 24 /
+  28 px sides; news topic tiles sit two per row at 320 px.
+
 ### Fixed — v5.2 wiring: verified or hidden (branch `v52/wiring`, 2026-09-28)
 Backend wiring after the v5.1 merge. Rule: a value that is unverified, invented, seeded or
 estimated is not shown as fact. No database writes; the clean-ups below need the owner.

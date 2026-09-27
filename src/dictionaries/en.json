@@ -516,7 +516,10 @@
     "connectName": "ForThePeople Connect:",
     "connectSoon": "Coming soon",
     "connectBody": "report local problems like potholes and garbage.",
-    "builtBy": "Built by Jayanth M B in Mandya",
+    "builtBy": "Built by <link>Jayanth M B</link>",
+    "linkedinNote": "(LinkedIn, opens in a new tab)",
+    "more": "More",
+    "less": "Less",
     "article": "Free expression under Article 19(1)(a)",
     "comingSoonTitle": "Coming soon from ForThePeople"
   },

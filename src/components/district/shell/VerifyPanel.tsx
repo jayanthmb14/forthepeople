@@ -11,9 +11,11 @@
 //    source · data date · we last checked · should update · on time? ·
 //    how we get it (automatic feed / entered by hand / from news /
 //    estimate / not collected here)
-//  then "Check it yourself" (the official portal), ONE "Report a mistake"
-//  button (prefilled with the page and "wrong data"), links to all sources
+//  then "Check it yourself" (the official portal), links to all sources
 //  and the change log, and the independence line — once per page.
+//  (v5.3: no "Report a mistake" button here any more — the floating
+//  "Report a problem" button, on every page, already knows the district,
+//  state and module of the page it is opened on.)
 //
 //  Overview: a summary ("21 up to date · 9 late · …") and, folded, one row
 //  per topic with its data date, cadence and status.
@@ -37,13 +39,10 @@ import type { LucideIcon } from "lucide-react";
 import { useFreshness, type DatasetFreshness } from "@/hooks/useFreshness";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { useSourceText } from "@/components/money/useMoney";
-import { getDistrict } from "@/lib/constants/districts";
 import { SIDEBAR_MODULES } from "@/lib/constants/sidebar-modules";
 import { DATASETS } from "@/lib/freshness";
-import { placeName } from "@/i18n/place-name";
 import { districtRoute } from "./path";
 import { modulePortal, moduleSourceNames } from "./sources";
-import ReportMistake from "./ReportMistake";
 import { useVerification } from "./useVerification";
 import {
   newestCheck,
@@ -155,8 +154,6 @@ export default function VerifyPanel({
   const isOverview = variant === "overview";
   const moduleSlug = isOverview ? "overview" : route.module;
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
-  const taluk = route.taluk ? getDistrict(stateSlug, districtSlug)?.taluks.find((x) => x.slug === route.taluk) : undefined;
-  const pageName = taluk ? placeName(taluk, locale) : mt.label(moduleSlug ?? "overview");
   const datasets = moduleSlug && !isOverview ? fresh.datasetsFor(moduleSlug) : [];
   // Known from the registry, so the intro does not flicker while loading.
   const hasDatasets = isOverview || DATASETS.some((d) => d.module === moduleSlug);
@@ -309,13 +306,6 @@ export default function VerifyPanel({
             {tv("checkYourself")}: {tv("portal")}
           </a>
         )}
-        <ReportMistake
-          stateSlug={stateSlug}
-          districtSlug={districtSlug}
-          module={route.kind === "taluk" ? null : (moduleSlug ?? null)}
-          pageName={pageName}
-          districtName={districtName}
-        />
         {moduleSlug !== "data-sources" && (
           <Link className="ftp-verify-link" href={`${base}/data-sources`}>
             {tv("allSources", { district: districtName })}

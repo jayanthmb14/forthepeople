@@ -404,13 +404,23 @@ Built in `src/components/home/` (`chrome.module.css`) and
 - **Report button:** a pill "Report a problem" in the bottom-right corner on
   PC and tablet; a 44 px round flag on phones. It opens a short form (kind of
   problem, what is wrong, optional email). Focus stays inside, Escape closes.
-  Hidden on admin pages and India module pages. District pages also keep one
-  "Report a mistake" in "Check this data".
+  Hidden on admin pages and India module pages. On district pages it is the
+  only report form (v5.3): it sends the state, district and module with the
+  report.
 - **Footer:** light, with the same ribbon and a coloured icon chip on each
   column title; links include Prices today, Vote for a district, Vote on
   features and GitHub stars; a "Coming soon from ForThePeople" row shows
   Connect and Jobs as two cards. Phones keep space at the bottom for the
-  Report button.
+  Report button. The last line reads "Built by Jayanth M B" (the name links
+  to his LinkedIn, new tab) and "Free expression under Article 19(1)(a)".
+- **Slim footer (v5.3):** district pages (overview, every module, taluk and
+  village page) and India module pages end with one thin line instead: the
+  logo mark, "Built by Jayanth M B", About · Privacy · Disclaimer and a
+  "More" button that opens the full footer in place (a disclosure with
+  `aria-expanded`; grows smoothly, then scrolls into view; no animation under
+  reduced motion; closed again on the next page). The line keeps its right
+  end clear of the Report button. Rule: `footer-mode.ts`; frame:
+  `FooterFrame.tsx`.
 
 ## 10. District overview (v5.1)
 

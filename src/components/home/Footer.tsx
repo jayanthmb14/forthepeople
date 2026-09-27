@@ -18,11 +18,20 @@
 //    Coming soon from ForThePeople
 //    [mark] ForThePeople Connect — report local problems      Coming soon
 //    [mark] ForThePeople Jobs — government jobs and exams     Coming soon
-//    Built by Jayanth M B in Mandya · Free expression under Article 19(1)(a)
+//    Built by Jayanth M B · Free expression under Article 19(1)(a)
+//
+//  "Jayanth M B" links to his LinkedIn profile (new tab; screen readers
+//  hear "LinkedIn, opens in a new tab").
 //
 //  Each column title has a small icon chip in its own pastel hue. There is
 //  no site-wide "Data refreshed …" line: freshness belongs to each dataset,
 //  next to its own figure (and in the status strip only when it is true).
+//
+//  v5.3: district pages and India module pages show a SLIM footer instead —
+//  one thin line with the logo mark, "Built by Jayanth M B", About ·
+//  Privacy · Disclaimer and a "More" button that opens this full footer in
+//  place. FooterFrame (client) picks the layout from the address; this
+//  server component draws both.
 //
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -30,10 +39,12 @@ import { Compass, Github, HeartHandshake, Info, Instagram, Star, Users } from "l
 import type { LucideIcon } from "lucide-react";
 import { NUMBER_LOCALE } from "@/i18n/languages";
 import { PRODUCTS, ProductMark } from "./products";
+import FooterFrame from "./FooterFrame";
 import styles from "./chrome.module.css";
 
 const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
 const INSTAGRAM_URL = "https://www.instagram.com/forthepeople_in/";
+const LINKEDIN_URL = "https://www.linkedin.com/in/jayanthmb/";
 
 export interface FooterProps {
   locale: string;
@@ -86,19 +97,35 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
     },
   ];
 
+  // "Built by <Jayanth M B>" — the name is the link. A fresh node for each
+  // place it is used (one element must not sit in two places of a tree
+  // that is handed to a client component).
+  const builtBy = () => t.rich("builtBy", {
+    link: (chunks) => (
+      <a key="linkedin" href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className={styles.builtByLink}>
+        {chunks}
+        <span className="sr-only"> {t("linkedinNote")}</span>
+      </a>
+    ),
+  });
+
   const starBadge = stars && (
     <>
-      <span className={styles.footerStars} aria-hidden>
+      <span key="count" className={styles.footerStars} aria-hidden>
         <Star size={12} className={styles.star} />
         <span className="ftp-num">{stars}</span>
       </span>
-      <span className="sr-only">{th("stars", { n: githubStars ?? 0 })}</span>
+      <span key="sr" className="sr-only">
+        {th("stars", { n: githubStars ?? 0 })}
+      </span>
     </>
   );
 
-  return (
-    <footer role="contentinfo" className={styles.footer}>
-      <div className={`ftp-container ${styles.footerGrid}`}>
+  // These pieces are handed to a client component (FooterFrame), where they
+  // can arrive as arrays: every top-level element carries a key.
+  const main = (
+    <>
+      <div key="grid" className={`ftp-container ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
           <Link href={`/${locale}`} className={styles.footerLogo} aria-label={th("home")} translate="no">
             <span className={styles.logoTile} aria-hidden>
@@ -149,7 +176,7 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
         </nav>
       </div>
 
-      <div className="ftp-container">
+      <div key="soon" className="ftp-container">
         <section className={styles.soon} aria-labelledby="ftp-footer-soon">
           <h2 id="ftp-footer-soon" className={styles.soonTitle}>
             {t("comingSoonTitle")}
@@ -170,11 +197,67 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
           </ul>
         </section>
       </div>
+    </>
+  );
 
-      <div className={`ftp-container ${styles.footerBottom}`}>
-        <span>{t("builtBy")}</span>
+  // The rule sits inside the container, so it lines up with the dashed rule
+  // and the columns above (not with the container's padding).
+  const bottom = (
+    <div key="bottom" className="ftp-container">
+      <div className={styles.footerBottom}>
+        <span>{builtBy()}</span>
         <span>{t("article")}</span>
       </div>
-    </footer>
+    </div>
+  );
+  const slimBottom = (
+    <div key="bottom" className="ftp-container">
+      <div className={styles.footerBottom}>
+        <span>{t("article")}</span>
+      </div>
+    </div>
+  );
+
+  // The slim line (district and India module pages): logo mark, built by,
+  // About · Privacy · Disclaimer. FooterFrame adds the "More" button.
+  const slimLine = (
+    <>
+      <Link key="mark" href={`/${locale}`} className={styles.slimMark} aria-label={th("home")}>
+        <span className={`${styles.logoTile} ${styles.slimTile}`} aria-hidden>
+          <Users size={13} strokeWidth={2.4} />
+        </span>
+      </Link>
+      <span key="built" className={styles.slimBuilt}>
+        {builtBy()}
+      </span>
+      <ul key="links" className={styles.slimLinks}>
+        <li>
+          <Link href={`/${locale}/about`}>{t("aboutUs")}</Link>
+        </li>
+        <li>
+          <span className={styles.slimDot} aria-hidden>
+            ·
+          </span>
+          <Link href={`/${locale}/privacy`}>{t("privacy")}</Link>
+        </li>
+        <li>
+          <span className={styles.slimDot} aria-hidden>
+            ·
+          </span>
+          <Link href={`/${locale}/disclaimer`}>{t("disclaimer")}</Link>
+        </li>
+      </ul>
+    </>
+  );
+
+  return (
+    <FooterFrame
+      main={main}
+      bottom={bottom}
+      slimLine={slimLine}
+      slimBottom={slimBottom}
+      moreLabel={t("more")}
+      lessLabel={t("less")}
+    />
   );
 }

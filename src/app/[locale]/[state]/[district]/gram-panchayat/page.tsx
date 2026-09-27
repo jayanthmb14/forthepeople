@@ -20,8 +20,8 @@
 //    least of their funds used) → Share / Compare. Urban districts (from
 //    the per-district config, so Pune is not treated like Mumbai) get
 //    their municipal body instead of an empty page. Sources, the "not an
-//    official website" line, "report a mistake" and the "N days old" note
-//    live in the district shell (verification panel, stale notice), not
+//    official website" line and the "N days old" note live in the
+//    district shell (verification panel, stale notice), not
 //    here (v5: no repetition, no emoji except the module's own in the
 //    header).
 //
@@ -481,8 +481,8 @@ function GramPanchayatInner({ params }: { params: Promise<{ locale: string; stat
         </>
       )}
 
-      {/* One row of actions. Sources and "report a mistake" are in the
-          district's verification panel at the bottom of the page. */}
+      {/* One row of actions. Sources are in the district's verification
+          panel at the bottom of the page. */}
       <MoneyToolbar shareTitle={mt.label("gram-panchayat")} compareHref={`/${locale}/compare?module=gram-panchayat&a=${district}`} />
 
       <PanchayatSheet gp={opened} locale={locale} taluk={opened ? talukName(opened.talukId) : null} money={money} onClose={() => setOpenId(null)} />

@@ -5,8 +5,8 @@
  */
 
 // The end of a daily-needs page (tap water, power, transport, health,
-// schools): related news, then the quiet Share / Compare row. Sources,
-// the "not an official website" line and "report a mistake" are NOT here:
+// schools): related news, then the quiet Share / Compare row. Sources and
+// the "not an official website" line are NOT here:
 // the district layout adds one verification panel at the bottom of every
 // page, so pages must not repeat them.
 "use client";

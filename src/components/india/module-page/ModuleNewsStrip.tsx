@@ -109,7 +109,7 @@ export default async function ModuleNewsStrip({ locale, newsKeywords, moduleTitl
                     🗞️
                   </span>
                   <span style={{ minWidth: 0 }}>
-                    <span lang={lang} style={{ display: "block", fontSize: 14, fontWeight: 600, lineHeight: 1.45, marginBottom: 4 }}>
+                    <span lang={lang} style={{ display: "block", fontSize: 14, fontWeight: 500, lineHeight: 1.45, marginBottom: 4 }}>
                       {n.title}
                     </span>
                     <span style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: "var(--ftp-text-2)" }}>

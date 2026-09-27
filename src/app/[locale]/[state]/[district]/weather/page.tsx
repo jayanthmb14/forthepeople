@@ -18,8 +18,8 @@
 //  weather) → the next 7 days (tap a day for every detail) → rain vs
 //  normal (a drop per month — tap one — and a ring) → charts (monthly rain
 //  vs normal, difference from normal, temperature) → recent readings (tap
-//  one for every detail) → AI insight → news → Share / CSV. Sources and
-//  "report a mistake" are in the layout's verification panel.
+//  one for every detail) → AI insight → news → Share / CSV. Sources are
+//  in the layout's verification panel.
 //
 //  Honesty rules on this page:
 //   • ONE "right now" (chooseCurrent, src/lib/weather/forecast.ts): our

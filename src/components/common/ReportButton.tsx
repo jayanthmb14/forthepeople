@@ -15,12 +15,14 @@
 //                 label for screen readers), so it covers almost nothing.
 //
 //  It opens a short form that already knows the page: the page title, its
-//  address, and — on a district page — the state, district and dashboard.
-//  The visitor picks what kind of problem (wrong or old data / something
-//  does not work / something else), writes what is wrong and, if they
-//  want a reply, an email. It posts to the existing /api/feedback (the
-//  same inbox as the "Report a mistake" button in each district page's
-//  verification section).
+//  address, and — on a district page — the state, district and dashboard
+//  (or the taluk). The visitor picks what kind of problem (wrong or old
+//  data / something does not work / something else), writes what is wrong
+//  and, if they want a reply, an email. It posts to /api/feedback.
+//
+//  v5.3: this is the ONE report form on district pages too — the separate
+//  "Report a mistake" button in "Check this data" was removed, so the
+//  district, state and module travel with this form (reportContext).
 //
 //  Not shown on admin pages, nor on India dashboard module pages, which
 //  have their own report button (IndiaReportIssueButton) in the same corner.
@@ -34,7 +36,6 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, X } from "lucide-react";
 import { getDistrict, getState } from "@/lib/constants/districts";
 import { getModule } from "@/lib/constants/sidebar-modules";
-import { OPEN_REPORT_EVENT } from "@/components/district/shell/ReportMistake";
 import s from "./ReportButton.module.css";
 
 type Kind = "wrong_data" | "bug" | "other";
@@ -45,13 +46,25 @@ const KINDS: readonly Kind[] = ["wrong_data", "bug", "other"];
 const KIND_EN: Record<Kind, string> = { wrong_data: "Wrong or old data", bug: "Something does not work", other: "Other" };
 
 /** Where the report is from: district page context, or the site section. */
-export function reportContext(pathname: string): { module?: string; stateSlug?: string; districtSlug?: string } {
+export function reportContext(pathname: string): {
+  module?: string;
+  stateSlug?: string;
+  districtSlug?: string;
+  /** Set on a taluk page (/en/karnataka/mandya/maddur). */
+  talukSlug?: string;
+} {
   const parts = pathname.split("/").filter(Boolean); // [locale, …]
   const st = parts[1] ? getState(parts[1]) : undefined;
   const dist = st && parts[2] ? getDistrict(st.slug, parts[2]) : undefined;
   if (st && dist) {
     const mod = parts[3] ? getModule(parts[3]) : undefined;
-    return { stateSlug: st.slug, districtSlug: dist.slug, module: parts[3] ? mod?.slug : "overview" };
+    const taluk = parts[3] && !mod ? dist.taluks.find((x) => x.slug === parts[3]) : undefined;
+    return {
+      stateSlug: st.slug,
+      districtSlug: dist.slug,
+      module: parts[3] ? mod?.slug : "overview",
+      talukSlug: taluk?.slug,
+    };
   }
   if (parts[1] === "india") return { module: parts[2] ? `india:${parts[2]}` : "india" };
   return { module: parts[1] ?? "home" };
@@ -153,7 +166,12 @@ export default function ReportButton() {
           // The admin inbox is in English: the dashboard's English name and
           // the district slug, or the page address.
           subject: `Report (${KIND_EN[kind]}): ${
-            ctx.districtSlug ? `${(ctx.module && getModule(ctx.module)?.label) || "District page"} (${ctx.districtSlug})` : pathname
+            ctx.districtSlug
+              ? `${
+                  (ctx.module && getModule(ctx.module)?.label) ||
+                  (ctx.talukSlug ? `Taluk page ${ctx.talukSlug}` : "District page")
+                } (${ctx.districtSlug})`
+              : pathname
           }`.slice(0, 200),
           message: message.trim().slice(0, 2000),
           email: email.trim() || undefined,
@@ -181,12 +199,6 @@ export default function ReportButton() {
         aria-expanded={open}
         aria-label={t("buttonAria")}
         onClick={() => {
-          // District pages have their own form that already knows the
-          // district and module: open that one instead of a second form.
-          if (document.documentElement.dataset.ftpReport === "district") {
-            window.dispatchEvent(new Event(OPEN_REPORT_EVENT));
-            return;
-          }
           // A fresh form after a report was sent.
           if (phase === "done") {
             setMessage("");
