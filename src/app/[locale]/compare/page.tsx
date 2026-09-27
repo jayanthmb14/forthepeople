@@ -266,10 +266,10 @@ function CompareContent({ locale }: { locale: string }) {
 
   const { data: overviewA, isLoading: loA } = useOverview(slugA, stateA);
   const { data: overviewB, isLoading: loB } = useOverview(slugB, stateB);
-  const { data: budgetA } = useBudget(slugA, stateA);
-  const { data: budgetB } = useBudget(slugB, stateB);
-  const { data: weatherA } = useWeather(slugA, stateA);
-  const { data: weatherB } = useWeather(slugB, stateB);
+  const { data: budgetA, isLoading: lbA } = useBudget(slugA, stateA);
+  const { data: budgetB, isLoading: lbB } = useBudget(slugB, stateB);
+  const { data: weatherA, isLoading: lwA } = useWeather(slugA, stateA);
+  const { data: weatherB, isLoading: lwB } = useWeather(slugB, stateB);
 
   const dA = overviewA?.data;
   const dB = overviewB?.data;
@@ -301,24 +301,28 @@ function CompareContent({ locale }: { locale: string }) {
 
   const isLoading = loA || loB;
 
-  // Scroll to the module's group once, after both districts have loaded.
+  // Finance and weather groups only render when there is data, so the
+  // focused group may be absent; the note above the table covers that case
+  // (but only once that group's own data has finished loading).
+  const focusGroupShown =
+    !!focusGroup &&
+    (focusGroup !== "finance" || totalBudA > 0 || totalBudB > 0) &&
+    (focusGroup !== "weather" || !!(weatherReadA || weatherReadB));
+  const focusGroupPending =
+    (focusGroup === "finance" && (lbA || lbB)) || (focusGroup === "weather" && (lwA || lwB));
+
+  // Scroll to the module's group once, as soon as both districts have
+  // loaded AND the group itself is on the page (weather/finance arrive later).
   const scrolledFor = useRef<string | null>(null);
   const tableReady = !isLoading && !!dA && !!dB;
   useEffect(() => {
-    if (!tableReady || !focusGroup || scrolledFor.current === focusGroup) return;
+    if (!tableReady || !focusGroup || !focusGroupShown || scrolledFor.current === focusGroup) return;
     const el = document.getElementById(groupId(focusGroup));
     if (!el) return;
     scrolledFor.current = focusGroup;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-  }, [tableReady, focusGroup]);
-
-  // Finance and weather groups only render when there is data, so the
-  // focused group may be absent; the note above the table covers that case.
-  const focusGroupShown =
-    !!focusGroup &&
-    (focusGroup !== "finance" || totalBudA > 0 || totalBudB > 0) &&
-    (focusGroup !== "weather" || !!(weatherReadA || weatherReadB));
+  }, [tableReady, focusGroup, focusGroupShown]);
 
   /** "From Weather & Rainfall" tag for the focused group only. */
   const fromFor = (g: CompareGroup) => (focusGroup === g && fromModule ? fromModule.label : null);
@@ -377,7 +381,7 @@ function CompareContent({ locale }: { locale: string }) {
 
           {/* Came from a module this page has no group for (or whose group
               has no data for these two districts): say so plainly. */}
-          {fromModule && !isLoading && !focusGroupShown && (
+          {fromModule && !isLoading && !focusGroupShown && !focusGroupPending && (
             <p role="note" className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "0 0 16px" }}>
               {focusGroup
                 ? `No ${GROUP_TITLES[focusGroup].toLowerCase()} figures are available for both districts yet.`
