@@ -1,48 +1,117 @@
 {
-  "title": "Power outages",
-  "description": "Planned and unplanned power cut notices, and how long each cut lasted",
-  "row": {
-    "ongoing": "Ongoing",
-    "resolved": "Power back",
-    "reason": "Reason: {reason}",
-    "started": "Started {time}",
-    "span": "{start} to {end}",
-    "hours": "{h} h",
-    "duration": "without power",
-    "households": "{count, plural, one {{n} home} other {{n} homes}}"
+  "description": "Is the power off in your area now, or will it be soon? Planned and unplanned power cut notices.",
+  "answer": {
+    "now": "Right now {count, plural, one {<b>one power cut</b> is} other {<b>{n} power cuts</b> are}} going on in {district}.",
+    "noneNow": "<b>No power cut</b> is going on in {district} right now, in the notices we hold.",
+    "next": "{count, plural, one {One more cut is} other {{n} more cuts are}} planned; the next one is in <b>{area}</b> on <b>{day}</b>.",
+    "newest": "The newest notice we hold is from {day}."
   },
   "tiles": {
-    "active": "Ongoing cuts",
-    "households": "Homes affected now",
-    "householdsUnknown": "Not given in the notices",
-    "resolved": "Power back",
-    "resolvedSub": "in the {n} newest notices",
-    "avg": "Average length",
-    "hoursUnit": "h",
+    "now": "Power cuts on now",
+    "soon": "Planned, coming up",
+    "over": "Power back",
+    "overSub": "of the {n} newest notices",
+    "avg": "Usual length",
+    "hoursUnit": "hours",
     "avgNone": "No end times published yet"
   },
-  "picture": {
-    "simple": "Of the <b>{total}</b> {total, plural, one {power cut} other {power cuts}} in the notices we hold, <b>{ended}</b> {ended, plural, one {has} other {have}} ended and <b>{ongoing}</b> {ongoing, plural, one {is} other {are}} still going on.",
-    "bulbsEach": "Each bulb is one power cut. {ended} of {total} are lit because the power is back.",
-    "bulbsScaled": "About {n} of every 10 power cuts have ended and the power is back.",
-    "newest": "Newest notice from"
+  "week": {
+    "title": "Power cuts this week",
+    "aria": "Power cuts on each day, from three days ago to three days from now",
+    "dayAria": "{day}: {count, plural, =0 {no power cut in the notices} one {one power cut} other {{n} power cuts}}",
+    "today": "Today",
+    "legendCut": "A power cut in the notices",
+    "legendNone": "No cut announced"
+  },
+  "bulbs": {
+    "title": "Is the power back?",
+    "each": "Each bulb is one power cut. {ended} of {total} are lit because the power is back.",
+    "scaled": "About {n} of every 10 power cuts are over and the power is back."
+  },
+  "list": {
+    "title": "Is my area affected?",
+    "searchLabel": "Type your area, village or street",
+    "searchPlaceholder": "Area name",
+    "filterAria": "Show power cuts",
+    "all": "All",
+    "open": "See details",
+    "showAll": "Show all {n}",
+    "emptyFilter": "No power cuts of this kind in the notices we hold.",
+    "unannounced": "Cuts that were never announced may not show here."
+  },
+  "status": {
+    "now": "On now",
+    "soon": "Coming up",
+    "over": "Power back",
+    "unclear": "No end time"
+  },
+  "check": {
+    "now": "<b>Yes.</b> The power is off in <b>{area}</b> right now.",
+    "soon": "A power cut is planned in <b>{area}</b>: {when}.",
+    "lastOnly": "No power cut now or planned for “{query}”. The last one in the notices was on <b>{day}</b>.",
+    "none": "<b>No notice</b> we hold mentions “{query}”. Cuts that were never announced may not show here."
+  },
+  "kind": {
+    "planned": "Planned cut",
+    "unplanned": "Unplanned cut"
+  },
+  "card": {
+    "length": "{h} hours",
+    "reason": "Why: {reason}"
+  },
+  "hoursShort": "{h} h",
+  "span": {
+    "from": "From {day}, {start}",
+    "sameDay": "{day}, {start} to {end}",
+    "twoDays": "{day}, {start} to {endDay}, {end}"
   },
   "longest": {
     "title": "The longest power cuts",
-    "units": "Hours without power, for cuts that have ended",
-    "simple": "The longest cut was in <b>{area}</b>, with no power for {hours} hours.",
-    "aria": "The longest power cuts"
+    "units": "Hours without power, for cuts that are over",
+    "simple": "The longest cut was in <b>{area}</b>: no power for {hours} hours."
   },
-  "sections": {
-    "active": "Ongoing power cuts",
-    "history": "Power cuts that have ended"
+  "repeat": {
+    "title": "Areas with the most cuts",
+    "units": "How many notices name each area",
+    "simple": "<b>{area}</b> is named in the most notices: {n}."
   },
-  "empty": {
-    "title": "No ongoing power cuts in the notices we hold",
-    "body": "Every power cut notice we have for this district has ended. Cuts that were never announced may not show here."
+  "unclearNote": "{count, plural, one {One notice gives} other {{n} notices give}} no end time, so we cannot say if the power is back there.",
+  "sheet": {
+    "discomFallback": "electricity company",
+    "discomSite": "Open the {discom} website",
+    "nowUntil": "The power is off here now. It should come back on <b>{end}</b>.",
+    "nowNoEnd": "The power is off here now. The notice does not say when it will come back.",
+    "soon": "The power will be off here: <b>{when}</b>.",
+    "overFor": "This cut is over. The power was off for <b>{h} hours</b>.",
+    "over": "This cut is over and the power is back.",
+    "unclear": "This notice gives no end time, so we cannot say if the power is back.",
+    "from": "From",
+    "to": "To",
+    "noEnd": "Not given",
+    "length": "How long",
+    "reason": "Why",
+    "kind": "Kind of cut",
+    "source": "Notice from",
+    "added": "Added on",
+    "note": "Times are as the electricity company published them. Call the company if your power is off and it is not listed."
   },
-  "share": {
-    "withData": "Power in {district}: {active, plural, one {# ongoing cut} other {# ongoing cuts}}, {resolved, plural, one {# cut} other {# cuts}} ended recently",
-    "noData": "Power cut information for {district}"
+  "end": {
+    "shareWithData": "Power in {district}: {now, plural, one {# cut on now} other {# cuts on now}}, {soon, plural, one {# planned} other {# planned}}",
+    "shareNoData": "Power cut information for {district}",
+    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
+    "actions": "Page actions",
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share this page on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "freq": {
+      "monthly": "Updated monthly",
+      "weekly": "Updated weekly",
+      "daily": "Updated daily",
+      "annual": "Updated once a year",
+      "quarterly": "Updated every three months",
+      "onPublish": "Updated when the source publishes"
+    }
   }
 }
