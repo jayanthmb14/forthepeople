@@ -12,7 +12,23 @@
 // emoji in a tinted tile, the display face for the heading, and honest
 // copy (the site shows published government data with dates, not "live"
 // data). No motion: this page may be shown on a slow, flaky connection.
-export default function OfflinePage() {
+// Text: "page_offline" messages.
+
+import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "page_offline" });
+  return { title: t("metaTitle"), robots: { index: false } };
+}
+
+export default async function OfflinePage({ params }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "page_offline" });
   return (
     <div
       className="ftp-hue-slate"
@@ -34,13 +50,10 @@ export default function OfflinePage() {
       >
         📡
       </div>
-      <h1 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 30, lineHeight: 1.15, fontWeight: 700, color: "var(--ftp-text)" }}>
-        You are offline
+      <h1 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 30, lineHeight: 1.3, fontWeight: 700, color: "var(--ftp-text)" }}>
+        {t("title")}
       </h1>
-      <p style={{ margin: 0, fontSize: 15, lineHeight: "23px", color: "var(--ftp-text-2)", maxWidth: 400 }}>
-        ForThePeople.in needs an internet connection to load district data.
-        Pages you opened recently may still work. Check your connection and try again.
-      </p>
+      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: "var(--ftp-text-2)", maxWidth: 400 }}>{t("body")}</p>
     </div>
   );
 }
