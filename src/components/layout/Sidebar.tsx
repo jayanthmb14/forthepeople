@@ -14,13 +14,17 @@
 //  • 240 px wide, sticky under the 56 px header. Collapses to 56 px icons
 //    with native title tooltips.
 //  • Nine groups from the registry (docs/MODULE-MAP.md), each headed by its
-//    emoji and translated name (`moduleGroups.<key>`).
+//    translated name only (v5: text headings, no emoji).
 //  • Items are at least 36 px tall (long names wrap, never cut off) with
-//    the module emoji in a hue-tinted chip
-//    (Design v4). Active = the module's hue tint + a 3 px hue bar.
-//  • A 6 px freshness dot on modules that have a live feed (weather,
-//    crops, water, news), fed by useFreshness — one request per district,
-//    cached for five minutes. Grey when unknown.
+//    the module emoji in a hue-tinted chip — the ONE icon per module.
+//    Active = the module's hue tint.
+//  • v5 freshness, from useFreshness (one request per district, cached
+//    five minutes): nothing when the data is current; a small amber dot
+//    when the module's main dataset is late; the name muted with "Coming
+//    soon" when nothing is collected for this district yet.
+//  • v5: no utility links here (compare, support, vote, "spot something
+//    wrong") — they live in the header, the footer and the "Report a
+//    mistake" button at the bottom of every page.
 //  • Every colour is a `var(--ftp-…)` token. No hex in this file.
 //
 "use client";
@@ -31,20 +35,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
-import {
-  GitCompareArrows,
-  Heart,
-  Lightbulb,
-  MessageSquare,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { hueClass } from "@/lib/design/hues";
-import type { LucideIcon } from "lucide-react";
 import { SIDEBAR_MODULES, getGroupedModules, getOrderedSlugs } from "@/lib/constants/sidebar-modules";
 import { useModuleGroupName } from "./useModuleGroups";
-import { useFreshness, MODULE_TO_FRESHNESS_KEY } from "@/hooks/useFreshness";
-import type { FreshnessStatus } from "@/hooks/useFreshness";
+import { useFreshness } from "@/hooks/useFreshness";
 
 interface SidebarProps {
   locale: string;
@@ -56,7 +51,6 @@ interface SidebarProps {
 // hardcoded slug lists live in this file.
 const SIDEBAR_GROUPS = getGroupedModules().map((g) => ({
   key: g.key,
-  emoji: g.emoji,
   slugs: g.modules.map((m) => m.slug),
 }));
 
@@ -95,20 +89,6 @@ function subscribeCollapsed(listener: () => void) {
   };
 }
 
-/** Dot colour for a freshness status. Unknown / no feed = grey. */
-function dotColor(status: FreshnessStatus | null | undefined): string {
-  switch (status) {
-    case "green":
-      return "var(--ftp-live)";
-    case "amber":
-      return "var(--ftp-warn)";
-    case "red":
-      return "var(--ftp-danger)";
-    default:
-      return "var(--ftp-border-strong)";
-  }
-}
-
 /** Shared style for every rail row (module links and the utility links). */
 function rowStyle(collapsed: boolean, active: boolean, color?: string): CSSProperties {
   return {
@@ -137,29 +117,9 @@ function rowStyle(collapsed: boolean, active: boolean, color?: string): CSSPrope
   };
 }
 
-function UtilityLink({
-  href,
-  icon: Icon,
-  label,
-  collapsed,
-  color,
-}: {
-  href: string;
-  icon: LucideIcon;
-  label: string;
-  collapsed: boolean;
-  color?: string;
-}) {
-  return (
-    <Link href={href} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} className="ftp-rail-item" style={rowStyle(collapsed, false, color)}>
-      <Icon size={ICON_SIZE} aria-hidden style={{ flexShrink: 0 }} />
-      {!collapsed && <span style={{ flex: 1, minWidth: 0 }}>{label}</span>}
-    </Link>
-  );
-}
-
 export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProps) {
   const ts = useTranslations("sidebar");
+  const tsh = useTranslations("page_shell");
   const mt = useModuleText();
   const groupName = useModuleGroupName();
   const pathname = usePathname();
@@ -179,29 +139,25 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
     if (!mod) return null;
     const isActive = activeSlug === slug;
     const href = slug === "overview" ? baseUrl : `${baseUrl}/${slug}`;
-    const hasFeed = slug in MODULE_TO_FRESHNESS_KEY;
-    const fresh = hasFeed ? freshness.forModule(slug) : null;
-    const dotTitle = hasFeed
-      ? fresh?.age
-        ? ts("dataAge", { age: fresh.age })
-        : freshness.loading
-          ? ts("checkingAge")
-          : ts("ageUnknown")
-      : undefined;
+    const main = freshness.primary(slug);
+    const soon = main?.status === "not_collected";
+    const late = main?.status === "late";
+    const name = mt.label(slug);
 
     return (
       <Link
         key={slug}
         href={href}
-        title={collapsed ? mt.label(slug) : undefined}
-        aria-label={collapsed ? mt.label(slug) : undefined}
+        title={collapsed ? (soon ? tsh("nav.comingSoonAria", { name }) : name) : undefined}
+        aria-label={collapsed || soon ? (soon ? tsh("nav.comingSoonAria", { name }) : name) : undefined}
         aria-current={isActive ? "page" : undefined}
         data-active={isActive ? "true" : "false"}
+        data-soon={soon ? "true" : undefined}
         className="ftp-rail-item"
-        style={rowStyle(collapsed, isActive)}
+        style={rowStyle(collapsed, isActive, soon ? "var(--ftp-text-2)" : undefined)}
       >
-        {/* v4: the module's emoji in a small chip tinted with its own hue
-            (vault note 37: emoji in the rail read for every age). */}
+        {/* The module's emoji in a small chip tinted with its own hue —
+            its one identity icon (greyed when coming soon). */}
         <span
           aria-hidden
           className={`ftp-emoji ${hueClass(slug)}`}
@@ -214,29 +170,38 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
             alignItems: "center",
             justifyContent: "center",
             fontSize: 14,
-            background: "var(--hue-tint)",
+            background: soon ? "var(--ftp-surface-2)" : "var(--hue-tint)",
+            filter: soon ? "grayscale(1)" : undefined,
+            opacity: soon ? 0.6 : undefined,
           }}
         >
           {mod.emoji}
         </span>
-        {!collapsed && <span style={{ flex: 1, minWidth: 0 }}>{mt.label(slug)}</span>}
-        {hasFeed && (
-          <span
-            aria-hidden
-            title={dotTitle}
-            style={{
-              position: collapsed ? "absolute" : "static",
-              top: collapsed ? 8 : undefined,
-              right: collapsed ? 10 : undefined,
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: dotColor(fresh?.status),
-              flexShrink: 0,
-            }}
-          />
+        {!collapsed && (
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <span>{name}</span>
+            {soon && <span style={{ fontSize: 11, lineHeight: "14px", color: "var(--ftp-text-2)" }}>{tsh("nav.comingSoon")}</span>}
+          </span>
         )}
-        {hasFeed && dotTitle && !collapsed && <span className="sr-only">{dotTitle}</span>}
+        {late && (
+          <>
+            <span
+              aria-hidden
+              title={tsh("nav.late")}
+              style={{
+                position: collapsed ? "absolute" : "static",
+                top: collapsed ? 8 : undefined,
+                right: collapsed ? 10 : undefined,
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "var(--ftp-warn)",
+                flexShrink: 0,
+              }}
+            />
+            <span className="sr-only">{tsh("nav.late")}</span>
+          </>
+        )}
       </Link>
     );
   }
@@ -305,26 +270,15 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
               <div
                 id={`ftp-rail-group-${group.key}`}
                 className="ftp-label"
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 18px 4px" }}
+                style={{ padding: "14px 18px 4px" }}
               >
-                <span aria-hidden className="ftp-emoji" style={{ fontSize: 13 }}>
-                  {group.emoji}
-                </span>
-                <span>{groupName(group.key)}</span>
+                {groupName(group.key)}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{group.slugs.map(renderModule)}</div>
             </div>
           ))
         )}
 
-        {/* Utility links */}
-        <div style={{ height: 1, background: "var(--ftp-border)", margin: "12px 8px 8px" }} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <UtilityLink href={`/${locale}/compare?a=${districtSlug}`} icon={GitCompareArrows} label={ts("compare")} collapsed={collapsed} />
-          <UtilityLink href={`/${locale}/support`} icon={Heart} label={ts("support")} collapsed={collapsed} color="var(--ftp-support)" />
-          <UtilityLink href={`/${locale}/features`} icon={Lightbulb} label={ts("voteFeatures")} collapsed={collapsed} color="var(--ftp-features)" />
-          <UtilityLink href={`/${locale}/features?tab=suggest`} icon={MessageSquare} label={ts("spotWrong")} collapsed={collapsed} />
-        </div>
       </nav>
     </aside>
   );

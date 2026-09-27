@@ -6,11 +6,10 @@
  * tablets (below 1024 px, where there is no sidebar).
  *
  * Lists every district module in the same nine groups as the sidebar
- * (docs/MODULE-MAP.md): 🏠 Start here · 🙋 You can help · 👥 Who runs it ·
- * 💰 Money & projects · 🤲 Help for you · 🚰 Daily needs · 🌾 Farming ·
- * 📚 Know your district · 🔍 Check our work. Each group is headed by its
- * emoji and translated name; each row is 44 px tall with the module emoji
- * in its own hue and the translated name. The current module gets its hue.
+ * (docs/MODULE-MAP.md). v5: group headings are text only; each row is
+ * 44 px tall with the module emoji (its one identity icon) in its own hue
+ * and the translated name. The current module gets its hue. Modules with
+ * no data for this district are muted and say "Coming soon".
  *
  * Phone: one column. Tablet: the rows flow into 2–3 columns inside a
  * group, so the whole list fits without long scrolling.
@@ -31,6 +30,7 @@ import { X } from "lucide-react";
 import { getGroupedModules } from "@/lib/constants/sidebar-modules";
 import { hueClass } from "@/lib/design/hues";
 import { useModuleGroupName } from "@/components/layout/useModuleGroups";
+import { useFreshness } from "@/hooks/useFreshness";
 
 interface Props {
   open: boolean;
@@ -55,8 +55,10 @@ export function MobileDistrictDrawer({
   activeSlug,
 }: Props) {
   const ts = useTranslations("sidebar");
+  const tsh = useTranslations("page_shell");
   const mt = useModuleText();
   const groupName = useModuleGroupName();
+  const fresh = useFreshness(stateSlug, districtSlug);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   // Lock page scroll while the sheet is open.
@@ -94,7 +96,7 @@ export function MobileDistrictDrawer({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={ts("allModulesFor", { district: districtName })}
+      aria-label={tsh("nav.allTopicsFor", { district: districtName })}
       style={{
         position: "fixed",
         inset: 0,
@@ -131,7 +133,7 @@ export function MobileDistrictDrawer({
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <p className="ftp-label">{ts("allModules")}</p>
+            <p className="ftp-label">{tsh("nav.allTopics")}</p>
             <p className="ftp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{districtName}</p>
           </div>
           <button
@@ -158,12 +160,9 @@ export function MobileDistrictDrawer({
                 <h2
                   id={`ftp-drawer-group-${group.key}`}
                   className="ftp-label"
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 8px 6px" }}
+                  style={{ padding: "14px 8px 6px", margin: 0 }}
                 >
-                  <span aria-hidden className="ftp-emoji" style={{ fontSize: 14 }}>
-                    {group.emoji}
-                  </span>
-                  <span>{name}</span>
+                  {name}
                 </h2>
                 <ul
                   style={{
@@ -178,6 +177,7 @@ export function MobileDistrictDrawer({
                   {group.modules.map((m) => {
                     const href = m.slug === "overview" ? base : `${base}/${m.slug}`;
                     const isActive = m.slug === current;
+                    const soon = fresh.primary(m.slug)?.status === "not_collected";
                     return (
                       <li key={m.slug} className={hueClass(m.slug)}>
                         <Link
@@ -191,17 +191,25 @@ export function MobileDistrictDrawer({
                             minHeight: 44, padding: "6px 8px", textDecoration: "none",
                             borderRadius: 12,
                             fontSize: 14, lineHeight: "20px", fontWeight: 500,
-                            color: "var(--ftp-text)",
+                            color: soon ? "var(--ftp-text-2)" : "var(--ftp-text)",
                           }}
                         >
                           <span
                             aria-hidden
                             className="ftp-emoji"
-                            style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "var(--hue-tint)" }}
+                            style={{
+                              width: 32, height: 32, borderRadius: 10, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17,
+                              background: soon ? "var(--ftp-surface-2)" : "var(--hue-tint)",
+                              filter: soon ? "grayscale(1)" : undefined,
+                              opacity: soon ? 0.6 : undefined,
+                            }}
                           >
                             {m.emoji}
                           </span>
-                          <span style={{ minWidth: 0 }}>{mt.label(m.slug)}</span>
+                          <span style={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
+                            <span>{mt.label(m.slug)}</span>
+                            {soon && <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 400 }}>{tsh("nav.comingSoon")}</span>}
+                          </span>
                         </Link>
                       </li>
                     );
