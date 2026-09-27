@@ -321,7 +321,8 @@
     "daysAgo": "{n}d ago",
     "justNow": "just now",
     "latestEstimate": "Latest available estimate",
-    "howComputed": "How we compute these numbers"
+    "howComputed": "How we compute these numbers",
+    "close": "Close"
   },
   "header": {
     "search": "Search any district",

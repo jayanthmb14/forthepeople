@@ -565,6 +565,19 @@ export function CountUp({ value }: { value: string | number }) {
  * @prop actions     Buttons on the right (CSV, Share, Compare) — see Toolbar.
  * @prop accent      Module accent for the icon tint (see ModuleAccent).
  */
+/**
+ * The frame every module page sits in. Width and padding per device:
+ *   phone (< 640)      full width, 16 px sides
+ *   tablet (640–1023)  full width, 20 px sides
+ *   laptop (1024–1439) up to 1320 px, 28 px sides
+ *   PC (≥ 1440)        up to 1320 px, centred in the space next to the sidebar
+ * Put grids inside with className="ftp-grid" (auto-fill columns, min 280 px;
+ * set --ftp-grid-min for other sizes). See docs/LAYOUT.md.
+ */
+export function ModulePage({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={`module-page ftp-module-page${className ? ` ${className}` : ""}`}>{children}</div>;
+}
+
 export function PageHeader({
   icon: Icon,
   title,

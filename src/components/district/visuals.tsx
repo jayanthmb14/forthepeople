@@ -502,3 +502,78 @@ export function ChartCard({
     </figure>
   );
 }
+
+// ── HowItWorks — "how this scheme reaches you", in 3–5 picture steps ──
+// Horizontal with arrows on tablet and up, a vertical list on phones.
+//   <HowItWorks title={t("howTitle")} steps={[
+//     { emoji: "📝", title: t("step.apply"), body: t("step.applyBody") },
+//     { emoji: "🔎", title: t("step.check") }, { emoji: "✅", title: t("step.approve") },
+//     { emoji: "💰", title: t("step.money") } ]} />
+export function HowItWorks({
+  title,
+  steps,
+}: {
+  title?: React.ReactNode;
+  steps: { emoji: string; title: React.ReactNode; body?: React.ReactNode }[];
+}) {
+  if (steps.length === 0) return null;
+  return (
+    <figure className="ftp-how" style={{ margin: 0 }}>
+      {title && <figcaption className="ftp-how-title">{title}</figcaption>}
+      <ol className="ftp-how-steps">
+        {steps.map((s, i) => (
+          <li key={i} className="ftp-how-step ftp-rise" style={{ ["--i" as string]: i } as React.CSSProperties}>
+            <span className="ftp-how-num" aria-hidden>{i + 1}</span>
+            <span className="ftp-how-emoji ftp-emoji" aria-hidden>{s.emoji}</span>
+            <span className="ftp-how-step-title">{s.title}</span>
+            {s.body && <span className="ftp-how-step-body">{s.body}</span>}
+          </li>
+        ))}
+      </ol>
+    </figure>
+  );
+}
+
+// ── CountdownBar — "12 days to go", filling from a start date to a target ──
+// For exams, elections, scheme deadlines. `start` is when the wait began
+// (notification date); the bar shows how much of the wait has passed.
+// Text comes from the caller so it is translated there:
+//   <CountdownBar start={exam.notifiedAt} target={exam.examDate} label={t("examIn", { n: days })} />
+export function CountdownBar({
+  start,
+  target,
+  label,
+  sub,
+}: {
+  start: Date | string;
+  target: Date | string;
+  label: React.ReactNode;
+  sub?: React.ReactNode;
+}) {
+  const s = new Date(start).getTime();
+  const e = new Date(target).getTime();
+  // eslint-disable-next-line react-hooks/purity -- a countdown is relative to now by definition
+  const now = Date.now();
+  const span = Math.max(e - s, 1);
+  const pct = Math.min(100, Math.max(0, ((now - s) / span) * 100));
+  const soon = e - now < 7 * 86_400_000 && e >= now;
+  return (
+    <div className="ftp-countdown">
+      <div className="ftp-countdown-label">
+        <span className="ftp-emoji" aria-hidden>{e < now ? "✅" : soon ? "⏰" : "⏳"} </span>
+        {label}
+      </div>
+      <div
+        className="ftp-countdown-track"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(pct)}
+        aria-label={typeof label === "string" ? label : undefined}
+      >
+        <div className={`ftp-countdown-fill${soon ? " is-soon" : ""}`} style={{ width: `${pct}%` }} />
+      </div>
+      {sub && <div className="ftp-countdown-sub">{sub}</div>}
+    </div>
+  );
+}
