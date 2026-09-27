@@ -4,10 +4,13 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Update Log page — Design v3 "Civic Ledger" module template.
+// Update Log page — Design v4 "Rang" module recipe (see the finance page).
 // Every data change for this district, newest first, as a DataTable with
-// mono timestamps (exact IST time + "x ago"). Filter chips narrow it to
+// tabular timestamps (exact IST time + "x ago"). Filter chips narrow it to
 // automatic updates, admin edits or seeds. Data: GET /api/data/update-log.
+//   PageHeader → StatStrip of emoji tiles → picture (how many recent changes
+//   were automatic, and when the newest one happened) → changes table →
+//   sources.
 
 "use client";
 import type React from "react";
@@ -21,6 +24,7 @@ import {
   StatStrip,
   StatTile,
   Section,
+  Card,
   Pill,
   Chips,
   DataTable,
@@ -31,6 +35,7 @@ import {
   formatIST,
   type Tone,
 } from "@/components/district/ui";
+import { Explainer, Pictogram } from "@/components/district/visuals";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
 
 interface UpdateLogRow {
@@ -52,20 +57,28 @@ interface UpdateLogResponse {
 }
 
 // "scrapers" is the API's filter key (see src/app/api/data/update-log);
-// citizens only ever see the label "Auto-Updates".
+// citizens only ever see the label "Auto-updates".
 type FilterTab = "all" | "scrapers" | "admin" | "seeds";
 
-/** Page wrapper: the v3 container (24 px sides, 16 on phones) at reading width. */
+/** Page wrapper: the container (24 px sides, 16 on phones) at reading width. */
 const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
 
 /** Who made the change → citizen-facing label + pill tone. */
 const SOURCE_LABELS: Record<string, { label: string; tone: Tone }> = {
-  scraper:    { label: "Auto-Update", tone: "brand" },
+  scraper:    { label: "Auto-update", tone: "brand" },
   cron:       { label: "Cron",        tone: "brand" },
   admin_edit: { label: "Admin",       tone: "warn" },
-  api:        { label: "API / Seed",  tone: "neutral" },
-  ai_bot:     { label: "AI Bot",      tone: "features" },
+  api:        { label: "API or seed", tone: "neutral" },
+  ai_bot:     { label: "AI bot",      tone: "features" },
 };
+
+/** "brand" pills on this page use the page hue instead of the brand blue. */
+const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
+
+/** "create" → "Create" (labels are sentence case, never all capitals). */
+function sentenceCase(word: string): string {
+  return word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word;
+}
 
 /** What kind of change → pill tone (semantic colour as text on a tint). */
 const ACTION_TONE: Record<string, Tone> = {
@@ -122,7 +135,7 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
 
   const tabs: Array<{ id: FilterTab; label: string }> = [
     { id: "all", label: "All" },
-    { id: "scrapers", label: "Auto-Updates" },
+    { id: "scrapers", label: "Auto-updates" },
     { id: "admin", label: "Admin" },
     { id: "seeds", label: "Seeds" },
   ];
@@ -140,13 +153,44 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
 
       {/* Stats — counts of what is loaded; "Total" comes from the server. */}
       <StatStrip cols={4}>
-        <StatTile label="Total updates" value={total.toLocaleString("en-IN")} icon={Clock} asOf={newest} />
-        <StatTile label="Shown" value={rows.length.toLocaleString("en-IN")} sub="Loaded on this page" />
-        <StatTile label="Auto-Updates" value={scraperCount} sub="Among those shown" />
-        <StatTile label="Admin" value={adminCount} sub="Among those shown" />
+        <StatTile emoji="🧮" label="Total updates" value={total.toLocaleString("en-IN")} asOf={newest} />
+        <StatTile emoji="👀" label="Shown" value={rows.length.toLocaleString("en-IN")} sub="Loaded on this page" />
+        <StatTile emoji="🤖" label="Auto-updates" value={scraperCount} sub="Among those shown" />
+        <StatTile emoji="🧑‍💼" label="Admin" value={adminCount} sub="Among those shown" />
       </StatStrip>
 
-      <Section title="Changes">
+      {/* The picture: of the changes on screen, how many came in on their
+          own (automatic feeds) — lit robots; beside it, when the newest
+          change happened. Only on the unfiltered view, where the share
+          means something. Same numbers as the tiles above. */}
+      {!isLoading && !error && filter === "all" && rows.length > 0 && newest && (
+        <div className="ftp-picture-row" style={{ marginTop: 16 }}>
+          <Card tinted padding={18}>
+            <Explainer title="In simple words" emoji="🤖">
+              Of the <strong>{rows.length.toLocaleString("en-IN")}</strong> latest changes shown here,{" "}
+              <strong>{scraperCount.toLocaleString("en-IN")}</strong> were automatic updates from our data feeds.
+              {scraperCount < rows.length && " The rest were admin edits, data imports or AI updates."}
+            </Explainer>
+            <Pictogram
+              filled={(scraperCount / rows.length) * 10}
+              emoji="🤖"
+              label={`About ${Math.round((scraperCount / rows.length) * 10)} of every 10 recent changes were automatic.`}
+            />
+          </Card>
+          <Card tinted padding={18} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, textAlign: "center" }}>
+            <span className="ftp-emoji" aria-hidden style={{ fontSize: 44 }}>🕒</span>
+            <p className="ftp-label">Newest change</p>
+            <div className="ftp-bignum" style={{ fontSize: 30, lineHeight: 1.1, color: "var(--hue-deep)" }} suppressHydrationWarning>
+              {relativeTime(newest)}
+            </div>
+            <p className="ftp-body ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }} suppressHydrationWarning>
+              {formatIST(newest)}
+            </p>
+          </Card>
+        </div>
+      )}
+
+      <Section title="Changes" emoji="🗒️">
         {/* Filter chips (32 px, 44 px on phones) */}
         <div style={{ marginBottom: 12 }}>
           <Chips
@@ -161,7 +205,7 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
         {error && <ErrorBlock />}
 
         {!isLoading && !error && rows.length === 0 && (
-          <EmptyState title="No updates yet" body="Data changes will appear here as they happen." />
+          <EmptyState emoji="🕒" title="No updates yet" body="Data changes will appear here as they happen." />
         )}
 
         {!isLoading && rows.length > 0 && (
@@ -185,8 +229,12 @@ function UpdateLogInner({ params }: { params: Promise<{ locale: string; state: s
                   </span>
                 ),
                 module: r.moduleName ? <Pill>{r.moduleName}</Pill> : "—",
-                change: <Pill tone={ACTION_TONE[r.action] ?? "neutral"}>{r.action.toUpperCase()}</Pill>,
-                by: <Pill tone={srcInfo.tone}>{srcInfo.label}</Pill>,
+                change: <Pill tone={ACTION_TONE[r.action] ?? "neutral"}>{sentenceCase(r.action)}</Pill>,
+                by: (
+                  <Pill tone={srcInfo.tone} style={srcInfo.tone === "brand" ? HUE_PILL : undefined}>
+                    {srcInfo.label}
+                  </Pill>
+                ),
                 records: r.recordCount != null && r.recordCount > 1 ? r.recordCount.toLocaleString("en-IN") : "—",
                 what: r.description ?? `${r.action} on ${r.tableName}`,
               };
