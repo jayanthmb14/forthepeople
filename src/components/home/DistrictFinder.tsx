@@ -163,12 +163,17 @@ export default function DistrictFinder({ mode, current, onNavigate }: DistrictFi
   const currentDistrict = current ? INDIA_STATES.find((x) => x.slug === current.stateSlug)?.districts.find((d) => d.slug === current.districtSlug) : undefined;
   const q = normaliseSearch(query);
 
-  // Dashboards of the district you are on, matched by their name in the
-  // page language or in English.
-  const modules =
-    q && current && currentDistrict
-      ? SIDEBAR_MODULES.filter((m) => normaliseSearch(mt.label(m.slug)).includes(q) || normaliseSearch(m.label).includes(q)).slice(0, 6)
-      : [];
+  // Dashboards of the district you are on: names first (page language or
+  // English), then dashboards whose one-line description mentions the
+  // word ("water" also finds Dams & rivers).
+  const modules = (() => {
+    if (!q || !current || !currentDistrict) return [];
+    const byName = SIDEBAR_MODULES.filter((m) => normaliseSearch(mt.label(m.slug)).includes(q) || normaliseSearch(m.label).includes(q));
+    const byText = SIDEBAR_MODULES.filter(
+      (m) => !byName.includes(m) && (normaliseSearch(mt.description(m.slug)).includes(q) || normaliseSearch(m.description).includes(q)),
+    );
+    return [...byName, ...byText].slice(0, 6);
+  })();
 
   const indiaLabel = t("indiaDashboard");
   const indiaMatches = q.length > 1 && [indiaLabel, "india", "bharat", "भारत", "ಭಾರತ"].some((x) => normaliseSearch(x).includes(q));

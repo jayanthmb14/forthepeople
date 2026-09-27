@@ -61,46 +61,46 @@ export default function HomeMap({ locale }: { locale: string }) {
   return (
     <figure ref={frame} className={styles.map} aria-label={t("mapLabel")}>
       <ComposableMap
-          projection="geoMercator"
-          // Mainland India plus the Andaman & Nicobar Islands fill the
-          // 800 × 900 box (same framing as the district map).
-          projectionConfig={{ center: [82.75, 22.7], scale: 1350 }}
-          width={800}
-          height={900}
-          className={styles.mapSvg}
-        >
-          <g aria-hidden="true">
-            <Geographies geography="/geo/india-states.json?v=4">
-              {({ geographies }: { geographies: Array<{ rsmKey: string }> }) =>
-                geographies.map((geo) => <Geography key={geo.rsmKey} geography={geo} tabIndex={-1} style={LAND} />)
-              }
-            </Geographies>
-          </g>
-          {LIVE_PINS.map(({ district, state, at }) => {
-            const href = `/${locale}/${state.slug}/${district.slug}`;
-            const label = t("openDistrict", { name: placeName(district, locale), state: place.state(state.slug, state.name) });
-            return (
-              <Marker key={`${state.slug}/${district.slug}`} coordinates={[at!.lng, at!.lat]}>
-                <a
-                  href={href}
-                  aria-label={label}
-                  className={styles.pin}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    router.push(href);
-                  }}
-                  onMouseEnter={(e) => showTip(e.currentTarget, label)}
-                  onFocus={(e) => showTip(e.currentTarget, label)}
-                  onMouseLeave={() => setTip(null)}
-                  onBlur={() => setTip(null)}
-                >
-                  <circle r={15} className={styles.pinHalo} />
-                  <circle r={7} className={styles.pinDot} />
-                </a>
-              </Marker>
-            );
-          })}
-        </ComposableMap>
+        projection="geoMercator"
+        // Mainland India plus the Andaman & Nicobar Islands fill the
+        // 800 × 900 box (same framing as the district map).
+        projectionConfig={{ center: [82.75, 22.7], scale: 1350 }}
+        width={800}
+        height={900}
+        className={styles.mapSvg}
+      >
+        <g aria-hidden="true">
+          <Geographies geography="/geo/india-states.json?v=4">
+            {({ geographies }: { geographies: Array<{ rsmKey: string }> }) =>
+              geographies.map((geo) => <Geography key={geo.rsmKey} geography={geo} tabIndex={-1} style={LAND} />)
+            }
+          </Geographies>
+        </g>
+        {LIVE_PINS.map(({ district, state, at }) => {
+          const href = `/${locale}/${state.slug}/${district.slug}`;
+          const label = t("openDistrict", { name: placeName(district, locale), state: place.state(state.slug, state.name) });
+          return (
+            <Marker key={`${state.slug}/${district.slug}`} coordinates={[at!.lng, at!.lat]}>
+              <a
+                href={href}
+                aria-label={label}
+                className={styles.pin}
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push(href);
+                }}
+                onMouseEnter={(e) => showTip(e.currentTarget, label)}
+                onFocus={(e) => showTip(e.currentTarget, label)}
+                onMouseLeave={() => setTip(null)}
+                onBlur={() => setTip(null)}
+              >
+                <circle r={15} className={styles.pinHalo} />
+                <circle r={7} className={styles.pinDot} />
+              </a>
+            </Marker>
+          );
+        })}
+      </ComposableMap>
       {tip && (
         <span className={styles.mapTip} style={{ left: tip.x, top: tip.y }} aria-hidden>
           {tip.label}
