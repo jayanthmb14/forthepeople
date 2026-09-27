@@ -25,6 +25,10 @@
 //  glance. Sources are in the layout's verification panel; reports go
 //  through the site-wide "Report a problem" button.
 //
+//  v5.3: headlines read quietly — story cards use TapCard density="compact"
+//  (15 px regular-weight titles, 14 px on phones, no shadow, less padding),
+//  a smaller glyph, smaller topic headings and a smaller sheet title.
+//
 //  Every story says WHERE it came from and WHEN. Headlines and summaries are
 //  live data (translated once in the backend when a translation exists; the
 //  row's `lang` says which language it is in).
@@ -224,9 +228,9 @@ function TopicTile({
       <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}>
         {pick && <CategoryGlyph pick={pick} size={36} chip />}
         {!pick && stack && <GlyphStack picks={stack} size={32} />}
-        <span className="ftp-bignum" style={{ fontSize: 22, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
+        <span className="ftp-bignum" style={{ fontSize: 20, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
       </span>
-      <span style={{ minWidth: 0, fontSize: 14, lineHeight: "19px", fontWeight: 650, overflowWrap: "break-word" }}>{label}</span>
+      <span style={{ minWidth: 0, fontSize: 13, lineHeight: "18px", fontWeight: 600, overflowWrap: "break-word" }}>{label}</span>
       <span aria-hidden style={{ height: 6, borderRadius: 99, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
         <span className="ftp-grow-x" style={{ display: "block", height: "100%", width: `${Math.max(4, Math.round(share * 100))}%`, borderRadius: 99, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
       </span>
@@ -243,8 +247,9 @@ function StoryCard({ n, onOpen }: { n: Story; onOpen: (n: Story) => void }) {
   const showSummary = summary && summary !== headline && !headline.startsWith(summary);
   return (
     <TapCard
+      density="compact"
       onOpen={() => onOpen(n)}
-      leading={<CategoryGlyph pick={newsStoryGlyph(n)} size={40} chip />}
+      leading={<CategoryGlyph pick={newsStoryGlyph(n)} size={32} chip />}
       title={headline}
       titleLang={n.lang}
       subtitle={
@@ -260,7 +265,7 @@ function StoryCard({ n, onOpen }: { n: Story; onOpen: (n: Story) => void }) {
           style={{
             margin: 0,
             fontSize: 13,
-            lineHeight: "20px",
+            lineHeight: "19px",
             color: "var(--ftp-text-2)",
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -310,7 +315,7 @@ function StorySheet({ n, base, onClose }: { n: Story; base: string; onClose: () 
     <DetailSheet
       open
       onClose={onClose}
-      title={headline}
+      title={<span style={{ fontSize: 17, lineHeight: "24px", fontWeight: 600 }}>{headline}</span>}
       titleLang={n.lang}
       subtitle={publisherOf(n) || undefined}
       media={<CategoryGlyph pick={newsStoryGlyph(n)} size={44} chip />}
@@ -485,7 +490,7 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
           {/* The one picture: what the news is about. Each tile is also the topic filter. */}
           <Section title={t("aboutTitle")}>
             <p className="ftp-prose" style={{ margin: "-4px 0 12px", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("aboutIntro")}</p>
-            <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "148px", gap: 10 }}>
+            <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "min(148px, calc(50% - 5px))", gap: 10 }}>
               <TopicTile
                 label={t("all")}
                 count={news.length}
@@ -513,16 +518,16 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
             <Section
               key={g.category}
               title={
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <CategoryGlyph pick={newsTopicGlyph(g.category)} size={32} chip />
-                  <span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <CategoryGlyph pick={newsTopicGlyph(g.category)} size={28} chip />
+                  <span style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650 }}>
                     {topicLabel(t, g.category)}{" "}
                     <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(g.count) })}</span>
                   </span>
                 </span>
               }
             >
-              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "300px" }}>
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "300px", gap: 12 }}>
                 {g.stories.map((n) => (
                   <StoryCard key={n.id} n={n} onOpen={setSelected} />
                 ))}

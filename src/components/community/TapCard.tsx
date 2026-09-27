@@ -25,6 +25,10 @@
 //
 //  Shared by the "Know your district" pages (news, exams, famous people,
 //  map, contributors). Text comes from the caller, so it is translated there.
+//
+//  density="compact" (v5.3, news stories): a smaller, regular-weight title
+//  (15 px, 14 px on phones), less padding and no shadow — for long lists of
+//  headlines that should read quietly. Everything else is unchanged.
 "use client";
 
 import React from "react";
@@ -40,6 +44,7 @@ export function TapCard({
   badge,
   hint,
   tinted,
+  density,
   as = "article",
   headingLevel = 3,
   children,
@@ -57,6 +62,8 @@ export function TapCard({
   /** Small "See details" line at the bottom, with a chevron. */
   hint?: React.ReactNode;
   tinted?: boolean;
+  /** "compact": smaller regular-weight title, tighter padding, no shadow (news). */
+  density?: "compact";
   as?: "article" | "li" | "div";
   headingLevel?: 2 | 3 | 4;
   children?: React.ReactNode;
@@ -65,7 +72,7 @@ export function TapCard({
   const Tag = as;
   const H = `h${headingLevel}` as "h2" | "h3" | "h4";
   return (
-    <Tag className={`ftp-card-link ${styles.card}${tinted ? ` ${styles.tinted}` : ""}`} style={style}>
+    <Tag className={`ftp-card-link ${styles.card}${tinted ? ` ${styles.tinted}` : ""}`} data-density={density} style={style}>
       <div className={styles.head}>
         {leading}
         <div className={styles.titleWrap}>

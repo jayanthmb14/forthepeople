@@ -100,3 +100,34 @@
     padding: 14px;
   }
 }
+
+/* density="compact" (news stories): quiet headlines in long lists —
+   a smaller, regular-weight title, less padding, no shadow. */
+.card[data-density="compact"] {
+  gap: 8px;
+  padding: 12px 14px;
+  box-shadow: none;
+}
+.card[data-density="compact"] .head {
+  gap: 10px;
+}
+.card[data-density="compact"] .title {
+  font-family: var(--ftp-font-sans);
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 550;
+}
+.card[data-density="compact"] .sub {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 17px;
+}
+@media (max-width: 639px) {
+  .card[data-density="compact"] {
+    padding: 12px;
+  }
+  .card[data-density="compact"] .title {
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
