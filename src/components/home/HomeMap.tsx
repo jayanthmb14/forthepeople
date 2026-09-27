@@ -169,7 +169,6 @@ export default function HomeMap({ locale, districts, stats }: { locale: string; 
     <figure className={styles.map}>
       <div className={styles.mapHead}>
         <span className={styles.mapTitle}>{t("map.title")}</span>
-        <span className={styles.mapHint}>{t("map.hint")}</span>
       </div>
       <DrillDownMap
         locale={locale}

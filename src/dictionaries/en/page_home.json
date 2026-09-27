@@ -42,7 +42,6 @@
   },
   "map": {
     "title": "India, live",
-    "hint": "Pick a pin for its latest facts, or a state to open it.",
     "aria": "Map of India. Each state opens its own page; the pins are the live districts.",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
@@ -67,7 +66,6 @@
     "legendState": "State — opens its page"
   },
   "india": {
-    "kicker": "The whole country",
     "title": "Explore all of India",
     "body": "Parliament, the Union Budget, the economy, people and every state — the country's big numbers in one place.",
     "cta": "Explore all of India",

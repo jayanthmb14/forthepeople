@@ -658,11 +658,6 @@
   font-weight: 700;
   color: var(--ftp-text);
 }
-.mapHint {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--ftp-text-2);
-}
 .mapLoading {
   width: 100%;
   aspect-ratio: 8 / 9;
@@ -1105,13 +1100,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-}
-.indiaKicker {
-  margin: 0;
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 700;
-  color: var(--home-violet);
 }
 .indiaTitle {
   margin: 0;
