@@ -1,0 +1,64 @@
+{
+ "d": [
+  {
+   "__type": "JJMIndia+map_data",
+   "KeyValue": "572",
+   "KeyId": "0194",
+   "Name": "Bengaluru Urban",
+   "Name_hi": "बंगलोरे अर्बन",
+   "Per": "72.30",
+   "ColorId": "3",
+   "Value": "229637",
+   "Total": "317618",
+   "Lat": "13.00455775",
+   "Long": "77.61291504",
+   "ISHGJReported": "0",
+   "IsHGJCertified": "0"
+  },
+  {
+   "__type": "JJMIndia+map_data",
+   "KeyValue": "573",
+   "KeyId": "0201",
+   "Name": "Mandya",
+   "Name_hi": "मांड्या",
+   "Per": "94.18",
+   "ColorId": "4",
+   "Value": "377759",
+   "Total": "401102",
+   "Lat": "12.68321491",
+   "Long": "76.75598145",
+   "ISHGJReported": "0",
+   "IsHGJCertified": "0"
+  },
+  {
+   "__type": "JJMIndia+map_data",
+   "KeyValue": "577",
+   "KeyId": "0202",
+   "Name": "Mysuru",
+   "Name_hi": "MYSORE",
+   "Per": "89.87",
+   "ColorId": "4",
+   "Value": "451097",
+   "Total": "501970",
+   "Lat": "12.20504761",
+   "Long": "76.34870586",
+   "ISHGJReported": "0",
+   "IsHGJCertified": "0"
+  },
+  {
+   "__type": "JJMIndia+map_data",
+   "KeyValue": "561",
+   "KeyId": "0208",
+   "Name": "Gadag",
+   "Name_hi": "GADAG ",
+   "Per": "100.00",
+   "ColorId": "5",
+   "Value": "200113",
+   "Total": "200113",
+   "Lat": "15.4325",
+   "Long": "75.638",
+   "ISHGJReported": "0",
+   "IsHGJCertified": "0"
+  }
+ ]
+}
