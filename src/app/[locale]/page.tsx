@@ -3,25 +3,32 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * Home page — Design v5 "calm".
+ * Home page — Design v5.1 "Warm Calm".
  *
  * The disclaimer line, header and footer come from [locale]/layout.tsx.
  * This page renders, top to bottom:
  *
- *   1. HomeHero           — kicker, the ONE <h1> (a task), sources line,
- *                           district search, "Explore all of India"
- *                           (primary) and "Use my location", one stats
- *                           line; the India map on the right (tablet, PC)
- *   2. LiveDistrictsCard  — the live districts as equal cards + a small
- *                           "Is your district next?" card
- *   3. IndiaGlance        — "India at a glance": headline national
- *                           figures, each with source and date
- *   4. PricesToday        — gold, silver, Sensex, Nifty, US dollar
- *   5. SupportLine        — one quiet line
+ *   0. HomeIntro          — a 1.2 s branded loading moment, once per
+ *                           session, skippable, off under reduced motion
+ *   1. PriceTicker        — running prices: gold 24K/22K, silver, Sensex,
+ *                           Nifty, dollar, crude + dated mandi prices,
+ *                           with today's date and the IST time
+ *   2. HomeHero           — kicker, the ONE <h1> (a task), search,
+ *                           "Find your district" + "Use my location", the
+ *                           colourful stats row; the clickable India map
+ *                           beside it (under it on phones)
+ *   3. IndiaGlance        — "Explore all of India": four checked national
+ *                           figures and the big button
+ *   4. LiveDistrictsCard  — the live districts as tight chips
+ *   5. PricesToday        — gold / silver / market cards with trend lines
+ *   6. DataChecks         — how we get and check the data (4 steps)
+ *   7. SupportBand        — the support ask with a few supporters' names
  *
- * Numbers: district and state counts come from the registry
- * (getPlatformFacts), national figures from IndiaIndicator rows. Nothing
- * is typed by hand; a missing row simply leaves its figure out.
+ * Numbers: counts from the registry (getPlatformFacts), everything else
+ * from the database (home-data.ts) or the price snapshot the /prices page
+ * uses (home-markets.ts). Nothing is typed by hand; a missing row leaves
+ * its figure out. The rules that choose what is shown are in
+ * home-picks.ts (tests/home.test.ts).
  */
 
 import type { Metadata } from "next";
@@ -46,8 +53,9 @@ import styles from "@/components/home/home.module.css";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
-// District rows and national figures change rarely; refresh hourly.
-export const revalidate = 3600;
+// Rebuilt at most every 15 minutes: the prices (15 min in Next's data cache,
+// home-markets.ts) and the "updated" time; district rows change rarely.
+export const revalidate = 900;
 
 export async function generateMetadata({
   params,
