@@ -5,24 +5,30 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  DisclaimerLine — the 32 px "not a government website" line (CONCEPT §5)
+//  DisclaimerLine — the slim "not a government website" line
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Sits directly above the sticky header on every page (except /india,
-//  which has its own IndiaLegalDisclaimer with the same NDSAP text).
+//  which has its own IndiaLegalDisclaimer).
 //
-//  Layout: always a single line — the full sentence on desktop, a cut-off
-//  sentence plus a "More" link (to /<locale>/disclaimer) on phones.
+//    ⓘ Independent, not a government website. Data from government portals
+//      (NDSAP), research institutions and other reputed sources — each
+//      figure shows its source and date.  Read the disclaimer        ×
+//
+//  The sources sentence is the ONE wording used site-wide (hero, footer,
+//  here). On phones the line keeps only the first sentence and a "More"
+//  link, so it stays one short line; the hero and the footer carry the
+//  sources sentence there.
 //
 //  Behaviour:
 //    - Shown on first load (the server renders it, so nobody misses it).
-//    - The × hides it and remembers that for 7 days in localStorage
+//    - × hides it and remembers that for 7 days in localStorage
 //      (key `ftp.disclaimerDismissedAt`, value = ISO time of the click).
 //    - After 7 days it comes back once, so returning visitors are reminded.
 //
-//  We read localStorage through useSyncExternalStore: on the server (and
-//  during hydration) the snapshot says "not dismissed", then React swaps
-//  in the real browser value. That keeps server and client HTML identical.
+//  localStorage is read through useSyncExternalStore: the server (and
+//  hydration) see "not dismissed", then React swaps in the browser value,
+//  so server and client HTML match.
 //
 "use client";
 
@@ -35,9 +41,6 @@ import styles from "./chrome.module.css";
 
 const STORAGE_KEY = "ftp.disclaimerDismissedAt";
 const HIDE_FOR_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-// The one-line notice lives in messages ("disclaimer.line"); the full legal
-// wording is on /<locale>/disclaimer.
 
 // ── A tiny store around one localStorage key ──
 const listeners = new Set<() => void>();
@@ -81,17 +84,8 @@ export default function DisclaimerLine({ locale }: { locale: string }) {
     <div role="region" aria-label={t("region")} className={styles.disclaimer}>
       <div className={`ftp-container ${styles.disclaimerRow}`}>
         <Info size={14} aria-hidden className={styles.disclaimerIcon} />
-        {/*
-          Always ONE line. The sentence is short enough to fit whole on a
-          desktop (1200 px container); on narrower screens it is cut with
-          "…" (full text in the tooltip, and screen readers still read all
-          of it). The link text swaps by width in chrome.module.css:
-          "Read the disclaimer" from 768 px up, "More" on phones.
-        */}
         <p className={styles.disclaimerText}>
-          <span className={styles.disclaimerSentence} title={t("line")}>
-            {t("line")}
-          </span>
+          {t("short")} <span className={styles.disclaimerSources}>{t("sources")}</span>
           <Link href={`/${locale}/disclaimer`} className={styles.disclaimerLinkLong}>
             {t("read")}
           </Link>
@@ -99,13 +93,7 @@ export default function DisclaimerLine({ locale }: { locale: string }) {
             {t("more")}
           </Link>
         </p>
-        <button
-          type="button"
-          onClick={dismiss}
-          className={styles.disclaimerClose}
-          aria-label={t("hideAria")}
-          title={t("hide")}
-        >
+        <button type="button" onClick={dismiss} className={styles.disclaimerClose} aria-label={t("hideAria")} title={t("hide")}>
           <X size={16} aria-hidden />
         </button>
       </div>

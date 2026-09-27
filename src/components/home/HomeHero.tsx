@@ -29,7 +29,7 @@ import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useFormat } from "@/i18n/client";
 import { AsOfText, CountUp } from "@/components/district/ui";
-import { DISTRICT_SEARCH_ID } from "./HeaderBar";
+const DISTRICT_SEARCH_ID = "ftp-district-search"; // replaced by the hero search box in the next step
 import YourDistrictBand from "./YourDistrictBand";
 import styles from "./home.module.css";
 

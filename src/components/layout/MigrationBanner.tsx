@@ -20,6 +20,7 @@
 
 "use client";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AlertOctagon, AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -37,8 +38,10 @@ type Announcement = {
   autoHideAfter: string | null;
 };
 
-// Design v3: each variant maps to a token pair (tinted background + dark
-// text) and a Lucide icon. No hex colours, no emoji, no shadows.
+// Design v5 (calm): each variant maps to a token pair (tinted background +
+// dark text) and a Lucide icon. No hex colours, no emoji, no shadows. The
+// announcement text itself is written by the admin; the only fixed words
+// here (the close button's label) come from the "disclaimer" messages.
 const VARIANT_STYLE: Record<string, { text: string; tint: string; Icon: LucideIcon }> = {
   critical: { text: "var(--ftp-danger)", tint: "var(--ftp-danger-tint)", Icon: AlertOctagon },
   warning:  { text: "var(--ftp-warn)",   tint: "var(--ftp-warn-tint)",   Icon: AlertTriangle },
@@ -63,6 +66,12 @@ function useResolvedAnnouncement(): Announcement | null {
         const data = (await res.json()) as Partial<Announcement>;
         if (!data.enabled) return;
         if (data.autoHideAfter && new Date(data.autoHideAfter).getTime() <= Date.now()) return;
+        // Already acknowledged in this browser → nothing to show.
+        try {
+          if (data.storageKey && localStorage.getItem(data.storageKey)) return;
+        } catch {
+          /* storage blocked (private mode): show the notice */
+        }
         setAnn(data as Announcement);
       } catch {
         // Network or DB error — fail closed (no banner) rather than show stale copy.
@@ -75,13 +84,9 @@ function useResolvedAnnouncement(): Announcement | null {
 }
 
 export default function MigrationBanner() {
+  const t = useTranslations("disclaimer");
   const ann = useResolvedAnnouncement();
   const [acknowledged, setAcknowledged] = useState(false);
-
-  useEffect(() => {
-    if (!ann) return;
-    if (localStorage.getItem(ann.storageKey)) setAcknowledged(true);
-  }, [ann]);
 
   // Body scroll lock only while a modal is actively blocking
   useEffect(() => {
@@ -95,7 +100,11 @@ export default function MigrationBanner() {
 
   function acknowledge() {
     if (!ann) return;
-    localStorage.setItem(ann.storageKey, new Date().toISOString());
+    try {
+      localStorage.setItem(ann.storageKey, new Date().toISOString());
+    } catch {
+      /* storage blocked: hide it for this page view only */
+    }
     setAcknowledged(true);
   }
 
@@ -128,8 +137,8 @@ export default function MigrationBanner() {
           </span>
           <button
             onClick={acknowledge}
-            aria-label="Dismiss notice"
-            title="Dismiss"
+            aria-label={t("dismissAria")}
+            title={t("dismiss")}
             style={{
               flexShrink: 0,
               width: 44,

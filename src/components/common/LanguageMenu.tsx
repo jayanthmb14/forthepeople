@@ -3,20 +3,26 @@
  * © 2026 Jayanth M B. MIT License.
  */
 
-// LanguageMenu — the header language switcher (Design v4).
+// LanguageMenu — the header language switcher (Design v5).
+//
+// Always in the header row, on every width (never inside another menu):
+//   PC / tablet  [🌐 English ▾]      phone  [🌐 EN ▾] / [🌐 हि ▾] / [🌐 ಕ ▾]
 //
 // Built entirely from the language registry (src/i18n/languages.ts): every
-// "live" or "beta" language is listed in its own script; "planned" ones are
-// counted ("20 more coming"). Switching keeps the current page: /kn/x/y ↔
-// /en/x/y. No language is typed in this file.
+// "live" or "beta" language is listed in its own script; the "planned" ones
+// sit behind one quiet "N more Indian languages coming" line that opens to
+// show their names. Switching keeps the current page: /kn/x/y ↔ /en/x/y.
+// No language is typed in this file.
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, ChevronDown, Globe, Lock } from "lucide-react";
+import { Check, ChevronDown, Globe } from "lucide-react";
 import { LANGUAGES, PLANNED_LOCALES, ROUTED_LOCALES, getLanguage } from "@/i18n/languages";
+import type { Language } from "@/i18n/languages";
+import s from "./LanguageMenu.module.css";
 
 /** Replace the locale segment of a path (works for 2- and 3-letter codes). */
 export function switchLocalePath(pathname: string | null, code: string): string {
@@ -27,7 +33,13 @@ export function switchLocalePath(pathname: string | null, code: string): string 
   return out || `/${code}`;
 }
 
-export default function LanguageMenu({ compact = false }: { compact?: boolean }) {
+/** "EN" for Latin scripts, else the first letter with its vowel sign ("हि", "ಕ"). */
+function shortLabel(l: Language): string {
+  if (l.script === "Latin") return l.code.toUpperCase();
+  return l.native.match(/^\P{M}\p{M}*/u)?.[0] ?? l.native.slice(0, 1);
+}
+
+export default function LanguageMenu() {
   const t = useTranslations("lang");
   const locale = useLocale();
   const pathname = usePathname();
@@ -35,6 +47,7 @@ export default function LanguageMenu({ compact = false }: { compact?: boolean })
   const wrap = useRef<HTMLDivElement>(null);
   const current = getLanguage(locale);
   const routed = LANGUAGES.filter((l) => l.status !== "planned");
+  const planned = LANGUAGES.filter((l) => l.status === "planned");
 
   useEffect(() => {
     if (!open) return;
@@ -58,23 +71,28 @@ export default function LanguageMenu({ compact = false }: { compact?: boolean })
   }, [open]);
 
   return (
-    <div ref={wrap} style={{ position: "relative" }}>
+    <div ref={wrap} className={s.wrap}>
       <button
         type="button"
         aria-expanded={open}
         aria-controls="ftp-lang-menu"
+        aria-label={t("changeAria", { name: current.native })}
         onClick={() => setOpen((x) => !x)}
-        className="ftp-lang-btn"
+        className={s.button}
       >
-        <Globe size={15} aria-hidden />
-        <span lang={current.code}>{compact ? current.code.toUpperCase() : current.native}</span>
+        <Globe size={16} aria-hidden />
+        <span lang={current.code} className={s.long}>
+          {current.native}
+        </span>
+        <span lang={current.code} className={s.short}>
+          {shortLabel(current)}
+        </span>
         <ChevronDown size={14} aria-hidden />
-        <span className="sr-only">{t("menuLabel")}</span>
       </button>
       {open && (
-        <div id="ftp-lang-menu" className="ftp-lang-panel">
-          <p className="ftp-lang-title">{t("menuLabel")}</p>
-          <ul>
+        <div id="ftp-lang-menu" className={s.panel}>
+          <p className={s.title}>{t("menuLabel")}</p>
+          <ul className={s.list}>
             {routed.map((l) => (
               <li key={l.code}>
                 <Link
@@ -82,41 +100,35 @@ export default function LanguageMenu({ compact = false }: { compact?: boolean })
                   hrefLang={l.code}
                   lang={l.code}
                   aria-current={l.code === locale ? "true" : undefined}
-                  className="ftp-lang-item"
+                  className={s.item}
                   onClick={() => setOpen(false)}
                 >
-                  <span className="ftp-lang-native">{l.native}</span>
-                  <span className="ftp-lang-english" lang="en">{l.english}</span>
+                  <span className={s.native}>{l.native}</span>
+                  <span className={s.english} lang="en">
+                    {l.english}
+                  </span>
                   {l.status === "beta" && (
-                    <span className="ftp-lang-beta" title={t("betaNote")}>
+                    <span className={s.beta} title={t("betaNote")}>
                       {t("beta")}
                     </span>
                   )}
-                  {l.code === locale && <Check size={15} aria-hidden className="ftp-lang-check" />}
+                  {l.code === locale && <Check size={16} aria-hidden className={s.check} />}
                 </Link>
               </li>
             ))}
           </ul>
+          {routed.some((l) => l.status === "beta") && <p className={s.note}>{t("betaNote")}</p>}
           {PLANNED_LOCALES.length > 0 && (
-            <>
-              <p className="ftp-lang-more">{t("more", { n: PLANNED_LOCALES.length })}</p>
-              {/* Every scheduled language, locked until its translation is
-                  switched on in the registry (status "planned"). */}
-              <ul aria-label={t("comingList")}>
-                {LANGUAGES.filter((l) => l.status === "planned").map((l) => (
-                  <li key={l.code}>
-                    <span className="ftp-lang-item ftp-lang-locked" aria-disabled="true" title={t("lockedNote")}>
-                      <span className="ftp-lang-native" lang={l.code} dir={l.dir}>
-                        {l.native}
-                      </span>
-                      <span className="ftp-lang-english" lang="en">{l.english}</span>
-                      <Lock size={13} aria-hidden className="ftp-lang-check" />
-                      <span className="sr-only">{t("lockedNote")}</span>
-                    </span>
+            <details className={s.more}>
+              <summary className={s.moreSummary}>{t("more", { n: PLANNED_LOCALES.length })}</summary>
+              <ul aria-label={t("comingList")} className={s.planned}>
+                {planned.map((l) => (
+                  <li key={l.code} lang={l.code} dir={l.dir} title={t("lockedNote")}>
+                    {l.native}
                   </li>
                 ))}
               </ul>
-            </>
+            </details>
           )}
         </div>
       )}

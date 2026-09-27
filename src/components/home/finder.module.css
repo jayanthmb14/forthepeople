@@ -1,0 +1,471 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * finder.module.css — district finder (header sheet), search results and
+ * the "Use my location" result card. Design v5 "calm": white surfaces,
+ * pastel-blue selection, one brand blue for actions, no emoji except the
+ * module identity emoji in dashboard results.
+ *
+ * Colours come from the --ftp-* tokens (globals.css). Touch targets are
+ * at least 44 px. Indic headings keep line-height >= 1.35 (docs/I18N.md §4).
+ */
+
+/* ───────────── Finder ───────────── */
+
+.finder {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.searchLabel {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.searchField {
+  position: relative;
+}
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ftp-text-2);
+  pointer-events: none;
+}
+.searchInput {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 44px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 16px; /* 16 px keeps iOS Safari from zooming in */
+  line-height: 22px;
+}
+.searchInput::placeholder {
+  color: var(--ftp-text-2);
+}
+.searchInput:focus {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 1px;
+  border-color: var(--ftp-brand);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.groupLabel {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.empty {
+  margin: 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ftp-text-2);
+}
+
+/* ───────────── Rows ───────────── */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  color: var(--ftp-text);
+  text-decoration: none;
+}
+.row:hover,
+.row[aria-current="page"] {
+  background: var(--ftp-brand-tint);
+}
+.row:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+  background: var(--ftp-brand-tint);
+}
+.rowMuted .rowName {
+  font-weight: 500;
+}
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.rowName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+}
+.rowLocal {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.rowMeta {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.rowArrow {
+  flex-shrink: 0;
+  color: var(--ftp-text-2);
+}
+.rowIcon {
+  flex-shrink: 0;
+  color: var(--ftp-brand);
+}
+.rowEmoji {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ftp-surface-2);
+  font-size: 17px;
+  line-height: 1;
+}
+.dotLive,
+.dotOff {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dotLive {
+  background: var(--ftp-brand);
+}
+.dotOff {
+  border: 1.5px solid var(--ftp-border-strong);
+}
+.tag {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text-2);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Live districts as small cards */
+.liveGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.liveChip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 56px;
+  padding: 9px 12px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  text-decoration: none;
+}
+.liveChip:hover,
+.liveChipHere {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand-tint);
+}
+.liveChip:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 1px;
+}
+
+/* States, each opens to its districts */
+.stateList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ftp-border);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  overflow: hidden;
+}
+.stateList > li + li {
+  border-top: 1px solid var(--ftp-border);
+}
+.stateSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.stateSummary::-webkit-details-marker {
+  display: none;
+}
+.stateSummary:hover {
+  background: var(--ftp-surface-2);
+}
+.stateSummary:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+.stateSummary .rowName {
+  flex: 1;
+  min-width: 0;
+}
+.stateCountLive {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-brand-deep);
+}
+.stateChevron {
+  flex-shrink: 0;
+  color: var(--ftp-text-2);
+  transition: transform 150ms ease;
+}
+.state[open] .stateChevron {
+  transform: rotate(90deg);
+}
+.state[open] > .list {
+  padding: 2px 6px 8px;
+}
+
+/* ───────────── Buttons ───────────── */
+
+.btnPrimary,
+.btnOutline,
+.btnOutlineWide {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-family: var(--ftp-font-sans);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btnPrimary {
+  border: 1px solid var(--ftp-brand);
+  background: var(--ftp-brand);
+  color: #fff;
+}
+.btnPrimary:hover {
+  background: var(--ftp-brand-deep);
+  border-color: var(--ftp-brand-deep);
+}
+.btnOutline,
+.btnOutlineWide {
+  border: 1px solid var(--ftp-border-strong);
+  background: var(--ftp-surface);
+  color: var(--ftp-brand-deep);
+}
+.btnOutline:hover,
+.btnOutlineWide:hover {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand-tint);
+}
+.btnOutlineWide {
+  width: 100%;
+  border-color: var(--ftp-brand);
+}
+.btnOutlineWide:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+.btnPrimary:focus-visible,
+.btnOutline:focus-visible,
+.btnOutlineWide:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+
+/* ───────────── "Use my location" result card ───────────── */
+
+.result {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+}
+.resultWrap {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(460px, calc(100vw - 24px));
+}
+.resultFloating {
+  box-shadow: 0 18px 44px -20px rgba(15, 27, 45, 0.35), 0 2px 6px rgba(15, 27, 45, 0.06);
+  animation: resultIn 200ms ease-out;
+}
+@keyframes resultIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.resultClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.resultClose:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+}
+.resultHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 40px;
+}
+.resultBadge {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand);
+}
+.resultBadgeWarn {
+  background: var(--ftp-warn-tint);
+  color: var(--ftp-warn);
+}
+.resultEyebrow {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.resultTitle {
+  margin: 2px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+  font-size: 21px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--ftp-text);
+  outline: none;
+}
+.resultLocal {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.resultState {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+.resultTag {
+  margin: 0;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+.resultBody {
+  margin: 0;
+  font-size: 15px;
+  line-height: 23px;
+}
+.resultNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+.resultActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.resultPrivacy {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--ftp-border);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resultFloating {
+    animation: none;
+  }
+  .stateChevron {
+    transition: none;
+  }
+}
