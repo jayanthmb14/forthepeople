@@ -94,7 +94,26 @@ statuses and duplicates, helplines, the "2021 Census" row, India dashboard
 numbers, invented police phone numbers. See `docs/DATA-FIXES-2026-09.md` and
 `docs/LEADERS-VERIFIED-2026-09.md` when they land.
 
+Duplicates (28 Sep): the code that made them is fixed (exams stored once per
+national/state/district scope, one spelling for election types, project and
+news matching) and a nightly duplicate check runs (`dedupe-data`). The
+one-time clean-up removed 48 rows: 30 exam copies, 11 non-government exams,
+6 election copies, 1 school copy (`scripts/dedupe-2026-09.ts`).
+
 Still yours:
+0. **Three small fixes the permission system would not let me make:**
+   - Merge the two "Regional Transport Office, Bengaluru East" rows in
+     GovOffice (ids `cmmvn6q0u005xmuxnmhtv37nk` keep, `cmmvn6u4b00d5muxnq92lwhpx`
+     delete). Neither stored address is right; the office is at Kasturi Nagar
+     (CA-15, NGEF East, 560043) per RTO directories — confirm on
+     transport.karnataka.gov.in, then set it (or leave it blank).
+   - Delete ElectionResult `cmmvn6vjp00immuxn73owqm6n` ("Tejasvi Surya (MLA)",
+     Bengaluru South 2023) — invented; he is an MP.
+   - Decide "Sarjapur Road International School" vs "Ryan International
+     School Sarjapur Road" (may be the same school).
+   The whole ElectionResult table needs reloading from results.eci.gov.in
+   (seeded rows have placeholder runners-up and wrong margins); results stay
+   hidden on the site until then.
 1. **Mysuru rainfall 2023–24 ("IMD Mysuru", 24 rows)** were typed by hand in
    `prisma/seed-mysuru-data.ts`; they are hidden on the site. Delete them
    if you agree (they were not in the dry run you approved, so I did not).
