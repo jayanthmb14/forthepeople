@@ -5,162 +5,163 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Government Offices — Design v4 "Rang" module page (docs/DESIGN-SYSTEM.md)
+//  Govt offices near you — "Where is the office, is it open now, and how
+//  do I reach it?"  (docs/LAYOUT.md recipe)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Data: useOffices() → the district office directory (active rows only).
-//  Search box + department Chips filter the list on the client.
+//  The answer: "Mandya has 42 Govt offices in 12 departments. It is Monday
+//  11:20 am in India: most offices are usually open now."
 //
-//  v4 look: emoji StatTiles, then the picture — an "In simple words" line
-//  and a week strip (Mon … Sun, lit on the days OFFICE_HOURS says offices
-//  open, today ringed) — then two charts: offices per department (bars)
-//  and how many offices list a phone, an email and a website (rings).
-//  Accents come from the page hue (slate for offices); the open / lunch /
-//  closed pills keep their semantic live / warn colours.
+//  Order: PageHeader → Explainer → 4 tiles → the picture (a week strip of
+//  the usual open days, today ringed) → search + department chips → one
+//  card per office. Tapping a card opens a DetailSheet: open / closed now,
+//  the week's hours, address, tap-to-call phone, email, website, head of
+//  office, services handled, the step-by-step certificate guides that send
+//  you to an office like this, and Call / Directions / Website buttons →
+//  link to How to get certificates → charts → AI insight → news → sources.
 //
-//  "Open now" (2026-09-27 fix): the old rule used 09:00–18:00 in the
-//  VISITOR'S BROWSER time zone while the page said "10:00 AM – 5:30 PM".
-//  Now:
-//    • The default hours live in ONE constant, OFFICE_HOURS, which drives
-//      both the text shown on the page and the open/closed rule.
-//    • The rule is always evaluated in Indian Standard Time, wherever the
-//      visitor is (see nowInIST).
-//    • When an office row carries its own hours (mondayHours … sundayHours
-//      and lunchBreak, e.g. "10:00-17:30"), its card shows its own
-//      open / closed / lunch status from those hours.
+//  Hours, honestly:
+//    • An office that lists its own hours (mondayHours … sundayHours,
+//      lunchBreak, e.g. "10:00-17:30") gets an exact Open now / Lunch
+//      break / Closed now from those hours.
+//    • Otherwise the page only says what is USUAL (USUAL_HOURS: Monday to
+//      Friday, 10:00 to 17:30; some offices open on Saturdays; closed on
+//      Sundays and public holidays) and asks people to call first. Every
+//      rule is evaluated in India time, wherever the visitor is.
+//    • The clock comes from useNow() (0 on the server), so nothing
+//      time-based is drawn until the browser knows the time.
 //
-//  Text: every word comes from the "page_offices" messages; day names and
-//  times are formatted by Intl in the reader's language. Office names,
-//  departments, addresses and services are data and stay as published.
+//  Deep link: ?q=<words> fills the search (the certificates page links
+//  here with the office a guide names). Every word is in page_offices
+//  (en / kn / hi); office names, departments, addresses and services are
+//  data and stay as published.
 "use client";
+
 import { use, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Building, Phone, Mail, Globe, MapPin, Search } from "lucide-react";
-import { useOffices } from "@/hooks/useRealtimeData";
-import type { GovOffice } from "@/hooks/useRealtimeData";
-import { useFormat, useModuleText } from "@/i18n/client";
-import { scriptLang } from "@/lib/utils/script-lang";
-import {
-  PageHeader,
-  Section,
-  Card,
-  Chips,
-  Pill,
-  StatTile,
-  StatStrip,
-  LoadingShell,
-  ErrorBlock,
-  EmptyState,
-} from "@/components/district/ui";
-import { ChartCard, Explainer } from "@/components/district/visuals";
+import { Building } from "lucide-react";
+import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import NoDataCard from "@/components/common/NoDataCard";
-import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import ModuleNews from "@/components/district/ModuleNews";
-import { getModuleSources } from "@/lib/constants/state-config";
-import { ModulePage, ModuleSummary, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { useOffices, useServices } from "@/hooks/useRealtimeData";
+import type { GovOffice, ServiceGuide } from "@/hooks/useRealtimeData";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
+import { Card, Chips, EmptyState, ErrorBlock, LoadingShell, ModulePage, PageHeader, Pill, Section, StatStrip, StatTile } from "@/components/district/ui";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { BarList, ProgressRing } from "@/components/district/daily-services/HueCharts";
-import { useDistrictName } from "@/components/district/daily-services/useDistrictName";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import {
+  ActionLink,
+  LinkCard,
+  MetaLine,
+  PageEnd,
+  SearchBox,
+  SheetBlock,
+  SheetNote,
+  SheetSmall,
+  TagList,
+  TapCard,
+  dataLang,
+  extUrl,
+  hostOf,
+  mapsUrl,
+  phoneList,
+  searchRows,
+  searchWords,
+  telHref,
+  useNow,
+} from "@/components/services-2/kit";
 
 // ─────────────────────────────────────────────────────────────────────
-//  Office hours (all times are IST, 24-hour "HH:MM")
+//  Hours (all times IST, 24-hour "HH:MM")
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Default hours for district government offices. Change them HERE and both
- * the sentence on the page and the "Open now" rule follow.
- * days: 0 = Sunday … 6 = Saturday.
+ * What is USUAL for district Govt offices — used only for offices that do
+ * not list their own hours, and always shown as "usually", with "call
+ * first". days: 0 = Sunday … 6 = Saturday. `someDays` are days when only
+ * some offices open (Saturdays differ by state and by week).
  */
-const OFFICE_HOURS = { days: [1, 2, 3, 4, 5], open: "10:00", close: "17:30" } as const;
+const USUAL_HOURS = { days: [1, 2, 3, 4, 5], someDays: [6], open: "10:00", close: "17:30" } as const;
 
-/** The per-day hour fields an office row may carry, indexed by day number (0 = Sunday). */
-const DAY_FIELDS = [
-  "sundayHours",
-  "mondayHours",
-  "tuesdayHours",
-  "wednesdayHours",
-  "thursdayHours",
-  "fridayHours",
-  "saturdayHours",
-] as const;
+/** The per-day hour fields an office row may carry, by day number (0 = Sunday). */
+const DAY_FIELDS = ["sundayHours", "mondayHours", "tuesdayHours", "wednesdayHours", "thursdayHours", "fridayHours", "saturdayHours"] as const;
 
-/** How many departments the bar list names before the rest are left out. */
+/** Mon … Sun, the order people read a week in. */
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/** How many departments the bar list names. */
 const TOP_DEPARTMENTS = 6;
 
-/**
- * The office row as the API returns it. The shared GovOffice type in the
- * hook does not list the hour columns yet, but /api/data/offices sends
- * every column of the table, so we read them here as optional fields.
- */
-type OfficeRow = GovOffice & Partial<Record<(typeof DAY_FIELDS)[number] | "lunchBreak", string | null>>;
+/** The API sends every column of the table; the shared type lists fewer. */
+type OfficeRow = GovOffice &
+  Partial<Record<(typeof DAY_FIELDS)[number] | "lunchBreak" | "holidays" | "notes" | "updatedAt", string | null>> & {
+    latitude?: number | null;
+    longitude?: number | null;
+  };
 
 const bold = (c: React.ReactNode) => <strong>{c}</strong>;
 
-/** "17:30" → minutes since midnight (1050). Returns null if not a time. */
+/** "17:30" → 1050 minutes since midnight, or null. */
 function toMinutes(hhmm: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
-  if (!m) return null;
-  return Number(m[1]) * 60 + Number(m[2]);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
 /** Short weekday name in the reader's language (0 = Sunday). 1 Jan 2023 was a Sunday. */
-function weekdayName(day: number, intl: string): string {
-  return new Intl.DateTimeFormat(intl, { weekday: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2023, 0, 1 + day)));
+function weekdayName(day: number, intl: string, style: "short" | "long" = "short"): string {
+  return new Intl.DateTimeFormat(intl, { weekday: style, timeZone: "UTC" }).format(new Date(Date.UTC(2023, 0, 1 + day)));
 }
 
-/** "17:30" → "5:30 pm" / "ಸಂಜೆ 5:30", in the reader's language. */
-function clockLabel(hhmm: string, intl: string): string {
-  const mins = toMinutes(hhmm) ?? 0;
+/** Minutes since midnight → "5:30 pm" / "ಸಂಜೆ 5:30", in the reader's language. */
+function clockOf(mins: number, intl: string): string {
   return new Intl.DateTimeFormat(intl, { hour: "numeric", minute: "2-digit", timeZone: "UTC" }).format(
     new Date(Date.UTC(2023, 0, 1, Math.floor(mins / 60), mins % 60)),
   );
 }
 
-/**
- * Current weekday and minute-of-day in Indian Standard Time.
- * IST is a fixed UTC+05:30 with no daylight saving, so shifting the UTC
- * clock by 330 minutes gives the IST wall clock whatever the browser's
- * own time zone is.
- */
-function nowInIST(now: Date = new Date()): { day: number; minutes: number } {
-  const ist = new Date(now.getTime() + 330 * 60_000);
+/** Weekday and minute of the day in India time. IST is UTC+05:30 all year. */
+function inIST(ms: number): { day: number; minutes: number } {
+  const ist = new Date(ms + 330 * 60_000);
   return { day: ist.getUTCDay(), minutes: ist.getUTCHours() * 60 + ist.getUTCMinutes() };
 }
 
-/** Parse "10:00-17:30" (hyphen or en dash, spaces allowed) → [open, close] minutes. */
+/** "10:00-17:30" (hyphen or dash, spaces allowed) → [open, close] minutes. */
 function parseRange(value: string | null | undefined): [number, number] | null {
-  if (!value) return null;
-  const m = /(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/.exec(value);
+  const m = /(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/.exec(value ?? "");
   if (!m) return null;
-  const open = toMinutes(m[1]);
-  const close = toMinutes(m[2]);
-  return open !== null && close !== null ? [open, close] : null;
+  const a = toMinutes(m[1]);
+  const b = toMinutes(m[2]);
+  return a !== null && b !== null ? [a, b] : null;
 }
 
-/** Default rule: open on OFFICE_HOURS.days between open and close, in IST. */
-function isOpenNow(now: Date = new Date()): boolean {
-  const { day, minutes } = nowInIST(now);
-  const open = toMinutes(OFFICE_HOURS.open) ?? 0;
-  const close = toMinutes(OFFICE_HOURS.close) ?? 0;
-  return (OFFICE_HOURS.days as readonly number[]).includes(day) && minutes >= open && minutes < close;
+type Usual = "open" | "closed" | "someSat" | "sunday";
+
+/** What is usual right now (for offices with no hours of their own). */
+function usualNow(ms: number): Usual {
+  const { day, minutes } = inIST(ms);
+  if (day === 0) return "sunday";
+  if ((USUAL_HOURS.someDays as readonly number[]).includes(day)) return "someSat";
+  const open = toMinutes(USUAL_HOURS.open) ?? 0;
+  const close = toMinutes(USUAL_HOURS.close) ?? 0;
+  return minutes >= open && minutes < close ? "open" : "closed";
 }
 
-/**
- * Status of ONE office from its own hours, or null when the row carries no
- * hours at all (the card then shows nothing and the page-level sentence
- * applies). A day with no hours listed counts as closed that day.
- */
-function officeStatus(o: OfficeRow, now: Date = new Date()): { state: "open" | "lunch" | "closed"; today: string | null } | null {
-  const hasOwnHours = DAY_FIELDS.some((f) => !!o[f]);
-  if (!hasOwnHours) return null;
-  const { day, minutes } = nowInIST(now);
-  const todayText = o[DAY_FIELDS[day]] ?? null;
-  const range = parseRange(todayText);
-  if (!range || minutes < range[0] || minutes >= range[1]) return { state: "closed", today: todayText };
+function hasOwnHours(o: OfficeRow): boolean {
+  return DAY_FIELDS.some((f) => !!o[f]);
+}
+
+/** One office's status from its own hours, or null when it lists none. A day with no hours counts as closed. */
+function ownStatus(o: OfficeRow, ms: number): { state: "open" | "lunch" | "closed"; today: [number, number] | null } | null {
+  if (!hasOwnHours(o)) return null;
+  const { day, minutes } = inIST(ms);
+  const range = parseRange(o[DAY_FIELDS[day]]);
+  if (!range || minutes < range[0] || minutes >= range[1]) return { state: "closed", today: range };
   const lunch = parseRange(o.lunchBreak);
-  if (lunch && minutes >= lunch[0] && minutes < lunch[1]) return { state: "lunch", today: todayText };
-  return { state: "open", today: todayText };
+  if (lunch && minutes >= lunch[0] && minutes < lunch[1]) return { state: "lunch", today: range };
+  return { state: "open", today: range };
 }
 
 /** One emoji per department, from keywords in its free-text name; 🏛️ otherwise. */
@@ -187,53 +188,34 @@ function deptEmoji(department: string): string {
   return "🏛️";
 }
 
-/** Contact link (tel / mailto / website) with a 32 px tap height. */
-function ContactLink({ href, icon: Icon, children, external }: { href: string; icon: typeof Phone; children: React.ReactNode; external?: boolean }) {
-  return (
-    <a
-      href={href}
-      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, fontSize: 13, fontWeight: 500, color: "var(--hue-deep)", textDecoration: "none" }}
-    >
-      <Icon size={12} aria-hidden style={{ color: "var(--hue)" }} /> {children}
-    </a>
+/**
+ * Certificate guides that send you to an office like this one. A guide's
+ * office ("Tahsildar Office / Nadakacheri") is split into alternatives;
+ * a guide matches when every telling word (4+ letters) of one alternative
+ * appears in this office's name, type or department. District and state
+ * names are not telling words.
+ */
+function guidesFor(o: OfficeRow, guides: ServiceGuide[], placeWords: Set<string>): ServiceGuide[] {
+  const hay = ` ${[o.name, o.type, o.department].join(" ").toLowerCase()} `;
+  return guides.filter((g) =>
+    g.office
+      .split(/\/|\bor\b|,/i)
+      .map((alt) => searchWords(alt).filter((w) => w.length >= 4 && !placeWords.has(w)))
+      .some((words) => words.length > 0 && words.every((w) => hay.includes(w))),
   );
 }
 
-/** Pill colours taken from the page hue instead of the neutral grey. */
-const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
-
-/** Mon … Sun, the order people read a week in. */
-const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
-
 /**
- * WeekStrip — seven day tiles, lit (hue) on the days OFFICE_HOURS says
- * offices open and grey on the others, with today ringed. The same
- * constant drives the sentence and the "Open now" rule, so the picture
- * can never disagree with them.
+ * WeekStrip — seven day tiles: lit on the usual open days, half-lit on
+ * days only some offices open, grey on closed days, today ringed.
  */
-function WeekStrip({
-  openDays,
-  today,
-  dayName,
-  ariaLabel,
-  caption,
-}: {
-  openDays: readonly number[];
-  today: number;
-  dayName: (d: number) => string;
-  ariaLabel: string;
-  caption: string;
-}) {
+function WeekStrip({ today, dayName, ariaLabel, caption }: { today: number | null; dayName: (d: number) => string; ariaLabel: string; caption: string }) {
   return (
     <figure style={{ margin: 0 }}>
-      <div
-        role="img"
-        aria-label={ariaLabel}
-        style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, maxWidth: 460 }}
-      >
+      <div role="img" aria-label={ariaLabel} style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, maxWidth: 520 }}>
         {WEEK_ORDER.map((d, i) => {
-          const open = openDays.includes(d);
+          const open = (USUAL_HOURS.days as readonly number[]).includes(d);
+          const some = (USUAL_HOURS.someDays as readonly number[]).includes(d);
           const isToday = d === today;
           return (
             <span
@@ -247,17 +229,15 @@ function WeekStrip({
                 gap: 4,
                 padding: "8px 0",
                 borderRadius: 12,
-                background: open ? "var(--hue-tint)" : "var(--ftp-surface-2)",
+                background: open ? "var(--hue-tint)" : some ? "color-mix(in srgb, var(--hue-tint) 50%, var(--ftp-surface-2))" : "var(--ftp-surface-2)",
                 border: isToday ? "2px solid var(--hue-deep)" : "2px solid transparent",
                 ["--i" as string]: i,
               }}
             >
-              <span className="ftp-emoji" style={{ fontSize: 20, filter: open ? "none" : "grayscale(1)", opacity: open ? 1 : 0.35 }}>
+              <span className="ftp-emoji" style={{ fontSize: 20, filter: open ? "none" : "grayscale(1)", opacity: open ? 1 : some ? 0.6 : 0.3 }}>
                 🏢
               </span>
-              <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: open ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>
-                {dayName(d)}
-              </span>
+              <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: open ? "var(--hue-deep)" : "var(--ftp-text-2)" }}>{dayName(d)}</span>
             </span>
           );
         })}
@@ -274,27 +254,26 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
   const f = useFormat();
   const mt = useModuleText();
   const districtName = useDistrictName(state, district);
+  const searchParams = useSearchParams();
   const { data, isLoading, error } = useOffices(district, state);
+  const { data: guideData } = useServices(district, state);
   const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const now = useNow();
 
   const n = (v: number) => f.number(v);
   const dayName = (d: number) => weekdayName(d, f.intl);
+  const rangeText = (r: [number, number]) => t("range", { open: clockOf(r[0], f.intl), close: clockOf(r[1], f.intl) });
+  const usualRange: [number, number] = [toMinutes(USUAL_HOURS.open) ?? 0, toMinutes(USUAL_HOURS.close) ?? 0];
+  const usualHours = t("usualHours", { from: dayName(USUAL_HOURS.days[0]), to: dayName(USUAL_HOURS.days[USUAL_HOURS.days.length - 1]), hours: rangeText(usualRange) });
 
-  // "Mon–Fri" for a continuous run, otherwise a list ("Mon, Wed and Fri").
-  const days = OFFICE_HOURS.days as readonly number[];
-  const continuous = days.every((d, i) => i === 0 || d === days[i - 1] + 1);
-  const daysLabel =
-    continuous && days.length > 2
-      ? t("dayRange", { from: dayName(days[0]), to: dayName(days[days.length - 1]) })
-      : new Intl.ListFormat(f.intl, { style: "short", type: "conjunction" }).format(days.map(dayName));
-  const hoursValues = { days: daysLabel, open: clockLabel(OFFICE_HOURS.open, f.intl), close: clockLabel(OFFICE_HOURS.close, f.intl) };
+  const offices: OfficeRow[] = ((data?.data ?? []) as OfficeRow[]).filter((o) => o.active);
+  const guides: ServiceGuide[] = (guideData?.data ?? []).filter((g) => g.active);
+  const placeWords = new Set([...searchWords(district.replace(/-/g, " ")), ...searchWords(state.replace(/-/g, " ")), ...searchWords(districtName)]);
 
-  const offices: OfficeRow[] = (data?.data ?? []).filter((o) => o.active);
-  const openNow = isOpenNow();
-  const todayIST = nowInIST().day;
-  const freq = getModuleSources("offices", state).frequency;
-  const refresh = t.has(`refresh.${freq}`) ? t(`refresh.${freq}`) : t("refresh.other", { freq });
+  const usual = now > 0 ? usualNow(now) : null;
+  const today = now > 0 ? inIST(now).day : null;
 
   // Offices per department, biggest first (also the chip order).
   const deptCounts = Object.entries(
@@ -304,263 +283,330 @@ function OfficesPageInner({ params }: { params: Promise<{ locale: string; state:
     }, {}),
   ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
-  // Ways to reach an office: how many list each one.
+  const withPhone = offices.filter((o) => phoneList(o.phone).length > 0).length;
   const reach = [
-    { key: "phone", emoji: "📞", label: t("reach.phone"), count: offices.filter((o) => Boolean(o.phone)).length },
+    { key: "phone", emoji: "📞", label: t("reach.phone"), count: withPhone },
     { key: "email", emoji: "✉️", label: t("reach.email"), count: offices.filter((o) => Boolean(o.email)).length },
-    { key: "website", emoji: "🌐", label: t("reach.website"), count: offices.filter((o) => Boolean(o.website)).length },
+    { key: "website", emoji: "🌐", label: t("reach.website"), count: offices.filter((o) => Boolean(extUrl(o.website))).length },
   ];
-  const anyReach = reach.some((r) => r.count > 0);
 
-  const filtered = offices.filter((o) => {
-    const matchesDept = filter === "all" || o.department === filter;
-    const q = search.toLowerCase();
-    const matchesSearch = !search || o.name.toLowerCase().includes(q) || o.department.toLowerCase().includes(q) || (o.nameLocal ?? "").includes(search);
-    return matchesDept && matchesSearch;
-  });
+  const byDept = filter === "all" ? offices : offices.filter((o) => o.department === filter);
+  const shown = searchRows(byDept, search, (o) => [o.name, o.nameLocal, o.department, o.type, o.address, ...o.services]);
+
+  const open = offices.find((o) => o.id === openId) ?? null;
+  const openStatus = open && now > 0 ? ownStatus(open, now) : null;
+  const openPhones = open ? phoneList(open.phone) : [];
+  const openSite = open ? extUrl(open.website) : null;
+  const openGuides = open ? guidesFor(open, guides, placeWords) : [];
+
+  /** The status pill for a card or sheet (own hours only). */
+  const statusPill = (s: { state: "open" | "lunch" | "closed" }) => (
+    <Pill tone={s.state === "open" ? "live" : s.state === "lunch" ? "warn" : "neutral"} dot>
+      {s.state === "open" ? t("status.open") : s.state === "lunch" ? t("status.lunch") : t("status.closed")}
+    </Pill>
+  );
+
+  const usualTile = usual === "open" ? t("tiles.usuallyOpen") : usual === "closed" ? t("tiles.usuallyClosed") : usual === "someSat" ? t("tiles.callFirst") : usual === "sunday" ? t("tiles.closed") : "—";
+  const usualEmoji = usual === "open" ? "🔓" : usual === "someSat" ? "📞" : "🔒";
 
   return (
     <ModulePage>
-      <PageHeader
-        icon={Building}
-        title={mt.label("offices")}
-        description={t("description")}
-        backHref={base}
-        accent={getModuleAccent("offices")}
-      />
+      <PageHeader icon={Building} title={mt.label("offices")} description={t("description")} backHref={base} />
 
-      <ModuleSummary>{t("summary", { district: districtName })}</ModuleSummary>
-
-      <AIInsightCard module="offices" district={district} />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
       {!isLoading && !error && offices.length === 0 && <NoDataCard module="offices" district={district} state={state} />}
 
-      {!isLoading && offices.length > 0 && (
+      {!isLoading && !error && offices.length > 0 && (
         <>
-          <StatStrip cols={3}>
-            <StatTile emoji="🏢" label={t("tiles.offices")} value={n(offices.length)} sub={refresh} />
-            <StatTile emoji="🗂️" label={t("tiles.departments")} value={n(deptCounts.length)} sub={refresh} />
-            <StatTile
-              emoji={openNow ? "🔓" : "🔒"}
-              label={t("tiles.status")}
-              value={openNow ? t("tiles.open") : t("tiles.closed")}
-              sub={t("hoursIst", hoursValues)}
-              countUp={false}
-            />
+          {/* 2. The answer in one sentence (the time part appears once the browser knows the time). */}
+          <Explainer emoji="🏢">
+            {t.rich("answer", { district: districtName, offices: offices.length, departments: deptCounts.length, b: bold })}
+            {usual && now > 0 && (
+              <>
+                {" "}
+                {t.rich(`now.${usual}`, { day: weekdayName(inIST(now).day, f.intl, "long"), time: clockOf(inIST(now).minutes, f.intl), hours: usualHours, b: bold })}
+              </>
+            )}
+          </Explainer>
+
+          {/* 3. Four big numbers. */}
+          <StatStrip cols={4}>
+            <StatTile emoji="🏢" label={t("tiles.offices")} value={n(offices.length)} sub={t("tiles.officesSub")} />
+            <StatTile emoji="🗂️" label={t("tiles.departments")} value={n(deptCounts.length)} sub={t("tiles.departmentsSub")} />
+            <StatTile emoji="📞" label={t("tiles.phone")} value={n(withPhone)} sub={t("tiles.phoneSub", { total: n(offices.length) })} />
+            <StatTile emoji={usualEmoji} label={t("tiles.now")} value={usualTile} sub={t("tiles.nowSub")} countUp={false} />
           </StatStrip>
 
-          {/* The picture: office hours in plain words plus a week strip.
-              Both the words and the open/closed rule come from OFFICE_HOURS. */}
+          {/* 4. The picture: the usual week, today ringed. */}
           <Card tinted padding={18} style={{ marginTop: 16 }}>
-            <Explainer emoji="🕙">
-              <span suppressHydrationWarning>
-                {t.rich(openNow ? "explainerOpen" : "explainerClosed", { hours: t("hours", hoursValues), b: bold })}
-                {offices.some((o) => officeStatus(o) !== null) ? <> {t("ownHours")}</> : null}
-              </span>
-            </Explainer>
+            <p className="ftp-label" style={{ margin: "0 0 10px", color: "var(--hue-deep)" }}>
+              {t("week.title")}
+            </p>
             <WeekStrip
-              openDays={OFFICE_HOURS.days}
-              today={todayIST}
+              today={today}
               dayName={dayName}
-              ariaLabel={t("week.aria", { days: daysLabel, today: dayName(todayIST) })}
-              caption={t("week.caption")}
+              ariaLabel={t("week.aria", { hours: usualHours })}
+              caption={t("week.caption", { hours: usualHours })}
             />
           </Card>
 
-          {/* Two charts: where the offices are (by department) and how you
-              can reach them. Each hides itself when it has nothing to say. */}
-          {(deptCounts.length > 1 || anyReach) && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 16, marginTop: 24 }}>
-              {deptCounts.length > 1 && (
-                <ChartCard
-                  title={t("dept.title")}
-                  emoji="🗂️"
-                  units={t("dept.units")}
-                  simple={t.rich("dept.simple", { dept: deptCounts[0][0], n: n(deptCounts[0][1]), total: n(offices.length), b: bold })}
-                  table={deptCounts.map(([d, c]) => ({ label: d, value: n(c) }))}
-                >
-                  <BarList
-                    items={deptCounts.slice(0, TOP_DEPARTMENTS).map(([d, c]) => ({
-                      key: d,
-                      label: d,
-                      lang: scriptLang(d),
-                      value: c,
-                      display: n(c),
-                      emoji: deptEmoji(d),
-                    }))}
-                  />
-                </ChartCard>
-              )}
-              {anyReach && (
-                <ChartCard
-                  title={t("reach.title")}
-                  emoji="☎️"
-                  units={t("reach.units")}
-                  simple={
-                    reach[0].count > 0
-                      ? t.rich("reach.simple", { n: n(reach[0].count), total: n(offices.length), b: bold })
-                      : t("reach.simpleNoPhone", { total: n(offices.length) })
-                  }
-                  table={reach.map((r) => ({ label: r.label, value: t("reach.count", { n: n(r.count), total: n(offices.length) }) }))}
-                >
-                  <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-                    {reach.map((r, i) => (
-                      <li key={r.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", minWidth: 0 }}>
-                        <ProgressRing
-                          pct={(r.count / offices.length) * 100}
-                          size={76}
-                          i={i}
-                          label={t("reach.ringAria", { what: r.label, n: n(r.count), total: n(offices.length) })}
-                        >
-                          <span className="ftp-emoji" style={{ fontSize: 24 }}>{r.emoji}</span>
-                        </ProgressRing>
-                        <span style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600, color: "var(--ftp-text)" }}>{r.label}</span>
-                        <span className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: "var(--hue-deep)" }}>
-                          {t("reach.count", { n: n(r.count), total: n(offices.length) })}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </ChartCard>
-              )}
-            </div>
-          )}
-
+          {/* 5. Find an office; tap a card for everything. */}
           <Section title={t("list.title")} emoji="📇">
-            {/* Search + department filter. */}
-            <label style={{ position: "relative", display: "block", marginBottom: 12 }}>
-              <span className="sr-only">{t("list.searchLabel")}</span>
-              <Search size={16} aria-hidden style={{ position: "absolute", insetInlineStart: 12, top: 14, color: "var(--hue)" }} />
-              <input
-                type="search"
-                placeholder={t("list.searchPlaceholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  width: "100%",
-                  minHeight: 44,
-                  padding: "10px 14px",
-                  paddingInlineStart: 36,
-                  borderRadius: "var(--ftp-radius-tile)",
-                  border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
-                  background: "var(--ftp-surface)",
-                  color: "var(--ftp-text)",
-                  fontFamily: "var(--ftp-font-sans)",
-                  fontSize: 15,
-                  boxSizing: "border-box",
-                }}
-              />
-            </label>
-            <div style={{ marginBottom: 12 }}>
-              <Chips
-                label={t("list.chipsLabel")}
-                value={filter}
-                onChange={setFilter}
-                items={[
-                  { value: "all", label: t("list.all"), count: offices.length },
-                  ...deptCounts.map(([d, c]) => ({ value: d, label: d, count: c })),
-                ]}
-              />
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <SearchBox id="office-search" label={t("list.searchLabel")} placeholder={t("list.searchPlaceholder")} value={search} onChange={setSearch} />
+              {deptCounts.length > 1 && (
+                <Chips
+                  label={t("list.chipsLabel")}
+                  value={filter}
+                  onChange={setFilter}
+                  items={[{ value: "all", label: t("list.all"), count: offices.length }, ...deptCounts.map(([d, c]) => ({ value: d, label: d, count: c }))]}
+                />
+              )}
             </div>
-
-            {filtered.length === 0 ? (
+            {shown.length === 0 ? (
               <EmptyState emoji="🔍" title={t("list.noMatch")} body={t("list.noMatchBody")} />
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
-                {filtered.map((o) => {
-                  // Only offices whose row lists its own hours get a status pill.
-                  const status = officeStatus(o);
+              <div className="ftp-grid">
+                {shown.map((o) => {
+                  const st = now > 0 ? ownStatus(o, now) : null;
+                  const phones = phoneList(o.phone);
                   return (
-                    <Card key={o.id} as="article">
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
-                          {deptEmoji(o.department)}
-                        </span>
-                        <div style={{ minWidth: 0 }}>
-                          <h3 className="ftp-title">{o.name}</h3>
-                          {o.nameLocal && (
-                            <div lang={scriptLang(o.nameLocal)} style={{ fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)" }}>
-                              {o.nameLocal}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                        <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 600, color: "var(--hue-deep)" }}>{o.department}</span>
-                        <Pill>{o.type}</Pill>
-                      </div>
-
-                      {status && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                          <Pill tone={status.state === "open" ? "live" : status.state === "lunch" ? "warn" : "neutral"} dot>
-                            <span suppressHydrationWarning>
-                              {status.state === "open" ? t("list.openNow") : status.state === "lunch" ? t("list.lunch") : t("list.closedNow")}
-                            </span>
-                          </Pill>
-                          <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
-                            {!status.today
-                              ? t("list.todayClosed")
-                              : o.lunchBreak
-                                ? t("list.todayLunch", { hours: status.today, lunch: o.lunchBreak })
-                                : t("list.today", { hours: status.today })}
-                          </span>
-                        </div>
+                    <TapCard
+                      key={o.id}
+                      emoji={deptEmoji(o.department)}
+                      title={o.name}
+                      titleLang={dataLang(o.name, locale)}
+                      subtitle={o.nameLocal ?? undefined}
+                      subtitleLang={dataLang(o.nameLocal, locale)}
+                      hint={t("list.hint")}
+                      onOpen={() => setOpenId(o.id)}
+                      aside={st ? statusPill(st) : undefined}
+                    >
+                      <MetaLine emoji="🗂️" lang={dataLang(o.department, locale)}>
+                        {o.type && o.type !== o.department ? `${o.department} · ${o.type}` : o.department}
+                      </MetaLine>
+                      <MetaLine emoji="📍" lang={dataLang(o.address, locale)} clamp={2}>
+                        {o.address}
+                      </MetaLine>
+                      {phones.length > 0 && (
+                        <MetaLine emoji="📞">
+                          <span className="ftp-num">{phones[0]}</span>
+                        </MetaLine>
                       )}
-
-                      {o.headName && (
-                        <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)", marginTop: 8 }}>
-                          {t("list.head", { name: o.headName })}
-                          {o.headDesignation && <span style={{ color: "var(--ftp-text-2)" }}> ({o.headDesignation})</span>}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-                        <MapPin size={12} aria-hidden style={{ flexShrink: 0, marginTop: 4, color: "var(--hue)" }} />
-                        <span>{o.address}</span>
-                      </div>
-
-                      {(o.phone || o.email || o.website) && (
-                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
-                          {o.phone && <ContactLink href={`tel:${o.phone}`} icon={Phone}><span className="ftp-num">{o.phone}</span></ContactLink>}
-                          {o.email && <ContactLink href={`mailto:${o.email}`} icon={Mail}>{o.email.split("@")[0]}</ContactLink>}
-                          {o.website && <ContactLink href={o.website} icon={Globe} external>{t("list.website")}</ContactLink>}
-                        </div>
-                      )}
-
-                      {o.services.length > 0 && (
-                        <div style={{ marginTop: 8 }}>
-                          <div className="ftp-label" style={{ marginBottom: 4 }}>{t("list.services")}</div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-                            {o.services.slice(0, 4).map((s, i) => (
-                              <Pill key={i} style={HUE_PILL}>
-                                {s}
-                              </Pill>
-                            ))}
-                            {o.services.length > 4 && (
-                              <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>{t("list.more", { n: n(o.services.length - 4) })}</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
+                    </TapCard>
                   );
                 })}
               </div>
             )}
           </Section>
+
+          <div style={{ marginTop: 20 }}>
+            <LinkCard href={`${base}/services`} emoji="🧾" title={t("toGuides.title")} body={t("toGuides.body")} />
+          </div>
+
+          {/* 6. Charts: where the offices are, and how you can reach them. */}
+          {(deptCounts.length > 1 || reach.some((r) => r.count > 0)) && (
+            <Section title={t("charts.title")} emoji="📊">
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px" }}>
+                {deptCounts.length > 1 && (
+                  <ChartCard
+                    title={t("dept.title")}
+                    emoji="🗂️"
+                    units={t("dept.units")}
+                    simple={t.rich("dept.simple", { dept: deptCounts[0][0], n: n(deptCounts[0][1]), total: n(offices.length), b: bold })}
+                    table={deptCounts.map(([d, c]) => ({ label: d, value: n(c) }))}
+                  >
+                    <BarList
+                      items={deptCounts.slice(0, TOP_DEPARTMENTS).map(([d, c]) => ({ key: d, label: d, lang: dataLang(d, locale), value: c, display: n(c), emoji: deptEmoji(d) }))}
+                    />
+                  </ChartCard>
+                )}
+                {reach.some((r) => r.count > 0) && (
+                  <ChartCard
+                    title={t("reach.title")}
+                    emoji="☎️"
+                    units={t("reach.units")}
+                    simple={withPhone > 0 ? t.rich("reach.simple", { n: n(withPhone), total: n(offices.length), b: bold }) : t("reach.simpleNoPhone", { total: n(offices.length) })}
+                    table={reach.map((r) => ({ label: r.label, value: t("reach.count", { n: n(r.count), total: n(offices.length) }) }))}
+                  >
+                    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                      {reach.map((r, i) => (
+                        <li key={r.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", minWidth: 0 }}>
+                          <ProgressRing pct={(r.count / offices.length) * 100} size={76} i={i} label={t("reach.ringAria", { what: r.label, n: n(r.count), total: n(offices.length) })}>
+                            <span className="ftp-emoji" style={{ fontSize: 24 }}>
+                              {r.emoji}
+                            </span>
+                          </ProgressRing>
+                          <span style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600, color: "var(--ftp-text)" }}>{r.label}</span>
+                          <span className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: "var(--hue-deep)" }}>
+                            {t("reach.count", { n: n(r.count), total: n(offices.length) })}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </ChartCard>
+                )}
+              </div>
+            </Section>
+          )}
+
+          <div style={{ marginTop: 20 }}>
+            <AIInsightCard module="offices" district={district} />
+          </div>
         </>
       )}
 
-      <ModuleSources module="offices" state={state} />
       <ModuleNews district={district} state={state} locale={locale} module="offices" />
-      <ModuleToolbar
-        locale={locale}
-        district={district}
+      <PageEnd
+        ns="page_offices"
+        sourceModule="offices"
         moduleSlug="offices"
-        moduleLabel={mt.label("offices")}
+        state={state}
+        district={district}
+        locale={locale}
+        districtName={districtName}
+        about={t("summary", { district: districtName })}
         shareText={t("share", { district: districtName, offices: offices.length, departments: deptCounts.length })}
       />
+
+      {/* Everything about one office. */}
+      <DetailSheet
+        open={!!open}
+        onClose={() => setOpenId(null)}
+        title={open?.name ?? ""}
+        titleLang={open ? dataLang(open.name, locale) : undefined}
+        subtitle={open?.nameLocal ? <span lang={dataLang(open.nameLocal, locale)}>{open.nameLocal}</span> : open?.department}
+        emoji={open ? deptEmoji(open.department) : undefined}
+        footer={
+          open && (
+            <>
+              {openPhones.length > 0 && (
+                <ActionLink href={telHref(openPhones[0])} emoji="📞" primary>
+                  {t("sheet.call")}
+                </ActionLink>
+              )}
+              <ActionLink href={mapsUrl(`${open.name}, ${open.address}`, open.latitude, open.longitude)} emoji="🗺️" newTab primary={openPhones.length === 0}>
+                {t("sheet.directions")}
+              </ActionLink>
+              {openSite && (
+                <ActionLink href={openSite} emoji="🌐" newTab>
+                  {t("sheet.website")}
+                </ActionLink>
+              )}
+            </>
+          )
+        }
+      >
+        {open && (
+          <>
+            {/* Open or closed now, from the office's own hours when it lists them. */}
+            {now > 0 && (
+              <SheetNote emoji={openStatus ? (openStatus.state === "open" ? "🔓" : openStatus.state === "lunch" ? "🍱" : "🔒") : "📞"}>
+                {openStatus
+                  ? openStatus.today
+                    ? t.rich(`sheet.own.${openStatus.state}`, { hours: rangeText(openStatus.today), b: bold })
+                    : t.rich("sheet.own.closedToday", { b: bold })
+                  : t.rich("sheet.noHours", { hours: usualHours, b: bold })}
+              </SheetNote>
+            )}
+
+            <DetailList
+              rows={[
+                { emoji: "🗂️", label: t("sheet.department"), value: open.department, lang: dataLang(open.department, locale) },
+                { emoji: "🏷️", label: t("sheet.type"), value: open.type && open.type !== open.department ? open.type : null, lang: dataLang(open.type, locale) },
+                {
+                  emoji: "👤",
+                  label: t("sheet.head"),
+                  value: open.headName ? (open.headDesignation ? `${open.headName} (${open.headDesignation})` : open.headName) : null,
+                  lang: dataLang(open.headName, locale),
+                },
+                { emoji: "📍", label: t("sheet.address"), value: open.address, lang: dataLang(open.address, locale) },
+                {
+                  emoji: "📞",
+                  label: t("sheet.phone"),
+                  value:
+                    openPhones.length > 0 ? (
+                      <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        {openPhones.map((p) => (
+                          <a key={p} href={telHref(p)} className="ftp-num" style={{ color: "var(--hue-deep)", fontWeight: 600, minHeight: 32, display: "inline-flex", alignItems: "center" }}>
+                            {p}
+                          </a>
+                        ))}
+                      </span>
+                    ) : null,
+                },
+                {
+                  emoji: "✉️",
+                  label: t("sheet.email"),
+                  value: open.email ? (
+                    <a href={`mailto:${open.email}`} style={{ color: "var(--hue-deep)" }}>
+                      {open.email}
+                    </a>
+                  ) : null,
+                },
+                {
+                  emoji: "🌐",
+                  label: t("sheet.website"),
+                  value: openSite ? (
+                    <a href={openSite} target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)" }}>
+                      {hostOf(openSite)}
+                    </a>
+                  ) : null,
+                },
+                { emoji: "🗓️", label: t("sheet.holidays"), value: open.holidays, lang: dataLang(open.holidays, locale) },
+                { emoji: "📝", label: t("sheet.notes"), value: open.notes, lang: dataLang(open.notes, locale) },
+              ]}
+            />
+
+            {hasOwnHours(open) && (
+              <SheetBlock emoji="🕙" title={t("sheet.hoursTitle")}>
+                <DetailList
+                  rows={[
+                    ...WEEK_ORDER.map((d) => {
+                      const r = parseRange(open[DAY_FIELDS[d]]);
+                      return {
+                        label: d === today ? <strong>{weekdayName(d, f.intl, "long")}</strong> : weekdayName(d, f.intl, "long"),
+                        value: r ? rangeText(r) : open[DAY_FIELDS[d]] || t("sheet.closedDay"),
+                      };
+                    }),
+                    ...(parseRange(open.lunchBreak) ? [{ label: t("sheet.lunch"), value: rangeText(parseRange(open.lunchBreak) as [number, number]) }] : []),
+                  ]}
+                />
+                <SheetSmall>{t("sheet.ist")}</SheetSmall>
+              </SheetBlock>
+            )}
+
+            {open.services.length > 0 && (
+              <SheetBlock emoji="🧾" title={t("sheet.services")}>
+                <TagList items={open.services} lang={dataLang(open.services[0], locale)} />
+              </SheetBlock>
+            )}
+
+            {openGuides.length > 0 && (
+              <SheetBlock emoji="📋" title={t("sheet.guides")}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {openGuides.slice(0, 6).map((g) => (
+                    <ActionLink key={g.id} href={`${base}/services?open=${encodeURIComponent(g.id)}`} emoji="🧾" internal>
+                      <span lang={dataLang(g.serviceName, locale)}>{g.serviceName}</span>
+                    </ActionLink>
+                  ))}
+                </div>
+              </SheetBlock>
+            )}
+
+            <SheetSmall>
+              {t("sheet.callFirst")}
+              {open.updatedAt && (
+                <>
+                  {" · "}
+                  <span suppressHydrationWarning>{t("sheet.updated", { date: f.date(open.updatedAt, { day: "numeric", month: "short", year: "numeric" }) })}</span>
+                </>
+              )}
+            </SheetSmall>
+          </>
+        )}
+      </DetailSheet>
     </ModulePage>
   );
 }

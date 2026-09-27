@@ -1,29 +1,55 @@
 {
-  "description": "Where government offices are, who heads them, how to reach them and what they handle",
-  "summary": "A directory of government offices in {district}: where each office is, which department it belongs to, who heads it, how to reach it, and which services it handles. Opening hours are shown in Indian Standard Time.",
-  "hours": "{days}, {open} to {close}",
-  "hoursIst": "{days}, {open} to {close} IST",
-  "dayRange": "{from}–{to}",
+  "description": "Where each Govt office is, whether it is open now, and how to call or reach it",
+  "summary": "A directory of government offices in {district}: where each office is, which department it belongs to, who heads it, how to call or reach it, its opening hours when it lists them, and which services it handles. All times are Indian Standard Time.",
+  "range": "{open} – {close}",
+  "usualHours": "{from}–{to}, {hours}",
+  "answer": "{district} has {offices, plural, one {<b>#</b> Govt office} other {<b>#</b> Govt offices}} in this directory, in {departments, plural, one {# department} other {# departments}}.",
+  "now": {
+    "open": "It is {day}, {time} in India: most offices are usually <b>open</b> now ({hours}).",
+    "closed": "It is {day}, {time} in India: most offices are usually <b>closed</b> now. They usually open {hours}.",
+    "someSat": "It is {day}, {time} in India. <b>Some offices open on Saturdays</b>, so call before you go.",
+    "sunday": "It is {day} in India: Govt offices are <b>closed</b> on Sundays."
+  },
   "tiles": {
     "offices": "Offices",
+    "officesSub": "In this directory",
     "departments": "Departments",
-    "status": "Right now",
-    "open": "Open",
+    "departmentsSub": "Kinds of office",
+    "phone": "List a phone",
+    "phoneSub": "Out of {total}",
+    "now": "Right now",
+    "nowSub": "Usual hours, India time",
+    "usuallyOpen": "Usually open",
+    "usuallyClosed": "Usually closed",
+    "callFirst": "Call first",
     "closed": "Closed"
   },
-  "refresh": {
-    "Quarterly": "Directory is updated every quarter",
-    "Monthly": "Directory is updated every month",
-    "Weekly": "Directory is updated every week",
-    "Daily": "Directory is updated every day",
-    "other": "Directory updates: {freq}"
-  },
-  "explainerOpen": "Right now, offices are <b>open</b>. They usually open <b>{hours}</b>, India time.",
-  "explainerClosed": "Right now, offices are <b>closed</b>. They usually open <b>{hours}</b>, India time.",
-  "ownHours": "Some offices keep their own hours, shown on their cards.",
   "week": {
-    "aria": "Offices open {days}. Today is {today}.",
-    "caption": "Coloured days are open days. The ringed day is today (India time)."
+    "title": "A usual office week",
+    "aria": "Usually open {hours}. Some offices open on Saturdays. Closed on Sundays.",
+    "caption": "Coloured days: usually open, {hours}, India time. Pale day: some offices open on Saturdays. Closed on Sundays and public holidays. The ringed day is today."
+  },
+  "list": {
+    "title": "Find an office",
+    "searchLabel": "Which office are you looking for?",
+    "searchPlaceholder": "Office, department or service",
+    "chipsLabel": "Department",
+    "all": "All",
+    "noMatch": "No office matches your search.",
+    "noMatchBody": "Try a different word, or pick All.",
+    "hint": "Call, directions and hours"
+  },
+  "status": {
+    "open": "Open now",
+    "lunch": "Lunch break",
+    "closed": "Closed now"
+  },
+  "toGuides": {
+    "title": "Need a certificate?",
+    "body": "See the steps, documents and fees in How to get certificates."
+  },
+  "charts": {
+    "title": "At a glance"
   },
   "dept": {
     "title": "Offices by department",
@@ -41,24 +67,56 @@
     "count": "{n} of {total}",
     "ringAria": "{what}: {n} of {total} offices"
   },
-  "list": {
-    "title": "Office directory",
-    "searchLabel": "Search offices",
-    "searchPlaceholder": "Search by office or department",
-    "chipsLabel": "Department",
-    "all": "All",
-    "noMatch": "No offices match your search.",
-    "noMatchBody": "Try a different name or department.",
-    "openNow": "Open now",
-    "lunch": "Lunch break",
-    "closedNow": "Closed now",
-    "today": "Today {hours} (IST)",
-    "todayLunch": "Today {hours}, lunch {lunch} (IST)",
-    "todayClosed": "Closed today",
-    "head": "Head: {name}",
+  "sheet": {
+    "call": "Call",
+    "directions": "Directions",
     "website": "Website",
-    "services": "Services",
-    "more": "+{n} more"
+    "own": {
+      "open": "<b>Open now.</b> Today: {hours}.",
+      "lunch": "<b>Lunch break now.</b> Today: {hours}.",
+      "closed": "<b>Closed now.</b> Today: {hours}.",
+      "closedToday": "<b>Closed today.</b>"
+    },
+    "noHours": "This office has not listed its hours. Most Govt offices are open <b>{hours}</b>, India time. Call before you go.",
+    "department": "Department",
+    "type": "Kind of office",
+    "head": "Head of office",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "holidays": "Holidays",
+    "notes": "Note",
+    "hoursTitle": "Opening hours",
+    "closedDay": "Closed",
+    "lunch": "Lunch break",
+    "ist": "All times are India time (IST).",
+    "services": "Services handled here",
+    "guides": "Step-by-step guides for an office like this",
+    "callFirst": "Hours and phone numbers can change: call before you go.",
+    "updated": "Details updated {date}"
   },
-  "share": "Government offices in {district}: {offices, plural, one {# office} other {# offices}} across {departments, plural, one {# department} other {# departments}}"
+  "share": "Government offices in {district}: {offices, plural, one {# office} other {# offices}} across {departments, plural, one {# department} other {# departments}}",
+  "end": {
+    "about": "About this page",
+    "notOfficial": "ForThePeople.in is not an official government website. Data is gathered from public government portals under India's Open Data Policy (NDSAP).",
+    "freq": {
+      "every30": "Checked every 30 minutes",
+      "every6h": "Checked every 6 hours",
+      "daily": "Updated every day",
+      "weekly": "Updated every week",
+      "monthly": "Updated every month",
+      "quarterly": "Updated every 3 months",
+      "annual": "Updated every year",
+      "whenPublished": "Updated when the source publishes"
+    },
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "csv": "Download CSV",
+    "shareHead": "{district} district update",
+    "shareSource": "Source: {url}",
+    "actions": "Page actions"
+  }
 }
