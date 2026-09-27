@@ -30,6 +30,7 @@ import { Pill } from "@/components/district/ui";
 import { weatherEmoji } from "@/components/district/visuals";
 import { getDistrictIcon } from "@/components/district/icons";
 import { DISTRICT_META } from "@/lib/data/district-meta";
+import { getDistrictHue } from "@/lib/design/hues";
 import { getDistrict } from "@/lib/constants/districts";
 import { ageInDays, asOfLabel } from "@/lib/utils/timeAgo";
 import { usePreview, useTopVotes } from "./home-data";
@@ -37,21 +38,6 @@ import styles from "./home.module.css";
 
 /** A district counts as "NEW" for this many days after it goes live. */
 const NEW_BADGE_DAYS = 30;
-
-/** Colour per district — loosely its landmark's palette. Unknown → cycle. */
-const DISTRICT_HUE: Record<string, string> = {
-  mandya: "green",
-  "bengaluru-urban": "indigo",
-  mysuru: "amber",
-  hyderabad: "orange",
-  chennai: "cyan",
-  mumbai: "blue",
-  pune: "pink",
-  lucknow: "violet",
-  kolkata: "teal",
-  "new-delhi": "rose",
-};
-const CYCLE = ["sky", "lime", "yellow", "slate", "rose", "teal", "violet", "orange"];
 
 export interface HomeDistrict {
   slug: string;
@@ -112,7 +98,7 @@ export default function LiveDistrictsCard({ locale, districts }: { locale: strin
           const temp = weather?.temp ?? null;
           const tempAsOf = asOfLabel(weather?.recordedAt ?? null, { prefix: "Weather as of" });
           const Icon = getDistrictIcon(d.slug);
-          const hue = DISTRICT_HUE[d.slug] ?? CYCLE[i % CYCLE.length];
+          const hue = getDistrictHue(d.slug);
           return (
             <li key={d.slug} className={`ftp-hue-${hue} ftp-rise`} style={{ ["--i" as string]: i }}>
               <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.districtTile} ftp-card-link`}>

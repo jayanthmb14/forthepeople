@@ -83,3 +83,26 @@ export function moduleFromPath(pathname: string | null | undefined): string {
   if (!seg) return "overview";
   return MODULE_HUE[seg] ? seg : "overview";
 }
+
+/** Colour per live district — loosely its landmark's palette. */
+export const DISTRICT_HUE: Record<string, Hue> = {
+  mandya: "green",
+  "bengaluru-urban": "indigo",
+  mysuru: "amber",
+  hyderabad: "orange",
+  chennai: "cyan",
+  mumbai: "blue",
+  pune: "pink",
+  lucknow: "violet",
+  kolkata: "teal",
+  "new-delhi": "rose",
+};
+const DISTRICT_CYCLE: Hue[] = ["sky", "lime", "yellow", "slate", "rose", "teal", "violet", "orange"];
+
+/** Hue for a district slug; unknown districts get a stable colour from their name. */
+export function getDistrictHue(slug: string): Hue {
+  if (DISTRICT_HUE[slug]) return DISTRICT_HUE[slug];
+  let h = 0;
+  for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return DISTRICT_CYCLE[h % DISTRICT_CYCLE.length];
+}

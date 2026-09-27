@@ -28,11 +28,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  AlertTriangle, BookOpen, CloudSun, MessageSquareWarning, Newspaper,
-  PiggyBank, Wheat,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { MessageSquareWarning } from "lucide-react";
 import {
   useOverview, useCropPrices, useWeather, useAlerts, useBudget, useNews, useExams,
   usePopulationProfile,
@@ -40,12 +36,14 @@ import {
 import type { ExamsData, LocalAlert } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
 import type { FreshnessStatus } from "@/hooks/useFreshness";
-import { getTieredModules, TIER_ACCENT } from "@/lib/constants/sidebar-modules";
+import { getTieredModules } from "@/lib/constants/sidebar-modules";
+import { hueClass } from "@/lib/design/hues";
 import { ageInDays, isWithinMinutes } from "@/lib/utils/timeAgo";
 import {
-  AsOfText, Card, EmptyState, FreshnessPill, LoadingShell, Pill, Section,
+  AsOfText, Card, EmptyState, FreshnessPill, LoadingShell, Pill, ProgressBar, Section,
   SourcePill,
 } from "@/components/district/ui";
+import { weatherEmoji } from "@/components/district/visuals";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import { DistrictHealthScoreCard } from "@/components/district/DistrictHealthScoreCard";
 import DistrictIdentityCard from "@/components/district/DistrictIdentityCard";
@@ -138,55 +136,69 @@ function shortDay(iso: string): string {
  * link inside a link is invalid HTML.
  */
 function TodayTile({
-  href, icon: Icon, label, value, unit, sub, asOf, asOfText, source,
+  href, emoji, hue, label, value, unit, sub, asOf, asOfText, source, visual,
 }: {
   href: string;
-  icon: LucideIcon;
+  emoji: string;
+  hue: string;
   label: string;
-  value: React.ReactNode;
+  value?: React.ReactNode;
   unit?: string;
   sub?: string;
   asOf?: string | null;
   /** Used instead of `asOf` when the as-of is a period (e.g. "FY 2024-25"). */
   asOfText?: string;
   source?: string | null;
+  /** Optional picture under the number (progress bar, glyph…). */
+  visual?: React.ReactNode;
 }) {
   return (
-    <Card href={href} padding={14} style={{ height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
-        <span className="ftp-label">{label}</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap", minWidth: 0 }}>
-        <span className="ftp-num" style={{ fontSize: 22, lineHeight: "28px", color: "var(--ftp-text)" }}>{value}</span>
-        {unit && <span style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{unit}</span>}
-      </div>
-      {sub && (
-        <p
-          className="ftp-body"
-          style={{ color: "var(--ftp-text-2)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-        >
-          {sub}
-        </p>
-      )}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-        {asOf ? <AsOfText asOf={asOf} /> : asOfText ? <span style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{asOfText}</span> : null}
-        {source && <SourcePill label={source} />}
-      </div>
-    </Card>
+    <div className={`ftp-hue-${hue}`} style={{ height: "100%" }}>
+      <Card href={href} padding={14} tinted style={{ height: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10 }}>
+            {emoji}
+          </span>
+          <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>{label}</span>
+        </div>
+        {value !== undefined && (
+          <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap", minWidth: 0 }}>
+            <span className="ftp-bignum" style={{ fontSize: 28, lineHeight: "32px", color: "var(--hue-deep)" }}>{value}</span>
+            {unit && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ftp-text-2)" }}>{unit}</span>}
+          </div>
+        )}
+        {sub && (
+          <p
+            className="ftp-body"
+            style={{ color: "var(--ftp-text)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
+          >
+            {sub}
+          </p>
+        )}
+        {visual && <div style={{ marginTop: 10 }}>{visual}</div>}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+          {asOf ? <AsOfText asOf={asOf} /> : asOfText ? <span style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{asOfText}</span> : null}
+          {source && <SourcePill label={source} />}
+        </div>
+      </Card>
+    </div>
   );
 }
 
 /** A Today slot with no recent data: one honest sentence + a link to the module. */
-function TodayEmpty({ label, icon: Icon, sentence, href }: { label: string; icon: LucideIcon; sentence: string; href: string }) {
+function TodayEmpty({ label, emoji, hue, sentence, href }: { label: string; emoji: string; hue: string; sentence: string; href: string }) {
   return (
-    <Card href={href} padding={14} style={{ height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        <Icon size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
-        <span className="ftp-label">{label}</span>
-      </div>
-      <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{sentence}</p>
-    </Card>
+    <div className={`ftp-hue-${hue}`} style={{ height: "100%" }}>
+      <Card href={href} padding={14} style={{ height: "100%", borderStyle: "dashed", boxShadow: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10, filter: "grayscale(0.6)" }}>
+            {emoji}
+          </span>
+          <span className="ftp-label">{label}</span>
+        </div>
+        <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{sentence}</p>
+      </Card>
+    </div>
   );
 }
 
@@ -258,6 +270,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
 
       {/* ═══ 1. Identity card ═══════════════════════════════ */}
       <DistrictIdentityCard
+        districtSlug={districtSlug}
         name={districtData.name}
         nameLocal={districtData.nameLocal}
         stateName={stateName}
@@ -298,7 +311,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       </div>
 
       {/* ═══ 2. Today in <district> ═════════════════════════ */}
-      <Section title={`Today in ${districtData.name}`}>
+      <Section title={`Today in ${districtData.name}`} emoji="☀️">
         <div
           style={{
             display: "grid",
@@ -312,7 +325,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
           ) : latestWeather && weatherFresh ? (
             <TodayTile
               href={`${base}/weather`}
-              icon={CloudSun}
+              emoji={weatherEmoji(latestWeather.conditions)}
+              hue="sky"
               label="Weather"
               value={latestWeather.temperature != null ? `${Math.round(latestWeather.temperature)}°` : "—"}
               unit={latestWeather.temperature != null ? "C" : undefined}
@@ -321,7 +335,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               source={latestWeather.source}
             />
           ) : (
-            <TodayEmpty href={`${base}/weather`} icon={CloudSun} label="Weather" sentence="No weather reading from the last 24 hours." />
+            <TodayEmpty href={`${base}/weather`} emoji="🌦️" hue="sky" label="Weather" sentence="No weather reading from the last 24 hours." />
           )}
 
           {/* Mandi (≤ 30 d) — modal price is per quintal; shown per kg. */}
@@ -330,7 +344,8 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
           ) : latestCrop && cropFresh ? (
             <TodayTile
               href={`${base}/crops`}
-              icon={Wheat}
+              emoji="🌾"
+              hue="green"
               label="Mandi"
               value={`₹${Math.round(latestCrop.modalPrice / 100).toLocaleString("en-IN")}`}
               unit="/kg"
@@ -339,39 +354,33 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
               source={latestCrop.source}
             />
           ) : (
-            <TodayEmpty href={`${base}/crops`} icon={Wheat} label="Mandi" sentence="No mandi prices from the last 30 days." />
+            <TodayEmpty href={`${base}/crops`} emoji="🌾" hue="green" label="Mandi" sentence="No mandi prices from the last 30 days." />
           )}
 
           {/* One headline (≤ 30 d) */}
           {newsLoading ? (
             <LoadingShell rows={1} />
           ) : headline && headlineFresh ? (
-            <Card href={`${base}/news`} padding={14} style={{ height: "100%" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <Newspaper size={14} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0 }} />
-                <span className="ftp-label">Headline</span>
-              </div>
-              <p
-                className="ftp-body"
-                style={{ fontWeight: 500, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
-              >
-                {headline.headline}
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                <AsOfText asOf={headline.publishedAt} prefix="Published" />
-                {(headline.publisher || headline.source) && <SourcePill label={headline.publisher || headline.source} />}
-              </div>
-            </Card>
+            <TodayTile
+              href={`${base}/news`}
+              emoji="📰"
+              hue="blue"
+              label="Headline"
+              sub={headline.headline}
+              asOf={headline.publishedAt}
+              source={headline.publisher || headline.source}
+            />
           ) : (
-            <TodayEmpty href={`${base}/news`} icon={Newspaper} label="Headline" sentence="No local news from the last 30 days." />
+            <TodayEmpty href={`${base}/news`} emoji="📰" hue="blue" label="Headline" sentence="No local news from the last 30 days." />
           )}
 
           {/* Alert (preferred) or next exam */}
           {topAlert ? (
-            <Card href={`${base}/alerts`} padding={14} style={{ height: "100%" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <AlertTriangle size={14} aria-hidden style={{ color: "var(--ftp-danger)", flexShrink: 0 }} />
-                <span className="ftp-label">Alert</span>
+            <div className="ftp-hue-rose" style={{ height: "100%" }}>
+            <Card href={`${base}/alerts`} padding={14} tinted style={{ height: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 17, borderRadius: 10 }}>⚠️</span>
+                <span className="ftp-label" style={{ color: "var(--hue-deep)" }}>Alert</span>
                 <Pill tone={topAlert.severity === "critical" || topAlert.severity === "high" ? "danger" : "warn"} style={{ marginLeft: "auto", textTransform: "capitalize" }}>
                   {topAlert.severity}
                 </Pill>
@@ -383,19 +392,21 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                 <AsOfText asOf={topAlert.startDate ?? topAlert.createdAt} prefix="Issued" />
               </div>
             </Card>
+            </div>
           ) : examsLoading ? (
             <LoadingShell rows={1} />
           ) : nextExam ? (
             <TodayTile
               href={`${base}/exams`}
-              icon={BookOpen}
+              emoji="📝"
+              hue="violet"
               label={nextExam.kind === "Exam" ? "Next exam" : "Apply by"}
               value={shortDay(nextExam.date)}
               sub={nextExam.exam.title}
               asOfText={nextExam.exam.department}
             />
           ) : (
-            <TodayEmpty href={`${base}/exams`} icon={BookOpen} label="Exams & alerts" sentence="No active alerts and no upcoming exam dates on record." />
+            <TodayEmpty href={`${base}/exams`} emoji="📝" hue="violet" label="Exams & alerts" sentence="No active alerts and no upcoming exam dates on record." />
           )}
 
           {/* Budget spent % for the latest financial year */}
@@ -404,16 +415,18 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
           ) : budgetEntries.length > 0 && totalAllocated > 0 ? (
             <TodayTile
               href={`${base}/finance`}
-              icon={PiggyBank}
+              emoji="💰"
+              hue="amber"
               label="Budget spent"
               value={spentPct.toFixed(1)}
               unit="%"
-              sub={`₹${(totalSpent / 1e7).toFixed(0)} Cr of ₹${(totalAllocated / 1e7).toFixed(0)} Cr`}
+              sub={`₹${Math.round(totalSpent / 1e7).toLocaleString("en-IN")} Cr of ₹${Math.round(totalAllocated / 1e7).toLocaleString("en-IN")} Cr`}
+              visual={<ProgressBar pct={spentPct} height={8} />}
               asOfText={latestFY ? `FY ${latestFY}` : undefined}
               source={budgetSource}
             />
           ) : (
-            <TodayEmpty href={`${base}/finance`} icon={PiggyBank} label="Budget spent" sentence="No budget figures on record for this district yet." />
+            <TodayEmpty href={`${base}/finance`} emoji="💰" hue="amber" label="Budget spent" sentence="No budget figures on record for this district yet." />
           )}
         </div>
       </Section>
@@ -423,47 +436,34 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
         <AIInsightCard module="overview" district={districtSlug} />
       </div>
 
-      {/* ═══ 3. Module groups ═══════════════════════════════ */}
-      <Section title="Everything about this district">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))",
-            gap: 12,
-            alignItems: "start",
-          }}
-        >
+      {/* ═══ 3. Every dashboard, as colourful emoji tiles ═════ */}
+      <Section title={`Explore ${districtData.name}`} emoji="🧭">
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {groups.map((group) => {
-            const accent = TIER_ACCENT[group.label];
             const mods = group.modules.filter((m) => m.slug !== "overview");
             if (mods.length === 0) return null;
             return (
-              <Card key={group.label} as="section" padding={0} aria-label={group.label}>
-                <h3 className="ftp-label" style={{ padding: "12px 16px 4px" }}>{group.label}</h3>
-                <ul style={{ listStyle: "none", margin: 0, padding: "0 0 8px" }}>
+              <section key={group.label} aria-label={group.label}>
+                <h3 className="ftp-display" style={{ margin: "0 0 10px", fontSize: 16, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
+                  {group.label}
+                </h3>
+                <ul className="ftp-module-grid">
                   {mods.map((mod) => {
-                    const Icon = mod.icon;
                     const f = fresh.forModule(mod.slug);
                     return (
-                      <li key={mod.slug}>
-                        <Link
-                          href={`${base}/${mod.slug}`}
-                          className="ftp-rail-item"
-                          style={{
-                            display: "flex", alignItems: "flex-start", gap: 10,
-                            padding: "8px 16px", minHeight: 44, textDecoration: "none", color: "var(--ftp-text)",
-                          }}
-                        >
-                          <Icon size={16} aria-hidden style={{ color: `var(--accent-${accent}-700)`, flexShrink: 0, marginTop: 2 }} />
-                          <span style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ display: "block", fontSize: 13, lineHeight: "20px", fontWeight: 500 }}>{mod.label}</span>
-                            <span style={{ display: "block", fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{mod.description}</span>
+                      <li key={mod.slug} className={hueClass(mod.slug)}>
+                        <Link href={`${base}/${mod.slug}`} className="ftp-module-tile ftp-card-link">
+                          <span className="ftp-module-emoji ftp-emoji" aria-hidden>
+                            {mod.emoji}
                           </span>
+                          <span className="ftp-module-name">{mod.label}</span>
+                          <span className="ftp-module-desc">{mod.description}</span>
                           {f && (
                             <span
+                              className="ftp-module-dot"
                               title={f.age ? `Updated ${f.age}` : "No recent data"}
                               aria-label={f.age ? `Data updated ${f.age}` : "No recent data"}
-                              style={{ width: 6, height: 6, borderRadius: "50%", background: STATUS_DOT[f.status], flexShrink: 0, marginTop: 7 }}
+                              style={{ background: STATUS_DOT[f.status] }}
                             />
                           )}
                         </Link>
@@ -471,14 +471,14 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
                     );
                   })}
                 </ul>
-              </Card>
+              </section>
             );
           })}
         </div>
       </Section>
 
       {/* ═══ 4. At a glance — each snippet hides itself when it has no data ═══ */}
-      <Section title="At a glance">
+      <Section title="At a glance" emoji="👀">
         <div
           style={{
             display: "grid",

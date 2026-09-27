@@ -130,6 +130,7 @@ export default function LockedDistrictPreview({
     <div className="px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: "calc(var(--ftp-reading-max) + 48px)" }}>
       {/* ═══ 1. Identity card ═══ */}
       <DistrictIdentityCard
+        districtSlug={districtSlug}
         name={districtName}
         nameLocal={districtNameLocal}
         stateName={stateName}

@@ -1035,3 +1035,34 @@ html[data-intro="show"] .ftp-home .ftp-pop { animation-delay: calc(1.85s + var(-
 /* Map pins on live districts (home India map) */
 .ftp-map-ping { transform-box: fill-box; transform-origin: center; animation: ftp-ping 2.2s var(--ftp-ease-out) infinite; }
 @media (prefers-reduced-motion: reduce) { .ftp-map-ping { animation: none; } }
+
+/* District hero illustration (identity card, v4): right side, fades into the card */
+.ftp-hero-art {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 46%;
+  opacity: 0.85; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to left, #000 55%, transparent 100%);
+          mask-image: linear-gradient(to left, #000 55%, transparent 100%);
+}
+@media (max-width: 767px) { .ftp-hero-art { width: 70%; opacity: 0.28; } }
+
+/* District overview: every dashboard as an emoji tile in its own hue */
+.ftp-module-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(168px, 100%), 1fr)); }
+.ftp-module-tile {
+  position: relative; display: flex; flex-direction: column; gap: 2px; height: 100%;
+  padding: 14px; border-radius: 18px; text-decoration: none; color: var(--ftp-text);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 12%, #fff) 0%, #fff 70%);
+  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  box-shadow: var(--ftp-shadow-1);
+}
+.ftp-module-emoji {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; margin-bottom: 8px; border-radius: 14px; font-size: 22px;
+  background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 25%, transparent);
+  box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--hue) 90%, transparent);
+  transition: transform 220ms var(--ftp-ease-out);
+}
+.ftp-module-tile:hover .ftp-module-emoji { transform: scale(1.08) rotate(-4deg); }
+.ftp-module-name { font-family: var(--ftp-font-display); font-size: 15px; line-height: 20px; font-weight: 650; color: var(--hue-deep); }
+.ftp-module-desc { font-size: 12px; line-height: 17px; color: var(--ftp-text-2); }
+.ftp-module-dot { position: absolute; top: 14px; right: 14px; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 3px #fff; }
+@media (prefers-reduced-motion: reduce) { .ftp-module-tile:hover .ftp-module-emoji { transform: none; } }
