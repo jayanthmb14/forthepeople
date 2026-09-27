@@ -151,6 +151,11 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
     longer blank on the India maps.
   - Map labels are translated.
   - Taluk maps say their shapes are approximate, and the false OpenStreetMap credit is removed.
+  - **State maps are no longer inside-out.** Every state file except Karnataka used GeoJSON winding.
+    d3 draws that as "the whole world except this state", so the card was grey with the state shrunk
+    to a speck. `scripts/rewind-geo.mjs` (`npm run geo:rewind`, `--check` for CI) fixed 35 files.
+    States now fit their frame, live districts get a pin, and the district locator's landmark badge
+    sits on the district instead of the top-left corner.
 
 ### Removed — dead code
 - Unreachable v1 India components, legacy Header/Footer, unused redesign-v2 components, tracked

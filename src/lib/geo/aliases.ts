@@ -91,3 +91,14 @@ export const INDIA_STATE_NAME_TO_SLUG: Record<string, string> = {
   "Dadra and Nagar Haveli and Daman and Diu": "dadra-nagar-haveli",
   "Andaman & Nicobar": "andaman-nicobar",
 };
+
+/**
+ * Cache-buster for public/geo/*-districts.json. Bump it whenever those files
+ * change so browsers don't keep an old copy (v2: rings rewound for d3,
+ * Telangana split out — see scripts/rewind-geo.mjs).
+ */
+export const GEO_VERSION = "2";
+
+export function stateGeoUrl(stateSlug: string): string {
+  return `/geo/${stateSlug}-districts.json?v=${GEO_VERSION}`;
+}

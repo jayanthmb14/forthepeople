@@ -48,7 +48,7 @@ import { useMyDistrict } from "@/hooks/useMyDistrict";
 import type { MyDistrict } from "@/hooks/useMyDistrict";
 import DistrictPopup from "./DistrictPopup";
 import styles from "./home.module.css";
-import { geoToRegistrySlug } from "@/lib/geo/aliases";
+import { geoToRegistrySlug, stateGeoUrl } from "@/lib/geo/aliases";
 
 export { useMyDistrict } from "@/hooks/useMyDistrict";
 
@@ -76,7 +76,7 @@ const districtGeo = new Map<string, Promise<GeoFeatureCollection | null>>();
 function loadDistrictShapes(stateSlug: string): Promise<GeoFeatureCollection | null> {
   let p = districtGeo.get(stateSlug);
   if (!p) {
-    p = fetch(`/geo/${stateSlug}-districts.json`)
+    p = fetch(stateGeoUrl(stateSlug))
       .then((r) => (r.ok ? (r.json() as Promise<GeoFeatureCollection>) : null))
       .catch(() => null);
     districtGeo.set(stateSlug, p);

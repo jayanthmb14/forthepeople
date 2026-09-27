@@ -16,11 +16,11 @@ import { useEffect, useMemo, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/district/ui";
-import { computeCenter, computeScale } from "@/components/map/GenericStateMap";
+import { fitMercator, pinPoint } from "@/lib/geo/fit";
 import { DISTRICT_ICONS } from "@/components/district/icons";
 import { HUE_HEX, getDistrictHue } from "@/lib/design/hues";
 import { getDistrictCentroid } from "@/lib/geo/district-centroids";
-import { geoToRegistrySlug } from "@/lib/geo/aliases";
+import { geoToRegistrySlug, stateGeoUrl } from "@/lib/geo/aliases";
 
 // Shapes use 2011 names (and Mumbai is two shapes), so compare registry slugs.
 function isDistrictShape(stateSlug: string, districtSlug: string, geoSlug: unknown): boolean {
@@ -54,7 +54,7 @@ export default function DistrictLocator({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/geo/${stateSlug}-districts.json`)
+    fetch(stateGeoUrl(stateSlug))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((g: Geo) => {
         if (!cancelled) setGeo(g);
@@ -67,8 +67,10 @@ export default function DistrictLocator({
     };
   }, [stateSlug]);
 
-  const center = useMemo(() => (geo ? computeCenter(geo) : ([78, 22] as [number, number])), [geo]);
-  const scale = useMemo(() => (geo ? computeScale(geo) : 2000), [geo]);
+  const { center, scale } = useMemo(
+    () => (geo ? fitMercator(geo, 500, 320, 14) : { center: [78, 22] as [number, number], scale: 1000 }),
+    [geo],
+  );
   const found = useMemo(
     () => Boolean(geo?.features.some((f) => isDistrictShape(stateSlug, districtSlug, f.properties?.slug))),
     [geo, stateSlug, districtSlug],
@@ -77,7 +79,10 @@ export default function DistrictLocator({
   if (failed || (geo && !found)) return null;
 
   const hue = HUE_HEX[getDistrictHue(districtSlug)];
-  const c = getDistrictCentroid(stateSlug, districtSlug);
+  // Registry centroid when we have one, else the middle of the district's own shape.
+  const shape = geo?.features.find((f) => isDistrictShape(stateSlug, districtSlug, f.properties?.slug));
+  const shapePin = shape ? pinPoint(shape) : null;
+  const c = getDistrictCentroid(stateSlug, districtSlug) ?? (shapePin ? { lng: shapePin[0], lat: shapePin[1] } : null);
   const dir = c ? direction(c.lat - center[1], c.lng - center[0]) : null;
 
   return (
@@ -91,11 +96,13 @@ export default function DistrictLocator({
           {t(`sentence.${dir}`, { name: districtName, state: stateName })}
         </p>
       )}
-      <div style={{ height: 280, marginTop: 8 }}>
+      {/* Same aspect as the map's viewBox, so a narrow card gets a shorter
+          frame instead of an empty band above and below the state. */}
+      <div style={{ aspectRatio: "500 / 320", width: "100%", maxHeight: 300, marginTop: 8 }}>
         {geo ? (
           <ComposableMap
             projection="geoMercator"
-            projectionConfig={{ center, scale: scale * 1.5 }}
+            projectionConfig={{ center, scale }}
             width={500}
             height={320}
             style={{ width: "100%", height: "100%" }}
@@ -120,10 +127,15 @@ export default function DistrictLocator({
               }
             </Geographies>
             {c && (
-              <Marker coordinates={[c.lng, c.lat]} style={{ default: { transform: "translateY(-18px)" } }}>
-                <circle r={16} fill={hue.hue} opacity={0.22} className="ftp-map-ping" />
-                <circle r={13} fill="#fff" stroke={hue.hue} strokeWidth={2.5} />
-                <Landmark slug={districtSlug} fallback={hue.hue} />
+              <Marker coordinates={[c.lng, c.lat]}>
+                {/* Lift the badge above the point with an inner <g>: a CSS
+                    transform on the Marker itself replaces its translate(x,y)
+                    and drew the badge in the top-left corner. */}
+                <g transform="translate(0,-18)">
+                  <circle r={16} fill={hue.hue} opacity={0.22} className="ftp-map-ping" />
+                  <circle r={13} fill="#fff" stroke={hue.hue} strokeWidth={2.5} />
+                  <Landmark slug={districtSlug} fallback={hue.hue} />
+                </g>
               </Marker>
             )}
           </ComposableMap>

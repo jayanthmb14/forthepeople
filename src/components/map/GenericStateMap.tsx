@@ -8,64 +8,17 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { useTranslations } from "next-intl";
 import { geoStyle, MapLegend, MapTooltip } from "@/components/map/mapTheme";
 import { getState } from "@/lib/constants/districts";
-import { geoToRegistrySlug } from "@/lib/geo/aliases";
+import { fitMercator, pinPoint, type GeoFeature } from "@/lib/geo/fit";
+import { geoToRegistrySlug, stateGeoUrl } from "@/lib/geo/aliases";
 
 interface GenericStateMapProps {
   locale: string;
   stateSlug: string;
   activeDistricts: Set<string>;
-}
-
-export function computeCenter(geojson: { features: Array<{ geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> }): [number, number] {
-  let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
-  for (const f of geojson.features) {
-    const coords = f.geometry.coordinates;
-    const flatten = (c: unknown[]): void => {
-      if (typeof c[0] === "number") {
-        const [lng, lat] = c as number[];
-        if (lng < minLng) minLng = lng;
-        if (lng > maxLng) maxLng = lng;
-        if (lat < minLat) minLat = lat;
-        if (lat > maxLat) maxLat = lat;
-      } else {
-        for (const sub of c) flatten(sub as unknown[]);
-      }
-    };
-    flatten(coords as unknown[]);
-  }
-  return [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
-}
-
-export function computeScale(geojson: { features: Array<{ geometry: { coordinates: number[][][][] | number[][][] | number[][] } }> }): number {
-  let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
-  for (const f of geojson.features) {
-    const coords = f.geometry.coordinates;
-    const flatten = (c: unknown[]): void => {
-      if (typeof c[0] === "number") {
-        const [lng, lat] = c as number[];
-        if (lng < minLng) minLng = lng;
-        if (lng > maxLng) maxLng = lng;
-        if (lat < minLat) minLat = lat;
-        if (lat > maxLat) maxLat = lat;
-      } else {
-        for (const sub of c) flatten(sub as unknown[]);
-      }
-    };
-    flatten(coords as unknown[]);
-  }
-  const lngSpan = maxLng - minLng;
-  const latSpan = maxLat - minLat;
-  const span = Math.max(lngSpan, latSpan);
-  if (span < 1) return 8000;
-  if (span < 3) return 4000;
-  if (span < 5) return 3000;
-  if (span < 8) return 2000;
-  if (span < 12) return 1400;
-  return 1000;
 }
 
 export default function GenericStateMap({ locale, stateSlug, activeDistricts }: GenericStateMapProps) {
@@ -83,7 +36,7 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    fetch(`/geo/${stateSlug}-districts.json`)
+    fetch(stateGeoUrl(stateSlug))
       .then((r) => {
         if (!r.ok) throw new Error("Not found");
         return r.json();
@@ -92,8 +45,23 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
       .catch(() => setFailed(true));
   }, [stateSlug]);
 
-  const center = useMemo(() => geoData ? computeCenter(geoData) : [78, 22] as [number, number], [geoData]);
-  const scale = useMemo(() => geoData ? computeScale(geoData) : 2000, [geoData]);
+  // Fit the state to the frame (every state fills its card the same way).
+  const { center, scale } = useMemo(
+    () => (geoData ? fitMercator(geoData, 500, 450, 18) : { center: [78, 22] as [number, number], scale: 1000 }),
+    [geoData],
+  );
+  // One pin per live district, so small ones (Hyderabad, Chennai) are easy to spot.
+  const pins = useMemo(() => {
+    if (!geoData) return [] as { slug: string; at: [number, number] }[];
+    const seen = new Set<string>();
+    const out: { slug: string; at: [number, number] }[] = [];
+    for (const f of geoData.features as GeoFeature[]) {
+      const slug = geoToRegistrySlug(stateSlug, String(f.properties?.slug ?? ""));
+      const at = activeDistricts.has(slug) && !seen.has(slug) ? pinPoint(f) : null;
+      if (at) { seen.add(slug); out.push({ slug, at }); }
+    }
+    return out;
+  }, [geoData, stateSlug, activeDistricts]);
 
   if (failed || !geoData) return null;
 
@@ -143,6 +111,12 @@ export default function GenericStateMap({ locale, stateSlug, activeDistricts }: 
               })
             }
           </Geographies>
+          {pins.map((p) => (
+            <Marker key={p.slug} coordinates={p.at} style={{ default: { pointerEvents: "none" } }}>
+              <circle r={11} className="ftp-map-ping" fill="var(--ftp-map-live)" opacity={0.35} />
+              <circle r={6} fill="var(--ftp-map-live)" stroke="#fff" strokeWidth={2} />
+            </Marker>
+          ))}
         </ZoomableGroup>
       </ComposableMap>
 
