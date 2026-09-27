@@ -6,13 +6,14 @@
 
 // ═══════════════════════════════════════════════════════════
 // ExamStepper — date-driven milestone strip (no padlocks)
-//   ✅ green — milestone date is in the past
-//   🔵 blue  — upcoming, shows date + "in N days"
-//   ⬜ grey  — date not announced ("TBA")
-// Status pill colors the connector. No paywall feel.
+//   done     — milestone date is in the past   → green check (live tone)
+//   upcoming — shows date + "in N days"        → blue dot (brand tone)
+//   tba      — date not announced ("TBA")      → grey dot (neutral)
+// The exam's status picks the colour of the connector line after the
+// next upcoming step. Design v3: tokens only, Lucide icons, mono dates.
 // ═══════════════════════════════════════════════════════════
 "use client";
-import { ExternalLink } from "lucide-react";
+import { Check, Circle, ExternalLink } from "lucide-react";
 
 interface ExamStepperProps {
   status: string;
@@ -63,30 +64,32 @@ function stateFor(date: string | null | undefined): MilestoneState {
   return t <= Date.now() ? "done" : "upcoming";
 }
 
-const COLORS: Record<MilestoneState, { bg: string; border: string; dot: string; text: string }> = {
-  done:     { bg: "#F0FDF4", border: "#86EFAC", dot: "#16A34A", text: "#166534" },
-  upcoming: { bg: "#EFF6FF", border: "#BFDBFE", dot: "#2563EB", text: "#1E40AF" },
-  tba:      { bg: "#F5F5F0", border: "#E8E8E4", dot: "#C0C0BA", text: "#9B9B9B" },
+// Marker colours per milestone state (all design tokens).
+const COLORS: Record<MilestoneState, { bg: string; border: string; icon: string; text: string; line: string }> = {
+  done:     { bg: "var(--ftp-live-tint)",  border: "var(--ftp-live)",          icon: "var(--ftp-live-text)", text: "var(--ftp-live-text)", line: "var(--ftp-live)" },
+  upcoming: { bg: "var(--ftp-brand-tint)", border: "var(--ftp-brand)",         icon: "var(--ftp-brand)",     text: "var(--ftp-brand-deep)", line: "var(--ftp-brand)" },
+  tba:      { bg: "var(--ftp-surface-2)",  border: "var(--ftp-border)",        icon: "var(--ftp-border-strong)", text: "var(--ftp-text-2)", line: "var(--ftp-border)" },
 };
 
+// Exam status → connector colour for the upcoming leg.
 const STATUS_ACCENT: Record<string, string> = {
-  upcoming:             "#2563EB",
-  NOTIFICATION_OUT:     "#2563EB",
-  open:                 "#16A34A",
-  APPLICATIONS_OPEN:    "#16A34A",
-  closed:               "#6B7280",
-  APPLICATIONS_CLOSED:  "#6B7280",
-  ADMIT_CARD_OUT:       "#D97706",
-  EXAM_SCHEDULED:       "#DC2626",
-  RESULT_PENDING:       "#D97706",
-  results:              "#D97706",
-  RESULT_OUT:           "#D97706",
-  COMPLETED:            "#6B7280",
+  upcoming:             "var(--ftp-brand)",
+  NOTIFICATION_OUT:     "var(--ftp-brand)",
+  open:                 "var(--ftp-live)",
+  APPLICATIONS_OPEN:    "var(--ftp-live)",
+  closed:               "var(--ftp-border-strong)",
+  APPLICATIONS_CLOSED:  "var(--ftp-border-strong)",
+  ADMIT_CARD_OUT:       "var(--ftp-warn)",
+  EXAM_SCHEDULED:       "var(--ftp-danger)",
+  RESULT_PENDING:       "var(--ftp-warn)",
+  results:              "var(--ftp-warn)",
+  RESULT_OUT:           "var(--ftp-warn)",
+  COMPLETED:            "var(--ftp-border-strong)",
 };
 
 export default function ExamStepper(props: ExamStepperProps) {
   const { status, applyUrl } = props;
-  const accent = STATUS_ACCENT[status] ?? "#2563EB";
+  const accent = STATUS_ACCENT[status] ?? "var(--ftp-brand)";
 
   const milestoneDates: Record<string, string | null | undefined> = {
     notification: props.notificationDate ?? props.announcedDate ?? null,
@@ -100,13 +103,19 @@ export default function ExamStepper(props: ExamStepperProps) {
     status === "open" || status === "APPLICATIONS_OPEN" || status === "NOTIFICATION_OUT";
 
   return (
-    <div
+    // Scrolls sideways INSIDE its own box on narrow phones, so the page
+    // itself never scrolls horizontally.
+    <ol
+      aria-label="Exam timeline"
       style={{
         display: "flex",
         alignItems: "stretch",
         gap: 0,
         overflowX: "auto",
         paddingBottom: 4,
+        margin: 0,
+        paddingLeft: 0,
+        listStyle: "none",
         maxWidth: "100%",
         minWidth: 0,
       }}
@@ -116,7 +125,7 @@ export default function ExamStepper(props: ExamStepperProps) {
         const s = stateFor(date);
         const c = COLORS[s];
 
-        // Subtitle: dated ISO or "TBA"
+        // Subtitle: the date, "date · in N days", or "TBA"
         let subtitle = "";
         if (s === "done") subtitle = fmtDate(date);
         else if (s === "upcoming") {
@@ -129,43 +138,48 @@ export default function ExamStepper(props: ExamStepperProps) {
         }
 
         const connectorColor = idx < STEPS.length - 1
-          ? (s === "done" ? "#86EFAC" : s === "upcoming" ? accent : "#E8E8E4")
+          ? (s === "done" ? c.line : s === "upcoming" ? accent : c.line)
           : undefined;
 
         return (
-          <div key={step.key} style={{ display: "flex", alignItems: "stretch", flex: "1 0 auto", minWidth: 120 }}>
+          <li key={step.key} style={{ display: "flex", alignItems: "stretch", flex: "1 0 auto", minWidth: 120 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 80, flex: 1 }}>
-              {/* Dot */}
+              {/* Marker */}
               <div
+                role="img"
                 aria-label={`${step.label}: ${s === "tba" ? "date not announced" : s === "done" ? "completed" : "upcoming"}`}
                 style={{
-                  width: 30,
-                  height: 30,
+                  width: 28,
+                  height: 28,
                   borderRadius: "50%",
                   background: c.bg,
-                  border: `2px solid ${c.border}`,
+                  border: `1px solid ${c.border}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  color: c.dot,
+                  color: c.icon,
                 }}
               >
-                {s === "done" ? "✓" : s === "upcoming" ? "●" : "·"}
+                {s === "done" ? (
+                  <Check size={14} aria-hidden />
+                ) : (
+                  <Circle size={s === "upcoming" ? 8 : 6} fill="currentColor" aria-hidden />
+                )}
               </div>
               {/* Label */}
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#1A1A1A", marginTop: 6, textAlign: "center" }}>
+              <div style={{ fontSize: 11, lineHeight: "16px", fontWeight: 500, color: "var(--ftp-text)", marginTop: 6, textAlign: "center" }}>
                 {step.label}
               </div>
-              {/* Subtitle */}
+              {/* Date / TBA */}
               <div
+                className="ftp-num"
                 style={{
                   fontSize: 10,
+                  fontWeight: 400,
                   color: c.text,
                   marginTop: 2,
                   textAlign: "center",
-                  lineHeight: 1.3,
+                  lineHeight: "14px",
                   minHeight: 14,
                 }}
               >
@@ -182,35 +196,37 @@ export default function ExamStepper(props: ExamStepperProps) {
                     alignItems: "center",
                     gap: 4,
                     marginTop: 8,
-                    padding: "4px 10px",
-                    background: "#16A34A",
-                    color: "#FFF",
-                    borderRadius: 6,
-                    fontSize: 10,
-                    fontWeight: 700,
+                    minHeight: 32,
+                    padding: "0 12px",
+                    background: "var(--ftp-brand)",
+                    color: "var(--ftp-surface)",
+                    borderRadius: "var(--ftp-radius-tile)",
+                    fontSize: 12,
+                    fontWeight: 500,
                     textDecoration: "none",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Apply ↗
-                  <ExternalLink size={9} />
+                  Apply
+                  <ExternalLink size={12} aria-hidden />
                 </a>
               )}
             </div>
             {connectorColor && (
               <div
+                aria-hidden
                 style={{
                   flex: "0 0 18px",
                   height: 2,
                   background: connectorColor,
-                  marginTop: 20,
+                  marginTop: 13,
                   alignSelf: "flex-start",
                 }}
               />
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
