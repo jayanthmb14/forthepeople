@@ -71,14 +71,14 @@ const YEAR = 365 * DAY;
 /**
  * Every dataset the freshness API reports, grouped by module, main dataset
  * first. Secondary datasets carry their own rule; main datasets use the
- * module's rule from the registry.
+ * module's rule from the registry. Pages whose content does not depend on
+ * one table ("What you can do": written guidance + news) have none.
  */
 export const DATASETS: ReadonlyArray<{ key: string; module: string; rule?: FreshnessRule }> = [
   { key: "news", module: "news" },
   { key: "alerts", module: "alerts" },
   { key: "weather", module: "weather" },
   { key: "rainfall", module: "weather", rule: { maxAgeHours: 2 * YEAR, every: "yearly", method: "manual" } },
-  { key: "actions", module: "responsibility" },
   { key: "rtiTemplates", module: "file-rti" },
   { key: "rti", module: "rti" },
   { key: "leaders", module: "leadership" },

@@ -11,8 +11,9 @@
 //
 // Mounted once in the district layout, under the page, so every module page
 // gets it without page edits. Pages with nothing related (overview, taluk
-// pages) render nothing. Each tile is the module's emoji, translated name
-// and one-line description in its own hue — the same tile as the overview.
+// pages) render nothing. Each tile is the module's emoji (its identity
+// icon), translated name and one-line description in its own hue.
+// v5: the heading is text only.
 "use client";
 
 import Link from "next/link";
@@ -41,7 +42,7 @@ export default function RelatedModules({
   const base = `/${locale}/${stateSlug}/${districtSlug}`;
   return (
     <nav aria-label={ts("seeAlso")} className="ftp-module-page" style={{ paddingTop: 0 }}>
-      <Section title={ts("seeAlso")} emoji="👉">
+      <Section title={ts("seeAlso")}>
         <ul className="ftp-module-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(220px, 100%), 1fr))" }}>
           {related.map((m) => (
             <li key={m.slug} className={hueClass(m.slug)}>

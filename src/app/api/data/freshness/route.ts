@@ -76,7 +76,6 @@ interface Row {
   alerts_date: Date | null; alerts_rows: number; alerts_active: number;
   weather_date: Date | null; weather_rows: number;
   rain_year: number | null; rain_rows: number;
-  actions_date: Date | null; actions_rows: number;
   rtitpl_rows: number;
   rti_year: number | null; rti_rows: number;
   leaders_date: Date | null; leaders_rows: number;
@@ -128,8 +127,6 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT count(*) FROM "WeatherReading" x WHERE x."districtId" = d.id)::int AS weather_rows,
       (SELECT max(x.year) FROM "RainfallHistory" x WHERE x."districtId" = d.id) AS rain_year,
       (SELECT count(*) FROM "RainfallHistory" x WHERE x."districtId" = d.id)::int AS rain_rows,
-      (SELECT max(x."updatedAt") FROM "ResponsibilityItem" x WHERE x."districtId" = d.id) AS actions_date,
-      (SELECT count(*) FROM "ResponsibilityItem" x WHERE x."districtId" = d.id)::int AS actions_rows,
       (SELECT count(*) FROM "RtiTemplate" x WHERE x."districtId" = d.id OR x."districtId" IS NULL)::int AS rtitpl_rows,
       (SELECT max(x.year) FROM "RtiStat" x WHERE x."districtId" = d.id) AS rti_year,
       (SELECT count(*) FROM "RtiStat" x WHERE x."districtId" = d.id)::int AS rti_rows,
@@ -247,7 +244,6 @@ function rawFacts(r: Row): Record<string, Raw> {
     alerts: { rows: r.alerts_rows, date: r.alerts_date, checked: r.alerts_date },
     weather: { rows: r.weather_rows, date: r.weather_date, checked: r.weather_date },
     rainfall: { rows: r.rain_rows, date: year(r.rain_year), period: r.rain_year ? String(r.rain_year) : null, periodKind: "year" },
-    actions: { rows: r.actions_rows, date: r.actions_date, checked: r.actions_date },
     rtiTemplates: { rows: r.rtitpl_rows },
     rti: { rows: r.rti_rows, date: year(r.rti_year), period: r.rti_year ? String(r.rti_year) : null, periodKind: "year" },
     leaders: { rows: r.leaders_rows, date: r.leaders_date, checked: r.leaders_date },
@@ -337,7 +333,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "district required" }, { status: 400 });
   }
 
-  const key = cacheKey(districtSlug, "freshness:v4");
+  const key = cacheKey(districtSlug, "freshness:v5");
   const cached = await cacheGet<Record<string, unknown>>(key);
   if (cached) {
     return NextResponse.json(cached, {
