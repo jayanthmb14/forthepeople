@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDistrictName, serializeForJson } from "@/lib/tenders/tender-helpers";
+import { NOT_STUB_TENDER } from "@/lib/data-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
   const in14d = new Date(now.getTime() + 14 * 86400_000);
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400_000);
 
-  const baseLocation = { locationDistrict: districtName };
+  // Seeded placeholder rows are never counted (data-filters.ts, Sept 2026 audit).
+  const baseLocation = { locationDistrict: districtName, ...NOT_STUB_TENDER };
   const live = { ...baseLocation, bidSubmissionEnd: { gte: now } };
 
   const [

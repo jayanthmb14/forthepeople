@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDistrictName, serializeForJson } from "@/lib/tenders/tender-helpers";
 import type { Prisma } from "@/generated/prisma";
+import { NOT_STUB_TENDER } from "@/lib/data-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,8 @@ export async function GET(
   const sortBy = searchParams.get("sortBy") ?? "deadline";
   const search = searchParams.get("search")?.trim();
 
-  const where: Prisma.TenderWhereInput = { locationDistrict: districtName };
+  // Seeded placeholder rows are never listed (data-filters.ts, Sept 2026 audit).
+  const where: Prisma.TenderWhereInput = { locationDistrict: districtName, ...NOT_STUB_TENDER };
 
   // Primary status bucket
   const now = new Date();

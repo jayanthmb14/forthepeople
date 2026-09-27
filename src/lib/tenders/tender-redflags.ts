@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma";
+import { NOT_STUB_TENDER } from "@/lib/data-filters";
 
 type FlagRow = {
   tenderId: string;
@@ -62,6 +63,8 @@ export async function computeFlagsForTender(tenderId: string): Promise<FlagRow[]
           categoryId: tender.categoryId,
           id: { not: tenderId },
           publishedAt: { gte: new Date(Date.now() - 365 * 86400_000) },
+          // Seeded placeholders are not peers (data-filters.ts).
+          ...NOT_STUB_TENDER,
         },
         select: { _count: { select: { bidders: true } } },
       });
@@ -114,6 +117,7 @@ export async function computeFlagsForTender(tenderId: string): Promise<FlagRow[]
         categoryId: tender.categoryId,
         id: { not: tenderId },
         publishedAt: { gte: new Date(Date.now() - 365 * 86400_000) },
+        ...NOT_STUB_TENDER,
       },
       select: { eligibility: true },
     });
@@ -143,6 +147,7 @@ export async function computeFlagsForTender(tenderId: string): Promise<FlagRow[]
         status: "CANCELLED",
         id: { not: tenderId },
         publishedAt: { gte: new Date(Date.now() - 180 * 86400_000) },
+        ...NOT_STUB_TENDER,
         title: { contains: tender.title.split(" ").slice(0, 3).join(" "), mode: "insensitive" },
       },
       select: { id: true, statusChangedAt: true },
@@ -176,7 +181,7 @@ export async function computeFlagsForTender(tenderId: string): Promise<FlagRow[]
 export async function recomputeAllFlags(options: { limit?: number } = {}): Promise<{ processed: number; written: number }> {
   // Target: published tenders with published/closing window in last 180 days
   const tenders = await prisma.tender.findMany({
-    where: { publishedAt: { gte: new Date(Date.now() - 180 * 86400_000) } },
+    where: { publishedAt: { gte: new Date(Date.now() - 180 * 86400_000) }, ...NOT_STUB_TENDER },
     select: { id: true },
     take: options.limit ?? 500,
     orderBy: { publishedAt: "desc" },
