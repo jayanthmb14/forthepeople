@@ -6,6 +6,10 @@
  *
  * Pattern: India › (dot) Karnataka [v] › (dot) Mandya [v] › Select sub-district [v]
  *
+ * v5 `variant="bar"` (the district bar under the header, DistrictBar):
+ * no "India" crumb (the logo already goes home), no dots, and the taluk
+ * crumb reads "All taluks ▾" instead of "Select taluk".
+ *
  * Each crumb is BOTH a clickable link (jump to that level) AND a caret
  * dropdown for switching to peer entities at the same level — so a user
  * on /en/karnataka/mandya can hop directly to Bengaluru Urban or Mysuru
@@ -51,6 +55,10 @@ export interface DistrictBreadcrumbProps {
   subdivisionLabel?: string;
   /** Compact mode: strips wrapper chrome so the breadcrumb fits inline in the header row. */
   compact?: boolean;
+  /** v5 district bar: no India crumb, no dots, "All taluks" placeholder. */
+  variant?: "bar";
+  /** Text of the taluk crumb when no taluk is open (bar variant), e.g. "All taluks". */
+  allSubLabel?: string;
 }
 
 type MenuKey = null | "india" | "state" | "district" | "taluk";
@@ -68,7 +76,10 @@ export default function DistrictBreadcrumb({
   currentTalukName,
   subdivisionLabel,
   compact = false,
+  variant,
+  allSubLabel,
 }: DistrictBreadcrumbProps) {
+  const isBar = variant === "bar";
   const tb = useTranslations("breadcrumb");
   const tsu = useTranslations("subUnitOne");
   const place = usePlaceText();
@@ -162,6 +173,7 @@ export default function DistrictBreadcrumb({
       ref={navRef}
       className="ftp-district-breadcrumb"
       data-compact={compact ? "true" : "false"}
+      data-variant={variant}
       aria-label={tb("nav")}
     >
       <style>{`
@@ -399,6 +411,24 @@ export default function DistrictBreadcrumb({
           }
         }
 
+        /* v5 district bar: the bar draws the chrome; crumbs sit on one
+           line at 13 px and the bar's own wrapper scrolls on phones. */
+        .ftp-district-breadcrumb[data-variant="bar"] {
+          padding: 0;
+          background: transparent;
+          border-bottom: none;
+          font-size: 13px;
+          overflow: visible;
+          flex: 0 0 auto;
+        }
+        .ftp-district-breadcrumb[data-variant="bar"] .ftp-breadcrumb-link {
+          padding: 6px 6px;
+          min-height: 32px;
+        }
+        .ftp-district-breadcrumb[data-variant="bar"] .ftp-breadcrumb-link[data-current="true"] {
+          font-weight: 600;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .ftp-breadcrumb-link,
           .ftp-breadcrumb-caret,
@@ -407,20 +437,25 @@ export default function DistrictBreadcrumb({
       `}</style>
 
       {/* India crumb — plain link, no caret. The peer-state switcher lives
-          on the State crumb below. Matches production parity (S19.7). */}
-      <span className="ftp-breadcrumb-crumb ftp-breadcrumb-crumb-static">
-        <Link href={`/${locale}`} className="ftp-breadcrumb-link">
-          <span>{tb("india")}</span>
-        </Link>
-      </span>
+          on the State crumb below. Matches production parity (S19.7).
+          The v5 district bar leaves it out: the logo already goes home. */}
+      {!isBar && (
+        <>
+          <span className="ftp-breadcrumb-crumb ftp-breadcrumb-crumb-static">
+            <Link href={`/${locale}`} className="ftp-breadcrumb-link">
+              <span>{tb("india")}</span>
+            </Link>
+          </span>
 
-      <span className="ftp-breadcrumb-sep" aria-hidden="true">›</span>
+          <span className="ftp-breadcrumb-sep" aria-hidden="true">›</span>
+        </>
+      )}
 
       {/* State crumb — caret opens the full state list (Session 19.8 fix:
           this used to incorrectly render districts of the current state,
           duplicating the District crumb's caret). */}
       <BreadcrumbCrumb
-        dot
+        dot={!isBar}
         label={stateLabel}
         href={`/${locale}/${stateSlug}`}
         isCurrent={false}
@@ -452,7 +487,7 @@ export default function DistrictBreadcrumb({
       {/* District crumb (current unless a taluk is selected) — caret shows
           all districts in the same state, current marked, coming-soon greyed. */}
       <BreadcrumbCrumb
-        dot
+        dot={!isBar}
         label={districtName}
         href={`/${locale}/${stateSlug}/${districtSlug}`}
         isCurrent={!currentTalukSlug}
@@ -487,8 +522,8 @@ export default function DistrictBreadcrumb({
           Session 19.8: placeholder + aria-label use the per-state subdivision
           label (Taluk / Tehsil / Mandal / Block / Taluka). */}
       <BreadcrumbCrumb
-        dot={!!currentTalukSlug}
-        label={currentTalukName ?? tb("selectSub", { unit: subLabel })}
+        dot={!isBar && !!currentTalukSlug}
+        label={currentTalukName ?? (isBar && allSubLabel ? allSubLabel : tb("selectSub", { unit: subLabel }))}
         href={
           currentTalukSlug
             ? `/${locale}/${stateSlug}/${districtSlug}/${currentTalukSlug}`

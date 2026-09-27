@@ -247,9 +247,10 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
       style={{
         width: collapsed ? "var(--ftp-rail-collapsed)" : "var(--ftp-rail-width)",
         minWidth: collapsed ? "var(--ftp-rail-collapsed)" : "var(--ftp-rail-width)",
-        height: "calc(100vh - 56px - 36px)",
+        // Sticky under the site header + the 48 px district bar (v5).
+        height: "calc(100vh - var(--ftp-shell-top, 104px))",
         position: "sticky",
-        top: 56,
+        top: "var(--ftp-shell-top, 104px)",
         overflowY: "auto",
         overflowX: "hidden",
         background: "var(--ftp-surface)",

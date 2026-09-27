@@ -1,0 +1,107 @@
+/* ============================================================
+ * ForThePeople.in — district shell (v5 "calm")
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * Styles for the pieces the district layout puts around every district
+ * page: the district bar, the glance row, the stale-data notice and the
+ * verification panel. Tokens only (var(--ftp-*)); no hex.
+ *
+ * Sticky stack: site header (56 px, z 50) → district bar (48 px, z 40)
+ * → sidebar (from 1024 px). `--ftp-header-h` may be set by the header;
+ * 56 px is the fallback.
+ * ============================================================ */
+
+.ftp-dshell {
+  --ftp-dbar-h: 48px;
+  --ftp-shell-top: calc(var(--ftp-header-h, 56px) + var(--ftp-dbar-h));
+}
+
+/* ---------- District bar ---------- */
+.ftp-dbar {
+  position: sticky;
+  top: var(--ftp-header-h, 56px);
+  z-index: 40;
+  height: 48px;
+  background: var(--ftp-surface);
+  border-bottom: 1px solid var(--ftp-border);
+}
+.ftp-dbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 8px 0 10px;
+}
+.ftp-dbar-crumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.ftp-dbar-crumbs::-webkit-scrollbar { display: none; }
+
+.ftp-dbar-topics {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 46%;
+  min-height: 44px;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  cursor: pointer;
+  text-align: start;
+}
+.ftp-dbar-topics:hover { border-color: var(--ftp-border-strong); }
+.ftp-dbar-topics-text { display: flex; flex-direction: column; min-width: 0; }
+.ftp-dbar-topics-label { font-size: 11px; line-height: 14px; color: var(--ftp-text-2); }
+.ftp-dbar-topics-page {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ftp-dbar-fresh {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: var(--ftp-radius-pill);
+  color: var(--ftp-text-2);
+  font-size: 13px;
+  text-decoration: none;
+}
+.ftp-dbar-fresh:hover { background: var(--ftp-surface-2); color: var(--ftp-text); }
+.ftp-dbar-fresh[data-late="true"] svg { color: var(--ftp-warn); }
+
+@media (min-width: 1024px) {
+  .ftp-dbar-inner { padding: 0 16px 0 18px; }
+  /* The dropdown menus must not be clipped by a scroll box on PCs. */
+  .ftp-dbar-crumbs { overflow: visible; }
+  .ftp-dbar-topics { display: none; }
+  .ftp-dbar-fresh { display: inline-flex; }
+}
+
+/* ---------- Module pages: the bar and the sidebar replace the
+   "← Back to overview" link above each page header. ---------- */
+.ftp-dshell-main header > a:first-child:has(> svg.lucide-arrow-left) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ftp-dbar-topics, .ftp-dbar-fresh { transition: none; }
+}

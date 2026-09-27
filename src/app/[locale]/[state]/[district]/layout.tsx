@@ -11,10 +11,9 @@ import { getTranslations } from "next-intl/server";
 import HueScope from "@/components/district/HueScope";
 import Sidebar from "@/components/layout/Sidebar";
 import RelatedModules from "@/components/layout/RelatedModules";
-import DistrictStatusBar from "@/components/layout/DistrictStatusBar";
-import { MobileBreadcrumbStrip } from "@/components/district/MobileBreadcrumbStrip";
-import { MobileDistrictChrome } from "@/components/district/MobileDistrictChrome";
+import DistrictBar from "@/components/district/shell/DistrictBar";
 import FeedbackFloatingButton from "@/components/common/FeedbackFloatingButton";
+import "./district-shell.css";
 import { getDistrict, getState } from "@/lib/constants/districts";
 import { generateDistrictMetadata, localName } from "@/lib/seo";
 
@@ -70,7 +69,7 @@ export default async function DistrictLayout({
   };
 
   return (
-    <>
+    <div className="ftp-dshell">
       <Script
         id="district-jsonld"
         type="application/ld+json"
@@ -82,37 +81,17 @@ export default async function DistrictLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
-      {/* Phone + tablet chrome (below 1024 px): the 44 px module bar under
-          the header ("current module · All modules") plus the bottom sheet
-          that lists the nine module groups. It also listens for the
-          'ftp:open-modules-drawer' window event. Hidden from 1024 px, where
-          the sidebar takes over (docs/LAYOUT.md). */}
-      <MobileDistrictChrome
-        locale={locale}
-        stateSlug={stateSlug}
-        districtSlug={districtSlug}
-        districtName={districtData!.name}
-      />
-      {/* 32 px status strip: district · state · date · time · data
-          freshness (from /api/data/freshness). Tells people WHEN the
-          numbers below were last updated. */}
-      <DistrictStatusBar
-        districtSlug={districtSlug}
-        stateSlug={stateSlug}
-        districtName={districtData!.name}
-        stateName={stateData?.name ?? ""}
-      />
-      {/* Mobile-only breadcrumb strip — desktop has its breadcrumb inside
-          HeaderBar (hidden on mobile). CSS in mobile.css hides this strip
-          on viewport ≥ 768px. */}
-      <MobileBreadcrumbStrip locale={locale} />
+      {/* v5: ONE district bar under the site header, sticky on every width:
+          state › district › taluk switchers, plus the topics drawer
+          (below 1024 px) or a link to the verification section (PC). */}
+      <DistrictBar locale={locale} stateSlug={stateSlug} districtSlug={districtSlug} />
 
       {/* HueScope: the open module's colour (Design v4) for sidebar + page. */}
       <HueScope
         style={{
           display: "flex",
           alignItems: "flex-start",
-          minHeight: "calc(100vh - 56px - 32px - 28px)", // viewport - header - status bar - disclaimer
+          minHeight: "calc(100vh - var(--ftp-shell-top, 104px))", // viewport - header - district bar
         }}
       >
         {/* Sidebar — laptops and PCs (≥ 1024 px) only */}
@@ -121,6 +100,7 @@ export default async function DistrictLayout({
         {/* Main content, then "See also" links to the modules people mix
             up with this one (registry `related`; nothing on the overview). */}
         <main
+          className="ftp-dshell-main"
           style={{ flex: 1, minWidth: 0 }}
           role="main"
           aria-label={ts("mainAria", { district: localName(locale, districtData!) })}
@@ -132,6 +112,6 @@ export default async function DistrictLayout({
 
       {/* Floating feedback button — bottom-right on all district pages */}
       <FeedbackFloatingButton stateSlug={stateSlug} districtSlug={districtSlug} />
-    </>
+    </div>
   );
 }
