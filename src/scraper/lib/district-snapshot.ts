@@ -71,3 +71,22 @@ export async function writeDistrictSnapshot<T>(snap: DistrictSnapshot<T>): Promi
   const same = JSON.stringify(prev.data) === JSON.stringify(snap.data) && prev.period === snap.period;
   return same ? "confirmed" : "changed";
 }
+
+/**
+ * fetchedAt of each district's snapshot (null = none yet), so a slow
+ * collector can start with the stalest districts and a run that hits its
+ * time budget does not starve the same districts every day.
+ */
+export async function snapshotAges(kind: SnapshotKind, slugs: string[]): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = Object.fromEntries(slugs.map((s) => [s, null]));
+  if (!redis || slugs.length === 0) return out;
+  try {
+    const rows = await redis.mget<Array<DistrictSnapshot<unknown> | null>>(...slugs.map((s) => snapshotKey(kind, s)));
+    slugs.forEach((s, i) => {
+      out[s] = rows[i]?.fetchedAt ?? null;
+    });
+  } catch {
+    /* unknown ages: keep the given order */
+  }
+  return out;
+}

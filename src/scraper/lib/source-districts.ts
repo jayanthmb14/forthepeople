@@ -124,3 +124,11 @@ export function toCollectorDistricts(
     .filter((d) => d.state)
     .map((d) => ({ id: d.id, slug: d.slug, name: d.name, stateSlug: d.state!.slug, stateName: d.state!.name }));
 }
+
+/** Stalest first: never-fetched, then oldest fetchedAt; ties keep the given order. */
+export function stalestFirst<T extends { slug: string }>(items: T[], ages: Record<string, string | null>): T[] {
+  return items
+    .map((it, i) => ({ it, i, t: ages[it.slug] ? Date.parse(ages[it.slug]!) : -Infinity }))
+    .sort((a, b) => a.t - b.t || a.i - b.i)
+    .map((x) => x.it);
+}
