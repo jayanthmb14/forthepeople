@@ -45,5 +45,31 @@
   },
   "intro": {
     "skip": "Tap anywhere to skip"
+  },
+  "map": {
+    "title": "India, live",
+    "hint": "Tap a pin for its latest facts, or a state to open it.",
+    "aria": "Map of India. Each state opens its own page; the pins are the live districts.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "reset": "Show all of India",
+    "close": "Close",
+    "pinLabel": "{name}, {state}: see its facts and open its dashboards",
+    "stateLive": "{n, plural, one {# live district} other {# live districts}} · open the state page",
+    "stateNone": "No live district yet · see the state and vote",
+    "stateOpen": "Open {name}",
+    "people": "People",
+    "lakh": "{n} lakh",
+    "crore": "{n} crore",
+    "estimate": "estimate",
+    "building": "Being built",
+    "projects": "{n, plural, one {# project} other {# projects}}",
+    "grade": "Report card",
+    "old": "old",
+    "newest": "Newest data",
+    "noFacts": "No facts collected yet for this district.",
+    "open": "Open {name}",
+    "legendLive": "Live district — tap for facts",
+    "legendState": "State — opens its page"
   }
 }

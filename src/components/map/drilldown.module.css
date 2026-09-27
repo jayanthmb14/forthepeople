@@ -1,0 +1,208 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * drilldown.module.css — the interactive India map (DrillDownMap).
+ * Pins take their colour from the district's hue (.ftp-hue-<name> sets
+ * --hue / --hue-deep); map shapes are coloured in mapTheme.tsx.
+ */
+
+.wrap {
+  position: relative;
+  width: 100%;
+  touch-action: pan-y;
+}
+.wrap[data-zoomed="true"] {
+  touch-action: none;
+}
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Live-district pins */
+.pin {
+  cursor: pointer;
+  outline: none;
+}
+.pinPing {
+  fill: var(--hue);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ping 2.8s ease-out infinite;
+}
+.pinHalo {
+  fill: var(--hue);
+  opacity: 0.18;
+}
+.pinDot {
+  fill: var(--hue);
+  stroke: var(--ftp-surface);
+  stroke-width: 2.5;
+}
+.pinCore {
+  fill: var(--ftp-surface);
+}
+.pinRing {
+  fill: none;
+  stroke: var(--hue-deep);
+  stroke-width: 2.5;
+  opacity: 0;
+}
+.pin:hover .pinHalo,
+.pin[data-on="true"] .pinHalo {
+  opacity: 0.32;
+}
+.pin[data-on="true"] .pinRing,
+.pin:focus-visible .pinRing {
+  opacity: 1;
+}
+.leader {
+  stroke: var(--hue);
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+.anchor {
+  fill: var(--hue);
+  stroke: var(--ftp-surface);
+  stroke-width: 1;
+}
+@keyframes ping {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+}
+
+/* Zoom buttons (top right) */
+.zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
+}
+.zoomBtn {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-bottom: 1px solid var(--ftp-border);
+  background: transparent;
+  color: var(--ftp-text);
+  cursor: pointer;
+}
+.zoomBtn:last-child {
+  border-bottom: 0;
+}
+.zoomBtn:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-brand-deep);
+}
+.zoomBtn:disabled {
+  color: var(--ftp-border-strong);
+  cursor: default;
+  background: transparent;
+}
+.zoomBtn:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+
+/* Floating card (a district's facts) and the state tooltip */
+.card {
+  position: absolute;
+  z-index: 4;
+  width: 272px;
+  max-width: calc(100% - 16px);
+  padding: 12px 14px 14px;
+}
+.card[data-dock="true"] {
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: auto;
+  max-width: none;
+}
+.close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+}
+.close:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 0;
+}
+.tip {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 240px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 18px;
+  pointer-events: none;
+}
+.tip[data-pinned="true"] {
+  pointer-events: auto;
+}
+.tipName {
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.tipHint {
+  color: var(--ftp-text-2);
+}
+.tipOpen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  margin-top: 4px;
+  color: var(--ftp-brand-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+.tipOpen:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinPing {
+    animation: none;
+    opacity: 0;
+  }
+}

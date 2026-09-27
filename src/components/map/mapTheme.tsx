@@ -20,6 +20,9 @@
 //                    hover → --ftp-map-locked-hover
 //    tooltip/legend→ white card, 1 px border, soft shadow
 //
+//    India map     → indiaStateStyle(): pale land, brand tint on hover /
+//                    tap (states open their page; live DISTRICTS are pins)
+//
 //  Map BEHAVIOUR (clicks, projections, zoom) stays in each map file.
 //
 "use client";
@@ -92,6 +95,45 @@ export function geoStyle(
     pressed: { fill: "var(--ftp-map-locked-hover)", outline: "none" },
   };
 }
+
+/**
+ * The India map on the home page (DrillDownMap): every state is the same
+ * pale land colour (a state is never painted "live" — only districts are
+ * live, and they are pins). Hover or tap tints a state brand-blue to show
+ * that it opens the state's page.
+ */
+export function indiaStateStyle(selected = false): { default: GeoStyle; hover: GeoStyle; pressed: GeoStyle } {
+  const hot: GeoStyle = {
+    fill: "var(--ftp-map-live-fill)",
+    stroke: "var(--ftp-map-live)",
+    strokeWidth: 1.2,
+    outline: "none",
+    cursor: "pointer",
+  };
+  return {
+    default: selected
+      ? hot
+      : {
+          fill: "var(--ftp-map-locked)",
+          stroke: "var(--ftp-surface)",
+          strokeWidth: 0.9,
+          outline: "none",
+          cursor: "pointer",
+          transition: "fill 150ms",
+        },
+    hover: hot,
+    pressed: hot,
+  };
+}
+
+/** The floating card and tooltip frame used on maps (white, thin border, soft shadow). */
+export const MAP_CARD_STYLE: React.CSSProperties = {
+  background: "var(--ftp-surface)",
+  color: "var(--ftp-text)",
+  border: "1px solid var(--ftp-border-strong)",
+  boxShadow: "var(--ftp-shadow-2)",
+  borderRadius: "var(--ftp-radius-card)",
+};
 
 /**
  * Hover tooltip that follows the pointer. White card, thin border, soft shadow.

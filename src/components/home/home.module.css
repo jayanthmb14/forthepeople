@@ -608,74 +608,52 @@
   color: var(--ftp-text-2);
 }
 
-/* Map (tablet and PC) */
+/* Map (HomeMap + map/DrillDownMap): beside the hero from 900 px, under it
+   on phones and tablets. */
 .heroMap {
-  display: none;
+  min-width: 0;
 }
 .map {
   position: relative;
   margin: 0;
-  padding: 12px 12px 6px;
+  padding: 12px 12px 8px;
   border: 1px solid var(--ftp-border);
   border-radius: 20px;
-  background: var(--ftp-surface);
+  background:
+    radial-gradient(80% 60% at 50% 40%, var(--home-sky-tint) 0%, transparent 70%),
+    var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
 }
-.mapSvg {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 440px;
-  margin: 0 auto;
+.mapHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 56px 4px 4px;
+}
+.mapTitle {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.mapHint {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
 }
 .mapLoading {
   width: 100%;
   aspect-ratio: 8 / 9;
-  max-height: 480px;
+  max-height: 560px;
   border-radius: 20px;
   background: var(--ftp-surface-2);
-}
-.pin {
-  cursor: pointer;
-  outline: none;
-}
-.pinHalo {
-  fill: var(--ftp-brand);
-  opacity: 0.16;
-  transition: opacity 150ms ease;
-}
-.pinDot {
-  fill: var(--ftp-brand);
-  stroke: var(--ftp-surface);
-  stroke-width: 2.5;
-}
-.pin:hover .pinHalo,
-.pin:focus-visible .pinHalo {
-  opacity: 0.38;
-}
-.pin:focus-visible .pinHalo {
-  stroke: var(--ftp-brand-deep);
-  stroke-width: 2;
-}
-.mapTip {
-  position: absolute;
-  z-index: 2;
-  transform: translate(-50%, calc(-100% - 8px));
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--ftp-text);
-  color: var(--ftp-surface);
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
 }
 .mapLegend {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 6px 18px;
-  padding: 6px 0 4px;
+  padding: 6px 0 2px;
   font-size: 12px;
   line-height: 16px;
   color: var(--ftp-text-2);
@@ -698,7 +676,151 @@
 .legendLand {
   border-radius: 3px;
   border: 1px solid var(--ftp-border-strong);
-  background: var(--ftp-map-land, #E3EAF4);
+  background: var(--ftp-map-locked);
+}
+
+/* The district card inside the map */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 28px;
+}
+.cardArt {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--hue-tint);
+}
+.cardDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--hue);
+}
+.cardTitle {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cardName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 800;
+  color: var(--ftp-text);
+}
+.cardLocal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hue-deep);
+}
+.cardState {
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.cardRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+.cardRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--ftp-border);
+  font-size: 13px;
+  line-height: 18px;
+}
+.cardRow:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.cardRow dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--ftp-text-2);
+  font-weight: 600;
+}
+.cardRow dt svg {
+  color: var(--hue);
+}
+.cardRow dd {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 2px 6px;
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ftp-text);
+}
+.cardNote {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.cardGrade {
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+  font-weight: 800;
+}
+.cardOld {
+  padding: 0 6px;
+  border: 1px solid var(--ftp-warn-border);
+  border-radius: 999px;
+  background: var(--ftp-warn-tint);
+  color: var(--ftp-warn-text);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.cardEmpty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+.cardOpen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  border-radius: 12px;
+  background: var(--ftp-brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.cardOpen:hover {
+  background: var(--ftp-brand-deep);
+}
+.cardOpen:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
 }
 
 /* ───────────── Sections ───────────── */
@@ -1044,16 +1166,24 @@
 }
 @media (min-width: 768px) {
   .heroBand {
-    padding: 32px 0 8px;
+    padding: 32px 0 12px;
   }
+}
+@media (min-width: 900px) {
   .hero {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 32px;
   }
   .heroMap {
-    display: block;
-    min-width: 0;
-    min-height: 380px;
+    min-height: 420px;
+  }
+}
+@media (min-width: 640px) and (max-width: 899px) {
+  /* Tablets: the map under the hero text, not too tall. */
+  .heroMap {
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
   }
 }
 @media (min-width: 1024px) {
@@ -1092,7 +1222,10 @@
   .btnPrimary,
   .btnOutline,
   .districtCard,
-  .pinHalo {
+  .tickItem {
     transition: none;
+  }
+  .btnPrimary:hover {
+    transform: none;
   }
 }
