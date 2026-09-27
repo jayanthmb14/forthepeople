@@ -4,7 +4,7 @@
   "notice": "<b>Data transparency notice:</b> Infrastructure project data on this page is aggregated from publicly available news articles and government press releases. ForThePeople.in does not independently verify construction progress or budget figures. Each data point is linked to its source article. For official project status, contact the executing agency directly. This is not an official government tracker.",
   "empty": {
     "title": "No infrastructure projects tracked yet.",
-    "body": "News-driven updates will populate this page automatically."
+    "body": "We have not added projects for this district yet."
   },
   "biggest": {
     "title": "Biggest projects by money",

@@ -46,7 +46,7 @@
   "electionAlert": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "electionAlertDate": "<b>Election period:</b> {label} is under way. Leadership positions and party links may change after the results on {date}. ForThePeople.in is not linked to any political party and does not support any candidate.",
   "emptyTitle": "No leadership data yet",
-  "emptyBody": "We add elected representatives and officers for this district as soon as they are checked against official records.",
+  "emptyBody": "We have not added elected representatives and officers for this district yet. We add them only after checking official records.",
   "tilePeople": "People listed",
   "tileElected": "Chosen by voters",
   "tileElectedSub": "MP and MLAs",
