@@ -3,5 +3,6 @@
 export const PAGE_NAMESPACES: readonly string[] = [
   "page_crops",
   "page_farm",
+  "page_gram-panchayat",
   "page_water"
 ];
