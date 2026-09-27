@@ -8,10 +8,16 @@
 // Job: Infrastructure Projects — PMGSY + state PWD portal
 // Schedule: Every 12 hours
 // Source: data.gov.in PMGSY dataset + pmgsy.nic.in
+//
+// A road already stored in the district (same canonical name — "NH-275
+// Road" = "NH 275 road", src/lib/dedupe/keys.ts) is updated, never added
+// twice. Only exact canonical names: PMGSY names differ by one village
+// ("Road from A to B" / "A to C"), so near-misses are separate roads.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
 import { firstAmount } from "../lib/sanity";
+import { findSameNamed } from "@/lib/dedupe/match";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 const PMGSY_RESOURCE = "9c6bfbde-23d9-4d1e-a1d4-c9c5b4f11a7e"; // PMGSY road projects
@@ -34,6 +40,11 @@ export async function scrapeInfrastructure(ctx: JobContext): Promise<ScraperResu
 
     const json = await res.json();
     const records: Record<string, string>[] = json?.records ?? [];
+    const pool = await prisma.infraProject.findMany({
+      where: { districtId: ctx.districtId },
+      select: { id: true, name: true, shortName: true, progressPct: true },
+      take: 5000,
+    });
 
     for (const rec of records) {
       const name = (rec.road_name ?? rec.project_name ?? rec.Road_Name ?? "").trim();
@@ -52,12 +63,10 @@ export async function scrapeInfrastructure(ctx: JobContext): Promise<ScraperResu
         (progressPct === null ? null : progressPct >= 100 ? "Completed" : "In Progress");
       if (!status) continue; // no status and no progress → nothing trustworthy to store
 
-      const existing = await prisma.infraProject.findFirst({
-        where: { districtId: ctx.districtId, name },
-      });
+      const existing = findSameNamed(pool, { name }, { exactOnly: true })?.row ?? null;
 
       if (!existing) {
-        await prisma.infraProject.create({
+        const row = await prisma.infraProject.create({
           data: {
             districtId: ctx.districtId,
             name,
@@ -68,7 +77,9 @@ export async function scrapeInfrastructure(ctx: JobContext): Promise<ScraperResu
             status,
             source: "PMGSY / data.gov.in",
           },
+          select: { id: true, name: true, shortName: true, progressPct: true },
         });
+        pool.push(row);
         newCount++;
       } else if (progressPct !== null && Math.abs((existing.progressPct ?? 0) - progressPct) > 1) {
         await prisma.infraProject.update({

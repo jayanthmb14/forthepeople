@@ -16,6 +16,7 @@
  */
 
 import { PrismaClient } from "../src/generated/prisma";
+import { findSameNamed } from "../src/lib/dedupe/match";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
@@ -192,9 +193,11 @@ async function main() {
 
   let added = 0, skipped = 0;
   for (const r of rows) {
-    const existing = await p.infraProject.findFirst({
-      where: { districtId: pune.id, name: r.name },
-    });
+    // Same project under another spelling counts as present (src/lib/dedupe/match.ts).
+    const existing = findSameNamed(
+      await p.infraProject.findMany({ where: { districtId: pune.id }, select: { name: true, shortName: true } }),
+      { name: r.name },
+    );
     if (existing) {
       console.log(`  ⏭️  ${r.shortName} — already present`);
       skipped++;

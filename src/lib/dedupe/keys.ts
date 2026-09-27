@@ -231,6 +231,16 @@ function levenshtein(a: string, b: string): number {
 const hasDigit = (w: string) => /\d/.test(w);
 
 /**
+ * True when both names carry numbers and the numbers differ ("Phase 1" /
+ * "Phase 2", "Line 2A" / "Line 3", "NH 44" / "NH 48"): never the same thing.
+ */
+export function numbersConflict(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = nameTokens(a).filter(hasDigit);
+  const nb = nameTokens(b).filter(hasDigit);
+  return na.length > 0 && nb.length > 0 && (na.length !== nb.length || na.some((w) => !nb.includes(w)));
+}
+
+/**
  * How alike two names are, 0–1, on their canonical words: the best of the
  * Dice word overlap, the edit-distance ratio of the sorted word strings, and
  * 0.88 when one name's 3+ words all appear in the other. When both names
@@ -252,11 +262,7 @@ export function similarity(a: string | null | undefined, b: string | null | unde
   const minSize = Math.min(sa.size, sb.size);
   const subset = minSize >= 3 && inter === minSize ? 0.88 : 0;
   let score = Math.max(dice, lev, subset);
-  const na = ta.filter(hasDigit);
-  const nb = tb.filter(hasDigit);
-  if (na.length && nb.length && (na.length !== nb.length || na.some((w) => !nb.includes(w)))) {
-    score = Math.min(score, 0.6);
-  }
+  if (numbersConflict(a, b)) score = Math.min(score, 0.6);
   return Math.round(score * 1000) / 1000;
 }
 
