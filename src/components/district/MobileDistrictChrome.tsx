@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronDown, LayoutDashboard } from "lucide-react";
 import { SIDEBAR_MODULES } from "@/lib/constants/sidebar-modules";
+import { hueClass } from "@/lib/design/hues";
 import { MobileDistrictDrawer } from "./MobileDistrictDrawer";
 
 export const OPEN_MODULES_EVENT = "ftp:open-modules-drawer";
@@ -76,7 +77,17 @@ export function MobileDistrictChrome({
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <CurrentIcon size={16} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0 }} />
+          {currentModule?.emoji ? (
+            <span
+              aria-hidden
+              className={`ftp-emoji ${hueClass(currentModule.slug)}`}
+              style={{ width: 28, height: 28, borderRadius: 9, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: "var(--hue-tint)" }}
+            >
+              {currentModule.emoji}
+            </span>
+          ) : (
+            <CurrentIcon size={16} aria-hidden style={{ color: "var(--ftp-brand)", flexShrink: 0 }} />
+          )}
           <span
             className="ftp-title"
             style={{ fontSize: 13, lineHeight: "20px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}

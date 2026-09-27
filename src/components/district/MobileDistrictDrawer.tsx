@@ -22,7 +22,8 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { getTieredModules, TIER_ACCENT } from "@/lib/constants/sidebar-modules";
+import { getTieredModules } from "@/lib/constants/sidebar-modules";
+import { hueClass } from "@/lib/design/hues";
 
 interface Props {
   open: boolean;
@@ -141,7 +142,6 @@ export function MobileDistrictDrawer({
                 {tier.modules.map((m) => {
                   const href = m.slug === "overview" ? base : `${base}/${m.slug}`;
                   const isActive = m.slug === current;
-                  const Icon = m.icon;
                   return (
                     <li key={m.slug}>
                       <Link
@@ -158,11 +158,13 @@ export function MobileDistrictDrawer({
                           color: isActive ? "var(--ftp-brand-deep)" : "var(--ftp-text)",
                         }}
                       >
-                        <Icon
-                          size={16}
+                        <span
                           aria-hidden
-                          style={{ flexShrink: 0, color: isActive ? "var(--ftp-brand)" : `var(--accent-${TIER_ACCENT[tier.label]}-700)` }}
-                        />
+                          className={`ftp-emoji ${hueClass(m.slug)}`}
+                          style={{ width: 28, height: 28, borderRadius: 9, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: "var(--hue-tint)" }}
+                        >
+                          {m.emoji}
+                        </span>
                         <span>{m.label}</span>
                       </Link>
                     </li>
