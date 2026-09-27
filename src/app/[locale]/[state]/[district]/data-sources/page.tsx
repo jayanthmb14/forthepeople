@@ -4,50 +4,52 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Data Sources page — Design v4 "Rang" module recipe (see the finance page):
-//   PageHeader → AI summary → StatStrip of emoji tiles → picture (how many
-//   tracked feeds are fresh right now, from /api/data/freshness) → "how our
-//   data arrives" ring (sources by kind) → data pledge → one card per
-//   module source, its emoji chip in that module's own hue → sources.
+// ═══════════════════════════════════════════════════════════════════════
+//  Where our data comes from — docs/LAYOUT.md page recipe
+// ═══════════════════════════════════════════════════════════════════════
+//  The question: "Can I trust these numbers? Where does each one come
+//  from, and is it up to date?"
 //
-// The list comes from the state registry (src/lib/constants/state-config.ts,
-// the single source of truth): the sources every district shares plus the
-// state's own. Unknown states get the shared list only — never another
-// state's sources. Every word on the page comes from
-// src/dictionaries/<locale>/page_data-sources.json; official source names
-// stay as published.
-
+//    PageHeader → Explainer (how many sources; how many live feeds are up
+//    to date right now) → 4 StatTiles → ONE picture: a traffic light for
+//    every feed we check automatically (green = up to date, amber = a bit
+//    late, red = late, grey = not reported), with what each colour means
+//    → source cards with a freshness stripe; tapping one opens a
+//    DetailSheet (what it feeds, the source, how it reaches us, how often
+//    it updates, freshness now; Open the source / Open the page)
+//    → "how our data arrives" ring beside the data pledge → sources.
+//
+//  The list comes from the state registry (src/lib/constants/state-config.ts,
+//  the single source of truth): the sources every district shares plus the
+//  state's own. Freshness comes from /api/data/freshness (useFreshness);
+//  only the feeds it reports get a colour — every other source shows its
+//  published refresh cadence instead (we never invent a date).
+//  Words: src/dictionaries/<locale>/page_data-sources.json; official source
+//  names stay as published.
 "use client";
-import { use } from "react";
+
 import type React from "react";
+import { use, useCallback, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Database, Clock } from "lucide-react";
-import { PageHeader, StatStrip, StatTile, Section, Card, Pill, FreshnessPill, SourcePill } from "@/components/district/ui";
-import { ChartCard, Explainer, Gauge, Pictogram } from "@/components/district/visuals";
+import { Database } from "lucide-react";
+import { ModulePage, PageHeader, StatStrip, StatTile, Section, Card, FreshnessPill } from "@/components/district/ui";
+import { ChartCard, Explainer } from "@/components/district/visuals";
+import { DetailSheet, DetailList } from "@/components/district/DetailSheet";
 import { ShareRing } from "@/components/accountability/AccountabilityVisuals";
+import { AccountabilityFooter, CardChip, CardList, ChartRow, SheetAction, SheetNote, TapCard, useCadence } from "@/components/accountability/AccountabilityKit";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
-import { useFreshness, type FreshnessKey } from "@/hooks/useFreshness";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { useFreshness, type FreshnessKey, type FreshnessStatus } from "@/hooks/useFreshness";
 import { getStateConfig, UNIVERSAL_DATA_SOURCES, type DataSourceEntry } from "@/lib/constants/state-config";
 import { getModuleMeta, hueClass, HUE_HEX, type Hue } from "@/lib/design/hues";
-import { useFormat, useModuleText } from "@/i18n/client";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
 /** The sources every district shares, then the state's own. */
 function getDataSources(stateSlug: string): DataSourceEntry[] {
   return [...UNIVERSAL_DATA_SOURCES, ...(getStateConfig(stateSlug)?.dataSources ?? [])];
 }
 
-// ── Presentation helpers ────────────────────────────────────────────────
-
-/** Page wrapper: the container (24 px sides, 16 on phones) at reading width. */
-const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
-
-/**
- * Which rows on this page have a freshness feed in /api/data/freshness.
- * Only these get a FreshnessPill with a real date; every other source shows
- * its published refresh cadence instead (we never invent a date).
- */
+/** Registry rows that have a freshness feed in /api/data/freshness. */
 const FRESHNESS_KEY_FOR_ROW: Record<string, FreshnessKey> = {
   "Crop Prices": "crops",
   Weather: "weather",
@@ -55,11 +57,19 @@ const FRESHNESS_KEY_FOR_ROW: Record<string, FreshnessKey> = {
   News: "news",
 };
 
+/** The feeds the freshness check reports, in the order of the traffic lights. */
+const FEEDS: Array<{ key: FreshnessKey; emoji: string }> = [
+  { key: "weather", emoji: "🌦️" },
+  { key: "crops", emoji: "🌾" },
+  { key: "dam", emoji: "🌊" },
+  { key: "news", emoji: "📰" },
+  { key: "aiInsights", emoji: "🤖" },
+];
+
 /**
  * Registry row name → its message key and the sidebar module it feeds. The
- * slug gives the row its module's emoji and hue; `emoji` overrides the
- * registry where two rows share a module (rainfall and weather) or the
- * registry emoji is generic. Rows not listed keep their registry name.
+ * slug gives the row its module's emoji, hue and page link; `emoji`
+ * overrides the registry where two rows share a module.
  */
 const ROW_MODULE: Record<string, { key: string; slug: string; emoji?: string }> = {
   "Crop Prices": { key: "cropPrices", slug: "crops" },
@@ -88,25 +98,7 @@ const ROW_MODULE: Record<string, { key: string; slug: string; emoji?: string }> 
   "Sugar Factories": { key: "sugar", slug: "industries", emoji: "🏭" },
 };
 
-/** Registry cadence text → message key. Unknown text is shown as published. */
-const FREQ_KEY: Record<string, string> = {
-  "Every 30 minutes": "every30min",
-  "Every 6 hours": "every6h",
-  Daily: "daily",
-  "Daily (market days)": "dailyMarket",
-  Weekly: "weekly",
-  Monthly: "monthly",
-  Quarterly: "quarterly",
-  Seasonal: "seasonal",
-  Annual: "annual",
-  "Post-election": "postElection",
-  "On-change": "onChange",
-  "As announced": "asAnnounced",
-  "When the source publishes": "whenPublished",
-  Static: "static",
-};
-
-/** How a source reaches us → message key and ring order. */
+/** How a source reaches us → message key. */
 const TYPE_KEY: Record<DataSourceEntry["type"], string> = {
   API: "api",
   Collected: "collected",
@@ -115,8 +107,7 @@ const TYPE_KEY: Record<DataSourceEntry["type"], string> = {
   RSS: "rss",
 };
 
-/** Each kind of source gets its own hue in the ring, so the slices read
-    apart at a glance (the legend names them). */
+/** Each kind gets its own hue in the ring so the slices read apart. */
 const TYPE_HUE: Record<DataSourceEntry["type"], Hue> = {
   API: "blue",
   Collected: "amber",
@@ -125,14 +116,15 @@ const TYPE_HUE: Record<DataSourceEntry["type"], Hue> = {
   RSS: "rose",
 };
 
-/** Emoji + hue class for a row; unknown rows keep the page's own look. */
-function rowLook(moduleName: string): { emoji: string; hue?: string } {
-  const m = ROW_MODULE[moduleName];
-  if (!m) return { emoji: "🔗" };
-  return { emoji: m.emoji ?? getModuleMeta(m.slug)?.emoji ?? "🔗", hue: hueClass(m.slug) };
-}
+/** Traffic-light colours (the kit's semantic tones). */
+const LIGHT: Record<FreshnessStatus, { color: string; tint: string; emoji: string }> = {
+  green: { color: "var(--ftp-live)", tint: "var(--ftp-live-tint)", emoji: "🟢" },
+  amber: { color: "var(--ftp-warn)", tint: "var(--ftp-warn-tint)", emoji: "🟡" },
+  red: { color: "var(--ftp-danger)", tint: "var(--ftp-danger-tint)", emoji: "🔴" },
+  unknown: { color: "var(--ftp-border-strong)", tint: "var(--ftp-surface-2)", emoji: "⚪" },
+};
 
-/** Short, readable label for a SourcePill: the link's host name. */
+/** Short label for a link: its host name. */
 function hostOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -141,116 +133,203 @@ function hostOf(url: string): string {
   }
 }
 
-/** The "Automatic feed" pill in the page hue (tint background, deep text). */
-const HUE_PILL: React.CSSProperties = { background: "var(--hue-tint)", color: "var(--hue-deep)" };
+const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
 export default function DataSourcesPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const t = useTranslations("page_data-sources");
   const f = useFormat();
   const mt = useModuleText();
+  const cadence = useCadence();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
   const num = (n: number) => f.number(n);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  // Stable, so the sheet's focus handling does not re-run on every render.
+  const closeSheet = useCallback(() => setOpenIdx(null), []);
 
-  const DATA_SOURCES = getDataSources(state);
-  const liveCount = DATA_SOURCES.filter((s) => s.status === "live").length;
-  const apiCount = DATA_SOURCES.filter((s) => s.type === "API").length;
+  const sources = getDataSources(state);
+  const liveCount = sources.filter((s) => s.status === "live").length;
+  const apiCount = sources.filter((s) => s.type === "API").length;
 
   const rowName = (moduleName: string) => {
     const key = ROW_MODULE[moduleName]?.key;
     return key && t.has(`rows.${key}`) ? t(`rows.${key}`) : moduleName;
   };
-  const cadence = (freq: string) => {
-    if (FREQ_KEY[freq]) return t(`freq.${FREQ_KEY[freq]}`);
-    if (/^census/i.test(freq)) return t("freq.censusMix");
-    return freq;
+  const rowEmoji = (moduleName: string) => {
+    const m = ROW_MODULE[moduleName];
+    return m ? m.emoji ?? getModuleMeta(m.slug)?.emoji ?? "🔗" : "🔗";
   };
 
-  // How the data arrives: each source has exactly one kind, so the parts
-  // add up to the whole list and a ring is honest here.
+  // One cached request: how old is each automatic feed for this district?
+  const fresh = useFreshness(state, district);
+  const summary = fresh.summary;
+  const tracked = summary ? summary.green + summary.amber + summary.red + summary.unknown : 0;
+  const statusLabel = (s: FreshnessStatus) => t(`light.${s}`);
+
+  // How the data arrives: each source has exactly one kind, so a ring is honest.
   const byType = (Object.keys(TYPE_KEY) as DataSourceEntry["type"][])
-    .map((type) => ({ type, count: DATA_SOURCES.filter((s) => s.type === type).length }))
+    .map((type) => ({ type, count: sources.filter((s) => s.type === type).length }))
     .filter((x) => x.count > 0)
     .sort((a, b) => b.count - a.count);
   const topType = byType[0];
 
-  // One cached request: "how old is each automatic feed for this district?"
-  // This page is the district's honest freshness dashboard.
-  const fresh = useFreshness(state, district);
-  const summary = fresh.summary;
-  const trackedFeeds = summary ? summary.green + summary.amber + summary.red + summary.unknown : 0;
-  // Share of tracked feeds inside their refresh window — the picture below.
-  const freshPct = summary && trackedFeeds > 0 ? (summary.green / trackedFeeds) * 100 : null;
+  // Sources whose feed we check come first, late ones before fresh ones.
+  const order: Record<FreshnessStatus, number> = { red: 0, amber: 1, unknown: 2, green: 3 };
+  const rows = sources
+    .map((ds, i) => {
+      const key = FRESHNESS_KEY_FOR_ROW[ds.module];
+      return { ds, i, freshness: key ? fresh.modules[key] : undefined };
+    })
+    .sort((a, b) => {
+      const fa = a.freshness ? order[a.freshness.status] : 9;
+      const fb = b.freshness ? order[b.freshness.status] : 9;
+      return fa - fb || a.i - b.i;
+    });
+  const open = openIdx !== null ? rows.find((r) => r.i === openIdx) ?? null : null;
+  const openSlug = open ? ROW_MODULE[open.ds.module]?.slug : undefined;
 
   return (
-    <div className="ftp-container" style={PAGE_STYLE}>
+    <ModulePage>
       <PageHeader
         icon={Database}
         title={mt.label("data-sources")}
         description={mt.description("data-sources")}
         backHref={base}
-        accent={getModuleAccent("data-sources")}
         freshness={fresh.checkedAt ? { asOf: fresh.checkedAt } : undefined}
       />
-      <AIInsightCard module="data-sources" district={district} />
 
-      <StatStrip cols={4}>
-        <StatTile emoji="🗂️" label={t("tileModules")} value={num(DATA_SOURCES.length)} sub={t("tileModulesSub")} />
+      <Explainer emoji="🔎">
+        {t.rich("explain", { n: sources.length, district: districtName, b: bold })}{" "}
+        {summary && tracked > 0 ? t.rich("explainFresh", { tracked, fresh: summary.green, b: bold }) : null}{" "}
+        {t("explainDates")}
+      </Explainer>
+
+      <StatStrip>
+        <StatTile emoji="🗂️" label={t("tileModules")} value={num(sources.length)} sub={t("tileModulesSub")} />
         <StatTile emoji="⚙️" label={t("tileAuto")} value={num(liveCount)} sub={t("tileAutoSub")} />
         <StatTile emoji="🏛️" label={t("tileApi")} value={num(apiCount)} sub={t("tileApiSub")} />
         <StatTile
           emoji="✅"
           label={t("tileFresh")}
-          value={summary ? t("nOfTotal", { n: num(summary.green), total: num(trackedFeeds) }) : "—"}
+          value={summary ? t("nOfTotal", { n: num(summary.green), total: num(tracked) }) : "—"}
           sub={summary ? t("tileFreshSub") : fresh.loading ? t("checking") : t("checkUnavailable")}
           asOf={fresh.checkedAt}
           countUp={false}
         />
       </StatStrip>
 
-      {/* The picture: one antenna per feed we check for this district, lit
-          when that feed is inside its refresh window; plus a dial. Same
-          numbers as the "Feeds fresh now" tile. */}
-      {summary && freshPct !== null && (
-        <div className="ftp-picture-row" style={{ marginTop: 16 }}>
-          <Card tinted padding={18}>
-            <Explainer emoji="📡">
-              {summary.green < trackedFeeds
-                ? t.rich("explainSome", { n: trackedFeeds, fresh: summary.green, b: (c) => <strong>{c}</strong> })
-                : t.rich("explainAll", { n: trackedFeeds, b: (c) => <strong>{c}</strong> })}
-            </Explainer>
-            <Pictogram
-              filled={summary.green}
-              total={trackedFeeds}
-              emoji="📡"
-              label={t("pictoLabel", { fresh: num(summary.green), n: num(trackedFeeds) })}
-            />
-          </Card>
-          <Card tinted padding={18} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Gauge value={freshPct} label={t("tileFresh")} caption={t("gaugeCaption")} />
-          </Card>
-        </div>
-      )}
+      {/* ONE picture: a traffic light for every feed we check automatically. */}
+      <Card tinted padding={18} style={{ marginTop: 16 }}>
+        <h2 className="ftp-display" style={{ margin: "0 0 4px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+          {t("lightsTitle")}
+        </h2>
+        <p className="ftp-body" style={{ margin: "0 0 14px", color: "var(--ftp-text-2)", fontSize: 14 }}>
+          {t("lightsHint")}
+        </p>
+        <ul className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "170px", listStyle: "none", margin: 0, padding: 0, gap: 10 } as React.CSSProperties}>
+          {FEEDS.map((feed) => {
+            const m = fresh.modules[feed.key];
+            const status: FreshnessStatus = m?.status ?? "unknown";
+            const light = LIGHT[status];
+            return (
+              <li
+                key={feed.key}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  background: light.tint,
+                  border: `2px solid ${light.color}`,
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    background: light.color,
+                    boxShadow: status === "unknown" ? "none" : `0 0 0 5px color-mix(in srgb, ${light.color} 22%, transparent)`,
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <span style={{ fontSize: 15, lineHeight: "20px", fontWeight: 700 }}>
+                    <span className="ftp-emoji" aria-hidden>
+                      {feed.emoji}{" "}
+                    </span>
+                    {t(`feeds.${feed.key}`)}
+                  </span>
+                  <span style={{ fontSize: 13, lineHeight: "18px", color: "var(--ftp-text-2)" }} suppressHydrationWarning>
+                    {statusLabel(status)}
+                    {m?.asOf ? ` · ${f.ago(m.asOf)}` : ""}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p style={{ margin: "14px 0 0", display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>
+          {(["green", "amber", "red", "unknown"] as const).map((s) => (
+            <span key={s}>
+              <span className="ftp-emoji" aria-hidden>
+                {LIGHT[s].emoji}{" "}
+              </span>
+              {t(`lightMeaning.${s}`)}
+            </span>
+          ))}
+        </p>
+      </Card>
 
-      {/* How the data arrives — sources grouped by kind. */}
-      {byType.length > 1 && topType && (
-        <div style={{ marginTop: 24 }}>
+      <AIInsightCard module="data-sources" district={district} />
+
+      {/* Every source as a card; tap for the details. */}
+      <Section title={t("listTitle")} emoji="🔗">
+        <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)" }}>
+          {t("listHint")}
+        </p>
+        <CardList label={t("listTitle")}>
+          {rows.map(({ ds, i, freshness }) => {
+            const slug = ROW_MODULE[ds.module]?.slug;
+            return (
+              <TapCard
+                key={`${ds.module}-${ds.source}`}
+                emoji={rowEmoji(ds.module)}
+                title={rowName(ds.module)}
+                sub={<span lang="en">{ds.source}</span>}
+                hueClassName={slug ? hueClass(slug) : undefined}
+                accent={freshness ? LIGHT[freshness.status].color : undefined}
+                onOpen={() => setOpenIdx(i)}
+              >
+                {freshness?.asOf ? (
+                  <FreshnessPill asOf={freshness.asOf} status={freshness.status} />
+                ) : (
+                  <CardChip emoji="🔄">{cadence(ds.frequency)}</CardChip>
+                )}
+              </TapCard>
+            );
+          })}
+        </CardList>
+      </Section>
+
+      {/* How the data arrives, beside our promise. */}
+      <ChartRow>
+        {byType.length > 1 && topType && (
           <ChartCard
             title={t("ringTitle")}
             emoji="🧩"
             units={t("ringUnits")}
-            simple={t.rich("ringSimple", {
-              kind: t(`type.${TYPE_KEY[topType.type]}`),
-              n: topType.count,
-              total: DATA_SOURCES.length,
-              b: (c) => <strong>{c}</strong>,
-            })}
+            simple={t.rich("ringSimple", { kind: t(`type.${TYPE_KEY[topType.type]}`), n: topType.count, total: sources.length, b: bold })}
             table={byType.map((x) => ({ label: t(`type.${TYPE_KEY[x.type]}`), value: num(x.count) }))}
           >
             <ShareRing
-              ariaLabel={t("ringAria", { total: DATA_SOURCES.length })}
-              centerValue={num(DATA_SOURCES.length)}
-              centerLabel={t("ringCenter", { n: DATA_SOURCES.length })}
+              ariaLabel={t("ringAria", { total: sources.length })}
+              centerValue={num(sources.length)}
+              centerLabel={t("ringCenter", { n: sources.length })}
               formatShare={(share) => f.number(share, { style: "percent", maximumFractionDigits: 0 })}
               slices={byType.map((x) => ({
                 key: x.type,
@@ -261,73 +340,86 @@ export default function DataSourcesPage({ params }: { params: Promise<{ locale: 
               }))}
             />
           </ChartCard>
-        </div>
-      )}
-
-      {/* Data pledge */}
-      <Section title={t("pledgeTitle")} emoji="🤝">
-        <Card tinted>
-          <p className="ftp-body">{t("pledgeBody")}</p>
+        )}
+        <Card tinted padding={18}>
+          <h2 className="ftp-display" style={{ margin: "0 0 10px", fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+            <span className="ftp-emoji" aria-hidden>
+              🤝{" "}
+            </span>
+            {t("pledgeTitle")}
+          </h2>
+          <ul style={{ margin: 0, paddingInlineStart: 20, display: "flex", flexDirection: "column", gap: 8, fontSize: 15, lineHeight: 1.6 }}>
+            <li>{t("pledge1")}</li>
+            <li>{t("pledge2")}</li>
+            <li>{t("pledge3")}</li>
+            <li>{t("pledge4")}</li>
+          </ul>
+          <Link
+            href={`${base}/update-log`}
+            style={{ display: "inline-flex", alignItems: "center", minHeight: 44, marginTop: 8, fontSize: 14, fontWeight: 700, color: "var(--hue-deep)", textDecoration: "none" }}
+          >
+            {t("updateLogLink")} →
+          </Link>
         </Card>
-      </Section>
+      </ChartRow>
 
-      <Section title={t("listTitle")} emoji="🔗">
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-          {DATA_SOURCES.map((ds) => {
-            const auto = ds.status === "live";
-            const key = FRESHNESS_KEY_FOR_ROW[ds.module];
-            const freshness = key ? fresh.modules[key] : undefined;
-            const look = rowLook(ds.module);
-            return (
-              <Card as="li" key={`${ds.module}-${ds.source}`} padding={12}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ flex: "1 1 220px", minWidth: 0, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                    {/* The module's own emoji, tinted in that module's hue. */}
-                    <span className={look.hue} style={{ display: "inline-flex", flexShrink: 0 }}>
-                      <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
-                        {look.emoji}
-                      </span>
+      <div style={{ marginTop: 28 }}>
+        <AccountabilityFooter moduleSlug="data-sources" locale={locale} state={state} district={district} showCompare={false} />
+      </div>
+
+      {/* Everything about one source. */}
+      <DetailSheet
+        open={open !== null}
+        onClose={closeSheet}
+        title={open ? rowName(open.ds.module) : ""}
+        subtitle={open ? <span lang="en">{open.ds.source}</span> : undefined}
+        emoji={open ? rowEmoji(open.ds.module) : "🔗"}
+        hueClassName={openSlug ? hueClass(openSlug) : hueClass("data-sources")}
+        footer={
+          open ? (
+            <>
+              {open.ds.url && (
+                <SheetAction href={open.ds.url} emoji="🌐" external>
+                  {t("openSource")}
+                </SheetAction>
+              )}
+              {openSlug && (
+                <SheetAction href={`${base}/${openSlug}`} emoji={getModuleMeta(openSlug)?.emoji ?? "📄"} quiet={Boolean(open.ds.url)}>
+                  {t("openPage", { page: mt.label(openSlug) })}
+                </SheetAction>
+              )}
+            </>
+          ) : null
+        }
+      >
+        {open && (
+          <>
+            <DetailList
+              rows={[
+                { emoji: "📄", label: t("rowUsedOn"), value: openSlug ? mt.label(openSlug) : null },
+                { emoji: "🏛️", label: t("rowSource"), value: open.ds.source, lang: "en" },
+                { emoji: "🚚", label: t("rowType"), value: t(`type.${TYPE_KEY[open.ds.type]}`) },
+                { emoji: "🔄", label: t("rowCadence"), value: cadence(open.ds.frequency) },
+                { emoji: "⚙️", label: t("rowMode"), value: open.ds.status === "live" ? t("autoFeed") : t("periodic") },
+                {
+                  emoji: open.freshness ? LIGHT[open.freshness.status].emoji : "⚪",
+                  label: t("rowFresh"),
+                  value: open.freshness ? (
+                    <span suppressHydrationWarning>
+                      {statusLabel(open.freshness.status)}
+                      {open.freshness.asOf ? ` · ${f.ago(open.freshness.asOf)}` : ""}
                     </span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                        <h3 className="ftp-title">{rowName(ds.module)}</h3>
-                        <Pill style={auto ? HUE_PILL : undefined}>{auto ? t("autoFeed") : t("periodic")}</Pill>
-                        {/* Same colour as this kind's slice in the ring above. */}
-                        <Pill style={{ background: HUE_HEX[TYPE_HUE[ds.type]].tint, color: HUE_HEX[TYPE_HUE[ds.type]].deep }}>
-                          {t(`type.${TYPE_KEY[ds.type]}`)}
-                        </Pill>
-                      </div>
-                      <p className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>
-                        {t.rich("sourceLine", {
-                          source: ds.source,
-                          s: (c) => (
-                            <span lang="en" style={{ color: "var(--ftp-text)" }}>
-                              {c}
-                            </span>
-                          ),
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    {/* A real date when we track this feed; otherwise the published cadence. */}
-                    {freshness?.asOf ? (
-                      <FreshnessPill asOf={freshness.asOf} status={freshness.status} />
-                    ) : (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                        <Clock size={12} aria-hidden /> {cadence(ds.frequency)}
-                      </span>
-                    )}
-                    {ds.url && <SourcePill label={hostOf(ds.url)} href={ds.url} />}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </ul>
-      </Section>
-
-      <ModulePageFooter moduleSlug="data-sources" locale={locale} state={state} district={district} showCompare={false} />
-    </div>
+                  ) : (
+                    t("notChecked")
+                  ),
+                },
+                { emoji: "🔗", label: t("rowLink"), value: open.ds.url ? hostOf(open.ds.url) : null },
+              ]}
+            />
+            <SheetNote emoji="📅">{t("sheetNote")}</SheetNote>
+          </>
+        )}
+      </DetailSheet>
+    </ModulePage>
   );
 }

@@ -1,0 +1,30 @@
+{
+  "seeDetails": "See details",
+  "notOfficial": "ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India's Open Data Policy (NDSAP).",
+  "toolbarLabel": "Page actions",
+  "share": "Share",
+  "shareAria": "Share this page",
+  "copied": "Link copied",
+  "compare": "Compare with another district",
+  "showAll": "Show all {n}",
+  "showLess": "Show fewer",
+  "freq": {
+    "every30min": "Every 30 minutes",
+    "every6h": "Every 6 hours",
+    "daily": "Daily",
+    "dailyMarket": "Daily, on market days",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "quarterly": "Every 3 months",
+    "seasonal": "Each season",
+    "annual": "Once a year",
+    "periodic": "From time to time",
+    "postElection": "After each election",
+    "onChange": "When something changes",
+    "asAnnounced": "When announced",
+    "whenPublished": "When the source publishes",
+    "withRelease": "With each update of this website",
+    "static": "Does not change",
+    "censusMix": "Census every 10 years; surveys from yearly to every 5 years"
+  }
+}

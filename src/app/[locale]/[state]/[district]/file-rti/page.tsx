@@ -4,447 +4,496 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// File RTI page — Design v4 "Rang" module recipe (see the finance page).
-// A citizen picks a topic, sees the ready-made RTI application (English +
-// local language when we have it), copies it and files it online.
-//   PageHeader → "In simple words" card with the three steps → topic list
-//   (an emoji chip per topic) → the chosen application → "after you file"
-//   timeline (the time limits in the RTI Act) → sources.
-// Templates come from useRTI() → data.templates (only `active` ones shown).
-// Every word on the page comes from src/dictionaries/<locale>/page_file-rti.json;
-// the letters themselves are shown as the office published them.
-
+// ═══════════════════════════════════════════════════════════════════════
+//  Ask the government (File RTI) — a three-step wizard
+// ═══════════════════════════════════════════════════════════════════════
+//  The question: "How do I ask a government office for information, and
+//  when must it answer?"
+//
+//    PageHeader → Explainer (what an RTI is, 30 days, how many ready
+//    letters we hold) → 4 StatTiles (ready letters, fee, 30 days, free for
+//    BPL) → the wizard:
+//      1 Pick a topic   ready-made letters as tap cards, plus "write my own"
+//      2 Copy the letter  the PIO's address, the letter (and the same letter
+//                         in the local language), a tip, Copy
+//      3 Send it        by post / by hand, or online (RTI Online is for
+//                       central government offices)
+//    → ONE picture: "after you send it" — the four time limits in the RTI
+//      Act as picture steps, plus "when did you send it?" → the reply and
+//      appeal dates on a countdown (worked out in the browser, never sent)
+//    → link to the RTI replies tracker → sources.
+//
+//  Templates: useRTI() → data.templates (active ones only). The letters are
+//  shown as the office published them; the "write my own" letter is in the
+//  reader's language (an RTI may be written in English, Hindi or the
+//  official language of the area: RTI Act, section 6(1)).
+//  Words: src/dictionaries/<locale>/page_file-rti.json.
 "use client";
+
 import type React from "react";
-import { use, useState } from "react";
+import { use, useRef, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { FileText, Copy, Check, ExternalLink } from "lucide-react";
-import { useRTI } from "@/hooks/useRealtimeData";
-import { PageHeader, Section, Card, Pill, LoadingShell, ErrorBlock, EmptyState, SourcePill } from "@/components/district/ui";
-import { Explainer } from "@/components/district/visuals";
-import ModulePageFooter from "@/components/accountability/ModulePageFooter";
-import { getModuleAccent } from "@/lib/constants/sidebar-modules";
-import { getDistrict } from "@/lib/constants/districts";
-import { getStateConfig } from "@/lib/constants/state-config";
-import { useModuleText } from "@/i18n/client";
+import { FilePen, Copy, Check } from "lucide-react";
+import { useRTI, type RtiTemplate } from "@/hooks/useRealtimeData";
+import { ModulePage, PageHeader, StatStrip, StatTile, Section, Card, LoadingShell, ErrorBlock, SourcePill } from "@/components/district/ui";
+import { CountdownBar, Explainer, HowItWorks } from "@/components/district/visuals";
 import { officeEmoji } from "@/components/accountability/AccountabilityVisuals";
+import { AccountabilityFooter, CardChip, CardList, SheetAction, TapCard } from "@/components/accountability/AccountabilityKit";
+import { getStateConfig } from "@/lib/constants/state-config";
+import { getLanguage } from "@/i18n/languages";
+import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 import { scriptLang } from "@/lib/utils/script-lang";
 
-/** Page wrapper: the container (24 px sides, 16 on phones) at reading width. */
-const PAGE_STYLE: React.CSSProperties = { paddingTop: 24, paddingBottom: 32, maxWidth: "var(--ftp-reading-max)" };
-
-/** Shared 44 px button shape (easy to tap on phones). Colours come from the
-    .ftp-btn-primary / .ftp-btn-secondary classes so hover works. */
-const BUTTON_BASE: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  minHeight: 44,
-  padding: "0 16px",
-  borderRadius: "var(--ftp-radius-tile)",
-  borderWidth: 1,
-  borderStyle: "solid",
-  fontFamily: "var(--ftp-font-sans)",
-  fontSize: 13,
-  fontWeight: 500,
-  cursor: "pointer",
-  textDecoration: "none",
-};
-
-/** The quiet (bordered) button: surface background, text colour. */
-const BUTTON_SECONDARY: React.CSSProperties = {
-  ...BUTTON_BASE,
-  borderColor: "var(--ftp-border)",
-  background: "var(--ftp-surface)",
-  color: "var(--ftp-text)",
-};
-
 const RTI_ONLINE = "https://rtionline.gov.in";
+const RTI_ACT = "https://rti.gov.in";
+const DAY = 86_400_000;
+/** Section 7(1): reply within 30 days. Section 19(1): first appeal within 30 days after that. */
+const REPLY_DAYS = 30;
+const APPEAL_DAYS = 30;
+/** The "write my own" choice in step 1. */
+const OWN = "__own__";
 
-/** Bold text inside translated sentences (t.rich "<b>…</b>"). */
+type Step = 1 | 2 | 3;
+
 const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
-/** Small sentence-case label above a block (12 px, text-2). */
-function BlockLabel({ children }: { children: React.ReactNode }) {
-  return <div className="ftp-label" style={{ marginBottom: 4 }}>{children}</div>;
+/** "₹10", "Rs. 10", "10" → "10". */
+function feeNumber(fee: string | null | undefined): string {
+  return String(fee ?? "").replace(/^\s*(₹|Rs\.?|INR)\s*/i, "").trim() || "0";
 }
 
-/** The three steps of filing an RTI — a real sequence, so it is numbered. */
-const STEPS: Array<{ emoji: string; key: "stepPick" | "stepCopy" | "stepFile" }> = [
-  { emoji: "👆", key: "stepPick" },
-  { emoji: "📋", key: "stepCopy" },
-  { emoji: "📮", key: "stepFile" },
-];
-
-function RtiSteps() {
+/** The wizard's progress bar: three numbered steps; later ones unlock after step 1. */
+function Stepper({ step, canGo, onGo }: { step: Step; canGo: boolean; onGo: (s: Step) => void }) {
   const t = useTranslations("page_file-rti");
+  const items: Array<{ n: Step; emoji: string; label: string }> = [
+    { n: 1, emoji: "👆", label: t("stepPick") },
+    { n: 2, emoji: "📋", label: t("stepCopy") },
+    { n: 3, emoji: "📮", label: t("stepSend") },
+  ];
   return (
     <ol
-      style={{
-        listStyle: "none",
-        padding: 0,
-        margin: 0,
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
-        gap: 10,
-      }}
+      aria-label={t("stepsAria")}
+      style={{ listStyle: "none", margin: "0 0 18px", padding: 0, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}
     >
-      {STEPS.map((s, i) => (
-        <li
-          key={s.key}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 12px",
-            borderRadius: "var(--ftp-radius-tile)",
-            background: "var(--ftp-surface)",
-            border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
-          }}
-        >
-          <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-            {s.emoji}
-          </span>
-          <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <span className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: "var(--hue-deep)" }}>
-              {t("stepN", { n: i + 1 })}
-            </span>
-            <span style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "var(--ftp-text)" }}>{t(s.key)}</span>
-          </span>
-        </li>
-      ))}
+      {items.map((it) => {
+        const current = it.n === step;
+        const done = it.n < step;
+        const enabled = it.n === 1 || canGo;
+        return (
+          <li key={it.n} style={{ minWidth: 0 }}>
+            <button
+              type="button"
+              disabled={!enabled}
+              aria-current={current ? "step" : undefined}
+              onClick={() => onGo(it.n)}
+              style={{
+                width: "100%",
+                minHeight: 56,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2,
+                padding: "8px 6px",
+                borderRadius: 14,
+                border: `1px solid ${current ? "var(--hue)" : "color-mix(in srgb, var(--hue) 20%, var(--ftp-border))"}`,
+                background: current ? "var(--hue)" : done ? "var(--hue-tint)" : "var(--ftp-surface)",
+                color: current ? "#fff" : enabled ? "var(--hue-deep)" : "var(--ftp-text-2)",
+                cursor: enabled ? "pointer" : "not-allowed",
+                opacity: enabled ? 1 : 0.6,
+                font: "inherit",
+              }}
+            >
+              <span style={{ fontSize: 12, lineHeight: "16px", fontWeight: 700 }}>
+                <span className="ftp-emoji" aria-hidden>
+                  {done ? "✅" : it.emoji}{" "}
+                </span>
+                {t("stepN", { n: it.n })}
+              </span>
+              <span style={{ fontSize: 13, lineHeight: "18px", fontWeight: 600, textAlign: "center" }}>{it.label}</span>
+            </button>
+          </li>
+        );
+      })}
     </ol>
   );
 }
 
-/**
- * After you file — the four time limits in the RTI Act, 2005 (sections 7
- * and 19). Law, not data, so it holds no district numbers.
- */
-function AfterYouFile({ commission, commissionUrl }: { commission: string; commissionUrl: string | null }) {
-  const t = useTranslations("page_file-rti");
-  const stages: Array<{ emoji: string; when: string; title: string; body: React.ReactNode }> = [
-    { emoji: "📮", when: t("tl1When"), title: t("tl1Title"), body: t("tl1Body") },
-    { emoji: "📬", when: t("tl2When"), title: t("tl2Title"), body: t("tl2Body") },
-    { emoji: "🧑‍⚖️", when: t("tl3When"), title: t("tl3Title"), body: t("tl3Body") },
-    { emoji: "🏛️", when: t("tl4When"), title: t("tl4Title"), body: t.rich("tl4Body", { commission, b: bold }) },
-  ];
+/** A labelled text box for a letter (scrolls when long). */
+function LetterBox({ label, text, lang }: { label: string; text: string; lang?: string }) {
   return (
-    <Section title={t("timelineTitle")} emoji="⏱️">
-      <Card tinted padding={18}>
-        <p className="ftp-body" style={{ margin: "0 0 14px", fontSize: 14, lineHeight: "21px" }}>
-          <span aria-hidden>👉 </span>
-          {t("timelineSimple")}
-        </p>
-        <ol
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 185px), 1fr))",
-            gap: 12,
-          }}
-        >
-          {stages.map((s, i) => (
-            <li
-              key={s.title}
-              className="ftp-pop"
-              style={{
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                padding: "14px 14px 16px",
-                borderRadius: "var(--ftp-radius-tile)",
-                background: "var(--ftp-surface)",
-                border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
-                boxShadow: "var(--ftp-shadow-1)",
-                ["--i" as string]: i,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span
-                  className="ftp-icon-chip ftp-emoji"
-                  aria-hidden
-                  style={{ width: 40, height: 40, fontSize: 21, borderRadius: 13 }}
-                >
-                  {s.emoji}
-                </span>
-                <span className="ftp-num" style={{ fontSize: 12, lineHeight: "16px", color: "var(--hue-deep)" }}>
-                  {t("stepN", { n: i + 1 })}
-                </span>
-              </div>
-              <span
-                style={{
-                  alignSelf: "flex-start",
-                  padding: "2px 10px",
-                  borderRadius: 999,
-                  background: i === 0 ? "var(--hue-tint)" : "linear-gradient(90deg, var(--hue), var(--hue-deep))",
-                  color: i === 0 ? "var(--hue-deep)" : "#fff",
-                  fontSize: 12,
-                  lineHeight: "18px",
-                  fontWeight: 600,
-                }}
-              >
-                {s.when}
-              </span>
-              <span className="ftp-display" style={{ fontSize: 16, lineHeight: "22px", fontWeight: 600, color: "var(--ftp-text)" }}>
-                {s.title}
-              </span>
-              <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{s.body}</span>
-            </li>
-          ))}
-        </ol>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-          <SourcePill label={t("actSource")} href="https://rti.gov.in" />
-          {commissionUrl && <SourcePill label={commission} href={commissionUrl} />}
-        </div>
-      </Card>
-    </Section>
+    <div>
+      <p className="ftp-label" style={{ marginBottom: 6 }}>
+        {label}
+      </p>
+      <div
+        lang={lang}
+        tabIndex={0}
+        style={{
+          background: "var(--ftp-surface)",
+          border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+          borderRadius: 12,
+          padding: 14,
+          fontSize: 15,
+          lineHeight: 1.7,
+          color: "var(--ftp-text)",
+          whiteSpace: "pre-wrap",
+          maxHeight: 320,
+          overflowY: "auto",
+          overflowWrap: "anywhere",
+        }}
+      >
+        {text}
+      </div>
+    </div>
   );
 }
 
 export default function FileRTIPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const t = useTranslations("page_file-rti");
+  const f = useFormat();
   const mt = useModuleText();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
-  const districtInfo = getDistrict(state, district);
-  // In sentences, use the district's local name when the page is in its language.
-  const districtName =
-    districtInfo?.nameLocal && scriptLang(districtInfo.nameLocal) === locale
-      ? districtInfo.nameLocal
-      : districtInfo?.name ?? district.replace(/-/g, " ");
   const stateConfig = getStateConfig(state);
   const commission = stateConfig?.stateInformationCommission ?? t("stateCommission");
   const { data, isLoading, error } = useRTI(district, state);
+  const [step, setStep] = useState<Step>(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sentOn, setSentOn] = useState("");
+  const wizardRef = useRef<HTMLDivElement>(null);
 
   const templates = (data?.data?.templates ?? []).filter((tpl) => tpl.active);
-  const selectedTpl = templates.find((tpl) => tpl.id === selected);
+  const tpl: RtiTemplate | null = selected && selected !== OWN ? templates.find((x) => x.id === selected) ?? null : null;
+  const own = selected === OWN;
+  const fees = templates.map((x) => Number(feeNumber(x.feeAmount))).filter((n) => Number.isFinite(n) && n > 0);
+  const minFee = fees.length > 0 ? Math.min(...fees) : null;
+  const maxFee = fees.length > 0 ? Math.max(...fees) : null;
 
-  const handleCopy = () => {
-    if (!selectedTpl) return;
+  // The letter the reader will copy.
+  const ownLetter = t("ownLetter");
+  const letter = tpl ? tpl.templateText : own ? ownLetter : "";
+  const localLetter = tpl?.templateTextLocal ?? null;
+  const localLang = scriptLang(localLetter);
+
+  const goTo = (s: Step) => {
+    setStep(s);
+    setCopied(false);
+    const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    wizardRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  };
+  const pick = (id: string) => {
+    setSelected(id);
+    goTo(2);
+  };
+  const copy = () => {
+    if (!letter) return;
     navigator.clipboard
-      .writeText(selectedTpl.templateText)
+      .writeText(letter)
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setTimeout(() => setCopied(false), 2500);
       })
       .catch(() => setCopied(false));
   };
 
-  // The local-language heading: Kannada for Karnataka (where the templates
-  // were written), a neutral phrase elsewhere. Never machine-translated.
-  const localHeading = state === "karnataka" ? t("inKannada") : t("inLocalLanguage");
+  // "When did you send it?" → the reply and first-appeal dates.
+  const sent = sentOn ? new Date(`${sentOn}T00:00:00+05:30`) : null;
+  const validSent = sent && !Number.isNaN(sent.getTime()) ? sent : null;
+  const replyBy = validSent ? new Date(validSent.getTime() + REPLY_DAYS * DAY) : null;
+  const appealBy = replyBy ? new Date(replyBy.getTime() + APPEAL_DAYS * DAY) : null;
+  const longDate = (d: Date) => f.date(d, { day: "numeric", month: "long", year: "numeric" });
 
-  const fileOnline = (
-    <a href={RTI_ONLINE} target="_blank" rel="noopener noreferrer" className="ftp-btn ftp-btn-secondary" style={BUTTON_SECONDARY}>
-      {t("fileOnline")} <ExternalLink size={12} aria-hidden />
-    </a>
-  );
+  const timeline = [
+    { emoji: "📮", title: t("tl1Title"), body: t("tl1Body") },
+    { emoji: "📬", title: t("tl2Title"), body: t("tl2Body") },
+    { emoji: "🧑‍⚖️", title: t("tl3Title"), body: t("tl3Body") },
+    { emoji: "🏛️", title: t("tl4Title"), body: t.rich("tl4Body", { commission, b: bold }) },
+  ];
+
+  const pioLine = tpl ? [tpl.pioName, tpl.pioAddress].filter(Boolean).join(",\n") : null;
 
   return (
-    <div className="ftp-container" style={PAGE_STYLE}>
+    <ModulePage>
       <PageHeader
-        icon={FileText}
+        icon={FilePen}
         title={mt.label("file-rti")}
         description={mt.description("file-rti")}
         backHref={base}
-        accent={getModuleAccent("file-rti")}
-        source={{ label: "rtionline.gov.in", href: RTI_ONLINE }}
+        source={{ label: t("actSource"), href: RTI_ACT }}
       />
-      {isLoading && <LoadingShell rows={4} />}
-      {error && <ErrorBlock />}
 
-      {!isLoading && !error && templates.length === 0 && (
-        <EmptyState emoji="📜" title={t("emptyTitle", { district: districtName })} body={t("emptyBody")} action={fileOnline} />
-      )}
+      <Explainer emoji="📜">
+        {t("explain")}{" "}
+        {templates.length > 0
+          ? t.rich("explainLetters", { n: templates.length, district: districtName, b: bold })
+          : t("explainOwn")}
+      </Explainer>
 
-      {/* The picture: what an RTI is, and the three steps on this page. The
-          count is the number of ready-made letters we actually hold. */}
-      {!isLoading && templates.length > 0 && (
-        <Card tinted padding={18} style={{ marginBottom: 8 }}>
-          <Explainer emoji="📜">{t.rich("explain", { n: templates.length, district: districtName, b: bold })}</Explainer>
-          <RtiSteps />
-        </Card>
-      )}
+      <StatStrip>
+        {templates.length > 0 && <StatTile emoji="📜" label={t("tileLetters")} value={f.number(templates.length)} sub={t("tileLettersSub", { district: districtName })} />}
+        {minFee !== null && maxFee !== null && (
+          <StatTile
+            emoji="💰"
+            label={t("tileFee")}
+            value={minFee === maxFee ? `₹${f.number(minFee)}` : `₹${f.number(minFee)}–${f.number(maxFee)}`}
+            sub={t("tileFeeSub")}
+            countUp={false}
+          />
+        )}
+        <StatTile emoji="⏱️" label={t("tileReply")} value={f.number(REPLY_DAYS)} unit={t("daysUnit")} sub={t("tileReplySub")} />
+        <StatTile emoji="🆓" label={t("tileBpl")} value={t("tileBplValue")} sub={t("tileBplSub")} countUp={false} />
+      </StatStrip>
 
-      {!isLoading && templates.length > 0 && (
-        // One column on phones; two side by side once a template is open on wider screens.
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: selected ? "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" : "1fr",
-            gap: 24,
-            alignItems: "start",
-          }}
-        >
-          {/* Template list */}
-          <Section title={t("chooseTopic")} emoji="🗂️">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {templates.map((tpl) => {
-                const isActive = selected === tpl.id;
-                const fee = String(tpl.feeAmount ?? "").replace(/^\s*(₹|Rs\.?)\s*/i, "") || "0";
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    aria-pressed={isActive}
-                    onClick={() => setSelected(tpl.id === selected ? null : tpl.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 12,
-                      padding: "12px 14px",
-                      minHeight: 44,
-                      borderRadius: "var(--ftp-radius-card)",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      background: isActive ? "linear-gradient(135deg, var(--hue-tint) 0%, var(--ftp-surface) 85%)" : "var(--ftp-surface)",
-                      border: `1px solid ${isActive ? "var(--hue)" : "var(--ftp-border)"}`,
-                      boxShadow: isActive ? "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
-                      color: "var(--ftp-text)",
-                      fontFamily: "var(--ftp-font-sans)",
-                      transition: "background-color 150ms ease, border-color 150ms ease",
-                    }}
-                  >
-                    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 38, height: 38, fontSize: 20, borderRadius: 12 }}>
-                      {officeEmoji(`${tpl.topic} ${tpl.department}`)}
-                    </span>
-                    <span style={{ display: "block", minWidth: 0 }}>
-                      <span className="ftp-title" style={{ display: "block" }}>{tpl.topic}</span>
-                      {tpl.topicLocal && (
-                        <span
-                          lang={scriptLang(tpl.topicLocal)}
-                          style={{ display: "block", fontSize: 13, lineHeight: "20px", color: "var(--hue-deep)", fontFamily: "var(--font-regional)" }}
-                        >
-                          {tpl.topicLocal}
-                        </span>
-                      )}
-                      <span className="ftp-body" style={{ display: "block", color: "var(--ftp-text-2)", marginTop: 2 }}>
-                        {t("pio", { department: tpl.department })}
-                      </span>
-                      <span style={{ display: "block", marginTop: 6 }}>
-                        <Pill style={{ background: "var(--hue-tint)", color: "var(--hue-deep)" }}>
-                          {t("fee", { fee: `₹${fee}` })}
-                        </Pill>
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </Section>
+      {/* The wizard. */}
+      <div ref={wizardRef} style={{ scrollMarginTop: 80 }}>
+        <Section title={t("wizardTitle")} emoji="🧭">
+          <Card tinted padding={18}>
+            <Stepper step={step} canGo={selected !== null} onGo={goTo} />
 
-          {/* Selected template */}
-          {selectedTpl && (
-            <Section title={t("yourApplication")} emoji="📝">
-              <Card tinted>
-                <div style={{ marginBottom: 12 }}>
-                  <BlockLabel>{t("to")}</BlockLabel>
-                  <div className="ftp-body" style={{ whiteSpace: "pre-line" }}>
-                    {selectedTpl.pioName && `${selectedTpl.pioName},\n`}
-                    {selectedTpl.pioAddress}
-                  </div>
-                </div>
+            {step === 1 && (
+              <div>
+                <h3 className="ftp-display" style={{ margin: "0 0 4px", fontSize: 19, lineHeight: 1.35, fontWeight: 650 }}>
+                  {t("pickTitle")}
+                </h3>
+                <p className="ftp-body" style={{ margin: "0 0 14px", color: "var(--ftp-text-2)", fontSize: 14 }}>
+                  {t("pickHint")}
+                </p>
+                {isLoading && <LoadingShell rows={3} />}
+                {error && <ErrorBlock />}
+                {!isLoading && (
+                  <CardList label={t("pickTitle")} min={240}>
+                    {templates.map((x) => (
+                      <TapCard
+                        key={x.id}
+                        emoji={officeEmoji(`${x.topic} ${x.department}`)}
+                        title={x.topic}
+                        titleLang="en"
+                        sub={x.topicLocal ? <span lang={scriptLang(x.topicLocal)}>{x.topicLocal}</span> : x.department}
+                        onOpen={() => pick(x.id)}
+                      >
+                        {x.topicLocal && <CardChip emoji="🏢">{x.department}</CardChip>}
+                        <CardChip emoji="💰">{t("fee", { fee: `₹${feeNumber(x.feeAmount)}` })}</CardChip>
+                      </TapCard>
+                    ))}
+                    <TapCard emoji="✍️" title={t("ownTitle")} sub={t("ownSub")} onOpen={() => pick(OWN)} />
+                  </CardList>
+                )}
+              </div>
+            )}
 
-                <div style={{ marginBottom: 12 }}>
-                  <BlockLabel>{t("applicationText")}</BlockLabel>
-                  <div
-                    lang={scriptLang(selectedTpl.templateText) ?? "en"}
-                    style={{
-                      background: "var(--ftp-surface)",
-                      border: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))",
-                      borderRadius: "var(--ftp-radius-tile)",
-                      padding: 12,
-                      fontFamily: "var(--ftp-font-sans)",
-                      fontSize: 13,
-                      lineHeight: "22px",
-                      fontWeight: 400,
-                      color: "var(--ftp-text)",
-                      whiteSpace: "pre-wrap",
-                      maxHeight: 280,
-                      overflowY: "auto",
-                    }}
-                  >
-                    {selectedTpl.templateText}
-                  </div>
-                </div>
-
-                {selectedTpl.templateTextLocal && (
-                  <div style={{ marginBottom: 12 }}>
-                    <BlockLabel>{localHeading}</BlockLabel>
-                    <div
-                      lang={scriptLang(selectedTpl.templateTextLocal)}
-                      style={{
-                        background: "var(--ftp-surface)",
-                        border: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))",
-                        borderRadius: "var(--ftp-radius-tile)",
-                        padding: 12,
-                        fontSize: 13,
-                        lineHeight: "22px",
-                        color: "var(--ftp-text)",
-                        fontFamily: "var(--font-regional)",
-                        maxHeight: 160,
-                        overflowY: "auto",
-                      }}
-                    >
-                      {selectedTpl.templateTextLocal}
-                    </div>
+            {step === 2 && (tpl || own) && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <h3 className="ftp-display" style={{ margin: 0, fontSize: 19, lineHeight: 1.35, fontWeight: 650 }}>
+                  {tpl ? t("letterTitle", { topic: tpl.topic }) : t("ownLetterTitle")}
+                </h3>
+                {pioLine && (
+                  <div>
+                    <p className="ftp-label" style={{ marginBottom: 6 }}>
+                      {t("to")}
+                    </p>
+                    <p lang="en" style={{ margin: 0, fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-line" }}>
+                      {pioLine}
+                    </p>
                   </div>
                 )}
-
-                {/* Tip */}
-                {selectedTpl.tips && (
-                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12 }}>
-                    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 28, height: 28, fontSize: 15, borderRadius: 9 }}>
+                {own && (
+                  <p className="ftp-body" style={{ fontSize: 14, lineHeight: 1.6 }}>
+                    {t("ownHow")}
+                  </p>
+                )}
+                <LetterBox label={t("applicationText")} text={letter} lang={tpl ? scriptLang(letter) ?? "en" : undefined} />
+                {localLetter && (
+                  <LetterBox label={t("inLanguage", { language: getLanguage(localLang).native })} text={localLetter} lang={localLang} />
+                )}
+                {tpl?.tips && (
+                  <p style={{ margin: 0, display: "flex", gap: 10, fontSize: 14, lineHeight: 1.6 }}>
+                    <span className="ftp-emoji" aria-hidden>
                       💡
                     </span>
-                    <div>
-                      <BlockLabel>{t("tip")}</BlockLabel>
-                      <div className="ftp-body">{selectedTpl.tips}</div>
-                    </div>
-                  </div>
+                    <span>
+                      <strong>{t("tip")}: </strong>
+                      <span lang="en">{tpl.tips}</span>
+                    </span>
+                  </p>
                 )}
-
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" onClick={handleCopy} className="ftp-btn ftp-btn-primary" style={{ ...BUTTON_BASE, color: "var(--ftp-surface)" }}>
-                    {copied ? (
-                      <>
-                        <Check size={14} aria-hidden /> {t("copied")}
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} aria-hidden /> {t("copyText")}
-                      </>
-                    )}
+                  <button
+                    type="button"
+                    onClick={copy}
+                    className="ftp-btn-primary"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      minHeight: 48,
+                      padding: "0 18px",
+                      flex: "1 1 180px",
+                      borderRadius: 12,
+                      border: "1px solid var(--hue)",
+                      color: "#fff",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "var(--ftp-font-sans)",
+                    }}
+                  >
+                    {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+                    {copied ? t("copied") : t("copyText")}
                   </button>
-                  {fileOnline}
+                  <SheetAction onClick={() => goTo(3)} emoji="➡️" quiet>
+                    {t("nextSend")}
+                  </SheetAction>
                 </div>
                 <p aria-live="polite" className="sr-only">
                   {copied ? t("copiedLive") : ""}
                 </p>
-              </Card>
-            </Section>
-          )}
-        </div>
-      )}
+                <button
+                  type="button"
+                  onClick={() => goTo(1)}
+                  style={{ alignSelf: "flex-start", minHeight: 44, background: "none", border: 0, padding: 0, color: "var(--hue-deep)", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "var(--ftp-font-sans)" }}
+                >
+                  ← {t("backToTopics")}
+                </button>
+              </div>
+            )}
 
-      {/* What happens after filing — shown whenever the page has loaded,
-          because the time limits apply to every RTI, templated or not. */}
-      {!isLoading && <AfterYouFile commission={commission} commissionUrl={stateConfig?.rtiPortalUrl ?? null} />}
+            {step === 3 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <h3 className="ftp-display" style={{ margin: 0, fontSize: 19, lineHeight: 1.35, fontWeight: 650 }}>
+                  {t("sendTitle")}
+                </h3>
+                <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "280px" } as React.CSSProperties}>
+                  <Card padding={16}>
+                    <p className="ftp-display" style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 650 }}>
+                      <span className="ftp-emoji" aria-hidden>
+                        📮{" "}
+                      </span>
+                      {t("postTitle")}
+                    </p>
+                    <p className="ftp-body" style={{ margin: "0 0 10px", color: "var(--ftp-text-2)", fontSize: 14 }}>
+                      {t("postWho")}
+                    </p>
+                    <ol style={{ margin: 0, paddingInlineStart: 20, display: "flex", flexDirection: "column", gap: 6, fontSize: 14, lineHeight: 1.6 }}>
+                      <li>{t("post1")}</li>
+                      <li>{tpl ? t("post2Fee", { fee: `₹${feeNumber(tpl.feeAmount)}` }) : t("post2")}</li>
+                      <li>{t("post3")}</li>
+                      <li>{t("post4")}</li>
+                    </ol>
+                  </Card>
+                  <Card padding={16}>
+                    <p className="ftp-display" style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 650 }}>
+                      <span className="ftp-emoji" aria-hidden>
+                        🌐{" "}
+                      </span>
+                      {t("onlineTitle")}
+                    </p>
+                    <p className="ftp-body" style={{ margin: "0 0 12px", color: "var(--ftp-text-2)", fontSize: 14 }}>
+                      {t("onlineWho")}
+                    </p>
+                    <SheetAction href={RTI_ONLINE} emoji="🌐" external>
+                      {t("fileOnline")}
+                    </SheetAction>
+                  </Card>
+                </div>
+                <p style={{ margin: 0, display: "flex", gap: 10, fontSize: 14, lineHeight: 1.6 }}>
+                  <span className="ftp-emoji" aria-hidden>
+                    🆓
+                  </span>
+                  <span>{t("bplNote")}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => goTo(2)}
+                  style={{ alignSelf: "flex-start", minHeight: 44, background: "none", border: 0, padding: 0, color: "var(--hue-deep)", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "var(--ftp-font-sans)" }}
+                >
+                  ← {t("backToLetter")}
+                </button>
+              </div>
+            )}
+          </Card>
+        </Section>
+      </div>
 
-      <ModulePageFooter
-        moduleSlug="rti"
-        locale={locale}
-        state={state}
-        district={district}
-        showCompare={false}
-        sourceUrls={{ "RTI Online Portal": RTI_ONLINE }}
-      />
-    </div>
+      {/* ONE picture: what happens after you send it (the RTI Act's time limits). */}
+      <Section title={t("timelineTitle")} emoji="⏱️">
+        <Card tinted padding={18}>
+          <p className="ftp-prose" style={{ margin: "0 0 14px", fontSize: 15, lineHeight: 1.6 }}>
+            {t("timelineSimple")}
+          </p>
+          <HowItWorks steps={timeline} />
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 15, fontWeight: 600 }}>
+              <span>
+                <span className="ftp-emoji" aria-hidden>
+                  🗓️{" "}
+                </span>
+                {t("sentOnLabel")}
+              </span>
+              <input
+                type="date"
+                value={sentOn}
+                onChange={(e) => setSentOn(e.target.value)}
+                style={{
+                  minHeight: 44,
+                  padding: "0 12px",
+                  borderRadius: 12,
+                  border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
+                  background: "var(--ftp-surface)",
+                  fontFamily: "var(--ftp-font-sans)",
+                  fontSize: 15,
+                  color: "var(--ftp-text)",
+                }}
+              />
+            </label>
+            {validSent && replyBy && appealBy ? (
+              <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                <CountdownBar start={validSent} target={replyBy} label={t("replyBy", { date: longDate(replyBy) })} />
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{t.rich("appealBy", { date: longDate(appealBy), b: bold })}</p>
+              </div>
+            ) : (
+              <p className="ftp-body" style={{ margin: "8px 0 0", color: "var(--ftp-text-2)", fontSize: 13 }}>
+                {t("sentOnHint")}
+              </p>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            <SourcePill label={t("actSource")} href={RTI_ACT} />
+            {stateConfig?.rtiPortalUrl && <SourcePill label={commission} href={stateConfig.rtiPortalUrl} />}
+          </div>
+        </Card>
+      </Section>
+
+      {/* The pair: the tracker shows how offices here actually reply. */}
+      <Card style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <p style={{ margin: 0, display: "flex", gap: 10, alignItems: "center", fontSize: 15, lineHeight: 1.5 }}>
+          <span className="ftp-emoji" aria-hidden style={{ fontSize: 24 }}>
+            📊
+          </span>
+          {t("trackerPrompt", { district: districtName })}
+        </p>
+        <Link
+          href={`${base}/rti`}
+          style={{ display: "inline-flex", alignItems: "center", minHeight: 44, fontSize: 14, fontWeight: 700, color: "var(--hue-deep)", textDecoration: "none" }}
+        >
+          {t("trackerLink")} →
+        </Link>
+      </Card>
+
+      <div style={{ marginTop: 28 }}>
+        <AccountabilityFooter
+          moduleSlug="rti"
+          locale={locale}
+          state={state}
+          district={district}
+          showCompare={false}
+          sourceUrls={{ "RTI Online Portal": RTI_ONLINE, ...(stateConfig?.rtiPortalUrl ? { [commission]: stateConfig.rtiPortalUrl } : {}) }}
+        />
+      </div>
+    </ModulePage>
   );
 }
