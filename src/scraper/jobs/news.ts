@@ -369,6 +369,7 @@ export async function scrapeNews(ctx: JobContext): Promise<ScraperResult> {
             moduleAction: aiClassification.moduleAction,
             extractedData: aiClassification.extractedData,
             confidence: aiClassification.confidence,
+            isAboutDistrict: aiClassification.isAboutDistrict,
           }).catch(() => {});
         }
 

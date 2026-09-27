@@ -19,7 +19,7 @@
 
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
-import { callAI } from "./ai-provider";
+import { callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
 
@@ -160,16 +160,16 @@ export async function extractExamFromNews(
 ): Promise<ExamExtraction | null> {
   let parsed: Partial<ExamExtraction>;
   try {
-    const response = await callAI({
+    const { data } = await callAIJSON<Partial<ExamExtraction>>({
       systemPrompt: EXTRACTION_SYSTEM_PROMPT,
       userPrompt: buildExtractionPrompt(article.title, article.url, article.publishedAt),
       purpose: "news-analysis", // free tier
-      jsonMode: true,
+      jsonShape: "object",
       maxTokens: 1024,
       temperature: 0,
+      timeoutMs: 30_000,
     });
-    const cleaned = response.text.trim().replace(/```(?:json)?/g, "").trim();
-    parsed = JSON.parse(cleaned);
+    parsed = data;
   } catch (err) {
     console.error("[exam-sync] extract failed:", err instanceof Error ? err.message : err);
     return null;

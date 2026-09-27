@@ -8,7 +8,7 @@
 // Insight Generator — uses callAI (OpenRouter tiered routing)
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
-import { callAI } from "@/lib/ai-provider";
+import { callAIJSON } from "@/lib/ai-provider";
 import { ModuleInsightConfig, getTtlMs } from "./insight-config";
 
 type Severity = "good" | "watch" | "alert" | "critical";
@@ -88,20 +88,17 @@ export async function generateInsight(
     const data = await fetchModuleData(config.module, districtSlug, stateSlug);
     const { systemPrompt, userPrompt } = buildPrompts(config, districtName, stateName, data);
 
-    // Use unified AI provider (OpenRouter tiered routing)
-    const response = await callAI({
+    // Use unified AI provider (OpenRouter tiered routing). The answer is
+    // parsed inside callAIJSON, so prose or broken JSON moves to the next model.
+    const { data: parsed, ...response } = await callAIJSON<{ severity?: string; opinion?: string; recommendation?: string }>({
       systemPrompt,
       userPrompt,
       purpose: "insight",
-      jsonMode: true,
+      jsonShape: "object",
       maxTokens: 2048,
       temperature: 0.3,
       district: districtSlug,
     });
-
-    // Parse the AI response
-    const text = response.text.trim().replace(/```(?:json)?\n?/g, "").trim();
-    const parsed = JSON.parse(text) as { severity?: string; opinion?: string; recommendation?: string };
 
     // Validate required fields
     const severity = (["good", "watch", "alert", "critical"].includes(parsed.severity ?? "")
