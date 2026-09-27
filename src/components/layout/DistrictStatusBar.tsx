@@ -18,6 +18,12 @@
  *   grey   — still loading, request failed, or no dated data at all
  * Hover / focus / tap the indicator to see each module's age
  * ("Weather · as of 20 Apr").
+ *
+ * Design v3 (2026-09-27): a calm 32 px strip on tokens —
+ *   district · state · date · time (JetBrains Mono) · status Pill.
+ * The request now goes through the shared useFreshness() hook, so the
+ * status strip, the left rail and the overview page share ONE fetch of
+ * /api/data/freshness per district (5-minute in-memory cache).
  */
 
 "use client";
@@ -25,6 +31,10 @@
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { asOfLabel } from "@/lib/utils/timeAgo";
+import { useFreshness } from "@/hooks/useFreshness";
+import type { FreshnessKey } from "@/hooks/useFreshness";
+import { Pill } from "@/components/district/ui";
+import type { Tone } from "@/components/district/ui";
 
 interface DistrictStatusBarProps {
   districtName: string;
@@ -35,24 +45,16 @@ interface DistrictStatusBarProps {
    * (/<locale>/<state>/<district>/...).
    */
   districtSlug?: string;
+  /** State slug (same fallback: read from the URL). */
+  stateSlug?: string;
 }
 
-// Shape of /api/data/freshness (src/app/api/data/freshness/route.ts).
 type Light = "green" | "amber" | "red" | "unknown";
-interface FreshnessModule {
-  status: Light | "ok";
-  age?: string;
-  lastUpdated?: string | null;
-  activeCount?: number;
-}
-interface FreshnessResponse {
-  modules: Record<string, FreshnessModule>;
-}
 
 // Which modules to list, in display order, with citizen-friendly names.
 // The API also returns `alerts` (a count, not a timestamp) — it is left
 // out because it carries no freshness information.
-const MODULE_LABELS: Array<[key: string, label: string]> = [
+const MODULE_LABELS: Array<[key: FreshnessKey, label: string]> = [
   ["weather", "Weather"],
   ["crops", "Crop prices"],
   ["dam", "Dam levels"],
@@ -62,12 +64,21 @@ const MODULE_LABELS: Array<[key: string, label: string]> = [
 
 type Overall = Light | "loading";
 
-const LIGHT_COLOR: Record<Overall, string> = {
-  green: "#16A34A",
-  amber: "#D97706",
-  red: "#DC2626",
-  unknown: "#9B9B9B",
-  loading: "#9B9B9B",
+/** Traffic light → kit Pill tone (colour shows only as tint + 6 px dot). */
+const LIGHT_TONE: Record<Overall, Tone> = {
+  green: "live",
+  amber: "warn",
+  red: "danger",
+  unknown: "neutral",
+  loading: "neutral",
+};
+
+/** Dot colour for each row in the popover. */
+const LIGHT_DOT: Record<Light, string> = {
+  green: "var(--ftp-live)",
+  amber: "var(--ftp-warn)",
+  red: "var(--ftp-danger)",
+  unknown: "var(--ftp-border-strong)",
 };
 
 const LIGHT_TEXT: Record<Overall, string> = {
@@ -78,14 +89,12 @@ const LIGHT_TEXT: Record<Overall, string> = {
   loading: "Checking data…",
 };
 
-/** Roll the per-module lights up into one colour for the bar. */
-function summarise(modules: Record<string, FreshnessModule>): Overall {
-  const lights = MODULE_LABELS.map(([k]) => modules[k]?.status).filter(
-    (s): s is Light => s === "green" || s === "amber" || s === "red",
-  );
-  if (lights.length === 0) return "unknown";
-  if (lights.every((l) => l === "green")) return "green";
-  if (lights.every((l) => l === "red")) return "red";
+/** Roll the per-module lights up into one light for the strip. */
+function summarise(lights: Light[]): Light {
+  const dated = lights.filter((s): s is "green" | "amber" | "red" => s === "green" || s === "amber" || s === "red");
+  if (dated.length === 0) return "unknown";
+  if (dated.every((l) => l === "green")) return "green";
+  if (dated.every((l) => l === "red")) return "red";
   return "amber";
 }
 
@@ -93,23 +102,17 @@ const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
 
-export default function DistrictStatusBar({ districtName, stateName, districtSlug }: DistrictStatusBarProps) {
+export default function DistrictStatusBar({ districtName, stateName, districtSlug, stateSlug }: DistrictStatusBarProps) {
   const [timeStr, setTimeStr] = useState("");
   const [dateStr, setDateStr] = useState("");
-  // The freshness answer is stored together with the slug it belongs to,
-  // so switching district shows "loading" again without any synchronous
-  // setState inside the effect (React Compiler rule).
-  const [result, setResult] = useState<{
-    slug: string;
-    overall: Overall;
-    rows: Array<{ label: string; light: Light; asOf: string }>;
-  } | null>(null);
   const [open, setOpen] = useState(false);
   const popoverId = useId();
 
-  // Fallback: derive the slug from /<locale>/<state>/<district>/...
+  // Fallback: derive the slugs from /<locale>/<state>/<district>/...
   const pathname = usePathname();
-  const slug = districtSlug ?? pathname?.split("/").filter(Boolean)[2] ?? "";
+  const parts = pathname?.split("/").filter(Boolean) ?? [];
+  const slug = districtSlug ?? parts[2] ?? "";
+  const stateKey = stateSlug ?? parts[1] ?? "";
 
   // IST clock, ticks every second.
   useEffect(() => {
@@ -128,125 +131,92 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
     return () => clearInterval(id);
   }, []);
 
-  // Freshness: one request per district page load. Grey until it answers,
-  // grey again if it fails — we never guess.
-  useEffect(() => {
-    if (!slug) return;
-    let cancelled = false;
-    fetch(`/api/data/freshness?district=${encodeURIComponent(slug)}`)
-      .then((r) => (r.ok ? (r.json() as Promise<FreshnessResponse>) : null))
-      .then((data) => {
-        if (cancelled) return;
-        if (!data?.modules) {
-          setResult({ slug, overall: "unknown", rows: [] });
-          return;
-        }
-        setResult({
-          slug,
-          overall: summarise(data.modules),
-          rows: MODULE_LABELS.map(([key, label]) => {
-            const m = data.modules[key];
-            const light: Light =
-              m?.status === "green" || m?.status === "amber" || m?.status === "red"
-                ? m.status
-                : "unknown";
-            const asOf = asOfLabel(m?.lastUpdated ?? null) || "no data yet";
-            return { label, light, asOf };
-          }),
-        });
+  // Freshness: the shared hook makes one request per district page load.
+  // Grey while it is loading, grey again if it fails — we never guess.
+  const fresh = useFreshness(stateKey, slug);
+  const hasData = Object.keys(fresh.modules).length > 0;
+  const rows = hasData
+    ? MODULE_LABELS.map(([key, label]) => {
+        const m = fresh.modules[key];
+        const light: Light = m?.status ?? "unknown";
+        const asOf = asOfLabel(m?.asOf ?? null) || "no data yet";
+        return { label, light, asOf };
       })
-      .catch(() => {
-        if (!cancelled) setResult({ slug, overall: "unknown", rows: [] });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
+    : [];
 
-  // No slug → we cannot ask; answer for another slug → still loading.
-  const overall: Overall = !slug ? "unknown" : result?.slug === slug ? result.overall : "loading";
-  const rows = result?.slug === slug ? result.rows : [];
+  const overall: Overall = !slug
+    ? "unknown"
+    : hasData
+      ? summarise(rows.map((r) => r.light))
+      : fresh.error
+        ? "unknown"
+        : "loading";
 
-  const colour = LIGHT_COLOR[overall];
   const text = LIGHT_TEXT[overall];
   // Plain-text version of the popover for the native tooltip / screen readers.
-  const title = rows.length
-    ? rows.map((r) => `${r.label} · ${r.asOf}`).join("\n")
-    : text;
+  const title = rows.length ? rows.map((r) => `${r.label} · ${r.asOf}`).join("\n") : text;
 
   return (
     <div
-      className="sticky top-[92px] md:top-[56px] flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-3"
+      className="sticky top-[92px] md:top-[56px] flex items-center justify-center gap-2 px-4"
       style={{
         zIndex: 30,
-        minHeight: 32,
-        background: "#FAFAF8",
-        borderBottom: "1px solid #E8E8E4",
+        height: 32,
+        background: "var(--ftp-bg)",
+        borderBottom: "1px solid var(--ftp-border)",
         fontSize: 11,
+        lineHeight: "16px",
+        color: "var(--ftp-text-2)",
+        whiteSpace: "nowrap",
       }}
     >
       <style>{`
         .ftp-fresh-btn {
-          display: inline-flex; align-items: center; gap: 5px;
-          background: transparent; border: 0; padding: 2px 4px; margin: 0;
-          font: inherit; font-weight: 600; cursor: default; border-radius: 4px;
-          position: relative;
+          display: inline-flex; align-items: center; min-height: 32px;
+          background: transparent; border: 0; padding: 0; margin: 0;
+          font: inherit; cursor: default; position: relative;
         }
-        .ftp-fresh-btn:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
-        .ftp-fresh-dot {
-          width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0;
-        }
+        .ftp-fresh-btn:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: var(--ftp-radius-pill); }
         .ftp-fresh-pop {
-          position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
-          min-width: 200px; padding: 8px 10px;
-          background: #FFFFFF; border: 1px solid #E8E8E4; border-radius: 8px;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-          text-align: left; font-weight: 400; color: #1A1A1A;
+          position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
+          min-width: 220px; padding: 8px 12px;
+          background: var(--ftp-surface); border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-tile);
+          text-align: left; color: var(--ftp-text); white-space: nowrap;
         }
         .ftp-fresh-pop-row {
           display: flex; align-items: center; justify-content: space-between; gap: 12px;
-          padding: 3px 0; font-size: 11px; white-space: nowrap;
+          padding: 3px 0; font-size: 11px; line-height: 16px;
         }
-        .ftp-fresh-pop-row span:last-child { color: #6B6B6B; font-variant-numeric: tabular-nums; }
-        .ftp-fresh-pop-foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid #F0F0EC; font-size: 10px; color: #9B9B9B; }
+        .ftp-fresh-pop-foot {
+          display: block; margin-top: 6px; padding-top: 6px;
+          border-top: 1px solid var(--ftp-border); font-size: 11px; color: var(--ftp-text-2);
+        }
       `}</style>
 
-      {/* Location dot + name */}
-      <span className="flex items-center gap-1" style={{ color: "#6B6B6B" }}>
-        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9B9B9B", display: "inline-block", flexShrink: 0 }} />
-        {districtName}
-        {stateName && <span style={{ color: "#9B9B9B" }}>, {stateName}</span>}
+      {/* District · State (truncates first on narrow phones) */}
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
+        <span style={{ color: "var(--ftp-text)", fontWeight: 500 }}>{districtName}</span>
+        {stateName && <span> · {stateName}</span>}
       </span>
 
-      <span style={{ color: "#D4D4D0" }}>|</span>
-
-      {/* Date — hidden on very small screens */}
+      {/* Date — hidden on small screens to keep the strip one line */}
       {dateStr && (
-        <>
-          <span className="hidden sm:inline" style={{ color: "#9B9B9B" }}>{dateStr}</span>
-          <span className="hidden sm:inline" style={{ color: "#D4D4D0" }}>|</span>
-        </>
+        <span className="hidden sm:inline" suppressHydrationWarning>
+          · {dateStr}
+        </span>
       )}
 
-      {/* Time */}
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          color: "#6B6B6B",
-          fontWeight: 500,
-          letterSpacing: "0.03em",
-        }}
-      >
-        {timeStr}
-      </span>
+      {/* Time (mono) */}
+      {timeStr && (
+        <span className="ftp-num" style={{ color: "var(--ftp-text)" }} suppressHydrationWarning>
+          · {timeStr}
+        </span>
+      )}
 
-      <span style={{ color: "#D4D4D0" }}>|</span>
-
-      {/* Freshness traffic light. Hover / focus / tap shows per-module ages. */}
+      {/* Freshness status. Hover / focus / tap shows per-module ages. */}
       <button
         type="button"
         className="ftp-fresh-btn"
-        style={{ color: colour }}
         title={title}
         aria-label={`Data freshness: ${text}`}
         aria-expanded={open}
@@ -257,22 +227,19 @@ export default function DistrictStatusBar({ districtName, stateName, districtSlu
         onBlur={() => setOpen(false)}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="ftp-fresh-dot" style={{ background: colour }} aria-hidden="true" />
-        {text}
+        <Pill tone={LIGHT_TONE[overall]} dot>{text}</Pill>
         {open && rows.length > 0 && (
           <span id={popoverId} role="tooltip" className="ftp-fresh-pop">
             {rows.map((r) => (
               <span key={r.label} className="ftp-fresh-pop-row">
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <span className="ftp-fresh-dot" style={{ background: LIGHT_COLOR[r.light] }} aria-hidden="true" />
+                  <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: LIGHT_DOT[r.light], flexShrink: 0 }} />
                   {r.label}
                 </span>
-                <span>{r.asOf}</span>
+                <span className="ftp-num" style={{ color: "var(--ftp-text-2)" }}>{r.asOf}</span>
               </span>
             ))}
-            <span className="ftp-fresh-pop-foot" style={{ display: "block" }}>
-              Dates are when the source last published.
-            </span>
+            <span className="ftp-fresh-pop-foot">Dates are when the source last published.</span>
           </span>
         )}
       </button>
