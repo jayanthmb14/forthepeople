@@ -4,30 +4,88 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Elections — module page (Design v3 "Civic Ledger", CONCEPT-v3 §5)
+// ═══════════════════════════════════════════════════════════════════════
+//  PageHeader → summary paragraph → StatStrip → type Chips → turnout chart
+//  → result cards → booth table → SourcesFooter → ModuleNews → Toolbar.
+//  Election results do not have a "fetched at" time, so every number says
+//  which election year it comes from instead. Party colour is only ever a
+//  6 px dot (from the shared party-colors table), never a tinted box.
 "use client";
+
+import { use, useState } from "react";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
-import DataSourceBanner from "@/components/common/DataSourceBanner";
-import NoDataCard from "@/components/common/NoDataCard";
 import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
+import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { getPartyColor } from "@/lib/constants/party-colors";
 import ModuleNews from "@/components/district/ModuleNews";
-import { use, useState } from "react";
-import { Vote } from "lucide-react";
+import { ArrowLeftRight, Download, Share2, Vote } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useElections } from "@/hooks/useRealtimeData";
-import { ModuleHeader, StatCard, SectionLabel, LoadingShell, ErrorBlock, DataTable } from "@/components/district/ui";
+import {
+  PageHeader,
+  StatStrip,
+  StatTile,
+  Section,
+  Card,
+  Chips,
+  LoadingShell,
+  ErrorBlock,
+  EmptyState,
+  DataTable,
+  SourcesFooter,
+  Toolbar,
+  ToolbarButton,
+} from "@/components/district/ui";
+import knDict from "@/dictionaries/kn.json";
 
-const PARTY_COLORS: Record<string, string> = {
-  BJP: "#FF6B00", INC: "#19A0F5", AAP: "#00AEEF", JD: "#2E8B57",
-  SP: "#CC0000", BSP: "#1565C0", DMK: "#FF0000", ADMK: "#008000",
-  TRS: "#FF69B4", YCP: "#006400",
+/** Official websites for the sources named by getModuleSources("elections"). */
+const SOURCE_URLS: Record<string, string> = {
+  "Election Commission of India (ECI)": "https://eci.gov.in",
 };
+
+/** Chart styling from tokens: brand bars, text-2 axis labels, surface-2 grid. */
+const AXIS_TICK = { fontSize: 11, fill: "var(--ftp-text-2)" };
+const TOOLTIP_STYLE = {
+  background: "var(--ftp-surface)",
+  border: "1px solid var(--ftp-border)",
+  borderRadius: 8,
+  fontSize: 12,
+  color: "var(--ftp-text)",
+};
+
+/** A 6 px dot in the party's colour — the only place party colour appears. */
+function PartyDot({ party }: { party?: string | null }) {
+  return (
+    <span
+      aria-hidden
+      style={{ width: 6, height: 6, borderRadius: "50%", background: getPartyColor(party).border, flexShrink: 0 }}
+    />
+  );
+}
+
+/** Turn rows into a CSV file and start a download in the browser. */
+function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.map(esc).join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function ElectionsPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useElections(district, state);
   const [typeFilter, setTypeFilter] = useState("all");
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
   const results = data?.data?.results ?? [];
   const booths = data?.data?.booths ?? [];
@@ -44,143 +102,225 @@ function ElectionsPageInner({ params }: { params: Promise<{ locale: string; stat
     .slice(0, 12)
     .map((r) => ({ name: r.constituency.slice(0, 12), turnout: r.turnoutPct ?? 0 }));
 
-  return (
-    <div style={{ padding: 24 }}>
-      <ModuleHeader icon={Vote} title="Elections" description="Election results, turnout data, and polling booth finder" backHref={base} />
+  const sc = getStateConfig(state);
+  const electionInfo = sc?.lastElectionYear && sc?.lastElectionType
+    ? `The ${sc.lastElectionYear} ${sc.lastElectionType} election results are the most recent.`
+    : "Results shown are from the most recent elections.";
+  const src = getModuleSources("elections", state);
+  // Local-script title comes from the dictionary (Kannada only for now).
+  const titleLocal = state === "karnataka" ? knDict.modules.elections : undefined;
+  // Honest "as of" for election numbers = the election they come from.
+  const yearSub = recentYear ? `${recentYear} results` : undefined;
 
-      {/* AI-crawler readable summary */}
-      {(() => {
-        const sc = getStateConfig(state);
-        const electionInfo = sc?.lastElectionYear && sc?.lastElectionType
-          ? `The ${sc.lastElectionYear} ${sc.lastElectionType} election results are the most recent.`
-          : "Results shown are from the most recent elections.";
-        return (
-          <p style={{ fontSize: 13, color: "#6B6B6B", lineHeight: 1.7, marginBottom: 16, padding: "12px 16px", background: "#FAFAF8", borderRadius: 8, borderLeft: "3px solid #D97706" }}>
-            This page shows assembly and parliamentary election results for constituencies in this district, sourced from the Election Commission of India (ECI). Results include winner names, party affiliations, vote counts, margins of victory, and voter turnout percentages. {electionInfo}
-          </p>
-        );
-      })()}
-      {(() => { const _src = getModuleSources("elections", state); return <DataSourceBanner moduleName="elections" sources={_src.sources} updateFrequency={_src.frequency} isLive={_src.isLive} />; })()}
+  const onShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Elections", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareNote("Link copied");
+        setTimeout(() => setShareNote(null), 2000);
+      }
+    } catch {
+      /* The visitor closed the share sheet — nothing to do. */
+    }
+  };
+
+  const onCsv = () =>
+    downloadCsv(
+      `${district}-election-results.csv`,
+      results.map((r) => ({
+        year: r.year,
+        election_type: r.electionType,
+        constituency: r.constituency,
+        winner: r.winnerName,
+        winner_party: r.winnerParty,
+        winner_votes: r.winnerVotes,
+        runner_up: r.runnerUpName ?? "",
+        runner_up_party: r.runnerUpParty ?? "",
+        runner_up_votes: r.runnerUpVotes ?? "",
+        turnout_pct: r.turnoutPct ?? "",
+        margin: r.margin ?? "",
+        source: r.source,
+      }))
+    );
+
+  return (
+    <div className="module-page" style={{ padding: 24, maxWidth: "var(--ftp-reading-max)" }}>
+      <PageHeader
+        icon={Vote}
+        accent={getModuleAccent("elections")}
+        title="Elections"
+        titleLocal={titleLocal}
+        description="Election results, turnout data, and polling booth finder"
+        backHref={base}
+        source={{ label: "ECI", href: SOURCE_URLS["Election Commission of India (ECI)"] }}
+      />
+
+      {/* AI-crawler readable summary — plain body text. */}
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginBottom: 16 }}>
+        This page shows assembly and parliamentary election results for constituencies in this district, sourced from the Election Commission of India (ECI). Results include winner names, party affiliations, vote counts, margins of victory, and voter turnout percentages. {electionInfo}
+      </p>
+
       <AIInsightCard module="elections" district={district} />
       {isLoading && <LoadingShell rows={4} />}
       {error && <ErrorBlock />}
 
-      {!isLoading && (
+      {!isLoading && !error && results.length === 0 && booths.length === 0 && (
+        <EmptyState
+          title="No election results yet for this district."
+          body="We add constituency results and booths as the Election Commission of India publishes them."
+        />
+      )}
+
+      {!isLoading && (results.length > 0 || booths.length > 0) && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-            <StatCard label="Constituencies" value={new Set(results.map(r => r.constituency)).size} icon={Vote} />
-            <StatCard label={`Latest Year`} value={recentYear || "—"} />
-            <StatCard label="Avg Turnout" value={`${avgTurnout.toFixed(1)}%`} />
-            <StatCard label="Polling Booths" value={booths.length} />
+          <div style={{ marginBottom: 24 }}>
+            <StatStrip cols={4}>
+              <StatTile icon={Vote} label="Constituencies" value={new Set(results.map(r => r.constituency)).size} sub={yearSub} />
+              <StatTile label="Latest Year" value={recentYear || "—"} />
+              <StatTile label="Avg Turnout" value={avgTurnout.toFixed(1)} unit="%" sub={yearSub} />
+              <StatTile label="Polling Booths" value={booths.length} sub="Listed on this page" />
+            </StatStrip>
           </div>
 
-          {/* Filter by type */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-            {types.map((t) => (
-              <button key={t} onClick={() => setTypeFilter(t)} style={{
-                padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: "pointer",
-                background: typeFilter === t ? "#2563EB" : "#F5F5F0",
-                color: typeFilter === t ? "#FFF" : "#6B6B6B",
-                border: typeFilter === t ? "1px solid #2563EB" : "1px solid #E8E8E4",
-              }}>
-                {t === "all" ? `All (${results.length})` : `${t} (${results.filter(r => r.electionType === t).length})`}
-              </button>
-            ))}
-          </div>
+          {/* Filter by election type */}
+          {results.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <Chips
+                label="Filter results by election type"
+                value={typeFilter}
+                onChange={setTypeFilter}
+                items={types.map((t) => ({
+                  value: t,
+                  label: t === "all" ? "All" : t,
+                  count: t === "all" ? results.length : results.filter((r) => r.electionType === t).length,
+                }))}
+              />
+            </div>
+          )}
 
           {/* Turnout Chart */}
           {turnoutChart.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <SectionLabel>Voter Turnout by Constituency (%)</SectionLabel>
-              <div style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: 16 }}>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={turnoutChart} margin={{ top: 5, right: 10, bottom: 40, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EC" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9B9B9B" }} angle={-30} textAnchor="end" interval={0} />
-                    <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} domain={[0, 100]} />
-                    <Tooltip formatter={(v) => [`${Number(v).toFixed(1)}%`, "Turnout"]} />
-                    <Bar dataKey="turnout" fill="#2563EB" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div style={{ marginTop: 16 }}>
+              <Section title="Voter Turnout by Constituency (%)">
+                <Card>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={turnoutChart} margin={{ top: 5, right: 10, bottom: 40, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--ftp-surface-2)" />
+                      <XAxis dataKey="name" tick={AXIS_TICK} angle={-30} textAnchor="end" interval={0} />
+                      <YAxis tick={AXIS_TICK} domain={[0, 100]} />
+                      <Tooltip formatter={(v) => [`${Number(v).toFixed(1)}%`, "Turnout"]} contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--ftp-surface-2)" }} />
+                      <Bar dataKey="turnout" fill="var(--ftp-brand)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              </Section>
             </div>
           )}
 
           {/* Results grid */}
-          <SectionLabel>Results</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginBottom: 24 }}>
-            {filtered.slice(0, 20).map((r) => {
-              const winColor = PARTY_COLORS[r.winnerParty.toUpperCase()] ?? "#6B7280";
-              const margin = r.margin ?? (r.winnerVotes - (r.runnerUpVotes ?? 0));
-              return (
-                <div key={r.id} style={{ background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{r.constituency}</div>
-                      <div style={{ fontSize: 11, color: "#9B9B9B" }}>{r.electionType} · {r.year}</div>
-                    </div>
-                    {r.turnoutPct && (
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 11, color: "#9B9B9B" }}>Turnout</div>
-                        <div style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{r.turnoutPct.toFixed(1)}%</div>
-                      </div>
-                    )}
-                  </div>
-                  {/* Winner */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: `${winColor}10`, borderRadius: 8, border: `1px solid ${winColor}30` }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: winColor, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{r.winnerName}</div>
-                      <div style={{ fontSize: 11, color: winColor, fontWeight: 600 }}>{r.winnerParty}</div>
-                    </div>
-                    <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 600 }}>{r.winnerVotes.toLocaleString("en-IN")}</div>
-                  </div>
-                  {/* Runner-up */}
-                  {r.runnerUpName && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "6px 10px", background: "#F9F9F7", borderRadius: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: "#4B4B4B" }}>{r.runnerUpName}</div>
-                        <div style={{ fontSize: 11, color: "#9B9B9B" }}>{r.runnerUpParty}</div>
-                      </div>
-                      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#6B6B6B" }}>{r.runnerUpVotes?.toLocaleString("en-IN")}</div>
-                    </div>
-                  )}
-                  {margin > 0 && (
-                    <div style={{ marginTop: 6, fontSize: 11, color: "#9B9B9B" }}>
-                      Margin: <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "#16A34A" }}>{margin.toLocaleString("en-IN")}</span> votes
-                    </div>
-                  )}
+          {results.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <Section title="Results">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
+                  {filtered.slice(0, 20).map((r) => {
+                    const margin = r.margin ?? (r.winnerVotes - (r.runnerUpVotes ?? 0));
+                    return (
+                      <Card key={r.id} as="article" padding={14}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <h3 className="ftp-title">{r.constituency}</h3>
+                            <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                              {r.electionType} · <span className="ftp-num">{r.year}</span>
+                            </div>
+                          </div>
+                          {r.turnoutPct && (
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div className="ftp-label">Turnout</div>
+                              <div className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text)" }}>{r.turnoutPct.toFixed(1)}%</div>
+                            </div>
+                          )}
+                        </div>
+                        {/* Winner */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderTop: "1px solid var(--ftp-border)" }}>
+                          <PartyDot party={r.winnerParty} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, lineHeight: "20px", fontWeight: 500, color: "var(--ftp-text)" }}>{r.winnerName}</div>
+                            <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{r.winnerParty} · Winner</div>
+                          </div>
+                          <div className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text)" }}>{r.winnerVotes.toLocaleString("en-IN")}</div>
+                        </div>
+                        {/* Runner-up */}
+                        {r.runnerUpName && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderTop: "1px solid var(--ftp-border)" }}>
+                            <PartyDot party={r.runnerUpParty} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>{r.runnerUpName}</div>
+                              <div style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>{r.runnerUpParty}</div>
+                            </div>
+                            <div className="ftp-num" style={{ fontSize: 13, color: "var(--ftp-text-2)" }}>{r.runnerUpVotes?.toLocaleString("en-IN")}</div>
+                          </div>
+                        )}
+                        {margin > 0 && (
+                          <div style={{ marginTop: 4, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
+                            Margin: <span className="ftp-num" style={{ color: "var(--ftp-text)" }}>{margin.toLocaleString("en-IN")}</span> votes
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-
-          <ModuleNews district={district} state={state} locale={locale} module="elections" />
+              </Section>
+            </div>
+          )}
 
           {/* Booth list */}
           {booths.length > 0 && (
-            <>
-              <SectionLabel>Polling Booths ({booths.length})</SectionLabel>
-              <DataTable
-                columns={[
-                  { key: "no", label: "Booth #", mono: true },
-                  { key: "name", label: "Booth Name" },
-                  { key: "loc", label: "Location" },
-                  { key: "const", label: "Constituency" },
-                  { key: "voters", label: "Voters", mono: true, align: "right" },
-                ]}
-                rows={booths.map((b) => ({
-                  no: b.boothNumber,
-                  name: b.name,
-                  loc: b.location,
-                  const: b.constituency,
-                  voters: b.totalVoters?.toLocaleString("en-IN") ?? "—",
-                }))}
-              />
-            </>
+            <div style={{ marginTop: 16 }}>
+              <Section title={<>Polling Booths (<span className="ftp-num">{booths.length}</span>)</>}>
+                <DataTable
+                  caption="Polling booths in this district"
+                  columns={[
+                    { key: "no", label: "Booth #", mono: true },
+                    { key: "name", label: "Booth Name" },
+                    { key: "loc", label: "Location" },
+                    { key: "const", label: "Constituency" },
+                    { key: "voters", label: "Voters", numeric: true },
+                  ]}
+                  rows={booths.map((b) => ({
+                    no: b.boothNumber,
+                    name: b.name,
+                    loc: b.location,
+                    const: b.constituency,
+                    voters: b.totalVoters?.toLocaleString("en-IN") ?? "—",
+                  }))}
+                />
+              </Section>
+            </div>
           )}
         </>
       )}
+
+      <SourcesFooter sources={src.sources.map((name) => ({ name, url: SOURCE_URLS[name], frequency: src.frequency }))} />
+      <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 11, lineHeight: "16px", marginTop: 8 }}>
+        ForThePeople.in is NOT an official government website. Data aggregated from publicly available government portals under India&apos;s Open Data Policy (NDSAP).
+      </p>
+
+      <ModuleNews district={district} state={state} locale={locale} module="elections" />
+
+      <Toolbar>
+        <ToolbarButton icon={Download} onClick={onCsv} disabled={results.length === 0}>
+          Download CSV
+        </ToolbarButton>
+        <ToolbarButton icon={Share2} onClick={onShare}>
+          {shareNote ?? "Share"}
+        </ToolbarButton>
+        <ToolbarButton icon={ArrowLeftRight} href={`/${locale}/compare?module=elections&a=${district}`}>
+          Compare with another district
+        </ToolbarButton>
+      </Toolbar>
     </div>
   );
 }
