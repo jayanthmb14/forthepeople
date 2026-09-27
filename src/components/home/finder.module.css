@@ -3,9 +3,10 @@
  * © 2026 Jayanth M B. MIT License.
  *
  * finder.module.css — district finder (header sheet), search results and
- * the "Use my location" result card. Design v5 "calm": white surfaces,
- * pastel-blue selection, one brand blue for actions, no emoji except the
- * module identity emoji in dashboard results.
+ * the "Use my location" result card. Design v5.1 "Warm Calm": white
+ * surfaces, pastel-blue selection, one brand blue for actions, a warm
+ * amber vote card, no emoji except the module identity emoji in
+ * dashboard results.
  *
  * Colours come from the --ftp-* tokens (globals.css). Touch targets are
  * at least 44 px. Indic headings keep line-height >= 1.35 (docs/I18N.md §4).
@@ -188,35 +189,142 @@
   white-space: nowrap;
 }
 
-/* Live districts as small cards */
-.liveGrid {
+/* Live districts: compact chips (the list keeps growing) */
+.groupCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+.liveChips {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .liveChip {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-height: 56px;
-  padding: 9px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px 0 10px;
   border: 1px solid var(--ftp-border);
-  border-radius: 12px;
+  border-radius: 999px;
   background: var(--ftp-surface);
   color: var(--ftp-text);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
 }
 .liveChip:hover,
 .liveChipHere {
   border-color: var(--ftp-brand);
   background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
 }
 .liveChip:focus-visible {
   outline: 2px solid var(--ftp-brand);
   outline-offset: 1px;
+}
+@media (max-width: 639px) {
+  .liveChip {
+    min-height: 44px;
+  }
+}
+
+/* "Your district not here yet? Vote for it" — a warm amber card */
+.voteCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--hue-pop) 80%, transparent);
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--hue-tint), var(--ftp-surface));
+  color: var(--ftp-text);
+  text-decoration: none;
+}
+.voteCard:hover {
+  border-color: var(--hue);
+}
+.voteCard:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.voteGlyph {
+  flex-shrink: 0;
+  display: block;
+}
+.vgTile {
+  fill: var(--hue-pop);
+}
+.vgPaper {
+  fill: var(--ftp-surface);
+}
+.vgTick {
+  fill: none;
+  stroke: var(--ftp-live);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.vgBox {
+  fill: var(--hue);
+}
+.vgSlot {
+  fill: var(--hue-deep);
+}
+.voteText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.voteTitle {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  color: var(--hue-deep);
+}
+.voteBody {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+.voteCta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: var(--hue-deep);
+  white-space: nowrap;
+}
+@media (max-width: 479px) {
+  .voteCard {
+    flex-wrap: wrap;
+  }
+  .voteCta {
+    width: 100%;
+    padding-left: 52px;
+  }
 }
 
 /* States, each opens to its districts */

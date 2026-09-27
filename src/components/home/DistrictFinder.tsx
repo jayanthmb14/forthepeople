@@ -15,7 +15,8 @@
 //
 //    [ Search: district or state, e.g. Mysore ]
 //    [ Use my location ]                     → LocateResult, inline
-//    Live districts      Mandya · Mysuru · …  (links)
+//    Live districts 10   (• Mandya) (• Mysuru) …  small chips (the list grows)
+//    [ballot] Your district not here yet? Vote for it →   /vote-district
 //    India dashboard →
 //    All states          Karnataka (3 live) ▸ every district; not-live
 //                        ones go to the vote page
@@ -35,7 +36,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ChevronRight, Globe2, LocateFixed, Search } from "lucide-react";
 import { INDIA_STATES } from "@/lib/constants/districts";
 import { SIDEBAR_MODULES } from "@/lib/constants/sidebar-modules";
-import { useModuleText, usePlaceText } from "@/i18n/client";
+import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import { placeName, placeNamePair } from "@/i18n/place-name";
 import { buildDistrictIndex, normaliseSearch, searchDistricts } from "./district-search";
 import type { DistrictMatch, FinderDistrict } from "./district-search";
@@ -129,6 +130,19 @@ export function DistrictResultList({
   );
 }
 
+/** A ballot going into a box: the "vote for your district" picture (decorative). */
+function VoteGlyph() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden focusable="false" className={s.voteGlyph}>
+      <rect width="40" height="40" rx="12" className={s.vgTile} />
+      <rect x="14" y="7" width="12" height="14" rx="2" transform="rotate(-8 20 14)" className={s.vgPaper} />
+      <path d="M16.4 13.6l2.3 2.3 4.3-4.9" transform="rotate(-8 20 14)" className={s.vgTick} strokeWidth="2" />
+      <rect x="8" y="19" width="24" height="14" rx="3" className={s.vgBox} />
+      <rect x="13" y="18" width="14" height="3" rx="1.5" className={s.vgSlot} />
+    </svg>
+  );
+}
+
 export interface DistrictFinderProps {
   mode: "district" | "search";
   /** The district page the visitor is on, if any. */
@@ -143,6 +157,7 @@ export default function DistrictFinder({ mode, current, onNavigate }: DistrictFi
   const locale = useLocale();
   const place = usePlaceText();
   const mt = useModuleText();
+  const fmt = useFormat();
   const loc = useLocate();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -352,11 +367,16 @@ export default function DistrictFinder({ mode, current, onNavigate }: DistrictFi
             )}
           </div>
 
+          {/* Live districts: small chips, because the list keeps growing. */}
           <section aria-label={t("liveGroup")}>
-            <h3 className={s.groupLabel}>{t("liveGroup")}</h3>
-            <ul className={s.liveGrid}>
+            <h3 className={s.groupLabel}>
+              {t("liveGroup")} <span className={s.groupCount}>{fmt.number(liveDistricts.length)}</span>
+            </h3>
+            <ul className={s.liveChips}>
               {liveDistricts.map((d) => {
                 const here = d.slug === current?.districtSlug && d.stateSlug === current?.stateSlug;
+                const name = placeName(d, locale);
+                const stateName = place.state(d.stateSlug, d.stateName);
                 return (
                   <li key={`${d.stateSlug}/${d.slug}`}>
                     <Link
@@ -364,15 +384,30 @@ export default function DistrictFinder({ mode, current, onNavigate }: DistrictFi
                       className={`${s.liveChip} ${here ? s.liveChipHere : ""}`}
                       onClick={onNavigate}
                       aria-current={here ? "page" : undefined}
+                      aria-label={t("liveChipAria", { name, state: stateName })}
+                      title={stateName}
                     >
-                      <span className={s.rowName}>{placeName(d, locale)}</span>
-                      <span className={s.rowMeta}>{here ? t("here") : place.state(d.stateSlug, d.stateName)}</span>
+                      <span className={s.dotLive} aria-hidden />
+                      {name}
                     </Link>
                   </li>
                 );
               })}
             </ul>
           </section>
+
+          {/* Not live yet? Vote — the demand decides which district opens next. */}
+          <Link href={`/${locale}/vote-district`} className={`ftp-hue-amber ${s.voteCard}`} onClick={onNavigate}>
+            <VoteGlyph />
+            <span className={s.voteText}>
+              <span className={s.voteTitle}>{t("voteCardTitle")}</span>
+              <span className={s.voteBody}>{t("voteCardBody")}</span>
+            </span>
+            <span className={s.voteCta}>
+              {t("voteCardCta")}
+              <ChevronRight size={16} aria-hidden />
+            </span>
+          </Link>
 
           <ul className={s.list}>
             <li>

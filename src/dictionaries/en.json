@@ -388,7 +388,11 @@
       "marketTitle": "NSE and BSE trade Monday to Friday, 9:15 AM to 3:30 PM IST, except on trading holidays. Tap for today's prices.",
       "refreshed": "Live data refreshed {ago}",
       "refreshedTitle": "Every live feed we collect for this district was checked within this time."
-    }
+    },
+    "liveChipAria": "{name}, {state}",
+    "voteCardTitle": "Your district not here yet?",
+    "voteCardBody": "Vote for it. Votes help decide which district opens next.",
+    "voteCardCta": "Vote"
   },
   "status": {
     "dataBehind": "Data behind",
