@@ -104,9 +104,11 @@ export default function LanguageMenu() {
                   onClick={() => setOpen(false)}
                 >
                   <span className={s.native}>{l.native}</span>
-                  <span className={s.english} lang="en">
-                    {l.english}
-                  </span>
+                  {l.english !== l.native && (
+                    <span className={s.english} lang="en">
+                      {l.english}
+                    </span>
+                  )}
                   {l.status === "beta" && (
                     <span className={s.beta} title={t("betaNote")}>
                       {t("beta")}
