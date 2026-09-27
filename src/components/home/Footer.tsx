@@ -27,12 +27,19 @@
 //  no site-wide "Data refreshed …" line: freshness belongs to each dataset,
 //  next to its own figure (and in the status strip only when it is true).
 //
+//  v5.3: district pages and India module pages show a SLIM footer instead —
+//  one thin line with the logo mark, "Built by Jayanth M B", About ·
+//  Privacy · Disclaimer and a "More" button that opens this full footer in
+//  place. FooterFrame (client) picks the layout from the address; this
+//  server component draws both.
+//
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Compass, Github, HeartHandshake, Info, Instagram, Star, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NUMBER_LOCALE } from "@/i18n/languages";
 import { PRODUCTS, ProductMark } from "./products";
+import FooterFrame from "./FooterFrame";
 import styles from "./chrome.module.css";
 
 const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
@@ -110,8 +117,8 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
     </>
   );
 
-  return (
-    <footer role="contentinfo" className={styles.footer}>
+  const main = (
+    <>
       <div className={`ftp-container ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
           <Link href={`/${locale}`} className={styles.footerLogo} aria-label={th("home")} translate="no">
@@ -184,15 +191,65 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
           </ul>
         </section>
       </div>
+    </>
+  );
 
-      {/* The rule sits inside the container, so it lines up with the
-          dashed rule and the columns above (not the container's padding). */}
-      <div className="ftp-container">
-        <div className={styles.footerBottom}>
-          <span>{builtBy}</span>
-          <span>{t("article")}</span>
-        </div>
+  // The rule sits inside the container, so it lines up with the dashed rule
+  // and the columns above (not with the container's padding).
+  const bottom = (
+    <div className="ftp-container">
+      <div className={styles.footerBottom}>
+        <span>{builtBy}</span>
+        <span>{t("article")}</span>
       </div>
-    </footer>
+    </div>
+  );
+  const slimBottom = (
+    <div className="ftp-container">
+      <div className={styles.footerBottom}>
+        <span>{t("article")}</span>
+      </div>
+    </div>
+  );
+
+  // The slim line (district and India module pages): logo mark, built by,
+  // About · Privacy · Disclaimer. FooterFrame adds the "More" button.
+  const slimLine = (
+    <>
+      <Link href={`/${locale}`} className={styles.slimMark} aria-label={th("home")}>
+        <span className={`${styles.logoTile} ${styles.slimTile}`} aria-hidden>
+          <Users size={13} strokeWidth={2.4} />
+        </span>
+      </Link>
+      <span className={styles.slimBuilt}>{builtBy}</span>
+      <ul className={styles.slimLinks}>
+        <li>
+          <Link href={`/${locale}/about`}>{t("aboutUs")}</Link>
+        </li>
+        <li>
+          <span className={styles.slimDot} aria-hidden>
+            ·
+          </span>
+          <Link href={`/${locale}/privacy`}>{t("privacy")}</Link>
+        </li>
+        <li>
+          <span className={styles.slimDot} aria-hidden>
+            ·
+          </span>
+          <Link href={`/${locale}/disclaimer`}>{t("disclaimer")}</Link>
+        </li>
+      </ul>
+    </>
+  );
+
+  return (
+    <FooterFrame
+      main={main}
+      bottom={bottom}
+      slimLine={slimLine}
+      slimBottom={slimBottom}
+      moreLabel={t("more")}
+      lessLabel={t("less")}
+    />
   );
 }

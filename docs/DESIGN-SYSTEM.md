@@ -411,7 +411,16 @@ Built in `src/components/home/` (`chrome.module.css`) and
   column title; links include Prices today, Vote for a district, Vote on
   features and GitHub stars; a "Coming soon from ForThePeople" row shows
   Connect and Jobs as two cards. Phones keep space at the bottom for the
-  Report button.
+  Report button. The last line reads "Built by Jayanth M B" (the name links
+  to his LinkedIn, new tab) and "Free expression under Article 19(1)(a)".
+- **Slim footer (v5.3):** district pages (overview, every module, taluk and
+  village page) and India module pages end with one thin line instead: the
+  logo mark, "Built by Jayanth M B", About · Privacy · Disclaimer and a
+  "More" button that opens the full footer in place (a disclosure with
+  `aria-expanded`; grows smoothly, then scrolls into view; no animation under
+  reduced motion; closed again on the next page). The line keeps its right
+  end clear of the Report button. Rule: `footer-mode.ts`; frame:
+  `FooterFrame.tsx`.
 
 ## 10. District overview (v5.1)
 

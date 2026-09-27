@@ -53,7 +53,10 @@ old Docker files are archived in `docs/archive/docker/`.
     extras move into `HeaderMenu`.
   - The GitHub star count is fetched on the server at most once an hour
     (`github-stars.ts`) and passed down from the layout.
-  - `Footer` repeats the links and shows the coming-soon apps.
+  - `Footer` repeats the links and shows the coming-soon apps. On district
+    pages and India module pages `FooterFrame` shows it folded under one
+    slim line with a "More" button (`footer-mode.ts` decides; tested in
+    `tests/footer-mode.test.ts`).
 - **Status strip** (`StatusStrip.tsx`; the rules are pure and tested in
   `status-strip.ts`). It reads three things:
   - **Clock:** the browser's time in IST, redrawn each minute. Nothing is

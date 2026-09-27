@@ -970,6 +970,163 @@
   }
 }
 
+/* ── Slim footer (v5.3): district pages and India module pages ──
+   One thin line — logo mark, built by, About · Privacy · Disclaimer and a
+   "More" button (FooterFrame.tsx) — that opens the full footer under it.
+   These rules come after the .footer ones so they win at equal weight. */
+.footerSlim {
+  margin-top: 0;
+  padding: 0;
+}
+.slimLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  min-height: 52px;
+  /* The right end stays clear of the floating "Report a problem" button
+     (bottom-right corner): the line wraps before it gets there. */
+  padding: 8px 200px 8px 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.slimMark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  border-radius: 8px;
+}
+.slimTile {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+.slimBuilt .builtByLink {
+  display: inline-block;
+  padding: 9px 0;
+}
+.slimLinks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.slimLinks li {
+  display: inline-flex;
+  align-items: center;
+}
+.slimDot {
+  padding: 0 8px;
+  color: var(--ftp-border-strong);
+}
+.slimLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  color: var(--ftp-text-2);
+  text-decoration: none;
+}
+.slimLinks a:hover {
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.slimToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-pill);
+  background: var(--ftp-surface);
+  color: var(--ftp-brand-deep);
+  font-family: var(--ftp-font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.slimToggle:hover {
+  background: var(--ftp-brand-tint);
+  border-color: color-mix(in srgb, var(--ftp-brand) 35%, var(--ftp-border));
+}
+.slimChevron {
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+.footerSlim[data-open="true"] .slimChevron {
+  transform: rotate(180deg);
+}
+.slimMark:focus-visible,
+.slimLinks a:focus-visible,
+.slimToggle:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.slimLinks a:focus-visible {
+  border-radius: 4px;
+}
+/* The full footer, folded under the line: rows 0fr → 1fr grows it
+   smoothly; hidden (and inert, in FooterFrame) while closed. */
+.slimMore {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 260ms var(--ftp-ease-out, ease-out),
+    visibility 0s linear 260ms;
+}
+.slimMore[data-open="true"] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 260ms var(--ftp-ease-out, ease-out),
+    visibility 0s;
+}
+.slimMoreClip {
+  min-height: 0;
+  overflow: hidden;
+}
+.slimMoreBody {
+  padding: 22px 0 22px;
+}
+@media (max-width: 639px) {
+  .footerSlim {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Phones: the round report flag is 44 px in the corner. */
+  .slimLine {
+    gap: 0 12px;
+    min-height: 44px;
+    padding: 4px 60px 4px 0;
+  }
+  .slimMark,
+  .slimLinks a,
+  .slimToggle {
+    min-height: 44px;
+  }
+  .slimBuilt .builtByLink {
+    padding: 13px 0;
+  }
+  .slimMoreBody {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slimMore,
+  .slimMore[data-open="true"],
+  .slimChevron,
+  .slimToggle {
+    transition: none;
+  }
+}
+
 /* ───────────────────────── Status strip ───────────────────────── */
 /* Day · date · IST clock · share market · live-data freshness. Under the
    sticky header, scrolls away with the page. A soft blue wash from the
