@@ -1,6 +1,6 @@
 {
   "description": "Government housing schemes: what you get, who can get it, and how many houses are really built",
-  "summary": "This page tracks government housing schemes such as PMAY in {district}: what each scheme gives, who can get it, where it runs, how many houses were planned, sanctioned, finished and are still being built, and how much money was set aside, released and spent. Progress figures come from AwaasSoft and are grouped by financial year.",
+  "summary": "This page tracks government housing schemes such as PMAY in {district}: what each scheme gives, who can get it, where it runs, how many houses were planned, sanctioned, finished and are still being built, and how much money was set aside, released and spent. Progress figures come from the scheme dashboards (such as AwaasSoft) and district records, grouped by financial year; each scheme names its own source.",
   "fy": "FY {year}",
   "fyRange": "FY {from} to {to}",
   "crore": "₹{n} Cr",
