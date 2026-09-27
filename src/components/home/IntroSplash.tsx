@@ -3,53 +3,17 @@
  * © 2026 Jayanth M B. MIT License.
  */
 
-// IntroSplash — the 2-second opening on the home page (Design v4).
+// IntroSplash — REMOVED in Design v5 "Calm" (27 Sep 2026).
 //
-//   0.00 s  logo pops in
-//   0.35 s  "Your district." · "Your data." · "Your right." rise one by one
-//   0.30 s  a saffron → blue → green line sweeps under them
-//   1.75 s  the whole card lifts away like a curtain; the page cascades in
+// v4 opened the home page with a 2-second full-screen splash once per
+// session. The owner asked for a calm site with the dashboards and main
+// actions straight away, so there is no splash any more: no overlay, no
+// inline script, no html[data-intro] attribute, no delayed hero cascade.
 //
-// Rules:
-//   • Once per browser session (sessionStorage), home page only.
-//   • Click, tap or any key skips it (IntroSkip).
-//   • prefers-reduced-motion and no-JS: never shown (the inline script
-//     below is what turns it on, and the CSS hides it otherwise).
-//   • Tricolour stays ceremonial: a thin line and soft washes, never stripes
-//     or a chakra (vault note 45).
-import { useTranslations } from "next-intl";
-import IntroSkip from "./IntroSkip";
-
-const ARM = `try{var d=document.documentElement;if(sessionStorage.getItem('ftp-intro')){d.setAttribute('data-intro','seen')}else{sessionStorage.setItem('ftp-intro','1');d.setAttribute('data-intro','show')}}catch(e){}`;
-
+// This stub renders nothing and exists only so the home page keeps
+// compiling until its `<IntroSplash />` line is removed
+// (src/app/[locale]/page.tsx, owned by the home page). Delete this file in
+// the same change that removes that import.
 export default function IntroSplash() {
-  const t = useTranslations("intro");
-  return (
-    <>
-      <script dangerouslySetInnerHTML={{ __html: ARM }} />
-      <div className="ftp-intro" aria-hidden="true">
-        <div className="ftp-intro-card">
-          <div className="ftp-intro-logo">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <span className="ftp-intro-word">
-              ForThePeople<span className="ftp-intro-in">.in</span>
-            </span>
-          </div>
-          <p className="ftp-intro-line">
-            <span style={{ ["--i" as string]: 0 }}>{t("line1")}</span>{" "}
-            <span style={{ ["--i" as string]: 1 }} className="ftp-intro-hl">{t("line2")}</span>{" "}
-            <span style={{ ["--i" as string]: 2 }}>{t("line3")}</span>
-          </p>
-          <div className="ftp-intro-bar"><span /></div>
-          <p className="ftp-intro-sub">{t("sub")}</p>
-        </div>
-      </div>
-      <IntroSkip />
-    </>
-  );
+  return null;
 }
