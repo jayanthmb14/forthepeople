@@ -8,10 +8,16 @@
 // Job: Elections — Election Commission of India
 // Schedule: Monthly (1st of month, 8 AM) + on election events
 // Source: eci.gov.in / data.gov.in ECI datasets
+//
+// electionType is stored in ONE spelling (LOK_SABHA, ASSEMBLY, …) and an
+// existing result is found by its canonical key — district, year, type,
+// constituency without seat number (src/lib/dedupe/keys.ts). The old exact
+// string match let "LokSabha" and "Lok Sabha" rows of the same seat coexist.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { JobContext, ScraperResult } from "../types";
 import { firstAmount } from "../lib/sanity";
+import { canonicalElectionType, electionResultKey } from "@/lib/dedupe/keys";
 
 const DATA_GOV_BASE = "https://api.data.gov.in/resource";
 // ECI constituency-wise election results Karnataka
@@ -51,11 +57,20 @@ export async function scrapeElections(ctx: JobContext): Promise<ScraperResult> {
     const json = await res.json();
     const records: Record<string, string>[] = json?.records ?? [];
 
+    // Results already stored for this district, by canonical key.
+    const stored = await prisma.electionResult.findMany({
+      where: { districtId: ctx.districtId },
+      select: { districtId: true, year: true, electionType: true, constituency: true },
+      take: 5000,
+    });
+    const known = new Set(stored.map(electionResultKey).filter((k): k is string => k !== null));
+
     for (const rec of records) {
       const constituency = (rec.constituency_name ?? rec.ac_name ?? "").trim();
-      const electionType = rec.election_type ?? "State Assembly";
+      // This dataset is assembly results; a type it names but we cannot read is skipped.
+      const electionType = rec.election_type ? canonicalElectionType(rec.election_type) : "ASSEMBLY";
       const year = parseInt(rec.year ?? rec.election_year ?? "0", 10);
-      if (!constituency || !year) continue;
+      if (!constituency || !year || !electionType) continue;
 
       const winnerName = (rec.winner_name ?? rec.winner ?? rec.candidate_name ?? "").trim();
       const winnerParty = normalizeParty(rec.winner_party ?? rec.party ?? "Independent");
@@ -73,11 +88,9 @@ export async function scrapeElections(ctx: JobContext): Promise<ScraperResult> {
       if (!winnerName || winnerVotesRaw === null) continue;
       const winnerVotes = Math.round(winnerVotesRaw);
 
-      const existing = await prisma.electionResult.findFirst({
-        where: { districtId: ctx.districtId, constituency, year, electionType },
-      });
-
-      if (!existing) {
+      const key = electionResultKey({ districtId: ctx.districtId, year, electionType, constituency });
+      if (key && !known.has(key)) {
+        known.add(key);
         await prisma.electionResult.create({
           data: {
             districtId: ctx.districtId,

@@ -1077,7 +1077,7 @@ async function main() {
     data: [
       {
         districtId: mandya.id,
-        year: 2019, electionType: "Lok Sabha",
+        year: 2019, electionType: "LOK_SABHA",
         constituency: "Mandya", winnerName: "Sumalatha Ambareesh",
         winnerParty: "Independent", winnerVotes: 704751,
         runnerUpName: "Nikhil Kumaraswamy", runnerUpParty: "JD(S)",
@@ -1087,7 +1087,7 @@ async function main() {
       },
       {
         districtId: mandya.id,
-        year: 2023, electionType: "Assembly",
+        year: 2023, electionType: "ASSEMBLY",
         constituency: "Krishnaraja", winnerName: "Narayan Gowda",
         winnerParty: "BJP", winnerVotes: 78234,
         runnerUpName: "Yatindra Siddharamaiah", runnerUpParty: "INC",
@@ -1097,7 +1097,7 @@ async function main() {
       },
       {
         districtId: mandya.id,
-        year: 2024, electionType: "Lok Sabha",
+        year: 2024, electionType: "LOK_SABHA",
         constituency: "Mandya", winnerName: "Nikhil Kumaraswamy",
         winnerParty: "JD(S)", winnerVotes: 736998,
         runnerUpName: "Sumalatha Ambareesh", runnerUpParty: "INC",
