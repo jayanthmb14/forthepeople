@@ -1,33 +1,32 @@
 {
-  "title": "Health",
-  "description": "Emergency helplines, hospitals and health schemes",
+  "description": "Where to go when someone is sick, whom to call, and whether the doctors' posts are filled",
+  "answer": {
+    "hospitals": "{district} has <b>{n}</b> {count, plural, one {hospital or health centre} other {hospitals and health centres}} listed here. In an emergency, call <b>108</b> for a free ambulance.",
+    "noHospitals": "In an emergency, call <b>108</b> for a free ambulance, or <b>112</b> for any emergency.",
+    "staff": "About <b>{n} of every 10</b> health posts the government has sanctioned here are filled."
+  },
+  "emergency": {
+    "aria": "Emergency numbers"
+  },
   "helplines": {
-    "title": "Emergency helplines",
+    "title": "More helplines",
     "call": "Call {name}: {number}",
-    "emergency": "National emergency",
-    "ambulance": "Ambulance",
+    "emergency": "Any emergency (police, fire, ambulance)",
+    "ambulance": "Ambulance, free, 24 hours",
     "icall": "iCALL (mental health)",
     "poison": "Poison help (AIIMS)",
     "ayushman": "Ayushman Bharat",
     "nhh": "National health helpline"
   },
-  "schemes": {
-    "title": "Government health schemes",
-    "central": "Central scheme",
-    "stateScheme": "{state} scheme",
-    "site": "Official website",
-    "desc": {
-      "pmjay": "Health cover of ₹5 lakh per family each year",
-      "jsy": "Cash help for mothers who give birth in a hospital",
-      "rbsk": "Free health check-ups and treatment for children",
-      "karnataka": "Karnataka's health assurance scheme for its residents",
-      "telangana": "Health cover of ₹5 lakh for BPL families, covering 2,500+ procedures at 1,100+ empanelled hospitals",
-      "tamil-nadu": "Chief Minister's Comprehensive Health Insurance Scheme, with cashless treatment up to ₹5 lakh",
-      "delhi": "Money for the treatment of serious illness for Delhi residents",
-      "maharashtra": "Mahatma Jyotiba Phule Jan Arogya Yojana, with cashless treatment for BPL families",
-      "west-bengal": "Health cover for every family in West Bengal, ₹5 lakh per family",
-      "uttar-pradesh": "Health cover for BPL families in UP, ₹5 lakh per family, with extra state cover"
-    }
+  "tiles": {
+    "places": "Hospitals listed",
+    "placesSub": "and health centres",
+    "filled": "Health posts filled",
+    "filledSub": "{pct} empty",
+    "working": "Health staff working",
+    "workingSub": "of {n} sanctioned",
+    "vacant": "Empty health posts",
+    "shortage": "Shortage"
   },
   "care": {
     "title": "Where to go for care",
@@ -50,10 +49,79 @@
       "chc": "Community health centres"
     }
   },
-  "nhm": {
-    "title": "Find the nearest hospital",
-    "body": "See hospitals on the National Health Mission portal",
-    "button": "NHM portal"
+  "list": {
+    "title": "Hospitals and health centres",
+    "empty": "No hospitals are listed for {district} yet",
+    "emptyBody": "We are adding government hospitals and health centres. Until then, the National Health Mission portal lists them.",
+    "emptyButton": "NHM portal",
+    "searchLabel": "Find a hospital",
+    "searchPlaceholder": "Name, place or service",
+    "typeAria": "Kind of hospital",
+    "all": "All",
+    "noMatch": "Nothing matches “{query}”",
+    "noMatchBody": "Try the name of the town, or a service such as maternity.",
+    "open": "Phone, directions and hours",
+    "today": "Today {hours}",
+    "hasPhone": "Phone number",
+    "services": "{count, plural, one {One service} other {{n} services}}",
+    "showAll": "Show all {n}"
   },
-  "share": "Health helplines and schemes for {district}: Emergency 112, Ambulance 108"
+  "schemes": {
+    "title": "Government health schemes",
+    "central": "Central scheme",
+    "stateScheme": "{state} scheme",
+    "site": "Official website",
+    "desc": {
+      "pmjay": "Health cover of ₹5 lakh per family each year",
+      "jsy": "Cash help for mothers who give birth in a hospital",
+      "rbsk": "Free health check-ups and treatment for children",
+      "karnataka": "Karnataka's health assurance scheme for its residents",
+      "telangana": "Health cover of ₹5 lakh for BPL families, covering 2,500+ procedures at 1,100+ empanelled hospitals",
+      "tamil-nadu": "Chief Minister's Comprehensive Health Insurance Scheme, with cashless treatment up to ₹5 lakh",
+      "delhi": "Money for the treatment of serious illness for Delhi residents",
+      "maharashtra": "Mahatma Jyotiba Phule Jan Arogya Yojana, with cashless treatment for BPL families",
+      "west-bengal": "Health cover for every family in West Bengal, ₹5 lakh per family",
+      "uttar-pradesh": "Health cover for BPL families in UP, ₹5 lakh per family, with extra state cover"
+    }
+  },
+  "sheet": {
+    "call": "Call",
+    "callAria": "Call {number}",
+    "directions": "Directions",
+    "site": "Website",
+    "today": "Open today: <b>{hours}</b>.",
+    "callFirst": "Call before you go to check the timings.",
+    "kind": "Kind",
+    "department": "Department",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "head": "In charge",
+    "headValue": "{name}, {role}",
+    "lunch": "Lunch break",
+    "holidays": "Holidays",
+    "notes": "Notes",
+    "services": "Services",
+    "hours": "Opening hours",
+    "dayToday": "{day} (today)",
+    "note": "Details are as the government office list gives them. Call before you go: timings can change on holidays."
+  },
+  "end": {
+    "share": "Hospitals and health help for {district}: ambulance 108, emergency 112",
+    "notOfficial": "ForThePeople.in is not an official government website. Data comes from public government portals under India's Open Data Policy (NDSAP).",
+    "actions": "Page actions",
+    "whatsapp": "WhatsApp",
+    "whatsappAria": "Share this page on WhatsApp",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "compare": "Compare with another district",
+    "freq": {
+      "monthly": "Updated monthly",
+      "weekly": "Updated weekly",
+      "daily": "Updated daily",
+      "annual": "Updated once a year",
+      "quarterly": "Updated every three months",
+      "onPublish": "Updated when the source publishes"
+    }
+  }
 }

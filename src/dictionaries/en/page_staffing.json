@@ -1,33 +1,37 @@
 {
   "health": {
-    "title": "Healthcare staff: sanctioned and filled posts",
-    "simple": "Of the <b>{sanctioned}</b> healthcare posts the government has sanctioned here, <b>{working}</b> have someone working in them."
+    "title": "Doctors and health staff: are the posts filled?",
+    "simple": "Of the <b>{sanctioned}</b> health posts the government has sanctioned here, <b>{working}</b> have someone working in them."
   },
   "schools": {
-    "title": "Teaching staff: sanctioned and filled posts",
+    "title": "Teachers: are the posts filled?",
     "simple": "Of the <b>{sanctioned}</b> teaching posts the government has sanctioned here, <b>{working}</b> have someone working in them."
   },
   "official": "Official data",
-  "tiles": {
-    "fillRate": "Posts filled",
-    "vacantSub": "{pct} empty",
-    "working": "Working",
-    "workingSub": "of {n} sanctioned",
-    "vacant": "Empty posts",
-    "shortage": "Shortage"
-  },
+  "shortage": "{pct} of the posts are empty, which is a shortage.",
   "pictogram": "About {n} of every 10 sanctioned posts are filled.",
   "gauge": "Posts filled",
   "gaugeCaption": "Sanctioned posts that are filled",
+  "open": "See details",
   "row": {
     "filled": "{pct} filled",
     "workingVacant": "{working} working, {vacant} empty",
-    "shortage": "{pct} short"
+    "shortage": "Shortage"
   },
   "gaps": {
     "title": "Where the empty posts are",
     "units": "Empty posts by role, the roles with the most",
     "simple": "<b>{role}</b> has the most empty posts: {n}.",
     "aria": "Roles with the most empty posts"
+  },
+  "sheet": {
+    "note": "The government has sanctioned <b>{sanctioned}</b> posts for {role} here. <b>{working}</b> have someone working in them and <b>{vacant}</b> are empty.",
+    "department": "Department",
+    "sanctioned": "Posts sanctioned",
+    "working": "People working",
+    "vacant": "Empty posts",
+    "filled": "Posts filled",
+    "asOf": "As of",
+    "source": "See the official data"
   }
 }
