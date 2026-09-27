@@ -1,18 +1,21 @@
 // ── ForThePeople.in — District Dashboard Modules ─────────────
 //
-// Single source of truth for sidebar + mobile nav. Each module has a
-// civic-priority number (1 = top). Ordering is deterministic — nav
-// components render SIDEBAR_MODULES sorted by priority, grouped into
-// the five v3 groups via `tierFromPriority()` (CONCEPT-v3 §5):
+// Single source of truth for the district sidebar, the phone/tablet
+// "All modules" drawer, the overview tiles and the "See also" links.
+// docs/MODULE-MAP.md is the plan this file follows:
 //
-//   Civic duty · Money & resources · Daily services · Accountability ·
-//   Community & people
+//   🏠 Start here · 🙋 You can help · 👥 Who runs it · 💰 Money & projects ·
+//   🤲 Help for you · 🚰 Daily needs · 🌾 Farming · 📚 Know your district ·
+//   🔍 Check our work
 //
-// Priority slot 30 is intentionally vacant — reserved for "Compare
-// Districts" which is a standalone header link, not a module.
+// Each module names its `group`; the order inside a group is the order of
+// this array. `priority` (1 = top) is derived from that order, so adding a
+// module is one line in the right place. Routes (slugs) never change.
 //
-// The `emoji` field is kept for the mobile drawers that still read it.
-// The desktop Sidebar renders the Lucide `icon` only.
+// `label`, `description` and the group `label` are the English fallback
+// only. Every language reads them from the `moduleNames`,
+// `moduleDescriptions` and `moduleGroups` messages (useModuleText /
+// useModuleGroups).
 
 import {
   LayoutDashboard, Map, Users, Waves, Factory,
@@ -25,124 +28,203 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export interface SidebarModule {
-  slug: string;
+// ── Groups ─────────────────────────────────────────────────
+
+/** Message key of a module group (`moduleGroups.<key>`), in sidebar order. */
+export type ModuleGroupKey =
+  | "start"
+  | "help"
+  | "whoRuns"
+  | "money"
+  | "helpForYou"
+  | "dailyNeeds"
+  | "farming"
+  | "know"
+  | "checkWork";
+
+export interface ModuleGroup {
+  key: ModuleGroupKey;
+  /** English fallback; the shown text comes from `moduleGroups.<key>`. */
   label: string;
   emoji: string;
+  /** The question the group answers (docs/MODULE-MAP.md). English, for docs and tooling. */
+  question: string;
+}
+
+export const MODULE_GROUPS: readonly ModuleGroup[] = [
+  { key: "start",      label: "Start here",          emoji: "🏠", question: "What is happening in my district today?" },
+  { key: "help",       label: "You can help",        emoji: "🙋", question: "What can I do, and who do I call?" },
+  { key: "whoRuns",    label: "Who runs it",         emoji: "👥", question: "Who is in charge, and are they doing their job?" },
+  { key: "money",      label: "Money & projects",    emoji: "💰", question: "Where does the money go?" },
+  { key: "helpForYou", label: "Help for you",        emoji: "🤲", question: "What can I get, and how do I apply?" },
+  { key: "dailyNeeds", label: "Daily needs",         emoji: "🚰", question: "Do I have water, power, a bus, a doctor, a school?" },
+  { key: "farming",    label: "Farming",             emoji: "🌾", question: "What will my crop fetch, and how do I grow it better?" },
+  { key: "know",       label: "Know your district",  emoji: "📚", question: "What is my district like?" },
+  { key: "checkWork",  label: "Check our work",      emoji: "🔍", question: "Can I trust this?" },
+];
+
+// ── Modules ────────────────────────────────────────────────
+
+export interface SidebarModule {
+  slug: string;
+  /** English fallback; the shown text comes from `moduleNames.<slug>`. */
+  label: string;
+  /** One emoji per module, unique across the registry. */
+  emoji: string;
   icon: LucideIcon;
+  /** English fallback; the shown text comes from `moduleDescriptions.<slug>`. */
   description: string;
-  /** 1 = top of sidebar, 37 = bottom. Gaps allowed. */
+  group: ModuleGroupKey;
+  /**
+   * Modules people mix up with this one (docs/MODULE-MAP.md "Pairs that
+   * used to be confusing"). Rendered as "See also" at the end of the page.
+   */
+  related?: readonly string[];
+  /** 1 = top of the sidebar. Derived from the array order below. */
   priority: number;
 }
 
-export const SIDEBAR_MODULES: SidebarModule[] = [
-  // ── Civic duty (1–5) ───────────────────────────────────────
-  { slug: "responsibility",   label: "My Responsibility",   emoji: "🌱", icon: Flame,            description: "What YOU can do to improve your district", priority: 1 },
-  { slug: "overview",         label: "Overview",            emoji: "📊", icon: LayoutDashboard,  description: "District summary, stats, weather", priority: 2 },
-  { slug: "leadership",       label: "Leadership",          emoji: "👥", icon: Users,            description: "MP, MLAs, DC, SP, judges", priority: 3 },
-  { slug: "elections",        label: "Elections",           emoji: "📊", icon: Vote,             description: "Results, turnout, booth finder", priority: 4 },
-  { slug: "citizen-corner",   label: "Citizen Corner",      emoji: "🤝", icon: Handshake,        description: "Responsibility tips, helplines", priority: 5 },
+type ModuleEntry = Omit<SidebarModule, "priority">;
 
-  // ── Money & resources (6–14) ───────────────────────────────
-  { slug: "finance",          label: "Finance & Budget",    emoji: "💰", icon: PiggyBank,        description: "Budget breakdown, lapsed funds tracker", priority: 6 },
-  { slug: "infrastructure",   label: "Infrastructure",      emoji: "🏗️", icon: HardHat,          description: "News-driven project tracker with timelines", priority: 7 },
-  { slug: "tenders",          label: "Govt. Tenders",       emoji: "📑", icon: Gavel,            description: "Live tender tracker, red-flag indicators, apply guide", priority: 8 },
-  { slug: "industries",       label: "Local Industries",    emoji: "🏭", icon: Factory,          description: "Sugar factories, arrears tracker", priority: 9 },
-  { slug: "schemes",          label: "Gov. Schemes",        emoji: "📋", icon: ScrollText,       description: "Active schemes, eligibility, apply links", priority: 10 },
-  { slug: "crops",            label: "Crop Prices",         emoji: "🌾", icon: Wheat,            description: "Live mandi prices from AGMARKNET", priority: 11 },
-  { slug: "farm",             label: "Farm Advisory",       emoji: "🌾", icon: Tractor,          description: "Soil health, KVK crop advisory", priority: 12 },
-  { slug: "water",            label: "Water & Dams",        emoji: "🚰", icon: Waves,            description: "Live dam levels, canal schedules", priority: 13 },
-  { slug: "gram-panchayat",   label: "Gram Panchayat",      emoji: "🏘️", icon: Building,         description: "Village data, MGNREGA, funds", priority: 14 },
+// Order = sidebar order. Keep each group's modules together.
+const MODULES: readonly ModuleEntry[] = [
+  // 🏠 Start here
+  { group: "start", slug: "overview",   label: "Overview",          emoji: "📊", icon: LayoutDashboard, description: "Your district on one page" },
+  { group: "start", slug: "news",       label: "News",              emoji: "📰", icon: Newspaper,       description: "What the local papers are saying", related: ["alerts"] },
+  { group: "start", slug: "alerts",     label: "Alerts & warnings", emoji: "⚠️", icon: AlertTriangle,   description: "Official warnings to act on", related: ["news", "weather"] },
+  { group: "start", slug: "weather",    label: "Weather & rain",    emoji: "🌦️", icon: Cloud,           description: "Today's weather and this year's rain" },
 
-  // ── Daily services (15–24) ─────────────────────────────────
-  { slug: "jjm",              label: "Water Supply (JJM)",  emoji: "💧", icon: Droplets,         description: "Jal Jeevan Mission tap connections", priority: 15 },
-  { slug: "power",            label: "Power & Outages",     emoji: "⚡", icon: Zap,              description: "Scheduled cuts, DISCOM tracker", priority: 16 },
-  { slug: "transport",        label: "Transport",           emoji: "🚌", icon: Bus,              description: "Bus routes, trains, auto fares", priority: 17 },
-  { slug: "health",           label: "Health",              emoji: "🏥", icon: Heart,            description: "Hospitals, bed count, doctor ratio", priority: 18 },
-  { slug: "schools",          label: "Schools",             emoji: "🎓", icon: GraduationCap,    description: "Board results, school directory", priority: 19 },
-  { slug: "housing",          label: "Housing Schemes",     emoji: "🏠", icon: Home,             description: "PMAY tracker, completion rates", priority: 20 },
-  { slug: "services",         label: "Services Guide",      emoji: "📋", icon: FileText,         description: "How to get certificates, land records", priority: 21 },
-  { slug: "offices",          label: "Offices & Services",  emoji: "🏢", icon: Building2,        description: "Govt offices, hours, open now", priority: 22 },
-  { slug: "weather",          label: "Weather & Rainfall",  emoji: "🌦️", icon: Cloud,            description: "Live weather, monsoon tracking", priority: 23 },
-  { slug: "alerts",           label: "Local Alerts",        emoji: "⚠️", icon: AlertTriangle,    description: "Advisories and warnings for the district", priority: 24 },
+  // 🙋 You can help
+  { group: "help", slug: "responsibility", label: "What you can do",           emoji: "🌱", icon: Flame,         description: "Small things you can do for your district", related: ["citizen-corner"] },
+  { group: "help", slug: "citizen-corner", label: "Helplines & your rights",   emoji: "📞", icon: Handshake,     description: "Numbers to call and rights you have", related: ["responsibility", "file-rti"] },
+  { group: "help", slug: "file-rti",       label: "Ask the government (RTI)",  emoji: "📜", icon: FilePen,       description: "Write an RTI request, step by step", related: ["rti"] },
+  { group: "help", slug: "rti",            label: "RTI replies tracker",       emoji: "🏛️", icon: ClipboardList, description: "How many RTI requests get answered, and how fast", related: ["file-rti"] },
 
-  // ── Accountability (25–31; slot 30 reserved) ───────────────
-  { slug: "police",           label: "Police & Traffic",    emoji: "👮", icon: Shield,           description: "Stations, traffic revenue, crime stats", priority: 25 },
-  { slug: "courts",           label: "Courts",              emoji: "⚖️", icon: Scale,            description: "Case pendency, disposal rates", priority: 26 },
-  { slug: "file-rti",         label: "File RTI",            emoji: "📜", icon: FilePen,          description: "Guided RTI wizard with templates", priority: 27 },
-  { slug: "rti",              label: "RTI Tracker",         emoji: "🏛️", icon: ClipboardList,    description: "Filing trends, response times", priority: 28 },
-  { slug: "data-sources",     label: "Data Sources",        emoji: "🔗", icon: Database,         description: "All official sources + data refresh status", priority: 29 },
-  { slug: "update-log",       label: "Update Log",          emoji: "🕒", icon: History,          description: "Every data change, with its date", priority: 31 },
+  // 👥 Who runs it
+  { group: "whoRuns", slug: "leadership",     label: "Leaders & officers", emoji: "👥", icon: Users,    description: "Your MP, MLAs, district officers and judges", related: ["elections"] },
+  { group: "whoRuns", slug: "elections",      label: "Elections",          emoji: "🗳️", icon: Vote,     description: "Who won, and how many people voted", related: ["leadership"] },
+  { group: "whoRuns", slug: "gram-panchayat", label: "Village councils",   emoji: "🏘️", icon: Building, description: "Gram panchayats, their money and MGNREGA work" },
+  { group: "whoRuns", slug: "courts",         label: "Courts",             emoji: "⚖️", icon: Scale,    description: "How many cases are waiting, and how fast they close" },
+  { group: "whoRuns", slug: "police",         label: "Police & safety",    emoji: "👮", icon: Shield,   description: "Police stations, crime numbers and traffic fines" },
 
-  // ── Community & people (32–37) ─────────────────────────────
-  { slug: "news",             label: "News & Updates",      emoji: "📰", icon: Newspaper,        description: "Local news aggregated from RSS", priority: 32 },
-  { slug: "exams",            label: "Exams & Jobs",        emoji: "📝", icon: BookOpen,         description: "Govt. exam notifications, eligibility, staffing data", priority: 33 },
-  { slug: "contributors",     label: "Contributors",        emoji: "🤝", icon: Heart,            description: "People who support this district's data", priority: 34 },
-  { slug: "famous-personalities", label: "Famous People",   emoji: "🌟", icon: Star,             description: "Notable people from this district", priority: 35 },
-  { slug: "population",       label: "Population",          emoji: "📈", icon: BarChart3,        description: "Census trends, literacy, sex ratio", priority: 36 },
-  { slug: "map",              label: "Interactive Map",     emoji: "🗺️", icon: Map,              description: "Drill-down map: state → district → taluk", priority: 37 },
+  // 💰 Money & projects
+  { group: "money", slug: "finance",        label: "Budget",                   emoji: "💰", icon: PiggyBank, description: "Money given to the district, and how much was spent" },
+  { group: "money", slug: "infrastructure", label: "Projects being built",     emoji: "🏗️", icon: HardHat,   description: "Roads, bridges and buildings, and how far along they are" },
+  { group: "money", slug: "tenders",        label: "Govt contracts (tenders)", emoji: "📑", icon: Gavel,     description: "Work the government is paying for, and who can bid" },
+  { group: "money", slug: "industries",     label: "Local industries",         emoji: "🏭", icon: Factory,   description: "Factories and big employers in the district" },
+
+  // 🤲 Help for you
+  { group: "helpForYou", slug: "schemes",  label: "Govt schemes",            emoji: "📋", icon: ScrollText, description: "Schemes you may get, and how to apply", related: ["housing", "services"] },
+  { group: "helpForYou", slug: "housing",  label: "Housing schemes",         emoji: "🏠", icon: Home,       description: "Government homes (PMAY): how many are built", related: ["schemes"] },
+  { group: "helpForYou", slug: "services", label: "How to get certificates", emoji: "🧾", icon: FileText,   description: "Steps and documents for certificates and land records", related: ["offices", "schemes"] },
+  { group: "helpForYou", slug: "offices",  label: "Govt offices near you",   emoji: "🏢", icon: Building2,  description: "Where each office is, and when it is open", related: ["services"] },
+  { group: "helpForYou", slug: "exams",    label: "Exams & jobs",            emoji: "📝", icon: BookOpen,   description: "Government exams and jobs you can apply for" },
+
+  // 🚰 Daily needs
+  { group: "dailyNeeds", slug: "jjm",       label: "Tap water (JJM)",    emoji: "🚰", icon: Droplets,      description: "How many homes have a tap connection", related: ["water"] },
+  { group: "dailyNeeds", slug: "water",     label: "Dams & rivers",      emoji: "🌊", icon: Waves,        description: "How full the dams are, and canal water", related: ["jjm", "weather"] },
+  { group: "dailyNeeds", slug: "power",     label: "Power cuts",         emoji: "⚡", icon: Zap,           description: "Planned power cuts and who to call" },
+  { group: "dailyNeeds", slug: "transport", label: "Buses & trains",     emoji: "🚌", icon: Bus,           description: "Bus routes, trains and auto fares" },
+  { group: "dailyNeeds", slug: "health",    label: "Hospitals & health", emoji: "🏥", icon: Heart,         description: "Hospitals, beds and doctors" },
+  { group: "dailyNeeds", slug: "schools",   label: "Schools",            emoji: "🎓", icon: GraduationCap, description: "Schools, exam results and teachers" },
+
+  // 🌾 Farming
+  { group: "farming", slug: "crops", label: "Crop prices",         emoji: "🌾", icon: Wheat,   description: "Mandi prices for your crops, with dates", related: ["farm"] },
+  { group: "farming", slug: "farm",  label: "Farm & soil advice",  emoji: "🚜", icon: Tractor, description: "Soil health and advice to grow better crops", related: ["crops", "weather"] },
+
+  // 📚 Know your district
+  { group: "know", slug: "population",           label: "People (census)", emoji: "📈", icon: BarChart3, description: "How many people live here, and who they are" },
+  { group: "know", slug: "map",                  label: "Map",             emoji: "🗺️", icon: Map,       description: "The district, its taluks and villages on a map" },
+  { group: "know", slug: "famous-personalities", label: "Famous people",   emoji: "🌟", icon: Star,      description: "Well-known people from this district" },
+  { group: "know", slug: "contributors",         label: "Supporters",      emoji: "🤝", icon: Heart,     description: "People who support this district's page" },
+
+  // 🔍 Check our work
+  { group: "checkWork", slug: "data-sources", label: "Where our data comes from", emoji: "🔗", icon: Database, description: "Every official source, and when it was last updated" },
+  { group: "checkWork", slug: "update-log",   label: "What changed and when",     emoji: "🕒", icon: History,  description: "Every data change, with its date" },
 ];
 
-export const TIER_LABELS = [
-  "Civic duty",
-  "Money & resources",
-  "Daily services",
-  "Accountability",
-  "Community & people",
-] as const;
+export const SIDEBAR_MODULES: SidebarModule[] = MODULES.map((m, i) => ({ ...m, priority: i + 1 }));
 
-export type TierLabel = (typeof TIER_LABELS)[number];
+const BY_SLUG: Record<string, SidebarModule> = Object.fromEntries(SIDEBAR_MODULES.map((m) => [m.slug, m]));
+const GROUP_BY_KEY = Object.fromEntries(MODULE_GROUPS.map((g) => [g.key, g])) as Record<ModuleGroupKey, ModuleGroup>;
 
-// Human-readable group label for a priority number. Used to render section
-// headings in the sidebar and the mobile drawers. Keep boundaries in sync
-// with the priority blocks above — any reassignment also shifts the group.
+/** The registry entry for a slug, or null. */
+export function getModule(slug: string | null | undefined): SidebarModule | null {
+  return (slug && BY_SLUG[slug]) || null;
+}
+
+/** The group a module belongs to, or null for unknown slugs. */
+export function getModuleGroup(slug: string | null | undefined): ModuleGroup | null {
+  const m = getModule(slug);
+  return m ? GROUP_BY_KEY[m.group] : null;
+}
+
+/** Related modules ("See also") for a slug, in the order listed. */
+export function getRelatedModules(slug: string | null | undefined): SidebarModule[] {
+  const m = getModule(slug);
+  return (m?.related ?? []).map((s) => BY_SLUG[s]).filter((x): x is SidebarModule => Boolean(x));
+}
+
+export type GroupedModules = ModuleGroup & { modules: SidebarModule[] };
+
+/** Modules grouped in MODULE_GROUPS order; empty groups are left out. */
+export function getGroupedModules(): GroupedModules[] {
+  return MODULE_GROUPS.map((g) => ({ ...g, modules: SIDEBAR_MODULES.filter((m) => m.group === g.key) })).filter(
+    (g) => g.modules.length > 0,
+  );
+}
+
+/** Flat list of module slugs in sidebar order. Used by the collapsed sidebar. */
+export function getOrderedSlugs(): string[] {
+  return SIDEBAR_MODULES.map((m) => m.slug);
+}
+
+// ── Older API, kept so existing callers compile ────────────
+//
+// `useModuleText().group()/groupOf()` (src/i18n/client.ts), OverviewClient
+// and LockedDistrictPreview still speak "tier labels". A tier label is now
+// the English label of the module's group. New code uses
+// getGroupedModules() / getModuleGroup() and translates `moduleGroups.<key>`.
+
+/** @deprecated English group label. Use ModuleGroupKey. */
+export type TierLabel = string;
+
+/** @deprecated English group labels in order. Use MODULE_GROUPS. */
+export const TIER_LABELS: readonly TierLabel[] = MODULE_GROUPS.map((g) => g.label);
+
+/** @deprecated English group label of the module at this priority. Use getModuleGroup(slug). */
 export function tierFromPriority(priority: number): TierLabel {
-  if (priority <= 5) return "Civic duty";
-  if (priority <= 14) return "Money & resources";
-  if (priority <= 24) return "Daily services";
-  if (priority <= 31) return "Accountability";
-  return "Community & people";
+  const m = SIDEBAR_MODULES.find((x) => x.priority === priority);
+  return (m ? GROUP_BY_KEY[m.group] : MODULE_GROUPS[0]).label;
+}
+
+/** @deprecated Groups with `label` = English group label. Use getGroupedModules(). */
+export function getTieredModules(): Array<GroupedModules & { label: TierLabel }> {
+  return getGroupedModules();
 }
 
 /**
- * Icon accent per group (CONCEPT-v3 §3). Values are names of the
- * `--accent-<name>-700` ramps on :root and match the kit's ModuleAccent.
- * civic → purple · money → amber · services → teal · accountability → slate ·
- * community → pink. ("data → blue" is reserved for the India dashboard.)
+ * v3 icon accent per group; PageHeader ignores it in v4 (colours come from
+ * the module hue) but ~35 pages still pass `accent={getModuleAccent(slug)}`.
  */
-export const TIER_ACCENT: Record<TierLabel, "purple" | "amber" | "teal" | "slate" | "pink"> = {
-  "Civic duty": "purple",
-  "Money & resources": "amber",
-  "Daily services": "teal",
-  "Accountability": "slate",
-  "Community & people": "pink",
+const GROUP_ACCENT: Record<ModuleGroupKey, "purple" | "amber" | "teal" | "slate" | "pink"> = {
+  start: "purple",
+  help: "purple",
+  whoRuns: "slate",
+  money: "amber",
+  helpForYou: "teal",
+  dailyNeeds: "teal",
+  farming: "amber",
+  know: "pink",
+  checkWork: "slate",
 };
 
-/** Accent name for a module slug (falls back to the civic purple). */
+/** Accent name for a module slug (falls back to purple). */
 export function getModuleAccent(slug: string): "purple" | "amber" | "teal" | "slate" | "pink" {
-  const mod = SIDEBAR_MODULES.find((m) => m.slug === slug);
-  return mod ? TIER_ACCENT[tierFromPriority(mod.priority)] : "purple";
+  const m = getModule(slug);
+  return m ? GROUP_ACCENT[m.group] : "purple";
 }
 
-/** Modules grouped by tier label, each group already sorted by priority. */
-export function getTieredModules(): Array<{ label: TierLabel; modules: SidebarModule[] }> {
-  // Plain Record instead of global Map — 'Map' is shadowed by the
-  // lucide-react icon import at the top of this file.
-  const sorted = [...SIDEBAR_MODULES].sort((a, b) => a.priority - b.priority);
-  const byTier: Partial<Record<TierLabel, SidebarModule[]>> = {};
-  for (const m of sorted) {
-    const t = tierFromPriority(m.priority);
-    (byTier[t] ??= []).push(m);
-  }
-  // Preserve the canonical tier order even if a tier is empty.
-  return TIER_LABELS.filter((t) => byTier[t] !== undefined).map((label) => ({ label, modules: byTier[label]! }));
-}
-
-/** Flat list of module slugs in priority order. Used by collapsed sidebars. */
-export function getOrderedSlugs(): string[] {
-  return [...SIDEBAR_MODULES].sort((a, b) => a.priority - b.priority).map((m) => m.slug);
-}
-
-// The 4 fixed tabs on mobile bottom-nav. Bottom-nav priority is different
+// The 4 fixed tabs on the phone bottom nav. Bottom-nav priority is different
 // from sidebar priority — citizens glance here most frequently.
 export const MOBILE_TAB_MODULES = ["overview", "crops", "weather", "news"] as const;

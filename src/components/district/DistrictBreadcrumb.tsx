@@ -78,6 +78,8 @@ export default function DistrictBreadcrumb({
   const localName = (name: string, nameLocal?: string | null) =>
     nameLocal && nameLocal !== name && scriptLang(nameLocal) === locale ? nameLocal : name;
   const stateLabel = place.state(stateSlug, stateName);
+  // Phones and tablets (< 1024 px, no sidebar) switch state/district/taluk
+  // in a bottom sheet; laptops and PCs in a floating dropdown.
   const isMobile = useIsMobile();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -423,8 +425,9 @@ export default function DistrictBreadcrumb({
         href={`/${locale}/${stateSlug}`}
         isCurrent={false}
         menuOpen={openMenu === "state"}
+        floating={!isMobile}
         onCaretClick={() => setOpenMenu(openMenu === "state" ? null : "state")}
-        ariaCaretLabel={`Switch state (currently ${stateName})`}
+        ariaCaretLabel={tb("switchState", { name: stateLabel })}
       >
         {peerLiveStates.length === 0 ? (
           <div className="ftp-breadcrumb-menu-empty">{tb("noStates")}</div>
@@ -454,15 +457,14 @@ export default function DistrictBreadcrumb({
         href={`/${locale}/${stateSlug}/${districtSlug}`}
         isCurrent={!currentTalukSlug}
         menuOpen={openMenu === "district"}
+        floating={!isMobile}
         onCaretClick={() =>
           setOpenMenu(openMenu === "district" ? null : "district")
         }
-        ariaCaretLabel={`Switch district (currently ${districtName})`}
+        ariaCaretLabel={tb("switchDistrict", { name: districtName })}
       >
         {peerLiveDistricts.length === 0 ? (
-          <div className="ftp-breadcrumb-menu-empty">
-            No districts listed for {stateName}
-          </div>
+          <div className="ftp-breadcrumb-menu-empty">{tb("noDistricts")}</div>
         ) : (
           peerLiveDistricts.map((d) => (
             <PeerMenuItem
@@ -495,6 +497,7 @@ export default function DistrictBreadcrumb({
         placeholder={!currentTalukSlug}
         isCurrent={!!currentTalukSlug}
         menuOpen={openMenu === "taluk"}
+        floating={!isMobile}
         onCaretClick={() => setOpenMenu(openMenu === "taluk" ? null : "taluk")}
         ariaCaretLabel={tb("chooseSub", { unit: subLabel, name: districtName })}
       >
@@ -597,6 +600,12 @@ interface CrumbProps {
   isCurrent: boolean;
   placeholder?: boolean;
   menuOpen: boolean;
+  /**
+   * Show the open menu as a floating dropdown (laptop/PC). On phones and
+   * tablets the parent shows a BreadcrumbBottomSheet instead, so the
+   * dropdown must not render as well.
+   */
+  floating?: boolean;
   onCaretClick: () => void;
   ariaCaretLabel: string;
   children: React.ReactNode;
@@ -610,6 +619,7 @@ function BreadcrumbCrumb({
   isCurrent,
   placeholder,
   menuOpen,
+  floating = true,
   onCaretClick,
   ariaCaretLabel,
   children,
@@ -664,7 +674,7 @@ function BreadcrumbCrumb({
       >
         <ChevronDown size={12} aria-hidden="true" />
       </button>
-      {menuOpen && (
+      {menuOpen && floating && (
         <div className="ftp-breadcrumb-menu" role="menu">
           {children}
         </div>
