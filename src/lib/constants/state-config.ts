@@ -482,7 +482,7 @@ export const UNIVERSAL_DATA_SOURCES: DataSourceEntry[] = [
   { module: "Schools", source: "UDISE+ (Unified District Information System for Education)", type: "API", frequency: "Annual", url: "https://udiseplus.gov.in", status: "static" },
   { module: "Elections", source: "Election Commission of India (ECI)", type: "Static", frequency: "Post-election", url: "https://eci.gov.in", status: "static" },
   { module: "Schemes", source: "MyScheme.gov.in / State scheme portals", type: "API", frequency: "Weekly", url: "https://myscheme.gov.in", status: "static" },
-  { module: "Courts", source: "NJDG (National Judicial Data Grid)", type: "API", frequency: "Weekly", url: "https://njdg.ecourts.gov.in", status: "static" },
+  { module: "Courts", source: "NJDG (National Judicial Data Grid)", type: "API", frequency: "Daily", url: "https://njdg.ecourts.gov.in/njdg_v3/", status: "live" },
   { module: "Police / Crime", source: "NCRB (National Crime Records Bureau) / data.gov.in", type: "Collected", frequency: "Annual", url: "https://ncrb.gov.in", status: "static" },
   { module: "Infrastructure", source: "PMGSY / State PWD Portal", type: "Collected", frequency: "Monthly", url: null, status: "static" },
   { module: "Jal Jeevan Mission", source: "JJM National Dashboard (eJalShakti)", type: "API", frequency: "Weekly", url: "https://ejalshakti.gov.in/jjmreport", status: "live" },
@@ -557,7 +557,7 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     },
     transport:         { sources: [config?.stateTransportFullName ?? "State Transport Corporation", "IRCTC"], frequency: "Monthly" },
     rti:               { sources: [config?.stateInformationCommission ?? "State Information Commission", "RTI Online Portal"], frequency: "When the source publishes" },
-    courts:            { sources: ["NJDG (National Judicial Data Grid)"], frequency: "When the source publishes" },
+    courts:            { sources: ["NJDG (National Judicial Data Grid)"], frequency: "Daily", isLive: true },
     population:        {
       sources: [
         "Census of India 2011 (Office of the Registrar General & Census Commissioner)",

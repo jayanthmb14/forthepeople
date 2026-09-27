@@ -7,12 +7,14 @@
 // Server-only: for every dataset in src/lib/constants/dataset-collection.ts,
 // how many rows we hold for a district and the date (or period) of the
 // newest one. Counted the way the pages show them: news-derived Leader /
-// CrimeStat / PowerOutage rows and non-local infrastructure are left out,
-// as in /api/data/[module]. One read-only aggregate per table.
+// CrimeStat / PowerOutage rows, hand-seeded CourtStat rows and non-local
+// infrastructure are left out, as in /api/data/[module]. One read-only
+// aggregate per table (plus the courts snapshot from Redis).
 import { prisma } from "@/lib/db";
-import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
 import type { DatasetDate } from "@/lib/constants/dataset-collection";
-import { NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
+import { readCourtsSnapshot } from "@/lib/courts/store";
+import { courtStatReadDate } from "@/lib/courts/snapshot";
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 const latest = (...ds: Array<Date | null | undefined>) =>
@@ -24,7 +26,15 @@ const LAST_CENSUS_YEAR = 2011;
 /** Last moment of a calendar month (for "rain up to Dec 2024" ages). */
 const endOfMonth = (year: number, month: number) => new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
-export async function collectDatasetDates(districtId: string, stateId: string): Promise<Record<string, DatasetDate>> {
+/**
+ * `districtSlug` lets the courts entry use the NJDG snapshot's read time
+ * (Redis); without it the date comes from the CourtStat rows' read date.
+ */
+export async function collectDatasetDates(
+  districtId: string,
+  stateId: string,
+  districtSlug?: string,
+): Promise<Record<string, DatasetDate>> {
   const d = { districtId };
   const [
     news, alerts, alertsActive, weather, rain, rainCount, rtiCount, rtiTop,
@@ -32,7 +42,7 @@ export async function collectDatasetDates(districtId: string, stateId: string): 
     budgetE, budgetA, budgetTop, infra, industries,
     schemes, housing, housingTop, services, offices, exams,
     jjm, dams, power, buses, trains, schools, crops, soil, advisories,
-    profiles, popHistory, famous, insights,
+    profiles, popHistory, famous, insights, courtsSnapshot,
   ] = await Promise.all([
     prisma.newsItem.aggregate({ where: d, _count: { _all: true }, _max: { publishedAt: true } }),
     prisma.localAlert.aggregate({ where: d, _count: { _all: true }, _max: { createdAt: true } }),
@@ -45,7 +55,8 @@ export async function collectDatasetDates(districtId: string, stateId: string): 
     prisma.leader.aggregate({ where: { ...d, active: true, ...NOT_FROM_NEWS_OPTIONAL }, _count: { _all: true }, _max: { lastVerifiedAt: true } }),
     prisma.electionResult.aggregate({ where: d, _count: { _all: true }, _max: { year: true } }),
     prisma.gramPanchayat.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
-    prisma.courtStat.aggregate({ where: d, _count: { _all: true }, _max: { year: true } }),
+    // Only the rows the NJDG collector wrote; "· read YYYY-MM-DD" sorts by date.
+    prisma.courtStat.aggregate({ where: { ...d, ...NJDG_COURTSTAT }, _count: { _all: true }, _max: { source: true } }),
     prisma.crimeStat.aggregate({ where: { ...d, ...NOT_FROM_NEWS }, _count: { _all: true }, _max: { year: true } }),
     prisma.policeStation.count({ where: d }),
     prisma.budgetEntry.aggregate({ where: d, _count: { _all: true }, _max: { fetchedAt: true, fiscalYear: true } }),
@@ -76,7 +87,14 @@ export async function collectDatasetDates(districtId: string, stateId: string): 
     prisma.populationHistory.findMany({ where: d, select: { year: true, source: true } }),
     prisma.famousPersonality.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { createdAt: true } }),
     prisma.aIModuleInsight.aggregate({ where: d, _count: { _all: true }, _max: { generatedAt: true } }),
+    districtSlug ? readCourtsSnapshot(districtSlug) : Promise.resolve(null),
   ]);
+
+  // Courts: when the collector last read NJDG — the snapshot's time, else
+  // the newest CourtStat row's read date (IST day, taken as its end).
+  const courtsReadOn = courtStatReadDate(courts._max.source);
+  const courtsNewest =
+    courtsSnapshot?.fetchedAt ?? (courtsReadOn ? new Date(`${courtsReadOn}T23:59:59+05:30`).toISOString() : null);
 
   // The editions the population page draws on, oldest first ("Census 2011 · NFHS-5 · NITI MPI 2023").
   // The last Census that was actually held is 2011 (the next is Census 2027),
@@ -96,7 +114,7 @@ export async function collectDatasetDates(districtId: string, stateId: string): 
     leaders: { rows: leaders._count._all, newest: iso(leaders._max.lastVerifiedAt), period: null },
     elections: { rows: elections._count._all, newest: null, period: elections._max.year ? String(elections._max.year) : null },
     panchayats: { rows: panchayats._count._all, newest: iso(panchayats._max.updatedAt), period: null },
-    courts: { rows: courts._count._all, newest: null, period: courts._max.year ? String(courts._max.year) : null },
+    courts: { rows: Math.max(courts._count._all, courtsSnapshot?.units.length ?? 0), newest: courtsNewest, period: null },
     police: { rows: crime._count._all + stations, newest: null, period: crime._max.year ? String(crime._max.year) : null },
     budget: {
       rows: budgetE._count._all + budgetA._count._all,

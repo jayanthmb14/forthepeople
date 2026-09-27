@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
+import { LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL } from "@/lib/data-filters";
 
 const WEIGHTS = {
   governance: 15,
@@ -329,7 +329,7 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
   sub.policeCoverage = { value: stations, max: Math.round((pop / 20000)), score: Math.round(stationScore), label: "Police Stations", ...noDataIf(district?.population == null) };
 
   // Court disposal rate
-  const courts = await prisma.courtStat.findMany({ where: { districtId }, orderBy: { year: "desc" }, take: 5 });
+  const courts = await prisma.courtStat.findMany({ where: { districtId, ...NJDG_COURTSTAT }, orderBy: { year: "desc" }, take: 5 });
   if (courts.length > 0) {
     const filed = courts.reduce((s, c) => s + c.filed, 0);
     const disposed = courts.reduce((s, c) => s + c.disposed, 0);

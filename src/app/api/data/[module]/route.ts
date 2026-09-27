@@ -15,7 +15,7 @@ import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
-import { LOCAL_INFRA, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
+import { LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, NOT_SEEDED_RAINFALL } from "@/lib/data-filters";
 import { dedupeStories } from "@/lib/news-dedupe";
 
 // Modules whose payload carries live text with stored translations
@@ -375,8 +375,9 @@ async function fetchModule(
     // 15. COURTS
     // ══════════════════════════════════════════════════
     case "courts": {
+      // Only rows the NJDG collector wrote; hand-seeded rows are never sent.
       const data = await prisma.courtStat.findMany({
-        where: { districtId: did },
+        where: { districtId: did, ...NJDG_COURTSTAT },
         orderBy: [{ year: "desc" }, { courtName: "asc" }],
       });
       return { data, meta };

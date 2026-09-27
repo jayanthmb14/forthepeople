@@ -6,6 +6,7 @@
 // Shared Prisma filters for what a district page may show or count.
 // Use them everywhere public numbers are built (data API, report card,
 // insights) so every screen agrees.
+import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
 
 /**
  * Rows written straight from a news article carry the article URL as
@@ -41,3 +42,12 @@ export const NOT_SEEDED_RAINFALL = {
     ],
   },
 };
+
+/**
+ * CourtStat rows the NJDG collector wrote ("NJDG district dashboard · read
+ * 2026-09-27", src/scraper/jobs/courts-njdg.ts). The older rows have no
+ * source and round numbers — they were typed into the seed scripts, not
+ * read from NJDG — so they are never shown or counted. (Deleting them is
+ * the owner's call; this keeps them out until then.)
+ */
+export const NJDG_COURTSTAT = { source: { startsWith: COURTSTAT_SOURCE_PREFIX } };

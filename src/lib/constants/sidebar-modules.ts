@@ -196,7 +196,7 @@ const YEAR = 365 * DAY;
  * Expected maximum age per module (main dataset). Periods are measured from
  * the START of a financial year (budget, housing) and from the END of a
  * calendar year (yearly statistics, the census), so "FY 2026-27" is current
- * until May 2027 and "2024 court statistics" until the end of 2026.
+ * until May 2027 and "2024 crime statistics" until the end of 2026.
  */
 export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   news:                   { maxAgeHours: 24 * HOUR, every: "daily",    method: "auto" },
@@ -210,7 +210,8 @@ export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   leadership:             { maxAgeHours: 90 * DAY,  every: "onChange", method: "manual" },
   elections:              { maxAgeHours: 6 * YEAR,  every: "election", method: "manual",    portal: "https://results.eci.gov.in" },
   "gram-panchayat":       { maxAgeHours: YEAR,      every: "monthly",  method: "manual",    portal: "https://egramswaraj.gov.in" },
-  courts:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://njdg.ecourts.gov.in" },
+  // Read from NJDG twice a day by /api/cron/scrape-courts (each district at least daily).
+  courts:                 { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto",      portal: "https://njdg.ecourts.gov.in/njdg_v3/" },
   police:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://ncrb.gov.in" },
   finance:                { maxAgeHours: 400 * DAY, every: "yearly",   method: "manual" },
   infrastructure:         { maxAgeHours: 90 * DAY,  every: "monthly",  method: "news" },

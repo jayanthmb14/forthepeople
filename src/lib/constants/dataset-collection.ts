@@ -24,6 +24,8 @@
 //
 //  Update this file whenever vercel.json or a collector's coverage changes.
 
+import { NJDG_DISTRICT_BASE, NJDG_DISTRICT_UNITS } from "@/lib/courts/sources";
+
 /** How the data reaches us. */
 export type Collection =
   /** Our collector fetches it on a schedule (a cron in vercel.json). */
@@ -70,6 +72,9 @@ export interface DatasetInfo {
 
 const DAY = 24;
 
+/** Districts whose court figures the NJDG collector reads (src/lib/courts/sources.ts). */
+export const NJDG_COVERED_DISTRICTS: readonly string[] = Object.keys(NJDG_DISTRICT_UNITS);
+
 /**
  * Districts whose dam levels the dams collector reads from the Karnataka
  * Water Resources Department portal (KARNATAKA_DISTRICT_DAMS in
@@ -90,7 +95,21 @@ export const DATASETS: readonly DatasetInfo[] = [
   { key: "leaders", slug: "leadership", collection: "hand", dateKind: "checked", maxAgeHours: 60 * DAY },
   { key: "elections", slug: "elections", collection: "published", dateKind: "period", url: "https://results.eci.gov.in" },
   { key: "panchayats", slug: "gram-panchayat", collection: "hand", dateKind: "checked", maxAgeHours: 365 * DAY, url: "https://egramswaraj.gov.in" },
-  { key: "courts", slug: "courts", collection: "hand", dateKind: "period", url: "https://njdg.ecourts.gov.in" },
+  // Read from NJDG's public district dashboards (src/scraper/jobs/courts-njdg.ts);
+  // the date is when the collector last read NJDG. Hand-typed CourtStat rows
+  // are never shown (NJDG_COURTSTAT in src/lib/data-filters.ts).
+  {
+    key: "courts",
+    slug: "courts",
+    collection: "auto",
+    cron: "/api/cron/scrape-courts",
+    every: "daily",
+    autoDistricts: NJDG_COVERED_DISTRICTS,
+    fallback: "hand",
+    dateKind: "reading",
+    maxAgeHours: 3 * DAY,
+    url: NJDG_DISTRICT_BASE,
+  },
   { key: "police", slug: "police", collection: "hand", dateKind: "period", url: "https://ncrb.gov.in" },
   // Money & projects
   { key: "budget", slug: "finance", collection: "hand", dateKind: "period" },
