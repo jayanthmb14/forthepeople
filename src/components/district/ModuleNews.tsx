@@ -10,7 +10,8 @@
 //
 //  Design v3 "Civic Ledger" (CONCEPT-v3 §5, Module page). Fetches the
 //  district's news once and keeps only the articles the AI news pipeline
-//  tagged for THIS module (targetModule === module). Renders nothing when
+//  tagged for THIS module (targetModule === module) whose own words back
+//  that tag (related, from src/lib/related-news.ts). Renders nothing when
 //  there are none — an empty "Related news" heading helps no one.
 //
 //  Each article is a quiet Card: source + date on top (so a reader knows
@@ -36,6 +37,8 @@ interface NewsItem {
   category: string;
   publishedAt: string;
   targetModule?: string | null;
+  /** True when the story's own words back its district and module tags. */
+  related?: boolean;
   /** Language of headline/summary: the page language once translated, else "en". */
   lang?: string;
 }
@@ -78,8 +81,11 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
       .then((r) => r.json())
       .then((json) => {
         const items: NewsItem[] = json.data ?? [];
+        // `related` (set by the news API from the English text): the story
+        // names this district, no other state, and fits the module
+        // (src/lib/related-news.ts; Sept 2026 audit).
         const filtered = items
-          .filter((n) => n.targetModule === module)
+          .filter((n) => n.targetModule === module && n.related === true)
           .slice(0, limit);
         setNews(filtered);
         setLoaded(true);

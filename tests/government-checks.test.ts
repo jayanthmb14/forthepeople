@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { leaderOfficePhone, leaderSourceOutlets, leaderSourceSummary, localRoleFits } from "@/lib/government-checks";
 import { MAX_INSIGHT_DAYS, insightTooOld } from "@/lib/insight-age";
+import { isRelatedNews } from "@/lib/related-news";
 
 describe("leaderOfficePhone", () => {
   it("drops emergency and helpline short codes (Sept 2026: CP Mumbai had '100')", () => {
@@ -73,5 +74,32 @@ describe("insightTooOld (card and /api/data/insight share it)", () => {
   });
   it("keeps recent ones", () => {
     expect(insightTooOld(new Date(now - 2 * 86_400_000), now)).toBe(false);
+  });
+});
+
+describe("isRelatedNews (related news on module pages)", () => {
+  const item = (title: string, targetModule: string, summary: string | null = null) => ({ title, summary, targetModule });
+
+  it("drops stories about another state or district (Sept 2026 audit examples)", () => {
+    expect(isRelatedNews(item("BJP Protests in Bengaluru Over Karnataka Govt's Finances", "elections"), "New Delhi", "Delhi")).toBe(false);
+    expect(isRelatedNews(item("Delhi Confidential: Centre's lawyer defends Karnataka Congress government", "elections"), "New Delhi", "Delhi")).toBe(false);
+    expect(isRelatedNews(item("South Tripura first in state to fully implement IHMIS", "leaders"), "Kolkata", "West Bengal")).toBe(false);
+    expect(isRelatedNews(item("4 killed in blast in Maharashtra's Yavatmal district", "police"), "Mumbai", "Maharashtra")).toBe(false);
+  });
+
+  it("drops stories whose words do not fit the module", () => {
+    expect(isRelatedNews(item("Hyderabad mega job mela on Saturday", "elections"), "Hyderabad", "Telangana")).toBe(false);
+    expect(isRelatedNews(item("VVCE's first batch to reunite in Mysuru", "police"), "Mysuru", "Karnataka")).toBe(false);
+  });
+
+  it("keeps a story that names the district and fits the module", () => {
+    expect(isRelatedNews(item("Mandya police arrest two in theft case", "police"), "Mandya", "Karnataka")).toBe(true);
+    expect(isRelatedNews(item("Bangalore voters queue up early", "elections"), "Bengaluru Urban", "Karnataka")).toBe(true);
+    expect(isRelatedNews(item("New office opens", "offices", "The Mysore district office opened on Monday."), "Mysuru", "Karnataka")).toBe(true);
+  });
+
+  it("needs a module tag and a district name", () => {
+    expect(isRelatedNews(item("Mandya police arrest two", ""), "Mandya", "Karnataka")).toBe(false);
+    expect(isRelatedNews({ title: "Mandya police arrest two" }, "Mandya", "Karnataka")).toBe(false);
   });
 });

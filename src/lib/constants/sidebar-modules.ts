@@ -147,7 +147,7 @@ const MODULES: readonly ModuleEntry[] = [
 
   // 👥 Who runs it
   { group: "whoRuns", slug: "leadership",     label: "Leaders & officers", emoji: "👥", icon: Users,    description: "Your MP, MLAs, district officers and judges", related: ["elections"] },
-  { group: "whoRuns", slug: "elections",      label: "Elections",          emoji: "🗳️", icon: Vote,     description: "Who won, and how many people voted", related: ["leadership"] },
+  { group: "whoRuns", slug: "elections",      label: "Elections",          emoji: "🗳️", icon: Vote,     description: "When you vote next, and where your polling booth is", related: ["leadership"] },
   { group: "whoRuns", slug: "gram-panchayat", label: "Village councils",   emoji: "🏘️", icon: Building, description: "Gram panchayats, their money and MGNREGA work" },
   { group: "whoRuns", slug: "courts",         label: "Courts",             emoji: "⚖️", icon: Scale,    description: "How many cases are waiting, and how fast they close" },
   { group: "whoRuns", slug: "police",         label: "Police & safety",    emoji: "👮", icon: Shield,   description: "Police stations, crime numbers and traffic fines" },

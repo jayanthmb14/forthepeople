@@ -89,10 +89,12 @@ const MODULE_META: Record<string, (c: MetaContext) => ModuleMeta> = {
     description: `District Collector, Superintendent of Police, MLAs, MPs and other key officials of ${d} district, ${s}.`,
     keywords: [`${d} collector`, `${d} district officials`, `${d} MLA MP`, `${s} government officers`],
   }),
+  // Results are withheld until checked against ECI (ELECTION_RESULTS_WITHHELD
+  // in src/lib/data-filters.ts), so the title does not promise them.
   elections: ({ d, s }) => ({
-    title: `${d} Election Results & Voter Data`,
-    description: `Assembly and Lok Sabha election results, voter turnout and candidates for ${d} district, ${s}.`,
-    keywords: [`${d} election results`, `${d} MLA`, `${d} MP`, `${s} election data`],
+    title: `${d} Elections — Next Vote & Polling Booths`,
+    description: `When the next Lok Sabha and assembly elections are for ${d} district, ${s}, how voting works, and where the polling booths are.`,
+    keywords: [`${d} election`, `${d} polling booth`, `${d} MLA`, `${s} election date`],
   }),
   "gram-panchayat": ({ d, s }) => ({
     title: `${d} Gram Panchayats — Funds & MGNREGA`,
