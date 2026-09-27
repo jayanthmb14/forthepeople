@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "page_about" });
   return {
     title: { absolute: t("metaTitle") },
-    description: t("metaDescription", { total: FACTS.totalIndiaDistricts }),
+    description: t("metaDescription", { live: FACTS.activeDistricts, states: FACTS.activeStates, total: FACTS.totalIndiaDistricts }),
     alternates: languageAlternates("/about", locale),
     openGraph: {
       url: `${BASE_URL}/${locale}/about`,
@@ -71,15 +71,25 @@ const PILLARS: { key: string; emoji: string; hue: Hue }[] = [
 ];
 
 // Portal names are proper nouns; the one-line descriptions are translated.
+// Sept 2026 audit: this list must name the sources the collectors actually
+// read. Removed: India-WRIS (not used — dam levels come from Karnataka's
+// Water Resources Department, src/scraper/jobs/dams.ts), IMD (weather is
+// OpenWeatherMap with Open-Meteo as the fallback, src/scraper/jobs/weather.ts)
+// and the National Scholarship Portal (no collector; schemes come from
+// myScheme, src/scraper/jobs/schemes.ts). Added the price and news sources.
 const DATA_SOURCES: { name: string; key: string; emoji: string; url: string }[] = [
   { name: "AGMARKNET", key: "agmarknet", emoji: "🌾", url: "https://agmarknet.gov.in" },
-  { name: "India-WRIS", key: "wris", emoji: "💧", url: "https://indiawris.gov.in" },
-  { name: "IMD", key: "imd", emoji: "🌦️", url: "https://mausam.imd.gov.in" },
+  { name: "Karnataka Water Resources Department", key: "kwrd", emoji: "💧", url: "https://water.karnataka.gov.in" },
+  { name: "OpenWeatherMap", key: "owm", emoji: "🌦️", url: "https://openweathermap.org" },
   { name: "Election Commission of India", key: "eci", emoji: "🗳️", url: "https://eci.gov.in" },
   { name: "eGramSwaraj / PFMS", key: "egram", emoji: "🏘️", url: "https://egramswaraj.gov.in" },
   { name: "UDISE+", key: "udise", emoji: "🎓", url: "https://udiseplus.gov.in" },
-  { name: "National Scholarship Portal", key: "nsp", emoji: "🎒", url: "https://scholarships.gov.in" },
+  { name: "myScheme", key: "myscheme", emoji: "🎒", url: "https://www.myscheme.gov.in" },
   { name: "PMAY-G / PMAY-U", key: "pmay", emoji: "🏠", url: "https://pmayg.nic.in" },
+  { name: "IBJA", key: "ibja", emoji: "🪙", url: "https://www.ibjarates.com" },
+  { name: "PPAC / BPCL", key: "fuel", emoji: "⛽", url: "https://ppac.gov.in" },
+  { name: "Yahoo Finance", key: "yahoo", emoji: "📈", url: "https://finance.yahoo.com" },
+  { name: "Google News", key: "news", emoji: "📰", url: "https://news.google.com" },
 ];
 
 /** One colour per state row in the "where we are live" bars. */
@@ -145,7 +155,7 @@ export default async function AboutPage({ params }: Props) {
         <Explainer>{t.rich("glanceSimple", { d, s, total, b })}</Explainer>
         <StatStrip cols={4}>
           <StatTile emoji="🏙️" label={t("tileLive")} value={d} sub={t("tileLiveSub", { s })} />
-          <StatTile emoji="🗺️" label={t("tilePlanned")} value={`${total}+`} />
+          <StatTile emoji="🗺️" label={t("tilePlanned")} value={total} />
           <StatTile emoji="🧩" label={t("tileModules")} value={modulesPerDistrict} />
           <StatTile emoji="🆓" label={t("tileCost")} value={t("tileCostValue")} />
         </StatStrip>

@@ -1,8 +1,8 @@
 {
   "metaTitle": "Vote for the next district",
-  "metaDescription": "{n} districts waiting. Your vote decides which goes live next on India's free district transparency platform.",
+  "metaDescription": "{n} districts are on the voting list. Your vote decides which goes live next on India's free district transparency platform.",
   "title": "Vote for the next district",
-  "description": "{n} districts waiting. Your vote decides which goes live next.",
+  "description": "{n} districts are on the voting list. Your vote decides which goes live next.",
   "backHome": "Back to home",
   "simple": "People have cast <b>{total, plural, one {# vote} other {# votes}}</b> for <b>{voted, plural, one {# district} other {# districts}}</b> so far. <b>{leader}</b> is ahead with <b>{votes, plural, one {# vote} other {# votes}}</b>.",
   "topLabel": "Most-requested districts",

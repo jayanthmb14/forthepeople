@@ -517,7 +517,7 @@
       "label": "States and UTs",
       "value": "{a} + {b}",
       "meta": "{n} districts",
-      "source": "MHA, 2024"
+      "source": "LGD (Local Government Directory), Sept 2026"
     },
     "languages": {
       "label": "Languages",
@@ -526,7 +526,7 @@
       "source": "Constitution, Schedule 8"
     },
     "footLeft": "Each figure names its source and year",
-    "footRight": "Independent. Sourced from .gov.in portals and NDSAP."
+    "footRight": "Independent. From government portals and other reputed sources."
   },
   "world": {
     "title": "India in the world",

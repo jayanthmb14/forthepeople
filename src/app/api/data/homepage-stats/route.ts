@@ -8,13 +8,19 @@
 // ForThePeople.in — Homepage Stats API
 // GET /api/data/homepage-stats
 // Returns aggregated counts for hero stats bar
+//
+// Sept 2026 audit: this public route had its own count (6 tables → 2,689
+// "data points" while the home page said 4,917) and a hand-typed 780. It
+// now uses the home page's own count (loadDataPointCount) and the shared
+// district total, so the two always agree. Nothing on the site calls it.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
-import { DASHBOARDS_PER_DISTRICT } from "@/lib/constants";
+import { DASHBOARDS_PER_DISTRICT, TOTAL_INDIA_DISTRICTS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
+import { loadDataPointCount } from "@/components/home/home-data";
 
-const CACHE_KEY = "ftp:homepage-stats:v3";
+const CACHE_KEY = "ftp:homepage-stats:v4";
 
 export async function GET() {
   const cached = await cacheGet<object>(CACHE_KEY);
@@ -24,36 +30,23 @@ export async function GET() {
 
   try {
     const [
-      cropCount,
-      damCount,
-      weatherCount,
-      newsCount,
-      leaderCount,
-      schoolCount,
+      dataPoints,
       activeDistricts,
       latestNews,
       latestInfraUpdate,
       latestLocalAlert,
     ] = await Promise.all([
-      prisma.cropPrice.count(),
-      prisma.damReading.count(),
-      prisma.weatherReading.count(),
-      prisma.newsItem.count(),
-      prisma.leader.count(),
-      prisma.school.count(),
+      loadDataPointCount(),
       prisma.district.count({ where: { active: true } }),
       prisma.newsItem.findFirst({ orderBy: { fetchedAt: "desc" }, select: { fetchedAt: true } }),
       prisma.infraUpdate.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }).catch(() => null),
       prisma.localAlert.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }).catch(() => null),
     ]);
 
-    const totalDataPoints = cropCount + damCount + weatherCount + newsCount + leaderCount + schoolCount;
+    // The same count as the home page's "data points tracked" (null when the count failed).
+    const totalDataPoints = dataPoints;
 
-    // mostRecentAt now reflects healthy data sources, not stale upstream APIs.
-    // AGMARKNET (cropPrice.fetchedAt) hasn't published since 2026-04-21 — verified
-    // via Session-10 diagnostic logs across all 10 districts.
-    // Railway weather scraper (weatherReading.recordedAt) offline since trial
-    // credit constraints around 2026-04-21.
+    // mostRecentAt: the newest news, infrastructure update or local alert.
     const times = [
       latestNews?.fetchedAt,
       latestInfraUpdate?.createdAt,
@@ -66,7 +59,7 @@ export async function GET() {
       modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
       totalDataPoints,
       mostRecentAt: mostRecentAt?.toISOString() ?? null,
-      plannedDistricts: 780,
+      plannedDistricts: TOTAL_INDIA_DISTRICTS,
       fromCache: false,
     };
 
@@ -81,9 +74,9 @@ export async function GET() {
       return NextResponse.json({
         activeDistricts: fallbackCount,
         modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
-        totalDataPoints: 0,
+        totalDataPoints: null,
         mostRecentAt: null,
-        plannedDistricts: 780,
+        plannedDistricts: TOTAL_INDIA_DISTRICTS,
         fromCache: false,
         error: true,
       });
@@ -91,9 +84,9 @@ export async function GET() {
       return NextResponse.json({
         activeDistricts: 0,
         modulesPerDistrict: DASHBOARDS_PER_DISTRICT,
-        totalDataPoints: 0,
+        totalDataPoints: null,
         mostRecentAt: null,
-        plannedDistricts: 780,
+        plannedDistricts: TOTAL_INDIA_DISTRICTS,
         fromCache: false,
         error: true,
       });

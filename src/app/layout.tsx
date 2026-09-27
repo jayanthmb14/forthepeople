@@ -163,7 +163,7 @@ const faqLd = {
         "@type": "Answer",
         // Generated from the district registry so this answer can never drift
         // from the homepage again (issue #36).
-        "text": `ForThePeople.in currently covers ${getCoveragePhrase()}: ${getCoverageSentence()}. The platform plans to expand to all ${FACTS.totalIndiaDistricts}+ Indian districts. Each district has ${FACTS.modulesPerDistrict} data modules covering weather, crops, water, budget, schools, elections, leadership and other civic categories, each linked to its official source.`,
+        "text": `ForThePeople.in currently covers ${getCoveragePhrase()}: ${getCoverageSentence()}. The platform plans to expand to all ${FACTS.totalIndiaDistricts} Indian districts. Each district has ${FACTS.modulesPerDistrict} data modules covering weather, crops, water, budget, schools, elections, leadership and other civic categories, each linked to its official source.`,
       },
     },
     {

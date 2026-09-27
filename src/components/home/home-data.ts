@@ -8,7 +8,8 @@
 //  Home page — server-side loaders (database)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  SERVER ONLY: imports Prisma. Only src/app/[locale]/page.tsx calls these.
+//  SERVER ONLY: imports Prisma. src/app/[locale]/page.tsx calls these (and
+//  /api/data/homepage-stats reuses loadDataPointCount so the two agree).
 //  (Prices need no database: see home-markets.ts.)
 //  Every loader is read-only and never throws: a failed query leaves its
 //  part of the page out (or shows an empty state), it never invents a number.

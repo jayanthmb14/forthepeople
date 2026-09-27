@@ -2,7 +2,7 @@
   "site": {
     "name": "ForThePeople.in",
     "tagline": "Your District. Your Data. Your Right.",
-    "disclaimer": "ForThePeople.in is an independent citizen transparency initiative. This is NOT an official government website. All data is sourced from publicly available government portals under India's Open Data Policy (NDSAP)."
+    "disclaimer": "ForThePeople.in is an independent citizen transparency initiative. This is NOT an official government website. Data comes from government portals (many under India's Open Data Policy, NDSAP) and other reputed sources; each figure shows its source and date."
   },
   "nav": {
     "home": "Home",
