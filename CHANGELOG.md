@@ -10,6 +10,29 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — people & services audit findings (branch `v54/fix-people-services`, 2026-09-28)
+Rule: verified or hidden; each error fixed where the code produced it. Not deployed; the data
+script is a dry run until the owner runs it with `--confirm`.
+- **Census 2011 is one set of numbers**: `/api/data/population/profile` and `/api/data/overview`
+  take population, sex ratio, literacy, urban share and density from the checked Census 2011
+  PopulationHistory row (`src/lib/census-2011.ts`); Pune's population tiles now show its Census
+  figures. District constants corrected (no projections or city-corporation figures); Compare is
+  labelled "Census 2011", counts only official taluks, and says "no data" for unpublished spending.
+- **Report card** (`src/lib/health-score.ts`): literacy from the Census, students-per-teacher and
+  school facilities from UDISE+ only, "PHC/Health Offices" flagged not collected, completion counts
+  every spelling of completed, court score capped at 100, no police stations = not collected.
+- **Overview**: the projects card uses the glance tile's "being built" rule; invented metro taluk
+  lists are hidden (`subUnitsUnchecked`), counts are the official ones (Lucknow 5, Mysuru 9).
+- **Hidden at the API** ("People & services" block in `src/lib/data-filters.ts`): per-school counts
+  without a UDISE+ code, notes packed into school addresses, inactive bus/train rows, famous people
+  not born in the district, staffing rows not from a government site; the news engine no longer
+  writes staffing; eligibility tests carry no post count; unconfirmed exams show no post count.
+- **Text**: population sources list only Census 2011 and NITI MPI; New Delhi's civic bodies are
+  NDMC, the Cantonment Board and part of MCD; Aarogyasri ₹10 lakh and MJPJAY for all ration-card
+  families (en/hi/kn); health "data date" no longer uses a maintenance edit's timestamp.
+- **Data script** `scripts/fix-audit-2026-09-people-services.ts` (dry run: 296 changes with sources).
+  After `--confirm`: clear Redis caches and re-run the health-score job.
+
 ### Fixed — duplicates: the writers fixed, and a guard that removes its own (branch `v52/dedupe`, 2026-09-28)
 Owner rule: a duplicate on the site means the code that wrote it is wrong. Nothing here is deployed
 or applied to the database yet.
