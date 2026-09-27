@@ -81,8 +81,5 @@
   "daysTitle": "When the stories came out",
   "daysUnits": "Stories per day, last {n} days",
   "daysSimple": "The busiest day was <b>{day}</b>, with {n, plural, one {{count} story} other {{count} stories}}.",
-  "daysAria": "A bar for each of the last {n} days, {total} stories in all.",
-  "frequency": "Daily",
-  "sourceRegional": "Regional news websites",
-  "compare": "Compare with another district"
+  "daysAria": "A bar for each of the last {n} days, {total} stories in all."
 }
