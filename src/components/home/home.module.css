@@ -83,3 +83,303 @@
   .tickerViewport::-webkit-scrollbar { display: none; }
   .tickerAsOf { display: none; }
 }
+
+/* ───────────────────────── Page flow + phone order ─────────────────────────
+ * Desktop order (source order):  strip · hero · stats · map+list · rest
+ * Phone order (CONCEPT §5):      hero · strip · list · map · stats · rest
+ * Each block is a direct child of .flow so `order` can move it on phones.
+ */
+.flow {
+  display: flex;
+  flex-direction: column;
+}
+.band {
+  width: 100%;
+}
+.bandHero   { padding-top: 32px; }
+.bandStats  { padding-top: 24px; }
+.bandMap    { padding-top: 24px; }
+@media (max-width: 767px) {
+  .bandHero     { order: 1; padding-top: 24px; padding-bottom: 16px; }
+  .bandStrip    { order: 2; }
+  .bandMap      { order: 3; padding-top: 16px; }
+  .bandStats    { order: 4; padding-top: 16px; }
+  .bandRest     { order: 5; }
+}
+
+/* ───────────────────────── Hero ───────────────────────── */
+
+.hero {
+  max-width: 720px;
+}
+.heroLead {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ftp-text-2);
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Buttons (primary + secondary). 40 px, 44 px on phones. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.button:hover {
+  border-color: var(--ftp-border-strong);
+  background: var(--ftp-surface-2);
+}
+.buttonPrimary {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand);
+  color: var(--ftp-surface);
+}
+.buttonPrimary:hover {
+  border-color: var(--ftp-brand-deep);
+  background: var(--ftp-brand-deep);
+}
+@media (max-width: 767px) {
+  .button { height: 44px; flex: 1 1 auto; }
+}
+
+/* ───────────────────────── Map + districts (7 / 5 columns) ───────────────────────── */
+
+.mapGrid {
+  align-items: stretch;
+}
+.mapCol {
+  grid-column: 1 / span 7;
+  min-width: 0;
+  display: flex;
+}
+.listCol {
+  grid-column: 8 / span 5;
+  min-width: 0;
+}
+@media (max-width: 1023px) {
+  .mapCol,
+  .listCol { grid-column: 1 / -1; }
+}
+@media (max-width: 767px) {
+  /* List first, then the map. */
+  .listCol { order: -1; }
+}
+
+.mapFrame {
+  position: relative;
+  flex: 1;
+  margin: 0;
+  min-height: 420px;
+  background: var(--ftp-surface-2);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+  overflow: hidden;
+  touch-action: pinch-zoom;
+}
+.mapCanvas {
+  position: absolute;
+  inset: 0;
+}
+.mapLoading {
+  width: 100%;
+  height: 100%;
+  background: var(--ftp-surface-2);
+}
+/* Re-colour DrillDownMap (it paints inline, hence !important) — see IndiaMapCard. */
+.mapCanvas > div {
+  background: transparent !important;
+  border-radius: 0 !important;
+  min-height: 0 !important;
+}
+.mapCanvas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scale(1.18);
+  transform-origin: center;
+}
+.mapCanvas :global(.ftp-geo-active) {
+  fill: var(--ftp-map-live) !important;
+  stroke: var(--ftp-surface) !important;
+}
+.mapCanvas :global(.ftp-geo-active):hover {
+  fill: var(--ftp-brand-deep) !important;
+}
+.mapCanvas :global(.ftp-geo-locked) {
+  fill: var(--ftp-map-locked) !important;
+  stroke: var(--ftp-surface) !important;
+}
+/* DrillDownMap's own legend is its last child; ours replaces it. */
+.mapCanvas > div > div:last-child {
+  display: none !important;
+}
+.mapLegend {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-tile);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+  pointer-events: none;
+}
+.legendRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legendSwatch {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+}
+.legendLive   { background: var(--ftp-map-live); }
+.legendLocked { background: var(--ftp-map-locked); }
+@media (max-width: 767px) {
+  .mapFrame { min-height: 0; aspect-ratio: 4 / 3; flex: none; width: 100%; }
+}
+
+/* Districts card */
+.districtsCard {
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.districtsHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ftp-border);
+}
+.districtsSort {
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+}
+.districtsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* 10 rows x 56 px; more districts scroll inside the card. */
+  max-height: 560px;
+  overflow-y: auto;
+  flex: 1;
+}
+.districtsList li + li {
+  border-top: 1px solid var(--ftp-border);
+}
+.districtRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px;
+  color: var(--ftp-text);
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+.districtRow:hover {
+  background: var(--ftp-surface-2);
+}
+.districtMain {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.districtLine1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.districtName {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.districtLocal {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.districtLine2 {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.districtTemp {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--ftp-text);
+}
+.districtsFoot {
+  padding: 12px 16px;
+  border-top: 1px solid var(--ftp-border);
+  font-size: 13px;
+  line-height: 20px;
+}
+@media (max-width: 767px) {
+  .districtsList { max-height: none; }
+}
+
+/* A plain inline link with a trailing arrow. */
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  color: var(--ftp-brand-deep);
+  text-decoration: none;
+}
+.inlineLink:hover {
+  text-decoration: underline;
+}
+@media (max-width: 767px) {
+  .inlineLink { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .districtRow { transition: none; }
+}
