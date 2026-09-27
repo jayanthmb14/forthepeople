@@ -99,7 +99,7 @@
 /* ---------- Module pages: the bar and the sidebar replace the
    "← Back to overview" link above each page header. ---------- */
 .ftp-dshell-main header > a:first-child:has(> svg.lucide-arrow-left) {
-  display: none;
+  display: none !important; /* the link sets display inline */
 }
 
 
@@ -129,6 +129,69 @@
 /* The page below the top strip needs less top padding. */
 .ftp-dshell-strip + .ftp-module-page,
 .ftp-dshell-strip + * > .ftp-module-page:first-child { padding-top: 16px; }
+
+/* ---------- Glance row ---------- */
+.ftp-glance { min-width: 0; }
+.ftp-glance-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* room for the focus ring inside the scroller */
+  padding-block: 2px;
+}
+.ftp-glance-list::-webkit-scrollbar { display: none; }
+@media (min-width: 640px) {
+  .ftp-glance:not([data-compact="true"]) .ftp-glance-list { flex-wrap: wrap; overflow: visible; }
+}
+.ftp-glance-list > li { flex: 0 0 auto; }
+.ftp-glance-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 320px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  color: var(--ftp-text);
+  text-decoration: none;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.ftp-glance-chip:hover { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); background: var(--hue-tint); }
+.ftp-glance-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+}
+.ftp-glance-text { display: flex; flex-direction: column; min-width: 0; }
+.ftp-glance-label { font-size: 11px; line-height: 14px; color: var(--ftp-text-2); }
+.ftp-glance-value {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ftp-glance-chip[data-tone="warn"] { background: var(--ftp-warn-tint); border-color: color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-border)); }
+.ftp-glance-chip[data-tone="warn"] .ftp-glance-icon { background: transparent; color: var(--ftp-warn); }
+.ftp-glance-chip[data-tone="danger"] { background: var(--ftp-danger-tint); border-color: color-mix(in srgb, var(--ftp-danger) 30%, var(--ftp-border)); }
+.ftp-glance-chip[data-tone="danger"] .ftp-glance-icon { background: transparent; color: var(--ftp-danger); }
+.ftp-glance-skeleton { width: 150px; height: 44px; border-radius: 12px; }
 
 /* ---------- Stale-data notice ---------- */
 .ftp-stale {
@@ -284,8 +347,6 @@
 .ftp-verify-link:hover { text-decoration: underline; }
 .ftp-verify-note {
   margin: 14px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--ftp-border);
   font-size: 12px;
   line-height: 18px;
   color: var(--ftp-text-2);
@@ -338,5 +399,5 @@
 .ftp-report-done { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; font-size: 15px; color: var(--ftp-live-text); }
 
 @media (prefers-reduced-motion: reduce) {
-  .ftp-dbar-topics, .ftp-dbar-fresh { transition: none; }
+  .ftp-dbar-topics, .ftp-dbar-fresh, .ftp-glance-chip { transition: none; }
 }

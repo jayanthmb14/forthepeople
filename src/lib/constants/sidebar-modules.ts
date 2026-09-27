@@ -202,7 +202,8 @@ export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   news:                   { maxAgeHours: 24 * HOUR, every: "daily",    method: "auto" },
   alerts:                 { maxAgeHours: 24 * HOUR, every: "onChange", method: "auto",      portal: "https://sachet.ndma.gov.in" },
   weather:                { maxAgeHours: 6 * HOUR,  every: "hourly",   method: "auto",      portal: "https://mausam.imd.gov.in" },
-  responsibility:         { maxAgeHours: 30 * DAY,  every: "weekly",   method: "news" },
+  // Written guidance; the news part of the page carries its own dates.
+  responsibility:         { maxAgeHours: null,      every: "onChange", method: "reference" },
   "citizen-corner":       { maxAgeHours: null,      every: "onChange", method: "reference" },
   "file-rti":             { maxAgeHours: null,      every: "onChange", method: "reference", portal: "https://rtionline.gov.in" },
   rti:                    { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual" },

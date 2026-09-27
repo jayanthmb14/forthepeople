@@ -106,6 +106,7 @@ interface Row {
   agri_date: Date | null; agri_checked: Date | null; agri_rows: number;
   soil_date: Date | null; soil_rows: number;
   census_year: number | null; census_dataset: string | null; census_checked: Date | null; census_rows: number;
+  census_hist_year: number | null;
   famous_rows: number;
   ai_date: Date | null;
 }
@@ -215,7 +216,11 @@ async function queryRow(districtId: string): Promise<Row | null> {
       (SELECT x.dataset FROM "DemographicProfile" x WHERE x."districtId" = d.id AND x."totalPopulation" IS NOT NULL
         ORDER BY x.year DESC LIMIT 1) AS census_dataset,
       (SELECT max(x."retrievedAt") FROM "DemographicProfile" x WHERE x."districtId" = d.id) AS census_checked,
-      (SELECT count(*) FROM "DemographicProfile" x WHERE x."districtId" = d.id AND x."totalPopulation" IS NOT NULL)::int AS census_rows,
+      (SELECT max(x.year) FROM "PopulationHistory" x WHERE x."districtId" = d.id
+        AND x.source ILIKE 'census of india%' AND x.source NOT ILIKE '%estimat%' AND x.source NOT ILIKE '%postpon%'
+        AND x.year <= EXTRACT(YEAR FROM now())) AS census_hist_year,
+      ((SELECT count(*) FROM "DemographicProfile" x WHERE x."districtId" = d.id)
+        + (SELECT count(*) FROM "PopulationHistory" x WHERE x."districtId" = d.id))::int AS census_rows,
       (SELECT count(*) FROM "FamousPersonality" x WHERE x."districtId" = d.id AND x.active)::int AS famous_rows,
       (SELECT max(x."generatedAt") FROM "AIModuleInsight" x WHERE x."districtId" = d.id) AS ai_date
     FROM "District" d
@@ -286,11 +291,13 @@ function rawFacts(r: Row): Record<string, Raw> {
     mandi: { rows: r.crops_rows, date: r.crops_date, checked: r.crops_checked },
     advice: { rows: r.agri_rows, date: r.agri_date, checked: r.agri_checked },
     soil: { rows: r.soil_rows, date: r.soil_date, checked: r.soil_date },
+    // The census row with a head count; else the newest census year in the
+    // population history (Pune has history rows but no census profile).
     census: {
       rows: r.census_rows,
-      date: year(r.census_year),
+      date: year(r.census_year ?? r.census_hist_year),
       checked: r.census_checked,
-      period: r.census_dataset ?? (r.census_year ? String(r.census_year) : null),
+      period: r.census_dataset ?? (r.census_hist_year ? `Census ${r.census_hist_year}` : null),
       periodKind: "dataset",
     },
     famous: { rows: r.famous_rows },
@@ -330,7 +337,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "district required" }, { status: 400 });
   }
 
-  const key = cacheKey(districtSlug, "freshness:v2");
+  const key = cacheKey(districtSlug, "freshness:v4");
   const cached = await cacheGet<Record<string, unknown>>(key);
   if (cached) {
     return NextResponse.json(cached, {
