@@ -1,40 +1,45 @@
 /**
- * ForThePeople.in — Election section for the leadership page.
- *
- * Renders all elections relevant to the district's state (national +
- * state-level rows). Each card carries a status Pill based on how far away
- * the polling (or next expected) date is:
- *   date < today      → neutral  "Completed"
- *   ≤ 14 days         → danger   "Voting in N days"
- *   ≤ 6 months        → warn     "Approaching"
- *   ≤ 2 years         → brand    "Upcoming"
- *   otherwise / none  → neutral  "Scheduled"
- *
- * Design v4 "Rang": an emoji Section, Cards whose icons and accents read
- * the page hue (--hue …; the leadership page wraps this in the elections
- * hue), an emoji chip per election kind, upcoming elections on a tinted
- * Card, dates / days / seats as tabular figures, multi-phase polling as a
- * DataTable. No pulsing glow on imminent elections. Data fetching and the
- * date maths are unchanged.
- *
- * Language: interface text comes from the "page_leadership" namespace
- * (`elections.*`); dates go through useFormat(). The election's own label,
- * body and note are reference data and are shown as stored.
- *
- * Includes a footer disclaimer clarifying that ForThePeople.in is not
- * affiliated with the ECI or any political party.
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+//  ElectionSection — the election calendar (Elections page)
+// ═══════════════════════════════════════════════════════════════════════
+//  Every election that concerns the district's voters (national rows plus
+//  the state's own rows, from /api/data/election-events), as tappable
+//  cards in a grid. Each card carries a status from how far away its date
+//  is:
+//    date < today      → "Completed"
+//    ≤ 14 days         → "Voting in N days"   (danger)
+//    ≤ 6 months        → "Coming soon"        (warn)
+//    ≤ 2 years         → "Upcoming"           (brand)
+//    otherwise / none  → "Scheduled"
+//  Tapping a card opens a DetailSheet with every date we hold (polling,
+//  phases, results, last held, next expected), who runs it, seats, the
+//  note, and a link to the official notice.
+//
+//  Also exports the helpers the Leadership page and the overview banner
+//  use: findActiveElection (polling within 30 days, either side) and
+//  findNextElection (the nearest one still ahead).
+//
+//  Text: "page_elections" namespace (`calendar.*`). The election's label,
+//  body and note are reference data and are shown as stored.
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, BarChart3, CalendarDays, Landmark } from "lucide-react";
-import { Card, DataTable, Pill, Section, SourcePill } from "@/components/district/ui";
+import { ChevronRight, ExternalLink, Search } from "lucide-react";
+import { Pill, Section, SourcePill } from "@/components/district/ui";
 import type { Tone } from "@/components/district/ui";
+import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { useFormat } from "@/i18n/client";
+import { hueClass } from "@/lib/design/hues";
 
-interface PollingPhase { phase: number; date: string }
+interface PollingPhase {
+  phase: number;
+  date: string;
+}
 export interface ElectionEvent {
   id: string;
   type: string;
@@ -55,207 +60,298 @@ export interface ElectionEvent {
 }
 
 /** Emoji for the kind of election (one per card). */
-const TYPE_EMOJI: Record<string, string> = { LOK_SABHA: "🏛️", STATE_ASSEMBLY: "🏢" };
+export const ELECTION_TYPE_EMOJI: Record<string, string> = {
+  LOK_SABHA: "🏛️",
+  STATE_ASSEMBLY: "🏢",
+  MUNICIPAL: "🏙️",
+  PANCHAYAT: "🏡",
+};
+
+/** Where a voter checks their name and booth (Election Commission of India). */
+export const ELECTORAL_SEARCH_URL = "https://electoralsearch.eci.gov.in/";
 
 type Translator = ReturnType<typeof useTranslations>;
 
-/** Status label + Pill tone for an election, from days until its date. */
-interface Urgency { tone: Tone; label: string }
-function urgencyTone(daysAway: number | null, isPast: boolean, t: Translator): Urgency {
-  if (isPast) return { tone: "neutral", label: t("elections.completed") };
-  if (daysAway == null) return { tone: "neutral", label: t("elections.scheduled") };
-  if (daysAway <= 14) return { tone: "danger", label: t("elections.votingIn", { n: daysAway }) };
-  if (daysAway <= 180) return { tone: "warn", label: t("elections.approaching") };
-  if (daysAway <= 730) return { tone: "brand", label: t("elections.upcoming") };
-  return { tone: "neutral", label: t("elections.scheduled") };
+function validDate(iso: string | null | undefined): iso is string {
+  return Boolean(iso) && !Number.isNaN(new Date(iso as string).getTime());
 }
 
-function daysFromToday(iso: string | null): number | null {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.round((t - Date.now()) / 86_400_000);
+/** Whole days from today to the date (negative = past). */
+export function daysUntil(iso: string | null | undefined): number | null {
+  if (!validDate(iso)) return null;
+  return Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000);
 }
 
-/** One line of the card: 14 px icon + label + value (value may contain mono spans). */
-function Row({ icon: Icon, label, children }: { icon: typeof CalendarDays; label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
-      <Icon size={14} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 3 }} />
-      <span>
-        <span style={{ color: "var(--ftp-text-2)" }}>{label}: </span>
-        {children}
-      </span>
-    </div>
-  );
+interface Urgency {
+  tone: Tone;
+  label: string;
+}
+function urgency(daysAway: number | null, t: Translator): Urgency {
+  if (daysAway != null && daysAway < 0) return { tone: "neutral", label: t("calendar.completed") };
+  if (daysAway == null) return { tone: "neutral", label: t("calendar.scheduled") };
+  if (daysAway <= 14) return { tone: "danger", label: t("calendar.votingIn", { n: daysAway }) };
+  if (daysAway <= 180) return { tone: "warn", label: t("calendar.approaching") };
+  if (daysAway <= 730) return { tone: "brand", label: t("calendar.upcoming") };
+  return { tone: "neutral", label: t("calendar.scheduled") };
 }
 
-function ElectionCard({ e }: { e: ElectionEvent }) {
-  const t = useTranslations("page_leadership");
+/** The translated kind of election ("Lok Sabha", "State assembly"), or the stored code. */
+export function electionTypeLabel(type: string, t: Translator): string {
+  const k = type.toLowerCase().replace(/[^a-z]/g, "");
+  return t.has(`calendar.types.${k}`) ? t(`calendar.types.${k}`) : type;
+}
+
+function ElectionCard({ e, onOpen }: { e: ElectionEvent; onOpen: (e: ElectionEvent) => void }) {
+  const t = useTranslations("page_elections");
   const f = useFormat();
-  const fullDate = (iso: string | null) => {
-    if (!iso || Number.isNaN(new Date(iso).getTime())) return "—";
-    return f.date(iso, { day: "2-digit", month: "short", year: "numeric" });
-  };
-  const monthYear = (iso: string | null) => {
-    if (!iso || Number.isNaN(new Date(iso).getTime())) return "—";
-    return f.date(iso, { month: "short", year: "numeric" });
-  };
   const target = e.pollingDate ?? e.nextExpected;
-  const days = daysFromToday(target);
-  const isPast = days != null && days < 0;
-  const tone = urgencyTone(days, isPast, t);
-  const isLive = !isPast && days != null && days <= 14;
-  const phases = e.pollingPhases && e.pollingPhases.length > 1 ? e.pollingPhases : null;
-
+  const days = daysUntil(target);
+  const u = urgency(days, t);
+  const past = days != null && days < 0;
+  const line = e.pollingDate
+    ? t("calendar.pollingOn", { date: f.date(e.pollingDate, { day: "numeric", month: "short", year: "numeric" }) })
+    : e.nextExpected
+      ? t("calendar.expectedAbout", { date: f.date(e.nextExpected, { month: "long", year: "numeric" }) })
+      : e.lastHeld
+        ? t("calendar.lastHeldOn", { date: f.date(e.lastHeld, { month: "long", year: "numeric" }) })
+        : null;
   return (
-    <Card
-      as="article"
-      // Upcoming elections get the soft hue wash; completed ones stay plain.
-      tinted={!isPast}
-      // A multi-phase election needs room for its table, so it spans the full row.
-      style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: phases ? "1 / -1" : undefined }}
+    <button
+      type="button"
+      onClick={() => onOpen(e)}
+      className="ftp-card-link"
+      aria-haspopup="dialog"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 8,
+        width: "100%",
+        minHeight: 44,
+        padding: 16,
+        textAlign: "left",
+        font: "inherit",
+        color: "var(--ftp-text)",
+        cursor: "pointer",
+        background: past ? "var(--ftp-surface)" : "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)",
+        border: past ? "1px solid var(--ftp-border)" : "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+        borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
+      }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-          {TYPE_EMOJI[e.type] ?? "🗳️"}
+      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}>
+          {ELECTION_TYPE_EMOJI[e.type] ?? "🗳️"}
         </span>
-        <Pill tone={tone.tone}>{tone.label}</Pill>
-      </div>
-      <h3 className="ftp-title" style={{ fontWeight: 600 }}>
+        <Pill tone={u.tone}>{u.label}</Pill>
+      </span>
+      <span className="ftp-title" style={{ fontWeight: 650, fontSize: 16 }}>
         {e.label}
-      </h3>
-
-      {e.pollingDate && (
-        <Row icon={CalendarDays} label={t("elections.polling")}>
-          <span className="ftp-num">{fullDate(e.pollingDate)}</span>
-          {days != null && !isPast ? (
-            <span style={{ color: "var(--ftp-text-2)" }}>
-              {" ("}
-              {days === 0 ? t("elections.today") : t("elections.daysAway", { n: days })}
-              {")"}
-            </span>
-          ) : null}
-        </Row>
+      </span>
+      {line && (
+        <span className="ftp-num" style={{ fontSize: 14, lineHeight: "20px", color: "var(--ftp-text)" }}>
+          <span aria-hidden>📅 </span>
+          {line}
+        </span>
       )}
-
-      {phases && (
-        <DataTable
-          dense
-          caption={t("elections.phasesCaption", { label: e.label })}
-          columns={[
-            { key: "phase", label: t("elections.phase"), numeric: true, width: 80 },
-            { key: "date", label: t("elections.pollingDate"), numeric: true },
-          ]}
-          rows={phases.map((p) => ({ phase: f.number(p.phase), date: fullDate(p.date) }))}
-        />
-      )}
-
-      {e.resultDate && (
-        <Row icon={BarChart3} label={t("elections.results")}>
-          <span className="ftp-num">{fullDate(e.resultDate)}</span>
-        </Row>
-      )}
-      {e.lastHeld && !e.pollingDate && (
-        <Row icon={CalendarDays} label={t("elections.lastHeld")}>
-          <span className="ftp-num">{monthYear(e.lastHeld)}</span>
-        </Row>
-      )}
-      {e.nextExpected && !e.pollingDate && (
-        <Row icon={CalendarDays} label={t("elections.nextExpected")}>
-          <span className="ftp-num">{t("elections.about", { date: monthYear(e.nextExpected) })}</span>
-          {days != null ? (
-            <span style={{ color: "var(--ftp-text-2)" }}>
-              {" ("}
-              {t("elections.monthsAway", { n: Math.abs(Math.round(days / 30)) })}
-              {")"}
-            </span>
-          ) : null}
-        </Row>
-      )}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-        <Landmark size={12} aria-hidden style={{ flexShrink: 0, color: "var(--hue)" }} />
-        <span>{e.totalSeats ? t("elections.seats", { body: e.body, n: e.totalSeats }) : e.body}</span>
-      </div>
-      {e.note && (
-        <p style={{ fontSize: 11, lineHeight: "16px", color: "var(--ftp-text-2)", margin: 0 }}>{e.note}</p>
-      )}
-      {isLive && (
-        <div
-          role="note"
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 6,
-            marginTop: 6,
-            paddingTop: 8,
-            borderTop: "1px solid var(--ftp-border)",
-            fontSize: 11,
-            lineHeight: "16px",
-            color: "var(--ftp-text)",
-          }}
-        >
-          <AlertTriangle size={12} aria-hidden style={{ flexShrink: 0, marginTop: 2, color: "var(--ftp-danger)" }} />
-          <span>{t("elections.liveNote")}</span>
-        </div>
-      )}
-    </Card>
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
+        <span>{e.totalSeats ? t("calendar.seats", { body: e.body, n: e.totalSeats }) : e.body}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontWeight: 600, color: "var(--hue-deep)", flexShrink: 0 }}>
+          {t("calendar.details")}
+          <ChevronRight size={14} aria-hidden />
+        </span>
+      </span>
+    </button>
   );
 }
 
-export default function ElectionSection({ stateSlug }: { stateSlug: string }) {
-  const t = useTranslations("page_leadership");
-  const { data, isLoading } = useQuery<{ data: ElectionEvent[] }>({
-    queryKey: ["elections", stateSlug],
-    queryFn: () => fetch(`/api/data/election-events?state=${stateSlug}`).then((r) => r.json()),
-    staleTime: 5 * 60_000,
-  });
-  if (isLoading || !data?.data?.length) return null;
-  const events = data.data;
+function ElectionSheet({ e, onClose }: { e: ElectionEvent | null; onClose: () => void }) {
+  const t = useTranslations("page_elections");
+  const f = useFormat();
+  if (!e) return null;
+  const full = (iso: string | null) => (validDate(iso) ? f.date(iso, { day: "numeric", month: "long", year: "numeric" }) : null);
+  const monthYear = (iso: string | null) => (validDate(iso) ? f.date(iso, { month: "long", year: "numeric" }) : null);
+  const target = e.pollingDate ?? e.nextExpected;
+  const days = daysUntil(target);
+  const u = urgency(days, t);
+  const live = days != null && days >= 0 && days <= 14;
+  const phases = e.pollingPhases && e.pollingPhases.length > 1 ? e.pollingPhases : null;
+  const officialNotice = e.source && /^https?:\/\//.test(e.source) ? e.source : null;
+  const btn: React.CSSProperties = {
+    flex: "1 1 160px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 44,
+    padding: "0 16px",
+    borderRadius: 12,
+    fontSize: 15,
+    fontWeight: 600,
+    textDecoration: "none",
+  };
   return (
-    <div style={{ marginTop: 32, marginBottom: 24 }}>
-      <Section title={t("elections.title")} emoji="🗳️" action={<SourcePill label="ECI" href="https://eci.gov.in" />}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
-          {events.map((e) => <ElectionCard key={e.id} e={e} />)}
-        </div>
-        <p
-          role="note"
-          style={{
-            background: "color-mix(in srgb, var(--hue-tint) 70%, #fff)",
-            border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
-            borderRadius: "var(--ftp-radius-tile)",
-            padding: 14,
-            margin: "16px 0 0",
-            fontSize: 11,
-            lineHeight: "18px",
-            color: "var(--ftp-text-2)",
-          }}
-        >
-          {t.rich("elections.disclaimer", {
-            link: (c) => (
-              <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)" }}>
-                {c}
-              </a>
-            ),
-          })}
+    <DetailSheet
+      open
+      onClose={onClose}
+      title={e.label}
+      subtitle={u.label}
+      emoji={ELECTION_TYPE_EMOJI[e.type] ?? "🗳️"}
+      hueClassName={hueClass("elections")}
+      footer={
+        <>
+          <a
+            href={ELECTORAL_SEARCH_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...btn, background: "var(--hue)", color: "#fff", border: "1px solid var(--hue)" }}
+          >
+            <Search size={18} aria-hidden />
+            {t("calendar.checkName")}
+          </a>
+          {officialNotice && (
+            <a
+              href={officialNotice}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ ...btn, background: "var(--ftp-surface)", color: "var(--ftp-text)", border: "1px solid var(--ftp-border)" }}
+            >
+              <ExternalLink size={18} aria-hidden />
+              {t("calendar.officialNotice")}
+            </a>
+          )}
+        </>
+      }
+    >
+      <DetailList
+        rows={[
+          { emoji: "🗳️", label: t("calendar.type"), value: electionTypeLabel(e.type, t) },
+          { emoji: "🏛️", label: t("calendar.runBy"), value: e.body },
+          { emoji: "🪑", label: t("calendar.seatsLabel"), value: e.totalSeats ? f.number(e.totalSeats) : null },
+          {
+            emoji: "📅",
+            label: t("calendar.polling"),
+            value: e.pollingDate ? (
+              <span className="ftp-num">
+                {full(e.pollingDate)}
+                {days != null && days >= 0 && (
+                  <span style={{ color: "var(--ftp-text-2)" }}> ({days === 0 ? t("calendar.today") : t("calendar.daysAway", { n: days })})</span>
+                )}
+              </span>
+            ) : null,
+          },
+          {
+            emoji: "🔢",
+            label: t("calendar.phases"),
+            value: phases ? (
+              <ol style={{ margin: 0, paddingInlineStart: 18 }}>
+                {phases.map((p) => (
+                  <li key={p.phase} className="ftp-num">
+                    {t("calendar.phaseOn", { n: p.phase, date: full(p.date) ?? "—" })}
+                  </li>
+                ))}
+              </ol>
+            ) : null,
+          },
+          { emoji: "📊", label: t("calendar.results"), value: full(e.resultDate) },
+          { emoji: "⏮️", label: t("calendar.lastHeld"), value: monthYear(e.lastHeld) },
+          {
+            emoji: "⏭️",
+            label: t("calendar.nextExpected"),
+            value: !e.pollingDate && e.nextExpected ? t("calendar.about", { date: monthYear(e.nextExpected) ?? "—" }) : null,
+          },
+          { emoji: "⏳", label: t("calendar.term"), value: e.termYears ? t("calendar.termYears", { n: e.termYears }) : null },
+          { emoji: "📝", label: t("calendar.note"), value: e.note },
+        ]}
+      />
+      {!e.pollingDate && e.nextExpected && (
+        <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("calendar.expectedHint")}</p>
+      )}
+      {live && (
+        <p role="note" style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
+          <span aria-hidden>⚠️ </span>
+          {t("calendar.liveNote")}
         </p>
-      </Section>
-    </div>
+      )}
+    </DetailSheet>
   );
 }
 
-// Helper used by the leadership page to detect an election period for
-// disclaimer rendering. Returns the nearest election within 30 days
-// (past or future) or null.
+/** The calendar: tappable election cards + their detail sheet + the ECI disclaimer. */
+export default function ElectionSection({ events }: { events: ElectionEvent[] }) {
+  const t = useTranslations("page_elections");
+  const [open, setOpen] = useState<ElectionEvent | null>(null);
+  const close = useCallback(() => setOpen(null), []);
+  if (events.length === 0) return null;
+  return (
+    <Section title={t("calendar.title")} emoji="🗓️" action={<SourcePill label="ECI" href="https://eci.gov.in" />}>
+      <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
+        {events.map((e) => (
+          <ElectionCard key={e.id} e={e} onOpen={setOpen} />
+        ))}
+      </div>
+      <p
+        role="note"
+        className="ftp-prose"
+        style={{
+          background: "color-mix(in srgb, var(--hue-tint) 70%, #fff)",
+          border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
+          borderRadius: "var(--ftp-radius-tile)",
+          padding: 14,
+          margin: "16px 0 0",
+          fontSize: 12,
+          lineHeight: "18px",
+          color: "var(--ftp-text-2)",
+        }}
+      >
+        {t.rich("calendar.disclaimer", {
+          link: (c) => (
+            <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--hue-deep)" }}>
+              {c}
+            </a>
+          ),
+        })}
+      </p>
+      <ElectionSheet e={open} onClose={close} />
+    </Section>
+  );
+}
+
+/**
+ * The nearest election within 30 days of today (either side), or null.
+ * The Leadership page uses it to warn that party links may change.
+ */
 export function findActiveElection(events: ElectionEvent[] | undefined): ElectionEvent | null {
   if (!events) return null;
   const today = Date.now();
   const candidates = events.filter((e) => {
-    const t = e.pollingDate ? new Date(e.pollingDate).getTime() : null;
-    if (t == null) return false;
-    return Math.abs(t - today) <= 30 * 86_400_000;
+    if (!validDate(e.pollingDate)) return false;
+    return Math.abs(new Date(e.pollingDate).getTime() - today) <= 30 * 86_400_000;
   });
-  candidates.sort((a, b) => Math.abs(new Date(a.pollingDate!).getTime() - today) - Math.abs(new Date(b.pollingDate!).getTime() - today));
+  candidates.sort(
+    (a, b) => Math.abs(new Date(a.pollingDate!).getTime() - today) - Math.abs(new Date(b.pollingDate!).getTime() - today),
+  );
   return candidates[0] ?? null;
+}
+
+/**
+ * The next election still ahead for this district's voters: national rows
+ * and the state's statewide rows (or rows for this district). Exact polling
+ * dates count first; otherwise the "next expected" month. Null when the
+ * calendar has nothing ahead.
+ */
+export function findNextElection(
+  events: ElectionEvent[] | undefined,
+  stateSlug: string,
+  districtSlug?: string,
+): ElectionEvent | null {
+  if (!events) return null;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const ahead = events
+    .filter((e) => (e.state === null || e.state === stateSlug) && (!e.district || !districtSlug || e.district === districtSlug))
+    .map((e) => ({ e, at: validDate(e.pollingDate) ? new Date(e.pollingDate).getTime() : validDate(e.nextExpected) ? new Date(e.nextExpected).getTime() : NaN }))
+    .filter((x) => Number.isFinite(x.at) && x.at >= startOfToday.getTime())
+    .sort((a, b) => a.at - b.at);
+  return ahead[0]?.e ?? null;
 }
