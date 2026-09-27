@@ -34,9 +34,16 @@ export default function ModulePageFooter({
   state,
   district,
   extraSources = [],
+  sourceUrls = {},
   actions,
   showCompare = true,
 }: {
+  /**
+   * Links for registry source names, e.g.
+   * { "NJDG (National Judicial Data Grid)": "https://njdg.ecourts.gov.in" }.
+   * The registry (getModuleSources) stores names only.
+   */
+  sourceUrls?: Record<string, string>;
   /** Module slug, e.g. "courts". Picks the source list and the compare link. */
   moduleSlug: string;
   locale: string;
@@ -52,7 +59,7 @@ export default function ModulePageFooter({
   // Registry sources (names only) + how often each one refreshes.
   const info = getModuleSources(moduleSlug, state);
   const sources: SourceEntry[] = [
-    ...info.sources.map((name) => ({ name, frequency: info.frequency })),
+    ...info.sources.map((name) => ({ name, url: sourceUrls[name], frequency: info.frequency })),
     ...extraSources,
   ];
 
