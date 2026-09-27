@@ -13,14 +13,17 @@ import QueryProvider from "@/components/providers/QueryProvider";
 import MigrationBanner from "@/components/layout/MigrationBanner";
 import PageProgressBar from "@/components/common/PageProgressBar";
 
-// Site-wide chrome — Design v3 "Civic Ledger" (2026-09-27).
-// HeaderBar renders the 32 px disclaimer line and the 56 px sticky header.
-// The GitHub star count is fetched here on the server (cached for an hour)
-// so no visitor's browser ever calls api.github.com.
+// Site-wide chrome — Design v5.1 "Warm Calm" (2026-09-27).
+// HeaderBar renders the disclaimer line, the 56 px sticky header and the
+// status strip under it. The GitHub star count is fetched here on the
+// server (cached for an hour) so no visitor's browser ever calls
+// api.github.com; the header and the footer both show it.
+// ReportButton is the floating "Report a problem" button on every page.
 import HeaderBar from "@/components/home/HeaderBar";
 import { getGithubStars } from "@/components/home/github-stars";
 import Footer from "@/components/home/Footer";
 import SkipLink from "@/components/common/SkipLink";
+import ReportButton from "@/components/common/ReportButton";
 
 /**
  * Only the locales in src/i18n/routing.ts may render this layout.
@@ -78,7 +81,8 @@ export default async function LocaleLayout({
           <MigrationBanner />
           <HeaderBar locale={locale} githubStars={githubStars} />
           {children}
-          <Footer locale={locale} />
+          <Footer locale={locale} githubStars={githubStars} />
+          <ReportButton />
         </QueryProvider>
       </div>
     </NextIntlClientProvider>

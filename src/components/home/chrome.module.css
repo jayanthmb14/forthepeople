@@ -3,16 +3,18 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * chrome.module.css — site-wide chrome, Design v5 "calm".
+ * chrome.module.css — site-wide chrome, Design v5.1 "Warm Calm".
  *
  *   - DisclaimerLine  (the slim line above the header)
- *   - HeaderBar       (56 px sticky header, one row at every width)
+ *   - HeaderBar       (56 px sticky header, one full-width row)
+ *   - ProductSwitcher, HeaderMenu, products.tsx (apps menu, phone menu, marks)
  *   - Footer          (light footer with the site links)
  *
- * Colours come from the --ftp-* tokens (globals.css): a white surface on
- * the soft blue-white page, one brand blue for actions, a soft rose only
- * for the Support heart. No gradients, no emoji. Touch targets are 44 px
- * on phones.
+ * Design v5.1 "Warm Calm": colours come from the --ftp-* tokens and the
+ * module hue classes (globals.css) — a white surface on the soft
+ * blue-white page, one brand blue for actions, a soft rose for Support,
+ * pastel hue accents for character. Soft pastel gradients only, no neon,
+ * no emoji. Touch targets are 44 px on phones.
  */
 
 /* ───────────────────────── Disclaimer line ───────────────────────── */
@@ -24,11 +26,28 @@
   font-size: 12px;
   line-height: 17px;
 }
+/* Full width, lined up with the header's logo and actions. */
 .disclaimerRow {
   min-height: 34px;
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 0 24px;
+}
+@media (min-width: 1440px) {
+  .disclaimerRow {
+    padding: 0 28px;
+  }
+}
+@media (max-width: 1023px) {
+  .disclaimerRow {
+    padding: 0 20px;
+  }
+}
+@media (max-width: 639px) {
+  .disclaimerRow {
+    padding: 0 12px;
+  }
 }
 .disclaimerIcon {
   flex-shrink: 0;
@@ -81,14 +100,41 @@
   backdrop-filter: saturate(1.2) blur(10px);
   border-bottom: 1px solid var(--ftp-border);
 }
+/* A 2 px pastel ribbon along the bottom edge: the four "people" hues of the
+   site (blue, violet, teal, amber), soft, never neon. Inside the 56 px. */
+.header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--ftp-map-live-fill) 0%,
+    color-mix(in srgb, var(--ftp-features) 30%, var(--ftp-surface)) 35%,
+    color-mix(in srgb, var(--ftp-live) 28%, var(--ftp-surface)) 68%,
+    color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-surface)) 100%
+  );
+}
+/* Full width: logo in the left corner, actions in the right corner. */
 .headerRow {
+  position: relative;
   height: 56px;
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 0 24px;
 }
 
-/* Logo tile + "ForThePeople.in" */
+/* Logo + the ▾ that opens the apps menu */
+.brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
 .wordmark {
   display: inline-flex;
   align-items: center;
@@ -113,8 +159,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: var(--ftp-brand);
-  color: #fff;
+  /* A soft two-blue gradient (brand → deep), with a faint inner light. */
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--ftp-surface) 38%, transparent) 0, transparent 55%),
+    linear-gradient(140deg, color-mix(in srgb, var(--ftp-brand) 82%, var(--ftp-surface)), var(--ftp-brand-deep));
+  color: var(--ftp-surface);
+  box-shadow: 0 4px 10px -6px color-mix(in srgb, var(--ftp-brand) 70%, transparent);
 }
 .wordmarkText {
   font-family: var(--ftp-font-sans);
@@ -126,16 +176,203 @@
 .wordmarkSuffix {
   color: var(--ftp-brand);
 }
+.switcherBtn {
+  position: relative;
+  width: 32px;
+  height: 44px;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.switcherBtn:hover,
+.switcherBtn[aria-expanded="true"] {
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+}
+.switcherBtn:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 1px;
+}
+/* A 44 px wide touch area around the narrow button (tablets). */
+.switcherBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0 -6px;
+}
+.caretOpen {
+  transform: rotate(180deg);
+}
 
-/* The district chip: "Choose district ▾" / "Mandya ▾" */
+/* The small menus hanging from the header (apps, "Menu") */
+.switcherPanel,
+.menuPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 60;
+  padding: 10px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-2);
+  animation: panelIn 160ms var(--ftp-ease-out, ease-out);
+}
+.switcherPanel {
+  left: 0;
+  width: 368px;
+}
+/* The mouse travels from the logo to the panel through this gap. */
+.switcherPanel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.menuTitle {
+  margin: 2px 8px 8px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+
+/* The apps list (switcher, phone menu) */
+.productList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.productRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ftp-text);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.productRow:hover,
+.productRow[aria-current="true"] {
+  background: var(--ftp-brand-tint);
+}
+.productRow:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+.productRowSoon {
+  cursor: default;
+}
+.productRowSoon:hover {
+  background: var(--ftp-surface-2);
+}
+.productText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.productName {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+}
+.productHint {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.productHere,
+.productSoon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.productHere {
+  color: var(--ftp-brand-deep);
+  background: var(--ftp-surface);
+}
+.productSoon {
+  color: var(--hue-deep);
+  background: var(--hue-tint);
+  border: 1px solid color-mix(in srgb, var(--hue-pop) 70%, transparent);
+}
+
+/* Product marks (products.tsx): colours from the hue class on the wrapper */
+.mark {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.mark svg {
+  display: block;
+}
+.markStopA {
+  stop-color: var(--hue-pop);
+}
+.markStopB {
+  stop-color: var(--hue-tint);
+}
+.markInk {
+  fill: var(--hue);
+}
+.markSoft {
+  fill: color-mix(in srgb, var(--hue) 55%, var(--hue-pop));
+}
+.markDeep {
+  fill: var(--hue-deep);
+}
+.markPaper {
+  fill: var(--ftp-surface);
+}
+.markLine {
+  fill: none;
+  stroke: var(--hue-deep);
+  stroke-linecap: round;
+}
+
+/* The district chip: "⌖ Choose district ▾" / "⌖ Mandya ▾" */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  max-width: 280px;
+  max-width: 260px;
   height: 40px;
-  padding: 0 10px 0 14px;
+  padding: 0 10px 0 11px;
   border: 1px solid var(--ftp-border-strong);
   border-radius: 999px;
   background: var(--ftp-surface);
@@ -160,6 +397,10 @@
   background: var(--ftp-brand-tint);
   color: var(--ftp-brand-deep);
 }
+.chipPin {
+  flex-shrink: 0;
+  color: var(--ftp-brand);
+}
 .chipText {
   min-width: 0;
   overflow: hidden;
@@ -177,13 +418,13 @@
   min-width: 0;
 }
 
-/* Search: a field-like button on laptops and PCs, an icon below 1024 px */
+/* Search: a field-like button from 1280 px, an icon below */
 .searchBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  width: 260px;
+  width: 240px;
   height: 40px;
   padding: 0 14px;
   border: 1px solid var(--ftp-border);
@@ -212,8 +453,9 @@
   white-space: nowrap;
 }
 
-/* Support: a quiet text link with a soft rose heart */
-.supportLink {
+/* "Vote on features" and GitHub: quiet text links */
+.quietLink,
+.githubLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -228,19 +470,172 @@
   text-decoration: none;
   white-space: nowrap;
 }
-.supportLink:hover {
-  color: var(--ftp-support-text, #B4234F);
-  background: var(--ftp-support-tint, #FDECF1);
+.quietLink:hover,
+.githubLink:hover {
+  color: var(--ftp-text);
+  background: var(--ftp-surface-2);
 }
+.quietLink:focus-visible,
+.githubLink:focus-visible,
 .supportLink:focus-visible {
   outline: 2px solid var(--ftp-brand);
   outline-offset: 2px;
 }
-.supportHeart {
-  color: var(--ftp-support-text, #B4234F);
+.voteIcon {
+  color: var(--ftp-warn);
+}
+.githubStars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+.star {
+  color: var(--ftp-warn);
+  fill: color-mix(in srgb, var(--ftp-warn) 35%, transparent);
 }
 
-@media (max-width: 1023px) {
+/* Support: a soft rose pill (never a crimson slab) */
+.supportLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 14px 0 12px;
+  border: 1px solid var(--ftp-support-border);
+  border-radius: 999px;
+  background: var(--ftp-support-tint);
+  color: var(--ftp-support);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+.supportLink:hover {
+  background: color-mix(in srgb, var(--ftp-support-tint) 70%, var(--ftp-support-border));
+}
+.supportHeart {
+  color: var(--ftp-support);
+  fill: color-mix(in srgb, var(--ftp-support) 22%, transparent);
+}
+
+/* "Menu" (below 1024 px): Vote on features, GitHub, Support (+ apps on phones) */
+.menuWrap {
+  position: relative;
+  flex-shrink: 0;
+  display: none;
+}
+.menuBtn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ftp-border);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  cursor: pointer;
+}
+.menuBtn:hover,
+.menuBtn[aria-expanded="true"] {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand-tint);
+}
+.menuBtn:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.menuPanel {
+  right: 0;
+  width: 300px;
+  max-height: min(78vh, 620px);
+  overflow-y: auto;
+}
+.menuApps {
+  display: none;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ftp-border);
+}
+.menuLinks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menuLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 10px;
+  border-radius: 12px;
+  color: var(--ftp-text);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.menuLink:hover {
+  background: var(--ftp-surface-2);
+}
+.menuLink:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+.menuSupport {
+  color: var(--ftp-support);
+}
+.menuSupport:hover {
+  background: var(--ftp-support-tint);
+}
+.menuIcon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+}
+.menuStars {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  color: var(--ftp-text-2);
+}
+
+/* ── Widths ── */
+@media (min-width: 1440px) {
+  .headerRow {
+    padding: 0 28px;
+  }
+}
+@media (max-width: 1279px) {
+  /* GitHub: icon + star count; the word stays for screen readers. */
+  .githubWord {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
   .searchBtn {
     width: 44px;
     height: 44px;
@@ -252,16 +647,48 @@
     display: none;
   }
 }
-@media (max-width: 639px) {
+@media (max-width: 1023px) {
+  .headerRow {
+    padding: 0 20px;
+  }
+  .quietLink,
+  .githubLink,
   .supportLink {
     display: none;
   }
+  .menuWrap {
+    display: block;
+  }
+}
+@media (max-width: 767px) {
+  .wordmarkText {
+    display: none;
+  }
+}
+@media (max-width: 639px) {
   .headerRow {
-    gap: 8px;
+    gap: 6px;
+    padding: 0 12px;
+  }
+  /* The chip opens the same finder with the search box focused. */
+  .searchBtn,
+  .switcherBtn {
+    display: none;
+  }
+  .menuApps {
+    display: block;
   }
   .chip {
     height: 44px;
-    padding: 0 8px 0 12px;
+    padding: 0 8px 0 10px;
+    gap: 5px;
+  }
+  .menuPanel {
+    position: fixed;
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
   .disclaimerClose {
     width: 44px;
@@ -281,30 +708,50 @@
     min-height: 36px;
   }
 }
-@media (max-width: 559px) {
-  /* Phones: the logo tile stands for the name, so the district chip fits. */
-  .wordmarkText {
-    display: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .chip,
-  .searchBtn {
+  .searchBtn,
+  .supportLink {
     transition: none;
+  }
+  .switcherPanel,
+  .menuPanel {
+    animation: none;
   }
 }
 
 /* ───────────────────────── Footer ───────────────────────── */
 
 .footer {
+  position: relative;
   margin-top: 56px;
-  padding: 36px 0 20px;
+  padding: 38px 0 22px;
   border-top: 1px solid var(--ftp-border);
-  background: var(--ftp-surface);
+  /* Light, with a soft blue wash in one corner. */
+  background:
+    radial-gradient(900px 260px at 100% 100%, color-mix(in srgb, var(--ftp-brand-tint) 80%, transparent), transparent 70%),
+    radial-gradient(600px 220px at 0% 0%, color-mix(in srgb, var(--ftp-features-tint) 55%, transparent), transparent 70%),
+    var(--ftp-surface);
   color: var(--ftp-text-2);
   font-size: 14px;
   line-height: 21px;
+}
+/* The same pastel ribbon as under the header, along the top edge. */
+.footer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--ftp-map-live-fill) 0%,
+    color-mix(in srgb, var(--ftp-features) 30%, var(--ftp-surface)) 35%,
+    color-mix(in srgb, var(--ftp-live) 28%, var(--ftp-surface)) 68%,
+    color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-surface)) 100%
+  );
 }
 .footerGrid {
   display: grid;
@@ -331,14 +778,14 @@
 }
 .footerTagline {
   margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
   color: var(--ftp-brand-deep);
 }
 .footerNote {
   margin: 0;
-  max-width: 400px;
+  max-width: 420px;
   font-size: 13px;
   line-height: 20px;
   color: var(--ftp-text-2);
@@ -349,32 +796,67 @@
   margin-top: 4px;
 }
 .footerIcon {
-  width: 44px;
+  min-width: 44px;
   height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--ftp-border);
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--hue-pop) 80%, transparent);
   border-radius: 12px;
-  background: var(--ftp-surface);
-  color: var(--ftp-text-2);
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+  text-decoration: none;
+}
+.footerIconWide {
+  padding: 0 12px;
 }
 .footerIcon:hover {
-  border-color: var(--ftp-brand);
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
+  border-color: var(--hue);
+}
+.footerStars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 999px;
+  background: var(--ftp-surface);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.footerIcon .footerStars {
+  margin-left: 0;
 }
 .footerCols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 22px;
 }
 .footerColTitle {
-  margin: 0 0 6px;
-  font-size: 13px;
-  line-height: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 700;
   color: var(--ftp-text);
+}
+.footerColIcon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--hue-tint);
+  color: var(--hue-deep);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue-pop) 70%, transparent);
 }
 .footerColList {
   list-style: none;
@@ -391,7 +873,7 @@
   text-decoration: none;
 }
 .footerColList a:hover {
-  color: var(--ftp-brand-deep);
+  color: var(--hue-deep);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -402,38 +884,44 @@
   outline-offset: 2px;
   border-radius: 6px;
 }
-.connect {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-  margin: 24px 0 0;
-  padding: 12px 14px;
-  border: 1px dashed var(--ftp-border-strong);
-  border-radius: 14px;
-  font-size: 13px;
+
+/* "Coming soon from ForThePeople": Connect and Jobs */
+.soon {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--ftp-border-strong);
+}
+.soonTitle {
+  margin: 0 0 10px;
+  font-size: 14px;
   line-height: 20px;
-  color: var(--ftp-text-2);
-}
-.connect strong {
-  color: var(--ftp-text);
   font-weight: 700;
+  color: var(--ftp-text);
 }
-.connectTag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-  white-space: nowrap;
+.soonList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* auto-fit: the two cards share the row on wide screens. */
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 10px;
 }
+.soonCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--hue-pop) 75%, transparent);
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--hue-tint), var(--ftp-surface) 75%);
+}
+
 .footerBottom {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 20px;
-  margin-top: 18px;
+  margin-top: 20px;
   padding-top: 14px;
   border-top: 1px solid var(--ftp-border);
   font-size: 12px;
@@ -458,5 +946,188 @@
 @media (max-width: 639px) {
   .footerColList a {
     min-height: 44px;
+  }
+  /* Room for the floating "Report a problem" button at the very end. */
+  .footer {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ───────────────────────── Status strip ───────────────────────── */
+/* Day · date · IST clock · share market · live-data freshness. Under the
+   sticky header, scrolls away with the page. A soft blue wash from the
+   left; each item has a small two-tone glyph in its own hue. */
+
+.strip {
+  border-bottom: 1px solid var(--ftp-border);
+  background: linear-gradient(90deg, var(--ftp-brand-tint) 0%, color-mix(in srgb, var(--ftp-brand-tint) 45%, var(--ftp-surface)) 45%, var(--ftp-surface) 100%);
+  color: var(--ftp-text-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+.stripRow {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.stripRow > * + * {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--ftp-border-strong);
+}
+.stripItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--ftp-text);
+  font-weight: 500;
+}
+.stripRefreshed {
+  color: var(--hue-deep);
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stripLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 32px;
+  color: var(--ftp-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+.stripLink:hover {
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.stripLink:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.stripShort {
+  display: none;
+}
+.stripGlyph {
+  flex-shrink: 0;
+  display: block;
+}
+.glyphPaper {
+  fill: var(--hue-tint);
+}
+.glyphInk {
+  fill: var(--hue);
+}
+.glyphSoft {
+  fill: var(--hue-pop);
+}
+.glyphDeep {
+  fill: var(--hue-deep);
+}
+.glyphRing {
+  fill: none;
+  stroke: var(--hue);
+}
+.glyphHand {
+  fill: none;
+  stroke: var(--hue-deep);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dotOpen,
+.dotClosed {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.dotOpen {
+  background: var(--ftp-live);
+}
+/* A slow ping while the market is open (off with reduced motion). */
+.dotOpen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ftp-live);
+  animation: stripPing 2.4s ease-out infinite;
+}
+.dotClosed {
+  background: var(--ftp-border-strong);
+  box-shadow: inset 0 0 0 1.5px var(--ftp-text-2);
+  opacity: 0.8;
+}
+@keyframes stripPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (min-width: 1440px) {
+  .stripRow {
+    padding: 0 28px;
+  }
+}
+@media (max-width: 1023px) {
+  .stripRow {
+    padding: 0 20px;
+  }
+}
+@media (max-width: 639px) {
+  .strip {
+    font-size: 12px;
+  }
+  .stripRow {
+    min-height: 30px;
+    padding: 0 12px;
+  }
+  .stripRow > * + * {
+    margin-left: 9px;
+    padding-left: 9px;
+  }
+  .stripLong,
+  .stripRefreshed {
+    display: none;
+  }
+  .stripShort {
+    display: inline;
+  }
+  .stripLink {
+    min-height: 30px;
+  }
+}
+@media (max-width: 379px) {
+  .stripGlyph {
+    display: none;
+  }
+}
+/* The smallest phones (320–359 px): the chip keeps just its words. */
+@media (max-width: 359px) {
+  .chipPin,
+  .chipCaret {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dotOpen::after {
+    animation: none;
+    display: none;
   }
 }

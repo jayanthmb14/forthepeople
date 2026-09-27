@@ -2,7 +2,7 @@
  * ForThePeople.in — Your District. Your Data. Your Right.
  * © 2026 Jayanth M B. MIT License.
  *
- * LanguageMenu.module.css — the header language switcher (Design v5).
+ * LanguageMenu.module.css — the header language switcher (Design v5.1).
  * Colours from --ftp-* tokens. 44 px targets on phones.
  */
 
@@ -130,13 +130,41 @@
 .moreSummary {
   display: flex;
   align-items: center;
-  min-height: 40px;
-  padding: 0 6px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px;
   border-radius: 10px;
   font-size: 13px;
   line-height: 18px;
+  font-weight: 600;
   color: var(--ftp-text-2);
   cursor: pointer;
+  list-style: none;
+}
+.moreSummary::-webkit-details-marker {
+  display: none;
+}
+.lock {
+  flex-shrink: 0;
+  color: var(--ftp-warn);
+}
+.moreCaret {
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.more[open] .moreCaret {
+  transform: rotate(180deg);
+}
+.lockedNote {
+  margin: 0 8px 8px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.lockSmall {
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 .moreSummary:hover {
   color: var(--ftp-text);
@@ -154,12 +182,21 @@
   gap: 6px;
 }
 .planned li {
-  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 8px;
+  border: 1px dashed var(--ftp-border-strong);
   border-radius: 999px;
   background: var(--ftp-surface-2);
   color: var(--ftp-text-2);
   font-size: 13px;
   line-height: 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .moreCaret {
+    transition: none;
+  }
 }
 
 @media (max-width: 639px) {
