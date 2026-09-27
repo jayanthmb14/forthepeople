@@ -7,12 +7,18 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_farm",
   "page_finance",
   "page_gram-panchayat",
+  "page_health",
   "page_industries",
   "page_infrastructure",
+  "page_jjm",
   "page_leadership",
   "page_money",
+  "page_power",
   "page_responsibility",
   "page_schemes",
+  "page_schools",
+  "page_staffing",
   "page_tenders",
+  "page_transport",
   "page_water"
 ];

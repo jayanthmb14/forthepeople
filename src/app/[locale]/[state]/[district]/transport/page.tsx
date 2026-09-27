@@ -12,9 +12,18 @@
 //  shown. Rows carry no timestamp, so the tiles state how often the
 //  source is refreshed (from getModuleSources) instead of a date.
 //
-//  Picture: one bus per listed route (or ten, scaled, when there are
-//  many), coloured for the routes run by the biggest operator. Built only
-//  from the routes on this page; with no bus routes it is not drawn.
+//  Pictures (built only from the routes on this page):
+//    1. one bus per listed route (or ten, scaled, when there are many),
+//       coloured for the routes run by the biggest operator;
+//    2. a ring of the kinds of buses (Ordinary, AC, Electric …), drawn
+//       when the routes use two or more kinds;
+//    3. in the Trains tab, how many listed trains run on each day of the
+//       week, drawn when two or more trains are listed.
+//  With no bus routes the bus pictures are not drawn.
+//
+//  Text: every sentence comes from the "page_transport" messages; day
+//  names, numbers and fares go through useFormat(). Operator names, bus
+//  types, places and train names are data and stay as published.
 "use client";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
@@ -22,8 +31,10 @@ import NoDataCard from "@/components/common/NoDataCard";
 import { getModuleSources } from "@/lib/constants/state-config";
 import ModuleNews from "@/components/district/ModuleNews";
 import { use, useState } from "react";
-import { Bus, Train, Clock, MapPin, Timer } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Bus, Clock, MapPin, Timer } from "lucide-react";
 import { useTransport } from "@/hooks/useRealtimeData";
+import type { TrainSchedule } from "@/hooks/useRealtimeData";
 import {
   PageHeader,
   Section,
@@ -35,14 +46,37 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/components/district/ui";
-import { Explainer, Pictogram } from "@/components/district/visuals";
+import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import { ModulePage, ModuleSources, ModuleToolbar } from "@/components/district/daily-services/ModuleShell";
+import { HueDonut, topWithOther } from "@/components/district/daily-services/BreakdownVisuals";
+import { useDistrictName } from "@/components/district/daily-services/district-name";
 import { getModuleAccent } from "@/lib/constants/sidebar-modules";
+import { useFormat, useModuleText } from "@/i18n/client";
 
+/** Day codes as stored in TrainSchedule.daysOfWeek, Monday first. */
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** A date on each weekday (1 Jan 2024 was a Monday), for Intl day names. */
+const dayDate = (i: number) => new Date(Date.UTC(2024, 0, 1 + i, 6, 30));
+
+/** Does this train run on day `i` (0 = Monday)? Accepts "Mon" or "Monday". */
+function runsOn(train: TrainSchedule, i: number): boolean {
+  const code = DAYS[i].toLowerCase();
+  return train.daysOfWeek.some((d) => d.slice(0, 3).toLowerCase() === code);
+}
 
 /** Up to this many routes, the picture shows one bus per route. */
 const ONE_BUS_EACH_MAX = 12;
+
+/** How the source's refresh frequency maps to a message key. */
+const FREQ_KEY: Record<string, string> = {
+  Monthly: "monthly",
+  Weekly: "weekly",
+  Daily: "daily",
+  Annual: "annual",
+  Quarterly: "quarterly",
+  "When the source publishes": "onPublish",
+};
 
 /** Route / train number tag in the page hue (tint, not a filled block). */
 function NumberTag({ children }: { children: React.ReactNode }) {
@@ -66,15 +100,62 @@ function NumberTag({ children }: { children: React.ReactNode }) {
 /** A small meta line item (icon + text) under a route. */
 function Meta({ icon: Icon, children }: { icon?: typeof Clock; children: React.ReactNode }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text)" }}>
       {Icon && <Icon size={12} aria-hidden style={{ color: "var(--hue)" }} />}
       {children}
     </span>
   );
 }
 
+/** Emoji chip on the left of a route card. */
+function RouteChip({ emoji }: { emoji: string }) {
+  return (
+    <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 12 }}>
+      {emoji}
+    </span>
+  );
+}
+
+/**
+ * DayColumns — seven columns, one per weekday, each as tall as the number
+ * of listed trains that run that day. The biggest day is the full height.
+ */
+function DayColumns({ counts, labels, ariaLabel }: { counts: number[]; labels: string[]; ariaLabel: string }) {
+  const f = useFormat();
+  const max = Math.max(...counts);
+  const BAR = 110;
+  return (
+    <div role="img" aria-label={ariaLabel} style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 8, alignItems: "end" }}>
+      {counts.map((n, i) => (
+        <div key={DAYS[i]} aria-hidden style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <span className="ftp-num" style={{ fontSize: 13, fontWeight: 700, color: "var(--hue-deep)" }}>
+            {f.number(n)}
+          </span>
+          <div style={{ width: "100%", maxWidth: 40, height: BAR, display: "flex", alignItems: "flex-end" }}>
+            <div
+              className="ftp-grow-y"
+              style={{
+                width: "100%",
+                height: Math.max(4, max > 0 ? (n / max) * BAR : 0),
+                borderRadius: "10px 10px 4px 4px",
+                background: n === max ? "linear-gradient(180deg, var(--hue), var(--hue-deep))" : "linear-gradient(180deg, var(--hue-pop), var(--hue))",
+                ["--i" as string]: i,
+              }}
+            />
+          </div>
+          <span style={{ fontSize: 12, lineHeight: 1.4, color: "var(--ftp-text-2)" }}>{labels[i]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TransportPageInner({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
   const { locale, state, district } = use(params);
+  const t = useTranslations("page_transport");
+  const f = useFormat();
+  const mt = useModuleText();
+  const districtName = useDistrictName(state, district);
   const base = `/${locale}/${state}/${district}`;
   const { data, isLoading, error } = useTransport(district, state);
   const [tab, setTab] = useState<"bus" | "train">("bus");
@@ -85,9 +166,16 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
 
   const operators = Array.from(new Set(buses.map((b) => b.operator)));
   const filteredBuses = busFilter === "all" ? buses : buses.filter((b) => b.operator === busFilter);
-  const refresh = `Source updates: ${getModuleSources("transport", state).frequency.toLowerCase()}`;
+  const freqRaw = getModuleSources("transport", state).frequency;
+  const freqKey = FREQ_KEY[freqRaw];
+  const refresh = t("refresh", { freq: freqKey ? t(`freq.${freqKey}`) : freqRaw.toLowerCase() });
 
-  // The picture: which operator runs the most of the listed routes.
+  const listFormat = new Intl.ListFormat(f.intl, { type: "conjunction" });
+  const dayShort = DAYS.map((_, i) => f.date(dayDate(i), { weekday: "short" }));
+  const dayNarrow = DAYS.map((_, i) => f.date(dayDate(i), { weekday: "narrow" }));
+  const dayLong = DAYS.map((_, i) => f.date(dayDate(i), { weekday: "long" }));
+
+  // Picture 1: which operator runs the most of the listed routes.
   const routesByOperator = operators
     .map((op) => ({ op, count: buses.filter((b) => b.operator === op).length }))
     .sort((a, b) => b.count - a.count);
@@ -98,19 +186,57 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
   const busesLabel = !topOperator
     ? ""
     : operators.length === 1
-      ? `Every bus route listed here is run by ${topOperator.op}.`
+      ? t("picture.busesOne", { op: topOperator.op })
       : oneEach
-        ? `Each bus is one route. The ${topOperator.count} coloured ones are run by ${topOperator.op}.`
-        : `About ${Math.round(busesLit)} of every 10 bus routes listed here are run by ${topOperator.op}.`;
+        ? t("picture.busesEach", { count: topOperator.count, op: topOperator.op })
+        : t("picture.busesScaled", { n: Math.round(busesLit), op: topOperator.op });
+
+  // Picture 2: kinds of buses (bus types are data, shown as published).
+  const typeCounts = new Map<string, number>();
+  buses.forEach((b) => {
+    const type = b.busType?.trim();
+    if (type) typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
+  });
+  const typeItems = topWithOther(
+    Array.from(typeCounts, ([type, value]) => ({ key: type, label: type, value })),
+    4,
+    t("types.other"),
+  );
+  const typedTotal = typeItems.reduce((s, i) => s + i.value, 0);
+  const topType = typeItems[0];
+
+  // Picture 3: listed trains that run on each weekday.
+  const dayCounts = DAYS.map((_, i) => trains.filter((tr) => runsOn(tr, i)).length);
+  const dayMax = Math.max(0, ...dayCounts);
+  const dayMin = Math.min(...dayCounts);
+  const mostDay = dayCounts.indexOf(dayMax);
+  const leastDay = dayCounts.indexOf(dayMin);
+
+  /** "30 min" / "Every 30 min" → "Every 30 min" in the page language; anything else as published. */
+  const busEvery = (freq: string) => {
+    const m = /^(?:every\s+)?(\d+)\s*(?:min|mins|minutes)\.?$/i.exec(freq.trim());
+    if (m) return t("bus.everyMin", { n: f.number(Number(m[1])) });
+    return /^every\s/i.test(freq) ? freq : t("bus.every", { freq });
+  };
+  /** "6 hours" / "45 min" → localised; anything else as published. */
+  const busDuration = (d: string) => {
+    const h = /^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\.?$/i.exec(d.trim());
+    if (h) return t("bus.hours", { n: f.number(Number(h[1])) });
+    const m = /^(\d+)\s*(?:min|mins|minutes)\.?$/i.exec(d.trim());
+    if (m) return t("bus.minutes", { n: f.number(Number(m[1])) });
+    return d;
+  };
 
   const listStyle = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" as const, gap: 8 };
+  const b = (c: React.ReactNode) => <strong>{c}</strong>;
+  const bNum = (c: React.ReactNode) => <strong className="ftp-num">{c}</strong>;
 
   return (
     <ModulePage>
       <PageHeader
         icon={Bus}
-        title="Transport"
-        description="Bus routes and train schedules serving the district"
+        title={t("title")}
+        description={t("description")}
         backHref={base}
         accent={getModuleAccent("transport")}
       />
@@ -125,40 +251,62 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
       {!isLoading && (buses.length > 0 || trains.length > 0) && (
         <>
           <StatStrip cols={3}>
-            <StatTile emoji="🚌" label="Bus routes" value={buses.length} sub={refresh} />
-            <StatTile emoji="🚆" label="Train services" value={trains.length} sub={refresh} />
-            <StatTile emoji="🏢" label="Operators" value={operators.length} sub={refresh} />
+            <StatTile emoji="🚌" label={t("tiles.buses")} value={f.number(buses.length)} sub={refresh} />
+            <StatTile emoji="🚆" label={t("tiles.trains")} value={f.number(trains.length)} sub={refresh} />
+            <StatTile emoji="🏢" label={t("tiles.operators")} value={f.number(operators.length)} sub={refresh} />
           </StatStrip>
 
-          {/* The picture: coloured buses are routes run by the biggest operator. */}
+          {/* Picture 1: coloured buses are routes run by the biggest operator. */}
           {topOperator && (
             <Card tinted padding={18} style={{ marginTop: 16 }}>
-              <Explainer title="In simple words" emoji="🚏">
-                {operators.length === 1 ? (
-                  <>
-                    All <strong className="ftp-num">{buses.length}</strong> bus route{buses.length === 1 ? "" : "s"} listed for this district{" "}
-                    {buses.length === 1 ? "is" : "are"} run by <strong>{topOperator.op}</strong>.
-                  </>
-                ) : (
-                  <>
-                    <strong>{topOperator.op}</strong> runs <strong className="ftp-num">{topOperator.count}</strong> of the{" "}
-                    <strong className="ftp-num">{buses.length}</strong> bus routes listed for this district.
-                  </>
-                )}
+              <Explainer emoji="🚏">
+                {operators.length === 1
+                  ? t.rich("picture.simpleOne", { n: f.number(buses.length), count: buses.length, op: topOperator.op, b: bNum })
+                  : t.rich("picture.simpleMany", {
+                      op: topOperator.op,
+                      count: f.number(topOperator.count),
+                      total: f.number(buses.length),
+                      b: bNum,
+                    })}
               </Explainer>
               <Pictogram filled={busesLit} total={busesTotal} emoji="🚌" label={busesLabel} />
             </Card>
           )}
 
-          <Section title="Timetables" emoji="🕒">
+          {/* Picture 2: kinds of buses, when there are two or more kinds. */}
+          {typeItems.length >= 2 && topType && (
+            <div style={{ marginTop: 24 }}>
+              <ChartCard
+                title={t("types.title")}
+                emoji="🚍"
+                units={t("types.units")}
+                simple={t.rich("types.simple", {
+                  type: topType.label,
+                  count: f.number(topType.value),
+                  total: f.number(typedTotal),
+                  b,
+                })}
+                table={typeItems.map((i) => ({ label: i.label, value: f.number(i.value) }))}
+              >
+                <HueDonut
+                  items={typeItems}
+                  centerValue={f.number(typedTotal)}
+                  centerLabel={t("types.center", { count: typedTotal })}
+                  ariaLabel={t("types.aria", { list: listFormat.format(typeItems.map((i) => `${i.label} ${f.number(i.value)}`)) })}
+                />
+              </ChartCard>
+            </div>
+          )}
+
+          <Section title={t("timetables")} emoji="🕒">
             {/* Bus / train switch. */}
             <Chips
-              label="Mode of transport"
+              label={t("modeAria")}
               value={tab}
               onChange={(v) => setTab(v as "bus" | "train")}
               items={[
-                { value: "bus", label: "Buses", count: buses.length },
-                { value: "train", label: "Trains", count: trains.length },
+                { value: "bus", label: t("buses"), count: buses.length },
+                { value: "train", label: t("trains"), count: trains.length },
               ]}
             />
 
@@ -167,38 +315,50 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
                 {operators.length > 1 && (
                   <div style={{ marginBottom: 12 }}>
                     <Chips
-                      label="Bus operator"
+                      label={t("operatorAria")}
                       value={busFilter}
                       onChange={setBusFilter}
-                      items={[{ value: "all", label: "All" }, ...operators.map((op) => ({ value: op, label: op }))]}
+                      items={[{ value: "all", label: t("all") }, ...operators.map((op) => ({ value: op, label: op }))]}
                     />
                   </div>
                 )}
                 {filteredBuses.length === 0 ? (
-                  <EmptyState emoji="🚌" title="No active bus routes listed for this district yet." />
+                  <EmptyState emoji="🚌" title={t("emptyBuses")} />
                 ) : (
                   <ul style={listStyle}>
-                    {filteredBuses.map((b) => (
-                      <Card key={b.id} as="li" padding={14}>
+                    {filteredBuses.map((bus) => (
+                      <Card key={bus.id} as="li" padding={14}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <Bus size={18} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 2 }} />
+                          <RouteChip emoji="🚌" />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                              {b.routeNumber && <NumberTag>{b.routeNumber}</NumberTag>}
-                              <span className="ftp-title">{b.origin} → {b.destination}</span>
+                              {bus.routeNumber && <NumberTag>{bus.routeNumber}</NumberTag>}
+                              <span className="ftp-title">
+                                {bus.origin} → {bus.destination}
+                              </span>
                             </div>
-                            {b.via && <div style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>via {b.via}</div>}
+                            {bus.via && <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{t("bus.via", { via: bus.via })}</div>}
                           </div>
-                          <div style={{ textAlign: "right", flexShrink: 0, fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>
-                            <div>{b.operator}</div>
-                            <div>{b.busType}</div>
+                          <div style={{ textAlign: "end", flexShrink: 0, fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>
+                            <div>{bus.operator}</div>
+                            <div>{bus.busType}</div>
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap", paddingLeft: 30 }}>
-                          {b.departureTime && <Meta icon={Clock}><span className="ftp-num">{b.departureTime}</span></Meta>}
-                          {b.frequency && <Meta>{/^every\s/i.test(b.frequency) ? b.frequency : `Every ${b.frequency}`}</Meta>}
-                          {b.duration && <Meta icon={Timer}>{b.duration}</Meta>}
-                          {b.fare ? <Meta><span className="ftp-num" style={{ color: "var(--hue-deep)" }}>₹{b.fare}</span></Meta> : null}
+                        <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap", paddingInlineStart: 48 }}>
+                          {bus.departureTime && (
+                            <Meta icon={Clock}>
+                              <span className="ftp-num">{bus.departureTime}</span>
+                            </Meta>
+                          )}
+                          {bus.frequency && <Meta>{busEvery(bus.frequency)}</Meta>}
+                          {bus.duration && <Meta icon={Timer}>{busDuration(bus.duration)}</Meta>}
+                          {bus.fare ? (
+                            <Meta>
+                              <span className="ftp-num" style={{ color: "var(--hue-deep)" }}>
+                                {f.number(bus.fare, { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
+                              </span>
+                            </Meta>
+                          ) : null}
                         </div>
                       </Card>
                     ))}
@@ -210,61 +370,96 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
             {tab === "train" && (
               <div style={{ marginTop: 12 }}>
                 {trains.length === 0 ? (
-                  <EmptyState emoji="🚆" title="No train services listed for this district yet." />
+                  <EmptyState emoji="🚆" title={t("emptyTrains")} />
                 ) : (
-                  <ul style={listStyle}>
-                    {trains.map((t) => (
-                      <Card key={t.id} as="li" padding={14}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <Train size={18} aria-hidden style={{ color: "var(--hue)", flexShrink: 0, marginTop: 2 }} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                              <NumberTag>{t.trainNumber}</NumberTag>
-                              <span className="ftp-title">{t.trainName}</span>
+                  <>
+                    {/* Picture 3: trains on each day, with two or more trains. */}
+                    {trains.length >= 2 && dayMax > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <ChartCard
+                          title={t("days.title")}
+                          emoji="📅"
+                          units={t("days.units")}
+                          simple={
+                            dayMax === dayMin
+                              ? t("days.simpleSame", { n: f.number(dayMax), count: dayMax })
+                              : t.rich("days.simple", {
+                                  most: dayLong[mostDay],
+                                  max: f.number(dayMax),
+                                  least: dayLong[leastDay],
+                                  min: f.number(dayMin),
+                                  b,
+                                })
+                          }
+                          table={DAYS.map((d, i) => ({ label: dayLong[i], value: f.number(dayCounts[i]) }))}
+                        >
+                          <DayColumns
+                            counts={dayCounts}
+                            labels={dayShort}
+                            ariaLabel={t("days.aria", { list: listFormat.format(DAYS.map((_, i) => `${dayShort[i]} ${f.number(dayCounts[i])}`)) })}
+                          />
+                        </ChartCard>
+                      </div>
+                    )}
+                    <ul style={listStyle}>
+                      {trains.map((tr) => {
+                        const runDays = DAYS.map((_, i) => i).filter((i) => runsOn(tr, i));
+                        return (
+                          <Card key={tr.id} as="li" padding={14}>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                              <RouteChip emoji="🚆" />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                  <NumberTag>{tr.trainNumber}</NumberTag>
+                                  <span className="ftp-title">{tr.trainName}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: 1.55, color: "var(--ftp-text-2)", marginTop: 2 }}>
+                                  <MapPin size={12} aria-hidden />
+                                  {tr.origin} → {tr.destination}
+                                </div>
+                                <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ftp-text-2)" }}>{t("train.station", { name: tr.stationName })}</div>
+                              </div>
+                              <div className="ftp-num" style={{ textAlign: "end", flexShrink: 0, fontSize: 13, lineHeight: 1.55 }}>
+                                {tr.arrivalTime && <div>{t("train.arr", { time: tr.arrivalTime })}</div>}
+                                {tr.departureTime && <div>{t("train.dep", { time: tr.departureTime })}</div>}
+                              </div>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)", marginTop: 2 }}>
-                              <MapPin size={12} aria-hidden />
-                              {t.origin} → {t.destination}
-                            </div>
-                            <div style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)" }}>Station: {t.stationName}</div>
-                          </div>
-                          <div className="ftp-num" style={{ textAlign: "right", flexShrink: 0, fontSize: 13, lineHeight: "20px" }}>
-                            {t.arrivalTime && <div>Arr: {t.arrivalTime}</div>}
-                            {t.departureTime && <div>Dep: {t.departureTime}</div>}
-                          </div>
-                        </div>
-                        {t.daysOfWeek.length > 0 && (
-                          <div
-                            aria-label={`Runs on ${DAYS.filter((d) => t.daysOfWeek.includes(d)).join(", ")}`}
-                            style={{ display: "flex", gap: 4, marginTop: 8, paddingLeft: 30 }}
-                          >
-                            {DAYS.map((d) => {
-                              const runs = t.daysOfWeek.includes(d);
-                              return (
-                                <span
-                                  key={d}
-                                  aria-hidden
-                                  className="ftp-num"
-                                  style={{
-                                    fontSize: 11,
-                                    lineHeight: "20px",
-                                    width: 22,
-                                    textAlign: "center",
-                                    borderRadius: 7,
-                                    background: runs ? "var(--hue-tint)" : "var(--ftp-surface-2)",
-                                    color: runs ? "var(--hue-deep)" : "var(--ftp-text-2)",
-                                    opacity: runs ? 1 : 0.6,
-                                  }}
-                                >
-                                  {d[0]}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </Card>
-                    ))}
-                  </ul>
+                            {runDays.length > 0 && (
+                              <div
+                                role="img"
+                                aria-label={t("train.runsOn", { days: listFormat.format(runDays.map((i) => dayLong[i])) })}
+                                style={{ display: "flex", gap: 4, marginTop: 8, paddingInlineStart: 48 }}
+                              >
+                                {DAYS.map((d, i) => {
+                                  const runs = runDays.includes(i);
+                                  return (
+                                    <span
+                                      key={d}
+                                      aria-hidden
+                                      style={{
+                                        fontSize: 11,
+                                        lineHeight: "20px",
+                                        minWidth: 22,
+                                        padding: "0 3px",
+                                        textAlign: "center",
+                                        borderRadius: 7,
+                                        background: runs ? "var(--hue-tint)" : "var(--ftp-surface-2)",
+                                        color: runs ? "var(--hue-deep)" : "var(--ftp-text-2)",
+                                        fontWeight: runs ? 700 : 400,
+                                        opacity: runs ? 1 : 0.6,
+                                      }}
+                                    >
+                                      {dayNarrow[i]}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </ul>
+                  </>
                 )}
               </div>
             )}
@@ -278,16 +473,17 @@ function TransportPageInner({ params }: { params: Promise<{ locale: string; stat
         locale={locale}
         district={district}
         moduleSlug="transport"
-        moduleLabel="Transport"
-        shareText={`Transport in ${district}: ${buses.length} bus routes, ${trains.length} train services`}
+        moduleLabel={mt.label("transport")}
+        shareText={t("share", { district: districtName, buses: buses.length, trains: trains.length })}
       />
     </ModulePage>
   );
 }
 
 export default function TransportPage({ params }: { params: Promise<{ locale: string; state: string; district: string }> }) {
+  const mt = useModuleText();
   return (
-    <ModuleErrorBoundary moduleName="Transport">
+    <ModuleErrorBoundary moduleName={mt.label("transport")}>
       <TransportPageInner params={params} />
     </ModuleErrorBoundary>
   );

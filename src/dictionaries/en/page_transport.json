@@ -1,0 +1,62 @@
+{
+  "title": "Transport",
+  "description": "Bus routes and train timetables for the district",
+  "refresh": "Source updates {freq}",
+  "freq": {
+    "monthly": "monthly",
+    "weekly": "weekly",
+    "daily": "daily",
+    "annual": "once a year",
+    "quarterly": "every three months",
+    "onPublish": "when the source publishes"
+  },
+  "tiles": {
+    "buses": "Bus routes",
+    "trains": "Train services",
+    "operators": "Operators"
+  },
+  "picture": {
+    "simpleOne": "All <b>{n}</b> {count, plural, one {bus route} other {bus routes}} listed for this district {count, plural, one {is} other {are}} run by <b>{op}</b>.",
+    "simpleMany": "<b>{op}</b> runs <b>{count}</b> of the <b>{total}</b> bus routes listed for this district.",
+    "busesOne": "Every bus route listed here is run by {op}.",
+    "busesEach": "Each bus is one route. The {count} coloured ones are run by {op}.",
+    "busesScaled": "About {n} of every 10 bus routes listed here are run by {op}."
+  },
+  "types": {
+    "title": "Kinds of buses",
+    "units": "Bus routes listed, by type of bus",
+    "simple": "<b>{type}</b> buses run {count} of the {total} routes listed.",
+    "center": "{count, plural, one {route} other {routes}}",
+    "aria": "Bus routes by type of bus: {list}.",
+    "other": "Other types"
+  },
+  "days": {
+    "title": "Trains on each day of the week",
+    "units": "Listed trains that run on each day",
+    "simpleSame": "{n} {count, plural, one {train runs} other {trains run}} on each day of the week.",
+    "simple": "<b>{most}</b> has the most trains ({max}) and <b>{least}</b> the fewest ({min}).",
+    "aria": "Trains on each day: {list}."
+  },
+  "timetables": "Timetables",
+  "modeAria": "Mode of transport",
+  "buses": "Buses",
+  "trains": "Trains",
+  "operatorAria": "Bus operator",
+  "all": "All",
+  "emptyBuses": "No active bus routes listed for this district yet.",
+  "emptyTrains": "No train services listed for this district yet.",
+  "bus": {
+    "via": "via {via}",
+    "every": "Every {freq}",
+    "everyMin": "Every {n} min",
+    "hours": "{n} h",
+    "minutes": "{n} min"
+  },
+  "train": {
+    "station": "Station: {name}",
+    "arr": "Arrives {time}",
+    "dep": "Leaves {time}",
+    "runsOn": "Runs on {days}"
+  },
+  "share": "Transport in {district}: {buses, plural, one {# bus route} other {# bus routes}}, {trains, plural, one {# train service} other {# train services}}"
+}

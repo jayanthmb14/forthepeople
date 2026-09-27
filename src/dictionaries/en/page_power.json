@@ -1,0 +1,48 @@
+{
+  "title": "Power outages",
+  "description": "Planned and unplanned power cut notices, and how long each cut lasted",
+  "row": {
+    "ongoing": "Ongoing",
+    "resolved": "Power back",
+    "reason": "Reason: {reason}",
+    "started": "Started {time}",
+    "span": "{start} to {end}",
+    "hours": "{h} h",
+    "duration": "without power",
+    "households": "{count, plural, one {{n} home} other {{n} homes}}"
+  },
+  "tiles": {
+    "active": "Ongoing cuts",
+    "households": "Homes affected now",
+    "householdsUnknown": "Not given in the notices",
+    "resolved": "Power back",
+    "resolvedSub": "in the {n} newest notices",
+    "avg": "Average length",
+    "hoursUnit": "h",
+    "avgNone": "No end times published yet"
+  },
+  "picture": {
+    "simple": "Of the <b>{total}</b> {total, plural, one {power cut} other {power cuts}} in the notices we hold, <b>{ended}</b> {ended, plural, one {has} other {have}} ended and <b>{ongoing}</b> {ongoing, plural, one {is} other {are}} still going on.",
+    "bulbsEach": "Each bulb is one power cut. {ended} of {total} are lit because the power is back.",
+    "bulbsScaled": "About {n} of every 10 power cuts have ended and the power is back.",
+    "newest": "Newest notice from"
+  },
+  "longest": {
+    "title": "The longest power cuts",
+    "units": "Hours without power, for cuts that have ended",
+    "simple": "The longest cut was in <b>{area}</b>, with no power for {hours} hours.",
+    "aria": "The longest power cuts"
+  },
+  "sections": {
+    "active": "Ongoing power cuts",
+    "history": "Power cuts that have ended"
+  },
+  "empty": {
+    "title": "No ongoing power cuts in the notices we hold",
+    "body": "Every power cut notice we have for this district has ended. Cuts that were never announced may not show here."
+  },
+  "share": {
+    "withData": "Power in {district}: {active, plural, one {# ongoing cut} other {# ongoing cuts}}, {resolved, plural, one {# cut} other {# cuts}} ended recently",
+    "noData": "Power cut information for {district}"
+  }
+}

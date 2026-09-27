@@ -1,0 +1,33 @@
+{
+  "health": {
+    "title": "Healthcare staff: sanctioned and filled posts",
+    "simple": "Of the <b>{sanctioned}</b> healthcare posts the government has sanctioned here, <b>{working}</b> have someone working in them."
+  },
+  "schools": {
+    "title": "Teaching staff: sanctioned and filled posts",
+    "simple": "Of the <b>{sanctioned}</b> teaching posts the government has sanctioned here, <b>{working}</b> have someone working in them."
+  },
+  "official": "Official data",
+  "tiles": {
+    "fillRate": "Posts filled",
+    "vacantSub": "{pct} empty",
+    "working": "Working",
+    "workingSub": "of {n} sanctioned",
+    "vacant": "Empty posts",
+    "shortage": "Shortage"
+  },
+  "pictogram": "About {n} of every 10 sanctioned posts are filled.",
+  "gauge": "Posts filled",
+  "gaugeCaption": "Sanctioned posts that are filled",
+  "row": {
+    "filled": "{pct} filled",
+    "workingVacant": "{working} working, {vacant} empty",
+    "shortage": "{pct} short"
+  },
+  "gaps": {
+    "title": "Where the empty posts are",
+    "units": "Empty posts by role, the roles with the most",
+    "simple": "<b>{role}</b> has the most empty posts: {n}.",
+    "aria": "Roles with the most empty posts"
+  }
+}
