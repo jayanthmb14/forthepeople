@@ -24,7 +24,7 @@ import { hasNjdgSource } from "@/lib/courts/sources";
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { courtStatReadDate } from "@/lib/courts/snapshot";
 import { NJDG_COURTSTAT } from "@/lib/data-filters";
-import { SLUG_RE } from "@/lib/read-api";
+import { publicCacheControl, SLUG_RE } from "@/lib/read-api";
 
 const MODULE = "court-pendency";
 const TTL_SECONDS = 600;
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 
     const lastUpdated = snapshot?.fetchedAt ?? rows.map((r) => r.readOn).filter(Boolean).sort().at(-1) ?? null;
     const resp = NextResponse.json({ data: { covered, snapshot, rows }, meta: { ...meta, lastUpdated } });
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL_SECONDS));
     return resp;
   } catch (err) {
     Sentry.captureException(err);

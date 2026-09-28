@@ -14,6 +14,11 @@ export function isSlug(value: string | null | undefined): value is string {
 }
 
 /** Cache-Control for a public read: the CDN keeps it `ttlSeconds`, and serves it stale for twice that while it refreshes. */
+export function publicCacheControl(ttlSeconds: number): string {
+  return `public, s-maxage=${ttlSeconds}, stale-while-revalidate=${ttlSeconds * 2}`;
+}
+
+/** publicCacheControl as a headers object for NextResponse.json(body, { headers }). */
 export function publicCacheHeaders(ttlSeconds: number): { "Cache-Control": string } {
-  return { "Cache-Control": `public, s-maxage=${ttlSeconds}, stale-while-revalidate=${ttlSeconds * 2}` };
+  return { "Cache-Control": publicCacheControl(ttlSeconds) };
 }

@@ -31,6 +31,7 @@ import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERTS, SHOWN_BUDGET_ENTR
 import type { GlanceData } from "@/components/district/shell/glance-types";
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 import { isCollectorRole } from "@/lib/leader-roles";
+import { publicCacheControl } from "@/lib/read-api";
 
 export const runtime = "nodejs";
 
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
   const cached = await cacheGet<GlanceData>(key);
   if (cached) {
     return NextResponse.json(cached, {
-      headers: { "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS * 2}` },
+      headers: { "Cache-Control": publicCacheControl(CACHE_SECONDS) },
     });
   }
 
@@ -193,6 +194,6 @@ export async function GET(req: NextRequest) {
 
   await cacheSet(key, data, CACHE_SECONDS);
   return NextResponse.json(data, {
-    headers: { "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS * 2}` },
+    headers: { "Cache-Control": publicCacheControl(CACHE_SECONDS) },
   });
 }

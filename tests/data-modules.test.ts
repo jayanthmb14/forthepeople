@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { isSlug } from "@/lib/read-api";
+import { isSlug, publicCacheControl, publicCacheHeaders } from "@/lib/read-api";
 
 // /api/data/[module] answers 404 for a module outside MODULES before any
 // cache or database work, so the list must name every case of the switch.
@@ -30,5 +30,12 @@ describe("isSlug", () => {
   it("accepts district and state slugs only", () => {
     for (const ok of ["mandya", "bengaluru-urban", "new-delhi", "tamil-nadu"]) expect(isSlug(ok)).toBe(true);
     for (const bad of ["", "Mandya", "mandya;drop", "a b", "../x", "x".repeat(65), null, undefined]) expect(isSlug(bad)).toBe(false);
+  });
+});
+
+describe("publicCacheControl", () => {
+  it("is the header string the read routes used to build by hand", () => {
+    expect(publicCacheControl(600)).toBe("public, s-maxage=600, stale-while-revalidate=1200");
+    expect(publicCacheHeaders(3600)).toEqual({ "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" });
   });
 });

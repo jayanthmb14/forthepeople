@@ -13,9 +13,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { storedWeights } from "@/lib/health-score";
-import { isSlug } from "@/lib/read-api";
+import { isSlug, publicCacheControl } from "@/lib/read-api";
 
 export const runtime = "nodejs";
+
+const CACHE_SECONDS = 3600;
 
 export async function GET(req: NextRequest) {
   const districtSlug = req.nextUrl.searchParams.get("district");
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
     if (cached) {
       return NextResponse.json(
         typeof cached === "string" ? JSON.parse(cached) : cached,
-        { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } }
+        { headers: { "Cache-Control": publicCacheControl(CACHE_SECONDS) } }
       );
     }
   } catch { /* non-fatal */ }
@@ -82,10 +84,10 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    if (redis) await redis.set(cacheKey, JSON.stringify(response), { ex: 3600 });
+    if (redis) await redis.set(cacheKey, JSON.stringify(response), { ex: CACHE_SECONDS });
   } catch { /* non-fatal */ }
 
   return NextResponse.json(response, {
-    headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
+    headers: { "Cache-Control": publicCacheControl(CACHE_SECONDS) },
   });
 }

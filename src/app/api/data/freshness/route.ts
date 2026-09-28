@@ -49,6 +49,7 @@ import {
 } from "@/lib/data-filters";
 import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
 import { lastAlertsFeedRead } from "@/lib/dataset-dates";
+import { publicCacheControl } from "@/lib/read-api";
 
 export const runtime = "nodejs";
 
@@ -228,7 +229,7 @@ export async function GET(req: NextRequest) {
   const cached = await cacheGet<Record<string, unknown>>(key);
   if (cached) {
     return NextResponse.json(cached, {
-      headers: { "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS * 2}` },
+      headers: { "Cache-Control": publicCacheControl(CACHE_SECONDS) },
     });
   }
 
@@ -333,6 +334,6 @@ export async function GET(req: NextRequest) {
 
   await cacheSet(key, data, CACHE_SECONDS);
   return NextResponse.json(data, {
-    headers: { "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS * 2}` },
+    headers: { "Cache-Control": publicCacheControl(CACHE_SECONDS) },
   });
 }

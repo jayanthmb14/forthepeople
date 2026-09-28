@@ -23,6 +23,7 @@ import { dedupeStories } from "@/lib/news-dedupe";
 import { topicOf, type NewsTopicId } from "@/lib/civic/news-topics";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
+import { publicCacheControl } from "@/lib/read-api";
 
 const WINDOW_DAYS = 14;
 const HEADLINES_PER_TOPIC = 3;
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
   const cached = await cacheGet<{ data: ResponsibilityNewsPayload | null; meta: Record<string, unknown> }>(key);
   if (cached) {
     const resp = NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } });
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL_SECONDS));
     return resp;
   }
 
@@ -127,7 +128,7 @@ export async function GET(req: NextRequest) {
     const result = { data, meta };
     await cacheSet(key, result, TTL_SECONDS);
     const resp = NextResponse.json(result);
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL_SECONDS));
     return resp;
   } catch (err) {
     console.error("[api/data/responsibility-news] query failed:", err instanceof Error ? err.message : err);
