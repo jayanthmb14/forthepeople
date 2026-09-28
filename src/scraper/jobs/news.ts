@@ -17,6 +17,7 @@
 // ═══════════════════════════════════════════════════════════
 import * as cheerio from "cheerio";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { classifyArticleWithAI, executeNewsAction } from "@/lib/news-action-engine";
 import { logUpdate } from "@/lib/update-log";
 import {
@@ -180,6 +181,39 @@ async function fetchRSSItems(query: string): Promise<Array<{
  *  district cannot use the whole run and the free model's daily cap lasts. */
 const MAX_AI_PER_DISTRICT = 20;
 
+// ── Articles the AI placed elsewhere ────────────────────────
+// Google News returns the same results every run while an article is
+// fresh (3 days, 18 runs). An article the AI said is about another place
+// was never remembered, so it went back to the AI every 4 h and used the
+// district's AI calls (MAX_AI_PER_DISTRICT) that new articles needed.
+// Its URL key is now kept in a Redis sorted set (score = when) until it
+// can no longer be fetched. Deferred articles (place not checked yet)
+// are not remembered: they are meant to be retried.
+const rejectedKey = (districtId: string) => `ftp:news:rejected:${districtId}`;
+const REJECTED_KEEP_MS = (NEWS_MAX_AGE_DAYS + 1) * 86_400_000;
+
+async function loadRejectedUrls(districtId: string): Promise<string[]> {
+  if (!redis) return [];
+  try {
+    const key = rejectedKey(districtId);
+    await redis.zremrangebyscore(key, 0, Date.now() - REJECTED_KEEP_MS);
+    const members = await redis.zrange<unknown[]>(key, 0, -1);
+    return members.map(String);
+  } catch {
+    return []; // memory is best-effort: without it the AI is simply asked again
+  }
+}
+
+async function rememberRejectedUrl(districtId: string, key: string): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.zadd(rejectedKey(districtId), { score: Date.now(), member: key });
+    await redis.expire(rejectedKey(districtId), Math.ceil(REJECTED_KEEP_MS / 1000));
+  } catch {
+    /* best-effort */
+  }
+}
+
 export async function scrapeNews(
   ctx: JobContext,
   /** deadlineAt: nothing new starts after it. aiDeadlineAt: this district's
@@ -208,6 +242,8 @@ export async function scrapeNews(
     });
     // Keyed by urlKey (no www / tracking parameters / trailing slash): the same article, one row.
     existingUrls.forEach((n) => { if (n.url) seenUrls.add(urlKey(n.url)); });
+    // …and the articles the AI already placed elsewhere (not saved, not asked again).
+    for (const k of await loadRejectedUrls(ctx.districtId)) seenUrls.add(k);
 
     // The last 7 days of this district's stories: same-headline check and
     // the canonical story a new copy points at (duplicateOf).
@@ -290,6 +326,7 @@ export async function scrapeNews(
         // show it on this district's page, and never act on it.
         if (aiClassification && !aiClassification.isAboutDistrict) {
           offTopicSkipped++;
+          await rememberRejectedUrl(ctx.districtId, urlKey(item.url));
           ctx.log(`[News] SKIPPED (not about ${ctx.districtName}): "${item.headline.slice(0, 60)}"`);
           continue;
         }
