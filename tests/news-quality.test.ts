@@ -12,9 +12,11 @@ import {
   isPlaceChecked,
   isPromotional,
   looksTruncated,
+  newsDisplayTitle,
   newsForDisplay,
   stripFeedSuffix,
 } from "@/lib/news-quality";
+import { sourceHash } from "@/lib/translation/content";
 
 describe("cleanHeadline", () => {
   it("drops outlet names and section tags at the end", () => {
@@ -117,5 +119,31 @@ describe("newsForDisplay", () => {
     expect(out[0].targetModule).toBe("police");
     expect(out[0].category).toBe("crime");
     expect(out[1].targetModule).toBe("budget"); // the AI's tag is kept
+  });
+});
+
+describe("newsDisplayTitle (the text the translation is made from)", () => {
+  const place = { districtName: "Mumbai", stateName: "Maharashtra" };
+  const rows = [
+    { title: "Mumbai​ civic body​ clears ₹2,000 crore road plan", publisher: "Hindustan Times", source: "Hindustan Times" },
+    { title: "Mumbai: BMC to repair 400 potholes before monsoon...", publisher: null, source: "Google News" },
+    { title: "Mumbai metro line 3 to open next week | Latest News Mumbai", publisher: null, source: "Google News" },
+    { title: "Mumbai: Uddhav Thackeray slams civic body over waterlogging in Andheri subway, says Sena UBT's Sanjay R", publisher: "Times of India", source: "Times of India" },
+    { title: "Mumbai rains: local trains running late - Mid-day", publisher: "Mid-day", source: "Mid-day" },
+  ].map((r, i) => ({ ...r, id: `n${i}`, classifiedBy: "ai:test", summary: null }));
+
+  it("is exactly the headline the news list shows, so the stored translation's hash matches", () => {
+    const shown = newsForDisplay(rows, place).map((r) => displayHeadline(r.title));
+    expect(shown).toHaveLength(rows.length);
+    rows.forEach((row, i) => {
+      expect(newsDisplayTitle(row)).toBe(shown[i]);
+      expect(sourceHash(newsDisplayTitle(row))).toBe(sourceHash(shown[i]));
+    });
+  });
+
+  it("differs from the stored title where cleaning changes it (the old job hashed the stored title)", () => {
+    const changed = rows.filter((r) => newsDisplayTitle(r) !== r.title.trim());
+    expect(changed.length).toBeGreaterThanOrEqual(3);
+    expect(newsDisplayTitle(rows[1])).toBe("Mumbai: BMC to repair 400 potholes before monsoon…");
   });
 });

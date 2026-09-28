@@ -24,6 +24,7 @@
 //   - no provider key → does nothing
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
+import { newsDisplayTitle } from "@/lib/news-quality";
 import { getTranslationProvider, type TranslationProvider } from "./providers";
 import { TRANSLATED_FIELDS, isMissingTable, sourceHash, translationTargets, type EntityType } from "./content";
 
@@ -73,7 +74,7 @@ async function visiblePieces(newsDays: number): Promise<Piece[]> {
       where: { duplicateOf: null, publishedAt: { gte: since } },
       orderBy: { publishedAt: "desc" },
       take: 600,
-      select: { id: true, title: true, summary: true },
+      select: { id: true, title: true, summary: true, publisher: true, source: true },
     }),
     prisma.aIModuleInsight.findMany({
       orderBy: { generatedAt: "desc" },
@@ -94,7 +95,9 @@ async function visiblePieces(newsDays: number): Promise<Piece[]> {
     }),
   ]);
   return [
-    ...pieces("news", news),
+    // The headline as the news list shows it — the overlay compares hashes
+    // of that text (src/lib/translation/overlay.ts).
+    ...pieces("news", news.map((n) => ({ id: n.id, title: newsDisplayTitle(n), summary: n.summary }))),
     ...pieces("moduleInsight", moduleInsights),
     ...pieces("insight", insights),
     ...pieces("indiaNews", indiaNews),

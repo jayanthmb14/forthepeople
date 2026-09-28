@@ -6,7 +6,7 @@
 
 // ═══════════════════════════════════════════════════════════
 // Job: News — Google News RSS + The Hindu state/city feeds
-// Schedule: daily (cron scrape-news, 06:00 UTC, vercel.json)
+// Schedule: every 4 hours (cron scrape-news, vercel.json)
 //
 // v5 (Sept 2026 audit): queries and feeds use the district's OWN state
 // (they said "Karnataka" for every district); the keyword classifier
@@ -17,6 +17,7 @@
 // ═══════════════════════════════════════════════════════════
 import * as cheerio from "cheerio";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { classifyArticleWithAI, executeNewsAction } from "@/lib/news-action-engine";
 import { logUpdate } from "@/lib/update-log";
 import {
@@ -28,7 +29,8 @@ import {
   newsFeedsFor,
 } from "@/lib/news-keywords";
 import { JobContext, ScraperResult } from "../types";
-import { findCanonicalStory, titleKey, type StoredStory } from "@/lib/news-dedupe";
+import { NEWS_MAX_AGE_DAYS, findCanonicalStory, planNewsRetention, titleKey, type StoredStory } from "@/lib/news-dedupe";
+import { deleteNewsItems } from "@/lib/news-store";
 import { cleanHeadline, isPromotional, stripFeedSuffix } from "@/lib/news-quality";
 import { urlKey } from "@/lib/dedupe/keys";
 
@@ -57,8 +59,9 @@ function parseRSSDate(dateStr: string): Date {
   }
 }
 
-// Reject articles older than maxAgeDays, future-dated, or from year < current-1
-function isArticleFresh(publishedDate: Date, maxAgeDays = 3): boolean {
+// Reject articles older than maxAgeDays, future-dated, or from year < current-1.
+// Retention never deletes a story inside this window (planNewsRetention).
+function isArticleFresh(publishedDate: Date, maxAgeDays = NEWS_MAX_AGE_DAYS): boolean {
   const now = new Date();
   const ageMs = now.getTime() - publishedDate.getTime();
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
@@ -178,6 +181,39 @@ async function fetchRSSItems(query: string): Promise<Array<{
  *  district cannot use the whole run and the free model's daily cap lasts. */
 const MAX_AI_PER_DISTRICT = 20;
 
+// ── Articles the AI placed elsewhere ────────────────────────
+// Google News returns the same results every run while an article is
+// fresh (3 days, 18 runs). An article the AI said is about another place
+// was never remembered, so it went back to the AI every 4 h and used the
+// district's AI calls (MAX_AI_PER_DISTRICT) that new articles needed.
+// Its URL key is now kept in a Redis sorted set (score = when) until it
+// can no longer be fetched. Deferred articles (place not checked yet)
+// are not remembered: they are meant to be retried.
+const rejectedKey = (districtId: string) => `ftp:news:rejected:${districtId}`;
+const REJECTED_KEEP_MS = (NEWS_MAX_AGE_DAYS + 1) * 86_400_000;
+
+async function loadRejectedUrls(districtId: string): Promise<string[]> {
+  if (!redis) return [];
+  try {
+    const key = rejectedKey(districtId);
+    await redis.zremrangebyscore(key, 0, Date.now() - REJECTED_KEEP_MS);
+    const members = await redis.zrange<unknown[]>(key, 0, -1);
+    return members.map(String);
+  } catch {
+    return []; // memory is best-effort: without it the AI is simply asked again
+  }
+}
+
+async function rememberRejectedUrl(districtId: string, key: string): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.zadd(rejectedKey(districtId), { score: Date.now(), member: key });
+    await redis.expire(rejectedKey(districtId), Math.ceil(REJECTED_KEEP_MS / 1000));
+  } catch {
+    /* best-effort */
+  }
+}
+
 export async function scrapeNews(
   ctx: JobContext,
   /** deadlineAt: nothing new starts after it. aiDeadlineAt: this district's
@@ -189,6 +225,11 @@ export async function scrapeNews(
   let aiCalls = 0;
   const aiUnavailable = () =>
     aiCalls >= MAX_AI_PER_DISTRICT || (aiDeadline !== undefined && Date.now() >= aiDeadline);
+  // Module actions run alongside the fetching, but the job waits for them
+  // before it returns: started and forgotten, they outlived the cron's
+  // response and Vercel could freeze one half-way (a project created
+  // without its timeline row). Their AI calls respect the same deadline.
+  const pendingActions: Promise<void>[] = [];
   try {
     const queries = buildNewsQueries(ctx.districtName, ctx.stateName);
     let aiSkippedForTime = 0;
@@ -202,9 +243,12 @@ export async function scrapeNews(
     const existingUrls = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
       select: { url: true },
+      take: 5000,
     });
     // Keyed by urlKey (no www / tracking parameters / trailing slash): the same article, one row.
     existingUrls.forEach((n) => { if (n.url) seenUrls.add(urlKey(n.url)); });
+    // …and the articles the AI already placed elsewhere (not saved, not asked again).
+    for (const k of await loadRejectedUrls(ctx.districtId)) seenUrls.add(k);
 
     // The last 7 days of this district's stories: same-headline check and
     // the canonical story a new copy points at (duplicateOf).
@@ -287,6 +331,7 @@ export async function scrapeNews(
         // show it on this district's page, and never act on it.
         if (aiClassification && !aiClassification.isAboutDistrict) {
           offTopicSkipped++;
+          await rememberRejectedUrl(ctx.districtId, urlKey(item.url));
           ctx.log(`[News] SKIPPED (not about ${ctx.districtName}): "${item.headline.slice(0, 60)}"`);
           continue;
         }
@@ -329,17 +374,23 @@ export async function scrapeNews(
         // Execute module action only if the AI says it is about this district
         // and is confident (executeNewsAction checks both again).
         if (aiClassification && aiClassification.isAboutDistrict && aiClassification.confidence >= 0.60) {
-          executeNewsAction({
+          const action = executeNewsAction({
             articleId: saved.id,
             articleTitle: item.headline,
             articleUrl: item.url,
+            articlePublishedAt: item.publishedAt,
+            articleSource: publisher ?? item.source,
+            articleSummary: cleanedSummary,
             districtId: ctx.districtId,
             targetModule: aiClassification.targetModule,
             moduleAction: aiClassification.moduleAction,
             extractedData: aiClassification.extractedData,
             confidence: aiClassification.confidence,
             isAboutDistrict: aiClassification.isAboutDistrict,
-          }).catch(() => {});
+          }, { deadlineAt: opts.deadlineAt }).catch((err) => {
+            ctx.log(`[News] action failed for "${item.headline.slice(0, 60)}": ${err instanceof Error ? err.message : String(err)}`);
+          });
+          pendingActions.push(action);
         }
 
         newCount++;
@@ -372,16 +423,17 @@ export async function scrapeNews(
       }
     }
 
-    // Keep only last 50 news items
-    const old = await prisma.newsItem.findMany({
+    // Keep the newest 50 stories, and every story still inside the feeds'
+    // window: deleting one of those made the next run fetch, classify and
+    // act on it again (planNewsRetention). Copies of a deleted original are
+    // re-pointed and its translations removed (deleteNewsItems).
+    const stored = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
       orderBy: { publishedAt: "desc" },
-      skip: 50,
-      select: { id: true },
+      select: { id: true, publishedAt: true },
+      take: 5000,
     });
-    if (old.length > 0) {
-      await prisma.newsItem.deleteMany({ where: { id: { in: old.map((n) => n.id) } } });
-    }
+    await deleteNewsItems(planNewsRetention(stored, Date.now()));
 
     const summary =
       `News: ${newCount} new items across ${queries.length} queries` +
@@ -410,5 +462,7 @@ export async function scrapeNews(
     const msg = err instanceof Error ? err.message : String(err);
     ctx.log(`Error: ${msg}`);
     return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };
+  } finally {
+    await Promise.allSettled(pendingActions);
   }
 }

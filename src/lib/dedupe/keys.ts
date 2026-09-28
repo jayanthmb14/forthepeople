@@ -33,6 +33,7 @@
 // To teach it a new alias, add it to ABBREVIATIONS / PHRASE_ALIASES /
 // EXAM_PHRASES below and a line to tests/dedupe-keys.test.ts.
 // ═══════════════════════════════════════════════════════════
+import { levenshtein } from "@/lib/text/levenshtein";
 
 // ── Text folding ────────────────────────────────────────────
 
@@ -212,21 +213,7 @@ export function urlKey(input: string | null | undefined): string {
 }
 
 // ── Similarity (fuzzy candidates only) ──────────────────────
-
-function levenshtein(a: string, b: string): number {
-  if (a === b) return 0;
-  if (!a.length) return b.length;
-  if (!b.length) return a.length;
-  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 0; i < a.length; i++) {
-    const cur = [i + 1];
-    for (let j = 0; j < b.length; j++) {
-      cur.push(Math.min(cur[j] + 1, prev[j + 1] + 1, prev[j] + (a[i] === b[j] ? 0 : 1)));
-    }
-    prev = cur;
-  }
-  return prev[b.length];
-}
+// Edit distance: src/lib/text/levenshtein.ts (shared with the double-check).
 
 const hasDigit = (w: string) => /\d/.test(w);
 

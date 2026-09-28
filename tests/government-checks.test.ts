@@ -102,4 +102,10 @@ describe("isRelatedNews (related news on module pages)", () => {
     expect(isRelatedNews(item("Mandya police arrest two", ""), "Mandya", "Karnataka")).toBe(false);
     expect(isRelatedNews({ title: "Mandya police arrest two" }, "Mandya", "Karnataka")).toBe(false);
   });
+
+  it("checks the words themselves even when the AI placed the story (the news API passes whole rows)", () => {
+    const aiRow = { ...item("Police arrest two in theft case", "police"), classifiedBy: "ai:typesafe/jev-router" };
+    expect(isRelatedNews(aiRow, "Mandya", "Karnataka")).toBe(false);
+    expect(isRelatedNews({ ...aiRow, title: "Mandya police arrest two in theft case" }, "Mandya", "Karnataka")).toBe(true);
+  });
 });

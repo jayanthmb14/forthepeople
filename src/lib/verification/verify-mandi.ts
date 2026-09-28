@@ -17,6 +17,7 @@
 // and none after three districts in a row came back empty.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
+import { shownCropPrices } from "@/lib/data-filters";
 import { agmarknetDistrictNames } from "@/scraper/lib/district-aliases";
 import { compareModalPrice, decideStatus, fmtNumber, istDayKey, MANDI_RELATIVE_TOLERANCE } from "./compare";
 import { DeadlineError, errText, fetchJson } from "./http";
@@ -67,14 +68,18 @@ export async function verifyMandi(ctx: VerifyContext): Promise<VerifierOutput> {
       out.errors.push("mandi: time budget used up");
       break;
     }
-    const newest = await prisma.cropPrice.findFirst({ where: { districtId: d.id }, orderBy: { date: "desc" }, select: { date: true } });
+    // Only the prices the crops page shows (shownCropPrices): New Delhi has
+    // no mandi of its own, Bengaluru Urban shows Bangalore APMC only — the
+    // check must not report on rows the page hides.
+    const shown = shownCropPrices(d.slug);
+    const newest = await prisma.cropPrice.findFirst({ where: { districtId: d.id, ...shown }, orderBy: { date: "desc" }, select: { date: true } });
     const base = { dataset: "mandi" as const, stateSlug: d.stateSlug, districtSlug: d.slug, entityType: "CropPrice", tolerance: `±${MANDI_RELATIVE_TOLERANCE * 100} % of the district modal, or within its min–max` };
     if (!newest) {
       out.records.push({ ...base, datasetKey: `mandi:${d.slug}`, kind: "cross-source", entityId: null, dataDate: null, primarySource: PRIMARY_SOURCE, primaryValue: null, sources: [], agreed: null, status: "unchecked", reason: "no-stored-data", notes: "No mandi prices stored for this district." });
       continue;
     }
     const rows = await prisma.cropPrice.findMany({
-      where: { districtId: d.id, date: newest.date },
+      where: { districtId: d.id, date: newest.date, ...shown },
       select: { id: true, commodity: true, market: true, modalPrice: true },
       take: 300,
     });

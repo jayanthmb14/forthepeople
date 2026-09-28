@@ -57,6 +57,12 @@ export const TIER2_MODELS = ["openai/gpt-5.6-luna", "google/gemini-3.1-flash-lit
 // Sonnet 5 ($2 / $10) is newer and cheaper than Sonnet 4.6 ($3 / $15).
 export const FACT_CHECK_MODELS = ["anthropic/claude-sonnet-5", "anthropic/claude-haiku-4.5"] as const;
 
+// ── Direct Anthropic (scripts only: FTP_AI_PROVIDER=anthropic) ──
+// Anthropic's own model id (not an OpenRouter slug), used by
+// src/lib/ai-provider.ts when a script calls Claude with its own key and
+// pins no model. Never used in production (see docs/RUNBOOKS/ai-models.md).
+export const ANTHROPIC_DIRECT_DEFAULT = "claude-haiku-4-5-20251001";
+
 // Models that "think" before answering. We send
 //   reasoning: { effort: "low", exclude: true }
 // so the thinking stays short and never leaks into the answer text, and we

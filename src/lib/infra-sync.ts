@@ -18,67 +18,18 @@
 
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
-import { callAIJSON } from "./ai-provider";
+import { AIDeadlineError, callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
 import { findSameNamed } from "./dedupe/match";
 import { plausibleBudgetRevision, politicalParty } from "./civic/project-facts";
-import {
-  detectDistrictFromName,
-  detectDistrictFromAgency,
-  allDistrictsMentionedInName,
-} from "./constants/infra-locations";
+import { applyScopeOverride, sanitizeInfra, type InfraExtraction, type KeyPerson } from "./infra-extraction";
+
+export type { InfraExtraction } from "./infra-extraction";
 
 // ═══════════════════════════════════════════════════════════
-// Types
+// Types (the extraction's own types: src/lib/infra-extraction.ts)
 // ═══════════════════════════════════════════════════════════
-
-export type InfraCategory =
-  | "ROAD" | "METRO" | "RAIL" | "BRIDGE" | "FLYOVER" | "WATER" | "SEWAGE"
-  | "HOUSING" | "PORT" | "AIRPORT" | "POWER" | "TELECOM" | "HOSPITAL"
-  | "SCHOOL" | "OTHER";
-
-export type InfraStatus =
-  | "PROPOSED" | "APPROVED" | "TENDER_ISSUED" | "UNDER_CONSTRUCTION"
-  | "ON_TRACK" | "DELAYED" | "STALLED" | "CANCELLED" | "COMPLETED";
-
-export type InfraUpdateType =
-  | "ANNOUNCEMENT" | "APPROVAL" | "TENDER" | "CONSTRUCTION_START"
-  | "BUDGET_INCREASE" | "BUDGET_DECREASE" | "DELAY" | "STALL"
-  | "PROGRESS_UPDATE" | "CONTROVERSY" | "COMPLETION" | "CANCELLATION"
-  | "PHASE_COMPLETE" | "INAUGURATION" | "REVIEW" | "SEED";
-
-export type InfraScope = "DISTRICT" | "STATE" | "NATIONAL";
-
-export interface KeyPerson {
-  name: string;
-  role: string | null;
-  party: string | null;
-  context: string | null;
-}
-
-export interface InfraExtraction {
-  projectName: string;
-  shortName: string;
-  description: string | null;
-  category: InfraCategory;
-  updateType: InfraUpdateType;
-  announcedBy: string | null;
-  announcedByRole: string | null;
-  party: string | null;
-  keyPeople: KeyPerson[];
-  executingAgency: string | null;
-  budget: number | null; // rupees
-  progressPct: number | null;
-  status: InfraStatus;
-  startDate: string | null;
-  expectedEndDate: string | null;
-  cancellationReason: string | null;
-  scope: InfraScope;
-  districtNames: string[];
-  summary: string;
-  confidence: number;
-}
 
 export interface InfraVerification {
   verified: boolean;
@@ -91,6 +42,16 @@ export interface NewsArticleRef {
   url: string;
   publishedAt: Date;
   source?: string | null;
+}
+
+/** deadlineAt: epoch ms after which no AI call starts (the news cron's time budget). */
+export interface InfraAIOptions {
+  deadlineAt?: number;
+}
+
+function aiFailure(step: string, err: unknown): void {
+  if (err instanceof AIDeadlineError) console.log(`[infra-sync] ${step} skipped: no time left in the run`);
+  else console.error(`[infra-sync] ${step} failed:`, err instanceof Error ? err.message : err);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -181,10 +142,11 @@ Hard rules:
 }
 
 export async function extractInfraFromNews(
-  article: NewsArticleRef
+  article: NewsArticleRef,
+  opts: InfraAIOptions = {},
 ): Promise<InfraExtraction | null> {
   try {
-    const { data: parsed } = await callAIJSON<Partial<InfraExtraction>>({
+    const { data: parsed } = await callAIJSON<Record<string, unknown>>({
       systemPrompt: EXTRACTION_SYSTEM,
       userPrompt: buildExtractionPrompt(article),
       purpose: "classify", // free tier per spec
@@ -192,110 +154,14 @@ export async function extractInfraFromNews(
       maxTokens: 1400,
       temperature: 0,
       timeoutMs: 30_000,
+      deadlineAt: opts.deadlineAt,
     });
-    if (!parsed.projectName || typeof parsed.projectName !== "string" || parsed.projectName.trim().length < 3) {
-      return null;
-    }
-    const safe: InfraExtraction = {
-      projectName: parsed.projectName.trim(),
-      shortName: (parsed.shortName ?? parsed.projectName).toString().trim(),
-      description: typeof parsed.description === "string" && parsed.description.trim().length > 10
-        ? parsed.description.trim().slice(0, 400)
-        : null,
-      category: (parsed.category as InfraCategory) ?? "OTHER",
-      updateType: (parsed.updateType as InfraUpdateType) ?? "ANNOUNCEMENT",
-      announcedBy: parsed.announcedBy ?? null,
-      announcedByRole: parsed.announcedByRole ?? null,
-      party: parsed.party ?? null,
-      keyPeople: Array.isArray(parsed.keyPeople)
-        ? parsed.keyPeople
-            .filter((p): p is KeyPerson => !!p && typeof (p as KeyPerson).name === "string")
-            .slice(0, 10)
-        : [],
-      executingAgency: parsed.executingAgency ?? null,
-      budget: typeof parsed.budget === "number" ? parsed.budget : null,
-      progressPct: typeof parsed.progressPct === "number" ? Math.min(100, Math.max(0, parsed.progressPct)) : null,
-      status: (parsed.status as InfraStatus) ?? "PROPOSED",
-      startDate: parsed.startDate ?? null,
-      expectedEndDate: parsed.expectedEndDate ?? null,
-      cancellationReason: parsed.cancellationReason ?? null,
-      scope: (parsed.scope as InfraScope) ?? "DISTRICT",
-      districtNames: Array.isArray(parsed.districtNames) ? parsed.districtNames.filter((s): s is string => typeof s === "string") : [],
-      summary: parsed.summary ?? article.title,
-      confidence: typeof parsed.confidence === "number" ? Math.min(1, Math.max(0, parsed.confidence)) : 0.5,
-    };
-    return applyScopeOverride(safe);
+    const safe = sanitizeInfra(parsed, article.title);
+    return safe ? applyScopeOverride(safe) : null;
   } catch (err) {
-    console.error("[infra-sync] extract failed:", err instanceof Error ? err.message : err);
+    aiFailure("extract", err);
     return null;
   }
-}
-
-// ── Rule-based scope override ──────────────────────────────
-// AI sometimes returns scope=STATE for a clearly city-level project
-// (e.g. "Bengaluru Metro"), which then fans out to every Karnataka
-// district. These rules force the correct scope from the project name
-// before the sync engine ever sees it.
-const NAMED_CITY_RX = /\b(bengaluru|bangalore|namma|mumbai|hyderabad|chennai|delhi|kolkata|lucknow|mysuru|mysore|mandya|pune|ahmedabad|surat|jaipur|nagpur|kanpur|thiruvananthapuram|kochi|bhubaneswar|patna|guwahati|chandigarh|coimbatore|indore|bhopal|vadodara|nashik|nagaland|gurgaon|gurugram|noida|ghaziabad)\b/i;
-const CITY_PROJECT_MARKER_RX = /\b(metro|airport|flyover|depot|station|municipal|bmc|ndmc|mcd|smart\s*city|outer\s*ring\s*road|peripheral\s*ring\s*road|inner\s*ring\s*road|orbital|sub-?urban\s*rail)\b/i;
-const STATE_HIGHWAY_RX = /\b(state\s*highway|sh-\d+|state\s*high\s*way)\b/i;
-const NATIONAL_RX = /\b(national\s*highway|nh-?\d+|bharatmala|sagarmala|pmgsy|bullet\s*train|vande\s*bharat|namo\s*bharat|rrts|udan)\b/i;
-
-function applyScopeOverride(extraction: InfraExtraction): InfraExtraction {
-  const name = extraction.projectName;
-
-  // Pass 1 — AREA mapping (from shared infra-locations constants).
-  // If the name references a single neighborhood/area that uniquely maps to
-  // one district, force scope=DISTRICT + districtNames=[that district] so the
-  // sync fan-out stays narrow.
-  const mentioned = allDistrictsMentionedInName(name);
-  if (mentioned.length === 1) {
-    const target = mentioned[0];
-    if (extraction.scope !== "DISTRICT" || !extraction.districtNames.includes(target)) {
-      console.log(`[infra-sync] scope override: "${name.slice(0, 60)}" → DISTRICT (area maps to ${target})`);
-      return { ...extraction, scope: "DISTRICT", districtNames: [target] };
-    }
-    return extraction;
-  }
-  // Area detected but maps to null (e.g. "Nagpur Metro Phase II") →
-  // returning "NATIONAL" lets the caller decide to drop it via verification
-  // gates; we also flag district=null so sync finds no target.
-  const areaNullHit = detectDistrictFromName(name);
-  if (areaNullHit === null) {
-    console.log(`[infra-sync] scope override: "${name.slice(0, 60)}" references a city not served — marked NATIONAL w/ empty districtNames`);
-    return { ...extraction, scope: "NATIONAL", districtNames: [] };
-  }
-
-  // Pass 2 — AGENCY mapping. BMRCL/CMRL/DMRC/… are city-locked, overriding
-  // the scope even if the project name doesn't mention the city.
-  if (extraction.executingAgency) {
-    const agencyDistrict = detectDistrictFromAgency(extraction.executingAgency);
-    if (agencyDistrict) {
-      console.log(`[infra-sync] scope override: agency "${extraction.executingAgency}" → DISTRICT ${agencyDistrict}`);
-      return { ...extraction, scope: "DISTRICT", districtNames: [agencyDistrict] };
-    }
-  }
-
-  // Pass 3 — the original regex rules (two cities → STATE, NH-/Vande Bharat → NATIONAL)
-  const namesTwo = (() => {
-    let count = 0;
-    let m: RegExpExecArray | null;
-    const rx = new RegExp(NAMED_CITY_RX.source, "gi");
-    while ((m = rx.exec(name)) && count < 3) count++;
-    return count >= 2;
-  })();
-
-  let next: InfraScope | null = null;
-  if (NATIONAL_RX.test(name)) next = "NATIONAL";
-  else if (namesTwo) next = "STATE";
-  else if (STATE_HIGHWAY_RX.test(name)) next = "STATE";
-  else if (NAMED_CITY_RX.test(name) && CITY_PROJECT_MARKER_RX.test(name)) next = "DISTRICT";
-
-  if (next && next !== extraction.scope) {
-    console.log(`[infra-sync] scope override: AI said ${extraction.scope} but "${name.slice(0, 60)}" forced to ${next}`);
-    return { ...extraction, scope: next };
-  }
-  return extraction;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -335,7 +201,8 @@ Set verified=false if the article doesn't support the core facts. Be conservativ
 
 export async function verifyInfraExtraction(
   article: NewsArticleRef,
-  extraction: InfraExtraction
+  extraction: InfraExtraction,
+  opts: InfraAIOptions = {},
 ): Promise<InfraVerification> {
   try {
     const { data: parsed } = await callAIJSON<Partial<InfraVerification>>({
@@ -346,6 +213,7 @@ export async function verifyInfraExtraction(
       maxTokens: 800,
       temperature: 0,
       timeoutMs: 30_000,
+      deadlineAt: opts.deadlineAt,
     });
     return {
       verified: parsed.verified === true,
@@ -353,8 +221,8 @@ export async function verifyInfraExtraction(
       flags: Array.isArray(parsed.flags) ? parsed.flags.filter((s): s is string => typeof s === "string").slice(0, 10) : [],
     };
   } catch (err) {
-    console.error("[infra-sync] verify failed:", err instanceof Error ? err.message : err);
-    // On verifier failure, don't falsely mark verified — return neutral
+    aiFailure("verify", err);
+    // On verifier failure (or no time left), don't falsely mark verified — nothing is written.
     return { verified: false, corrections: null, flags: ["verifier_error"] };
   }
 }
@@ -431,7 +299,11 @@ async function findTargetDistricts(extraction: InfraExtraction, sourceDistrictId
     const rows = await prisma.district.findMany({
       where: {
         active: true,
-        OR: candidateNames.map((n) => ({ name: { equals: n, mode: "insensitive" as const } })),
+        // By name, or by slug: the scope override (src/lib/infra-extraction.ts)
+        // names the district by its slug ("bengaluru-urban"), which never
+        // equalled a name, so "Hebbal Flyover" from the Mysuru feed was filed
+        // under Mysuru.
+        OR: candidateNames.flatMap((n) => [{ name: { equals: n, mode: "insensitive" as const } }, { slug: n }]),
       },
       select: { id: true, slug: true, stateId: true },
     });
@@ -440,13 +312,15 @@ async function findTargetDistricts(extraction: InfraExtraction, sourceDistrictId
     // project to Mumbai just because the article mentions Mumbai.
     const sameState = rows.filter((r) => r.stateId === src.stateId);
     if (sameState.length > 0) return sameState;
-    // If all matched districts are in other states, fall back to source district
-    // rather than polluting other states' data.
+    // Every place named is in another state: the project is not this
+    // district's. Write nothing (it used to be filed under the source
+    // district — a Bengaluru metro line on the Chennai page).
     if (rows.length > 0) {
       console.warn(
-        `[infra-sync] Cross-state district match suppressed: article from ${src.slug} ` +
-        `matched ${rows.map((r) => r.slug).join(", ")} in different state(s). Falling back to source district.`
+        `[infra-sync] Cross-state district match: article from ${src.slug} ` +
+        `names ${rows.map((r) => r.slug).join(", ")} in other state(s) — not written.`
       );
+      return [];
     }
   }
   return [src];
@@ -548,6 +422,8 @@ export async function syncInfraFromNews(
   for (const t of targets) {
     // Same project already stored in this district? (canonical name / alias / ≥ 0.85 similar)
     let project = await findExistingProject(t.id, extraction);
+    const isNew = !project;
+    let changed = false;
 
     // ── CREATE ────────────────────────────────────────────
     if (!project) {
@@ -576,7 +452,8 @@ export async function syncInfraFromNews(
           startDate: startDate,
           originalEndDate: expectedEnd,
           expectedEnd: expectedEnd,
-          cancelledDate: isCancel ? now : null,
+          // The article's date, not the day the news was read.
+          cancelledDate: isCancel ? article.publishedAt : null,
           cancellationReason: isCancel ? extraction.cancellationReason : null,
           source: article.url,
           sourceUrls: [article.url] as Prisma.InputJsonValue,
@@ -591,14 +468,13 @@ export async function syncInfraFromNews(
       const incomingRank = statusRank(extraction.status);
       const existingRank = statusRank(project.status);
 
-      const patch: Prisma.InfraProjectUpdateInput = {
-        lastNewsAt: now,
-      };
+      // The facts this article changes (bookkeeping is added below).
+      const patch: Prisma.InfraProjectUpdateInput = {};
 
       // Status: allow cancel from any state; otherwise only upward
       if (isCancel && project.status !== "CANCELLED" && project.status !== "cancelled") {
         patch.status = "CANCELLED";
-        if (!project.cancelledDate) patch.cancelledDate = now;
+        if (!project.cancelledDate) patch.cancelledDate = article.publishedAt;
         if (!project.cancellationReason && extraction.cancellationReason) patch.cancellationReason = extraction.cancellationReason;
       } else if (incomingRank > existingRank && statusRank(project.status) !== 99) {
         patch.status = extraction.status;
@@ -655,22 +531,24 @@ export async function syncInfraFromNews(
 
       if (extraction.keyPeople.length > 0) {
         const merged = mergeKeyPeople(project.keyPeople, extraction.keyPeople);
-        patch.keyPeople = merged as unknown as Prisma.InputJsonValue;
+        // Only when someone new is named (the old code rewrote the list on
+        // every mention, which counted every mention as an update).
+        if (merged.length > mergeKeyPeople(project.keyPeople, []).length) {
+          patch.keyPeople = merged as unknown as Prisma.InputJsonValue;
+        }
       }
+      changed = Object.keys(patch).length > 0;
 
+      // Bookkeeping on every mention: when the news last named it, which articles, verification.
+      patch.lastNewsAt = now;
       patch.sourceUrls = mergeSourceUrls(project.sourceUrls, article.url) as unknown as Prisma.InputJsonValue;
       if (verified) {
         patch.lastVerifiedAt = now;
         patch.verificationCount = { increment: 1 };
       }
-
-      if (Object.keys(patch).length > 2) {
-        await prisma.infraProject.update({ where: { id: project.id }, data: patch });
-        updatedProjects++;
-      } else {
-        await prisma.infraProject.update({ where: { id: project.id }, data: { lastNewsAt: now, sourceUrls: patch.sourceUrls } });
-        duplicatesSkipped++;
-      }
+      await prisma.infraProject.update({ where: { id: project.id }, data: patch });
+      if (changed) updatedProjects++;
+      else duplicatesSkipped++;
     }
 
     // ── TIMELINE ENTRY (dedupe by newsUrl) ────────────────
@@ -678,7 +556,8 @@ export async function syncInfraFromNews(
       where: { projectId: project.id, newsUrl: article.url },
       select: { id: true },
     });
-    if (!existingEntry) {
+    const timelineAdded = !existingEntry;
+    if (timelineAdded) {
       const budgetChange =
         extraction.updateType === "BUDGET_INCREASE" || extraction.updateType === "BUDGET_DECREASE"
           ? extraction.budget ?? null
@@ -714,13 +593,16 @@ export async function syncInfraFromNews(
       /* cache optional */
     }
 
-    // UpdateLog
+    // UpdateLog (the public change feed): only when the project was created,
+    // a fact changed or its timeline got this article — not for a repeat of
+    // an article already on the timeline.
+    if (!isNew && !changed && !timelineAdded) continue;
     await logUpdate({
       source: "scraper",
       actorLabel: "news-cron",
       tableName: "InfraProject",
       recordId: project.id,
-      action: existingEntry ? "update" : "update",
+      action: isNew ? "create" : "update",
       districtId: t.id,
       moduleName: "infrastructure",
       description: `${extraction.shortName}: ${extraction.updateType}`,
@@ -745,37 +627,39 @@ export async function syncInfraFromNews(
 
 /**
  * Top-level orchestrator: extract → verify → sync.
- * Returns null when the article isn't about a real project or verification fails.
+ * Returns null when the article isn't about a real project or the verifier
+ * did not confirm it.
  */
 export async function extractVerifyAndSyncInfra(
   article: NewsArticleRef,
-  sourceDistrictId: string
+  sourceDistrictId: string,
+  opts: InfraAIOptions = {},
 ): Promise<InfraSyncResult | null> {
-  const extraction = await extractInfraFromNews(article);
+  const extraction = await extractInfraFromNews(article, opts);
   if (!extraction) return null;
   if (extraction.confidence < 0.5) return null;
 
-  const verification = await verifyInfraExtraction(article, extraction);
-  const merged: InfraExtraction = verification.corrections
-    ? { ...extraction, ...verification.corrections }
-    : extraction;
-
-  // Defensive: a verifier "correction" can null out projectName/shortName
-  // (it sometimes treats vague articles as un-anchored). Drop those here so
-  // the downstream split() / fuzzy matcher never blows up.
-  if (typeof merged.projectName !== "string" || merged.projectName.trim().length < 3) {
-    console.log(`[infra-sync] skipped: verifier nulled projectName for "${article.title.slice(0, 80)}"`);
-    return null;
-  }
-  if (typeof merged.shortName !== "string" || merged.shortName.trim().length < 1) {
-    merged.shortName = merged.projectName.split(/\s+/).slice(0, 3).join(" ");
-  }
-
-  // Sync only if verifier said ok OR confidence is very high
-  if (!verification.verified && merged.confidence < 0.85) {
+  // Verified or hidden: only what the second pass confirms is written. (It
+  // used to be written anyway when the extractor rated itself ≥ 0.85 —
+  // also when the verifier said the article does not support it, or failed.)
+  const verification = await verifyInfraExtraction(article, extraction, opts);
+  if (!verification.verified) {
     console.log(`[infra-sync] skipped unverified: "${article.title.slice(0, 80)}" flags=${verification.flags.join(",")}`);
     return null;
   }
 
-  return syncInfraFromNews(merged, article, sourceDistrictId, verification.verified);
+  // The verifier's corrections are raw model JSON: they go through the same
+  // checks and the same scope rules as the first extraction. A correction
+  // that nulls the project name means the article does not name one.
+  const corrections =
+    verification.corrections && typeof verification.corrections === "object" && !Array.isArray(verification.corrections)
+      ? verification.corrections
+      : {};
+  const merged = sanitizeInfra({ ...extraction, ...corrections }, article.title);
+  if (!merged) {
+    console.log(`[infra-sync] skipped: verifier nulled projectName for "${article.title.slice(0, 80)}"`);
+    return null;
+  }
+
+  return syncInfraFromNews(applyScopeOverride(merged), article, sourceDistrictId, true);
 }

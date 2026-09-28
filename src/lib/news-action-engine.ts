@@ -13,7 +13,6 @@ import { Prisma } from "@/generated/prisma";
 import { callAIJSON } from "./ai-provider";
 import { extractExamFromNews, syncExamFromNews } from "./exam-sync";
 import { extractVerifyAndSyncInfra } from "./infra-sync";
-import { logUpdate } from "./update-log";
 import { decideNewsAction } from "./news-action-rules";
 
 // ── Per-cron extraction cap ─────────────────────────────────
@@ -33,6 +32,14 @@ export interface NewsClassification {
   articleId: string;
   articleTitle: string;
   articleUrl: string;
+  /** When the outlet published the article. Timeline dates, "announced"
+   *  dates and the prompts' "Published:" line use it — never the sync time. */
+  articlePublishedAt: Date;
+  /** The outlet's name (publisher), when known. */
+  articleSource?: string | null;
+  /** The feed's summary, when it says more than the headline (the exam
+   *  extractor keeps a link only when it is written in this text). */
+  articleSummary?: string | null;
   districtId: string;
   targetModule: string;
   moduleAction: string;
@@ -107,7 +114,7 @@ Return ONLY valid JSON (no markdown):
 
 Module-specific extractedData fields:
 - alerts: {"alertType":"security","alertTitle":"...","alertDescription":"...","location":"...","severity":"warning","startDate":"2026-03-28","endDate":"2026-03-29"}
-- infrastructure: {"projectName":"...","budgetCrores":120,"status":"Announced","category":"Road","progressPct":0}
+- infrastructure: {"projectName":"...","budgetRupees":1200000000,"status":"Announced","category":"Road","progressPct":0}
 - police: {"crimeCategory":"theft","count":15,"description":"..."}
 - schemes: {"schemeName":"PM Kisan","beneficiaryCount":5000}
 - leaders: {"personName":"...","role":"District Collector","party":null,"tier":2}
@@ -157,36 +164,63 @@ Use "news" module if it doesn't clearly fit another. confidence = how certain yo
   }
 }
 
+// ── Admin review queue ───────────────────────────────────────
+/**
+ * One pending NewsActionQueue item per article and module (the same URL
+ * was queued up to 19 times while retention deleted and re-fetched it).
+ */
+async function queueForReview(c: NewsClassification): Promise<void> {
+  const already = await prisma.newsActionQueue.findFirst({
+    where: { districtId: c.districtId, dataType: c.targetModule, sourceUrl: c.articleUrl, status: "pending" },
+    select: { id: true },
+  });
+  if (already) {
+    console.log(`[NewsAction] Already queued: ${c.targetModule} — ${c.articleTitle.slice(0, 60)}`);
+    return;
+  }
+  await prisma.newsActionQueue.create({
+    data: {
+      districtId: c.districtId,
+      dataType: c.targetModule,
+      extractedData: c.extractedData as unknown as Prisma.InputJsonValue,
+      sourceUrl: c.articleUrl,
+      headline: c.articleTitle,
+      confidence: c.confidence,
+      status: "pending",
+    },
+  });
+  console.log(`[NewsAction] Queued review: ${c.targetModule} — ${c.articleTitle.slice(0, 60)}`);
+}
+
 // ── Execute DB mutation based on module ──────────────────────
 // What may happen is decided by decideNewsAction() (src/lib/news-action-rules.ts):
 // skip / drop (generic "news", police items that are not crimes) / queue for
-// admin review (every leaders, police and power item — news never writes
-// Leader, CrimeStat or PowerOutage rows — and anything below 0.85) / execute.
+// admin review (every leaders, police, power and schemes item — news never
+// writes Leader, CrimeStat, PowerOutage or Scheme rows — and anything below
+// 0.85) / execute.
 export async function executeNewsAction(
-  classification: NewsClassification
+  classification: NewsClassification,
+  /** deadlineAt: no AI extraction starts after it (the news cron's time budget). */
+  opts: { deadlineAt?: number } = {},
 ): Promise<void> {
-  const { districtId, targetModule, extractedData, articleTitle, articleUrl, confidence } = classification;
+  const { districtId, targetModule, articleTitle, articleUrl } = classification;
   const decision = decideNewsAction(classification);
+  const article = {
+    title: articleTitle,
+    url: articleUrl,
+    publishedAt: classification.articlePublishedAt,
+    source: classification.articleSource ?? null,
+    summary: classification.articleSummary ?? null,
+  };
 
   if (decision.kind === "skip" || decision.kind === "drop") {
     console.log(`[NewsAction] ${decision.kind === "skip" ? "Skip" : "Drop"} (${decision.reason}): ${articleTitle.slice(0, 60)}`);
     return;
   }
 
-  // Mid confidence, or a review-only module: queue for admin review
+  // Mid confidence, or a review-only module: queue for admin review (once per article).
   if (decision.kind === "queue") {
-    await prisma.newsActionQueue.create({
-      data: {
-        districtId,
-        dataType: targetModule,
-        extractedData: extractedData as unknown as Prisma.InputJsonValue,
-        sourceUrl: articleUrl,
-        headline: articleTitle,
-        confidence,
-        status: "pending",
-      },
-    });
-    console.log(`[NewsAction] Queued review: ${targetModule} — ${articleTitle.slice(0, 60)}`);
+    await queueForReview(classification);
     return;
   }
 
@@ -207,26 +241,18 @@ export async function executeNewsAction(
         // shows OFFICIAL_ALERTS only). The story stays on the news page.
         console.log(`[NewsAction] News is not an official warning — no LocalAlert: ${articleTitle.slice(0, 60)}`);
 
-        // For elections: surface ECI-schedule-style headlines into UpdateLog
-        // so a human can confirm before we mutate ElectionEvent. We
-        // intentionally do NOT auto-write polling/result dates from a
+        // For elections: ECI-schedule-style headlines go to the admin review
+        // queue so a human can confirm before anything touches ElectionEvent.
+        // We intentionally do NOT auto-write polling/result dates from a
         // single article — wrong schedule data is worse than missing
-        // schedule data when voting is days away.
+        // schedule data when voting is days away. (They used to be written
+        // to the public change log as an ElectionEvent "update", although
+        // nothing had changed.)
         if (targetModule === "elections") {
           const looksScheduleAnnouncement = /\b(eci|election commission)\b.*\b(announce|schedule|notif)/i.test(articleTitle)
             || /\b(polling|voting)\s+(on|date|schedule)\b/i.test(articleTitle)
             || /\b(result|counting)\s+(on|date)\b/i.test(articleTitle);
-          if (looksScheduleAnnouncement) {
-            const dn = (await prisma.district.findUnique({ where: { id: districtId }, select: { name: true } }))?.name ?? "";
-            await logUpdate({
-              source: "scraper", actorLabel: "news-action-engine",
-              tableName: "ElectionEvent", recordId: "pending-review",
-              action: "update",
-              districtId, districtName: dn, moduleName: "elections",
-              description: `Election schedule headline flagged for review: ${articleTitle}`,
-              recordCount: 1, details: { articleUrl, reason: "auto-update of polling/result dates is gated behind manual review" },
-            });
-          }
+          if (looksScheduleAnnouncement) await queueForReview(classification);
         }
         break;
       }
@@ -242,10 +268,7 @@ export async function executeNewsAction(
         }
         infraExtractionsThisRun++;
         try {
-          const result = await extractVerifyAndSyncInfra(
-            { title: articleTitle, url: articleUrl, publishedAt: new Date() },
-            districtId
-          );
+          const result = await extractVerifyAndSyncInfra(article, districtId, opts);
           if (!result) {
             console.log(`[NewsAction] infra: skipped (no projectName / low confidence / verify fail): ${articleTitle.slice(0, 60)}`);
           } else {
@@ -263,52 +286,23 @@ export async function executeNewsAction(
         break;
       }
 
-      case "schemes": {
-        const data = extractedData as Record<string, unknown>;
-        if (data.schemeName) {
-          const namePrefix = (data.schemeName as string).split(" ").slice(0, 3).join(" ");
-          const scheme = await prisma.scheme.findFirst({
-            where: {
-              districtId,
-              name: { contains: namePrefix, mode: "insensitive" },
-            },
-          });
-          if (scheme && data.beneficiaryCount) {
-            await prisma.scheme.update({
-              where: { id: scheme.id },
-              data: {
-                beneficiaryCount: data.beneficiaryCount as number,
-                source: articleUrl,
-              },
-            });
-            console.log(`[NewsAction] ✅ Updated Scheme: ${scheme.name}`);
-          }
-        }
-        break;
-      }
-
-      // "leaders", "police" and "power" never reach this switch: they are
-      // review-only (decideNewsAction queues them), so no news article can
-      // write a Leader, CrimeStat or PowerOutage row.
+      // "leaders", "police", "power" and "schemes" never reach this switch:
+      // they are review-only (decideNewsAction queues them), so no news
+      // article can write a Leader, CrimeStat, PowerOutage or Scheme row.
+      // (Sept 2026 audit: a headline's beneficiary figure — matched to a
+      // scheme by "name contains its first 3 words", often a national
+      // number — replaced the district's count and its source.)
 
       case "exams": {
         // News-driven exam sync — extract structured metadata then upsert.
         // Failure is non-fatal: the NewsItem still persists via the outer pipeline.
         try {
-          const extraction = await extractExamFromNews({
-            title: articleTitle,
-            url: articleUrl,
-            publishedAt: new Date(),
-          });
+          const extraction = await extractExamFromNews(article, opts);
           if (!extraction) {
             console.log(`[NewsAction] exams: extraction returned null for "${articleTitle.slice(0, 60)}"`);
             break;
           }
-          const result = await syncExamFromNews(
-            extraction,
-            { title: articleTitle, url: articleUrl, publishedAt: new Date() },
-            districtId
-          );
+          const result = await syncExamFromNews(extraction, article, districtId);
           console.log(
             `[NewsAction] ✅ Exam sync: ${extraction.shortName} → ` +
             `created ${result.created}, updated ${result.updated}, skipped ${result.skipped} ` +

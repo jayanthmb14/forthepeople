@@ -3,7 +3,16 @@
  * © 2026 Jayanth M B. MIT License.
  */
 import { describe, expect, it } from "vitest";
-import { dedupeStories, findCanonicalStory, planTitleDuplicates, titleKey } from "@/lib/news-dedupe";
+import {
+  NEWS_KEEP_PER_DISTRICT,
+  NEWS_MAX_AGE_DAYS,
+  dedupeStories,
+  findCanonicalStory,
+  planCopyPromotion,
+  planNewsRetention,
+  planTitleDuplicates,
+  titleKey,
+} from "@/lib/news-dedupe";
 
 const n = (title: string, publishedAt: string) => ({ title, publishedAt });
 
@@ -106,5 +115,41 @@ describe("ingest-time checks (src/scraper/jobs/news.ts)", () => {
       { id: "x", title: "Short", fetchedAt: "2026-09-22T00:00Z" },
     ]);
     expect(plan).toEqual([{ keepId: "old", removeIds: ["new"] }]);
+  });
+});
+
+describe("housekeeping of stored stories", () => {
+  const now = Date.parse("2026-09-28T06:00:00Z");
+  const hoursAgo = (h: number) => new Date(now - h * 3_600_000);
+
+  it("planNewsRetention never deletes a story the feeds can still return (Kolkata: 60 stories, all < 3 days old)", () => {
+    const fresh = Array.from({ length: 60 }, (_, i) => ({ id: `f${i}`, publishedAt: hoursAgo(i) }));
+    expect(planNewsRetention(fresh, now)).toEqual([]);
+  });
+
+  it("planNewsRetention deletes only rows beyond the newest 50 that are older than the window", () => {
+    const rows = [
+      ...Array.from({ length: 50 }, (_, i) => ({ id: `n${i}`, publishedAt: hoursAgo(i) })),
+      { id: "fresh-51", publishedAt: hoursAgo(60) }, // 2.5 days: still fetchable, kept
+      { id: "old-1", publishedAt: hoursAgo(NEWS_MAX_AGE_DAYS * 24 + 1) },
+      { id: "old-2", publishedAt: hoursAgo(24 * 10) },
+    ];
+    expect(planNewsRetention([...rows].reverse(), now).sort()).toEqual(["old-1", "old-2"]);
+    // Old rows among the newest 50 stay.
+    expect(planNewsRetention([{ id: "only", publishedAt: hoursAgo(24 * 30) }], now)).toEqual([]);
+    expect(NEWS_KEEP_PER_DISTRICT).toBe(50);
+  });
+
+  it("planCopyPromotion makes the earliest surviving copy the story's row", () => {
+    const plan = planCopyPromotion([
+      { id: "c2", duplicateOf: "orig", publishedAt: "2026-09-20T10:00Z" },
+      { id: "c1", duplicateOf: "orig", publishedAt: "2026-09-20T08:00Z" },
+      { id: "c3", duplicateOf: "other", publishedAt: "2026-09-20T09:00Z" },
+      { id: "x", duplicateOf: null, publishedAt: "2026-09-20T09:00Z" },
+    ]);
+    expect(plan).toEqual([
+      { keepId: "c1", repointIds: ["c2"] },
+      { keepId: "c3", repointIds: [] },
+    ]);
   });
 });

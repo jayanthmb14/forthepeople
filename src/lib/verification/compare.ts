@@ -20,7 +20,10 @@
 // outside feed (OpenWeather, AGMARKNET), not when it was typed in by hand.
 // ═══════════════════════════════════════════════════════════
 import type { DatasetStatus } from "@/lib/freshness";
+import { levenshtein } from "@/lib/text/levenshtein";
 import type { ReasonCode, RowStatus, SourceCheck } from "./types";
+
+export { levenshtein };
 
 // ── Numbers ─────────────────────────────────────────────────
 
@@ -204,21 +207,6 @@ export function nameTokens(name: string): string[] {
     .filter((t) => t && !TITLES.has(t));
 }
 
-/** Levenshtein edit distance (small strings only). */
-export function levenshtein(a: string, b: string): number {
-  if (a === b) return 0;
-  if (!a.length) return b.length;
-  if (!b.length) return a.length;
-  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    const cur = [i];
-    for (let j = 1; j <= b.length; j++) {
-      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    }
-    prev = cur;
-  }
-  return prev[b.length];
-}
 
 function tokenMatches(short: string, long: string): boolean {
   if (short === long) return true;
