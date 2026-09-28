@@ -17,15 +17,17 @@
 //                reshuffles, staffing, accidents, lost property … (they
 //                were queued as if they were NCRB crime counts)
 //   queue    admin review (NewsActionQueue, status "pending"): every
-//            leaders / police / power item — news never writes those tables
-//            (the Sept 2026 audit found "D K Shivakumar — Chief Minister —
-//            BJP" filed under Mumbai, a headline number stored as a crime
-//            count) — and anything below 0.85 confidence
+//            leaders / police / power / schemes item — news never writes
+//            those tables (the Sept 2026 audit found "D K Shivakumar —
+//            Chief Minister — BJP" filed under Mumbai, a headline number
+//            stored as a crime count; a headline's beneficiary figure —
+//            often a national one — replaced a scheme's count and source
+//            and was charted under "MyScheme") — and anything below 0.85
 //   execute  high-confidence items of the other modules
 // ═══════════════════════════════════════════════════════════
 
 /** Modules where a news article must NEVER write straight to the page. */
-export const REVIEW_ONLY_MODULES: ReadonlySet<string> = new Set(["police", "leaders", "power"]);
+export const REVIEW_ONLY_MODULES: ReadonlySet<string> = new Set(["police", "leaders", "power", "schemes"]);
 
 /** The classifier's "does not fit any page" modules: nothing to act on. */
 const GENERIC_MODULES: ReadonlySet<string> = new Set(["news", "general", "other", ""]);

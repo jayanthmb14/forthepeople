@@ -160,8 +160,9 @@ Use "news" module if it doesn't clearly fit another. confidence = how certain yo
 // ── Execute DB mutation based on module ──────────────────────
 // What may happen is decided by decideNewsAction() (src/lib/news-action-rules.ts):
 // skip / drop (generic "news", police items that are not crimes) / queue for
-// admin review (every leaders, police and power item — news never writes
-// Leader, CrimeStat or PowerOutage rows — and anything below 0.85) / execute.
+// admin review (every leaders, police, power and schemes item — news never
+// writes Leader, CrimeStat, PowerOutage or Scheme rows — and anything below
+// 0.85) / execute.
 export async function executeNewsAction(
   classification: NewsClassification
 ): Promise<void> {
@@ -263,33 +264,12 @@ export async function executeNewsAction(
         break;
       }
 
-      case "schemes": {
-        const data = extractedData as Record<string, unknown>;
-        if (data.schemeName) {
-          const namePrefix = (data.schemeName as string).split(" ").slice(0, 3).join(" ");
-          const scheme = await prisma.scheme.findFirst({
-            where: {
-              districtId,
-              name: { contains: namePrefix, mode: "insensitive" },
-            },
-          });
-          if (scheme && data.beneficiaryCount) {
-            await prisma.scheme.update({
-              where: { id: scheme.id },
-              data: {
-                beneficiaryCount: data.beneficiaryCount as number,
-                source: articleUrl,
-              },
-            });
-            console.log(`[NewsAction] ✅ Updated Scheme: ${scheme.name}`);
-          }
-        }
-        break;
-      }
-
-      // "leaders", "police" and "power" never reach this switch: they are
-      // review-only (decideNewsAction queues them), so no news article can
-      // write a Leader, CrimeStat or PowerOutage row.
+      // "leaders", "police", "power" and "schemes" never reach this switch:
+      // they are review-only (decideNewsAction queues them), so no news
+      // article can write a Leader, CrimeStat, PowerOutage or Scheme row.
+      // (Sept 2026 audit: a headline's beneficiary figure — matched to a
+      // scheme by "name contains its first 3 words", often a national
+      // number — replaced the district's count and its source.)
 
       case "exams": {
         // News-driven exam sync — extract structured metadata then upsert.

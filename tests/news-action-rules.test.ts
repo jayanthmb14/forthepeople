@@ -30,6 +30,14 @@ describe("decideNewsAction", () => {
     expect(decideNewsAction({ ...base, targetModule: "power" })).toEqual({ kind: "queue", reason: "review-only" });
   });
 
+  it("queues every schemes item — a headline figure is not a district's beneficiary count", () => {
+    // "9.8 crore farmers get PM Kisan instalment" is a national figure; it
+    // used to overwrite Scheme.beneficiaryCount (and its source) at ≥ 0.85.
+    const d = decideNewsAction({ ...base, targetModule: "schemes", extractedData: { schemeName: "PM Kisan", beneficiaryCount: 98_000_000 } });
+    expect(d).toEqual({ kind: "queue", reason: "review-only" });
+    expect(decideNewsAction({ ...base, targetModule: "Schemes", confidence: 0.99 })).toEqual({ kind: "queue", reason: "review-only" });
+  });
+
   it("drops police items that are not crimes, queues real crime items", () => {
     for (const cat of ["transfer", "personnel reshuffle", "administrative", "staffing-shortage", "road_accident", "traffic violation", "lost-property", undefined, ""]) {
       expect(decideNewsAction({ ...base, targetModule: "police", extractedData: { crimeCategory: cat, count: 4 } }).kind, String(cat)).toBe("drop");
