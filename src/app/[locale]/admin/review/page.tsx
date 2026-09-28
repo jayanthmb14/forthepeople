@@ -72,15 +72,20 @@ export default async function AdminReviewPage({
   const feedbackItems = await prisma.feedback.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { district: { select: { name: true } } } });
   const newFeedbackCount = feedbackItems.filter((f) => f.status === "new").length;
   const logs = await prisma.newsIntelligenceLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
-  const contributions = await prisma.contribution.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
-  const paidContributions = contributions.filter((c) => c.status === "paid");
-  const totalCollectedRs = Math.round(paidContributions.reduce((s, c) => s + c.amount, 0) / 100);
+  // The table lists the newest 100; the totals count every contribution.
+  const [contributions, paidTotals, contributionCount] = await Promise.all([
+    prisma.contribution.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.contribution.aggregate({ where: { status: "paid" }, _count: { _all: true }, _sum: { amount: true } }),
+    prisma.contribution.count(),
+  ]);
+  const paidCount = paidTotals._count._all;
+  const totalCollectedRs = Math.round((paidTotals._sum.amount ?? 0) / 100);
 
   const TABS = [
     { key: "review", label: "Pending Review", badge: pendingItems.length },
     { key: "applied", label: "Applied", badge: appliedItems.length },
     { key: "feedback", label: "Feedback", badge: newFeedbackCount, badgeRed: newFeedbackCount > 0 },
-    { key: "payments", label: "Payments", badge: paidContributions.length },
+    { key: "payments", label: "Payments", badge: paidCount },
     { key: "logs", label: "AI Logs", badge: null },
   ];
 
@@ -208,8 +213,8 @@ export default async function AdminReviewPage({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
             {[
               { label: "Total Collected", value: `₹${totalCollectedRs.toLocaleString("en-IN")}` },
-              { label: "Successful Payments", value: String(paidContributions.length) },
-              { label: "Pending / Failed", value: String(contributions.length - paidContributions.length) },
+              { label: "Successful Payments", value: String(paidCount) },
+              { label: "Pending / Failed", value: String(contributionCount - paidCount) },
             ].map((s) => (
               <div key={s.label} style={{ background: "#fff", border: "1px solid #E8E8E4", borderRadius: 10, padding: "14px 16px" }}>
                 <div style={{ fontSize: 11, color: "#9B9B9B", marginBottom: 4 }}>{s.label}</div>
