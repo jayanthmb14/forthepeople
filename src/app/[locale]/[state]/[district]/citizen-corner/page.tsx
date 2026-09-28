@@ -93,8 +93,9 @@ function EmergencyCallCard() {
         textDecoration: "none",
         color: "var(--hue-deep)",
         borderRadius: "var(--ftp-radius-card)",
-        background: "var(--hue-tint)",
-        border: "1px solid color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+        // v5.5: a white card with a hue outline; the big number carries the colour.
+        background: "var(--ftp-surface)",
+        border: "1px solid color-mix(in srgb, var(--hue) 35%, var(--ftp-border))",
         boxShadow: "var(--ftp-shadow-1)",
       }}
     >
@@ -113,7 +114,7 @@ function HelplineKinds({ helplines, onPick }: { helplines: Helpline[]; onPick: (
   const t = useTranslations("page_citizen-corner");
   const f = useFormat();
   return (
-    <Card tinted padding={18}>
+    <Card padding={18}>
       <p className="ftp-display" style={{ margin: 0, fontSize: 18, lineHeight: "24px", fontWeight: 650, color: "var(--ftp-text)" }}>
         {t("kindsTitle", { n: helplines.length })}
       </p>
@@ -138,8 +139,8 @@ function HelplineKinds({ helplines, onPick }: { helplines: Helpline[]; onPick: (
                   gap: 10,
                   padding: "10px 12px",
                   borderRadius: 14,
-                  border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
-                  background: "#fff",
+                  border: "1px solid var(--ftp-border)",
+                  background: "var(--ftp-surface)",
                   cursor: "pointer",
                   textAlign: "left",
                   font: "inherit",
@@ -328,7 +329,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
             </div>
             <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "280px" } as React.CSSProperties}>
               {tips.map((tip, i) => (
-                <Card key={i} as="article" tinted={tip.urgency === "now"}>
+                <Card key={i} as="article">
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
@@ -351,7 +352,7 @@ export default function CitizenCornerPage({ params }: { params: Promise<{ locale
             {/* The topics ring beside a short note on where the tips come from. */}
             <div className={tips.length >= 2 ? "ftp-picture-row" : undefined} style={{ marginTop: 16 }}>
               <TopicsRing tips={tips} period={tipsPeriod} />
-              <Card tinted padding={18}>
+              <Card padding={18}>
                 <p className="ftp-display" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 650 }}>
                   {t("aboutTipsTitle")}
                 </p>
