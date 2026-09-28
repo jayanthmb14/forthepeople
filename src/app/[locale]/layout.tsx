@@ -32,6 +32,10 @@ import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 
 const NUDGE_PRICES = smallestAmounts(TIER_CONFIG);
 
+// First-visit tour: a tiny client mount that loads the tour lazily (only
+// when it is offered or asked for) — src/components/tour/TourMount.tsx.
+import TourMount from "@/components/tour/TourMount";
+
 /**
  * Only the locales in src/i18n/routing.ts may render this layout.
  *
@@ -91,6 +95,7 @@ export default async function LocaleLayout({
           <Footer locale={locale} githubStars={githubStars} />
           <ReportButton />
           <SupportNudgeMount monthlyFrom={NUDGE_PRICES.monthly} onceFrom={NUDGE_PRICES.once} />
+          <TourMount />
         </QueryProvider>
       </div>
     </NextIntlClientProvider>

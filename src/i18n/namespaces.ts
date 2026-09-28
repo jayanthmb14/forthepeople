@@ -63,6 +63,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_support-nudge",
   "page_taluk",
   "page_tenders",
+  "page_tour",
   "page_transport",
   "page_update-log",
   "page_verify",

@@ -209,7 +209,7 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
 
       {/* ═══ 4. Leaders, people, projects and money ═══ */}
       <Section title={to("v5.basics")}>
-        <div className="ftp-ov-grid">
+        <div className="ftp-ov-grid" data-tour="district-overview">
           <LeadersSnippet district={districtSlug} state={stateSlug} base={base} />
           <PopulationSnippet district={districtSlug} state={stateSlug} base={base} />
           <InfraSnippet district={districtSlug} state={stateSlug} base={base} />

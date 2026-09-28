@@ -81,7 +81,7 @@ export default function HomeHero({ locale, stats, districts, mapStats, side }: H
         </h1>
         <p className={styles.lead}>{tp("hero.sub")}</p>
 
-        <div className={styles.heroSearch}>
+        <div className={styles.heroSearch} data-tour="home-search">
           <HomeSearch />
           <div className={styles.actions}>
             <button type="submit" form={HOME_SEARCH_FORM_ID} className={styles.btnPrimary}>
@@ -98,7 +98,7 @@ export default function HomeHero({ locale, stats, districts, mapStats, side }: H
 
       <HeroStats stats={stats} />
 
-      <div className={styles.mapRow}>
+      <div className={styles.mapRow} data-tour="home-map">
         <div className={styles.heroMap}>
           <HomeMap locale={locale} districts={districts} stats={mapStats} />
         </div>

@@ -187,7 +187,7 @@ export default function VerifyPanel({
   const vTotal = vSummary ? vSummary.verified + vSummary["single-source"] + vSummary.disagreement + vSummary.unchecked : 0;
 
   return (
-    <section id="verify" className="ftp-verify" aria-labelledby="ftp-verify-title">
+    <section id="verify" className="ftp-verify" aria-labelledby="ftp-verify-title" data-tour="district-verify">
       <h2 id="ftp-verify-title" className="ftp-verify-title">
         <ShieldCheck size={18} aria-hidden />
         {tv("title")}
