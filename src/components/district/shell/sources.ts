@@ -9,6 +9,7 @@
 // free-text `source` column of each row, which often holds internal notes.
 import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
 import { getFreshnessRule } from "@/lib/constants/sidebar-modules";
+import { tenderPortalFor } from "@/lib/constants/tender-portals";
 
 /** Registry key used by getModuleSources for a sidebar slug. */
 const SOURCE_KEY: Record<string, string> = {
@@ -26,9 +27,14 @@ export function moduleSourceNames(module: string, stateSlug: string, districtSlu
   return getModuleSources(SOURCE_KEY[module] ?? module, stateSlug, districtSlug).sources;
 }
 
-/** An official portal to check a module's figures, state-specific where one exists. */
+/**
+ * An official portal to check a module's figures, state-specific where one
+ * exists. Tenders: the state portal the rows came from, or none when no
+ * collector reads the state (never a portal that supplied nothing).
+ */
 export function modulePortal(module: string, stateSlug: string, districtSlug?: string): string | null {
   const config = getStateConfig(stateSlug, districtSlug);
+  if (module === "tenders") return tenderPortalFor(stateSlug)?.app ?? null;
   const byState: Record<string, string | null | undefined> = {
     water: config?.waterPortalUrl,
     power: config?.discomPortalUrl,

@@ -8,6 +8,7 @@
 // SINGLE SOURCE OF TRUTH — Per-State Configuration
 // When adding a new state, ONLY add a new entry here.
 // ═══════════════════════════════════════════════════════════
+import { tenderPortalFor } from "./tender-portals";
 
 export interface StateConfig {
   slug: string;
@@ -437,10 +438,6 @@ const SOURCE_LINKS: Record<string, string> = {
   "NREGA.nic.in": "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx",
   UPSC: "https://upsc.gov.in",
   SSC: "https://ssc.gov.in",
-  "KPPP (Karnataka eProc)": "https://kppp.karnataka.gov.in",
-  "CPPP (GePNIC)": "https://eprocure.gov.in/cppp/",
-  IREPS: "https://www.ireps.gov.in",
-  "defproc.gov.in": "https://defproc.gov.in",
   "Jal Jeevan Mission National Dashboard (eJalShakti)": "https://ejalshakti.gov.in/jjmreport",
   "UDISE+ (Unified District Information System for Education)": "https://dashboard.udiseplus.gov.in/",
   "AGMARKNET (Agricultural Marketing Information Network)": "https://agmarknet.gov.in",
@@ -456,6 +453,7 @@ const SOURCE_LINKS: Record<string, string> = {
 // run. Update this when vercel.json changes.
 export function getModuleSources(moduleName: string, stateSlug: string, districtSlug?: string): ModuleSourceInfo {
   const config = getStateConfig(stateSlug, districtSlug);
+  const tenderPortal = tenderPortalFor(stateSlug);
   const map: Record<string, ModuleSourceInfo> = {
     // Sept 2026 audit: readings come from OpenWeatherMap and the forecast
     // (and its cross-check) from Open-Meteo (src/scraper/jobs/weather.ts,
@@ -519,7 +517,11 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     "responsibility":  { sources: ["District Administration"], frequency: "Quarterly" },
     "update-log":      { sources: ["ForThePeople.in Admin & Data Refresh"], frequency: "When the source publishes" },
     services:          { sources: ["District NIC Portal", "State Government Directory", "MyScheme.gov.in"], frequency: "When the source publishes" },
-    tenders:           { sources: ["KPPP (Karnataka eProc)", "CPPP (GePNIC)", "IREPS", "defproc.gov.in", "BEL eProc", "HAL TenderWizard"], frequency: "When the source publishes" },
+    // Every Tender row comes from the state's GePNIC portal (Tender.sourcePortal
+    // is its host); states without one have no tender collector, so no source
+    // is named (Sept 2026: the list named six portals none of which supplied
+    // a row).
+    tenders:           { sources: tenderPortal ? [tenderPortal.host] : [], frequency: "When the source publishes" },
   };
   const info = map[moduleName] ?? { sources: ["Government public data portals"], frequency: "Periodic" };
   const links: Record<string, string> = {};
@@ -527,6 +529,7 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
   // The state's own portals (power company, water department) where the registry names them.
   if (config?.discomPortalUrl && info.sources.includes(config.discomFullName)) links[config.discomFullName] = config.discomPortalUrl;
   if (config?.stateTransportUrl && info.sources.includes(config.stateTransportFullName)) links[config.stateTransportFullName] = config.stateTransportUrl;
+  if (tenderPortal && info.sources.includes(tenderPortal.host)) links[tenderPortal.host] = tenderPortal.app;
   return Object.keys(links).length ? { ...info, links } : info;
 }
 

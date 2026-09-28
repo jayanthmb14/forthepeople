@@ -66,11 +66,11 @@
     "DIRECT_NOMINATION": "Awarded via nomination/single-source rather than open tender. Allowed under Rule 194 in specific cases but always flagged for transparency."
   },
   "disclaimer": {
-    "compact": "<s>Data source:</s> tenders published on KPPP, CPPP, IREPS, defproc.gov.in, BEL eProc and HAL TenderWizard — aggregated under RTI §4 proactive-disclosure rules and the GODL-India licence.",
+    "compact": "<s>Data source:</s> tenders published on the state government's procurement portal — aggregated under RTI §4 proactive-disclosure rules and the GODL-India licence.",
     "fullLink": "Full disclaimer",
     "heading": "Legal and usage disclaimer for tenders",
     "englishOnly": "The official version of this legal text is in English.",
-    "c1": "<s>Source data only.</s> Every tender shown here is aggregated from a public Government of India or State of Karnataka procurement portal. No data is generated or inferred.",
+    "c1": "<s>Source data only.</s> Every tender shown here is aggregated from a public Government of India or State Government procurement portal. No data is generated or inferred.",
     "c2": "<s>Not an official government service.</s> ForThePeople.in is an independent civic platform. For binding status, always verify on the source portal.",
     "c3": "<s>Factual red-flag labels.</s> Labels like \"single bidder\" or \"short window\" are mathematical observations computed from the published data, compared against rules such as GFR 2017, KTPPA 1999, or CVC guidelines. They are not allegations. Legitimate reasons may exist in any individual case.",
     "c4": "<s>Eligibility wizard is informational.</s> Matching runs in your browser against tender-published criteria. Nothing on this page constitutes legal advice under the Advocates Act §33. Consult an enrolled advocate for interpretation.",
@@ -186,7 +186,7 @@
   "header": {
     "title": "Government Tenders",
     "titleIn": "Government Tenders in {district}",
-    "description": "Open tenders from KPPP, CPPP, IREPS, defproc, BEL eProc, HAL TenderWizard. Factual red-flag indicators, plain-English summaries, apply guide.",
+    "description": "Open tenders from the state government's procurement portal. Factual red-flag indicators and an apply guide.",
     "newest": "Newest tender published"
   },
   "tiles": {

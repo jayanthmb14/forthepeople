@@ -38,20 +38,10 @@
 // ═══════════════════════════════════════════════════════════
 import * as cheerio from "cheerio";
 import { normName } from "./source-districts";
+import type { GepnicPortal } from "@/lib/constants/tender-portals";
 
-export interface GepnicPortal {
-  /** Stored as Tender.sourcePortal; shown to readers as the source. */
-  host: string;
-  /** …/nicgep/app */
-  app: string;
-}
-
-export const GEPNIC_PORTALS: Record<string, GepnicPortal> = {
-  maharashtra: { host: "mahatenders.gov.in", app: "https://mahatenders.gov.in/nicgep/app" },
-  "tamil-nadu": { host: "tntenders.gov.in", app: "https://tntenders.gov.in/nicgep/app" },
-  "west-bengal": { host: "wbtenders.gov.in", app: "https://wbtenders.gov.in/nicgep/app" },
-  delhi: { host: "govtprocurement.delhi.gov.in", app: "https://govtprocurement.delhi.gov.in/nicgep/app" },
-};
+// The portal list is plain data shared with the source panels (client code).
+export { GEPNIC_PORTALS, type GepnicPortal } from "@/lib/constants/tender-portals";
 
 export const orgListUrl = (p: GepnicPortal) => `${p.app}?page=FrontEndTendersByOrganisation&service=page`;
 
