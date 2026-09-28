@@ -34,12 +34,12 @@ import { redis } from "@/lib/redis";
 import { sendAdminAlert } from "@/lib/admin-alerts";
 import {
   ALL_CHAIN_MODELS,
+  ANTHROPIC_DIRECT_DEFAULT,
   EXPIRY_WARNING_DAYS,
   KNOWN_MODEL_EXPIRY,
   PLAIN_PARAMS_MODELS,
   REASONING_MODELS,
   REASONING_TOKEN_HEADROOM,
-  TIER1_FREE_MODELS,
   estimateCost as estimateCostPure,
   findExpiringModels,
   getModelForPurpose as getModelForPurposePure,
@@ -84,11 +84,8 @@ export interface AIResponse {
   json?: unknown;
 }
 
-// ── Re-exports kept for existing importers ─────────────────
+// ── Re-export kept for /api/health ──────────────────────────
 export const getModelForPurpose = getModelForPurposePure;
-export const estimateCost = estimateCostPure;
-/** @deprecated kept for old importers; the free chain lives in ai-models.ts */
-export const FREE_FALLBACK_MODELS: readonly string[] = TIER1_FREE_MODELS.slice(1);
 
 function paidFallbackEnabled(): boolean {
   return process.env.AI_PAID_FALLBACK === "1";
@@ -501,18 +498,16 @@ export async function getAIDegradedState(): Promise<{ at: string; error: string 
   }
 }
 
-// ── Settings cache (for backward compat with admin panel) ───
-let cachedSettings: {
-  activeProvider: string;
-  geminiModel: string;
-  anthropicModel: string;
-  anthropicBaseUrl: string;
-  anthropicSource: string;
-  fallbackEnabled: boolean;
-  fallbackProvider: string;
+// ── Admin-editable defaults (AIProviderSettings row) ────────
+// callAI reads only maxTokens and temperature from it (a caller's own
+// values win). The row's model fields are shown in the admin panel only;
+// model ids live in ai-models.ts.
+interface CallDefaults {
   maxTokens: number;
   temperature: number;
-} | null = null;
+}
+const DEFAULT_SETTINGS: CallDefaults = { maxTokens: 2048, temperature: 0.3 };
+let cachedSettings: CallDefaults | null = null;
 let cacheTs = 0;
 const CACHE_TTL = 60_000;
 
@@ -521,36 +516,16 @@ export function invalidateAISettingsCache() {
   cacheTs = 0;
 }
 
-export function invalidateKeyCache(_provider?: string) {
-  // No-op — kept for backward compat with admin API routes
-}
-
+/** Used by /api/admin/ai-settings to say whether a key is set (every provider goes through OpenRouter). */
 export async function getAPIKey(_provider?: string): Promise<string | null> {
   return process.env.OPENROUTER_API_KEY ?? null;
 }
 
-const DEFAULT_SETTINGS = {
-  activeProvider: "openrouter",
-  geminiModel: "gemini-2.5-flash",
-  anthropicModel: "claude-sonnet-4.6",
-  anthropicBaseUrl: "https://openrouter.ai/api/v1",
-  anthropicSource: "openrouter",
-  fallbackEnabled: true,
-  fallbackProvider: "gemini",
-  maxTokens: 2048,
-  temperature: 0.3,
-};
-
-async function getSettings() {
+async function getSettings(): Promise<CallDefaults> {
   if (cachedSettings && Date.now() - cacheTs < CACHE_TTL) return cachedSettings;
   try {
     const s = await prisma.aIProviderSettings.findUnique({ where: { id: "singleton" } });
     cachedSettings = {
-      ...DEFAULT_SETTINGS,
-      geminiModel: s?.geminiModel ?? DEFAULT_SETTINGS.geminiModel,
-      anthropicModel: s?.anthropicModel ?? DEFAULT_SETTINGS.anthropicModel,
-      fallbackEnabled: s?.fallbackEnabled ?? DEFAULT_SETTINGS.fallbackEnabled,
-      fallbackProvider: s?.fallbackProvider ?? DEFAULT_SETTINGS.fallbackProvider,
       maxTokens: s?.maxTokens ?? DEFAULT_SETTINGS.maxTokens,
       temperature: s?.temperature ?? DEFAULT_SETTINGS.temperature,
     };
@@ -575,7 +550,7 @@ async function callAnthropic(
   // Lazy import so non-script code paths don't pay the SDK boot cost.
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
   const client = new Anthropic({ apiKey, baseURL: process.env.ANTHROPIC_BASE_URL });
-  const model = request.model ?? "claude-haiku-4-5-20251001";
+  const model = request.model ?? ANTHROPIC_DIRECT_DEFAULT;
   const resp = await client.messages.create({
     model,
     max_tokens: maxTokens,
@@ -633,7 +608,7 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
   //    requested via env. Used by long-running scripts so OpenRouter
   //    free-tier 429s don't strangle a backfill run.
   if (process.env.FTP_AI_PROVIDER === "anthropic" && process.env.ANTHROPIC_API_KEY) {
-    const anthropicModel = request.model ?? "claude-haiku-4-5-20251001";
+    const anthropicModel = request.model ?? ANTHROPIC_DIRECT_DEFAULT;
     try {
       const { text, usage } = await callAnthropic(request, maxTokens, temp);
       const json = request.jsonMode ? extractJSON(text, shape) : undefined;
@@ -770,9 +745,8 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
  * Pass jsonShape "object" to also request OpenRouter's JSON mode.
  */
 export async function callAIJSON<T = unknown>(request: AIRequest): Promise<{ data: T } & AIResponse> {
+  // In JSON mode both paths (OpenRouter, direct Anthropic) parse the answer
+  // before they return, so `json` is always set here.
   const res = await callAI({ ...request, jsonMode: true });
-  const data = (res.json !== undefined ? res.json : extractJSON(res.text, request.jsonShape ?? "any")) as T;
-  return { data, ...res };
+  return { data: res.json as T, ...res };
 }
-
-export { extractJSON } from "@/lib/ai-json";
