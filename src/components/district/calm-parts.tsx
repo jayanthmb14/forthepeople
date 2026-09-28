@@ -70,7 +70,7 @@ export function IconPictogram({
                 height: size + 14,
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: 10,
+                borderRadius: "var(--ftp-radius-sm)",
                 background: lit > 0 ? "var(--hue-tint)" : "var(--ftp-surface-2)",
               }}
             >
@@ -115,7 +115,7 @@ export function CalmNote({
         gap: 10,
         alignItems: "flex-start",
         padding: "10px 14px",
-        borderRadius: 12,
+        borderRadius: "var(--ftp-radius-tile)",
         background: palette.bg,
         border: `1px solid ${palette.border}`,
         // v5.2 "White Calm": the hue note is white with a 3 px hue rule.
@@ -210,7 +210,7 @@ export function ListCard({
       >
         <span style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
           {Icon && (
-            <span className="ftp-icon-chip" aria-hidden style={{ width: 30, height: 30, borderRadius: 10 }}>
+            <span className="ftp-icon-chip" aria-hidden style={{ width: 30, height: 30, borderRadius: "var(--ftp-radius-sm)" }}>
               <Icon size={16} />
             </span>
           )}
@@ -247,7 +247,7 @@ export function SearchBox({ value, onChange, label, placeholder }: { value: stri
           minHeight: 44,
           paddingBlock: 0,
           paddingInline: "36px 14px",
-          borderRadius: 12,
+          borderRadius: "var(--ftp-radius-tile)",
           border: "1px solid var(--ftp-border-strong)",
           fontSize: 15,
           fontFamily: "var(--ftp-font-sans)",
@@ -311,7 +311,7 @@ export function ThenNowBars({
         <span
           style={{
             padding: "3px 10px",
-            borderRadius: 999,
+            borderRadius: "var(--ftp-radius-pill)",
             background: same ? "var(--ftp-surface-2)" : up ? "var(--ftp-warn-tint)" : "var(--hue-tint)",
             color: same ? "var(--ftp-text-2)" : up ? "var(--ftp-warn)" : "var(--hue-deep)",
             fontSize: 13,
