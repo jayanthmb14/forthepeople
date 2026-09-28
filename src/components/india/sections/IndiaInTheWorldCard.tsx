@@ -31,6 +31,7 @@ import * as React from "react";
 import { useTranslations } from "next-intl";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { CategoryGlyph } from "@/components/graphics";
+import { medalPick } from "../glyphs";
 import {
   Award,
   Film,
@@ -227,8 +228,6 @@ function moveText(movement: Ranking["movement"], t: Tr): string {
   if (movement.kind === "new") return t("new");
   return t("stable");
 }
-
-const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
 function RankRow({ ranking, t, onOpen }: { ranking: Ranking; t: Tr; onOpen: () => void }) {
   const Icon = ICON_BY_CATEGORY[ranking.category] ?? Trophy;
@@ -450,7 +449,7 @@ export function IndiaInTheWorldCard() {
         onClose={close}
         title={open ? rankTitle(open, t) : ""}
         subtitle={open ? t("sheet.sub", { rank: open.rank }) : undefined}
-        emoji={open ? MEDAL_EMOJI[open.rank - 1] ?? "🌏" : undefined}
+        media={open ? <CategoryGlyph pick={medalPick(open.rank) ?? { glyph: "globe", hue: "sky" }} size={44} chip /> : undefined}
         hueClassName="ftp-hue-amber"
       >
         {open ? (
