@@ -210,9 +210,11 @@ files are archived in `docs/archive/docker/`.
    - `prices`
 
    None of them writes to the database; some cache their answer in Redis.
-5. **Freshness** — every payload carries its `updatedAt`; the UI pill
-   (`src/lib/utils/timeAgo.ts` and friends) derives "Xh ago / stale" from it.
-   Nothing is labelled live by default.
+5. **Freshness** — every payload carries its `updatedAt`. The district shell
+   reads `/api/data/freshness` (the district bar's feed pill,
+   `StaleDataNotice`, `VerifyPanel`) and the kit's `AsOfText` / `ReadingAge`
+   turn dates into translated "N days old" text. Nothing is labelled live by
+   default.
 6. **Content edits** — the admin Content Editor writes to the same tables and
    invalidates the cache key; every change is recorded in `UpdateLog` with the
    old/new diff (`src/lib/update-log.ts`) and surfaced on the district

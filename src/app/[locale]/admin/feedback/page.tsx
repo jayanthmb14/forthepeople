@@ -6,6 +6,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { timeAgoLabel } from "@/lib/utils/timeAgo";
 
 interface FeedbackItem {
   id: string;
@@ -60,13 +61,6 @@ const FLAG_BADGES: Record<string, { emoji: string; color: string; bg: string }> 
 };
 
 const card: React.CSSProperties = { background: "#FFF", border: "1px solid #E8E8E4", borderRadius: 10, padding: 16 };
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 60000;
-  if (diff < 60) return `${Math.round(diff)}m ago`;
-  if (diff < 1440) return `${Math.round(diff / 60)}h ago`;
-  return `${Math.round(diff / 1440)}d ago`;
-}
 
 export default function FeedbackAdminPage() {
   const [items, setItems] = useState<FeedbackItem[]>([]);
@@ -349,7 +343,7 @@ export default function FeedbackAdminPage() {
 
                   {/* Time */}
                   <span style={{ fontSize: 10, color: "#9B9B9B", whiteSpace: "nowrap", flexShrink: 0 }}>
-                    {timeAgo(item.createdAt)}
+                    {timeAgoLabel(item.createdAt).label}
                   </span>
                 </div>
 
