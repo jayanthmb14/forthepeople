@@ -37,6 +37,7 @@ import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import {
   COLLECTED_BUDGET_SOURCES,
+  DATA_GOV_BUDGET_PREFIX,
   GOVERNMENT_URL_PATTERN,
   LOCAL_INFRA_SCOPES,
   NEWS_SOURCE_PREFIX,
@@ -55,8 +56,8 @@ export const runtime = "nodejs";
 const NJDG_COURTSTAT_LIKE = `${COURTSTAT_SOURCE_PREFIX}%`;
 /** LIKE pattern for LocalAlert rows the NDMA SACHET collector wrote (OFFICIAL_ALERTS). */
 const SACHET_ALERT_LIKE = `${SACHET_SOURCE_PREFIX}%`;
-/** SHOWN_BUDGET_ENTRY's `startsWith: "data.gov.in ("` as a LIKE pattern (collector rows only). */
-const DATA_GOV_BUDGET_LIKE = "data.gov.in (%";
+/** SHOWN_BUDGET_ENTRY's collector prefix as a LIKE pattern (collector rows only). */
+const DATA_GOV_BUDGET_LIKE = `${DATA_GOV_BUDGET_PREFIX}%`;
 /** NOT_FROM_NEWS: a row whose source is an article URL. */
 const NEWS_SOURCE_LIKE = `${NEWS_SOURCE_PREFIX}%`;
 

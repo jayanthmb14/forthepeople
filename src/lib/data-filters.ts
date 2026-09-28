@@ -180,8 +180,10 @@ export const SHOW_CITIZEN_TIP_ROWS = false;
  * writes checked rows.
  */
 export const COLLECTED_BUDGET_SOURCES: string[] = ["Karnataka Finance Dept / data.gov.in"];
+/** Label prefix of the data.gov.in budget collector's rows ("data.gov.in (<resource>)"). */
+export const DATA_GOV_BUDGET_PREFIX = "data.gov.in (";
 export const SHOWN_BUDGET_ENTRY = {
-  OR: [{ source: { in: COLLECTED_BUDGET_SOURCES } }, { source: { startsWith: "data.gov.in (" } }],
+  OR: [{ source: { in: COLLECTED_BUDGET_SOURCES } }, { source: { startsWith: DATA_GOV_BUDGET_PREFIX } }],
 };
 
 /**
