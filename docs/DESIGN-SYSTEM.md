@@ -329,6 +329,11 @@ where a category needs a picture.
   `url(#ftpHueFill)` / `url(#ftpHueFillH)` for bars (near-flat hue),
   `url(#ftpHueArea)` for areas, `url(#ftpMutedFill)` for the comparison
   series, `stroke="var(--hue)"` for lines. Never draw a chart from one point.
+  **v5.5 (Sept 2026): every chart is blue.** `ChartCard` puts
+  `CHART_HUE_CLASS` (`ftp-hue-blue`) on its frame, so `var(--hue)` and the
+  gradients inside any chart draw in one soft blue (grey for comparisons),
+  whatever the module; the module hue stays on the header, icons and chips.
+  `HueDonut` uses soft blues and greys. Axis labels are 12 px.
 
 Shape and depth: radius 14 px (cards), 12 px (tiles, chips, buttons), 999 px
 (pills); shadows `--ftp-shadow-1` (rest) and `--ftp-shadow-2` (hover/overlay)

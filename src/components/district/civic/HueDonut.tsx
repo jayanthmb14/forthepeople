@@ -4,7 +4,7 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  HueDonut — a category ring in shades of the page hue (civic pages)
+//  HueDonut — a category ring in soft blues and greys (civic pages)
 // ═══════════════════════════════════════════════════════════════════════
 //
 //      ╭───────╮     ■ 🧹 Cleanliness & waste     6  (21 %)
@@ -34,16 +34,20 @@ export interface DonutSlice {
   marker?: React.ReactNode;
 }
 
-/** Eight shades of the page hue, dark → light, so neighbours stay apart. */
+/**
+ * Soft blues and greys, alternating light and mid so neighbours stay
+ * apart. Inside a ChartCard the hue is the chart blue (CHART_HUE_CLASS);
+ * no near-black shades, no heavy fills.
+ */
 const SHADES = [
-  "var(--hue-deep)",
   "var(--hue)",
   "var(--hue-pop)",
-  "color-mix(in srgb, var(--hue-deep) 55%, #fff)",
-  "color-mix(in srgb, var(--hue) 45%, #fff)",
-  "color-mix(in srgb, var(--hue-deep) 78%, #000)",
-  "color-mix(in srgb, var(--hue-pop) 50%, #fff)",
-  "color-mix(in srgb, var(--hue) 70%, var(--hue-deep))",
+  "color-mix(in srgb, var(--ftp-text-2) 62%, var(--ftp-surface))",
+  "color-mix(in srgb, var(--hue) 58%, var(--ftp-surface))",
+  "var(--hue-deep)",
+  "var(--ftp-border-strong)",
+  "color-mix(in srgb, var(--hue) 32%, var(--ftp-surface))",
+  "color-mix(in srgb, var(--ftp-text-2) 38%, var(--ftp-surface))",
 ];
 
 export function HueDonut({

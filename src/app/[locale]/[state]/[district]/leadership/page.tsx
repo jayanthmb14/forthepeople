@@ -11,15 +11,19 @@
 //  The answer, in one sentence: "N people run <district>, from the
 //  President down to your town; M of them are the MP and MLAs you vote for."
 //
-//  ModulePage → PageHeader → Explainer (real counts) → 4 StatTiles → the
-//  picture: LeaderLadder ("who is above whom", country → state → your MP
-//  and MLAs → district officers → city) with tappable names → one list of
-//  person cards per level (ftp-grid; tapping a card opens LeaderSheet with
-//  the job in plain words, party, area, since when, office contact when
-//  stored, how the record was checked, and the latest news that names the
-//  person) → party ring + notes → next election → AI insight → CSV / Share
-//  / Compare → news. v5: no emoji (small line icons per level); sources,
-//  "not an official website" and the stale note come from the shell.
+//  ModulePage → PageHeader → Explainer (real counts) → 4 StatTiles →
+//  "Key people" (Collector / DC, SP or Police Commissioner, the minister in
+//  charge, the MP and the MLA for the district headquarters seat) as white
+//  cards → the picture: LeaderLadder ("who is above whom") with tappable
+//  names → the directory: one white list per level (laptop: a table of
+//  name and role · constituency · party; phone: two lines; officers grouped
+//  by department) → tapping any card or row opens LeaderSheet (the job in
+//  plain words, party, area, since when, office contact when stored, how
+//  the record was checked, and the latest news that names the person) →
+//  party ring + notes → next election → AI insight → CSV / Share / Compare
+//  → news. v5.5 (owner, 28 Sep 2026): "a clean ordered directory", mostly
+//  white; no emoji; sources, "not an official website" and the stale note
+//  come from the shell.
 //
 //  Data: /api/data/leaders (rows guessed from news are never served),
 //  the source pill names the outlets the rows cite (recordsSource),
@@ -33,6 +37,7 @@ import { use, useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Building2, ChevronRight, Info, Layers, Users, Vote } from "lucide-react";
+import { KeyPeople, LeaderRows, pickKeyPeople } from "@/components/district/civic/LeaderDirectory";
 import ModuleErrorBoundary from "@/components/common/ModuleErrorBoundary";
 import AIInsightCard from "@/components/common/AIInsightCard";
 import ModuleNews from "@/components/district/ModuleNews";
@@ -54,7 +59,7 @@ import { ChartCard, Explainer } from "@/components/district/visuals";
 import { HueDonut } from "@/components/district/civic/HueDonut";
 import { LeaderLadder } from "@/components/district/civic/LeaderLadder";
 import { LeaderSheet } from "@/components/district/civic/LeaderSheet";
-import { LeaderAvatar, isPlaceholderName, orderTiers, roleText, tierMeta } from "@/components/district/civic/leader-shared";
+import { orderTiers, tierMeta } from "@/components/district/civic/leader-shared";
 import { isHeadquartersMla } from "@/lib/leader-roles";
 import { COURTS_TIER, ladderTier } from "@/lib/civic/leader-level";
 import { daysUntil, findActiveElection, findNextElection, type ElectionEvent } from "@/components/district/ElectionSection";
@@ -62,7 +67,6 @@ import { getPartyColor } from "@/lib/constants/party-colors";
 import { usePlaceText } from "@/i18n/client";
 import { hueClass } from "@/lib/design/hues";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
-import { scriptLang } from "@/lib/utils/script-lang";
 import { leaderSourceSummary } from "@/lib/government-checks";
 import knDict from "@/dictionaries/kn.json";
 
@@ -103,96 +107,6 @@ function rank(role: string): number {
 
 /** A name that is only a role ("Prime Minister") is not a person. */
 const ROLE_WORDS = /^(prime minister|president|governor|chief minister|minister|mla|mp|speaker|collector|commissioner|mayor|judge|officer|secretary|chairman|director)/i;
-
-/** One person, as a big tappable card. The whole card opens the detail sheet. */
-function LeaderCard({ l, onOpen, hq = false }: { l: Leader; onOpen: (l: Leader) => void; hq?: boolean }) {
-  const t = useTranslations("page_leadership");
-  const f = useFormat();
-  const role = roleText(l, f.locale);
-  const placeholder = isPlaceholderName(l.name);
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(l)}
-      className="ftp-card-link"
-      aria-haspopup="dialog"
-      aria-label={t("card.openAria", { name: l.name, role: role.text })}
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
-        width: "100%",
-        minHeight: 44,
-        padding: 14,
-        textAlign: "left",
-        font: "inherit",
-        color: "var(--ftp-text)",
-        cursor: "pointer",
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
-        borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
-      }}
-    >
-      <span style={{ position: "relative", flexShrink: 0 }}>
-        <LeaderAvatar name={l.name} photoUrl={l.photoUrl} />
-      </span>
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        <span
-          className="ftp-title"
-          style={{ fontWeight: 650, color: placeholder ? "var(--ftp-text-2)" : "var(--ftp-text)", fontStyle: placeholder ? "italic" : "normal" }}
-        >
-          {l.name}
-        </span>
-        {l.nameLocal && !placeholder && l.nameLocal !== l.name && (
-          <span lang={scriptLang(l.nameLocal)} style={{ fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-            {l.nameLocal}
-          </span>
-        )}
-        <span lang={role.lang} style={{ fontSize: 14, lineHeight: "20px", color: "var(--ftp-text)" }}>
-          {role.text}
-        </span>
-        {l.constituency && (
-          <span style={{ fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
-            {l.constituency}
-          </span>
-        )}
-        {hq && (
-          <span style={{ alignSelf: "flex-start", marginTop: 4, padding: "1px 8px", borderRadius: 999, fontSize: 12, lineHeight: "18px", fontWeight: 600, color: "var(--ftp-brand)", background: "var(--ftp-brand-tint)" }}>
-            {t("hqBadge")}
-          </span>
-        )}
-        <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-          {l.party ? (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "2px 10px",
-                borderRadius: 999,
-                border: "1px solid var(--ftp-border)",
-                fontSize: 12,
-                lineHeight: "18px",
-                color: "var(--ftp-text)",
-              }}
-            >
-              {/* Party colour appears only as this dot. */}
-              <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: getPartyColor(l.party).border, flexShrink: 0 }} />
-              {l.party}
-            </span>
-          ) : (
-            <span />
-          )}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 12, lineHeight: "18px", fontWeight: 600, color: "var(--hue-deep)" }}>
-            {t("card.details")}
-            <ChevronRight size={14} aria-hidden />
-          </span>
-        </span>
-      </span>
-    </button>
-  );
-}
 
 /**
  * Chart: the elected representatives (MP and MLAs) by party, as last
@@ -337,6 +251,8 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
       ? f.date(liveElection.resultDate, { day: "numeric", month: "long", year: "numeric" })
       : null;
 
+  const keyPeople = pickKeyPeople(people, district);
+
   const jumpTo = (tier: number) =>
     document.getElementById(`level-${tier}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -396,26 +312,37 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
       {!isLoading && !error && people.length === 0 && <EmptyState title={t("emptyTitle")} body={t("emptyBody")} />}
 
       {people.length > 0 && (
-        <>
-          <StatStrip cols={4}>
-            <StatTile icon={Users} label={t("tilePeople")} value={f.number(people.length)} asOf={asOf} />
-            <StatTile icon={Vote} label={t("tileElected")} value={f.number(electedCount)} sub={t("tileElectedSub")} />
-            <StatTile icon={Building2} label={t("tileOfficers")} value={f.number(officerCount)} sub={t("tileOfficersSub")} />
-            <StatTile icon={Layers} label={t("tileLevels")} value={f.number(govTiers.length)} sub={t("tileLevelsSub")} />
-          </StatStrip>
-
-          {/* The picture: who is above whom. Names in it open the same sheet as the cards. */}
-          <div style={{ marginTop: 16 }}>
-            <Card padding={18}>
-              <LeaderLadder tiers={govTiers} byTier={byTier} onPick={setSelected} onJump={jumpTo} />
-            </Card>
-          </div>
-        </>
+        <StatStrip cols={4}>
+          <StatTile icon={Users} label={t("tilePeople")} value={f.number(people.length)} asOf={asOf} />
+          <StatTile icon={Vote} label={t("tileElected")} value={f.number(electedCount)} sub={t("tileElectedSub")} />
+          <StatTile icon={Building2} label={t("tileOfficers")} value={f.number(officerCount)} sub={t("tileOfficersSub")} />
+          <StatTile icon={Layers} label={t("tileLevels")} value={f.number(govTiers.length)} sub={t("tileLevelsSub")} />
+        </StatStrip>
       )}
 
-      {/* The main list: one section per level, in the same order as the picture. */}
+      {/* Key people: whom most citizens need first. */}
+      {keyPeople.length > 0 && (
+        <Section title={t("key.title", { name: districtName })}>
+          <p className="ftp-body" style={{ color: "var(--ftp-text-2)", margin: "-6px 0 12px", fontSize: 14, lineHeight: "21px" }}>
+            {t("key.lead")}
+          </p>
+          <KeyPeople people={keyPeople} district={district} onOpen={setSelected} />
+        </Section>
+      )}
+
+      {/* The picture: who is above whom. Names in it open the same sheet as the rows. */}
+      {people.length > 0 && govTiers.length > 1 && (
+        <div style={{ marginTop: 28 }}>
+          <Card padding={18}>
+            <LeaderLadder tiers={govTiers} byTier={byTier} onPick={setSelected} onJump={jumpTo} />
+          </Card>
+        </div>
+      )}
+
+      {/* The directory: one list per level, in the same order as the picture. */}
       {tiers.map((tier) => {
         const meta = tierMeta(tier, t);
+        const officers = tier === 3 || tier === 5;
         return (
           <section key={tier} id={`level-${tier}`} style={{ scrollMarginTop: 80 }}>
             <Section title={meta.label}>
@@ -424,11 +351,12 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
                   {meta.hint}
                 </p>
               )}
-              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
-                {byTier[tier].map((l) => (
-                  <LeaderCard key={l.id} l={l} onOpen={setSelected} hq={isHeadquartersMla(l, district)} />
-                ))}
-              </div>
+              <LeaderRows
+                leaders={byTier[tier]}
+                district={district}
+                onOpen={setSelected}
+                groupByDept={officers}
+              />
             </Section>
           </section>
         );

@@ -1,0 +1,179 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * Leaders & officers directory (LeaderDirectory.tsx): one white card per
+ * level with a row per person. Laptop: a table (name · constituency ·
+ * party). Phone: name and role on top, constituency · party on one line
+ * under them. Tokens and hue variables only.
+ */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+  box-shadow: var(--ftp-shadow-1);
+  overflow: hidden;
+}
+
+.head,
+.row {
+  display: grid;
+  /* The list sets --cols: seat and party columns drop out when nobody in the list has one. */
+  grid-template-columns: var(--cols, 40px minmax(0, 2.2fr) minmax(0, 1.4fr) minmax(0, 0.9fr) 20px);
+  align-items: center;
+  column-gap: 14px;
+  padding: 10px 16px;
+}
+
+.head {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: var(--ftp-surface-2);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+
+.item + .item,
+.head + .item {
+  border-top: 1px solid var(--ftp-border);
+}
+
+.group {
+  padding: 12px 16px 6px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--ftp-text-2);
+  border-top: 1px solid var(--ftp-border);
+}
+
+.group:first-child {
+  border-top: none;
+}
+
+.group + .item {
+  border-top: none;
+}
+
+.row {
+  width: 100%;
+  min-height: 60px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: var(--ftp-text);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.row:hover {
+  background: var(--hue-tint);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--ftp-focus);
+  outline-offset: -2px;
+}
+
+.who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.name {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 650;
+}
+
+.placeholder {
+  color: var(--ftp-text-2);
+  font-style: italic;
+}
+
+.sub {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+
+.cell {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ftp-text);
+}
+
+.hq {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--hue-deep);
+}
+
+.party {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.meta {
+  display: none;
+}
+
+.off {
+  display: none;
+}
+
+.chev {
+  color: var(--ftp-text-2);
+}
+
+/* Phones and small tablets: two lines, no table columns. */
+@media (max-width: 767px) {
+  .head {
+    display: none;
+  }
+  .row {
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    padding: 10px 14px;
+  }
+  .cell {
+    display: none;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 10px;
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--ftp-text);
+  }
+  .meta:empty {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    transition: none;
+  }
+}

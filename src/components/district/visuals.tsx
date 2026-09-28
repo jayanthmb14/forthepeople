@@ -409,8 +409,17 @@ export function WeatherGlyph({ conditions, size = 48, hourIST }: { conditions?: 
 //  ChartCard + recharts theme
 // ─────────────────────────────────────────────────────────────────────
 
-/** Axis tick style for every recharts chart. */
-export const CHART_AXIS = { fontSize: 11, fill: "var(--ftp-text-2)", fontFamily: "var(--ftp-font-sans)" } as const;
+/** Axis tick style for every recharts chart (12 px, secondary text: readable, never loud). */
+export const CHART_AXIS = { fontSize: 12, fill: "var(--ftp-text-2)", fontFamily: "var(--ftp-font-sans)" } as const;
+
+/**
+ * Every chart draws in one soft blue (plus grey for comparisons), whatever
+ * module it sits in (owner, 28 Sep 2026: "80–90 % white, a few shades of
+ * blue here and there"). ChartCard puts this class on its frame, so
+ * `var(--hue)`, `url(#ftpHueFill)` and friends inside a chart are blue; the
+ * module hue stays on the page header, icons and chips.
+ */
+export const CHART_HUE_CLASS = "ftp-hue-blue";
 
 /** Tooltip box style for every recharts chart. */
 export const chartTooltipStyle: React.CSSProperties = {
@@ -432,14 +441,15 @@ export const chartTooltipStyle: React.CSSProperties = {
 export function ChartGradients() {
   return (
     <defs>
-      {/* v5: near-flat fills — the hue fading only slightly into its pastel. */}
+      {/* v5.5: softer near-flat fills (owner: "no heavy colour") — the chart
+          blue at 84 % fading to 66 %, still ≥ 3 : 1 against white at the top. */}
       <linearGradient id="ftpHueFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="var(--hue)" />
-        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.72} />
+        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.84} />
+        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.66} />
       </linearGradient>
       <linearGradient id="ftpHueFillH" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.72} />
-        <stop offset="100%" stopColor="var(--hue)" />
+        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.66} />
+        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.84} />
       </linearGradient>
       <linearGradient id="ftpHueArea" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.22} />
@@ -460,6 +470,8 @@ export function ChartGradients() {
  * v5: the title carries no emoji (the `emoji` prop is accepted and ignored),
  * the one-line takeaway (`simple`) has no pointing-hand, and the table
  * switch uses a small table icon.
+ * v5.5: a plain white card, and the chart inside draws in one soft blue
+ * (CHART_HUE_CLASS) on every module page.
  *
  * @prop table  Optional rows for "Show as table": [{label, value}] or a node.
  */
@@ -495,6 +507,7 @@ export function ChartCard({
   const hasTable = Boolean(table);
   return (
     <figure
+      className={CHART_HUE_CLASS}
       style={{
         margin: 0,
         padding: 18,

@@ -147,8 +147,9 @@ const STEPS = ["step1", "step2", "step3"] as const;
 
 /** Surface shared by the helpline and rights cards. */
 const TINTED: React.CSSProperties = {
-  background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)",
-  border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+  // v5.5 (owner, 28 Sep 2026: mostly white): a white card; the hue is only on the number.
+  background: "var(--ftp-surface)",
+  border: "1px solid var(--ftp-border)",
   borderRadius: "var(--ftp-radius-card)",
   boxShadow: "var(--ftp-shadow-1)",
 };
@@ -230,7 +231,7 @@ export function HelplineCard({ h, onInfo }: { h: Helpline; onInfo: () => void })
           alignItems: "center",
           justifyContent: "center",
           border: "none",
-          borderInlineStart: "1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border))",
+          borderInlineStart: "1px solid var(--ftp-border)",
           background: "transparent",
           color: "var(--hue-deep)",
           cursor: "pointer",
@@ -260,7 +261,7 @@ export function HelplineSheet({ h, onClose }: { h: Helpline | null; onClose: () 
         </SheetLink>
       }
     >
-      <div style={{ padding: "12px 14px", borderRadius: 14, background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)", border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))" }}>
+      <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--ftp-surface-2)", border: "1px solid var(--ftp-border)" }}>
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
           {t("whenToCall")}
         </p>
@@ -307,21 +308,11 @@ export function RightCard({ r, onOpen }: { r: Right; onOpen: () => void }) {
         overflow: "hidden",
       }}
     >
-      {/* The picture: a plain icon of what the right is about, on a soft band of the page hue. */}
-      <span
-        aria-hidden
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: 72,
-          background: "var(--hue-tint)",
-          color: "var(--hue)",
-        }}
-      >
-        <r.icon size={36} strokeWidth={1.5} />
-      </span>
       <span style={{ display: "flex", flexDirection: "column", gap: 6, padding: 14, flex: 1 }}>
+        {/* The picture: a small plain icon of what the right is about, in the page hue (v5.5: no tinted band). */}
+        <span aria-hidden style={{ color: "var(--hue)", lineHeight: 0 }}>
+          <r.icon size={24} strokeWidth={1.75} />
+        </span>
         <span className="ftp-display" style={{ fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
           {t(`rights.${r.id}.title`)}
         </span>
@@ -356,7 +347,7 @@ export function RightSheet({ r, onClose, base }: { r: Right | null; onClose: () 
     ) : undefined;
   return (
     <DetailSheet open onClose={onClose} title={t(`rights.${r.id}.title`)} hueClassName={SHEET_HUE} footer={footer}>
-      <div style={{ padding: "12px 14px", borderRadius: 14, background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)", border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))" }}>
+      <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--ftp-surface-2)", border: "1px solid var(--ftp-border)" }}>
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
           {t("whatItMeans")}
         </p>
