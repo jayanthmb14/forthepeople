@@ -1,6 +1,7 @@
-// Standalone entry for the red-flag recomputation job.
-// Run manually:  npx tsx src/scraper/tender-redflag-computer.ts
-// Run via cron (Vercel cron or Node scheduler): imports runRedFlagComputer().
+// Manual ops script: recompute tender red flags (src/lib/tenders/tender-redflags.ts).
+// Run:  npx tsx scripts/tenders-redflags.ts   (writes TenderRedFlag rows in the
+// database .env points at). Not scheduled; moved here from
+// src/scraper/tender-redflag-computer.ts on 2026-09-28 — it had never run.
 
 import "dotenv/config";
 import { recomputeAllFlags } from "@/lib/tenders/tender-redflags";

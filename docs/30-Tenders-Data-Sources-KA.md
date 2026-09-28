@@ -2,6 +2,10 @@
 
 Per-portal detail for future expansion to other states. Last refreshed: 2026-04-19.
 
+> **Status 2026-09-28:** the engines named below never ran and were deleted
+> (`src/scraper/engines/*`); this file is research only. The live collector is
+> `src/scraper/jobs/gepnic-tenders.ts`.
+
 ## 1. KPPP — Karnataka eProcurement
 
 - URL: https://eproc.karnataka.gov.in

@@ -18,6 +18,13 @@ tenders a year per state. ForThePeople's Tenders module gives them:
 
 ## Data sources
 
+> **Status 2026-09-28:** the engines below (and `src/scraper/tender-orchestrator.ts`,
+> `src/scraper/engines/*`, `src/scraper/parsers/*`) never ran — `TenderScraperRun`
+> had 0 rows and the target pages sit behind captchas — and were deleted. The live
+> collector is `src/scraper/jobs/gepnic-tenders.ts` (cron `scrape-tenders`,
+> Maharashtra, Tamil Nadu, West Bengal and Delhi GePNIC portals). The table is
+> kept as research for future states.
+
 | Priority | Portal | Engine | Volume/year (est.) |
 |----------|--------|--------|---------------------|
 | 1 | KPPP (eproc.karnataka.gov.in) | `kppp-seam` | ~50k Karnataka tenders |
@@ -48,7 +55,9 @@ Serialisation to JSON goes through `src/lib/tenders/format.ts:serializeForJson()
 
 ## AI enrichment
 
-`src/cron/tenders-ai-enrich.ts` runs (Vercel cron every 2h):
+`scripts/tenders-ai-enrich.ts` is a **manual script, not scheduled** (it was
+never in `vercel.json` and has never run; `TenderAISummary` is empty). When run
+it does:
 
 1. Plain-English summary (150 words, neutral adjective-free)
 2. Structured eligibility JSON (null when not stated)
@@ -129,8 +138,7 @@ and `<TenderDisclaimer variant="full"/>` at the foot.
 ```bash
 npx prisma db push         # schema → DB (project convention; no migrations folder)
 npx tsx prisma/seed-tenders-karnataka.ts
-npx tsx src/scraper/tender-orchestrator.ts --portal KPPP --dry-run --limit 10
-npx tsx src/cron/tenders-ai-enrich.ts --single-tender-id <id> --dry-run
-npx tsx src/scraper/tender-redflag-computer.ts
+npx tsx scripts/tenders-ai-enrich.ts --single-tender-id <id> --dry-run
+npx tsx scripts/tenders-redflags.ts
 bash scripts/lint-tender-copy.sh
 ```

@@ -5,7 +5,7 @@
 | Integration | Purpose in Tenders module | Env var |
 |-------------|---------------------------|---------|
 | OpenRouter (via `callAI`) | AI enrichment: summary / eligibility / checklist | `OPENROUTER_API_KEY` |
-| Sentry | Error logging from orchestrator + cron | `SENTRY_DSN` |
+| Sentry | Error logging from the `scrape-tenders` cron | `SENTRY_DSN` |
 | Plausible | Page-view analytics | (no key — cookieless) |
 | Resend | Admin alert emails when cost budget exceeded | `RESEND_API_KEY`, `ADMIN_EMAIL` |
 | Neon PostgreSQL | Primary data store | `DATABASE_URL` |

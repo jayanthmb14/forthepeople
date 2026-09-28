@@ -1,4 +1,8 @@
-// Tender AI enrichment cron.
+// Tender AI enrichment — manual ops script, NOT scheduled.
+// Run:  npx tsx scripts/tenders-ai-enrich.ts --dry-run --limit 5
+// Moved here from src/cron/tenders-ai-enrich.ts on 2026-09-28: it was never
+// in vercel.json and had never run (TenderAISummary had 0 rows). Writes
+// TenderAISummary rows in the database .env points at.
 // For each Tender with no TenderAISummary (or with error state), generate:
 //   1. Plain-English summary (150 words max)
 //   2. Structured eligibility JSON
