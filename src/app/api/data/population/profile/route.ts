@@ -10,7 +10,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { censusOnlyProfile, pickCensus2011, reconcileCensusProfile } from "@/lib/census-2011";
+import { censusOnlyProfile, reconcileCensusProfile } from "@/lib/census-2011";
+import { loadCensus2011 } from "@/lib/census-2011-db";
 
 export const revalidate = 86400;
 
@@ -40,20 +41,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "District not found" }, { status: 404 });
   }
 
-  const [allDatasets, history] = await Promise.all([
+  // The checked Census 2011 row (PopulationHistory). Its core numbers win
+  // over the hand-seeded profile's (Sept 2026 audit, src/lib/census-2011.ts).
+  const [allDatasets, census] = await Promise.all([
     prisma.demographicProfile.findMany({
       where: { districtId: district.id },
       select: { year: true, dataset: true },
       orderBy: [{ year: "desc" }, { dataset: "asc" }],
     }),
-    prisma.populationHistory.findMany({
-      where: { districtId: district.id, year: 2011 },
-      select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
-    }),
+    loadCensus2011(district.id),
   ]);
-  // The checked Census 2011 row (PopulationHistory). Its core numbers win
-  // over the hand-seeded profile's (Sept 2026 audit, src/lib/census-2011.ts).
-  const census = pickCensus2011(history);
 
   if (allDatasets.length === 0 && !census) {
     return NextResponse.json({

@@ -27,7 +27,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
-import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERTS, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
+import { LOCAL_INFRA, NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERTS, SHOWN_BUDGET_ENTRY, bySeverity } from "@/lib/data-filters";
 import type { GlanceData } from "@/components/district/shell/glance-types";
 import { isNonProject, projectStage } from "@/lib/civic/project-facts";
 import { isCollectorRole } from "@/lib/leader-roles";
@@ -36,17 +36,10 @@ export const runtime = "nodejs";
 
 const CACHE_SECONDS = 600;
 
-
 // The district head goes by several titles (src/lib/leader-roles.ts — the
 // same rule as the overview's "District leaders" card).
 const isCollector = isCollectorRole;
 const isMP = (role: string) => /\bmp\b|member of parliament/i.test(role);
-
-// Same ranking as the alerts page (/api/data/alerts).
-const SEVERITY_RANK: Record<string, number> = {
-  critical: 0, high: 1, severe: 1, warning: 2, medium: 2, moderate: 2, low: 3, info: 4,
-};
-const rankOf = (s: string | null | undefined) => SEVERITY_RANK[(s ?? "").toLowerCase()] ?? 5;
 
 /** The soonest future date among an event's polling date, expected date or next term. */
 function nextDate(e: {
@@ -167,7 +160,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const sortedAlerts = [...alertRows].sort((a, b) => rankOf(a.severity) - rankOf(b.severity));
+  // Same ranking as the alerts page (bySeverity).
+  const sortedAlerts = [...alertRows].sort(bySeverity);
   // Same rule as the Projects page and the home map (src/lib/civic/project-facts.ts).
   const realProjects = projects.filter((p) => !isNonProject({ name: p.name ?? "" }));
   const beingBuilt = realProjects.filter((p) => projectStage(p.status) === "building");

@@ -22,7 +22,8 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { hasNjdgSource } from "@/lib/courts/sources";
 import { readCourtsSnapshot } from "@/lib/courts/store";
-import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapshot";
+import { courtStatReadDate } from "@/lib/courts/snapshot";
+import { NJDG_COURTSTAT } from "@/lib/data-filters";
 
 const MODULE = "court-pendency";
 const TTL_SECONDS = 600;
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
       const district = await prisma.district.findFirst({ where: { slug: districtSlug }, select: { id: true } });
       if (district) {
         const found = await prisma.courtStat.findMany({
-          where: { districtId: district.id, source: { startsWith: COURTSTAT_SOURCE_PREFIX } },
+          where: { districtId: district.id, ...NJDG_COURTSTAT },
           orderBy: [{ year: "desc" }, { courtName: "asc" }],
           take: 60,
         });

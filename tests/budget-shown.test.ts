@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { hasEstimatedSpend, rowsSource, withPublishedSpend } from "@/lib/money/budget-shown";
-import { COLLECTED_BUDGET_SOURCES, SEEDED_BUDGET_SOURCES, SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
+import { COLLECTED_BUDGET_SOURCES, SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
 
 describe("withPublishedSpend", () => {
   it("blanks spend and release figures the row calls an estimate (Pune, Sept 2026)", () => {
@@ -60,9 +60,33 @@ describe("budget row filters", () => {
   });
 });
 
-// Merge of v54/fix-news into v54/fix-money's rule: the news branch hid the
-// seeded budgets by their exact labels (SEEDED_BUDGET_SOURCES); the queries
-// use SHOWN_BUDGET_ENTRY, which must hide every one of those labels too.
+/**
+ * BudgetEntry source labels written by hand-made seed scripts
+ * (prisma/seed-bengaluru-data.ts, seed-hyderabad-data.ts,
+ * seed-lucknow-data.ts, seed-mumbai-data.ts, seed-delhi-data.ts), not read
+ * from a budget document. The Sept 2026 audit found their totals were state
+ * or agency budgets credited to one district (New Delhi's twelve Delhi
+ * Government heads sum to the same ₹65,200 crore as Mumbai's; Lucknow's
+ * are UP state heads), and their "spent" was a fixed share of every line
+ * (Bengaluru Urban 44 % / 70 %, Hyderabad "estimated from state avg
+ * utilisation"). (BMC's own 2025-26 budget estimate is ₹74,427.41 crore —
+ * not what the Mumbai rows add up to.) Kept here as the audit's record:
+ * v54/fix-news hid them by these exact labels (NOT_SEEDED_BUDGET, removed
+ * from src/lib/data-filters.ts in v55 — no query used it); the queries use
+ * SHOWN_BUDGET_ENTRY, which must hide every one of these labels too.
+ */
+const SEEDED_BUDGET_SOURCES: string[] = [
+  "BBMP Budget 2024-25 / BDA / BMRCL / Karnataka State Budget / finance.karnataka.gov.in",
+  "BBMP Budget 2025-26 / BMRCL / Karnataka State Budget / finance.karnataka.gov.in",
+  "finance.telangana.gov.in (estimated from state avg utilisation)",
+  "ghmc.gov.in (estimated from state avg utilisation)",
+  "UP Finance Department",
+  "UP Finance Department (budget.up.nic.in)",
+  "BMC Budget 2025-26",
+  "MMRDA / State Allocation",
+  "Delhi Budget",
+  "Delhi Budget / delhiplanning.delhi.gov.in",
+];
 describe("seeded budget labels (v54/fix-news)", () => {
   const passesShown = (source: string | null) =>
     source !== null && (COLLECTED_BUDGET_SOURCES.includes(source) || source.startsWith("data.gov.in ("));

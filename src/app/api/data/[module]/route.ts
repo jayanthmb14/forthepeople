@@ -18,6 +18,7 @@ import { localizeRows } from "@/lib/translation/overlay";
 import {
   ACTIVE_TRANSPORT,
   BORN_HERE_PERSONALITY,
+  ELECTION_RESULTS_WITHHELD,
   JJM_DISTRICT_TOTAL,
   LOCAL_INFRA,
   NJDG_COURTSTAT,
@@ -25,15 +26,16 @@ import {
   NOT_FROM_NEWS_OPTIONAL,
   NOT_SEEDED_RAINFALL,
   OFFICIAL_ALERTS,
+  SHOW_CITIZEN_TIP_ROWS,
+  SHOWN_BUDGET_ALLOCATION,
+  SHOWN_BUDGET_ENTRY,
   SHOWN_CRIME,
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
-  ELECTION_RESULTS_WITHHELD,
-  SHOW_CITIZEN_TIP_ROWS,
-
+  VERIFIED_SUGAR_SEASON,
+  bySeverity,
   shownCropPrices,
 } from "@/lib/data-filters";
-import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY, VERIFIED_SUGAR_SEASON } from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
@@ -43,8 +45,8 @@ import { dedupeStories } from "@/lib/news-dedupe";
 import { leaderOfficePhone } from "@/lib/government-checks";
 import { isRelatedNews } from "@/lib/related-news";
 import { getStateConfig } from "@/lib/constants/state-config";
-
-import { pickCensus2011, withCensusFigures } from "@/lib/census-2011";
+import { withCensusFigures } from "@/lib/census-2011";
+import { loadCensus2011 } from "@/lib/census-2011-db";
 import { schoolForDisplay } from "@/lib/school-rows";
 import { displayHeadline, newsForDisplay } from "@/lib/news-quality";
 import { districtAliases } from "@/lib/news-keywords";
@@ -165,12 +167,7 @@ async function fetchModule(
       // People figures (population, literacy, sex ratio, density): the
       // checked Census 2011 row, not the hand-typed District columns
       // (Sept 2026 audit — src/lib/census-2011.ts).
-      const census = pickCensus2011(
-        await prisma.populationHistory.findMany({
-          where: { districtId: did, year: 2011 },
-          select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
-        }),
-      );
+      const census = await loadCensus2011(did);
       const shown = d ? withCensusFigures(d, census) : d;
       return { data: shown ? { ...shown, schoolsFrom: udise ? "udise" : "listed", figuresFrom: census ? "census-2011" : "district" } : shown, meta };
     }
@@ -668,12 +665,8 @@ async function fetchModule(
         },
         orderBy: { createdAt: "desc" },
       });
-      // Most serious first. Sorting the text column put "medium" before
-      // "critical"; rank it explicitly, newest first within a level.
-      const RANK: Record<string, number> = { critical: 0, high: 1, severe: 1, warning: 2, medium: 2, moderate: 2, low: 3, info: 4 };
-      const data = [...rows].sort(
-        (a, b) => (RANK[(a.severity ?? "").toLowerCase()] ?? 5) - (RANK[(b.severity ?? "").toLowerCase()] ?? 5),
-      );
+      // Most serious first (bySeverity), newest first within a level.
+      const data = [...rows].sort(bySeverity);
       return { data, meta };
     }
 

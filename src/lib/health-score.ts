@@ -10,12 +10,22 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT, shownCropPrices } from "@/lib/data-filters";
-import { SHOWN_BUDGET_ALLOCATION } from "@/lib/data-filters";
+import {
+  JJM_DISTRICT_TOTAL,
+  LOCAL_INFRA,
+  NJDG_COURTSTAT,
+  NOT_FROM_NEWS,
+  NOT_FROM_NEWS_OPTIONAL,
+  SHOWN_BUDGET_ALLOCATION,
+  SHOWN_CRIME,
+  VERIFIED_PANCHAYAT,
+  shownCropPrices,
+} from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
-import { pickCensus2011 } from "@/lib/census-2011";
+import type { CensusHistoryRow } from "@/lib/census-2011";
+import { loadCensus2011 } from "@/lib/census-2011-db";
 import { projectStage } from "@/lib/civic/project-facts";
 
 const WEIGHTS = {
@@ -106,16 +116,15 @@ function noDataIf(missing: boolean): { noData?: true } {
 }
 
 /**
- * The district's checked Census 2011 row (population, literacy, density).
- * Sept 2026 audit: District.population / literacy were typed constants
- * (Mandya's literacy was Mysuru's), so the report card reads the Census.
+ * What several categories share, read once per district: the checked
+ * Census 2011 row (population, literacy, density — Sept 2026 audit:
+ * District.population / literacy were typed constants, Mandya's literacy
+ * was Mysuru's), the newest dam readings and the checked panchayat rows.
  */
-async function census2011(districtId: string) {
-  const rows = await prisma.populationHistory.findMany({
-    where: { districtId, year: 2011 },
-    select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
-  });
-  return pickCensus2011(rows);
+interface Shared {
+  census: CensusHistoryRow | null;
+  dams: Array<{ storagePct: number }>;
+  gps: Array<{ roadConnected: boolean | null; fundsUtilized: number | null }>;
 }
 
 /**
@@ -280,11 +289,9 @@ async function calcGovernance(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 2. Education ─────────────────────────────────────────────
-async function calcEducation(districtId: string): Promise<CategoryResult> {
+async function calcEducation(districtId: string, districtSlug: string, { census }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  const district = await prisma.district.findFirst({ where: { id: districtId } });
-  const census = await census2011(districtId);
   const literacy = census?.literacy ?? null;
   sub.literacy = literacy !== null
     ? { value: Math.round(literacy), max: 95, score: Math.round(Math.min(100, (literacy / 95) * 100)), label: "Literacy Rate (%, Census 2011)" }
@@ -306,7 +313,7 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
   // (collector) only. The schools listed by name were hand-seeded with
   // estimated enrolment and mostly empty facilities (Sept 2026 audit), so
   // they are never used as a stand-in.
-  const udise = district?.slug ? await readDistrictSnapshot<UdiseSnapshotData>("udise", district.slug) : null;
+  const udise = districtSlug ? await readDistrictSnapshot<UdiseSnapshotData>("udise", districtSlug) : null;
   const totalStudents = udise ? udise.data.totals.students : 0;
   const totalTeachers = udise ? udise.data.totals.teachers : 0;
   if (totalTeachers > 0) {
@@ -326,7 +333,7 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 3. Health ────────────────────────────────────────────────
-async function calcHealth(districtId: string): Promise<CategoryResult> {
+async function calcHealth({ census }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   // Health centres per person: not measured. The old measure counted the
@@ -340,7 +347,7 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
   sub.activeHealthAlerts = healthAlertsMetric();
 
   // Literacy as a proxy for health literacy (Census 2011)
-  const literacy = (await census2011(districtId))?.literacy ?? null;
+  const literacy = census?.literacy ?? null;
   sub.healthLiteracyProxy = literacy !== null
     ? { value: Math.round(literacy), max: 90, score: Math.round(Math.min(100, (literacy / 90) * 100)), label: "Literacy (Health Literacy Proxy, %, Census 2011)" }
     : { value: 0, max: 90, score: 50, label: "Literacy (Health Literacy Proxy, %)", noData: true };
@@ -349,7 +356,7 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 4. Infrastructure ─────────────────────────────────────────
-async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
+async function calcInfrastructure(districtId: string, { gps }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   const projects = await prisma.infraProject.findMany({ where: { districtId, ...LOCAL_INFRA } });
@@ -367,7 +374,6 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
   }
 
   // Road connectivity via gram panchayats (checked rows only; none yet)
-  const gps = await prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT } });
   if (gps.length > 0) {
     const connected = gps.filter((g) => g.roadConnected).length;
     const roadPct = (connected / gps.length) * 100;
@@ -389,15 +395,10 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 5. Water & Sanitation ────────────────────────────────────
-async function calcWaterSanitation(districtId: string): Promise<CategoryResult> {
+async function calcWaterSanitation(districtId: string, { dams: latestDams }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Dam storage
-  const latestDams = await prisma.damReading.findMany({
-    where: { districtId },
-    orderBy: { recordedAt: "desc" },
-    take: 5,
-  });
+  // Dam storage (the five newest readings)
   if (latestDams.length > 0) {
     const avgStorage = latestDams.reduce((s, d) => s + d.storagePct, 0) / latestDams.length;
     // 70-100% = excellent, 40-70% = moderate, <40% = poor
@@ -458,11 +459,10 @@ async function calcEconomy(districtId: string, districtSlug: string): Promise<Ca
 }
 
 // ── 7. Safety ────────────────────────────────────────────────
-async function calcSafety(districtId: string): Promise<CategoryResult> {
+async function calcSafety(districtId: string, { census }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   // Crime rate per 100k population (Census 2011 population)
-  const census = await census2011(districtId);
   const pop = census?.population ?? 1000000;
   const crimes = await prisma.crimeStat.findMany({
     where: { districtId, ...SHOWN_CRIME, year: new Date().getFullYear() - 1 },
@@ -504,11 +504,10 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 8. Agriculture ───────────────────────────────────────────
-async function calcAgriculture(districtId: string): Promise<CategoryResult> {
+async function calcAgriculture(districtId: string, { dams }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Irrigation coverage (from JJM + dams)
-  const dams = await prisma.damReading.findMany({ where: { districtId }, orderBy: { recordedAt: "desc" }, take: 5 });
+  // Irrigation coverage (the five newest dam readings)
   const avgStorage = dams.length > 0 ? dams.reduce((s, d) => s + d.storagePct, 0) / dams.length : 50;
   const irrigationScore = Math.min(100, (avgStorage / 80) * 80);
   sub.irrigationProxy = { value: Math.round(avgStorage), max: 80, score: Math.round(irrigationScore), label: "Reservoir Storage (Irrigation Proxy, %)", ...noDataIf(dams.length === 0) };
@@ -548,7 +547,7 @@ async function calcDigitalAccess(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 10. Citizen Welfare ──────────────────────────────────────
-async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
+async function calcCitizenWelfare(districtId: string, { gps }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   // Scheme coverage
@@ -569,7 +568,6 @@ async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
   }
 
   // MGNREGA utilization via gram panchayats (checked rows only; none yet)
-  const gps = await prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT } });
   const withMgnrega = gps.filter((g) => (g.fundsUtilized ?? 0) > 0).length;
   const mgnregaScore = gps.length > 0 ? (withMgnrega / gps.length) * 100 : 40;
   sub.mgnregaUtilization = { value: withMgnrega, max: gps.length, score: Math.round(mgnregaScore), label: "GPs with MGNREGA Funds Utilized", ...noDataIf(gps.length === 0) };
@@ -610,22 +608,27 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
     name: districtId,
     slug: "",
   };
-  // Fetch district for district-type-aware weight adjustment
-  const districtCensus = await census2011(districtId);
-  const districtType = getDistrictType(districtCensus?.population, districtCensus?.density, districtCensus?.urbanPct);
+  const [census, dams, gps] = await Promise.all([
+    loadCensus2011(districtId),
+    prisma.damReading.findMany({ where: { districtId }, orderBy: { recordedAt: "desc" }, take: 5, select: { storagePct: true } }),
+    prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT }, select: { roadConnected: true, fundsUtilized: true } }),
+  ]);
+  const shared: Shared = { census, dams, gps };
+  // District-type-aware weights (getDistrictType)
+  const districtType = getDistrictType(census?.population, census?.density, census?.urbanPct);
   const weights = getAdjustedWeights(districtType);
 
   const [gov, edu, hlt, inf, wat, eco, saf, agr, dig, wel] = await Promise.all([
     calcGovernance(districtId),
-    calcEducation(districtId),
-    calcHealth(districtId),
-    calcInfrastructure(districtId),
-    calcWaterSanitation(districtId),
+    calcEducation(districtId, district.slug, shared),
+    calcHealth(shared),
+    calcInfrastructure(districtId, shared),
+    calcWaterSanitation(districtId, shared),
     calcEconomy(districtId, district.slug),
-    calcSafety(districtId),
-    calcAgriculture(districtId),
+    calcSafety(districtId, shared),
+    calcAgriculture(districtId, shared),
     calcDigitalAccess(districtId),
-    calcCitizenWelfare(districtId),
+    calcCitizenWelfare(districtId, shared),
   ]);
 
   const categories = {
