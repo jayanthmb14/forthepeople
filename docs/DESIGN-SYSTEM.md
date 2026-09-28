@@ -191,7 +191,7 @@ picture, how-it-works steps, a countdown) use **simple monochrome Lucide
 icons in the hue**, not emoji.
 
 **Categories get crafted SVG glyphs, never emoji** (v5.1).
-`src/components/graphics/` holds about 40 drawn glyphs on one 24 px grid, in
+`src/components/graphics/` holds about 56 drawn glyphs on one 24 px grid, in
 soft duotone that uses only the hue variables (no hex):
 
 - `CategoryGlyph`: a glyph bare, or on a pastel tile (`chip`), 16–48 px.
@@ -202,8 +202,11 @@ soft duotone that uses only the hue variables (no hex):
   `GlyphStack` (a few overlapping chips, e.g. an "All" tile), `GlyphScene`,
   `GlyphEmptyState` (an empty state with a small illustration).
 - Used today on News (topics, stories, the story sheet), Police (crime types,
-  helplines, the station sheet) and Infrastructure (kinds of project on
-  chips, cards, the sheet and both charts).
+  helplines, the station sheet), Infrastructure (kinds of project on
+  chips, cards, the sheet and both charts) and the India pages (every
+  module, topic and card; `src/components/india/glyphs.ts` picks the glyph
+  for a module slug, category or super-category, and `medalPick()` gives
+  gold, silver and bronze).
 - Adding one: draw it in `glyph-data.ts`, give it a hue in `GLYPH_HUE`
   (`category-map.ts`), map the words to it, extend
   `tests/category-glyph.test.ts`.
