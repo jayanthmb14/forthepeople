@@ -20,10 +20,10 @@ import { prisma } from "@/lib/db";
 import { collectDatasetDates } from "@/lib/dataset-dates";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import type { DatasetDatesPayload } from "@/lib/constants/dataset-collection";
+import { publicCacheControl, SLUG_RE } from "@/lib/read-api";
 
 const MODULE = "dataset-dates";
 const TTL_SECONDS = 600;
-const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 export async function GET(req: NextRequest) {
   const districtSlug = req.nextUrl.searchParams.get("district") ?? "";
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 
   const key = cacheKey(districtSlug, MODULE);
-  const headers = { "Cache-Control": `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}` };
+  const headers = { "Cache-Control": publicCacheControl(TTL_SECONDS) };
   const cached = await cacheGet<DatasetDatesPayload>(key);
   if (cached) return NextResponse.json(cached, { headers });
 

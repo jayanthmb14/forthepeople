@@ -209,6 +209,10 @@ old Docker files are archived in `docs/archive/docker/`.
    - `prices`
 
    None of them writes to the database; some cache their answer in Redis.
+   Slugs are checked (`src/lib/read-api.ts`) before any cache or database
+   work, and `[module]` answers 404 for a module it does not serve.
+   `/api/public/district/<slug>` is the one route meant for other sites
+   (CORS open); each item it sends names its own source.
 5. **Freshness** — every payload carries its `updatedAt`; the UI pill
    (`src/lib/utils/timeAgo.ts` and friends) derives "Xh ago / stale" from it.
    Nothing is labelled live by default.
@@ -348,10 +352,12 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
   routes may be CDN-cached briefly.
 - **Privacy**: Plausible (cookieless), DPDP policy at `/privacy`, supporter
   records anonymised at the API boundary (`src/lib/contributor-label.ts` and the
-  contributors API), name/message validators in `src/lib/validators/`. Names
-  that are really a phone number or e-mail are masked as "Supporter" by both
-  contributors APIs (`publicDisplayName()` in `src/lib/supporter-name.ts`) and
-  again on screen; new rows never take the payer's contact as a name.
+  contributors API), name/message validators in `src/lib/validators/`.
+  `/api/data/contributors` and `/api/payment/contributors` send every name
+  through `publicDisplayName()` (`src/lib/supporter-name.ts`): a name that is
+  really a phone number or an e-mail (older webhook rows can hold the payer's
+  contact as the name) goes out as "Supporter", and is masked again on screen;
+  new rows never take the payer's contact as a name.
 - **Secrets**: only names in git (`.env.example`); values in Vercel env and the
   owner's password manager. Push protection is on.
 

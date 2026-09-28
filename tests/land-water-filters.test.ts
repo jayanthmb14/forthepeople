@@ -6,7 +6,7 @@
 // Land & water "verified or hidden" filters (src/lib/data-filters.ts,
 // Sept 2026 audit): what the crops and alerts pages may show.
 import { describe, expect, it } from "vitest";
-import { OFFICIAL_ALERTS, SHOWN_CROP_PRICE, shownCropPrices } from "@/lib/data-filters";
+import { OFFICIAL_ALERTS, SHOWN_CROP_PRICE, bySeverity, shownCropPrices } from "@/lib/data-filters";
 import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
 
 describe("SHOWN_CROP_PRICE / shownCropPrices", () => {
@@ -41,5 +41,15 @@ describe("SHOWN_CROP_PRICE / shownCropPrices", () => {
 describe("OFFICIAL_ALERTS", () => {
   it("shows only warnings read from NDMA SACHET, never news stories", () => {
     expect(OFFICIAL_ALERTS).toEqual({ sourceUrl: { startsWith: SACHET_SOURCE_PREFIX } });
+  });
+});
+
+describe("bySeverity (alerts page and glance row)", () => {
+  it("puts the most serious warning first, whatever the case, unknown levels last", () => {
+    const rows = [
+      { id: "a", severity: "medium" }, { id: "b", severity: "CRITICAL" }, { id: "c", severity: null },
+      { id: "d", severity: "info" }, { id: "e", severity: "Severe" }, { id: "f", severity: "low" }, { id: "g", severity: "high" },
+    ];
+    expect([...rows].sort(bySeverity).map((r) => r.id)).toEqual(["b", "e", "g", "a", "f", "d", "c"]);
   });
 });

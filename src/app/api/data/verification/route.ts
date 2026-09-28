@@ -28,11 +28,11 @@ import { stateCacheKey, VERIFICATION_MODULE } from "@/lib/verification/cache-key
 import { readVerificationRows } from "@/lib/verification/store";
 import { summarise, uncheckedSummaries } from "@/lib/verification/summary";
 import type { DatasetVerificationSummary } from "@/lib/verification/types";
+import { publicCacheControl, SLUG_RE } from "@/lib/read-api";
 
 export const runtime = "nodejs";
 
 const TTL_SECONDS = 600;
-const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 interface Payload {
   district: string | null;
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   }
 
   const key = district ? cacheKey(district, VERIFICATION_MODULE) : stateCacheKey(state as string);
-  const headers = { "Cache-Control": `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}` };
+  const headers = { "Cache-Control": publicCacheControl(TTL_SECONDS) };
   const cached = await cacheGet<Payload>(key);
   if (cached && (!state || !district || cached.state === state)) return NextResponse.json(cached, { headers });
 

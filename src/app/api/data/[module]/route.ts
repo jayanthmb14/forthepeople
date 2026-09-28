@@ -13,11 +13,13 @@ import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey, getModuleTTL } from "@/lib/cache";
+import { isSlug, publicCacheHeaders } from "@/lib/read-api";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
 import {
   ACTIVE_TRANSPORT,
   BORN_HERE_PERSONALITY,
+  ELECTION_RESULTS_WITHHELD,
   JJM_DISTRICT_TOTAL,
   LOCAL_INFRA,
   NJDG_COURTSTAT,
@@ -25,15 +27,18 @@ import {
   NOT_FROM_NEWS_OPTIONAL,
   NOT_SEEDED_RAINFALL,
   OFFICIAL_ALERTS,
+  SHOW_CITIZEN_TIP_ROWS,
+  SHOW_TALUK_FIGURES,
+  SHOWN_BUDGET_ALLOCATION,
+  SHOWN_BUDGET_ENTRY,
   SHOWN_CRIME,
   SHOWN_TRAFFIC,
   VERIFIED_PANCHAYAT,
-  ELECTION_RESULTS_WITHHELD,
-  SHOW_CITIZEN_TIP_ROWS,
-
+  VERIFIED_SUGAR_SEASON,
+  bySeverity,
   shownCropPrices,
+  taluksForDisplay,
 } from "@/lib/data-filters";
-import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY, VERIFIED_SUGAR_SEASON } from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { NregaSnapshotData } from "@/scraper/lib/nrega";
@@ -43,8 +48,8 @@ import { dedupeStories } from "@/lib/news-dedupe";
 import { leaderOfficePhone } from "@/lib/government-checks";
 import { isRelatedNews } from "@/lib/related-news";
 import { getStateConfig } from "@/lib/constants/state-config";
-
-import { pickCensus2011, withCensusFigures } from "@/lib/census-2011";
+import { withCensusFigures } from "@/lib/census-2011";
+import { loadCensus2011 } from "@/lib/census-2011-db";
 import { schoolForDisplay } from "@/lib/school-rows";
 import { displayHeadline, newsForDisplay } from "@/lib/news-quality";
 import { districtAliases } from "@/lib/news-keywords";
@@ -52,6 +57,21 @@ import { districtAliases } from "@/lib/news-keywords";
 // Modules whose payload carries live text with stored translations
 // (src/lib/translation). Every other module ignores ?locale=.
 const LOCALIZED_MODULES = new Set(["news"]);
+
+/**
+ * Every module fetchModule answers (tests/data-modules.test.ts keeps this
+ * list and the switch in step). Anything else is 404 before any cache or
+ * database work.
+ */
+const MODULES = new Set([
+  "overview", "leaders", "budget", "revenue", "crops", "weather", "rainfall", "soil", "water",
+  "infrastructure", "schemes", "news", "police", "rti", "courts", "elections", "panchayats",
+  "schools", "jjm", "housing", "power", "transport", "factories", "local-industries", "services",
+  "tips", "alerts", "offices", "agri", "population", "taluks", "famous-personalities",
+]);
+
+/** `{ data, meta }`, plus `snapshot` for modules with a collector snapshot (schools, panchayats). */
+type ModuleResult = { data: unknown; meta: Record<string, unknown>; [extra: string]: unknown };
 
 // ── Params type (Next.js 15+) ───────────────────────────
 type RouteContext = { params: Promise<{ module: string }> };
@@ -61,41 +81,51 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const sp = req.nextUrl.searchParams;
   const districtSlug = sp.get("district") ?? "";
   const stateSlug = sp.get("state") ?? "";
-  const talukSlug = sp.get("taluk") ?? "";
-  // ?locale=kn → overlay STORED translations of live text (no API calls).
-  const locale = LOCALIZED_MODULES.has(module) ? contentLocale(sp.get("locale")) : null;
 
   if (!districtSlug) {
     return NextResponse.json({ error: "district param required" }, { status: 400 });
   }
+  if (!isSlug(districtSlug)) {
+    return NextResponse.json({ error: "invalid district" }, { status: 400 });
+  }
+  if (!MODULES.has(module)) {
+    return NextResponse.json({ error: "Unknown module" }, { status: 404 });
+  }
+  // ?locale=kn → overlay STORED translations of live text (no API calls).
+  const locale = LOCALIZED_MODULES.has(module) ? contentLocale(sp.get("locale")) : null;
+  const ttl = getModuleTTL(module);
+  const headers = publicCacheHeaders(ttl);
 
   // ── Cache check ──────────────────────────────────────
-  const baseKey = cacheKey(districtSlug, module + (talukSlug ? `:${talukSlug}` : ""));
+  // One entry per district and module (and language): no client sends
+  // ?taluk=, and a free-form value in the key let any request skip the cache.
+  const baseKey = cacheKey(districtSlug, module);
   const key = locale ? `${baseKey}@${locale}` : baseKey;
-  const cached = await cacheGet<{ data: unknown; meta: Record<string, unknown> }>(key);
+  const cached = await cacheGet<ModuleResult>(key);
   if (cached) {
-    const ttl = getModuleTTL(module);
-    const resp = NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } });
-    resp.headers.set("Cache-Control", `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`);
-    return resp;
+    return NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } }, { headers });
   }
 
   // ── Fetch ────────────────────────────────────────────
   try {
-    let result = locale ? await cacheGet<{ data: unknown; meta: Record<string, unknown> }>(baseKey) : null;
+    let result = locale ? await cacheGet<ModuleResult>(baseKey) : null;
     if (!result) {
-      result = await fetchModule(module, districtSlug, stateSlug, talukSlug);
-      await cacheSet(baseKey, result, getModuleTTL(module));
+      const fetched = await fetchModule(module, districtSlug, stateSlug);
+      if (!fetched) {
+        // Same answer as before for a district we do not hold, but never
+        // cached, so made-up slugs cannot fill Redis.
+        const meta = { module, district: districtSlug, updatedAt: new Date().toISOString(), fromCache: false, error: "District not found" };
+        return NextResponse.json({ data: null, meta }, { headers: { "Cache-Control": "no-store" } });
+      }
+      result = fetched;
+      await cacheSet(baseKey, result, ttl);
     }
     if (locale) {
       result = await localizeModule(module, result, locale);
       // Short TTL so translations written by the job show up within minutes.
-      await cacheSet(key, result, Math.min(getModuleTTL(module), 600));
+      await cacheSet(key, result, Math.min(ttl, 600));
     }
-    const ttl = getModuleTTL(module);
-    const resp = NextResponse.json(result);
-    resp.headers.set("Cache-Control", `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`);
-    return resp;
+    return NextResponse.json(result, { headers });
   } catch (err) {
     Sentry.captureException(err);
     console.error(`[API] ${module} error:`, err);
@@ -104,11 +134,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 }
 
 // ── Live-text overlay ────────────────────────────────────
-async function localizeModule(
-  module: string,
-  result: { data: unknown; meta: Record<string, unknown> },
-  locale: string,
-): Promise<{ data: unknown; meta: Record<string, unknown> }> {
+async function localizeModule(module: string, result: ModuleResult, locale: string): Promise<ModuleResult> {
   if (module === "news" && Array.isArray(result.data)) {
     const rows = await localizeRows("news", result.data as { id: string; title: string }[], locale);
     return { ...result, data: rows.map((r) => ({ ...r, headline: r.title })), meta: { ...result.meta, locale } };
@@ -116,24 +142,24 @@ async function localizeModule(
   return result;
 }
 
+/** ISO time of the first row's date field (rows come newest first), or null. */
+function newestDate<K extends string>(rows: ReadonlyArray<{ [k in K]: Date | null }>, field: K): string | null {
+  return rows[0]?.[field]?.toISOString() ?? null;
+}
+
 // ── Module resolver ──────────────────────────────────────
-async function fetchModule(
-  module: string,
-  districtSlug: string,
-  _stateSlug: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _talukSlug: string
-) {
+/** One module's payload for a district; null when we hold no such district. */
+async function fetchModule(module: string, districtSlug: string, stateSlug: string): Promise<ModuleResult | null> {
   const now = new Date().toISOString();
   const meta = { module, district: districtSlug, updatedAt: now, fromCache: false };
 
   // Resolve district id once
   const district = await prisma.district.findFirst({
     where: { slug: districtSlug },
-    select: { id: true, name: true, nameLocal: true },
+    select: { id: true, name: true, nameLocal: true, state: { select: { name: true } } },
   });
 
-  if (!district) return { data: null, meta: { ...meta, error: "District not found" } };
+  if (!district) return null;
 
   const did = district.id;
 
@@ -165,12 +191,7 @@ async function fetchModule(
       // People figures (population, literacy, sex ratio, density): the
       // checked Census 2011 row, not the hand-typed District columns
       // (Sept 2026 audit — src/lib/census-2011.ts).
-      const census = pickCensus2011(
-        await prisma.populationHistory.findMany({
-          where: { districtId: did, year: 2011 },
-          select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
-        }),
-      );
+      const census = await loadCensus2011(did);
       const shown = d ? withCensusFigures(d, census) : d;
       return { data: shown ? { ...shown, schoolsFrom: udise ? "udise" : "listed", figuresFrom: census ? "census-2011" : "district" } : shown, meta };
     }
@@ -262,7 +283,7 @@ async function fetchModule(
         orderBy: [{ date: "desc" }, { commodity: "asc" }],
         take: 100,
       });
-      return { data, meta: { ...meta, lastUpdated: data[0]?.date?.toISOString() ?? null } };
+      return { data, meta: { ...meta, lastUpdated: newestDate(data, "date") } };
     }
 
     // ══════════════════════════════════════════════════
@@ -274,7 +295,7 @@ async function fetchModule(
         orderBy: { recordedAt: "desc" },
         take: 48,
       });
-      return { data, meta: { ...meta, lastUpdated: data[0]?.recordedAt?.toISOString() ?? null } };
+      return { data, meta: { ...meta, lastUpdated: newestDate(data, "recordedAt") } };
     }
 
     // ══════════════════════════════════════════════════
@@ -324,7 +345,7 @@ async function fetchModule(
           take: 20,
         }),
       ]);
-      return { data: { dams, canals }, meta: { ...meta, lastUpdated: dams[0]?.recordedAt?.toISOString() ?? null } };
+      return { data: { dams, canals }, meta: { ...meta, lastUpdated: newestDate(dams, "recordedAt") } };
     }
 
     // ══════════════════════════════════════════════════
@@ -376,15 +397,12 @@ async function fetchModule(
     case "news": {
       // Filter out near-duplicates (duplicateOf != null) so the public list
       // shows one article per story. Admin retains full visibility.
-      const [rows, place] = await Promise.all([
-        prisma.newsItem.findMany({
-          where: { districtId: did, duplicateOf: null },
-          orderBy: { publishedAt: "desc" },
-          take: 60,
-        }),
-        prisma.district.findUnique({ where: { id: did }, select: { state: { select: { name: true } } } }),
-      ]);
-      const stateName = place?.state.name || getStateConfig(_stateSlug)?.name || "";
+      const rows = await prisma.newsItem.findMany({
+        where: { districtId: did, duplicateOf: null },
+        orderBy: { publishedAt: "desc" },
+        take: 60,
+      });
+      const stateName = district.state.name || getStateConfig(stateSlug)?.name || "";
       // Sept 2026 audit (src/lib/news-quality.ts): no promotions, no
       // keyword-only rows that may be about another place, clean headlines,
       // today's topic rules — for rows saved by older code too.
@@ -668,12 +686,8 @@ async function fetchModule(
         },
         orderBy: { createdAt: "desc" },
       });
-      // Most serious first. Sorting the text column put "medium" before
-      // "critical"; rank it explicitly, newest first within a level.
-      const RANK: Record<string, number> = { critical: 0, high: 1, severe: 1, warning: 2, medium: 2, moderate: 2, low: 3, info: 4 };
-      const data = [...rows].sort(
-        (a, b) => (RANK[(a.severity ?? "").toLowerCase()] ?? 5) - (RANK[(b.severity ?? "").toLowerCase()] ?? 5),
-      );
+      // Most serious first (bySeverity), newest first within a level.
+      const data = [...rows].sort(bySeverity);
       return { data, meta };
     }
 
@@ -707,27 +721,23 @@ async function fetchModule(
     case "population": {
       // Exclude non-district metro-area estimates (e.g. "Mumbai Metropolitan Region")
       // so Overview (district) and Population page (district census) stay consistent.
-      const [data, profile] = await Promise.all([
-        prisma.populationHistory.findMany({
-          where: {
-            districtId: did,
-            NOT: { source: { contains: "Metropolitan Region", mode: "insensitive" } },
-          },
-          orderBy: { year: "asc" },
-        }),
-        prisma.demographicProfile.findFirst({
-          where: { districtId: did },
-          orderBy: [{ year: "desc" }, { updatedAt: "desc" }],
-        }),
-      ]);
-      return { data, profile, meta };
+      // (The profile comes from /api/data/population/profile, reconciled with
+      // the Census row; this payload no longer carries an unreconciled copy.)
+      const data = await prisma.populationHistory.findMany({
+        where: {
+          districtId: did,
+          NOT: { source: { contains: "Metropolitan Region", mode: "insensitive" } },
+        },
+        orderBy: { year: "asc" },
+      });
+      return { data, meta };
     }
 
     // ══════════════════════════════════════════════════
     // 30. TALUKS
     // ══════════════════════════════════════════════════
     case "taluks": {
-      const data = await prisma.taluk.findMany({
+      const rows = await prisma.taluk.findMany({
         where: { districtId: did },
         include: {
           villages: { orderBy: { name: "asc" } },
@@ -735,7 +745,9 @@ async function fetchModule(
         },
         orderBy: { name: "asc" },
       });
-      return { data, meta };
+      // Seeded taluk people and areas are never sent (SHOW_TALUK_FIGURES).
+      const census = SHOW_TALUK_FIGURES ? await loadCensus2011(did) : null;
+      return { data: taluksForDisplay(rows, { census }), meta };
     }
 
     case "famous-personalities": {

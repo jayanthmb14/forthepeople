@@ -19,33 +19,31 @@
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import redis from "@/lib/redis";
+import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
+import { isSlug, publicCacheHeaders } from "@/lib/read-api";
 import { examsForDisplay, storedExamScope } from "@/lib/dedupe/exam-rules";
 import { isOfficialStaffingRow } from "@/lib/data-filters";
 import { withoutEligibilityTestPosts } from "@/lib/exams/eligibility-test";
 
+const TTL_SECONDS = 3600;
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const districtSlug = sp.get("district") ?? "";
-  const stateSlug = sp.get("state") ?? "";
 
   if (!districtSlug) {
     return NextResponse.json({ error: "district param required" }, { status: 400 });
   }
+  if (!isSlug(districtSlug)) {
+    return NextResponse.json({ error: "invalid district" }, { status: 400 });
+  }
 
   // ── Cache check (1 hour TTL) ─────────────────────────────
-  const cacheKey = `ftp:${districtSlug}:exams`;
-  try {
-    if (redis) {
-      const cached = await redis.get<{ data: unknown; meta: Record<string, unknown> }>(cacheKey);
-      if (cached) {
-        const resp = NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } });
-        resp.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
-        return resp;
-      }
-    }
-  } catch {
-    // Non-fatal: proceed without cache
+  const key = cacheKey(districtSlug, "exams");
+  const headers = publicCacheHeaders(TTL_SECONDS);
+  const cached = await cacheGet<{ data: unknown; meta: Record<string, unknown> }>(key);
+  if (cached) {
+    return NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } }, { headers });
   }
 
   // ── Fetch ────────────────────────────────────────────────
@@ -120,18 +118,8 @@ export async function GET(req: NextRequest) {
       },
     };
 
-    // Cache for 1 hour
-    try {
-      if (redis) {
-        await redis.set(cacheKey, { data: result, meta }, { ex: 3600 });
-      }
-    } catch {
-      // Non-fatal
-    }
-
-    const resp = NextResponse.json({ data: result, meta });
-    resp.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
-    return resp;
+    await cacheSet(key, { data: result, meta }, TTL_SECONDS);
+    return NextResponse.json({ data: result, meta }, { headers });
   } catch (err) {
     console.error("[API] exams error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

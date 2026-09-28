@@ -26,6 +26,7 @@ import { leaderOfficePhone } from "@/lib/government-checks";
 import { contentLocale } from "@/lib/translation/content";
 import { localizeRows } from "@/lib/translation/overlay";
 import { shownRoleLocal } from "@/lib/local-text";
+import { publicCacheControl } from "@/lib/read-api";
 
 const WINDOW_DAYS = 180;
 const LIMIT = 5;
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
   const cached = await cacheGet<{ data: LeaderNewsPayload | null; meta: Record<string, unknown> }>(key);
   if (cached) {
     const resp = NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } });
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL_SECONDS));
     return resp;
   }
 
@@ -141,7 +142,7 @@ export async function GET(req: NextRequest) {
     const result = { data, meta };
     await cacheSet(key, result, TTL_SECONDS);
     const resp = NextResponse.json(result);
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL_SECONDS}, stale-while-revalidate=${TTL_SECONDS * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL_SECONDS));
     return resp;
   } catch (err) {
     console.error("[api/data/leader-news] query failed:", err instanceof Error ? err.message : err);

@@ -18,7 +18,8 @@ import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
  * wrong far too often, so they are never shown or counted. Curated rows name
  * their source ("NCRB", "BESCOM", "manual-research").
  */
-export const NOT_FROM_NEWS = { NOT: { source: { startsWith: "http" } } };
+export const NEWS_SOURCE_PREFIX = "http";
+export const NOT_FROM_NEWS = { NOT: { source: { startsWith: NEWS_SOURCE_PREFIX } } };
 
 /** Same, for tables where `source` is optional (Leader). */
 export const NOT_FROM_NEWS_OPTIONAL = { OR: [{ source: null }, NOT_FROM_NEWS] };
@@ -28,7 +29,8 @@ export const NOT_FROM_NEWS_OPTIONAL = { OR: [{ source: null }, NOT_FROM_NEWS] };
  * were copied onto many districts by the old sync (one Delhi project was on
  * all ten), so district pages list DISTRICT and CITY projects only.
  */
-export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: ["DISTRICT", "CITY"] } }] };
+export const LOCAL_INFRA_SCOPES = ["DISTRICT", "CITY"];
+export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: LOCAL_INFRA_SCOPES } }] };
 
 /**
  * Monthly rainfall rows that the seed scripts generated with Math.random()
@@ -74,7 +76,7 @@ export const JJM_DISTRICT_TOTAL = { source: JJM_SOURCE };
  * India Report (estimated)" — Hyderabad), not published NCRB counts.
  * Never shown or counted as figures.
  */
-export const NOT_ESTIMATED_CRIME = { NOT: { source: { contains: "estimat", mode: "insensitive" as const } } };
+const NOT_ESTIMATED_CRIME = { NOT: { source: { contains: "estimat", mode: "insensitive" as const } } };
 
 /**
  * CrimeStat rows a page may show: not written from a news article and not
@@ -104,6 +106,46 @@ export const SHOWN_TRAFFIC = {
  */
 export const VERIFIED_PANCHAYAT_SOURCES: string[] = [];
 export const VERIFIED_PANCHAYAT = { source: { in: VERIFIED_PANCHAYAT_SOURCES } };
+
+// ── Places: taluks (Sept 2026 audit) ───────────────────────────────────
+
+/**
+ * Taluk.population and Taluk.area are sent only once a checked source
+ * fills them. Taluk has no source column and the figures were typed into
+ * the seeds: Chennai's 7 zones add up to 11.7 million people and 852 km²
+ * (Census 2011: 4.6 million, 175 km²), Bengaluru Urban's to a round
+ * 12,765,000 (Census: 9,621,551), Mysuru's to 8,692 km² (district: 6,307),
+ * and New Delhi lists its whole-district subdivision beside its parts.
+ * While this is false the taluks API sends null for both, and the map's
+ * "How the land is shared" ring and the taluk tiles hide themselves.
+ */
+export const SHOW_TALUK_FIGURES = false;
+
+/** How far the taluks' total may exceed the district's Census figure before they are all hidden. */
+const TALUK_SUM_TOLERANCE = 0.05;
+
+/**
+ * Taluk rows as the API may send them: population and area set to null
+ * while SHOW_TALUK_FIGURES is off, and also when (switched on) the
+ * taluks' people or area add up to more than the district's Census 2011
+ * row allows. Every other field is unchanged.
+ */
+export function taluksForDisplay<T extends { population: number | null; area: number | null }>(
+  rows: T[],
+  opts: { show?: boolean; census?: { population: number; density: number | null } | null } = {},
+): T[] {
+  const hidden = () => rows.map((r) => ({ ...r, population: null, area: null }));
+  if (!(opts.show ?? SHOW_TALUK_FIGURES)) return hidden();
+  const census = opts.census;
+  if (census) {
+    const people = rows.reduce((sum, r) => sum + (r.population ?? 0), 0);
+    const area = rows.reduce((sum, r) => sum + (r.area ?? 0), 0);
+    const censusArea = census.density ? census.population / census.density : null;
+    if (people > census.population * (1 + TALUK_SUM_TOLERANCE)) return hidden();
+    if (censusArea && area > censusArea * (1 + TALUK_SUM_TOLERANCE)) return hidden();
+  }
+  return rows;
+}
 
 // ── Government area (Sept 2026 audit) ───────────────────────────────────
 
@@ -138,8 +180,10 @@ export const SHOW_CITIZEN_TIP_ROWS = false;
  * writes checked rows.
  */
 export const COLLECTED_BUDGET_SOURCES: string[] = ["Karnataka Finance Dept / data.gov.in"];
+/** Label prefix of the data.gov.in budget collector's rows ("data.gov.in (<resource>)"). */
+export const DATA_GOV_BUDGET_PREFIX = "data.gov.in (";
 export const SHOWN_BUDGET_ENTRY = {
-  OR: [{ source: { in: COLLECTED_BUDGET_SOURCES } }, { source: { startsWith: "data.gov.in (" } }],
+  OR: [{ source: { in: COLLECTED_BUDGET_SOURCES } }, { source: { startsWith: DATA_GOV_BUDGET_PREFIX } }],
 };
 
 /**
@@ -175,7 +219,10 @@ export const NOT_STUB_TENDER = { OR: [{ rawHtmlSnapshot: null }, { NOT: { rawHtm
 // Crops, alerts. Each filter says which audit finding it answers.
 
 /**
- * CropPrice rows a page may show or count:
+ * The base rule for CropPrice rows. For one district's prices always use
+ * shownCropPrices(districtSlug) below — it adds the in-district mandi
+ * rule; this constant alone would show Ramanagara prices as Bengaluru
+ * Urban's. CropPrice rows a page may show or count:
  *  - not hand-typed seed rows. prisma/seed.ts wrote 8 invented Mandya
  *    prices labelled "AGMARKNET / data.gov.in" (Areca "₹350/kg",
  *    Sugarcane "₹3/kg"), and the Bengaluru / Mysuru seed scripts did the
@@ -200,7 +247,8 @@ export const SHOWN_CROP_PRICE = {
 };
 
 /**
- * SHOWN_CROP_PRICE, plus only the mandis inside the district where the
+ * THE per-district crop-price rule (pages, report card, insights, public
+ * API): SHOWN_CROP_PRICE, plus only the mandis inside the district where the
  * AGMARKNET district is bigger than ours (Bengaluru Urban: only Bangalore
  * APMC; New Delhi: none — agmarknetMarketsInDistrict in
  * src/scraper/lib/district-aliases.ts). An empty OR matches no row.
@@ -222,6 +270,21 @@ export function shownCropPrices(districtSlug: string) {
  * are never shown or counted as warnings.
  */
 export const OFFICIAL_ALERTS = { sourceUrl: { startsWith: SACHET_SOURCE_PREFIX } };
+
+/**
+ * How serious a warning is, most serious first. Sorting the text column
+ * put "medium" before "critical", so the alerts page and the glance row
+ * rank it with this one table (unknown levels last).
+ */
+export const ALERT_SEVERITY_RANK: Readonly<Record<string, number>> = {
+  critical: 0, high: 1, severe: 1, warning: 2, medium: 2, moderate: 2, low: 3, info: 4,
+};
+
+/** Sort comparator: most serious warning first (a stable sort keeps the query's order within a level). */
+export function bySeverity(a: { severity?: string | null }, b: { severity?: string | null }): number {
+  const rank = (s: string | null | undefined) => ALERT_SEVERITY_RANK[(s ?? "").toLowerCase()] ?? 5;
+  return rank(a.severity) - rank(b.severity);
+}
 
 
 // ── People & services (Sept 2026 audit) ─────────────────────
@@ -257,6 +320,14 @@ function isGovernmentUrl(raw: string | null | undefined): boolean {
 }
 
 /**
+ * isGovernmentUrl as a case-insensitive regular expression, for raw SQL
+ * (`"sourceUrl" ~* GOVERNMENT_URL_PATTERN` in /api/data/freshness): the host
+ * ends in gov.in, nic.in or .gov, with or without the http(s):// scheme.
+ * tests/people-services-filters.test.ts keeps the two in step.
+ */
+export const GOVERNMENT_URL_PATTERN = "^(https?://)?([a-z0-9-]+\\.)*(gov\\.in|nic\\.in|gov)([/:?#]|$)";
+
+/**
  * DepartmentStaffing (sanctioned vs working posts) is shown only when its
  * source is a government site. The news pipeline turned numbers in
  * national stories into "district" rows (Kolkata: 2,73,000 CAPF posts, 0
@@ -265,46 +336,3 @@ function isGovernmentUrl(raw: string | null | undefined): boolean {
 export function isOfficialStaffingRow(row: { sourceUrl: string | null }): boolean {
   return isGovernmentUrl(row.sourceUrl);
 }
-
-// ── News area: warnings, budgets (Sept 2026 audit) ─────────────────────
-//
-// Merge note (v54/merge-rest): v54/fix-news and v54/fix-land-water both
-// stopped news stories counting as warnings, and v54/fix-news and
-// v54/fix-money both stopped seeded budget rows counting as a district
-// budget. One rule each is used by the queries:
-//   • warnings — OFFICIAL_ALERTS above (NDMA SACHET rows only). The news
-//     branch's OFFICIAL_ALERT ({ autoGenerated: false, sourceUrl not null })
-//     was looser (it also passed a hand-typed row with any link), so it was
-//     folded into OFFICIAL_ALERTS. The SACHET collector writes
-//     autoGenerated: false, so every row the news rule meant to keep is kept.
-//   • budgets — SHOWN_BUDGET_ENTRY above (collector labels only). It hides
-//     every label in SEEDED_BUDGET_SOURCES below (tests/budget-shown.test.ts
-//     checks that), so NOT_SEEDED_BUDGET is kept as the audit's record of
-//     the seed labels, not applied separately.
-
-/**
- * BudgetEntry source labels written by hand-made seed scripts
- * (prisma/seed-bengaluru-data.ts, seed-hyderabad-data.ts,
- * seed-lucknow-data.ts, seed-mumbai-data.ts, seed-delhi-data.ts), not read
- * from a budget document. The Sept 2026 audit found their totals were state
- * or agency budgets credited to one district (New Delhi's twelve Delhi
- * Government heads sum to the same ₹65,200 crore as Mumbai's; Lucknow's
- * are UP state heads), and their "spent" was a fixed share of every line
- * (Bengaluru Urban 44 % / 70 %, Hyderabad "estimated from state avg
- * utilisation"). They are never shown or counted; matched by the exact
- * labels, so a collector's rows are unaffected. (BMC's own 2025-26 budget
- * estimate is ₹74,427.41 crore — not what the Mumbai rows add up to.)
- */
-export const SEEDED_BUDGET_SOURCES: string[] = [
-  "BBMP Budget 2024-25 / BDA / BMRCL / Karnataka State Budget / finance.karnataka.gov.in",
-  "BBMP Budget 2025-26 / BMRCL / Karnataka State Budget / finance.karnataka.gov.in",
-  "finance.telangana.gov.in (estimated from state avg utilisation)",
-  "ghmc.gov.in (estimated from state avg utilisation)",
-  "UP Finance Department",
-  "UP Finance Department (budget.up.nic.in)",
-  "BMC Budget 2025-26",
-  "MMRDA / State Allocation",
-  "Delhi Budget",
-  "Delhi Budget / delhiplanning.delhi.gov.in",
-];
-export const NOT_SEEDED_BUDGET = { OR: [{ source: null }, { source: { notIn: SEEDED_BUDGET_SOURCES } }] };

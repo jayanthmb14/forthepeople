@@ -34,9 +34,8 @@ export async function GET(
       stateSpecific: stateSpecific.map((r) => ({ slug: r.slug, title: r.title, bodyMd: r.bodyMd })),
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err) },
-      { status: 500 },
-    );
+    // The detail goes to the log only; the public answer never carries database text.
+    console.error("[api/tenders/disclaimer]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

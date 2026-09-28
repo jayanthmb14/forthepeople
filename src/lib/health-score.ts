@@ -10,12 +10,22 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
-import { SHOWN_BUDGET_ALLOCATION } from "@/lib/data-filters";
+import {
+  JJM_DISTRICT_TOTAL,
+  LOCAL_INFRA,
+  NJDG_COURTSTAT,
+  NOT_FROM_NEWS,
+  NOT_FROM_NEWS_OPTIONAL,
+  SHOWN_BUDGET_ALLOCATION,
+  SHOWN_CRIME,
+  VERIFIED_PANCHAYAT,
+  shownCropPrices,
+} from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { UdiseSnapshotData } from "@/scraper/lib/udise";
-import { pickCensus2011 } from "@/lib/census-2011";
+import type { CensusHistoryRow } from "@/lib/census-2011";
+import { loadCensus2011 } from "@/lib/census-2011-db";
 import { projectStage } from "@/lib/civic/project-facts";
 
 const WEIGHTS = {
@@ -33,11 +43,53 @@ const WEIGHTS = {
 
 type WeightMap = Record<keyof typeof WEIGHTS, number>;
 
-function getDistrictType(population?: number | null, density?: number | null): "metro" | "urban" | "semi-urban" | "rural" {
-  if (population && population > 5_000_000) return "metro";
+/** Census urban share (%) below which a district is weighted as rural. */
+const RURAL_BELOW_URBAN_PCT = 40;
+/** Census urban share (%) from which a district is weighted as a metro (all-city districts). */
+const METRO_FROM_URBAN_PCT = 90;
+/** Population (Census 2011) from which a district is weighted as a metro. */
+const METRO_FROM_POPULATION = 5_000_000;
+
+/**
+ * Which weights a district gets (getAdjustedWeights), from its Census 2011
+ * row. The urban share decides first — Mandya has 1.8 million people but
+ * is 83 % rural, so population alone called it "urban" (Sept 2026 audit):
+ *   urban share < 40 %                        → rural
+ *   urban share ≥ 90 % or population > 5 M    → metro
+ *   otherwise                                 → urban
+ * Without an urban share, the old rule: > 5 M metro, > 1 M urban,
+ * density > 500 per km² semi-urban, else rural.
+ */
+export function getDistrictType(
+  population?: number | null,
+  density?: number | null,
+  urbanPct?: number | null,
+): "metro" | "urban" | "semi-urban" | "rural" {
+  if (typeof urbanPct === "number" && Number.isFinite(urbanPct)) {
+    if (urbanPct < RURAL_BELOW_URBAN_PCT) return "rural";
+    if (urbanPct >= METRO_FROM_URBAN_PCT || (population ?? 0) > METRO_FROM_POPULATION) return "metro";
+    return "urban";
+  }
+  if (population && population > METRO_FROM_POPULATION) return "metro";
   if (population && population > 1_000_000) return "urban";
   if (density && density > 500) return "semi-urban";
   return "rural";
+}
+
+/**
+ * The category weights a stored report card was computed with
+ * (DistrictHealthScore.weights, which depend on the district type), with
+ * the base weight for any missing entry. The health-score API used to
+ * send the base weights for every district.
+ */
+export function storedWeights(stored: unknown): WeightMap {
+  const s = stored && typeof stored === "object" ? (stored as Record<string, unknown>) : {};
+  const out = { ...WEIGHTS } as WeightMap;
+  for (const key of Object.keys(WEIGHTS) as Array<keyof WeightMap>) {
+    const v = s[key];
+    if (typeof v === "number" && Number.isFinite(v)) out[key] = v;
+  }
+  return out;
 }
 
 // Adjust category weights slightly based on district type (always sums to 100)
@@ -80,16 +132,15 @@ function noDataIf(missing: boolean): { noData?: true } {
 }
 
 /**
- * The district's checked Census 2011 row (population, literacy, density).
- * Sept 2026 audit: District.population / literacy were typed constants
- * (Mandya's literacy was Mysuru's), so the report card reads the Census.
+ * What several categories share, read once per district: the checked
+ * Census 2011 row (population, literacy, density — Sept 2026 audit:
+ * District.population / literacy were typed constants, Mandya's literacy
+ * was Mysuru's), the newest dam readings and the checked panchayat rows.
  */
-async function census2011(districtId: string) {
-  const rows = await prisma.populationHistory.findMany({
-    where: { districtId, year: 2011 },
-    select: { year: true, population: true, sexRatio: true, literacy: true, urbanPct: true, density: true, source: true },
-  });
-  return pickCensus2011(rows);
+interface Shared {
+  census: CensusHistoryRow | null;
+  dams: Array<{ storagePct: number }>;
+  gps: Array<{ roadConnected: boolean | null; fundsUtilized: number | null }>;
 }
 
 /**
@@ -110,6 +161,92 @@ export function udiseSchoolInfraPct(udise: UdiseSnapshotData | null): number | n
     schools += p.schools;
   }
   return schools > 0 ? weighted / schools : null;
+}
+
+/** Neutral score for a measure with no data behind it (flagged noData). */
+const NO_DATA_SCORE = 50;
+
+/**
+ * Active health alerts. No official source publishes district health
+ * advisories: the only LocalAlert writer (NDMA SACHET) never writes one,
+ * and the old "health_advisory" rows came from news stories. Counting
+ * them scored "0 alerts = 100" for every district, so this is always a
+ * neutral placeholder until a collector exists (Sept 2026 audit).
+ */
+export function healthAlertsMetric(): SubMetric {
+  return { value: 0, max: 0, score: NO_DATA_SCORE, label: "Active Health Alerts (lower is better)", noData: true };
+}
+
+/**
+ * Power outages in the last 30 days (lower is better). A placeholder while
+ * the district has no outage row from a checked source at all — an empty
+ * table is "not collected", not "no outages".
+ */
+export function powerReliabilityMetric(everRecorded: number, last30Days: number): SubMetric {
+  const label = "Power Outages (last 30 days, lower is better)";
+  if (everRecorded === 0) return { value: 0, max: 0, score: NO_DATA_SCORE, label, noData: true };
+  return { value: last30Days, max: 0, score: Math.max(0, 100 - last30Days * 5), label };
+}
+
+/** Soil health records on file (20 or more scores 100); none = a placeholder. */
+export function soilHealthMetric(records: number): SubMetric {
+  const label = "Soil Health Records";
+  if (records === 0) return { value: 0, max: 20, score: NO_DATA_SCORE, label, noData: true };
+  return { value: records, max: 20, score: Math.round(Math.min(100, (records / 20) * 100)), label };
+}
+
+/** Agri advisories issued in the last 14 days (5 or more scores 100); none = a placeholder. */
+export function agriAdvisoriesMetric(active: number): SubMetric {
+  const label = "Active Agri Advisories";
+  if (active === 0) return { value: 0, max: 5, score: NO_DATA_SCORE, label, noData: true };
+  return { value: active, max: 5, score: Math.min(100, active * 20), label };
+}
+
+/** One mandi price, as the crops page may show it (shownCropPrices). */
+export interface PricePoint {
+  commodity: string;
+  variety: string | null;
+  market: string;
+  date: Date;
+  modalPrice: number;
+}
+
+/** Fewest market days a crop needs in one mandi before its prices say anything about stability. */
+const MIN_PRICE_DAYS = 3;
+
+/**
+ * Crop price stability: for each crop (and variety) in each mandi with at
+ * least three market days, how much its modal price moved (coefficient of
+ * variation, %); the average across them is the value, lower is better.
+ * The old measure took the spread of 30 rows of DIFFERENT crops (onion
+ * against wheat against areca), which says nothing about stability and
+ * scored 0 for Pune (Sept 2026 audit). Too few dated prices → placeholder.
+ */
+export function cropPriceStability(prices: readonly PricePoint[]): SubMetric {
+  const series = new Map<string, { days: Set<number>; values: number[] }>();
+  for (const p of prices) {
+    if (!(p.modalPrice > 0)) continue;
+    const key = `${p.commodity}|${p.variety ?? ""}|${p.market}`;
+    const s = series.get(key) ?? { days: new Set<number>(), values: [] };
+    s.days.add(new Date(p.date).setUTCHours(0, 0, 0, 0));
+    s.values.push(p.modalPrice);
+    series.set(key, s);
+  }
+  const cvs: number[] = [];
+  for (const { days, values } of series.values()) {
+    if (days.size < MIN_PRICE_DAYS) continue;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const sd = Math.sqrt(values.reduce((acc, v) => acc + (v - mean) ** 2, 0) / values.length);
+    cvs.push((sd / mean) * 100);
+  }
+  if (cvs.length === 0) return { value: 0, max: 0, score: 60, label: "Crop Price Stability", noData: true };
+  const cv = cvs.reduce((a, b) => a + b, 0) / cvs.length;
+  return { value: Math.round(cv), max: 0, score: Math.round(Math.max(0, 100 - cv * 3)), label: "Crop Price Stability (CV % — lower is better)" };
+}
+
+/** How many measures rest on real data (the rest are placeholders). */
+export function dataCoverage(subs: readonly SubMetric[]): { measured: number; total: number } {
+  return { measured: subs.filter((m) => !m.noData).length, total: subs.length };
 }
 
 function avg(scores: number[]): number {
@@ -168,11 +305,9 @@ async function calcGovernance(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 2. Education ─────────────────────────────────────────────
-async function calcEducation(districtId: string): Promise<CategoryResult> {
+async function calcEducation(districtId: string, districtSlug: string, { census }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  const district = await prisma.district.findFirst({ where: { id: districtId } });
-  const census = await census2011(districtId);
   const literacy = census?.literacy ?? null;
   sub.literacy = literacy !== null
     ? { value: Math.round(literacy), max: 95, score: Math.round(Math.min(100, (literacy / 95) * 100)), label: "Literacy Rate (%, Census 2011)" }
@@ -194,7 +329,7 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
   // (collector) only. The schools listed by name were hand-seeded with
   // estimated enrolment and mostly empty facilities (Sept 2026 audit), so
   // they are never used as a stand-in.
-  const udise = district?.slug ? await readDistrictSnapshot<UdiseSnapshotData>("udise", district.slug) : null;
+  const udise = districtSlug ? await readDistrictSnapshot<UdiseSnapshotData>("udise", districtSlug) : null;
   const totalStudents = udise ? udise.data.totals.students : 0;
   const totalTeachers = udise ? udise.data.totals.teachers : 0;
   if (totalTeachers > 0) {
@@ -214,7 +349,7 @@ async function calcEducation(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 3. Health ────────────────────────────────────────────────
-async function calcHealth(districtId: string): Promise<CategoryResult> {
+async function calcHealth({ census }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   // Health centres per person: not measured. The old measure counted the
@@ -224,15 +359,11 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
   // is a neutral placeholder flagged noData.
   sub.healthFacilities = { value: 0, max: 0, score: 50, label: "Health centres (not collected yet)", noData: true };
 
-  // Check for health alerts (more alerts = worse health situation)
-  const healthAlerts = await prisma.localAlert.count({
-    where: { districtId, type: "health_advisory", active: true },
-  });
-  const alertScore = Math.max(0, 100 - healthAlerts * 10);
-  sub.activeHealthAlerts = { value: healthAlerts, max: 0, score: alertScore, label: "Active Health Alerts (lower is better)" };
+  // Health alerts: not collected (healthAlertsMetric).
+  sub.activeHealthAlerts = healthAlertsMetric();
 
   // Literacy as a proxy for health literacy (Census 2011)
-  const literacy = (await census2011(districtId))?.literacy ?? null;
+  const literacy = census?.literacy ?? null;
   sub.healthLiteracyProxy = literacy !== null
     ? { value: Math.round(literacy), max: 90, score: Math.round(Math.min(100, (literacy / 90) * 100)), label: "Literacy (Health Literacy Proxy, %, Census 2011)" }
     : { value: 0, max: 90, score: 50, label: "Literacy (Health Literacy Proxy, %)", noData: true };
@@ -241,7 +372,7 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 4. Infrastructure ─────────────────────────────────────────
-async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
+async function calcInfrastructure(districtId: string, { gps }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   const projects = await prisma.infraProject.findMany({ where: { districtId, ...LOCAL_INFRA } });
@@ -259,7 +390,6 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
   }
 
   // Road connectivity via gram panchayats (checked rows only; none yet)
-  const gps = await prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT } });
   if (gps.length > 0) {
     const connected = gps.filter((g) => g.roadConnected).length;
     const roadPct = (connected / gps.length) * 100;
@@ -268,26 +398,23 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
     sub.roadConnectivity = { value: 0, max: 100, score: 50, label: "Village Road Connectivity (%)", noData: true };
   }
 
-  // Power outage frequency (lower is better)
-  const outages = await prisma.powerOutage.count({
-    where: { districtId, ...NOT_FROM_NEWS, createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
-  });
-  const outageScore = Math.max(0, 100 - outages * 5);
-  sub.powerReliability = { value: outages, max: 0, score: outageScore, label: "Power Outages (last 30 days, lower is better)" };
+  // Power outage frequency (lower is better), from checked rows only.
+  const [outagesEver, outages] = await Promise.all([
+    prisma.powerOutage.count({ where: { districtId, ...NOT_FROM_NEWS } }),
+    prisma.powerOutage.count({
+      where: { districtId, ...NOT_FROM_NEWS, createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
+    }),
+  ]);
+  sub.powerReliability = powerReliabilityMetric(outagesEver, outages);
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
 
 // ── 5. Water & Sanitation ────────────────────────────────────
-async function calcWaterSanitation(districtId: string): Promise<CategoryResult> {
+async function calcWaterSanitation(districtId: string, { dams: latestDams }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Dam storage
-  const latestDams = await prisma.damReading.findMany({
-    where: { districtId },
-    orderBy: { recordedAt: "desc" },
-    take: 5,
-  });
+  // Dam storage (the five newest readings)
   if (latestDams.length > 0) {
     const avgStorage = latestDams.reduce((s, d) => s + d.storagePct, 0) / latestDams.length;
     // 70-100% = excellent, 40-70% = moderate, <40% = poor
@@ -310,25 +437,18 @@ async function calcWaterSanitation(districtId: string): Promise<CategoryResult> 
 }
 
 // ── 6. Economy ───────────────────────────────────────────────
-async function calcEconomy(districtId: string): Promise<CategoryResult> {
+async function calcEconomy(districtId: string, districtSlug: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Crop price stability (std dev of recent prices — lower = better)
+  // Crop price stability over the last 30 days: only the prices the crops
+  // page shows (shownCropPrices — no seed rows, only mandis in the district).
   const prices = await prisma.cropPrice.findMany({
-    where: { districtId, date: { gte: new Date(Date.now() - 30 * 86400000) } },
+    where: { districtId, date: { gte: new Date(Date.now() - 30 * 86400000) }, ...shownCropPrices(districtSlug) },
+    select: { commodity: true, variety: true, market: true, date: true, modalPrice: true },
     orderBy: { date: "desc" },
-    take: 30,
+    take: 3000,
   });
-  if (prices.length > 5) {
-    const modals = prices.map((p) => p.modalPrice);
-    const mean = modals.reduce((a, b) => a + b, 0) / modals.length;
-    const stdDev = Math.sqrt(modals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / modals.length);
-    const cv = mean > 0 ? (stdDev / mean) * 100 : 20; // coefficient of variation
-    const stabilityScore = Math.max(0, 100 - cv * 3);
-    sub.cropPriceStability = { value: Math.round(cv), max: 0, score: Math.round(stabilityScore), label: "Crop Price Stability (CV % — lower is better)" };
-  } else {
-    sub.cropPriceStability = { value: 0, max: 0, score: 60, label: "Crop Price Stability", noData: true };
-  }
+  sub.cropPriceStability = cropPriceStability(prices);
 
   // Revenue collection
   const revenue = await prisma.revenueCollection.findMany({
@@ -355,11 +475,10 @@ async function calcEconomy(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 7. Safety ────────────────────────────────────────────────
-async function calcSafety(districtId: string): Promise<CategoryResult> {
+async function calcSafety(districtId: string, { census }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   // Crime rate per 100k population (Census 2011 population)
-  const census = await census2011(districtId);
   const pop = census?.population ?? 1000000;
   const crimes = await prisma.crimeStat.findMany({
     where: { districtId, ...SHOWN_CRIME, year: new Date().getFullYear() - 1 },
@@ -401,26 +520,23 @@ async function calcSafety(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 8. Agriculture ───────────────────────────────────────────
-async function calcAgriculture(districtId: string): Promise<CategoryResult> {
+async function calcAgriculture(districtId: string, { dams }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Irrigation coverage (from JJM + dams)
-  const dams = await prisma.damReading.findMany({ where: { districtId }, orderBy: { recordedAt: "desc" }, take: 5 });
+  // Irrigation coverage (the five newest dam readings)
   const avgStorage = dams.length > 0 ? dams.reduce((s, d) => s + d.storagePct, 0) / dams.length : 50;
   const irrigationScore = Math.min(100, (avgStorage / 80) * 80);
   sub.irrigationProxy = { value: Math.round(avgStorage), max: 80, score: Math.round(irrigationScore), label: "Reservoir Storage (Irrigation Proxy, %)", ...noDataIf(dams.length === 0) };
 
-  // Soil health records
-  const soilRecords = await prisma.soilHealth.count({ where: { districtId } });
-  const soilScore = Math.min(100, (soilRecords / 20) * 100);
-  sub.soilHealthData = { value: soilRecords, max: 20, score: Math.round(soilScore), label: "Soil Health Records" };
-
-  // Agri advisories (active = good)
-  const advisories = await prisma.agriAdvisory.count({
-    where: { districtId, active: true, weekOf: { gte: new Date(Date.now() - 14 * 86400000) } },
-  });
-  const advisoryScore = Math.min(100, advisories * 20);
-  sub.agriAdvisories = { value: advisories, max: 5, score: advisoryScore, label: "Active Agri Advisories" };
+  // Soil health records and recent agri advisories (none on file = placeholder).
+  const [soilRecords, advisories] = await Promise.all([
+    prisma.soilHealth.count({ where: { districtId } }),
+    prisma.agriAdvisory.count({
+      where: { districtId, active: true, weekOf: { gte: new Date(Date.now() - 14 * 86400000) } },
+    }),
+  ]);
+  sub.soilHealthData = soilHealthMetric(soilRecords);
+  sub.agriAdvisories = agriAdvisoriesMetric(advisories);
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -447,7 +563,7 @@ async function calcDigitalAccess(districtId: string): Promise<CategoryResult> {
 }
 
 // ── 10. Citizen Welfare ──────────────────────────────────────
-async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
+async function calcCitizenWelfare(districtId: string, { gps }: Shared): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
   // Scheme coverage
@@ -468,7 +584,6 @@ async function calcCitizenWelfare(districtId: string): Promise<CategoryResult> {
   }
 
   // MGNREGA utilization via gram panchayats (checked rows only; none yet)
-  const gps = await prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT } });
   const withMgnrega = gps.filter((g) => (g.fundsUtilized ?? 0) > 0).length;
   const mgnregaScore = gps.length > 0 ? (withMgnrega / gps.length) * 100 : 40;
   sub.mgnregaUtilization = { value: withMgnrega, max: gps.length, score: Math.round(mgnregaScore), label: "GPs with MGNREGA Funds Utilized", ...noDataIf(gps.length === 0) };
@@ -505,22 +620,31 @@ export interface HealthScoreSummary {
 }
 
 export async function calculateDistrictHealthScore(districtId: string): Promise<HealthScoreSummary> {
-  // Fetch district for district-type-aware weight adjustment
-  const districtCensus = await census2011(districtId);
-  const districtType = getDistrictType(districtCensus?.population, districtCensus?.density);
+  const district = (await prisma.district.findUnique({ where: { id: districtId }, select: { name: true, slug: true } })) ?? {
+    name: districtId,
+    slug: "",
+  };
+  const [census, dams, gps] = await Promise.all([
+    loadCensus2011(districtId),
+    prisma.damReading.findMany({ where: { districtId }, orderBy: { recordedAt: "desc" }, take: 5, select: { storagePct: true } }),
+    prisma.gramPanchayat.findMany({ where: { districtId, ...VERIFIED_PANCHAYAT }, select: { roadConnected: true, fundsUtilized: true } }),
+  ]);
+  const shared: Shared = { census, dams, gps };
+  // District-type-aware weights (getDistrictType)
+  const districtType = getDistrictType(census?.population, census?.density, census?.urbanPct);
   const weights = getAdjustedWeights(districtType);
 
   const [gov, edu, hlt, inf, wat, eco, saf, agr, dig, wel] = await Promise.all([
     calcGovernance(districtId),
-    calcEducation(districtId),
-    calcHealth(districtId),
-    calcInfrastructure(districtId),
-    calcWaterSanitation(districtId),
-    calcEconomy(districtId),
-    calcSafety(districtId),
-    calcAgriculture(districtId),
+    calcEducation(districtId, district.slug, shared),
+    calcHealth(shared),
+    calcInfrastructure(districtId, shared),
+    calcWaterSanitation(districtId, shared),
+    calcEconomy(districtId, district.slug),
+    calcSafety(districtId, shared),
+    calcAgriculture(districtId, shared),
     calcDigitalAccess(districtId),
-    calcCitizenWelfare(districtId),
+    calcCitizenWelfare(districtId, shared),
   ]);
 
   const categories = {
@@ -545,8 +669,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
   const grade = getGrade(overallScore);
 
   // How much of the score rests on real data (the rest are placeholders).
-  const allSubs = Object.values(categories).flatMap((c) => Object.values(c.subMetrics));
-  const dataCoverage = { measured: allSubs.filter((m) => !m.noData).length, total: allSubs.length };
+  const coverage = dataCoverage(Object.values(categories).flatMap((c) => Object.values(c.subMetrics)));
 
   const existing = await prisma.districtHealthScore.findUnique({ where: { districtId } });
   const previousScore = existing?.overallScore ?? null;
@@ -592,7 +715,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
       districtType,
       trendChange: change,
       trendDetails,
-      dataCoverage,
+      dataCoverage: coverage,
     } as unknown as Prisma.InputJsonValue,
     previousScore,
     trend,
@@ -606,10 +729,9 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
     update: scoreData,
   });
 
-  const district = await prisma.district.findFirst({ where: { id: districtId }, select: { name: true } });
   console.log(
-    `[Health Score] ${district?.name ?? districtId}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}` +
-      ` — ${dataCoverage.measured} of ${dataCoverage.total} measures backed by data`,
+    `[Health Score] ${district.name}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}` +
+      ` — ${coverage.measured} of ${coverage.total} measures backed by data`,
   );
-  return { overallScore, grade, ...dataCoverage };
+  return { overallScore, grade, ...coverage };
 }

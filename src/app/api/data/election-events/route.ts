@@ -15,6 +15,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
+import { isSlug } from "@/lib/read-api";
 
 interface ElectionPayload {
   id: string;
@@ -50,7 +51,11 @@ function urgencyMs(e: { pollingDate: Date | null; nextExpected: Date | null; res
 }
 
 export async function GET(req: NextRequest) {
-  const stateSlug = req.nextUrl.searchParams.get("state");
+  const stateSlug = req.nextUrl.searchParams.get("state") || null;
+  // Only a real state slug reaches the cache key and the query.
+  if (stateSlug !== null && !isSlug(stateSlug)) {
+    return NextResponse.json({ data: [], meta: { fromCache: false, count: 0, error: "invalid state" } }, { status: 400 });
+  }
   const key = cacheKey(stateSlug ?? "national", "election-events");
   const cached = await cacheGet<{ data: ElectionPayload[] }>(key);
   if (cached) return NextResponse.json({ ...cached, meta: { fromCache: true } });
@@ -102,10 +107,10 @@ export async function GET(req: NextRequest) {
     await cacheSet(key, { data }, 300);
     return NextResponse.json({ data, meta: { fromCache: false, count: data.length } });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[api/data/election-events] query failed:", msg);
+    // The detail goes to the log only; the public answer never carries it.
+    console.error("[api/data/election-events] query failed:", err instanceof Error ? err.message : String(err));
     return NextResponse.json(
-      { data: [], meta: { fromCache: false, count: 0, error: msg } },
+      { data: [], meta: { fromCache: false, count: 0, error: "unavailable" } },
       { status: 200 }, // 200 with empty array — never blank the page on a backend hiccup
     );
   }

@@ -68,6 +68,9 @@ const HOUR = 1;
 const DAY = 24 * HOUR;
 const YEAR = 365 * DAY;
 
+/** Written or typed-in lists with no source date: never stale, never "current". */
+const REFERENCE_RULE: FreshnessRule = { maxAgeHours: null, every: "onChange", method: "manual" };
+
 /**
  * Every dataset the freshness API reports, grouped by module, main dataset
  * first. Secondary datasets carry their own rule; main datasets use the
@@ -91,12 +94,15 @@ export const DATASETS: ReadonlyArray<{ key: string; module: string; rule?: Fresh
   { key: "budget", module: "finance" },
   { key: "projects", module: "infrastructure" },
   { key: "tenders", module: "tenders" },
-  { key: "industries", module: "industries" },
-  { key: "schemes", module: "schemes" },
+  // Hand-typed lists with no check date: @updatedAt moves on any bulk edit
+  // (one clean-up pass on 28 Sep 2026 made March seed schemes and
+  // industries read "current"), so it is not one (Sept 2026 audit).
+  // Reference lists until a real checked-at column exists.
+  { key: "industries", module: "industries", rule: REFERENCE_RULE },
+  { key: "schemes", module: "schemes", rule: REFERENCE_RULE },
   { key: "housing", module: "housing" },
-  // Hand-typed directories with no check date (@updatedAt is not one): reference lists.
-  { key: "services", module: "services", rule: { maxAgeHours: null, every: "onChange", method: "manual" } },
-  { key: "offices", module: "offices", rule: { maxAgeHours: null, every: "onChange", method: "manual" } },
+  { key: "services", module: "services", rule: REFERENCE_RULE },
+  { key: "offices", module: "offices", rule: REFERENCE_RULE },
   { key: "exams", module: "exams" },
   { key: "jjm", module: "jjm" },
   { key: "dams", module: "water" },
@@ -141,6 +147,18 @@ export function fyStartDate(fy: string | null | undefined): Date | null {
   const m = /(\d{4})/.exec(fy);
   if (!m) return null;
   return new Date(Date.UTC(Number(m[1]), 3, 1));
+}
+
+/**
+ * The later of two financial years ("2025-26" vs "2026-27"), by the date
+ * each starts; either may be missing. A tie keeps the first.
+ */
+export function newerFy(a: string | null | undefined, b: string | null | undefined): string | null {
+  const da = fyStartDate(a);
+  const db = fyStartDate(b);
+  if (!da) return db ? (b ?? null) : (a ?? b ?? null);
+  if (!db) return a ?? null;
+  return db.getTime() > da.getTime() ? (b ?? null) : (a ?? null);
 }
 
 /** 31 December of a calendar year (UTC); null for a missing year. */

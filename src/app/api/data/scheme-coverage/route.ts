@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet, cacheKey } from "@/lib/cache";
+import { publicCacheControl } from "@/lib/read-api";
 
 const TTL = 3600;
 
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
   const cached = await cacheGet<{ data: unknown; meta: Record<string, unknown> }>(key);
   if (cached) {
     const resp = NextResponse.json({ ...cached, meta: { ...cached.meta, fromCache: true } });
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL}, stale-while-revalidate=${TTL * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL));
     return resp;
   }
 
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     const result = { data, meta };
     await cacheSet(key, result, TTL);
     const resp = NextResponse.json(result);
-    resp.headers.set("Cache-Control", `public, s-maxage=${TTL}, stale-while-revalidate=${TTL * 2}`);
+    resp.headers.set("Cache-Control", publicCacheControl(TTL));
     return resp;
   } catch (err) {
     Sentry.captureException(err);

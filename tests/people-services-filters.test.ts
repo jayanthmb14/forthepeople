@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 // data-filters imports collector modules that pull in the Prisma client.
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import { ACTIVE_TRANSPORT, BORN_HERE_PERSONALITY, isOfficialStaffingRow } from "@/lib/data-filters";
+import { ACTIVE_TRANSPORT, BORN_HERE_PERSONALITY, GOVERNMENT_URL_PATTERN, isOfficialStaffingRow } from "@/lib/data-filters";
 import { cleanSchoolAddress, schoolForDisplay } from "@/lib/school-rows";
 
 describe("listed schools (Sept 2026 audit)", () => {
@@ -46,5 +46,17 @@ describe("row filters", () => {
   });
   it("transport rows must be active", () => {
     expect(ACTIVE_TRANSPORT).toEqual({ active: true });
+  });
+});
+
+describe("GOVERNMENT_URL_PATTERN (the freshness SQL's copy of isOfficialStaffingRow)", () => {
+  const re = new RegExp(GOVERNMENT_URL_PATTERN, "i");
+  const urls = [
+    "https://nhm.gov.in/x", "http://mandya.nic.in", "HTTPS://WWW.MOHFW.GOV.IN/page?x=1", "www.karnataka.gov.in/health",
+    "https://www.usa.gov", "https://data.gov.in:443/x", "mandya.nic.in",
+    "https://example.com/gov.in", "https://gov.in.example.com", "https://news.example.org/story", "https://notgov.in",
+  ];
+  it.each(urls)("agrees with isOfficialStaffingRow on %s", (u) => {
+    expect(re.test(u)).toBe(isOfficialStaffingRow({ sourceUrl: u }));
   });
 });
