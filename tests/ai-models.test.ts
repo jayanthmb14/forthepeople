@@ -129,3 +129,12 @@ describe("estimateCost", () => {
     expect(estimateCost("openai/gpt-oss-20b", undefined)).toEqual({ usd: 0, inr: 0 });
   });
 });
+
+describe("router models that think", () => {
+  it("jev-router gets reasoning headroom but no optional params", async () => {
+    const m = await import("@/lib/ai-models");
+    expect(m.REASONING_MODELS.has("typesafe/jev-router")).toBe(true);
+    expect(m.PLAIN_PARAMS_MODELS.has("typesafe/jev-router")).toBe(true);
+    expect(m.REASONING_TOKEN_HEADROOM).toBeGreaterThanOrEqual(1024);
+  });
+});

@@ -72,6 +72,10 @@ export const REASONING_MODELS: ReadonlySet<string> = new Set([
   "openai/gpt-oss-20b",
   "nvidia/nemotron-3-super-120b-a12b:free",
   "openrouter/free", // may route to a reasoning model
+  // Routes to reasoning models too (e.g. deepseek-v4.1-flash); without the
+  // headroom its thinking used up max_tokens -> "reasoning only, no answer".
+  // Its optional params stay off (PLAIN_PARAMS_MODELS); only headroom applies.
+  "typesafe/jev-router",
 ]);
 
 // Routers that choose their own reasoning effort and reject response_format /
