@@ -30,8 +30,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
     closingIn48h,
     closingIn7d,
     closingIn14d,
-    awardedLast30,
-    awardedLast30Value,
+    awarded90dCount,
+    awarded90dValue,
     mseReservedLive,
     startupExemptLive,
     topAuthorities,
@@ -121,8 +121,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
       { bucket: ">14d", count: Math.max(0, liveCount - closingIn14d) },
     ],
     awarded90d: {
-      count: awardedLast30,
-      totalValueInr: awardedLast30Value._sum.awardedAmountInr ?? BigInt(0),
+      count: awarded90dCount,
+      totalValueInr: awarded90dValue._sum.awardedAmountInr ?? BigInt(0),
     },
     topAuthorities: topAuthorities.map((r) => ({
       authority: authorityMap.get(r.authorityId) ?? { id: r.authorityId, name: "Unknown", shortCode: "UNK" },
