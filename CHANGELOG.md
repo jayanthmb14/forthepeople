@@ -10,6 +10,33 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — scheduled jobs and collectors (branch `v55/be-crons`, 2026-09-28)
+Backend review of crons, collectors and seeds. Not deployed; no schema change, no data written.
+- **Seeds**: `npm run db:seed` / `db:reset` / the `prisma.seed` hook ran `prisma/seed.ts`, which
+  wiped ~50 tables (District and State included) with `.env` pointing at production. The seeds
+  with invented or "approximate" rows (Mandya pilot, Bengaluru / Mysuru / Delhi / Lucknow data,
+  the Chennai / Kolkata / Mumbai / Hyderabad city loaders) moved to `prisma/archive/` behind
+  `prisma/seed-guard.ts` (runs only with `ALLOW_SEED_WIPE=1` against a local DB); the npm
+  scripts are gone.
+- **News**: each district's AI call now gets its own time share (one call walking the model
+  chain used to leave 8–9 of 10 districts without news, logged "success"); unreached districts
+  make the run "partial"; a stored article inside the 3-day window is never pruned (it came back
+  as new next run); the 14-day alert sweep no longer switches off official SACHET warnings.
+- **Tenders**: past-deadline GePNIC tenders close by date on every run, not only for bodies on
+  today's list. **Insights**: leaders insights refresh at 7 days (daily in an election), not ~13.
+  **Platform report**: 300 s limit and a 240 s AI deadline. **Citizen tips**: stored 14 days so a
+  failed week keeps last week's tips; prompt uses official alerts and recent weather only.
+  **Crops**: firewood, wood, "Flowers-Others" and flower-market records are not crop prices.
+  **Budget**: a future data.gov.in dataset must be read per district with the record's own year.
+  **Dams**: the chart's `dam-history` cache is cleared after new readings.
+- **Crons**: one district list and JobContext helper, one lock style (`lock:cron:<name>`;
+  verify-data's lock outlives its 300 s), runs that throw after start are recorded as errors;
+  `tests/cron-schedule.test.ts` keeps route comments, the collector registry and the data-sources
+  list equal to `vercel.json`.
+- **Removed (never ran in production)**: the Railway scheduler and the 13 jobs only it ran
+  (`npm run scraper`), and the first tender pipeline (orchestrator, engines, PDF parser); its two
+  manual jobs are now `scripts/tenders-ai-enrich.ts` and `scripts/tenders-redflags.ts`.
+
 ### Fixed — money: budgets, projects, industries, tenders, schemes (branch `v54/fix-money`, 2026-09-28)
 Owner rule: verified or hidden. Nothing here is deployed or applied to the database yet.
 - **Budgets**: seeded sector rows (state or city totals filed under one district, "spent" as a
