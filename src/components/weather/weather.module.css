@@ -84,6 +84,18 @@
   .rain { justify-content: flex-end; }
 }
 
+/* Narrowest phones (a 320 px screen leaves a 288 px column): tighter gaps and
+   a smaller picture, so a day row never pushes the page sideways. The row
+   keeps its 56 px height, so every day is still an easy tap. */
+@container (max-width: 319px) {
+  .day {
+    grid-template-columns: minmax(60px, 72px) 32px auto minmax(24px, 1fr) 46px;
+    column-gap: 6px;
+    padding: 6px 10px;
+  }
+  .dayArt svg { width: 32px; height: 32px; }
+}
+
 /* Min–max bar on the week's scale: cool pastel sky → warm pastel amber. */
 .rangeTrack { position: relative; width: 78%; height: 6px; border-radius: 999px; background: var(--ftp-surface-2); margin: 2px 0; }
 .rangeFill {

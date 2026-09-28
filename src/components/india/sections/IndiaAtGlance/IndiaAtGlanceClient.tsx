@@ -5,7 +5,7 @@
  *   left    identity zone: title, live count, the 7-module directory
  *   middle  featured module (population) with its headline, growth pill,
  *           world-rank callout and four cells
- *   right   India's world ranks (medal emoji for the top three) and the
+ *   right   India's world ranks (drawn medals for the top three) and the
  *           latest updates
  *
  * Sep 2026: all text through next-intl (page_india "band.*", "glance.*",
@@ -18,6 +18,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { CategoryGlyph } from "@/components/graphics";
+import { indiaModuleGlyph, medalPick } from "../../glyphs";
 import styles from "./styles.module.css";
 import { SectionWatermark } from "../SectionWatermark";
 import { BandNumber, BandVisibleProvider, useBandText, useBandVisible } from "../band-kit";
@@ -52,7 +54,6 @@ type Props = {
 type Text = ReturnType<typeof useBandText>;
 
 const EM_DASH = "—";
-const MEDAL = ["🥇", "🥈", "🥉"];
 
 function getInd(byKey: Record<string, MacroIndicator>, ref: { moduleSlug: string; metricKey: string }): MacroIndicator | undefined {
   return byKey[indicatorKey(ref)];
@@ -92,7 +93,8 @@ function DirectoryRowItem({ row, data, locale, text }: { row: DirectoryRow; data
   return (
     <Link href={`/${locale}/india/${row.moduleSlug}`} className={styles.directoryRow}>
       <span className={styles.directoryRowLabel}>
-        <span aria-hidden>{row.emoji}</span> {def ? text.x.moduleTitle(def) : module_.title}
+        <CategoryGlyph pick={indiaModuleGlyph(row.moduleSlug, def?.category)} size={16} style={{ alignSelf: "center" }} />{" "}
+        {def ? text.x.moduleTitle(def) : module_.title}
         {row.isFeatured && <span className={styles.directoryRowFeaturedTag}>{text.t("band.featured")}</span>}
       </span>
       <span className={styles.directoryRowValue}>
@@ -187,7 +189,7 @@ function WorldRankCard({ data, text }: { data: MacroSnapshotData; text: Text }) 
       <div className={styles.rightCardHeader}>
         <span className={styles.rightCardTitle}>{tb("rankTitle")}</span>
         <span className={styles.rightCardIcon} aria-hidden>
-          🌐
+          <CategoryGlyph glyph="globe" size={16} />
         </span>
       </div>
       <div className={styles.rightCardList}>
@@ -195,15 +197,13 @@ function WorldRankCard({ data, text }: { data: MacroSnapshotData; text: Text }) 
           const rank = getInd(data.indicatorByKey, entry.rankRef);
           const value = getInd(data.indicatorByKey, entry.valueRef);
           if (!rank || !value) return null;
-          const medal = MEDAL[Math.round(rank.value) - 1];
+          const medal = medalPick(Math.round(rank.value));
           return (
             <div key={entry.key} className={styles.rightCardListItem}>
               <span className={styles.rightCardListItemLeft}>
                 <span className={styles.rightCardListItemRank}>
                   {medal ? (
-                    <span className="ftp-emoji" aria-hidden style={{ marginInlineEnd: 2 }}>
-                      {medal}
-                    </span>
+                    <CategoryGlyph pick={medal} size={16} style={{ display: "inline-block", verticalAlign: "-3px", marginInlineEnd: 2 }} />
                   ) : null}
                   #<BandNumber value={rank.value} />
                 </span>
@@ -313,7 +313,7 @@ export function IndiaAtGlanceClient({ data, locale }: Props) {
             <div className={styles.featuredHeader}>
               <div className={styles.featuredHeaderLeft}>
                 <span className={styles.featuredIcon} aria-hidden>
-                  {MACRO_DIRECTORY.find((r) => r.isFeatured)?.emoji ?? ""}
+                  <CategoryGlyph pick={indiaModuleGlyph(featuredModuleSlug, featuredDef?.category)} size={18} />
                 </span>
                 <span className={styles.featuredTitle}>{featuredDef ? x.moduleTitle(featuredDef) : featuredModuleSlug}</span>
                 {headlineInd?.source && <span className={styles.featuredSourceInline}>{headlineInd.source}</span>}

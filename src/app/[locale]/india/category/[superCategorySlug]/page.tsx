@@ -38,6 +38,8 @@ import { INDIA_SOURCES } from "@/lib/india/india-sources";
 import { routing } from "@/i18n/routing";
 import { languageAlternates } from "@/i18n/seo";
 import { ModulePage as PageFrame, Section } from "@/components/district/ui";
+import { CategoryGlyph } from "@/components/graphics";
+import { indiaSuperCategoryGlyph } from "@/components/india/glyphs";
 import { ModuleDropdown } from "@/components/india/primitives/ModuleDropdown";
 import { SuperCategoryHero } from "@/components/india/sections/SuperCategoryHero";
 import { CategoryModuleCards, type CategoryCard } from "@/components/india/sections/CategoryModuleCards";
@@ -203,7 +205,7 @@ export default async function IndiaSuperCategoryPage({ params }: PageProps) {
         {superCategorySlug === "governance" && <ElectionPeriodNotice />}
 
         <SuperCategoryHero
-          emoji={superCategory.icon}
+          glyph={indiaSuperCategoryGlyph(superCategory.slug).glyph}
           title={categoryTitle}
           tagline={x.scTagline(superCategory)}
           countLabel={t("hero.count", { n: counts.total })}
@@ -251,9 +253,7 @@ export default async function IndiaSuperCategoryPage({ params }: PageProps) {
               color: "var(--ftp-text-2)",
             }}
           >
-            <span className="ftp-emoji" aria-hidden style={{ fontSize: 22 }}>
-              🚧
-            </span>
+            <CategoryGlyph glyph="hardhat" hue="amber" size={24} />
             <div style={{ flex: "1 1 240px" }}>
               <strong style={{ display: "block", color: "var(--ftp-text)" }}>{t("soonNote.title", { n: counts.soon })}</strong>
               {t("soonNote.body")}

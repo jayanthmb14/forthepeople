@@ -35,6 +35,7 @@ import { getSuperCategoryBySlug } from "@/lib/india/india-super-categories";
 import { INDIA_SOURCES } from "@/lib/india/india-sources";
 import { ModulePage as PageFrame, Section } from "@/components/district/ui";
 import { ChartCard } from "@/components/district/visuals";
+import { CategoryGlyph } from "@/components/graphics";
 import ModuleHero from "./ModuleHero";
 import { toFigure } from "./figures";
 import ModuleNewsStrip from "./ModuleNewsStrip";
@@ -64,7 +65,6 @@ interface Props {
 }
 
 const MIX_ORDER = ["coal", "renewables", "hydro", "nuclear"];
-const MIX_EMOJI: Record<string, string> = { coal: "🪨", renewables: "☀️", hydro: "💧", nuclear: "⚛️" };
 /** Colours people already link with each source: coal grey, sun amber, water blue, atom violet. */
 const MIX_COLOR: Record<string, string> = { coal: "#475569", renewables: "#D97706", hydro: "#0369A1", nuclear: "#7C3AED" };
 const MAX_TILES = 8;
@@ -185,14 +185,13 @@ export default async function ModulePage({ locale, module }: Props) {
     const ordered = [...groups.mix].sort((a, b) => MIX_ORDER.indexOf(a.part) - MIX_ORDER.indexOf(b.part));
     const parts: MixPart[] = ordered.map((m) => ({
       label: t.has(`parts.${m.part}`) ? t(`parts.${m.part}`) : label(m.row),
-      emoji: MIX_EMOJI[m.part],
       color: MIX_COLOR[m.part],
       pct: m.row.value ?? 0,
       display: `${fmtDecimal(locale, m.row.value ?? 0, 1)}%`,
     }));
     const sum = parts.reduce((s, p) => s + p.pct, 0);
     if (sum < 99.5) {
-      parts.push({ label: t("vis.mixOther"), emoji: "🔋", color: "#CBD5E1", pct: 100 - sum, display: `${fmtDecimal(locale, 100 - sum, 1)}%` });
+      parts.push({ label: t("vis.mixOther"), color: "#CBD5E1", pct: 100 - sum, display: `${fmtDecimal(locale, 100 - sum, 1)}%` });
     }
     const top = [...parts].sort((a, b) => b.pct - a.pct)[0];
     pictures.push(
@@ -347,9 +346,7 @@ export default async function ModulePage({ locale, module }: Props) {
               borderRadius: 10,
             }}
           >
-            <span className="ftp-emoji" aria-hidden style={{ marginInlineEnd: 6 }}>
-              ⚖️
-            </span>
+            <CategoryGlyph glyph="justice" size={16} style={{ display: "inline-block", verticalAlign: "-3px", marginInlineEnd: 6 }} />
             {legalNote}
           </p>
         ) : null}
@@ -371,9 +368,7 @@ export default async function ModulePage({ locale, module }: Props) {
               lineHeight: "21px",
             }}
           >
-            <span className="ftp-emoji" aria-hidden style={{ fontSize: 22 }}>
-              🚧
-            </span>
+            <CategoryGlyph glyph="hardhat" hue="amber" size={24} />
             <span>
               <strong style={{ display: "block", marginBottom: 2 }}>{t("soon.title")}</strong>
               {t("soon.body", { module: title, source: firstSource })}
@@ -382,7 +377,7 @@ export default async function ModulePage({ locale, module }: Props) {
         ) : null}
 
         {pictures.length > 0 ? (
-          <Section title={t("vis.heading")} emoji="🖼️">
+          <Section title={t("vis.heading")}>
             <div
               style={{
                 display: "grid",

@@ -30,6 +30,8 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
+import { CategoryGlyph } from "@/components/graphics";
+import { medalPick } from "../glyphs";
 import {
   Award,
   Film,
@@ -227,8 +229,6 @@ function moveText(movement: Ranking["movement"], t: Tr): string {
   return t("stable");
 }
 
-const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
-
 function RankRow({ ranking, t, onOpen }: { ranking: Ranking; t: Tr; onOpen: () => void }) {
   const Icon = ICON_BY_CATEGORY[ranking.category] ?? Trophy;
   const title = rankTitle(ranking, t);
@@ -383,9 +383,7 @@ export function IndiaInTheWorldCard() {
             gap: 10,
           }}
         >
-          <span className="ftp-emoji" aria-hidden style={{ fontSize: 22 }}>
-            🌏
-          </span>
+          <CategoryGlyph glyph="globe" size={32} chip />
           {t("title")}
         </h2>
         <span style={{ fontSize: "12px", color: "var(--color-text-tertiary)" }}>{t("subtitle")}</span>
@@ -451,7 +449,7 @@ export function IndiaInTheWorldCard() {
         onClose={close}
         title={open ? rankTitle(open, t) : ""}
         subtitle={open ? t("sheet.sub", { rank: open.rank }) : undefined}
-        emoji={open ? MEDAL_EMOJI[open.rank - 1] ?? "🌏" : undefined}
+        media={open ? <CategoryGlyph pick={medalPick(open.rank) ?? { glyph: "globe", hue: "sky" }} size={44} chip /> : undefined}
         hueClassName="ftp-hue-amber"
       >
         {open ? (

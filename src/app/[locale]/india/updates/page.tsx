@@ -12,7 +12,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock3 } from "lucide-react";
 import IndiaUpdateLog from "@/components/india/IndiaUpdateLog";
 import { hueClass } from "@/lib/design/hues";
 import { ModulePage as PageFrame } from "@/components/district/ui";
@@ -84,9 +84,7 @@ export default async function IndiaUpdatesPage({
               boxShadow: "var(--ftp-shadow-1)",
             }}
           >
-            <span aria-hidden className="ftp-emoji" style={{ position: "absolute", right: -10, bottom: -30, fontSize: 140, opacity: 0.08, pointerEvents: "none" }}>
-              🕒
-            </span>
+            <Clock3 aria-hidden size={140} strokeWidth={1.5} style={{ position: "absolute", right: -10, bottom: -30, opacity: 0.08, pointerEvents: "none", color: "var(--hue-deep)" }} />
             <div
               style={{
                 display: "flex",
@@ -103,9 +101,7 @@ export default async function IndiaUpdatesPage({
                 fontWeight: 600,
               }}
             >
-              <span className="ftp-emoji" aria-hidden="true" style={{ fontSize: 14 }}>
-                🕒
-              </span>
+              <Clock3 aria-hidden size={14} style={{ flexShrink: 0 }} />
               {t("chip")}
             </div>
             <h1 className="ftp-display" style={{ position: "relative", fontSize: "clamp(26px, 4vw, 34px)", lineHeight: 1.15, fontWeight: 650, color: "var(--ftp-text)", margin: "10px 0 6px" }}>

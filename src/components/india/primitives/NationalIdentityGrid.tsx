@@ -3,7 +3,9 @@
  * (capital, currency, national animal, bird, flower, tree) under the hero
  * banner. Fixed facts, translated through page_india "identity.*".
  *
- * Cells wrap instead of cutting words off, so longer languages fit.
+ * Cells wrap instead of cutting words off, so longer languages fit. Each
+ * symbol is drawn by its Lucide icon only (v5.1: the emoji that stood
+ * beside each icon repeated it and were removed).
  * Sync server component (useTranslations).
  */
 
@@ -15,16 +17,15 @@ import { INDIA_NS } from "../i18n";
 interface IdentityCell {
   key: "capital" | "currency" | "animal" | "bird" | "flower" | "tree";
   icon: LucideIcon;
-  glyph: string;
 }
 
 const CELLS: IdentityCell[] = [
-  { key: "capital", icon: Building, glyph: "🏛" },
-  { key: "currency", icon: IndianRupee, glyph: "₹" },
-  { key: "animal", icon: PawPrint, glyph: "🐅" },
-  { key: "bird", icon: Bird, glyph: "🦚" },
-  { key: "flower", icon: Flower, glyph: "🪷" },
-  { key: "tree", icon: Trees, glyph: "🌳" },
+  { key: "capital", icon: Building },
+  { key: "currency", icon: IndianRupee },
+  { key: "animal", icon: PawPrint },
+  { key: "bird", icon: Bird },
+  { key: "flower", icon: Flower },
+  { key: "tree", icon: Trees },
 ];
 
 export function NationalIdentityGrid() {
@@ -74,10 +75,7 @@ export function NationalIdentityGrid() {
                 color: "var(--color-text-primary)",
               }}
             >
-              <Icon size={11} aria-hidden style={{ color: "#BA7517", flexShrink: 0 }} />
-              <span aria-hidden className="ftp-emoji" style={{ fontSize: "12px" }}>
-                {cell.glyph}
-              </span>
+              <Icon size={13} aria-hidden style={{ color: "#BA7517", flexShrink: 0 }} />
               <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{t(`${cell.key}.value`)}</span>
             </div>
           </li>

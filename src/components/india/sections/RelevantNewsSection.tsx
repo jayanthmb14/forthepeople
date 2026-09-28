@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import { localizeRows } from "@/lib/translation/overlay";
 import { SourcePill, type SourcePillVariant } from "@/components/india/primitives/SourcePill";
 import { domainOf, fmtDate } from "@/components/india/format";
+import { Glyph } from "@/components/graphics";
 
 export interface RelevantNewsSectionProps {
   moduleSlug: string;
@@ -56,8 +57,8 @@ export async function RelevantNewsSection({ moduleSlug, locale, className }: Rel
   return (
     <section className={className} style={{ marginTop: "2rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>
-          📰
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10 }}>
+          <Glyph name="general" size={19} />
         </span>
         <h2 className="ftp-h2" style={{ fontSize: 20, lineHeight: "26px" }}>
           {t("data.news.title")}

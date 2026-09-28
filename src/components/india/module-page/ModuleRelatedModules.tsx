@@ -4,7 +4,8 @@
  *
  * Cross-link cards: 3–5 related modules at the bottom of every module
  * deep-dive page. Each card carries its own category colour (the v4 hue
- * of that category), the module emoji, its translated title and tagline.
+ * of that category), the module's drawn glyph, its translated title and
+ * tagline.
  */
 
 import Link from "next/link";
@@ -15,8 +16,10 @@ import {
   type IndiaModuleDef,
 } from "@/lib/india/india-modules";
 import { Section } from "@/components/district/ui";
+import { CategoryGlyph } from "@/components/graphics";
 import { indiaCategoryHue } from "./v4";
 import { INDIA_NS, indiaText } from "../i18n";
+import { indiaModuleGlyph } from "../glyphs";
 
 interface Props {
   locale: string;
@@ -36,7 +39,7 @@ export default async function ModuleRelatedModules({ locale, module }: Props) {
   if (related.length === 0) return null;
 
   return (
-    <Section title={t("related.title")} emoji="🧭">
+    <Section title={t("related.title")}>
       <ul
         style={{
           listStyle: "none",
@@ -67,9 +70,7 @@ export default async function ModuleRelatedModules({ locale, module }: Props) {
               }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 18, borderRadius: 11 }}>
-                  {m.icon}
-                </span>
+                <CategoryGlyph pick={indiaModuleGlyph(m.slug, m.category)} size={34} chip />
                 <span className="ftp-display" style={{ fontSize: 15, fontWeight: 650, lineHeight: 1.3 }}>
                   {x.moduleTitle(m)}
                 </span>

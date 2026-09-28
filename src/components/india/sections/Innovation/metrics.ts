@@ -21,17 +21,16 @@ export const INNOV_SPEC: BandSpec = {
   watermarkClass: "rocketWatermark",
   dotsAccent: "#993C1D",
   directory: [
-    { moduleSlug: S, emoji: "🚀", featured: true, value: { ref: { moduleSlug: S, metricKey: "dpiit_recognised_lakh" }, decimals: 1, fmt: "fmt.lakh" } },
-    { moduleSlug: "science-isro", emoji: "🛰", value: { ref: { moduleSlug: "science-isro", metricKey: "satellites_launched_count" }, fmt: "innov.fmt.satellites" } },
-    { moduleSlug: D, emoji: "📱", value: { ref: { moduleSlug: D, metricKey: "upi_txn_per_month_billion" }, fmt: "innov.fmt.upi" } },
-    { moduleSlug: "science-rd", emoji: "🔬", value: { ref: { moduleSlug: "science-rd", metricKey: "rd_pct_gdp" }, decimals: 2, fmt: "fmt.pct" } },
-    { moduleSlug: "trade-overview", emoji: "📦", value: { ref: { moduleSlug: "trade-overview", metricKey: "exports_annual_lakh_cr" }, fmt: "fmt.inrLakhCr" } },
-    { moduleSlug: "trade-fdi", emoji: "💰", value: { ref: { moduleSlug: "trade-fdi", metricKey: "fdi_equity_inflow_billion_usd" }, fmt: "fmt.usdB" } },
-    { moduleSlug: "trade-diaspora", emoji: "🌐", value: { ref: { moduleSlug: "trade-diaspora", metricKey: "remittances_annual_billion_usd" }, fmt: "fmt.usdB" } },
+    { moduleSlug: S, featured: true, value: { ref: { moduleSlug: S, metricKey: "dpiit_recognised_lakh" }, decimals: 1, fmt: "fmt.lakh" } },
+    { moduleSlug: "science-isro", value: { ref: { moduleSlug: "science-isro", metricKey: "satellites_launched_count" }, fmt: "innov.fmt.satellites" } },
+    { moduleSlug: D, value: { ref: { moduleSlug: D, metricKey: "upi_txn_per_month_billion" }, fmt: "innov.fmt.upi" } },
+    { moduleSlug: "science-rd", value: { ref: { moduleSlug: "science-rd", metricKey: "rd_pct_gdp" }, decimals: 2, fmt: "fmt.pct" } },
+    { moduleSlug: "trade-overview", value: { ref: { moduleSlug: "trade-overview", metricKey: "exports_annual_lakh_cr" }, fmt: "fmt.inrLakhCr" } },
+    { moduleSlug: "trade-fdi", value: { ref: { moduleSlug: "trade-fdi", metricKey: "fdi_equity_inflow_billion_usd" }, fmt: "fmt.usdB" } },
+    { moduleSlug: "trade-diaspora", value: { ref: { moduleSlug: "trade-diaspora", metricKey: "remittances_annual_billion_usd" }, fmt: "fmt.usdB" } },
   ],
   featured: {
     moduleSlug: S,
-    emoji: "🚀",
     headline: { ref: { moduleSlug: S, metricKey: "dpiit_recognised_lakh" }, decimals: 1 },
     growth: { ref: { moduleSlug: S, metricKey: "change_yoy_lakh" }, decimals: 1, fmt: "innov.growth" },
     callout: { label: "calloutLabel", value: { ref: { moduleSlug: S, metricKey: "unicorns_count" }, fmt: "fmt.plus" }, sub: "calloutSub" },
@@ -45,7 +44,7 @@ export const INNOV_SPEC: BandSpec = {
   cards: [
     {
       key: "hubs",
-      emoji: "🚀",
+      glyph: "medal",
       href: "/india/science-startups",
       bars: true,
       rows: [
@@ -60,7 +59,7 @@ export const INNOV_SPEC: BandSpec = {
     },
     {
       key: "digital",
-      emoji: "🔌",
+      glyph: "phone",
       href: "/india/science-digital",
       rows: [
         { key: "upi", value: { ref: { moduleSlug: D, metricKey: "upi_txn_per_month_billion" }, fmt: "innov.fmt.upiRow" } },

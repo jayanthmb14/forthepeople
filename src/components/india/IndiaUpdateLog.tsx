@@ -32,10 +32,12 @@ import { type IndiaModuleCategory, getIndiaCategories, getIndiaModuleBySlug } fr
 import { EmptyState as KitEmptyState, LoadingShell, StatStrip, StatTile } from "@/components/district/ui";
 import { Explainer } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
+import { CategoryGlyph, GlyphChips } from "@/components/graphics";
 import { useFormat } from "@/i18n/client";
 import { MixDonut, type MixPart } from "./module-page/ModuleVisuals";
 import { formatIndicator } from "./format";
 import { INDIA_NS, indiaText } from "./i18n";
+import { indiaCategoryGlyph, indiaModuleGlyph } from "./glyphs";
 import styles from "./india-tap.module.css";
 
 interface UpdateRow {
@@ -54,28 +56,6 @@ interface UpdateRow {
   notes: string | null;
   fetchedAt: string;
 }
-
-const CATEGORY_EMOJI: Record<IndiaModuleCategory, string> = {
-  snapshot: "🇮🇳",
-  demographics: "👥",
-  economy: "📈",
-  budget: "🏛️",
-  agriculture: "🌾",
-  livestock: "🐄",
-  wildlife: "🐅",
-  infrastructure: "🛣️",
-  energy: "⚡",
-  health: "🏥",
-  education: "🎓",
-  defence: "🛡️",
-  justice: "⚖️",
-  elections: "🗳️",
-  science: "🔬",
-  trade: "🌐",
-  tourism: "🧳",
-  sports: "🏅",
-  custom: "📚",
-};
 
 /** Topics shown in the ring before the rest are grouped as "other". */
 const RING_TOPICS = 5;
@@ -149,13 +129,12 @@ export default function IndiaUpdateLog({ hueClassName }: { hueClassName: string 
       const rest = sorted.slice(RING_TOPICS).reduce((s, [, n]) => s + n, 0);
       const parts: MixPart[] = head.map(([c, n], i) => ({
         label: x.category(c),
-        emoji: CATEGORY_EMOJI[c],
         pct: (n / total) * 100,
         display: f.number(n),
         color: RING_COLORS[i % RING_COLORS.length],
       }));
       if (rest > 0) {
-        parts.push({ label: t("chart.other"), emoji: "➕", pct: (rest / total) * 100, display: f.number(rest), color: RING_OTHER });
+        parts.push({ label: t("chart.other"), pct: (rest / total) * 100, display: f.number(rest), color: RING_OTHER });
       }
       ring = { parts, top: head[0] };
     }
@@ -211,21 +190,22 @@ export default function IndiaUpdateLog({ hueClassName }: { hueClassName: string 
       ) : null}
 
       <div
-        role="group"
-        aria-label={t("filterAria")}
         style={{
-          display: "flex",
-          gap: 8,
-          flexWrap: "wrap",
           margin: "24px 0 16px",
           paddingBottom: 12,
           borderBottom: "1px solid var(--ftp-border)",
         }}
       >
-        <Chip label={t("all")} emoji="🗂️" active={category === "all"} onClick={() => setCategory("all")} />
-        {allCategories.map((c) => (
-          <Chip key={c} label={x.category(c)} emoji={CATEGORY_EMOJI[c]} active={category === c} onClick={() => setCategory(c)} />
-        ))}
+        {/* Topic chips with their drawn glyphs (v5.1: were emoji chips). */}
+        <GlyphChips
+          label={t("filterAria")}
+          value={category}
+          onChange={(v) => setCategory(v as "all" | IndiaModuleCategory)}
+          items={[
+            { value: "all", label: t("all") },
+            ...allCategories.map((c) => ({ value: c, label: x.category(c), pick: indiaCategoryGlyph(c) })),
+          ]}
+        />
       </div>
 
       {dbPending ? (
@@ -276,9 +256,7 @@ export default function IndiaUpdateLog({ hueClassName }: { hueClassName: string 
                   <article className={styles.card}>
                     <button type="button" className={styles.cardButton} onClick={() => setOpen(row)} aria-label={t("details", { metric: label.text })}>
                       <span style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11, flexShrink: 0 }}>
-                          {CATEGORY_EMOJI[row.category] ?? "📌"}
-                        </span>
+                        <CategoryGlyph pick={indiaModuleGlyph(row.moduleSlug, row.category)} size={36} chip />
                         <span style={{ minWidth: 0, fontSize: 13, fontWeight: 650, color: "var(--hue-deep)" }}>{moduleTitle(row)}</span>
                       </span>
                       <span lang={label.lang} style={{ fontSize: 15, lineHeight: "21px", color: "var(--ftp-text)" }}>
@@ -308,7 +286,7 @@ export default function IndiaUpdateLog({ hueClassName }: { hueClassName: string 
         title={selLabel?.text ?? ""}
         titleLang={selLabel?.lang}
         subtitle={sel ? moduleTitle(sel) : undefined}
-        emoji={sel ? CATEGORY_EMOJI[sel.category] ?? "📌" : undefined}
+        media={sel ? <CategoryGlyph pick={indiaModuleGlyph(sel.moduleSlug, sel.category)} size={44} chip /> : undefined}
         hueClassName={hueClassName}
         footer={
           sel ? (
@@ -364,34 +342,5 @@ export default function IndiaUpdateLog({ hueClassName }: { hueClassName: string 
         [dir="rtl"] .india-flip-rtl { transform: scaleX(-1); }
       `}</style>
     </section>
-  );
-}
-
-function Chip({ label, emoji, active, onClick }: { label: string; emoji: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className="ftp-chip"
-      style={{
-        background: active ? "var(--hue)" : "var(--ftp-surface)",
-        color: active ? "#FFFFFF" : "var(--ftp-text-2)",
-        border: active ? "1px solid var(--hue)" : "1px solid var(--ftp-border)",
-        borderRadius: 999,
-        padding: "5px 12px 5px 9px",
-        fontSize: 14,
-        fontWeight: 600,
-        cursor: "pointer",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-      }}
-    >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 15 }}>
-        {emoji}
-      </span>
-      {label}
-    </button>
   );
 }

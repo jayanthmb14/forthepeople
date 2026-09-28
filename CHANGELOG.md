@@ -10,6 +10,17 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Changed — v5.5 UI polish (branch `v55/ui-polish`, 2026-09-28)
+- **India dashboard without emoji**: `/india`, its category pages, module pages and the update log
+  drew about 120 emoji on `/india` alone. Modules, topics and cards now draw the shared SVG glyphs
+  (16 new ones in `src/components/graphics`: people, globe, paw, rocket, sun, medal, book, map,
+  lock, flask, phone, briefcase, fish, cow, speech, lotus), picked by `src/components/india/glyphs.ts`;
+  UI markers (dates, sources, arrows, planned features, data-quality chips) use small Lucide icons.
+- **Weather at 320 px**: the 7-day rows no longer push the page 9 px sideways (tighter columns
+  under a 320 px container query; rows stay 56 px tall).
+- **District module pages**: "See also" → "Check this data" uses the normal 28 px section gap
+  (was 96 px on a laptop).
+
 ### Fixed — money: budgets, projects, industries, tenders, schemes (branch `v54/fix-money`, 2026-09-28)
 Owner rule: verified or hidden. Nothing here is deployed or applied to the database yet.
 - **Budgets**: seeded sector rows (state or city totals filed under one district, "spent" as a

@@ -1,7 +1,7 @@
 /**
  * SuperCategoryHero — hero for /[locale]/india/category/<slug>.
  *
- * File 45 §4 Level 2, Design v4: a hue band with the category emoji, the
+ * File 45 §4 Level 2, Design v4: a hue band with the category glyph, the
  * module count, title and tagline; a status ring (how many of the modules
  * are live — counted from the registry, the same numbers the cards and
  * the footer note use); the "In simple words" line; and up to four
@@ -17,10 +17,12 @@
 
 import * as React from "react";
 import { Explainer } from "@/components/district/visuals";
+import { Glyph, type GlyphName } from "@/components/graphics";
 import { FigureTiles, type FigureDetail } from "@/components/india/FigureSheet";
 
 export interface SuperCategoryHeroProps {
-  emoji: string;
+  /** Drawn glyph for the category (src/components/india/glyphs.ts); coloured by the page hue. */
+  glyph: GlyphName;
   title: string;
   tagline: string;
   countLabel: string;
@@ -37,7 +39,7 @@ export interface SuperCategoryHeroProps {
 }
 
 export function SuperCategoryHero({
-  emoji,
+  glyph,
   title,
   tagline,
   countLabel,
@@ -69,15 +71,15 @@ export function SuperCategoryHero({
         marginBottom: "1.5rem",
       }}
     >
-      <span aria-hidden className="ftp-emoji" style={{ position: "absolute", right: -18, bottom: -36, fontSize: 170, opacity: 0.08, transform: "rotate(-10deg)", pointerEvents: "none" }}>
-        {emoji}
+      <span aria-hidden style={{ position: "absolute", right: -18, bottom: -36, opacity: 0.08, transform: "rotate(-10deg)", pointerEvents: "none" }}>
+        <Glyph name={glyph} size={170} />
       </span>
 
       <div className="sc-hero-grid" style={{ position: "relative" }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 52, height: 52, fontSize: 28, borderRadius: 16, background: "#fff", boxShadow: "var(--ftp-shadow-1)" }}>
-              {emoji}
+            <span className="ftp-icon-chip" aria-hidden style={{ width: 52, height: 52, borderRadius: 16, background: "#fff", boxShadow: "var(--ftp-shadow-1)" }}>
+              <Glyph name={glyph} size={30} />
             </span>
             <span
               style={{

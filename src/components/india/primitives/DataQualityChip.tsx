@@ -7,6 +7,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { Calculator, CircleCheck, Waves, type LucideIcon } from "lucide-react";
 import { INDIA_NS } from "../i18n";
 
 export type DataQualityKind = "published" | "derived" | "estimated";
@@ -16,15 +17,16 @@ export interface DataQualityChipProps {
   className?: string;
 }
 
-const PALETTE: Record<DataQualityKind, { bg: string; fg: string; emoji: string }> = {
-  published: { bg: "#EAF3DE", fg: "#27500A", emoji: "✅" },
-  derived: { bg: "var(--ftp-surface-2)", fg: "var(--ftp-text-2)", emoji: "🧮" },
-  estimated: { bg: "#FAEEDA", fg: "#854F0B", emoji: "〰️" },
+/** Each kind's colours and a small Lucide icon (v5.1: were emoji). */
+const PALETTE: Record<DataQualityKind, { bg: string; fg: string; icon: LucideIcon }> = {
+  published: { bg: "#EAF3DE", fg: "#27500A", icon: CircleCheck },
+  derived: { bg: "var(--ftp-surface-2)", fg: "var(--ftp-text-2)", icon: Calculator },
+  estimated: { bg: "#FAEEDA", fg: "#854F0B", icon: Waves },
 };
 
 export function DataQualityChip({ quality, className }: DataQualityChipProps) {
   const t = useTranslations(INDIA_NS);
-  const { bg, fg, emoji } = PALETTE[quality] ?? PALETTE.published;
+  const { bg, fg, icon: Icon } = PALETTE[quality] ?? PALETTE.published;
   return (
     <span
       className={className}
@@ -41,9 +43,7 @@ export function DataQualityChip({ quality, className }: DataQualityChipProps) {
         color: fg,
       }}
     >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 11 }}>
-        {emoji}
-      </span>
+      <Icon size={12} aria-hidden style={{ flexShrink: 0 }} />
       {t(`quality.${quality}`)}
     </span>
   );

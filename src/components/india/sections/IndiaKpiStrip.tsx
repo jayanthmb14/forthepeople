@@ -1,7 +1,7 @@
 /**
  * IndiaKpiStrip — five KPI tiles under the hero (file 48 §4.7.4).
  *
- * Each tile has its own accent, an emoji chip, a number that counts up
+ * Each tile has its own accent, a drawn glyph chip, a number that counts up
  * once (and is correct in the server HTML), one line of context and the
  * source with its year. These are reference facts with a named source and
  * year, typed here on purpose; the district count comes from the registry
@@ -15,6 +15,8 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { CategoryGlyph, type GlyphName } from "@/components/graphics";
+import type { Hue } from "@/lib/design/hues";
 import { CountUpNumber } from "@/components/india/primitives/CountUpNumber";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { INDIA_NS } from "../i18n";
@@ -23,7 +25,7 @@ type Accent = "blue" | "forest-green" | "amber" | "indigo" | "pink";
 
 interface KpiTileSpec {
   id: "population" | "area" | "gdp" | "states" | "languages";
-  emoji: string;
+  glyph: GlyphName;
   value?: number;
   decimals?: number;
   /** Two numbers shown as "{a} + {b}" (states + union territories). */
@@ -31,6 +33,15 @@ interface KpiTileSpec {
   accent: Accent;
   numColor: string;
 }
+
+/** The pastel hue closest to each tile's accent, for its glyph. */
+const ACCENT_HUE: Record<Accent, Hue> = {
+  blue: "blue",
+  "forest-green": "green",
+  amber: "amber",
+  indigo: "indigo",
+  pink: "pink",
+};
 
 const ACCENT_RGB: Record<Accent, string> = {
   blue: "24, 95, 165",
@@ -50,11 +61,11 @@ const ACCENT_RGB: Record<Accent, string> = {
 export const INDIA_REFERENCE = { populationBillion: 1.46, states: 28, uts: 8 } as const;
 
 const KPI_TILES: KpiTileSpec[] = [
-  { id: "population", emoji: "👥", value: INDIA_REFERENCE.populationBillion, decimals: 2, accent: "blue", numColor: "#082F58" },
-  { id: "area", emoji: "🗺️", value: 3.29, decimals: 2, accent: "forest-green", numColor: "#27500A" },
-  { id: "gdp", emoji: "💹", value: 3.92, decimals: 1, accent: "amber", numColor: "#633806" },
-  { id: "states", emoji: "🏛️", pair: [INDIA_REFERENCE.states, INDIA_REFERENCE.uts], accent: "indigo", numColor: "#26215C" },
-  { id: "languages", emoji: "🗣️", value: 22, decimals: 0, accent: "pink", numColor: "#4D182A" },
+  { id: "population", glyph: "people", value: INDIA_REFERENCE.populationBillion, decimals: 2, accent: "blue", numColor: "#082F58" },
+  { id: "area", glyph: "map", value: 3.29, decimals: 2, accent: "forest-green", numColor: "#27500A" },
+  { id: "gdp", glyph: "growth", value: 3.92, decimals: 1, accent: "amber", numColor: "#633806" },
+  { id: "states", glyph: "civic", pair: [INDIA_REFERENCE.states, INDIA_REFERENCE.uts], accent: "indigo", numColor: "#26215C" },
+  { id: "languages", glyph: "speech", value: 22, decimals: 0, accent: "pink", numColor: "#4D182A" },
 ];
 
 const numStyle = (color: string): React.CSSProperties => ({
@@ -96,7 +107,6 @@ export function IndiaKpiStrip() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span
-                  className="ftp-emoji"
                   aria-hidden
                   style={{
                     width: 26,
@@ -105,12 +115,11 @@ export function IndiaKpiStrip() {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 15,
                     background: `rgba(${rgb}, 0.14)`,
                     flexShrink: 0,
                   }}
                 >
-                  {tile.emoji}
+                  <CategoryGlyph glyph={tile.glyph} hue={ACCENT_HUE[tile.accent]} size={18} />
                 </span>
                 <span style={{ fontSize: "12px", lineHeight: "16px", color: "var(--ftp-text-2)", fontWeight: 600 }}>{t(`${tile.id}.label`)}</span>
               </div>

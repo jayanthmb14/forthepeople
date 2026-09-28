@@ -20,7 +20,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Search } from "lucide-react";
 import { INDIA_MODULES, type IndiaModuleDef } from "@/lib/india/india-modules";
+import { CategoryGlyph } from "@/components/graphics";
 import { INDIA_NS, indiaText } from "../i18n";
+import { indiaModuleGlyph } from "../glyphs";
 
 export interface ModuleDropdownProps {
   currentLabel: string;
@@ -186,9 +188,7 @@ export function ModuleDropdown({ currentLabel, scope, superCategorySlug, locale,
                           borderRadius: 8,
                         }}
                       >
-                        <span className="ftp-emoji" aria-hidden>
-                          {m.icon}
-                        </span>
+                        <CategoryGlyph pick={indiaModuleGlyph(m.slug, m.category)} size={16} />
                         <span style={{ flex: 1 }}>{x.moduleTitle(m)}</span>
                         {m.status === "planned" || m.status === "coming_soon" ? (
                           <span style={{ fontSize: 12, fontWeight: 600, background: "var(--ftp-warn-tint)", color: "var(--ftp-warn)", padding: "1px 7px", borderRadius: 999 }}>

@@ -9,6 +9,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { CategoryGlyph } from "@/components/graphics";
 
 export interface ElectionPeriodNoticeProps {
   className?: string;
@@ -36,9 +37,7 @@ export function ElectionPeriodNotice({ className }: ElectionPeriodNoticeProps) {
         marginBottom: "1rem",
       }}
     >
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 22 }}>
-        🗳️
-      </span>
+      <CategoryGlyph glyph="politics" hue="amber" size={24} />
       <div>
         <div style={{ fontSize: 14, fontWeight: 600, color: "#633806", marginBottom: 4 }}>
           {mode === "on" ? t("election.onTitle") : t("election.pendingTitle")}

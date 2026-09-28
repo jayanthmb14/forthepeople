@@ -20,16 +20,15 @@ export const LIVING_SPEC: BandSpec = {
   watermarkClass: "crossWatermark",
   dotsAccent: "#0F6E56",
   directory: [
-    { moduleSlug: H, emoji: "💗", featured: true, value: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1, fmt: "living.fmt.yrs" } },
-    { moduleSlug: "health-pmjay", emoji: "🏥", value: { ref: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" }, decimals: 1, fmt: "living.fmt.crCards" } },
-    { moduleSlug: "health-immunisation", emoji: "💉", value: { ref: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" }, decimals: 1, fmt: "fmt.crore" } },
-    { moduleSlug: "education-schools", emoji: "🏫", value: { ref: { moduleSlug: "education-schools", metricKey: "schools_total_lakh" }, decimals: 1, fmt: "living.fmt.lakhSchools" } },
-    { moduleSlug: "education-higher", emoji: "🎓", value: { ref: { moduleSlug: "education-higher", metricKey: "higher_ed_enrolment_crore" }, decimals: 1, fmt: "living.fmt.crEnrolled" } },
-    { moduleSlug: "education-skills", emoji: "🛠", value: { ref: { moduleSlug: "education-skills", metricKey: "pmkvy_trained_crore" }, decimals: 1, fmt: "living.fmt.crTrained" } },
+    { moduleSlug: H, featured: true, value: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1, fmt: "living.fmt.yrs" } },
+    { moduleSlug: "health-pmjay", value: { ref: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" }, decimals: 1, fmt: "living.fmt.crCards" } },
+    { moduleSlug: "health-immunisation", value: { ref: { moduleSlug: "health-immunisation", metricKey: "doses_administered_crore" }, decimals: 1, fmt: "fmt.crore" } },
+    { moduleSlug: "education-schools", value: { ref: { moduleSlug: "education-schools", metricKey: "schools_total_lakh" }, decimals: 1, fmt: "living.fmt.lakhSchools" } },
+    { moduleSlug: "education-higher", value: { ref: { moduleSlug: "education-higher", metricKey: "higher_ed_enrolment_crore" }, decimals: 1, fmt: "living.fmt.crEnrolled" } },
+    { moduleSlug: "education-skills", value: { ref: { moduleSlug: "education-skills", metricKey: "pmkvy_trained_crore" }, decimals: 1, fmt: "living.fmt.crTrained" } },
   ],
   featured: {
     moduleSlug: H,
-    emoji: "💗",
     headline: { ref: { moduleSlug: H, metricKey: "life_expectancy_years" }, decimals: 1 },
     // No growth line: the "+14 years since 1990" row is on the World Bank basis
     // (58.6 → 72.2), and under the SRS headline (70.6) it implied a 1990 value
@@ -46,7 +45,7 @@ export const LIVING_SPEC: BandSpec = {
   cards: [
     {
       key: "leaders",
-      emoji: "🏅",
+      glyph: "medal",
       href: "/india/health-overview",
       rows: [
         { key: "imr", arrow: "down", note: { state: "kerala" }, value: { ref: { moduleSlug: H, metricKey: "state_leader_kerala_imr" }, fmt: "living.fmt.perK" } },
@@ -58,7 +57,7 @@ export const LIVING_SPEC: BandSpec = {
     },
     {
       key: "schemes",
-      emoji: "🩺",
+      glyph: "hospital",
       href: "/india/health-pmjay",
       rows: [
         { key: "ayushman", value: { ref: { moduleSlug: "health-pmjay", metricKey: "cards_issued_crore" }, fmt: "living.fmt.crCards" } },

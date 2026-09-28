@@ -4,8 +4,9 @@
  *
  * Module deep-dive hero: category and status chips, the title, the plain
  * description, the module picture (photo when the registry has one,
- * otherwise a Lucide icon on a hue tile), the "In simple words" line and
- * the latest published figures as emoji StatTiles.
+ * otherwise a Lucide icon on a hue tile, with the module's drawn glyph in
+ * the corner), the "In simple words" line and the latest published
+ * figures as StatTiles.
  *
  * Honesty (Sep 2026): the old headline tile printed the registry's
  * `headlineMetric.mockValue` as if it were published. Tiles now come only
@@ -23,8 +24,10 @@ import type { IndiaModuleDef } from "@/lib/india/india-modules";
 import { CATEGORY_ACCENT } from "@/lib/india/india-design";
 import { EmptyState } from "@/components/district/ui";
 import { Explainer } from "@/components/district/visuals";
+import { Glyph } from "@/components/graphics";
 import { FigureTiles, type FigureDetail } from "../FigureSheet";
 import ModuleHeroIcon from "./ModuleHeroIcon";
+import { indiaModuleGlyph } from "../glyphs";
 
 /** A plain figure tile (value + date + source) without a detail sheet. */
 export interface HeroTile {
@@ -70,6 +73,8 @@ export default function ModuleHero({
   empty,
 }: Props) {
   const accent = CATEGORY_ACCENT[module.category];
+  // The module's glyph, coloured by the page's category hue (v5.1: was the registry emoji).
+  const glyph = indiaModuleGlyph(module.slug, module.category).glyph;
   return (
     <section
       style={{
@@ -87,9 +92,7 @@ export default function ModuleHero({
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
             <span className="india-chip">
-              <span className="ftp-emoji" aria-hidden>
-                {module.icon}
-              </span>
+              <Glyph name={glyph} size={16} />
               {categoryLabel}
             </span>
             <span className={isLive ? "india-chip india-chip-live" : "india-chip india-chip-soon"}>{statusLabel}</span>
@@ -107,7 +110,7 @@ export default function ModuleHero({
             <img src={module.heroImage.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 20 }} />
           ) : (
             <>
-              <span className="ftp-emoji india-module-hero-emoji">{module.icon}</span>
+              <Glyph name={glyph} size={30} className="india-module-hero-emoji" />
               <ModuleHeroIcon slug={module.slug} accent={accent} size={72} />
             </>
           )}
@@ -136,7 +139,7 @@ export default function ModuleHero({
           border: 1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border));
           box-shadow: var(--ftp-shadow-1);
         }
-        .india-module-hero-emoji { position: absolute; top: 10px; right: 12px; font-size: 30px; }
+        .india-module-hero-emoji { position: absolute; top: 10px; right: 12px; }
         .india-chip {
           display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px;
           background: #fff; border: 1px solid color-mix(in srgb, var(--hue) 28%, var(--ftp-border));
