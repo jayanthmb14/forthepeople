@@ -12,7 +12,7 @@ import { seedBengaluruHierarchy } from "../seed-bengaluru-hierarchy";
 import { seedBengaluruLeaders } from "../seed-bengaluru-leaders";
 import { seedBengaluruData } from "./seed-bengaluru-data";
 import { seedBengaluruDataExtA } from "../seed-bengaluru-data-ext-a";
-import { seedBengaluruDataExtB } from "../seed-bengaluru-data-ext-b";
+import { seedBengaluruDataExtB } from "./seed-bengaluru-data-ext-b";
 import { seedBengaluruDataExtC } from "./seed-bengaluru-data-ext-c";
 import { seedMysuruHierarchy } from "../seed-mysuru-hierarchy";
 import { seedMysuruLeaders } from "../seed-mysuru-leaders";
