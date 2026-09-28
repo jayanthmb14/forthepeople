@@ -452,7 +452,8 @@ export async function syncInfraFromNews(
           startDate: startDate,
           originalEndDate: expectedEnd,
           expectedEnd: expectedEnd,
-          cancelledDate: isCancel ? now : null,
+          // The article's date, not the day the news was read.
+          cancelledDate: isCancel ? article.publishedAt : null,
           cancellationReason: isCancel ? extraction.cancellationReason : null,
           source: article.url,
           sourceUrls: [article.url] as Prisma.InputJsonValue,
@@ -473,7 +474,7 @@ export async function syncInfraFromNews(
       // Status: allow cancel from any state; otherwise only upward
       if (isCancel && project.status !== "CANCELLED" && project.status !== "cancelled") {
         patch.status = "CANCELLED";
-        if (!project.cancelledDate) patch.cancelledDate = now;
+        if (!project.cancelledDate) patch.cancelledDate = article.publishedAt;
         if (!project.cancellationReason && extraction.cancellationReason) patch.cancellationReason = extraction.cancellationReason;
       } else if (incomingRank > existingRank && statusRank(project.status) !== 99) {
         patch.status = extraction.status;
