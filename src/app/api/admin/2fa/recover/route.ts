@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         <h2>Admin 2FA Recovery</h2>
         <p>Someone requested to reset 2FA for the ForThePeople.in admin panel.</p>
         <p>If this was you, click the link below to disable 2FA and log in with your password only:</p>
-        <p><a href="https://forthepeople.in/en/admin/recover?token=${token}" style="background:#2563eb;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Reset 2FA</a></p>
+        <p><a href="https://forthepeople.in/en/admin-recover?token=${token}" style="background:#2563eb;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Reset 2FA</a></p>
         <p>This link expires in 1 hour.</p>
         <p>If you didn't request this, ignore this email and consider changing your admin password immediately.</p>
         ${maskedPhone ? `<p style="color:#666;font-size:13px;">Recovery phone on file: ${maskedPhone}</p>` : ""}

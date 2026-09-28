@@ -111,8 +111,9 @@ old Docker files are archived in `docs/archive/docker/`.
 - `src/app/[locale]/india/...` — the national roll-up, driven by
   `src/lib/india/india-modules.ts` and statically generated with revalidation.
 - `src/app/[locale]/admin/...` — the admin console (tabs are client components
-  under the same folder). `/admin/review`, `/admin/security`, `/admin/recover`
-  are standalone tool pages.
+  under the same folder). `/admin/review` and `/admin/security` are standalone
+  tool pages; the 2FA recovery page is `/[locale]/admin-recover`, outside the
+  admin layout so it opens while logged out.
 - Everything public lives under `src/app/[locale]/…` (about, contribute,
   feedback, support, privacy and disclaimer moved there in e505d27). Directly
   under `src/app/` there are only the root layout and page, the error and

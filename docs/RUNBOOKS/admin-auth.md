@@ -168,7 +168,7 @@ Every existing cookie fails its signature check immediately.
 | Code form never appears | layout reads `admin_totp_pending`; cookies blocked or not sent over http | use https (cookies are `secure` in production) |
 | Correct code rejected, `error=1` | pending token expired (5 min), or you switched network (IP bound), or Redis blip | go "Back to password" and log in again |
 | Correct code rejected, `error=code` | phone clock drift beyond ±30 s | re-sync time on the phone; or use a backup code |
-| Lost phone AND backup codes | — | `/en/admin/recover` e-mails a 1-hour reset link to `AdminAuth.recoveryEmail`; needs `RESEND_API_KEY` |
+| Lost phone AND backup codes | — | `/en/admin-recover` (outside the admin layout, so it opens while logged out) e-mails a 1-hour reset link to `AdminAuth.recoveryEmail`; needs `RESEND_API_KEY` |
 | Build fails: "ADMIN_SESSION_SECRET is not set" | `admin-auth.ts` throws at import | set it in Vercel (all envs) and in CI |
 
 Structured log events to search in Vercel logs / Sentry:

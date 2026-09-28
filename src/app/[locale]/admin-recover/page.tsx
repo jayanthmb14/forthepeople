@@ -4,21 +4,28 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
+// Admin 2FA recovery: the page the e-mailed reset link opens. It lives
+// OUTSIDE src/app/[locale]/admin/ on purpose: the admin layout shows only
+// the password / code form to a logged-out visitor, and someone who lost
+// their phone is logged out, so inside it this page could never render.
+
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 function RecoverContent() {
   const searchParams = useSearchParams();
+  const params = useParams<{ locale: string }>();
+  const loginHref = `/${params?.locale || "en"}/admin`;
   const token = searchParams.get("token");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  // A token in the link means we start verifying straight away.
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(token ? "loading" : "idle");
   const [message, setMessage] = useState("");
 
   // If token is in URL, auto-verify on mount
   useEffect(() => {
     if (!token) return;
-    setStatus("loading");
     fetch("/api/admin/2fa/recover/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -91,7 +98,7 @@ function RecoverContent() {
         )}
         {(status === "success" || status === "error") && (
           <a
-            href="../admin"
+            href={loginHref}
             style={{
               padding: "10px 24px", background: "#2563EB", color: "#fff",
               textDecoration: "none", borderRadius: 8, fontSize: 14, fontWeight: 600,
@@ -142,7 +149,7 @@ function RecoverContent() {
           ✅ If that email matches our records, a recovery link has been sent. Check your inbox.
         </div>
       )}
-      <a href="../admin" style={{ fontSize: 12, color: "#9B9B9B" }}>← Back to login</a>
+      <a href={loginHref} style={{ fontSize: 12, color: "#9B9B9B" }}>← Back to login</a>
     </div>
   );
 }
