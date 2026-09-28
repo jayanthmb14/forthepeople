@@ -87,7 +87,7 @@ async function collectAll(runStart: number): Promise<Response> {
     // Fair share: this district may spend AI time only up to an equal slice
     // of what is left, so every district gets fresh news every run.
     const districtsLeft = activeDistrictRows.length - i;
-    const aiDeadlineAt = Math.min(deadlineAt, Date.now() + (deadlineAt - Date.now()) / districtsLeft);
+    const aiDeadlineAt = Math.floor(Math.min(deadlineAt, Date.now() + (deadlineAt - Date.now()) / districtsLeft));
     const districtId = row.id;
     const logs: string[] = [];
     const ctx = jobContextFor(row, (msg) => logs.push(msg));

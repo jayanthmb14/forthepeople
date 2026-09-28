@@ -10,6 +10,10 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — AI calls failing on a fractional timeout (2026-09-28)
+
+- `scrape-news` split the run's AI time per district with a division, so `AbortSignal.timeout()` got e.g. 17742.5 ms and threw on every model — news classification silently fell back to keywords only. The route now floors the per-district deadline and `callAI()` always passes whole milliseconds.
+
 ### Changed — v5.6 "White Calm" refresh (branches `v56/*`, 2026-09-28)
 
 - Pages are 80–90 % white: module colour only as a thin left/top rule, the icon chip, key numbers, status dots and chart bars (`docs/DESIGN-SYSTEM.md` §2a).

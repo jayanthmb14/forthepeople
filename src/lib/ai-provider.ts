@@ -646,6 +646,9 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
       }
       timeoutMs = Math.min(timeoutMs, left);
     }
+    // AbortSignal.timeout() throws on a non-integer delay, which would fail
+    // every model in the chain — so always hand it whole milliseconds.
+    timeoutMs = Math.max(1, Math.floor(timeoutMs));
 
     if (i > 0) console.log(`[AI] Falling back to ${model}`);
     try {
