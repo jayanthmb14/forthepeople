@@ -108,8 +108,13 @@ It exists for curl/ops scripts (`cleanup-news`, `payments`, …). It bypasses
 - it is **not** accepted by anything that changes security posture. These
   use `requireAdminCookie()` (session cookie only):
   `POST /api/admin/2fa/setup`, `/verify`, `/disable`,
+  `PATCH /api/admin/security` (recovery e-mail / phone),
   `POST /api/admin/security/logout-all`, and the API-key vault
   (`vault-session.ts`, which binds to the cookie value).
+- While 2FA is on, changing the recovery e-mail or phone also needs a
+  current code (the recovery e-mail receives the link that switches 2FA
+  off), and `2fa/setup` refuses with 409 — disable 2FA first (that needs a
+  code), then set it up again. Rules: `src/lib/admin-second-factor.ts`.
 - `Authorization: Bearer <SEED_SECRET>` is **no longer** an admin credential.
   It is checked only inside `POST /api/admin/seed-tenders`.
 

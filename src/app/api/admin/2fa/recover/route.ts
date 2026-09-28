@@ -31,6 +31,10 @@ function maskPhone(phone: string): string | null {
   return `•••••${digits.slice(-4)}`;
 }
 
+// The same answer whether or not the e-mail matched, so the endpoint does
+// not confirm which address is on file.
+const SENT_MESSAGE = "If the email matches, a recovery link has been sent.";
+
 // POST: { email: "..." } — send recovery email
 export async function POST(req: NextRequest) {
   const ipHash = hashIp(getClientIp(req));
@@ -52,11 +56,11 @@ export async function POST(req: NextRequest) {
   const adminAuth = await prisma.adminAuth.findUnique({ where: { id: "admin" } });
   if (!adminAuth) {
     // Don't reveal if email matches or not
-    return NextResponse.json({ sent: true, message: "If the email matches, a recovery link has been sent." });
+    return NextResponse.json({ sent: true, message: SENT_MESSAGE });
   }
 
   if (!adminAuth.recoveryEmail || adminAuth.recoveryEmail.toLowerCase() !== email.toLowerCase()) {
-    return NextResponse.json({ sent: true, message: "If the email matches, a recovery link has been sent." });
+    return NextResponse.json({ sent: true, message: SENT_MESSAGE });
   }
 
   // Generate a one-time token
@@ -95,5 +99,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to send email. Check RESEND_API_KEY." }, { status: 500 });
   }
 
-  return NextResponse.json({ sent: true, message: "Recovery email sent" });
+  return NextResponse.json({ sent: true, message: SENT_MESSAGE });
 }
