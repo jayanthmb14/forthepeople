@@ -27,6 +27,7 @@ import {
   NOT_SEEDED_RAINFALL,
   OFFICIAL_ALERTS,
   SHOW_CITIZEN_TIP_ROWS,
+  SHOW_TALUK_FIGURES,
   SHOWN_BUDGET_ALLOCATION,
   SHOWN_BUDGET_ENTRY,
   SHOWN_CRIME,
@@ -35,6 +36,7 @@ import {
   VERIFIED_SUGAR_SEASON,
   bySeverity,
   shownCropPrices,
+  taluksForDisplay,
 } from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
@@ -720,7 +722,7 @@ async function fetchModule(
     // 30. TALUKS
     // ══════════════════════════════════════════════════
     case "taluks": {
-      const data = await prisma.taluk.findMany({
+      const rows = await prisma.taluk.findMany({
         where: { districtId: did },
         include: {
           villages: { orderBy: { name: "asc" } },
@@ -728,7 +730,9 @@ async function fetchModule(
         },
         orderBy: { name: "asc" },
       });
-      return { data, meta };
+      // Seeded taluk people and areas are never sent (SHOW_TALUK_FIGURES).
+      const census = SHOW_TALUK_FIGURES ? await loadCensus2011(did) : null;
+      return { data: taluksForDisplay(rows, { census }), meta };
     }
 
     case "famous-personalities": {

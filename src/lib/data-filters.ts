@@ -107,6 +107,46 @@ export const SHOWN_TRAFFIC = {
 export const VERIFIED_PANCHAYAT_SOURCES: string[] = [];
 export const VERIFIED_PANCHAYAT = { source: { in: VERIFIED_PANCHAYAT_SOURCES } };
 
+// ── Places: taluks (Sept 2026 audit) ───────────────────────────────────
+
+/**
+ * Taluk.population and Taluk.area are sent only once a checked source
+ * fills them. Taluk has no source column and the figures were typed into
+ * the seeds: Chennai's 7 zones add up to 11.7 million people and 852 km²
+ * (Census 2011: 4.6 million, 175 km²), Bengaluru Urban's to a round
+ * 12,765,000 (Census: 9,621,551), Mysuru's to 8,692 km² (district: 6,307),
+ * and New Delhi lists its whole-district subdivision beside its parts.
+ * While this is false the taluks API sends null for both, and the map's
+ * "How the land is shared" ring and the taluk tiles hide themselves.
+ */
+export const SHOW_TALUK_FIGURES = false;
+
+/** How far the taluks' total may exceed the district's Census figure before they are all hidden. */
+const TALUK_SUM_TOLERANCE = 0.05;
+
+/**
+ * Taluk rows as the API may send them: population and area set to null
+ * while SHOW_TALUK_FIGURES is off, and also when (switched on) the
+ * taluks' people or area add up to more than the district's Census 2011
+ * row allows. Every other field is unchanged.
+ */
+export function taluksForDisplay<T extends { population: number | null; area: number | null }>(
+  rows: T[],
+  opts: { show?: boolean; census?: { population: number; density: number | null } | null } = {},
+): T[] {
+  const hidden = () => rows.map((r) => ({ ...r, population: null, area: null }));
+  if (!(opts.show ?? SHOW_TALUK_FIGURES)) return hidden();
+  const census = opts.census;
+  if (census) {
+    const people = rows.reduce((sum, r) => sum + (r.population ?? 0), 0);
+    const area = rows.reduce((sum, r) => sum + (r.area ?? 0), 0);
+    const censusArea = census.density ? census.population / census.density : null;
+    if (people > census.population * (1 + TALUK_SUM_TOLERANCE)) return hidden();
+    if (censusArea && area > censusArea * (1 + TALUK_SUM_TOLERANCE)) return hidden();
+  }
+  return rows;
+}
+
 // ── Government area (Sept 2026 audit) ───────────────────────────────────
 
 /**
