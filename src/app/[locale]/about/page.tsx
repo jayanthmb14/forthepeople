@@ -33,6 +33,7 @@ import SiteHeader from "@/components/site/SiteHeader";
 import { BarList } from "@/components/site/SiteVisuals";
 import { HUE_HEX, type Hue } from "@/lib/design/hues";
 import { INDIA_STATES } from "@/lib/constants/districts";
+import { ABOUT_DATA_SOURCES } from "@/lib/constants/about-sources";
 import { getPlatformFacts } from "@/lib/platform-facts";
 import { languageAlternates } from "@/i18n/seo";
 
@@ -71,26 +72,7 @@ const PILLARS: { key: string; emoji: string; hue: Hue }[] = [
 ];
 
 // Portal names are proper nouns; the one-line descriptions are translated.
-// Sept 2026 audit: this list must name the sources the collectors actually
-// read. Removed: India-WRIS (not used — dam levels come from Karnataka's
-// Water Resources Department, src/scraper/jobs/dams.ts), IMD (weather is
-// OpenWeatherMap with Open-Meteo as the fallback, src/scraper/jobs/weather.ts)
-// and the National Scholarship Portal (no collector; schemes come from
-// myScheme, src/scraper/jobs/schemes.ts). Added the price and news sources.
-const DATA_SOURCES: { name: string; key: string; emoji: string; url: string }[] = [
-  { name: "AGMARKNET", key: "agmarknet", emoji: "🌾", url: "https://agmarknet.gov.in" },
-  { name: "Karnataka Water Resources Department", key: "kwrd", emoji: "💧", url: "https://water.karnataka.gov.in" },
-  { name: "OpenWeatherMap", key: "owm", emoji: "🌦️", url: "https://openweathermap.org" },
-  { name: "Election Commission of India", key: "eci", emoji: "🗳️", url: "https://eci.gov.in" },
-  { name: "eGramSwaraj / PFMS", key: "egram", emoji: "🏘️", url: "https://egramswaraj.gov.in" },
-  { name: "UDISE+", key: "udise", emoji: "🎓", url: "https://udiseplus.gov.in" },
-  { name: "myScheme", key: "myscheme", emoji: "🎒", url: "https://www.myscheme.gov.in" },
-  { name: "PMAY-G / PMAY-U", key: "pmay", emoji: "🏠", url: "https://pmayg.nic.in" },
-  { name: "IBJA", key: "ibja", emoji: "🪙", url: "https://www.ibjarates.com" },
-  { name: "PPAC / BPCL", key: "fuel", emoji: "⛽", url: "https://ppac.gov.in" },
-  { name: "Yahoo Finance", key: "yahoo", emoji: "📈", url: "https://finance.yahoo.com" },
-  { name: "Google News", key: "news", emoji: "📰", url: "https://news.google.com" },
-];
+// The list and the rule for what may be on it: src/lib/constants/about-sources.ts.
 
 /** One colour per state row in the "where we are live" bars. */
 const STATE_ROW_HUES: Hue[] = ["blue", "green", "violet", "amber", "teal", "rose", "indigo", "orange", "cyan", "pink"];
@@ -247,21 +229,25 @@ export default async function AboutPage({ params }: Props) {
         <Section title={t("sourcesTitle")} emoji="🏛️">
           <p className="ftp-prose" style={{ ...READ, marginBottom: 16 }}>{t.rich("sourcesBody", { b })}</p>
           <ul className="ftp-grid" style={{ listStyle: "none", margin: 0, padding: 0, gap: 8, ["--ftp-grid-min" as string]: "300px" } as React.CSSProperties}>
-            {DATA_SOURCES.map((src) => (
+            {ABOUT_DATA_SOURCES.map((src) => (
               <Card key={src.key} as="li" padding={12} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 36, height: 36, fontSize: 18, borderRadius: 11 }}>
                   {src.emoji}
                 </span>
                 <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
-                  >
-                    {src.name}
-                    <ExternalLink size={12} aria-hidden />
-                  </a>
+                  {src.url ? (
+                    <a
+                      href={src.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
+                    >
+                      {src.name}
+                      <ExternalLink size={12} aria-hidden />
+                    </a>
+                  ) : (
+                    <span style={{ display: "inline-flex", alignItems: "center", minHeight: 32, fontSize: 14, fontWeight: 600, color: "var(--ftp-text)" }}>{src.name}</span>
+                  )}
                   <span className="ftp-body" style={{ color: "var(--ftp-text-2)" }}>{t(`src_${src.key}`)}</span>
                 </span>
               </Card>
