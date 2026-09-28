@@ -85,7 +85,7 @@ export function MethodologyAccordion({ rows, group, className }: MethodologyAcco
                 <ChevronDown
                   size={16}
                   aria-hidden
-                  style={{ color: "var(--ftp-text-2)", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }}
+                  style={{ color: "var(--ftp-text-2)", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform var(--ftp-dur-fast) ease" }}
                 />
               </button>
               {isOpen && (

@@ -122,7 +122,7 @@ export function IconPictogram({
               justifyContent: "center",
               width: size + 12,
               height: size + 12,
-              borderRadius: 10,
+              borderRadius: "var(--ftp-radius-sm)",
               background: i < lit ? "var(--hue-tint)" : "var(--ftp-surface-2)",
               color: i < lit ? "var(--hue)" : "var(--ftp-border-strong)",
             }}
@@ -193,7 +193,7 @@ export function ReadingAge({
         alignItems: "flex-start",
         gap: 8,
         padding: "8px 12px",
-        borderRadius: 12,
+        borderRadius: "var(--ftp-radius-tile)",
         background: "var(--ftp-warn-tint)",
         border: "1px solid color-mix(in srgb, var(--ftp-warn) 25%, transparent)",
         color: "var(--ftp-text)",

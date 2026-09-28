@@ -106,7 +106,7 @@ export function LanguageRotator() {
           from { opacity: 0; transform: translateY(6px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .ftp-rotator { animation: ftp-rotator-in 360ms ease-out both; }
+        .ftp-rotator { animation: ftp-rotator-in 180ms ease-out both; }
         @media (prefers-reduced-motion: reduce) {
           .ftp-rotator { animation: none; }
         }

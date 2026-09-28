@@ -68,7 +68,7 @@ export function GlyphChips({
               background: active ? "var(--hue-tint)" : "var(--ftp-surface)",
               color: active ? "var(--hue-deep)" : "var(--ftp-text)",
               boxShadow: active ? "inset 0 0 0 1px var(--hue)" : undefined,
-              transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
+              transition: "background-color var(--ftp-dur-fast) ease, color var(--ftp-dur-fast) ease, border-color var(--ftp-dur-fast) ease",
               fontFamily: "var(--ftp-font-sans)",
               fontSize: 13,
               lineHeight: "20px",

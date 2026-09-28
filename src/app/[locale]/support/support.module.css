@@ -33,7 +33,7 @@
   }
 }
 .rise {
-  animation: rise 180ms var(--ftp-ease-out, ease-out) both;
+  animation: rise var(--ftp-dur-slow) var(--ftp-ease-out, ease-out) both;
   animation-delay: calc(var(--d, 0) * 40ms);
 }
 
@@ -70,7 +70,7 @@
   .heroArt { display: flex; }
 }
 @media (max-width: 639px) {
-  .hero { padding: 0 14px; border-radius: 16px; }
+  .hero { padding: 0 14px; border-radius: var(--ftp-radius-card); }
 }
 
 /* ── A band: the slightly darker surface that groups white cards ─────── */
@@ -134,10 +134,10 @@
   padding: 16px 14px 14px;
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
-  border-radius: 16px;
+  border-radius: var(--ftp-radius-card);
   box-shadow: inset 0 2px 0 var(--hue), var(--ftp-shadow-1);
   scroll-margin-top: 96px;
-  transition: transform 150ms var(--ftp-ease-out, ease-out), box-shadow 150ms ease, border-color 150ms ease;
+  transition: transform var(--ftp-dur) var(--ftp-ease), box-shadow var(--ftp-dur) var(--ftp-ease), border-color var(--ftp-dur) var(--ftp-ease);
 }
 .tierCard:hover {
   transform: translateY(-2px);
@@ -202,7 +202,7 @@
   line-height: 18px;
   font-weight: 650;
   white-space: nowrap;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color var(--ftp-dur) ease, border-color var(--ftp-dur) ease;
 }
 
 .price {
@@ -268,7 +268,7 @@
   padding: 16px;
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
-  border-radius: 16px;
+  border-radius: var(--ftp-radius-card);
   box-shadow: var(--ftp-shadow-1);
 }
 .stepBadge {
@@ -330,9 +330,9 @@
 .disclosure {
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
-  border-radius: 16px;
+  border-radius: var(--ftp-radius-card);
   box-shadow: var(--ftp-shadow-1);
-  transition: border-color 150ms ease;
+  transition: border-color var(--ftp-dur) ease;
 }
 .disclosure:hover { border-color: var(--ftp-border-strong); }
 .summary {
@@ -349,8 +349,8 @@
   color: var(--ftp-text);
 }
 .summary::-webkit-details-marker { display: none; }
-.summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: 16px; }
-.chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform 150ms ease; }
+.summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: var(--ftp-radius-card); }
+.chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform var(--ftp-dur-fast) ease; }
 .disclosure[open] .chevron { transform: rotate(180deg); }
 .disclosureBody {
   padding: 4px 16px 16px;

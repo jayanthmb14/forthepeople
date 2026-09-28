@@ -80,19 +80,17 @@ export function Explainer({
   return (
     <div
       role="note"
+      // v5.7: white card + 3 px hue rule from `.ftp-card.ftp-card-tinted`.
+      className="ftp-card ftp-card-tinted"
       style={{
         display: "flex",
         gap: 12,
         alignItems: "flex-start",
         padding: "14px 16px",
         margin: "0 0 20px",
-        borderRadius: "var(--ftp-radius-card)",
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
-        boxShadow: "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)",
       }}
     >
-      <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, marginTop: 1 }}>
+      <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: "var(--ftp-radius-sm)", marginTop: 1 }}>
         <KitIcon icon={chipIcon} size={17} />
       </span>
       <div style={{ minWidth: 0 }}>
@@ -158,7 +156,7 @@ export function Pictogram({
                 height: box,
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: 10,
+                borderRadius: "var(--ftp-radius-sm)",
                 background: lit > 0 ? "var(--hue-tint)" : "var(--ftp-surface-2)",
                 border: `1px solid ${lit > 0 ? "color-mix(in srgb, var(--hue) 18%, transparent)" : "transparent"}`,
                 ["--i" as string]: i,
@@ -331,7 +329,7 @@ export function WaterTank({
             fontSize: 24,
           }}
         >
-          <span style={{ padding: "2px 10px", borderRadius: 999, background: "var(--ftp-surface)", color: "var(--hue-deep)", boxShadow: "var(--ftp-shadow-1)" }}>
+          <span style={{ padding: "2px 10px", borderRadius: "var(--ftp-radius-pill)", background: "var(--ftp-surface)", color: "var(--hue-deep)", boxShadow: "var(--ftp-shadow-1)" }}>
             {Math.round(p)}%
           </span>
         </span>
@@ -425,7 +423,7 @@ export const CHART_HUE_CLASS = "ftp-hue-blue";
 export const chartTooltipStyle: React.CSSProperties = {
   background: "var(--ftp-surface)",
   border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
-  borderRadius: 12,
+  borderRadius: "var(--ftp-radius-tile)",
   boxShadow: "var(--ftp-shadow-2)",
   fontSize: 12,
   fontFamily: "var(--ftp-font-sans)",
@@ -507,14 +505,12 @@ export function ChartCard({
   const hasTable = Boolean(table);
   return (
     <figure
-      className={CHART_HUE_CLASS}
+      // v5.7: the white card look comes from `.ftp-card` (a chart inside a
+      // card becomes a quiet surface-2 panel, never a second border).
+      className={`ftp-card ${CHART_HUE_CLASS}`}
       style={{
         margin: 0,
         padding: 18,
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
-        borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
         minWidth: 0,
       }}
     >

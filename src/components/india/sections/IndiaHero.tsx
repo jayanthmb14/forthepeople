@@ -60,7 +60,7 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
         <HeroJaaliBottomLeft />
         <HeroMandala />
 
-        {/* 4px vertical tricolor stripe on left edge — fades in over 400ms */}
+        {/* 4px vertical tricolor stripe on left edge — fades in over 180ms */}
         <span
           aria-hidden
           className="india-hero-stripe"
@@ -70,7 +70,6 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
             top: 0,
             bottom: 0,
             width: "4px",
-            opacity: 0,
             background:
               "linear-gradient(180deg, #FF9933 0%, #FF9933 33.33%, #FFFFFF 33.33%, #FFFFFF 66.66%, #138808 66.66%, #138808 100%)",
           }}
@@ -89,7 +88,6 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
           <div
             className="india-hero-banner"
             style={{
-              opacity: 0,
               paddingBottom: "10px",
               borderBottom: "0.5px dashed rgba(0,0,0,0.10)",
             }}
@@ -185,40 +183,42 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
           </div>
 
           {/* 1×6 identity grid */}
-          <div className="india-hero-identity" style={{ opacity: 0 }}>
+          <div className="india-hero-identity">
             <NationalIdentityGrid />
           </div>
 
           {/* 1×6 quick access strip */}
-          <div className="india-hero-quick" style={{ opacity: 0 }}>
+          <div className="india-hero-quick">
             <QuickAccessStrip locale={locale} />
           </div>
         </div>
 
+        {/* v5.7: the hero rests fully visible (no inline opacity: 0 waiting
+            for an animation to finish); the 180 ms entrance only plays over it. */}
         <style>{`
           @keyframes ftp-hero-fade-in-up {
-            0%   { opacity: 0; transform: translateY(8px); }
+            0%   { opacity: 0.35; transform: translateY(4px); }
             100% { opacity: 1; transform: translateY(0); }
           }
           @keyframes ftp-hero-stripe-fade {
-            0%   { opacity: 0; }
+            0%   { opacity: 0.35; }
             100% { opacity: 1; }
           }
           @media (prefers-reduced-motion: no-preference) {
             .india-hero-banner {
-              animation: ftp-hero-fade-in-up 250ms ease-out forwards;
+              animation: ftp-hero-fade-in-up 180ms ease-out backwards;
               animation-delay: 0ms;
             }
             .india-hero-identity {
-              animation: ftp-hero-fade-in-up 250ms ease-out forwards;
-              animation-delay: 50ms;
+              animation: ftp-hero-fade-in-up 180ms ease-out backwards;
+              animation-delay: 30ms;
             }
             .india-hero-quick {
-              animation: ftp-hero-fade-in-up 250ms ease-out forwards;
-              animation-delay: 100ms;
+              animation: ftp-hero-fade-in-up 180ms ease-out backwards;
+              animation-delay: 60ms;
             }
             .india-hero-stripe {
-              animation: ftp-hero-stripe-fade 400ms ease-out forwards;
+              animation: ftp-hero-stripe-fade 180ms ease-out backwards;
             }
           }
           @media (prefers-reduced-motion: reduce) {

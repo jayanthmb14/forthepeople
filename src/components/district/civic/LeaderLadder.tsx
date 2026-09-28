@@ -78,10 +78,11 @@ export function LeaderLadder({
                   gap: 12,
                   flexWrap: "wrap",
                   padding: "12px 14px",
-                  borderRadius: 16,
-                  // v5.5: white bands; the level shows in the icon and the title only.
-                  background: "var(--ftp-surface)",
-                  border: "1px solid var(--ftp-border)",
+                  borderRadius: "var(--ftp-radius-tile)",
+                  // v5.5: the level shows in the icon and the title only.
+                  // v5.7: a band inside the card is a quiet surface-2 panel
+                  // (no second border); the white name buttons sit on it.
+                  background: "var(--ftp-surface-2)",
                 }}
               >
                 <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11 }}>
@@ -131,7 +132,7 @@ export function LeaderLadder({
                           minHeight: 44,
                           maxWidth: "100%",
                           padding: "4px 12px",
-                          borderRadius: 12,
+                          borderRadius: "var(--ftp-radius-tile)",
                           border: "1px solid var(--ftp-border)",
                           background: "var(--ftp-surface)",
                           cursor: "pointer",

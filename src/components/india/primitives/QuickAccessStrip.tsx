@@ -76,7 +76,7 @@ export function QuickAccessStrip({ locale }: QuickAccessStripProps) {
                   padding: "7px 9px",
                   color: "var(--color-text-primary)",
                   textDecoration: "none",
-                  transition: "transform 150ms, background 150ms",
+                  transition: "transform var(--ftp-dur-fast), background var(--ftp-dur-fast)",
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>

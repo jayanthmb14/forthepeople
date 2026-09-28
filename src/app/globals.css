@@ -9,9 +9,9 @@
   /* ── Colors ── */
   /* v5 "Calm": the legacy names now carry the cool blue-white palette
      (see the v5 token block further down for the canonical --ftp-* set). */
-  --color-background: #FAFBFD;
+  --color-background: #F2F4F8;
   --color-surface: #FFFFFF;
-  --color-border: #E1E8F2;
+  --color-border: #DAE2EE;
   --color-text-primary: #0F1B2D;
   --color-text-secondary: #4A5A70;
   --color-text-muted: #5F6F86;
@@ -64,8 +64,8 @@
   /* ── Session 18 v12 Phase F: standardized FTP card tokens ──
      Use these in scoped component <style> blocks to keep border/radius/
      shadow consistent across every dashboard card / tile / section. */
-  --ftp-border-card:    1px solid #E1E8F2;
-  --ftp-border-section: 1px solid #E1E8F2;
+  --ftp-border-card:    1px solid #DAE2EE;
+  --ftp-border-section: 1px solid #DAE2EE;
   --ftp-border-hover:   1px solid #2563EB;
   --ftp-radius-card:    14px;
   --ftp-radius-tile:    12px;
@@ -80,7 +80,7 @@
   --color-text-tertiary:        #5F6F86;
   --color-text-info:            #2563EB;
   --color-background-info:      #E8F0FE;
-  --color-border-tertiary:      #E1E8F2;
+  --color-border-tertiary:      #DAE2EE;
   --color-border-secondary:     #C9D5E6;
   --color-border-info:          #2563EB;
   --border-radius-md:           8px;
@@ -208,8 +208,8 @@
    generator but doesn't surface them as inheritable CSS custom properties
    unless declared on a real selector. */
 :root {
-  --ftp-border-card:    1px solid #E1E8F2;
-  --ftp-border-section: 1px solid #E1E8F2;
+  --ftp-border-card:    1px solid #DAE2EE;
+  --ftp-border-section: 1px solid #DAE2EE;
   --ftp-border-hover:   1px solid #2563EB;
   --ftp-radius-card:    14px;
   --ftp-radius-tile:    12px;
@@ -423,13 +423,15 @@
  *  calm tinted notice — never as a stripe or a gradient.
  */
 :root {
-  /* Surfaces (v5.2 "White Calm"): a near-white page, white cards, a very
-     quiet grey-blue for hovers and skeletons. 80–90 % of a screen is white. */
-  --ftp-bg:              #FAFBFD;
+  /* Surfaces (v5.7 "White Calm, edged"): a light cool-grey ground a touch
+     darker than the cards, so every white card stands out on it; white
+     cards with one 1 px border; a very quiet grey-blue for hovers, tracks,
+     skeletons and a card inside a card. 80–90 % of a screen is still white. */
+  --ftp-bg:              #F2F4F8;
   --ftp-surface:         #FFFFFF;
   --ftp-surface-2:       #F3F6FA;
-  --ftp-border:          #E1E8F2;
-  --ftp-border-strong:   #C9D5E6;
+  --ftp-border:          #DAE2EE;
+  --ftp-border-strong:   #C3CFE1;
 
   /* Text */
   --ftp-text:            #0F1B2D;
@@ -464,15 +466,26 @@
   --ftp-map-locked:      #E6ECF5;
   --ftp-map-locked-hover:#D5DFED;
 
-  /* Shape */
+  /* Shape — one rounded scale (v5.7): cards / panels 14, tiles / buttons /
+     inputs 12, small inner pieces (icon chips, rows) 10, chips and pills 999. */
   --ftp-radius-card:     14px;
   --ftp-radius-tile:     12px;
+  --ftp-radius-sm:       10px;
   --ftp-radius-pill:     999px;
 
-  /* Depth — soft, cool shadows; link cards lift a little on hover */
-  --ftp-shadow-1:        0 1px 2px rgba(15, 27, 45, 0.04), 0 4px 14px -8px rgba(15, 27, 45, 0.10);
-  --ftp-shadow-2:        0 2px 6px rgba(15, 27, 45, 0.05), 0 14px 30px -14px rgba(15, 27, 45, 0.18);
-  --ftp-ease-out:        cubic-bezier(0.22, 1, 0.36, 1);
+  /* Depth — soft, cool shadows; tappable cards lift 1 px on hover */
+  --ftp-shadow-1:        0 1px 2px rgba(15, 27, 45, 0.05), 0 2px 8px -4px rgba(15, 27, 45, 0.08);
+  --ftp-shadow-2:        0 2px 6px rgba(15, 27, 45, 0.06), 0 12px 26px -12px rgba(15, 27, 45, 0.20);
+
+  /* Motion (v5.7): quick and quiet. fast = colour / border changes,
+     base = hover lifts, menus, slow = entrances and sheets (never more).
+     draw = the one exception, a chart's bars / rings growing in once. */
+  --ftp-dur-fast:        120ms;
+  --ftp-dur:             160ms;
+  --ftp-dur-slow:        180ms;
+  --ftp-dur-draw:        560ms;
+  --ftp-ease:            cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ftp-ease-out:        var(--ftp-ease);
 
   /* Focus ring (keyboard users): brand blue, 2 px, offset 2 px */
   --ftp-focus:           #2563EB;
@@ -510,8 +523,10 @@
   --ftp-bg:              #0E0E0C;
   --ftp-surface:         #1A1A18;
   --ftp-surface-2:       #232320;
-  --ftp-border:          rgba(255, 255, 255, 0.10);
-  --ftp-border-strong:   rgba(255, 255, 255, 0.18);
+  --ftp-border:          rgba(255, 255, 255, 0.12);
+  --ftp-border-strong:   rgba(255, 255, 255, 0.20);
+  --ftp-shadow-1:        0 1px 2px rgba(0, 0, 0, 0.35);
+  --ftp-shadow-2:        0 2px 6px rgba(0, 0, 0, 0.40), 0 12px 26px -12px rgba(0, 0, 0, 0.55);
 
   --ftp-text:            #F5F5F1;
   --ftp-text-2:          #B8B8B4;
@@ -586,13 +601,15 @@
   .ftp-chip { min-height: 44px; }
 }
 
-/* Interactive card: a 1 px lift, a softer shadow and a hue border on hover. */
-.ftp-card-link { transition: transform 200ms var(--ftp-ease-out), box-shadow 200ms var(--ftp-ease-out), border-color 150ms ease; }
-.ftp-card-link:hover { transform: translateY(-1px); box-shadow: var(--ftp-shadow-2); border-color: color-mix(in srgb, var(--hue) 35%, var(--ftp-border)); }
-.ftp-card-link:active { transform: translateY(0); }
+/* Interactive (tappable) card: a 1 px lift, a stronger shadow and the
+   module hue on its border at low strength. Quick (160 ms). */
+.ftp-card-link { transition: transform var(--ftp-dur) var(--ftp-ease), box-shadow var(--ftp-dur) var(--ftp-ease), border-color var(--ftp-dur-fast) ease; }
+.ftp-card-link:hover { transform: translateY(-1px); box-shadow: var(--ftp-shadow-2); border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)) !important; }
+.ftp-card-link:active { transform: translateY(0); box-shadow: var(--ftp-shadow-1); }
+.ftp-card-link:focus-visible { outline: 2px solid var(--ftp-focus); outline-offset: 2px; }
 
 /* Left rail item (Sidebar.tsx). Hover = surface-2; active is set inline. */
-.ftp-rail-item { transition: background-color 150ms ease, color 150ms ease; }
+.ftp-rail-item { transition: background-color var(--ftp-dur-fast) ease, color var(--ftp-dur-fast) ease; }
 .ftp-rail-item:hover:not([data-active="true"]) { background: var(--ftp-surface-2); color: var(--ftp-text); }
 
 /* Every kit button (ToolbarButton, PrimaryButton) carries `.ftp-btn`.
@@ -604,11 +621,11 @@
 }
 
 /* Secondary (quiet) button used by Toolbar. */
-.ftp-btn-secondary { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-btn-secondary { transition: border-color var(--ftp-dur-fast) ease, background-color var(--ftp-dur-fast) ease; }
 .ftp-btn-secondary:hover { border-color: var(--ftp-border-strong); background: var(--ftp-surface-2); }
 
 /* Primary (filled brand) button — PrimaryButton in the kit. */
-.ftp-btn-primary { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-btn-primary { transition: border-color var(--ftp-dur-fast) ease, background-color var(--ftp-dur-fast) ease; }
 .ftp-btn-primary:hover:not(:disabled) { border-color: var(--ftp-brand-deep); background: var(--ftp-brand-deep); }
 
 /* Live dot: the ONE permitted animation — 2 s opacity pulse, only when
@@ -619,9 +636,11 @@
 }
 .ftp-live-dot { animation: ftp-live-pulse 2s ease-in-out infinite; }
 
-/* Skeleton rows for LoadingShell: flat surface-2 blocks, gentle fade. */
+/* Skeleton rows for LoadingShell: flat blocks, gentle fade. v5.7: a tone
+   between surface-2 and the border, so a skeleton shows both on a white
+   card and on the (now darker) page ground. */
 @keyframes ftp-skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-.ftp-skeleton { background: var(--ftp-surface-2); animation: ftp-skeleton 1.6s ease-in-out infinite; }
+.ftp-skeleton { background: color-mix(in srgb, var(--ftp-border) 55%, var(--ftp-surface-2)); animation: ftp-skeleton 1.6s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .ftp-live-dot, .ftp-skeleton { animation: none; }
@@ -688,7 +707,7 @@ body {
 .progress-bar-fill {
   height: 100%;
   border-radius: 99px;
-  transition: width 400ms ease;
+  transition: width var(--ftp-dur-slow) var(--ftp-ease);
 }
 
 /* ── Utility: Animate fade-in ── */
@@ -698,7 +717,7 @@ body {
 }
 
 .animate-fade-in {
-  animation: fade-in 200ms ease forwards;
+  animation: fade-in var(--ftp-dur-slow) var(--ftp-ease) backwards;
 }
 
 /* ── Skip navigation (accessibility) ── */
@@ -731,7 +750,9 @@ body {
 :focus-visible {
   outline: 2px solid var(--ftp-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  /* (v5.7: no border-radius here — it squared off every rounded card and
+     chip the moment it took keyboard focus. The outline follows the
+     element's own radius.) */
 }
 
 /* ── Screen-reader only ── */
@@ -896,35 +917,44 @@ body {
 .ftp-h1-face { font-family: var(--ftp-font-h1); letter-spacing: -0.02em; }
 .ftp-emoji   { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; line-height: 1; }
 
-/* ── Motion ───────────────────────────────────────────────────────
-   Subtle. One entrance (fade + 6 px rise, staggered by --i), bars and
-   rings that grow in once, numbers that count up once. No intro splash,
-   no bouncing, no floating. Content is fully visible without JS; the
-   animation only plays on load. prefers-reduced-motion turns it all off. */
-@keyframes ftp-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes ftp-pop  { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+/* ── Motion (v5.7: quick) ─────────────────────────────────────────
+   Subtle and fast. One entrance (a 180 ms fade + 4 px rise, staggered by
+   --i, never more than 150 ms of delay), bars and rings that grow in once
+   (--ftp-dur-draw), numbers that count up once. Entrances start from a
+   VISIBLE state (opacity 0.35, never 0) and are pure CSS — nothing waits
+   for JS or a scroll observer. No intro splash, no bouncing.
+   prefers-reduced-motion turns it all off. */
+@keyframes ftp-rise { from { opacity: 0.35; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes ftp-pop  { from { opacity: 0.35; transform: scale(0.98); } to { opacity: 1; transform: none; } }
+/* Page content (module pages): a quick fade only — no transform, so a
+   position: fixed sheet inside the page is never trapped. */
+@keyframes ftp-enter { from { opacity: 0.4; } to { opacity: 1; } }
 @keyframes ftp-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes ftp-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 /* Only a "from": the stroke animates to whatever dashoffset the element
    declares, so a ring drawn to 62 % stops at 62 %. */
 @keyframes ftp-draw { from { stroke-dashoffset: var(--len, 1000); } }
-.ftp-draw-path { animation: ftp-draw 900ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 60ms + 100ms); }
-.ftp-dt-row { transition: background-color 120ms ease; }
+.ftp-draw-path { animation: ftp-draw var(--ftp-dur-draw) var(--ftp-ease) both; animation-delay: min(calc(var(--i, 0) * 40ms + 60ms), 240ms); }
+.ftp-dt-row { transition: background-color var(--ftp-dur-fast) ease; }
 .ftp-dt-row:hover { background: var(--ftp-surface-2) !important; }
 @keyframes ftp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes ftp-ping { 0% { transform: scale(1); opacity: 0.4; } 100% { transform: scale(2.2); opacity: 0; } }
 @keyframes ftp-wave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-.ftp-rise { animation: ftp-rise 420ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 50ms); }
-.ftp-pop  { animation: ftp-pop 360ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
-.ftp-grow-x { transform-origin: left center; animation: ftp-grow-x 700ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 60ms + 100ms); }
-.ftp-grow-y { transform-origin: center bottom; animation: ftp-grow-y 700ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 40ms + 80ms); }
+.ftp-rise { animation: ftp-rise var(--ftp-dur-slow) var(--ftp-ease) backwards; animation-delay: min(calc(var(--i, 0) * 30ms), 150ms); }
+.ftp-pop  { animation: ftp-pop var(--ftp-dur-slow) var(--ftp-ease) backwards; animation-delay: min(calc(var(--i, 0) * 25ms), 150ms); }
+.ftp-grow-x { transform-origin: left center; animation: ftp-grow-x var(--ftp-dur-draw) var(--ftp-ease) both; animation-delay: min(calc(var(--i, 0) * 40ms + 60ms), 240ms); }
+.ftp-grow-y { transform-origin: center bottom; animation: ftp-grow-y var(--ftp-dur-draw) var(--ftp-ease) both; animation-delay: min(calc(var(--i, 0) * 30ms + 60ms), 240ms); }
 .ftp-float { animation: ftp-float 5s ease-in-out infinite; }
 .ftp-wave  { animation: ftp-wave 4.5s linear infinite; }
 .ftp-ping  { position: absolute; inset: 0; border-radius: 50%; background: currentColor; animation: ftp-ping 2.4s var(--ftp-ease-out) infinite; }
 
 /* Kit surfaces */
 .ftp-v4-card, .ftp-card { background: var(--ftp-surface); border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-card); box-shadow: var(--ftp-shadow-1); }
+/* v5.7: a card inside a card never draws a second full border and shadow —
+   it becomes a quiet surface-2 panel (the outer card keeps the edge). */
+.ftp-card .ftp-card:not(.ftp-card-link) { background: var(--ftp-surface-2); border-color: transparent; box-shadow: none; }
+.ftp-card .ftp-card.ftp-card-tinted { box-shadow: inset 3px 0 0 var(--hue); }
 .ftp-v4-tinted, .ftp-card-tinted { background: var(--ftp-surface); border-color: var(--ftp-border); box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1); }
 /* v5.2 "White Calm" accents: the ONLY places a module hue may touch a card.
    .ftp-rule-left = a 3 px hue rule on the left edge (explainers, the page
@@ -938,7 +968,7 @@ body {
    white text); .ftp-btn-brand (kit PrimaryButton) is always brand blue. */
 .ftp-btn-primary { background: var(--hue); border-color: var(--hue); box-shadow: 0 1px 2px rgba(15, 27, 45, 0.08); }
 .ftp-btn-primary:hover:not(:disabled) { background: var(--hue-deep); border-color: var(--hue-deep); }
-.ftp-btn-brand { background: var(--ftp-brand); border: 1px solid var(--ftp-brand); color: var(--ftp-surface); box-shadow: 0 1px 2px rgba(15, 27, 45, 0.08); transition: background-color 150ms ease, border-color 150ms ease; }
+.ftp-btn-brand { background: var(--ftp-brand); border: 1px solid var(--ftp-brand); color: var(--ftp-surface); box-shadow: 0 1px 2px rgba(15, 27, 45, 0.08); transition: background-color var(--ftp-dur-fast) ease, border-color var(--ftp-dur-fast) ease; }
 .ftp-btn-brand:hover:not(:disabled) { background: var(--ftp-brand-deep); border-color: var(--ftp-brand-deep); }
 
 /* Sidebar rail: active item in the module's hue */
@@ -952,8 +982,8 @@ body {
 html { scroll-padding-top: 100px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ftp-rise, .ftp-pop, .ftp-grow-x, .ftp-grow-y, .ftp-float, .ftp-ping, .ftp-draw-path, .ftp-wave { animation: none !important; }
-  .ftp-card-link, .ftp-card-link:hover { transform: none !important; transition: none !important; }
+  .ftp-rise, .ftp-pop, .ftp-grow-x, .ftp-grow-y, .ftp-float, .ftp-ping, .ftp-draw-path, .ftp-wave, .ftp-module-page, .animate-fade-in { animation: none !important; }
+  .ftp-card-link, .ftp-card-link:hover, .ftp-module-tile:hover { transform: none !important; transition: none !important; }
   /* Hover lifts on buttons and tiles: no movement at all. */
   *, *::before, *::after { transition-duration: 0.01ms !important; }
   a:hover, button:hover { transform: none !important; }
@@ -984,9 +1014,9 @@ html { scroll-padding-top: 100px; }
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
   box-shadow: var(--ftp-shadow-1);
-  transition: border-color 150ms ease, box-shadow 200ms var(--ftp-ease-out);
+  transition: transform var(--ftp-dur) var(--ftp-ease), border-color var(--ftp-dur-fast) ease, box-shadow var(--ftp-dur) var(--ftp-ease);
 }
-.ftp-module-tile:hover { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); box-shadow: var(--ftp-shadow-2); }
+.ftp-module-tile:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); box-shadow: var(--ftp-shadow-2); }
 .ftp-module-emoji {
   display: inline-flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; margin-bottom: 8px; border-radius: 11px; font-size: 20px;
@@ -1002,7 +1032,7 @@ html { scroll-padding-top: 100px; }
 @media (max-width: 767px) { .ftp-picture-row { grid-template-columns: minmax(0, 1fr); } }
 
 /* Chips: pastel. Active = hue tint + deep text + hue border; hover = tint. */
-.ftp-chip { transition: border-color 150ms ease, background-color 150ms ease; }
+.ftp-chip { transition: border-color var(--ftp-dur-fast) ease, background-color var(--ftp-dur-fast) ease, color var(--ftp-dur-fast) ease; }
 .ftp-chip:hover[aria-pressed="false"] { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)) !important; background: var(--ftp-surface-2) !important; }
 header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-decoration: underline; }
 .ftp-h1, .ftp-h2 { text-wrap: balance; }
@@ -1102,7 +1132,7 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 /* ═══ Layout — module page frame, grids, detail sheet, steps, countdown ═══
    Devices: phone < 640 · tablet 640–1023 · laptop 1024–1439 · PC ≥ 1440.
    docs/LAYOUT.md explains the rules. */
-.ftp-module-page { width: 100%; max-width: 1320px; margin-inline: auto; padding: 24px 28px 48px; box-sizing: border-box; }
+.ftp-module-page { width: 100%; max-width: 1320px; margin-inline: auto; padding: 24px 28px 48px; box-sizing: border-box; animation: ftp-enter var(--ftp-dur-slow) var(--ftp-ease) backwards; }
 @media (max-width: 1023px) { .ftp-module-page { padding: 20px 20px 40px; } }
 @media (max-width: 639px)  { .ftp-module-page { padding: 16px 16px 32px; } }
 /* Older pages still pass maxWidth: var(--ftp-reading-max) inline (960 px):
@@ -1150,11 +1180,11 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 
 /* DetailSheet: bottom sheet on phones/tablets, right panel on laptop/PC */
 .ftp-sheet-root { position: fixed; inset: 0; z-index: 90; }
-.ftp-sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 27, 45, 0.40); animation: ftp-fade-in 160ms ease-out; }
+.ftp-sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 27, 45, 0.40); animation: ftp-fade-in var(--ftp-dur) ease-out; }
 .ftp-sheet {
   position: absolute; left: 0; right: 0; bottom: 0; max-height: 90vh; display: flex; flex-direction: column;
   background: var(--ftp-surface); border-radius: 18px 18px 0 0; box-shadow: 0 -12px 40px -16px rgba(15, 27, 45, 0.30);
-  animation: ftp-sheet-up 220ms cubic-bezier(.2,.8,.2,1); padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: ftp-sheet-up var(--ftp-dur-slow) var(--ftp-ease); padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (min-width: 1024px) {
   .ftp-sheet { left: auto; top: 0; width: min(480px, 100vw); max-height: none; border-radius: 18px 0 0 18px; animation-name: ftp-sheet-left; }
@@ -1174,8 +1204,8 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-detail-row dt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ftp-text-2); }
 .ftp-detail-row dt > svg { flex-shrink: 0; color: var(--hue, var(--ftp-text-2)); }
 .ftp-detail-row dd { margin: 0; font-size: 15px; line-height: 22px; color: var(--ftp-text); overflow-wrap: anywhere; }
-@keyframes ftp-sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes ftp-sheet-left { from { transform: translateX(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ftp-sheet-up { from { transform: translateY(24px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes ftp-sheet-left { from { transform: translateX(32px); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @keyframes ftp-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* HowItWorks steps: numbered white cards, a small hue icon each */
@@ -1197,7 +1227,7 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-countdown-label { display: flex; align-items: center; gap: 6px; font-weight: 650; font-size: 14px; color: var(--ftp-text); }
 .ftp-countdown-label > svg { flex-shrink: 0; color: var(--hue, var(--ftp-text-2)); }
 .ftp-countdown-track { height: 8px; border-radius: 99px; background: var(--ftp-surface-2); overflow: hidden; }
-.ftp-countdown-fill { height: 100%; border-radius: 99px; background: var(--hue, var(--ftp-brand)); transition: width 600ms ease-out; }
+.ftp-countdown-fill { height: 100%; border-radius: 99px; background: var(--hue, var(--ftp-brand)); transition: width var(--ftp-dur-slow) var(--ftp-ease); }
 .ftp-countdown-fill.is-soon { background: var(--ftp-warn); }
 .ftp-countdown-sub { font-size: 12px; color: var(--ftp-text-2); }
 @media (prefers-reduced-motion: reduce) {

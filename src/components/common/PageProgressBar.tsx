@@ -176,7 +176,7 @@ export default function PageProgressBar() {
         zIndex: 9999,
         pointerEvents: "none",
         opacity: visible ? 1 : 0,
-        transition: "opacity 200ms ease",
+        transition: "opacity var(--ftp-dur) ease",
       }}
     >
       {/* Reduced motion: keep the bar, drop the animation. */}
@@ -186,7 +186,7 @@ export default function PageProgressBar() {
           height: "100%",
           width: `${progress}%`,
           background: "var(--ftp-brand)",
-          transition: "width 180ms ease-out",
+          transition: "width var(--ftp-dur) ease-out",
         }}
       />
     </div>

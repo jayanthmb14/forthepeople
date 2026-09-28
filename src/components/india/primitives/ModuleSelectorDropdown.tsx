@@ -401,7 +401,7 @@ export function ModuleSelectorDropdown({
                         style={{
                           color: "var(--color-text-tertiary)",
                           transform: isExpanded ? "rotate(90deg)" : "rotate(0)",
-                          transition: "transform 150ms",
+                          transition: "transform var(--ftp-dur-fast)",
                         }}
                       />
                     </button>

@@ -837,13 +837,13 @@ export function StatTile({
   const labelIcon = Icon ?? emojiIcon(emoji);
   return (
     <div
+      // v5: a plain white tile; the module hue shows only in the small
+      // icon chip and the number. v5.7: the white, border and shadow come
+      // from `.ftp-card` (so a tile inside a card turns into a quiet
+      // surface-2 panel instead of drawing a second border).
+      className="ftp-card"
       style={{
-        // v5: a plain white tile; the module hue shows only in the small
-        // icon chip and the number.
-        background: "var(--ftp-surface)",
-        border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-tile)",
-        boxShadow: "var(--ftp-shadow-1)",
         padding: "14px 16px",
         minWidth: 0,
       }}
@@ -1002,25 +1002,25 @@ export function Card({
   /** v5.2: a white card with a 3 px page-hue rule on the left (no wash). */
   tinted?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "style" | "className">) {
+  // v5.2 "White Calm": always white. `tinted` marks a card as the
+  // highlighted one with a 3 px hue rule on its left edge — no wash.
+  // v5.7: white, the 1 px border, the radius and the shadow come from
+  // `.ftp-card` / `.ftp-card-tinted` in globals.css, so a card inside a
+  // card turns into a quiet surface-2 panel (no double border).
   const base: React.CSSProperties = {
-    // v5.2 "White Calm": always white. `tinted` marks a card as the
-    // highlighted one with a 3 px hue rule on its left edge — no wash.
-    background: "var(--ftp-surface)",
-    border: "1px solid var(--ftp-border)",
-    borderRadius: "var(--ftp-radius-card)",
-    boxShadow: tinted ? "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
     padding,
     minWidth: 0,
     ...style,
   };
+  const cls = ["ftp-card", tinted ? "ftp-card-tinted" : null, href ? "ftp-card-link" : null, className].filter(Boolean).join(" ");
   if (href) {
     return (
-      <Link href={href} className={["ftp-card-link", className].filter(Boolean).join(" ")} style={{ ...base, display: "block", textDecoration: "none", color: "inherit" }}>
+      <Link href={href} className={cls} style={{ ...base, display: "block", textDecoration: "none", color: "inherit" }}>
         {children}
       </Link>
     );
   }
-  return React.createElement(as, { style: base, className, ...rest }, children);
+  return React.createElement(as, { style: base, className: cls, ...rest }, children);
 }
 
 /**
@@ -1325,6 +1325,7 @@ export function ErrorBlock({ message, onRetry }: { message?: string; onRetry?: (
         background: "var(--ftp-surface)",
         border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
         fontSize: 13,
         lineHeight: "20px",
         color: "var(--ftp-text)",
@@ -1377,9 +1378,10 @@ export function EmptyState({
         background: "var(--ftp-surface)",
         border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
+        boxShadow: "var(--ftp-shadow-1)",
       }}
     >
-      <span className="ftp-icon-chip" aria-hidden style={{ width: 40, height: 40, borderRadius: 12 }}>
+      <span className="ftp-icon-chip" aria-hidden style={{ width: 40, height: 40, borderRadius: "var(--ftp-radius-tile)" }}>
         <KitIcon icon={chipIcon} size={18} />
       </span>
       <div style={{ minWidth: 0 }}>
@@ -1443,11 +1445,10 @@ export function Chips({
               gap: 6,
               minHeight: 34,
               padding: "0 12px",
-              borderRadius: "var(--ftp-radius-tile)",
+              borderRadius: "var(--ftp-radius-pill)",
               border: `1px solid ${active ? "var(--hue)" : "var(--ftp-border)"}`,
               background: active ? "var(--hue-tint)" : "var(--ftp-surface)",
               color: active ? "var(--hue-deep)" : "var(--ftp-text)",
-              transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
               fontFamily: "var(--ftp-font-sans)",
               fontSize: 13,
               lineHeight: "20px",

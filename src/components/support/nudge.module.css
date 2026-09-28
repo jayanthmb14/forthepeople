@@ -21,11 +21,11 @@
   padding: 16px 16px 14px;
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
-  border-radius: 16px;
+  border-radius: var(--ftp-radius-card);
   box-shadow: var(--ftp-shadow-2);
   color: var(--ftp-text);
   font-family: var(--ftp-font-sans);
-  animation: nudgeIn 180ms var(--ftp-ease-out, ease-out) both;
+  animation: nudgeIn var(--ftp-dur-slow) var(--ftp-ease-out, ease-out) both;
 }
 @keyframes nudgeIn {
   from {
@@ -92,7 +92,7 @@
   background: transparent;
   color: var(--ftp-text-2);
   cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--ftp-dur) ease, color var(--ftp-dur) ease;
 }
 .close:hover {
   background: var(--ftp-surface-2);
@@ -119,7 +119,7 @@
   font-weight: 650;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color var(--ftp-dur) ease, border-color var(--ftp-dur) ease;
 }
 .primary {
   flex: 1 1 auto;

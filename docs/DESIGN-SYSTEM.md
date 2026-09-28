@@ -1,4 +1,4 @@
-# ForThePeople.in — Design System v5.2 "White Calm"
+# ForThePeople.in — Design System v5.7 "White Calm, edged"
 
 The site should feel **calm, clear and trustworthy**: a quiet blue-white page,
 white cards, one blue for actions, and colour only where it tells you which
@@ -20,6 +20,14 @@ asked for the old feel: a white page where only what is needed is shown, a
 few blue accents, "so it does not look fabricated or made by AI". The rule
 is in §2a and wins over any older line in this file that talks about
 pastel washes.
+
+**v5.7 "White Calm, edged"** (28 Sept 2026) keeps the 80/20 rule and fixes
+what the owner saw next: "most things are white, so it is hard to tell two
+things apart". The page ground is now a light cool grey a touch darker than
+the cards, every card and tile has one 1 px border and the same rounded
+corners, a card inside a card becomes a quiet grey panel instead of a
+second border, and all motion is quick (120–180 ms). Details in §2a, §2,
+§5 "Shape and depth" and §8.
 
 Reference implementation: the kit in `src/components/district/ui.tsx`,
 `visuals.tsx` and `DetailSheet.tsx`; shared SVG glyphs in
@@ -76,9 +84,26 @@ Not allowed any more:
 - tinted table headers and zebra rows (use `--ftp-surface-2`);
 - `#fff` in components (use `var(--ftp-surface)`).
 
-Page: `--ftp-bg` is a near-white `#FAFBFD`, cards are white with a 1 px
-`--ftp-border`, `--ftp-surface-2` (`#F3F6FA`) is only for hovers, tracks,
-skeletons and table headers. Gold stays for money (a gold rule / chip /
+Page (v5.7): `--ftp-bg` is a light cool grey `#F2F4F8`, a touch darker than
+the cards and biased very slightly toward the brand blue, so every white
+card stands out on it by its own edge. Cards, tiles, panels and sheets are
+pure white (`--ftp-surface`) with **one** 1 px `--ftp-border` (`#DAE2EE`),
+the shared radius scale (§5 "Shape and depth") and `--ftp-shadow-1`.
+`--ftp-surface-2` (`#F3F6FA`) is for hovers, tracks, table headers and a
+card inside a card.
+
+How things are told apart (v5.7):
+
+- **Groups** are separated by spacing and by the card edges on the grey
+  ground — not by extra lines. No rules between sections.
+- **Card inside a card:** the inner one is a quiet `--ftp-surface-2` panel
+  with no border and no shadow (`.ftp-card .ftp-card` does it for the kit;
+  the verify panel's topic cards, the People card's boxes and the leader
+  ladder's bands do the same by hand). Never a second full border.
+- **Rows inside a card** (lists, tables, news) keep 1 px dividers.
+- **Tappable cards** lift 1 px on hover, take `--ftp-shadow-2` and their
+  border turns to the module hue at 40 % (`.ftp-card-link`, overview tiles,
+  module tiles). Everything else stays still. Gold stays for money (a gold rule / chip /
 number, not a gold wash). The landmark drawing on the overview hero stays,
 kept small (about 30 % of the hero width on a PC, a 96 px band on a phone).
 
@@ -95,13 +120,13 @@ exception).
 
 | Token | Value | Use | Contrast |
 |---|---|---|---|
-| `--ftp-bg` | `#FAFBFD` | page (near-white, v5.2) | — |
+| `--ftp-bg` | `#F2F4F8` | page ground, a touch darker than the cards (v5.7; was `#FAFBFD`) | white card on it 1.10 : 1 |
 | `--ftp-surface` | `#FFFFFF` | cards, tiles, sheets | — |
-| `--ftp-surface-2` | `#F3F6FA` | hovers, tracks, skeletons, table headers (v5.2) | — |
-| `--ftp-text` | `#0F1B2D` | body text, titles | 16.2 : 1 on bg |
-| `--ftp-text-2` | `#4A5A70` | secondary text, labels | 7.0 on white, 6.5 on surface-2 |
-| `--ftp-border` | `#E1E8F2` | card and table borders | — |
-| `--ftp-border-strong` | `#C9D5E6` | inputs, hovered borders | — |
+| `--ftp-surface-2` | `#F3F6FA` | hovers, tracks, table headers, a card inside a card | — |
+| `--ftp-text` | `#0F1B2D` | body text, titles | 15.7 : 1 on bg |
+| `--ftp-text-2` | `#4A5A70` | secondary text, labels | 7.0 on white, 6.5 on surface-2, 6.4 on bg |
+| `--ftp-border` | `#DAE2EE` | the one card / tile / table border (v5.7; was `#E1E8F2`) | 1.30 : 1 on white, 1.18 on bg |
+| `--ftp-border-strong` | `#C3CFE1` | inputs, hovered quiet buttons (v5.7; was `#C9D5E6`) | — |
 | `--ftp-brand` | `#2563EB` | links, primary buttons, focus ring | 5.2 on white (white text on it 5.2) |
 | `--ftp-brand-deep` | `#1E40AF` | hover, text on brand-tint | 7.6 on brand-tint |
 | `--ftp-brand-tint` | `#E8F0FE` | selected rows, brand chips | — |
@@ -293,12 +318,14 @@ replace it with a Lucide icon or remove it.
 - **`StaleNotice`** — the calm amber "this is old" line (§6).
 - **`StatTile`** / **`StatStrip`** — a white tile: small icon chip + label,
   the number in `--hue-deep` (counts up once), a sub line, "As of" + source.
-- **`Card`** — white, 1 px `--ftp-border`, 14 px radius, `--ftp-shadow-1`.
-  With `href` it lifts 1 px and takes a hue border on hover. `tinted` = a
-  3 px hue rule on the left (v5.2; no wash).
+- **`Card`** — white, 1 px `--ftp-border`, 14 px radius, `--ftp-shadow-1`,
+  all from the `.ftp-card` class (v5.7), so a `Card` / `StatTile` /
+  `ChartCard` / `Explainer` inside another card turns into a surface-2
+  panel by itself. With `href` it lifts 1 px and takes a hue border on
+  hover. `tinted` = a 3 px hue rule on the left (v5.2; no wash).
 - **`Section`** / **`SectionHeader`** — an H2 with an optional action; no emoji.
-- **`Chips`** — pastel filter chips, 12 px radius, 34 px (44 on phones).
-  Active = hue tint + deep text + hue border.
+- **`Chips`** — filter chips as pills (999 px radius, v5.7), 34 px (44 on
+  phones). Active = hue tint + deep text + hue border.
 - **`PrimaryButton`** — the one main action on a screen: brand blue, white
   text, 12 px radius, 40 px (44 on phones), darker on hover
   (`.ftp-btn-brand`). **`ToolbarButton`** — the quiet white one.
@@ -336,9 +363,19 @@ where a category needs a picture.
   whatever the module; the module hue stays on the header, icons and chips.
   `HueDonut` uses soft blues and greys. Axis labels are 12 px.
 
-Shape and depth: radius 14 px (cards), 12 px (tiles, chips, buttons), 999 px
-(pills); shadows `--ftp-shadow-1` (rest) and `--ftp-shadow-2` (hover/overlay)
-only. Touch targets are at least 44 × 44 px. The focus ring is always visible.
+Shape and depth (v5.7, one scale everywhere):
+
+| Token | Value | For |
+|---|---|---|
+| `--ftp-radius-card` | 14 px | cards, panels, the page header, the verify panel, chart cards |
+| `--ftp-radius-tile` | 12 px | stat tiles, buttons, inputs, notes, the stale notice, a panel inside a card |
+| `--ftp-radius-sm` | 10 px | icon chips, list rows, small inner pieces |
+| `--ftp-radius-pill` | 999 px | filter chips, status pills, taluk chips, badges |
+
+Shadows: `--ftp-shadow-1` (rest: a crisp 1–2 px edge shadow) and
+`--ftp-shadow-2` (hover / overlay) only. Touch targets are at least
+44 × 44 px. The focus ring (2 px `--ftp-focus`, 2 px offset) is always
+visible and follows the element's own corners.
 
 **The module-page recipe** (see `docs/LAYOUT.md`):
 
@@ -410,16 +447,36 @@ Style (classes in `globals.css`):
 
 ## 8. Motion
 
-Subtle, and only where it helps. Every animation has a job, and
+Subtle, **quick**, and only where it helps. Every animation has a job, and
 `prefers-reduced-motion` turns **all** of it off (`globals.css` and each
 module's own `@media (prefers-reduced-motion: reduce)` block).
 
+Motion tokens (v5.7, `globals.css`) — use these, never a raw duration:
+
+| Token | Value | For |
+|---|---|---|
+| `--ftp-dur-fast` | 120 ms | colour, background and border changes (hover, chips, rows) |
+| `--ftp-dur` | 160 ms | hover lifts, menus, popovers, the sheet backdrop |
+| `--ftp-dur-slow` | 180 ms | entrances (`.ftp-rise`, `.ftp-pop`, page fade) and sheets / drawers opening — the ceiling for anything a person waits on |
+| `--ftp-dur-draw` | 560 ms | the one exception: chart bars, rings and the courts scale growing in once |
+| `--ftp-ease` | `cubic-bezier(0.2, 0.7, 0.2, 1)` | every transition and entrance (`--ftp-ease-out` is an alias) |
+
+Rules: nothing a person waits on takes longer than 180 ms; stagger delays
+stop at 150 ms (240 ms for draw-ins); no bounce or overshoot curves.
+Entrances start from a **visible** state (opacity 0.35, never 0) and are
+pure CSS — no content ever sits at opacity 0 waiting for JS or a scroll
+observer. Looping pictures (live dot, skeleton, pings, weather art) keep
+their slow loops; they are ambient, not waits.
+
 Everywhere:
 
-- one entrance: fade + 6 px rise (`.ftp-rise`, staggered by `--i`);
+- one entrance: a 180 ms fade + 4 px rise (`.ftp-rise`, staggered by
+  `--i`); module pages fade in once (`.ftp-module-page`, opacity only so a
+  fixed sheet inside is never trapped);
 - bars and rings grow in once; numbers count up once (stat tiles, the
   overview's number tiles, the home stats row); a tank has a slow wave;
-- link cards lift 1 px on hover; menus and sheets slide in once.
+- tappable cards lift 1 px on hover (shadow-2, hue border at 40 %);
+  menus and sheets slide in once (180 ms).
 
 v5.1 additions, each with a purpose:
 
@@ -637,6 +694,9 @@ Styles in `district-shell.css`; parts in `src/components/district/shell/`:
 - [ ] No saturated gradient band and no pastel wash; big areas are white,
       colour only as the accents in §2a (80–90 % white).
 - [ ] No hex colours in the component; tokens and hue variables only.
+- [ ] Cards and tiles are white on the grey ground with one 1 px
+      `--ftp-border` and a radius from the scale; no card-in-card double
+      border; durations from the motion tokens (≤ 180 ms).
 - [ ] The first screen shows the answer and the main action.
 - [ ] Every dataset has a date; old data shows the stale notice; undated data
       says "Date not published by the source".

@@ -151,7 +151,7 @@
 .moreCaret {
   margin-left: auto;
   flex-shrink: 0;
-  transition: transform 150ms ease;
+  transition: transform var(--ftp-dur-fast) ease;
 }
 .more[open] .moreCaret {
   transform: rotate(180deg);

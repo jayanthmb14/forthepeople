@@ -70,7 +70,7 @@
   font: inherit;
   color: var(--ftp-text);
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color var(--ftp-dur-fast) ease;
 }
 
 .row:hover {

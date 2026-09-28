@@ -33,8 +33,8 @@
   font-weight: 600;
   box-shadow: var(--ftp-shadow-2);
   cursor: pointer;
-  animation: fabIn 320ms var(--ftp-ease-out, ease-out) both;
-  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  animation: fabIn var(--ftp-dur-slow) var(--ftp-ease) backwards;
+  transition: border-color var(--ftp-dur-fast) ease, background-color var(--ftp-dur-fast) ease, transform var(--ftp-dur-fast) ease;
 }
 .fab:hover {
   border-color: var(--ftp-warn-border);
@@ -116,7 +116,7 @@
   background: var(--ftp-surface);
   color: var(--ftp-text);
   text-align: start;
-  animation: cardUp 200ms var(--ftp-ease-out, ease-out);
+  animation: cardUp var(--ftp-dur-slow) var(--ftp-ease);
 }
 @keyframes cardUp {
   from {

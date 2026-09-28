@@ -184,7 +184,7 @@ export default function FeedbackPage() {
                           cursor: "pointer",
                           textAlign: "start",
                           fontFamily: "inherit",
-                          transition: "background-color 150ms ease, border-color 150ms ease",
+                          transition: "background-color var(--ftp-dur-fast) ease, border-color var(--ftp-dur-fast) ease",
                         }}
                       >
                         <span className="ftp-emoji" aria-hidden style={{ display: "block", fontSize: 22, marginBottom: 6 }}>

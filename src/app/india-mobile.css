@@ -28,7 +28,7 @@
   border-radius: 50%;
   background: var(--ftp-dot-accent, #888780);
   opacity: 0.25;
-  transition: opacity 200ms ease;
+  transition: opacity var(--ftp-dur) ease;
 }
 
 .ftp-right-rail-dot[data-active="true"] {

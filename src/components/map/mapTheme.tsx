@@ -62,7 +62,7 @@ export function geoStyle(
         strokeWidth: solid ? 1.4 : 1.2,
         outline: "none",
         cursor: "pointer",
-        transition: "fill 150ms",
+        transition: "fill var(--ftp-dur-fast)",
       },
       hover: {
         fill: "var(--ftp-map-live-hover)",
@@ -85,7 +85,7 @@ export function geoStyle(
       strokeWidth: 0.8,
       outline: "none",
       cursor: lockedClickable ? "pointer" : "default",
-      transition: "fill 150ms",
+      transition: "fill var(--ftp-dur-fast)",
     },
     hover: {
       fill: "var(--ftp-map-locked-hover)",
@@ -150,7 +150,7 @@ export function indiaStateStyle(selected = false, tone = 0): { default: GeoStyle
           strokeLinejoin: "round",
           outline: "none",
           cursor: "pointer",
-          transition: "fill 150ms, stroke 150ms",
+          transition: "fill var(--ftp-dur-fast), stroke var(--ftp-dur-fast)",
         },
     hover: hot,
     pressed: hot,
