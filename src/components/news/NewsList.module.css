@@ -128,7 +128,7 @@ button.main:hover .title {
 }
 
 .sep {
-  color: var(--ftp-border-strong);
+  color: var(--ftp-text-2);
 }
 
 /* A tiny neutral tag: "Police", "AI summary". */
