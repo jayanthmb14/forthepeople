@@ -20,3 +20,8 @@ Rules:
 - Scripts that were one-off data fixes, probes or test-data seeders were
   deleted in the v5 cleanup (27 Sep 2026). `git log --all -- scripts/<name>.ts`
   still finds them.
+- The old local runner `src/scraper/scheduler.ts` (`npm run scraper`) and the
+  13 jobs only it imported (power, rti, mgnrega, police, infrastructure, jjm,
+  housing, schools, finance, transport, schemes, soil, elections) were
+  deleted on 28 Sep 2026: they never ran in production and wrote invented
+  defaults. `git log --all -- src/scraper/scheduler.ts` finds them.

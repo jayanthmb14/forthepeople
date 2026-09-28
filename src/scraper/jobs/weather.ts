@@ -147,7 +147,7 @@ export async function collectWeather(ctx: JobContext): Promise<WeatherCollectRes
   }
 }
 
-/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
+/** ScraperJob signature for the admin "run now" button (/api/admin/run-scraper). */
 export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
   const { success, recordsNew, recordsUpdated, error } = await collectWeather(ctx);
   return { success, recordsNew, recordsUpdated, error };

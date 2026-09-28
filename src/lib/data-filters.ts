@@ -127,7 +127,8 @@ export const SHOW_CITIZEN_TIP_ROWS = false;
 
 /**
  * BudgetEntry.source labels written by a collector from a published
- * dataset (src/scraper/jobs/finance.ts, src/scraper/jobs/budget.ts). Every
+ * dataset (src/scraper/jobs/budget.ts; the first label below is from the
+ * retired jobs/finance.ts, deleted in Sept 2026). Every
  * other BudgetEntry row was typed into a seed or a one-off script: whole-
  * state or whole-city totals filed under one district (Hyderabad, Lucknow,
  * New Delhi), invented round sector figures (Mumbai, Kolkata, Chennai,

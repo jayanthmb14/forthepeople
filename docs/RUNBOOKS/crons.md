@@ -7,8 +7,8 @@ Every scheduled job on ForThePeople.in is a Vercel Cron hitting a route
 under `src/app/api/cron/`. The schedule lives in `vercel.json` (`crons`
 array) and is the single source of truth — if it is not in `vercel.json`,
 it does not run. The old Railway node-cron container
-(`src/scraper/scheduler.ts`) expired in April 2026 and is not used by
-production. (Railway itself was still running an old copy on 27 Sep; the
+(`src/scraper/scheduler.ts`) expired in April 2026; the scheduler and the
+jobs only it ran were deleted from the code in Sept 2026. (Railway itself was still running an old copy on 27 Sep; the
 owner's steps to stop it are in `docs/OWNER-TODO.md` §2.)
 
 ## 1. The crons
@@ -189,9 +189,10 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
 - Be polite to sources: at most one request every 2–3 s per portal. NJDG
   gets ≥ 3 s between requests; the collectors identify themselves honestly
   in the user agent and never use captcha-protected pages.
-- `src/scraper/scheduler.ts` (local runner) still points at the old
-  `jobs/courts.ts`, `jobs/jjm.ts`, `jobs/mgnrega.ts`, `jobs/schools.ts` and
-  `jobs/power.ts`. Those jobs call dead APIs; the crons above replaced them.
+- There is no local runner any more (`npm run scraper` is gone). To run a
+  collector by hand, call its cron route (section 3); the admin "run now"
+  button (`/api/admin/run-scraper`) covers weather, news, crops and insights
+  for one district.
 - The comment at the top of `health-score/route.ts` still says weekly; the
   schedule in `vercel.json` (daily) is the one that counts.
 - Never use the word "scraper" in citizen-facing text (CLAUDE.md).

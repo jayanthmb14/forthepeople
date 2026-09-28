@@ -319,11 +319,10 @@ const baseUrl = process.env.ANTHROPIC_BASE_URL
 ## Data Flow Summary
 
 ```
-Railway (24/7 container)                    Vercel Crons
-├── scheduler.ts (node-cron)               ├── /api/cron/scrape-news   (daily 6AM UTC)
-│   ├── news.ts — every 1h                 ├── /api/cron/scrape-crops  (daily 3:30AM UTC)
-│   ├── ai-analyzer.ts — monthly           └── /api/cron/generate-insights (every 2h)
-│   └── ... 18 other scraper jobs
+Vercel Crons (schedules: vercel.json; the Railway container is retired)
+├── /api/cron/scrape-news         → src/scraper/jobs/news.ts
+├── /api/cron/news-intelligence   → src/scraper/jobs/ai-analyzer.ts
+└── /api/cron/generate-insights   → src/lib/insight-generator.ts
 
 DB: NewsItem → AIInsight → ReviewQueue → AIInsightCard (approved only)
 DB: AIModuleInsight (pre-computed, TTL-based) → AIInsightCard (directly)

@@ -29,9 +29,9 @@ are copied into prose. Read `CHANGELOG.md` for what changed and when.
 ```
 
 Everything runs inside Vercel serverless functions. There is no long-running
-worker in production any more: `src/scraper/scheduler.ts` (`npm run scraper`) is
-a local runner for the same job modules, not part of the deployed system. The
-old Docker files are archived in `docs/archive/docker/`.
+worker: the old node-cron runner (`src/scraper/scheduler.ts`, `npm run
+scraper`) and the jobs only it ran were deleted in Sept 2026. The old Docker
+files are archived in `docs/archive/docker/`.
 
 ## 2. Routing
 
@@ -140,8 +140,10 @@ old Docker files are archived in `docs/archive/docker/`.
      with module, cron, schedule, storage, source and expected age, for the
      "Where our data comes from" page and the freshness checks. Nothing reads
      it yet.
-   - The old `jobs/courts.ts`, `jjm.ts`, `mgnrega.ts`, `schools.ts` and
-     `power.ts` call dead APIs and run only from the local scheduler.
+   - The old jobs that called dead APIs (courts, JJM, MGNREGA, schools,
+     power, police, housing, RTI and others) ran only from the retired local
+     scheduler and were deleted with it; `git log -- src/scraper/scheduler.ts`
+     finds them.
 2. **Scheduling** — `vercel.json` `crons` calls `src/app/api/cron/<job>/route.ts`
    on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, runs
    the job(s) inside its own time budget, and records a `ScraperLog` row per
@@ -388,10 +390,9 @@ src/lib/          everything shared: db, redis, cache, ai-provider, ai-models, a
                   tenders, validators; verification/ (double-check), weather/
                   (forecast), courts/ (NJDG snapshot), dedupe/ (canonical keys,
                   duplicate guard)
-src/scraper/      collection job modules + parsers (lib/); the cron routes run news,
-                  crops, weather, dams, alerts, exams, budget, AI analysis, courts,
-                  JJM, schools, MGNREGA and tenders; the rest only from the local
-                  scheduler (`npm run scraper`)
+src/scraper/      collection job modules + parsers (lib/), run by the cron routes:
+                  news, crops, weather, dams, alerts, exams, budget, AI analysis,
+                  courts, JJM, schools, MGNREGA, tenders and fuel
 tests/            Vitest suites
 ```
 

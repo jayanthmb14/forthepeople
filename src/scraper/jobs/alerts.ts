@@ -28,7 +28,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
-import { JobContext, ScraperResult } from "../types";
+import type { ScraperResult } from "../types";
 import { alertDistrictNames } from "../lib/district-aliases";
 import { DISTRICT_CENTROIDS } from "@/lib/geo/district-centroids";
 import {
@@ -285,25 +285,4 @@ export async function collectSachetAlerts(
     changedBy,
     createdBy,
   };
-}
-
-/** ScraperJob signature kept for the old scheduler: one district, 45 s budget. */
-export async function scrapeAlerts(ctx: JobContext): Promise<ScraperResult> {
-  try {
-    const district = await prisma.district.findUnique({
-      where: { id: ctx.districtId },
-      select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-    });
-    if (!district) return { success: false, recordsNew: 0, recordsUpdated: 0, error: "district not found" };
-    const r = await collectSachetAlerts(toAlertDistricts([district]), {
-      deadlineMs: Date.now() + 45_000,
-      log: ctx.log,
-      useCheckedCache: false,
-    });
-    return { success: r.success, recordsNew: r.recordsNew, recordsUpdated: r.recordsUpdated };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    ctx.log(`Error: ${msg}`);
-    return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };
-  }
 }

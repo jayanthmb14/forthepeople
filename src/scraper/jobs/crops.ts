@@ -216,7 +216,7 @@ export async function collectCrops(ctx: JobContext, opts: CropsCollectOptions = 
   }
 }
 
-/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
+/** ScraperJob signature for the admin "run now" button (/api/admin/run-scraper). */
 export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
   const { success, recordsNew, recordsUpdated, error } = await collectCrops(ctx);
   return { success, recordsNew, recordsUpdated, error };
