@@ -285,7 +285,11 @@ async function findTargetDistricts(extraction: InfraExtraction, sourceDistrictId
     const rows = await prisma.district.findMany({
       where: {
         active: true,
-        OR: candidateNames.map((n) => ({ name: { equals: n, mode: "insensitive" as const } })),
+        // By name, or by slug: the scope override (src/lib/infra-extraction.ts)
+        // names the district by its slug ("bengaluru-urban"), which never
+        // equalled a name, so "Hebbal Flyover" from the Mysuru feed was filed
+        // under Mysuru.
+        OR: candidateNames.flatMap((n) => [{ name: { equals: n, mode: "insensitive" as const } }, { slug: n }]),
       },
       select: { id: true, slug: true, stateId: true },
     });
@@ -294,13 +298,15 @@ async function findTargetDistricts(extraction: InfraExtraction, sourceDistrictId
     // project to Mumbai just because the article mentions Mumbai.
     const sameState = rows.filter((r) => r.stateId === src.stateId);
     if (sameState.length > 0) return sameState;
-    // If all matched districts are in other states, fall back to source district
-    // rather than polluting other states' data.
+    // Every place named is in another state: the project is not this
+    // district's. Write nothing (it used to be filed under the source
+    // district — a Bengaluru metro line on the Chennai page).
     if (rows.length > 0) {
       console.warn(
-        `[infra-sync] Cross-state district match suppressed: article from ${src.slug} ` +
-        `matched ${rows.map((r) => r.slug).join(", ")} in different state(s). Falling back to source district.`
+        `[infra-sync] Cross-state district match: article from ${src.slug} ` +
+        `names ${rows.map((r) => r.slug).join(", ")} in other state(s) — not written.`
       );
+      return [];
     }
   }
   return [src];
