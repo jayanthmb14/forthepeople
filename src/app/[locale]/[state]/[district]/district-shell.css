@@ -245,6 +245,12 @@
    is empty — display: none — when the module's data is current.) */
 .ftp-dshell-strip:not(:empty) + .ftp-module-page,
 .ftp-dshell-strip:not(:empty) + * > .ftp-module-page:first-child { padding-top: 16px; }
+/* "See also" right above "Check this data": the normal 28 px section gap
+   (as above every other H2 on the page), not the page's bottom padding +
+   the strip's padding + the panel's own top margin (96 px on a laptop). */
+.ftp-dshell-main > nav.ftp-module-page:has(+ .ftp-dshell-strip[data-pos="bottom"]) { padding-bottom: 0; }
+.ftp-dshell-main > nav.ftp-module-page + .ftp-dshell-strip[data-pos="bottom"] { padding-top: 28px; }
+.ftp-dshell-main > nav.ftp-module-page + .ftp-dshell-strip[data-pos="bottom"] > .ftp-verify { margin-top: 0; }
 
 /* ---------- Glance tiles (overview only, v5.1) ----------
    Each tile: a pastel wash of its module hue, a drawn picture in a white
