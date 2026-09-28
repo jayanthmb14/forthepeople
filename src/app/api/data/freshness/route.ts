@@ -27,25 +27,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
-import {
-  DATASETS,
-  electionResultsBehind,
-  fyStartDate,
-  isPrimary,
-  judgeDataset,
-  liveFeedSummary,
-  ruleFor,
-  yearEndDate,
-  type DatasetFreshness,
-  type PeriodKind,
-} from "@/lib/freshness";
-import { COURTSTAT_SOURCE_PREFIX, courtStatReadDate } from "@/lib/courts/snapshot";
+import { liveFeedSummary } from "@/lib/freshness";
+import { buildDatasets, courtsReadAt, iso, type FreshnessRow } from "@/lib/freshness-facts";
+import { COURTSTAT_SOURCE_PREFIX } from "@/lib/courts/snapshot";
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import {
   COLLECTED_BUDGET_SOURCES,
-  ELECTION_RESULTS_WITHHELD,
   SEEDED_RAINFALL_LAST_YEAR,
   SEEDED_RAINFALL_SOURCES,
   VERIFIED_PANCHAYAT,
@@ -91,54 +80,15 @@ function formatAge(ageMinutes: number | null): string {
   return `${Math.round(ageMinutes / 1440)}d ago`;
 }
 
-/** One row of scalar sub-queries. Dates come back as Date, counts as int. */
-interface Row {
-  tenders_active: boolean;
-  news_date: Date | null; news_checked: Date | null; news_rows: number;
-  alerts_date: Date | null; alerts_rows: number; alerts_active: number; alerts_checked: Date | null;
-  weather_date: Date | null; weather_rows: number;
-  rain_year: number | null; rain_rows: number;
-  rtitpl_rows: number;
-  rti_year: number | null; rti_rows: number;
-  leaders_date: Date | null; leaders_rows: number;
-  elections_year: number | null; elections_rows: number; elections_held: Date | null;
-  courts_source: string | null; courts_rows: number;
-  crime_year: number | null; crime_rows: number;
-  traffic_date: Date | null; traffic_checked: Date | null; traffic_rows: number;
-  stations_rows: number;
-  budget_fy: string | null; budget_checked: Date | null; budget_rows: number; budget_estimate: boolean;
-  infra_date: Date | null; infra_checked: Date | null; infra_rows: number;
-  tenders_date: Date | null; tenders_rows: number;
-  industries_date: Date | null; industries_rows: number;
-  schemes_date: Date | null; schemes_rows: number;
-  housing_fy: string | null; housing_checked: Date | null; housing_rows: number; housing_estimate: boolean;
-  services_rows: number;
-  offices_rows: number;
-  exams_date: Date | null; exams_rows: number;
-  jjm_date: Date | null; jjm_rows: number;
-  dams_date: Date | null; dams_checked: Date | null; dams_rows: number; dams_estimate: boolean;
-  canals_date: Date | null; canals_checked: Date | null; canals_rows: number;
-  power_date: Date | null; power_rows: number;
-  buses_rows: number; trains_rows: number;
-  health_date: Date | null; health_rows: number;
-  schools_date: Date | null; schools_rows: number;
-  crops_date: Date | null; crops_checked: Date | null; crops_rows: number;
-  agri_date: Date | null; agri_checked: Date | null; agri_rows: number;
-  soil_date: Date | null; soil_rows: number;
-  census_year: number | null; census_dataset: string | null; census_checked: Date | null; census_rows: number;
-  census_hist_year: number | null;
-  famous_rows: number;
-  ai_date: Date | null;
-}
 
-async function queryRow(districtId: string): Promise<Row | null> {
+async function queryRow(districtId: string): Promise<FreshnessRow | null> {
   // Filters match what the pages show (src/lib/data-filters.ts):
   // NOT_FROM_NEWS (source not a URL), SHOWN_BUDGET_ENTRY (collector rows only —
   // never the seeded budgets), LOCAL_INFRA (DISTRICT/CITY scope),
   // NJDG_COURTSTAT, JJM_DISTRICT_TOTAL, SHOWN_CRIME / SHOWN_TRAFFIC (no
   // estimates), news without duplicates, active leaders / industries / people,
   // OFFICIAL_ALERTS (SACHET rows only), NOT_SEEDED_RAINFALL.
-  const rows = await prisma.$queryRaw<Row[]>`
+  const rows = await prisma.$queryRaw<FreshnessRow[]>`
     SELECT
       d."tendersActive" AS tenders_active,
       (SELECT max(x."publishedAt") FROM "NewsItem" x WHERE x."districtId" = d.id AND x."duplicateOf" IS NULL) AS news_date,
@@ -255,168 +205,6 @@ async function queryRow(districtId: string): Promise<Row | null> {
     WHERE d.id = ${districtId}
   `;
   return rows[0] ?? null;
-}
-
-interface Raw {
-  rows: number;
-  /** Days the data is behind a newer event (elections), whatever its age. */
-  behindDays?: number | null;
-  date?: Date | null;
-  checked?: Date | null;
-  period?: string | null;
-  periodKind?: PeriodKind;
-  estimate?: boolean;
-  notCollected?: boolean;
-}
-
-/**
- * When the NJDG collector last read a district's courts: the Redis
- * snapshot's time, else the newest CourtStat row's read day (IST, end of day).
- */
-function courtsReadAt(snapshotFetchedAt: string | null, newestSource: string | null): Date | null {
-  if (snapshotFetchedAt) return new Date(snapshotFetchedAt);
-  const day = courtStatReadDate(newestSource);
-  return day ? new Date(`${day}T23:59:59+05:30`) : null;
-}
-
-/** Facts that do not come from the SQL row: collectors' snapshots (Redis) and filtered counts. */
-interface Extra {
-  courtsDate: Date | null;
-  /** GramPanchayat rows a page may show (VERIFIED_PANCHAYAT) and their newest update. */
-  gp: { rows: number; date: Date | null };
-  /** MGNREGA snapshot: the source's "as on" day, and when we read it. */
-  nrega: { date: Date; checked: Date } | null;
-  /** UDISE+ snapshot: when we read it. */
-  udiseAt: Date | null;
-  /** When the NDMA SACHET alerts cron last finished without an error (Redis run record). */
-  alertsCheckedAt: Date | null;
-}
-
-/** The later of two dates (either may be missing). */
-function newer(a: Date | null | undefined, b: Date | null | undefined): Date | null {
-  if (!a) return b ?? null;
-  if (!b) return a;
-  return new Date(a).getTime() >= new Date(b).getTime() ? a : b;
-}
-
-/** SQL row → the raw facts per dataset key (DATASETS in src/lib/freshness.ts). */
-function rawFacts(r: Row, x: Extra): Record<string, Raw> {
-  const year = (y: number | null): Raw["date"] => yearEndDate(y);
-  return {
-    news: { rows: r.news_rows, date: r.news_date, checked: r.news_checked },
-    // Official warnings only (OFFICIAL_ALERTS in src/lib/data-filters.ts:
-    // NDMA SACHET rows) — never news stories. "No warning" is an answer too,
-    // so the dataset is as fresh as the last good read of the SACHET feed,
-    // not the newest alert row (Sept 2026 audit: "No active warnings right
-    // now" under a feed last read 35 days earlier; a quiet spell is not
-    // "late"). A good read is either the cron's run record (Redis) or the
-    // collector's ScraperLog "alerts" row — the newer one counts.
-    alerts: {
-      rows: r.alerts_rows > 0 ? r.alerts_rows : newer(x.alertsCheckedAt, r.alerts_checked) ? 1 : 0,
-      date: newer(newer(x.alertsCheckedAt, r.alerts_checked), r.alerts_date),
-      checked: newer(newer(x.alertsCheckedAt, r.alerts_checked), r.alerts_date),
-    },
-    weather: { rows: r.weather_rows, date: r.weather_date, checked: r.weather_date },
-    rainfall: { rows: r.rain_rows, date: year(r.rain_year), period: r.rain_year ? String(r.rain_year) : null, periodKind: "year" },
-    rtiTemplates: { rows: r.rtitpl_rows },
-    rti: { rows: r.rti_rows, date: year(r.rti_year), period: r.rti_year ? String(r.rti_year) : null, periodKind: "year" },
-    leaders: { rows: r.leaders_rows, date: r.leaders_date, checked: r.leaders_date },
-    // Results withheld (ELECTION_RESULTS_WITHHELD): nothing is shown, so nothing is "on time".
-    elections: ELECTION_RESULTS_WITHHELD
-      ? { rows: 0 }
-      : {
-          rows: r.elections_rows,
-          date: year(r.elections_year),
-          period: r.elections_year ? String(r.elections_year) : null,
-          periodKind: "year",
-          // Results of a newer Lok Sabha / Assembly election are not in yet.
-          behindDays: electionResultsBehind(r.elections_year, r.elections_held),
-        },
-    panchayats: x.nrega
-      ? { rows: x.gp.rows + 1, date: x.nrega.date, checked: x.nrega.checked }
-      : { rows: x.gp.rows, date: x.gp.date, checked: x.gp.date },
-    courts: { rows: r.courts_rows, date: x.courtsDate, checked: x.courtsDate },
-    crime: { rows: r.crime_rows, date: year(r.crime_year), period: r.crime_year ? String(r.crime_year) : null, periodKind: "year" },
-    traffic: { rows: r.traffic_rows, date: r.traffic_date, checked: r.traffic_checked },
-    stations: { rows: r.stations_rows },
-    budget: {
-      rows: r.budget_rows,
-      date: fyStartDate(r.budget_fy),
-      checked: r.budget_checked,
-      period: r.budget_fy,
-      periodKind: "fy",
-      estimate: r.budget_estimate,
-    },
-    projects: { rows: r.infra_rows, date: r.infra_date ?? r.infra_checked, checked: r.infra_checked },
-    tenders: { rows: r.tenders_rows, date: r.tenders_date, checked: r.tenders_date, notCollected: !r.tenders_active },
-    industries: { rows: r.industries_rows, date: r.industries_date, checked: r.industries_date },
-    schemes: { rows: r.schemes_rows, date: r.schemes_date, checked: r.schemes_date },
-    housing: {
-      rows: r.housing_rows,
-      date: fyStartDate(r.housing_fy),
-      checked: r.housing_checked,
-      period: r.housing_fy,
-      periodKind: "fy",
-      estimate: r.housing_estimate,
-    },
-    // Hand-typed directories: no date. @updatedAt moves on any bulk edit, so
-    // it is not a check date (Sept 2026 audit); src/lib/freshness.ts marks
-    // them "reference".
-    services: { rows: r.services_rows },
-    offices: { rows: r.offices_rows },
-    exams: { rows: r.exams_rows, date: r.exams_date, checked: r.exams_date },
-    jjm: { rows: r.jjm_rows, date: r.jjm_date, checked: r.jjm_date },
-    dams: { rows: r.dams_rows, date: r.dams_date, checked: r.dams_checked, estimate: r.dams_estimate },
-    canals: { rows: r.canals_rows, date: r.canals_date, checked: r.canals_checked },
-    power: { rows: r.power_rows, date: r.power_date, checked: r.power_date },
-    buses: { rows: r.buses_rows },
-    trains: { rows: r.trains_rows },
-    health: { rows: r.health_rows, date: r.health_date, checked: r.health_date },
-    schools: x.udiseAt
-      ? { rows: r.schools_rows + 1, date: x.udiseAt, checked: x.udiseAt }
-      : { rows: r.schools_rows, date: r.schools_date, checked: r.schools_date },
-    mandi: { rows: r.crops_rows, date: r.crops_date, checked: r.crops_checked },
-    advice: { rows: r.agri_rows, date: r.agri_date, checked: r.agri_checked },
-    soil: { rows: r.soil_rows, date: r.soil_date, checked: r.soil_date },
-    // The census row with a head count; else the newest census year in the
-    // population history (Pune has history rows but no census profile).
-    census: {
-      rows: r.census_rows,
-      date: year(r.census_year ?? r.census_hist_year),
-      checked: r.census_checked,
-      period: r.census_dataset ?? (r.census_hist_year ? `Census ${r.census_hist_year}` : null),
-      periodKind: "dataset",
-    },
-    famous: { rows: r.famous_rows },
-  };
-}
-
-const iso = (d: Date | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
-
-function buildDatasets(r: Row, now: Date, extra: Extra): DatasetFreshness[] {
-  const facts = rawFacts(r, extra);
-  return DATASETS.map(({ key, module }) => {
-    const f = facts[key] ?? { rows: 0 };
-    const rule = ruleFor(key);
-    const date = f.date ?? null;
-    let j = judgeDataset({ rows: f.rows, dataDate: date, rule, notCollected: f.notCollected, now });
-    if (f.behindDays && j.status !== "not_collected") j = { ...j, status: "late", lateByDays: f.behindDays };
-    return {
-      module,
-      key,
-      primary: isPrimary(key),
-      rows: f.rows,
-      dataDate: iso(date),
-      period: f.period ?? null,
-      periodKind: f.period ? (f.periodKind ?? null) : null,
-      lastChecked: iso(f.checked),
-      maxAgeHours: rule.maxAgeHours,
-      every: rule.every,
-      method: rule.method,
-      estimate: Boolean(f.estimate),
-      ...j,
-    };
-  });
 }
 
 export async function GET(req: NextRequest) {
