@@ -5,15 +5,20 @@
  * per file 45 §10 empty-state rule). Headlines and summaries are live
  * data: the stored translation is shown when it exists (localizeRows),
  * otherwise the English, marked lang="en".
+ *
+ * v5.6 (Sept 2026): the same quiet list as the district news page
+ * (NewsList): the headline on one line, the AI summary on one grey line,
+ * then "site · date" and the kind of source as a tiny neutral tag (in words,
+ * not colour). The row is the link to the original. No hex colours.
  */
 
 import * as React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { localizeRows } from "@/lib/translation/overlay";
-import { SourcePill, type SourcePillVariant } from "@/components/india/primitives/SourcePill";
 import { domainOf, fmtDate } from "@/components/india/format";
 import { Glyph } from "@/components/graphics";
+import NewsList from "@/components/news/NewsList";
 
 export interface RelevantNewsSectionProps {
   moduleSlug: string;
@@ -22,10 +27,11 @@ export interface RelevantNewsSectionProps {
   className?: string;
 }
 
-function pillVariant(sourceTier: string): SourcePillVariant {
-  if (sourceTier === "tier_1_government") return "gov";
-  if (sourceTier === "tier_2_major") return "major-outlet";
-  return "specialist";
+/** The kind of source, as a key under page_india-module.data.news. */
+function tierKey(sourceTier: string): "tierGov" | "tierMajor" | "tierSpecialist" {
+  if (sourceTier === "tier_1_government") return "tierGov";
+  if (sourceTier === "tier_2_major") return "tierMajor";
+  return "tierSpecialist";
 }
 
 export async function RelevantNewsSection({ moduleSlug, locale, className }: RelevantNewsSectionProps) {
@@ -53,6 +59,7 @@ export async function RelevantNewsSection({ moduleSlug, locale, className }: Rel
   if (news.length === 0) return null;
 
   const t = await getTranslations({ locale, namespace: "page_india-module" });
+  const tn = await getTranslations({ locale, namespace: "moduleNews" });
 
   return (
     <section className={className} style={{ marginTop: "2rem" }}>
@@ -66,42 +73,39 @@ export async function RelevantNewsSection({ moduleSlug, locale, className }: Rel
         <span
           style={{
             fontSize: 12,
-            background: "rgba(60, 52, 137, 0.10)",
-            color: "#3C3489",
-            padding: "1px 8px",
+            lineHeight: "18px",
+            background: "var(--ftp-surface)",
+            border: "1px solid var(--ftp-border)",
+            color: "var(--ftp-text-2)",
+            padding: "0 8px",
             borderRadius: 999,
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
           {t("data.news.ai")}
         </span>
       </div>
 
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
-        {news.map((n) => (
-          <li
-            key={n.id}
-            style={{
-              border: "1px solid var(--ftp-border)",
-              borderRadius: "var(--ftp-radius-card)",
-              padding: "14px 16px",
-              background: "var(--ftp-surface)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-              <SourcePill domain={domainOf(n.sourceUrl) || n.source} variant={pillVariant(n.sourceTier)} />
-              <span style={{ fontSize: 12, color: "var(--ftp-text-2)" }}>{fmtDate(locale, n.publishedAt)}</span>
-            </div>
-            <div lang={n.lang}>
-              <h3 style={{ fontSize: 15, fontWeight: 550, margin: "0 0 4px", lineHeight: 1.45 }}>{n.headline}</h3>
-              <p style={{ fontSize: 13, color: "var(--ftp-text-2)", lineHeight: 1.6, margin: "0 0 8px" }}>{n.summary}</p>
-            </div>
-            <a href={n.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "var(--hue-deep)", fontWeight: 600 }}>
-              {t("data.news.readAt", { site: domainOf(n.sourceUrl) })}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <NewsList
+        newTabLabel={tn("opensOriginal")}
+        items={news.map((n) => {
+          const site = domainOf(n.sourceUrl) || n.source;
+          return {
+            id: n.id,
+            headline: n.headline,
+            summary: n.summary,
+            lang: n.lang,
+            href: n.sourceUrl,
+            meta: [
+              site,
+              <time key="when" dateTime={new Date(n.publishedAt).toISOString()}>
+                {fmtDate(locale, n.publishedAt)}
+              </time>,
+            ],
+            tag: t(`data.news.${tierKey(n.sourceTier)}`),
+          };
+        })}
+      />
 
       <p
         role="note"
@@ -111,8 +115,8 @@ export async function RelevantNewsSection({ moduleSlug, locale, className }: Rel
           fontSize: 12,
           lineHeight: "18px",
           color: "var(--ftp-text-2)",
-          background: "rgba(60, 52, 137, 0.05)",
-          borderInlineStart: "3px solid #3C3489",
+          background: "var(--ftp-surface-2)",
+          borderInlineStart: "3px solid var(--ftp-border-strong)",
           borderRadius: 10,
         }}
       >

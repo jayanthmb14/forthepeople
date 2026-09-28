@@ -397,6 +397,9 @@
       "title": "Related news",
       "ai": "AI summaries",
       "readAt": "Read the original at {site}",
+      "tierGov": "Government source",
+      "tierMajor": "Major news outlet",
+      "tierSpecialist": "Specialist source",
       "about": "About these summaries: AI writes them for quick context; they are not the original article. Follow the link to read the full report. ForThePeople is not the author of the original news."
     },
     "health": {
