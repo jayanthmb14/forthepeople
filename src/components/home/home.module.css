@@ -346,28 +346,6 @@
   min-width: 0;
   text-align: center;
 }
-.kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 15px;
-  line-height: 22px;
-  font-weight: 600;
-  color: var(--ftp-text-2);
-}
-/* "Your data." — the one phrase of the slogan made stronger. */
-.kickerEm {
-  font-weight: 800;
-  color: var(--ftp-brand-deep);
-}
-.kickerDot {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--ftp-brand);
-}
 .title {
   margin: 0;
   max-width: 18em;
@@ -379,11 +357,17 @@
   color: var(--ftp-text);
   text-wrap: balance;
 }
-/* The key words ("your district"): brand blue and the heaviest weight —
-   no highlighter stroke behind them. */
+/* "data": brand blue and the heaviest weight — no highlighter stroke. */
 .titleHl {
   font-weight: 800;
   color: var(--ftp-brand);
+}
+/* The Indian flag after the headline (the page's only emoji). */
+.titleFlag {
+  display: inline-block;
+  font-size: 0.9em;
+  line-height: 1;
+  vertical-align: 0.02em;
 }
 :global([lang="hi"]) .title,
 :global([lang="kn"]) .title {
@@ -1525,9 +1509,6 @@
   }
   .heroText {
     gap: 10px;
-  }
-  .kicker {
-    font-size: 14px;
   }
   /* Map: a little more room for India. */
   .map {

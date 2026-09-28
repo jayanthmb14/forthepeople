@@ -23,10 +23,11 @@
     "srcPpac": "Source: PPAC (Indian Oil pumps), opens in a new tab"
   },
   "hero": {
-    "title": "See what is happening in <hl>your district</hl>",
+    "headline": "Your district. Your <hl>data</hl>. Your right.",
+    "sub": "India's first free, real-time district transparency platform.",
+    "flag": "India",
     "find": "Find your district",
-    "quickPicks": "Live districts — pick one, or type any district",
-    "tagline": "Your district. <b>Your data.</b> Your right."
+    "quickPicks": "Live districts — pick one, or type any district"
   },
   "stats": {
     "aria": "ForThePeople.in in numbers",
@@ -67,9 +68,9 @@
     "legendState": "State — opens its page"
   },
   "india": {
-    "title": "Explore all of India",
+    "title": "Explore the whole India",
     "body": "Parliament, the Union Budget, the economy, people and every state — the country's big numbers in one place.",
-    "cta": "Explore all of India",
+    "cta": "Explore the whole India",
     "fig": {
       "states": "States and union territories",
       "seats": "Lok Sabha seats",
