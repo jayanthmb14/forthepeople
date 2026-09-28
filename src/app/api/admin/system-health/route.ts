@@ -9,15 +9,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { redis } from "@/lib/redis";
+import { cronIntervalsFor } from "@/lib/cron-auth";
+import vercelConfig from "../../../../../vercel.json";
 
-// Expected update frequency per module (minutes). Used by the UI to colour-code
-// freshness cells and in the per-cell popover.
-export const EXPECTED_INTERVAL_MIN: Record<string, number> = {
-  weather: 5,
-  news: 60,
-  crops: 15,
-  insights: 120,
-};
+// Expected update frequency per module (minutes), from the cron that
+// refreshes it in vercel.json. Used by the UI to colour-code freshness cells
+// and in the per-cell popover. (Sept 2026: this was a hand-typed copy of the
+// old Railway schedules — weather 5, crops 15 — so crops were always red.)
+const EXPECTED_INTERVAL_MIN = cronIntervalsFor(vercelConfig.crons, {
+  weather: "scrape-weather",
+  news: "scrape-news",
+  crops: "scrape-crops",
+  insights: "generate-insights",
+});
 
 interface FreshnessRow {
   district: string;

@@ -192,12 +192,8 @@ export default function SystemHealth() {
   const s24 = data.scrapers.last24h;
   const successPct = s24.total > 0 ? (s24.successful / s24.total) * 100 : 100;
 
-  const expected = data.expectedIntervals ?? {
-    weather: 5,
-    news: 60,
-    crops: 15,
-    insights: 120,
-  };
+  // From vercel.json via the API (cronIntervalsFor); no client copy to drift.
+  const expected: Partial<Record<ModuleKey, number>> = data.expectedIntervals ?? {};
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
