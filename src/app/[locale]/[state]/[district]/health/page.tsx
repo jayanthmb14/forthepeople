@@ -163,10 +163,11 @@ const SUB_HOSPITAL_KEY: Record<string, string> = {
 
 /** Step colours for the care staircase, lightest (village) to deepest (district). */
 const STEP_BG = [
+  // v5.2 "White Calm": soft steps only; the height carries the meaning.
   "var(--hue-tint)",
-  "color-mix(in srgb, var(--hue-pop) 55%, var(--ftp-surface))",
+  "color-mix(in srgb, var(--hue-pop) 30%, var(--ftp-surface))",
+  "color-mix(in srgb, var(--hue-pop) 60%, var(--ftp-surface))",
   "var(--hue-pop)",
-  "var(--hue)",
 ];
 
 /** Cards shown before "Show all". */
@@ -335,7 +336,7 @@ function HealthPageInner({ params }: { params: Promise<{ locale: string; state: 
                       ["--i" as string]: i,
                     }}
                   >
-                    <s.icon size={28} strokeWidth={1.75} style={{ color: i === 3 ? "#fff" : "var(--hue-deep)" }} />
+                    <s.icon size={28} strokeWidth={1.75} style={{ color: "var(--hue-deep)" }} />
                   </div>
                 </div>
                 <div className="ftp-title" style={{ fontSize: 15, lineHeight: 1.4, fontWeight: 600, marginTop: 10 }}>
