@@ -108,10 +108,11 @@ async function saveInsight(
   // Low-confidence answers are not shown to citizens.
   if (insight.confidence < 0.5) return false;
 
-  const existing = await prisma.aIInsight.findFirst({
+  const previous = await prisma.aIInsight.findMany({
     where: { districtId, module: insight.module },
     orderBy: { createdAt: "desc" },
-    select: { id: true },
+    select: { id: true, approved: true },
+    take: 50,
   });
 
   const cited = articles.filter((a) => insight.newsIds.includes(a.id));
@@ -139,8 +140,19 @@ async function saveInsight(
     });
   }
 
-  if (existing) {
-    await prisma.aIInsight.delete({ where: { id: existing.id } }).catch(() => {});
+  // What the new insight replaces. An approved one replaces every earlier
+  // insight; one waiting for review replaces only the earlier ones except
+  // the latest approved, which stays on the page until an admin approves
+  // the new one (/api/insights shows approved insights only — deleting it
+  // left the module with no insight). Their review items and stored
+  // translations go with them (ReviewQueue.insightId has no cascade: 404
+  // of 406 pending review items pointed at deleted insights).
+  const keepApproved = created.approved ? null : (previous.find((p) => p.approved)?.id ?? null);
+  const replaced = previous.map((p) => p.id).filter((id) => id !== keepApproved);
+  if (replaced.length > 0) {
+    await prisma.reviewQueue.deleteMany({ where: { insightId: { in: replaced } } }).catch(() => {});
+    await prisma.contentTranslation.deleteMany({ where: { entityType: "insight", entityId: { in: replaced } } }).catch(() => {});
+    await prisma.aIInsight.deleteMany({ where: { id: { in: replaced } } }).catch(() => {});
   }
   return true;
 }
