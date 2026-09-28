@@ -71,7 +71,7 @@ export default function LanguageMenu() {
   usePopover(open, close, wrap, button);
 
   return (
-    <div ref={wrap} className={s.wrap}>
+    <div ref={wrap} className={s.wrap} data-tour="language">
       <button
         ref={button}
         type="button"

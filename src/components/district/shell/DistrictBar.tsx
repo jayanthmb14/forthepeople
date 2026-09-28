@@ -174,7 +174,7 @@ export default function DistrictBar({ locale, stateSlug, districtSlug }: Props) 
 
   return (
     <>
-      <div className="ftp-dbar" role="region" aria-label={t("bar.aria")}>
+      <div className="ftp-dbar" role="region" aria-label={t("bar.aria")} data-tour="district-bar">
         <div className="ftp-dbar-inner">
           <div className="ftp-dbar-crumbs">
             <DistrictBreadcrumb
@@ -198,6 +198,7 @@ export default function DistrictBar({ locale, stateSlug, districtSlug }: Props) 
           <button
             type="button"
             className="ftp-dbar-topics"
+            data-tour="district-topics"
             onClick={() => setDrawerOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={drawerOpen}

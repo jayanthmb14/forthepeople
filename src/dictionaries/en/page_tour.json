@@ -1,0 +1,70 @@
+{
+  "offer": {
+    "aria": "Site tour",
+    "title": "New here? Take a 30-second tour",
+    "bodyHome": "See government data for your district — every number shows its source and date.",
+    "bodyDistrict": "A quick look at how this district page works — every number shows its source and date.",
+    "show": "Show me",
+    "noThanks": "No thanks",
+    "close": "Close"
+  },
+  "card": {
+    "aria": "Site tour",
+    "step": "Step {n} of {total}",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done — start exploring",
+    "skip": "Skip tour",
+    "close": "Close the tour",
+    "keys": "Use the arrow keys to move between steps. Press Escape to close the tour."
+  },
+  "replay": "Take the tour",
+  "home": {
+    "search": {
+      "title": "Find your district",
+      "body": "Type your district’s name, or tap “Use my location”. Every live district has its own page."
+    },
+    "stats": {
+      "title": "Your district data",
+      "body": "How many districts are live, how much data we track, and when it was last updated."
+    },
+    "map": {
+      "title": "The India map",
+      "body": "Blue pins are the live districts. Tap one, or pick it from the list of live districts."
+    },
+    "india": {
+      "title": "Explore all of India",
+      "body": "The country’s big numbers in one place, each with its source and date."
+    },
+    "language": {
+      "title": "Your language",
+      "body": "Read the site in another language. You can change it here at any time."
+    },
+    "support": {
+      "title": "Support",
+      "body": "ForThePeople.in is a free, independent citizen project. If it helps you, you can support it here."
+    }
+  },
+  "district": {
+    "bar": {
+      "title": "Switch district or taluk",
+      "body": "Move to another state, district or taluk from here."
+    },
+    "topics": {
+      "title": "Every topic",
+      "body": "Every dashboard for this district is listed here: weather, crop prices, schools and more."
+    },
+    "overview": {
+      "title": "This district at a glance",
+      "body": "Leaders, people, projects and money in short. Tap “View all” on a card to see more."
+    },
+    "verify": {
+      "title": "Check this data",
+      "body": "See how old each dataset is and where it comes from, so you can check it yourself."
+    },
+    "report": {
+      "title": "Found a mistake?",
+      "body": "Tap “Report a problem” to tell us. It sends this page along with your note."
+    }
+  }
+}

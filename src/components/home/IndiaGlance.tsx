@@ -69,7 +69,7 @@ export default function IndiaGlance({ locale, figures }: { locale: string; figur
   };
 
   return (
-    <section aria-labelledby="home-india" className={`ftp-container ${styles.section}`}>
+    <section aria-labelledby="home-india" className={`ftp-container ${styles.section}`} data-tour="home-india">
       <div className={styles.india}>
         <div className={styles.indiaText}>
           <h2 id="home-india" className={styles.indiaTitle}>

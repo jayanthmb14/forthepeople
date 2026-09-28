@@ -225,6 +225,7 @@ export default function Sidebar({ locale, stateSlug, districtSlug }: SidebarProp
         scrollbarColor: "var(--ftp-border) transparent",
       }}
       className="hidden lg:block"
+      data-tour="district-topics"
     >
       {/* Collapse / expand toggle */}
       <div

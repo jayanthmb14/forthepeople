@@ -67,7 +67,7 @@ export default function HeroStats({ stats }: { stats: PlatformStats }) {
 
   if (tiles.length === 0 && !last) return null;
   return (
-    <div className={styles.statsBox}>
+    <div className={styles.statsBox} data-tour="home-stats">
       <p className={styles.statsLine}>{t.rich("stats.line", { b: (c) => <strong>{c}</strong> })}</p>
       <ul className={styles.stats} aria-label={t("stats.aria")}>
         {tiles.map((c) => (

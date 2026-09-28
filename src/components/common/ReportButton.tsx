@@ -195,6 +195,7 @@ export default function ReportButton() {
         ref={trigger}
         type="button"
         className={s.fab}
+        data-tour="report"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={t("buttonAria")}

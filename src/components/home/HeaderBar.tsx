@@ -158,7 +158,7 @@ export default function HeaderBar({ locale, githubStars = null }: HeaderBarProps
               </>
             )}
           </a>
-          <Link href={`/${locale}/support`} className={styles.supportLink}>
+          <Link href={`/${locale}/support`} className={styles.supportLink} data-tour="support">
             <Heart size={14} aria-hidden className={styles.supportHeart} />
             {t("support")}
           </Link>

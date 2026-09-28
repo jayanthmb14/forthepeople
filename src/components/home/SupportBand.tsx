@@ -76,7 +76,7 @@ export default function SupportBand({ locale }: { locale: string }) {
 
   return (
     <section aria-labelledby="home-support" className={`ftp-container ${styles.section}`}>
-      <div className={styles.supportBand}>
+      <div className={styles.supportBand} data-tour="support">
         <span className={styles.supportArt} aria-hidden>
           <Heart size={26} strokeWidth={2.2} />
         </span>
