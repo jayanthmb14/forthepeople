@@ -16,8 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import redis from "@/lib/redis";
-import { cacheKey } from "@/lib/cache";
+import { dropModuleCaches } from "@/lib/cache";
 import { logUpdate } from "@/lib/update-log";
 import { logAuditAuto } from "@/lib/audit-log";
 import { getModuleConfig } from "../route";
@@ -226,13 +225,8 @@ export async function POST(req: NextRequest) {
   });
 
   // Invalidate Redis caches so public pages refresh immediately.
-  if (redis) {
-    try {
-      await redis.del(cacheKey(districtSlug, cfg.module));
-      await redis.del(cacheKey(districtSlug, "overview"));
-    } catch (err) {
-      console.error("[content/save] cache invalidation failed:", err);
-    }
+  if (!(await dropModuleCaches(districtSlug, [cfg.module, "overview"]))) {
+    console.error("[content/save] cache invalidation failed");
   }
 
   return NextResponse.json({ updated, created, deleted });

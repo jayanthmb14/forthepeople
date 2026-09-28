@@ -12,7 +12,9 @@ vi.mock("@/lib/db", () => ({ prisma: { supporter: { aggregate } } }));
 
 import { supporterTotals } from "@/lib/supporter-totals";
 
-beforeEach(() => aggregate.mockReset());
+beforeEach(() => {
+  aggregate.mockReset();
+});
 
 describe("supporterTotals", () => {
   it("sums successful payments all-time", async () => {

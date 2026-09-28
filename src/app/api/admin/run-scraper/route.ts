@@ -11,8 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import redis from "@/lib/redis";
-import { cacheKey } from "@/lib/cache";
+import { dropModuleCaches } from "@/lib/cache";
 import { writeLog } from "@/scraper/logger";
 import type { JobContext, ScraperJob, ScraperResult } from "@/scraper/types";
 import { scrapeWeather } from "@/scraper/jobs/weather";
@@ -31,14 +30,6 @@ const SCRAPER_MAP: Record<Exclude<JobKind, "insights">, { fn: ScraperJob; caches
   news: { fn: scrapeNews, caches: ["news"] },
   crops: { fn: scrapeCrops, caches: ["crops", "overview"] },
 };
-
-async function invalidateCache(districtSlug: string, modules: string[]) {
-  const r = redis;
-  if (!r) return;
-  await Promise.all(
-    modules.map((m) => r.del(cacheKey(districtSlug, m)).catch(() => 0))
-  );
-}
 
 export async function POST(req: NextRequest) {
   const { ok: isAdmin } = await requireAdmin();
@@ -140,7 +131,7 @@ export async function POST(req: NextRequest) {
 
   await writeLog(`${job}/${district.slug}`, startedAt, result);
   if (result.success) {
-    await invalidateCache(district.slug, mapping.caches);
+    await dropModuleCaches(district.slug, mapping.caches);
   }
 
   return NextResponse.json({

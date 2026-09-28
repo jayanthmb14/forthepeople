@@ -38,6 +38,31 @@ export async function cacheSet(
   }
 }
 
+/**
+ * Drop a district's cached /api/data responses for these modules — and,
+ * when `locales` is given, their translated copies (`<key>@<locale>`, which
+ * the data route writes for "news"). Call it after a write so pages show
+ * the new rows at once. Never throws: returns false when Redis refused
+ * (the entries then expire by their TTL), true otherwise.
+ */
+export async function dropModuleCaches(
+  districtSlug: string,
+  modules: readonly string[],
+  opts: { locales?: readonly string[] } = {},
+): Promise<boolean> {
+  if (!redis || modules.length === 0) return true;
+  const keys = modules.flatMap((m) => {
+    const base = cacheKey(districtSlug, m);
+    return [base, ...(opts.locales ?? []).map((l) => `${base}@${l}`)];
+  });
+  try {
+    await redis.del(...keys);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** TTL by module — live data shorter, stable data longer */
 export function getModuleTTL(module: string): number {
   const live = new Set(["crops", "weather", "water", "dam", "alerts", "news", "power"]);

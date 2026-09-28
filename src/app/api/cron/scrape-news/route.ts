@@ -19,8 +19,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { scrapeNews } from "@/scraper/jobs/news";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { resetExtractionCounters } from "@/lib/news-action-engine";
@@ -160,11 +159,7 @@ export async function GET(request: Request) {
     });
 
     // Invalidate news cache for this district
-    if (result.success && redis) {
-      await redis.del(cacheKey(slug, "news"));
-      for (const loc of translationTargets()) await redis.del(`${cacheKey(slug, "news")}@${loc}`);
-      await redis.del(cacheKey(slug, "overview"));
-    }
+    if (result.success) await dropModuleCaches(slug, ["news", "overview"], { locales: translationTargets() });
   }
 
   const totalNew = results.reduce((s, r) => s + r.newCount, 0);

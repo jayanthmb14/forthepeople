@@ -19,8 +19,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
@@ -55,10 +54,7 @@ export async function GET(request: Request) {
 
     for (const slug of r.changedSlugs) {
       const d = districts.find((x) => x.slug === slug);
-      if (redis) {
-        await redis.del(cacheKey(slug, "jjm")).catch(() => {});
-        await redis.del(cacheKey(slug, "overview")).catch(() => {});
-      }
+      await dropModuleCaches(slug, ["jjm", "overview"]);
       const f = r.figures[slug];
       await logUpdate({
         source: "cron",
@@ -75,10 +71,8 @@ export async function GET(request: Request) {
       });
     }
     // Unchanged rows still moved their "as of" date: bust those caches too.
-    if (redis) {
-      for (const slug of Object.keys(r.figures)) {
-        if (!r.changedSlugs.includes(slug)) await redis.del(cacheKey(slug, "jjm")).catch(() => {});
-      }
+    for (const slug of Object.keys(r.figures)) {
+      if (!r.changedSlugs.includes(slug)) await dropModuleCaches(slug, ["jjm"]);
     }
 
     const outcome = runOutcome({ attempted: r.attempted, failed: r.failures.length, budgetExhausted: r.budgetExhausted });

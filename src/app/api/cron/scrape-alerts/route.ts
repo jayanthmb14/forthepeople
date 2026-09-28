@@ -20,8 +20,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { collectSachetAlerts, toAlertDistricts } from "@/scraper/jobs/alerts";
@@ -55,12 +54,7 @@ export async function GET(request: Request) {
     console.log(`[scrape-alerts] ${logs.join(" | ")}`);
 
     // Fresh alerts must show at once: bust the alerts + overview caches.
-    for (const slug of Object.keys(r.changedBy)) {
-      if (redis) {
-        await redis.del(cacheKey(slug, "alerts")).catch(() => {});
-        await redis.del(cacheKey(slug, "overview")).catch(() => {});
-      }
-    }
+    for (const slug of Object.keys(r.changedBy)) await dropModuleCaches(slug, ["alerts", "overview"]);
     // "What changed and when": one row per district for NEW alerts only
     // (CWC re-issues a flood bulletin every few hours; updates are not news).
     for (const slug of Object.keys(r.createdBy)) {

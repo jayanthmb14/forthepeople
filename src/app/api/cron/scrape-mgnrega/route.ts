@@ -22,8 +22,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
@@ -59,10 +58,7 @@ export async function GET(request: Request) {
     for (const slug of r.changedSlugs) {
       const d = districts.find((x) => x.slug === slug);
       const s = r.summary[slug];
-      if (redis) {
-        await redis.del(cacheKey(slug, "panchayats")).catch(() => {});
-        await redis.del(cacheKey(slug, "schemes")).catch(() => {});
-      }
+      await dropModuleCaches(slug, ["panchayats", "schemes"]);
       await logUpdate({
         source: "cron",
         actorLabel: "cron",
