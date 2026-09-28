@@ -13,14 +13,19 @@
  * Design v5.1 "Warm Calm": colours come from the --ftp-* tokens and the
  * module hue classes (globals.css) — a white surface on the soft
  * blue-white page, one brand blue for actions, a soft rose for Support,
- * pastel hue accents for character. Soft pastel gradients only, no neon,
- * no emoji. Touch targets are 44 px on phones.
+ * pastel hue accents for character. No neon, no emoji. Touch targets are
+ * 44 px on phones.
+ *
+ * v5.6 (28 Sep 2026, owner review): the chrome is mostly white with thin
+ * grey rules, like the June site — no pastel ribbons, no gradient washes,
+ * no filled pills. Colour is kept to small marks: the blue logo tile, the
+ * blue district pin, the rose Support text, icon strokes in their hue.
  */
 
 /* ───────────────────────── Disclaimer line ───────────────────────── */
 
 .disclaimer {
-  background: var(--ftp-surface-2);
+  background: var(--ftp-bg);
   border-bottom: 1px solid var(--ftp-border);
   color: var(--ftp-text-2);
   font-size: 12px;
@@ -100,24 +105,6 @@
   backdrop-filter: saturate(1.2) blur(10px);
   border-bottom: 1px solid var(--ftp-border);
 }
-/* A 2 px pastel ribbon along the bottom edge: the four "people" hues of the
-   site (blue, violet, teal, amber), soft, never neon. Inside the 56 px. */
-.header::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    var(--ftp-map-live-fill) 0%,
-    color-mix(in srgb, var(--ftp-features) 30%, var(--ftp-surface)) 35%,
-    color-mix(in srgb, var(--ftp-live) 28%, var(--ftp-surface)) 68%,
-    color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-surface)) 100%
-  );
-}
 /* Full width: logo in the left corner, actions in the right corner. */
 .headerRow {
   position: relative;
@@ -158,13 +145,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  /* A soft two-blue gradient (brand → deep), with a faint inner light. */
-  background:
-    radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--ftp-surface) 38%, transparent) 0, transparent 55%),
-    linear-gradient(140deg, color-mix(in srgb, var(--ftp-brand) 82%, var(--ftp-surface)), var(--ftp-brand-deep));
+  border-radius: 9px;
+  /* One flat brand blue (v5.6: no gradient, no glow). */
+  background: var(--ftp-brand);
   color: var(--ftp-surface);
-  box-shadow: 0 4px 10px -6px color-mix(in srgb, var(--ftp-brand) 70%, transparent);
 }
 .wordmarkText {
   font-family: var(--ftp-font-sans);
@@ -373,7 +357,7 @@
   max-width: 260px;
   height: 40px;
   padding: 0 10px 0 11px;
-  border: 1px solid var(--ftp-border-strong);
+  border: 1px solid var(--ftp-border);
   border-radius: 999px;
   background: var(--ftp-surface);
   color: var(--ftp-text);
@@ -393,9 +377,9 @@
   outline-offset: 2px;
 }
 .chipActive {
-  border-color: color-mix(in srgb, var(--ftp-brand) 35%, transparent);
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
+  border-color: var(--ftp-border-strong);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
 }
 .chipPin {
   flex-shrink: 0;
@@ -429,7 +413,7 @@
   padding: 0 14px;
   border: 1px solid var(--ftp-border);
   border-radius: 12px;
-  background: var(--ftp-surface-2);
+  background: var(--ftp-surface);
   color: var(--ftp-text-2);
   font-family: var(--ftp-font-sans);
   font-size: 14px;
@@ -440,7 +424,7 @@
 }
 .searchBtn:hover {
   border-color: var(--ftp-border-strong);
-  background: var(--ftp-surface);
+  background: var(--ftp-surface-2);
 }
 .searchBtn:focus-visible {
   outline: 2px solid var(--ftp-brand);
@@ -500,7 +484,8 @@
   fill: color-mix(in srgb, var(--ftp-warn) 35%, transparent);
 }
 
-/* Support: a soft rose pill (never a crimson slab) */
+/* Support: a white pill with rose text and a thin rose rule (v5.6: the
+   rose fill only on hover) — never a crimson slab */
 .supportLink {
   display: inline-flex;
   align-items: center;
@@ -510,7 +495,7 @@
   padding: 0 14px 0 12px;
   border: 1px solid var(--ftp-support-border);
   border-radius: 999px;
-  background: var(--ftp-support-tint);
+  background: var(--ftp-surface);
   color: var(--ftp-support);
   font-size: 14px;
   line-height: 20px;
@@ -520,7 +505,7 @@
   transition: background-color 150ms ease;
 }
 .supportLink:hover {
-  background: color-mix(in srgb, var(--ftp-support-tint) 70%, var(--ftp-support-border));
+  background: var(--ftp-support-tint);
 }
 .supportHeart {
   color: var(--ftp-support);
@@ -726,32 +711,16 @@
 .footer {
   position: relative;
   margin-top: 56px;
-  padding: 38px 0 22px;
+  /* The bottom padding keeps the last line clear of the floating
+     "Report a problem" button (bottom-right corner) when the page is
+     scrolled to the very end. */
+  padding: 38px 0 calc(76px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--ftp-border);
-  /* Light, with a soft blue wash in one corner. */
-  background:
-    radial-gradient(900px 260px at 100% 100%, color-mix(in srgb, var(--ftp-brand-tint) 80%, transparent), transparent 70%),
-    radial-gradient(600px 220px at 0% 0%, color-mix(in srgb, var(--ftp-features-tint) 55%, transparent), transparent 70%),
-    var(--ftp-surface);
+  /* v5.6: plain white, one thin rule on top. */
+  background: var(--ftp-surface);
   color: var(--ftp-text-2);
   font-size: 14px;
   line-height: 21px;
-}
-/* The same pastel ribbon as under the header, along the top edge. */
-.footer::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -1px;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--ftp-map-live-fill) 0%,
-    color-mix(in srgb, var(--ftp-features) 30%, var(--ftp-surface)) 35%,
-    color-mix(in srgb, var(--ftp-live) 28%, var(--ftp-surface)) 68%,
-    color-mix(in srgb, var(--ftp-warn) 30%, var(--ftp-surface)) 100%
-  );
 }
 .footerGrid {
   display: grid;
@@ -802,17 +771,18 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid color-mix(in srgb, var(--hue-pop) 80%, transparent);
+  border: 1px solid var(--ftp-border);
   border-radius: 12px;
-  background: var(--hue-tint);
-  color: var(--hue-deep);
+  background: var(--ftp-surface);
+  color: var(--ftp-text-2);
   text-decoration: none;
 }
 .footerIconWide {
   padding: 0 12px;
 }
 .footerIcon:hover {
-  border-color: var(--hue);
+  border-color: var(--ftp-border-strong);
+  color: var(--hue-deep);
 }
 .footerStars {
   display: inline-flex;
@@ -846,17 +816,13 @@
   font-weight: 700;
   color: var(--ftp-text);
 }
+/* v5.6: just the icon in its hue, no tinted tile. */
 .footerColIcon {
-  width: 26px;
-  height: 26px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--hue-tint);
-  color: var(--hue-deep);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue-pop) 70%, transparent);
+  color: var(--hue);
 }
 .footerColList {
   list-style: none;
@@ -912,9 +878,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--hue-pop) 75%, transparent);
+  border: 1px solid var(--ftp-border);
   border-radius: 14px;
-  background: linear-gradient(120deg, var(--hue-tint), var(--ftp-surface) 75%);
+  background: var(--ftp-surface);
 }
 
 .footerBottom {
@@ -963,10 +929,6 @@
 @media (max-width: 639px) {
   .footerColList a {
     min-height: 44px;
-  }
-  /* Room for the floating "Report a problem" button at the very end. */
-  .footer {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1097,7 +1059,8 @@
   overflow: hidden;
 }
 .slimMoreBody {
-  padding: 22px 0 22px;
+  /* Room for the floating "Report a problem" button at the very end. */
+  padding: 22px 0 calc(76px + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 639px) {
   .footerSlim {
@@ -1116,9 +1079,6 @@
   }
   .slimBuilt .builtByLink {
     padding: 13px 0;
-  }
-  .slimMoreBody {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 }
 @media (prefers-reduced-motion: reduce) {
