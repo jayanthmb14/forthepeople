@@ -111,8 +111,9 @@ old Docker files are archived in `docs/archive/docker/`.
 - `src/app/[locale]/india/...` — the national roll-up, driven by
   `src/lib/india/india-modules.ts` and statically generated with revalidation.
 - `src/app/[locale]/admin/...` — the admin console (tabs are client components
-  under the same folder). `/admin/review`, `/admin/security`, `/admin/recover`
-  are standalone tool pages.
+  under the same folder). `/admin/review` and `/admin/security` are standalone
+  tool pages; the 2FA recovery page is `/[locale]/admin-recover`, outside the
+  admin layout so it opens while logged out.
 - Everything public lives under `src/app/[locale]/…` (about, contribute,
   feedback, support, privacy and disclaimer moved there in e505d27). Directly
   under `src/app/` there are only the root layout and page, the error and
@@ -302,32 +303,55 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
   delete to revoke) plus an HMAC-signed cookie `<id>.<expiry>.<hmac>` signed
   with `ADMIN_SESSION_SECRET`. `requireAdmin()` verifies HMAC, expiry and Redis
   presence, and is called by every admin route, page and server action. It also
-  accepts a timing-safe ops header (`x-admin-secret` = `ADMIN_PASSWORD`, or
-  `Bearer <SEED_SECRET>`) so curl-based tooling works; that path is rate-limited.
+  accepts a timing-safe ops header (`x-admin-secret` = `ADMIN_PASSWORD`) so
+  curl-based tooling works; that path is rate-limited. The header skips 2FA, so
+  anything that changes security or decrypts secrets uses `requireAdminCookie()`
+  (cookie session only): 2FA setup / verify / disable, the recovery e-mail and
+  phone (plus a current code while 2FA is on), logout-all, the API-key vault
+  and revealing a stored service login. Rules: `src/lib/admin-second-factor.ts`.
 - **TOTP** (`src/lib/totp.ts`): secret encrypted at rest with
   `ENCRYPTION_SECRET`; the 2FA step is bound to a signed challenge cookie so it
-  cannot be reached without the password step, and is rate-limited.
+  cannot be reached without the password step, and is rate-limited. Every code
+  check (login, vault unlock, 2FA verify / disable, recovery change) is
+  throttled per IP and fails closed. The lost-phone page is
+  `/[locale]/admin-recover`, outside the admin layout.
 - **API Key Vault** (`src/lib/vault-session.ts`): a separate, shorter TOTP-bound
-  session for revealing stored third-party keys; reveals are rate-limited and
-  audit-logged (`src/lib/audit-log.ts`).
+  session for revealing stored third-party keys, bound to the admin cookie
+  (`requireVaultSession()`); the unlock code is throttled and counts towards
+  the login lockout; reveals are capped and audit-logged (`src/lib/audit-log.ts`).
 - **Rate limiting** (`src/lib/rate-limit.ts`): Redis counters keyed by a salted
-  hash of the IP (`VOTE_IP_SALT`); raw IPs are never stored.
+  hash of the IP (`VOTE_IP_SALT`, `hashIp(getClientIp(req))`). Citizens' raw
+  IPs are never stored (feedback keeps the same salted hash); only the admin's
+  own login IP is kept, in `AdminAuth` and the admin audit log.
 - **Crons**: bearer `CRON_SECRET`, plus Redis locks on the slow collectors.
   Collectors identify themselves honestly in their user agent, wait between
   requests and never use captcha-protected pages.
-- **Payments**: Razorpay order → client checkout → `/api/payment/verify` checks
-  the HMAC signature; `/api/webhooks/razorpay` verifies `RAZORPAY_WEBHOOK_SECRET`
-  in constant time and is the only writer of `payment.captured` state.
+- **Payments** (rules pure and tested in `src/lib/supporter-payment.ts`):
+  - One-time: `create-order` stores the order under a one-time tier within its
+    bounds → checkout → `/api/payment/verify` checks the HMAC signature and
+    that the contribution belongs to that order. The supporter row is written
+    by `recordOneTimePayment()` (`src/lib/record-supporter-payment.ts`), the
+    one writer shared with the webhook (`payment.captured`, when the browser
+    never came back) and the admin Sync button: checkout name (never the
+    payer's contact), checkout visibility, an expiry by amount, and never a
+    row for a monthly debit (`invoice_id`).
+  - Monthly: `create-subscription` checks tier, amount and place and writes
+    them into the subscription's notes; `verify-subscription` reads them back
+    from Razorpay (never from the browser). The webhook keeps status, badge
+    and expiry current; a cancelled or halted subscription expires at the end
+    of the paid period.
+  - `/api/webhooks/razorpay` verifies `RAZORPAY_WEBHOOK_SECRET` in constant
+    time. Every writer clears the supporter lists with `bustSupporterCaches()`
+    (`src/lib/supporter-cache.ts`).
 - **Headers**: `vercel.json` sets nosniff / frame-deny / referrer / permissions
   policies site-wide. Admin JSON is `Cache-Control: no-store`; public data
   routes may be CDN-cached briefly.
 - **Privacy**: Plausible (cookieless), DPDP policy at `/privacy`, supporter
   records anonymised at the API boundary (`src/lib/contributor-label.ts` and the
-  contributors API), name/message validators in `src/lib/validators/`.
-  Known gap (Sept 2026): `/api/data/contributors` does not yet mask names
-  that are really phone numbers (the Razorpay webhook can store the payer's
-  contact as the name). The support components hide them on screen
-  (`src/components/support/public-name.ts`); the API fix is still to do.
+  contributors API), name/message validators in `src/lib/validators/`. Names
+  that are really a phone number or e-mail are masked as "Supporter" by both
+  contributors APIs (`publicDisplayName()` in `src/lib/supporter-name.ts`) and
+  again on screen; new rows never take the payer's contact as a name.
 - **Secrets**: only names in git (`.env.example`); values in Vercel env and the
   owner's password manager. Push protection is on.
 

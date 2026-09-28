@@ -142,7 +142,7 @@ export default async function AdminLayout({
               </a>
               {" · "}
               <a
-                href={`/${locale}/admin/recover`}
+                href={`/${locale}/admin-recover`}
                 style={{ fontSize: 11, color: "#9B9B9B", textDecoration: "underline" }}
               >
                 Send recovery email

@@ -13,7 +13,9 @@ import { rateLimit, hashIp, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
-    const rl = await rateLimit(`feedback:${hashIp(getClientIp(req))}`, 10, 3600);
+    const ip = getClientIp(req);
+    const ipHash = hashIp(ip);
+    const rl = await rateLimit(`feedback:${ipHash}`, 10, 3600);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Rate limit — max 10 feedback submissions per hour." },
@@ -56,7 +58,9 @@ export async function POST(req: NextRequest) {
         name: name?.slice(0, 100) ?? null,
         page: page?.slice(0, 500) ?? null,
         rating: rating != null ? Math.min(5, Math.max(1, Number(rating))) : null,
-        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        // The salted hash, never the raw address: repeat senders still group,
+        // and nothing reads it back (docs/ARCHITECTURE.md §5).
+        ipAddress: ip === "unknown" ? null : ipHash,
         userAgent: req.headers.get("user-agent")?.slice(0, 500) ?? null,
         districtId: districtId ?? null,
         status: "new",

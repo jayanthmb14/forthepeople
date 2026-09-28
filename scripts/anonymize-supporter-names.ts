@@ -112,7 +112,7 @@ async function main() {
 
   console.log(`\nUpdated ${updated} row(s) → name = "${REPLACEMENT}".`);
   console.log(
-    'Now bust the public cache: the contributors API key is "ftp:contributors:v7" ' +
+    "Now clear the public supporter lists: the keys are in src/lib/supporter-cache.ts " +
       "(or run scripts/bust-all-caches.ts)."
   );
 

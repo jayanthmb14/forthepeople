@@ -20,7 +20,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -33,6 +33,8 @@ const DESC_MAX = 200;
 const URL_PATTERN = /https?:\/\/|www\.|\.com|\.in|\.org|\.net|\.io/i;
 const PROFANITY = /\b(fuck|shit|asshole|bitch|cunt|nigger|retard|faggot)\b/i;
 
+// Stored as submittedBy. Rate limits use hashIp(getClientIp()) instead:
+// this hash includes the User-Agent, so changing it would dodge a limit.
 function buildIpHash(req: NextRequest): string {
   // Daily salt rotation: ipHash for a given IP changes every UTC day,
   // so a user's vote trail across days isn't linkable.
@@ -66,10 +68,15 @@ function dbUnavailable() {
   );
 }
 
+// Listed publicly only once an admin has moved a suggestion past
+// "proposed": new submissions are unmoderated (the description may hold a
+// URL) and there is no moderation screen yet.
+const LISTED_STATUSES = ["shortlisted", "in_progress", "live"];
+
 export async function GET() {
   try {
     const suggestions = await prisma.indiaModuleSuggestion.findMany({
-      where: { status: { not: "declined" } },
+      where: { status: { in: LISTED_STATUSES } },
       orderBy: [{ voteCount: "desc" }, { createdAt: "asc" }],
       take: 20,
       select: {
@@ -133,7 +140,7 @@ export async function POST(req: NextRequest) {
   const ipHash = buildIpHash(req);
 
   // Rate limit: 3 suggestions per IP per hour.
-  const rl = await rateLimit(`india:sug:${ipHash}`, 3, 60 * 60);
+  const rl = await rateLimit(`india:sug:${hashIp(getClientIp(req))}`, 3, 60 * 60);
   if (!rl.success) {
     return NextResponse.json(
       { error: "Too many submissions — try again later." },

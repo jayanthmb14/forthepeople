@@ -71,9 +71,12 @@ door to the API-key vault or donor data.
 | 2FA recovery e-mails, all IPs | `rate:admin-2fa-recover:global` | 10 | 1 h | 429 |
 | Recovery-link verify per IP | `rate:admin-2fa-recover-verify:<ipHash>` | 10 | 15 min | 429 |
 | 2FA disable attempts per IP | `rate:admin-2fa-disable:<ipHash>` | 5 | 15 min | 429 |
+| 2FA setup-verify attempts per IP | `rate:admin-2fa-verify:<ipHash>` | 5 | 15 min | 429 (reset on success) |
+| Recovery-change code attempts per IP | `rate:admin-security-code:<ipHash>` | 5 | 15 min | 429 (reset on success) |
+| Vault unlock attempts per IP | `rate:admin-vault-unlock:<ipHash>` | 5 | 15 min | 429 (reset on success; also 429 while the login lock is on) |
 
-**Lockout.** Every wrong password *or* wrong code increments
-`admin:auth-failures`. At **10** failures (from any IPs combined) the key
+**Lockout.** Every wrong password *or* wrong code (login, vault unlock,
+2FA setup-verify) increments `admin:auth-failures`. At **10** failures (from any IPs combined) the key
 `admin:login-lock` is set for **15 minutes** and both steps redirect to
 `/admin?error=locked`. A successful login clears the counter. The count is
 also mirrored to `AdminAuth.failedAttempts` / `lockedUntil` in Postgres for
@@ -108,8 +111,13 @@ It exists for curl/ops scripts (`cleanup-news`, `payments`, …). It bypasses
 - it is **not** accepted by anything that changes security posture. These
   use `requireAdminCookie()` (session cookie only):
   `POST /api/admin/2fa/setup`, `/verify`, `/disable`,
+  `PATCH /api/admin/security` (recovery e-mail / phone),
   `POST /api/admin/security/logout-all`, and the API-key vault
   (`vault-session.ts`, which binds to the cookie value).
+- While 2FA is on, changing the recovery e-mail or phone also needs a
+  current code (the recovery e-mail receives the link that switches 2FA
+  off), and `2fa/setup` refuses with 409 — disable 2FA first (that needs a
+  code), then set it up again. Rules: `src/lib/admin-second-factor.ts`.
 - `Authorization: Bearer <SEED_SECRET>` is **no longer** an admin credential.
   It is checked only inside `POST /api/admin/seed-tenders`.
 
@@ -163,7 +171,7 @@ Every existing cookie fails its signature check immediately.
 | Code form never appears | layout reads `admin_totp_pending`; cookies blocked or not sent over http | use https (cookies are `secure` in production) |
 | Correct code rejected, `error=1` | pending token expired (5 min), or you switched network (IP bound), or Redis blip | go "Back to password" and log in again |
 | Correct code rejected, `error=code` | phone clock drift beyond ±30 s | re-sync time on the phone; or use a backup code |
-| Lost phone AND backup codes | — | `/en/admin/recover` e-mails a 1-hour reset link to `AdminAuth.recoveryEmail`; needs `RESEND_API_KEY` |
+| Lost phone AND backup codes | — | `/en/admin-recover` (outside the admin layout, so it opens while logged out) e-mails a 1-hour reset link to `AdminAuth.recoveryEmail`; needs `RESEND_API_KEY` |
 | Build fails: "ADMIN_SESSION_SECRET is not set" | `admin-auth.ts` throws at import | set it in Vercel (all envs) and in CI |
 
 Structured log events to search in Vercel logs / Sentry:

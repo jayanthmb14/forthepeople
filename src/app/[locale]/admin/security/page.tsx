@@ -55,6 +55,8 @@ export default function SecurityPage() {
 
   // Recovery email
   const [recoveryEmailInput, setRecoveryEmailInput] = useState("");
+  // While 2FA is on, changing the recovery e-mail needs a current code.
+  const [recoveryCode, setRecoveryCode] = useState("");
   const [recoveryEmailSaving, setRecoveryEmailSaving] = useState(false);
   const [recoveryEmailMsg, setRecoveryEmailMsg] = useState("");
   const [showChangeEmail, setShowChangeEmail] = useState(false);
@@ -122,13 +124,15 @@ export default function SecurityPage() {
       const res = await fetch("/api/admin/security", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recoveryEmail: recoveryEmailInput.trim() }),
+        body: JSON.stringify({ recoveryEmail: recoveryEmailInput.trim(), code: recoveryCode.replace(/\s/g, "") }),
       });
       const json = await res.json();
       if (res.ok) {
         showToast("Recovery email updated");
         setShowChangeEmail(false);
         setRecoveryEmailInput("");
+        setRecoveryCode("");
+        setRecoveryEmailMsg("");
         loadAuthInfo();
       } else {
         setRecoveryEmailMsg(json.error);
@@ -395,6 +399,19 @@ export default function SecurityPage() {
                 placeholder="new@email.com"
                 style={{ flex: 1, padding: "6px 10px", border: "1px solid #E8E8E4", borderRadius: 6, fontSize: 13 }}
               />
+              {authInfo?.totpEnabled && (
+                <input
+                  type="text"
+                  value={recoveryCode}
+                  onChange={(e) => setRecoveryCode(e.target.value)}
+                  placeholder="2FA code"
+                  aria-label="Current 6-digit code from your authenticator app"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={7}
+                  style={{ width: 100, padding: "6px 10px", border: "1px solid #E8E8E4", borderRadius: 6, fontSize: 13, fontFamily: "monospace" }}
+                />
+              )}
               <button
                 onClick={saveRecoveryEmail}
                 disabled={recoveryEmailSaving}

@@ -8,40 +8,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
 import type { Prisma } from "@/generated/prisma";
 import { logAuditAuto } from "@/lib/audit-log";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
-import redis from "@/lib/redis";
-import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS, CONTRIBUTOR_KEY_PATTERNS } from "@/lib/supporter-cache";
-
-// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
-const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
-
-async function bustAllContributorCaches() {
-  // Static keys
-  await Promise.all(CONTRIBUTOR_CACHE_KEYS.map((k) => cacheSet(k, null, 1)));
-  // Dynamic per-district / per-state keys (versioned suffix)
-  if (redis) {
-    try {
-      const patterns = CONTRIBUTOR_KEY_PATTERNS;
-      for (const p of patterns) {
-        // @upstash/redis returns [cursor: string, keys: string[]] from SCAN.
-        let cursor: string | number = "0";
-        do {
-          const res = await redis.scan(cursor as number, { match: p, count: 100 });
-          // Be permissive — different upstash versions use string vs number cursors.
-          const tuple = res as unknown as [string | number, string[]];
-          cursor = tuple[0] ?? "0";
-          const keys = Array.isArray(tuple[1]) ? tuple[1] : [];
-          if (keys.length > 0) await redis.del(...keys);
-        } while (String(cursor) !== "0");
-      }
-    } catch (err) {
-      console.error("[supporters] cache scan failed:", err);
-    }
-  }
-}
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
@@ -111,7 +81,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
   }
 
   const supporter = await prisma.supporter.update({ where: { id }, data });
-  await bustAllContributorCaches();
+  await bustSupporterCaches();
 
   await logAuditAuto({
     action: "supporter_edit",

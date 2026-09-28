@@ -10,21 +10,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
 import { logAuditAuto } from "@/lib/audit-log";
 import { calculateOneTimeExpiry } from "@/lib/contribution-expiry";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
-import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
-
-// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
-const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
-
-async function invalidateContributorCaches() {
-  await Promise.all(CONTRIBUTOR_CACHE_KEYS.map((k) => cacheSet(k, null, 1)));
-}
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 
 export async function POST(req: NextRequest) {
   const { ok } = await requireAdmin();
@@ -106,7 +98,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await invalidateContributorCaches();
+  await bustSupporterCaches();
 
   await logAuditAuto({
     action: "supporter_add_manual",

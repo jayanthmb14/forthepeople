@@ -13,17 +13,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
 import { logAuditAuto } from "@/lib/audit-log";
 import { validateContributorName } from "@/lib/validators/contributor-name";
-import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
-
-// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
-const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
-
-async function bustCaches() {
-  await Promise.all(CONTRIBUTOR_CACHE_KEYS.map((k) => cacheSet(k, null, 1)));
-}
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 
 export async function PATCH(
   req: NextRequest,
@@ -43,7 +35,7 @@ export async function PATCH(
 
   if (action === "delete") {
     await prisma.supporter.delete({ where: { id } });
-    await bustCaches();
+    await bustSupporterCaches();
     await logAuditAuto({
       action: "supporter_flag_delete",
       resource: "Supporter",
@@ -58,7 +50,7 @@ export async function PATCH(
       where: { id },
       data: { nameFlagged: false },
     });
-    await bustCaches();
+    await bustSupporterCaches();
     await logAuditAuto({
       action: "supporter_flag_approve",
       resource: "Supporter",
@@ -83,7 +75,7 @@ export async function PATCH(
       where: { id },
       data: { name: check.cleaned, nameFlagged: false, originalName: null },
     });
-    await bustCaches();
+    await bustSupporterCaches();
     await logAuditAuto({
       action: "supporter_flag_restore",
       resource: "Supporter",
@@ -102,7 +94,7 @@ export async function PATCH(
       where: { id },
       data: { name: check.cleaned, nameFlagged: false },
     });
-    await bustCaches();
+    await bustSupporterCaches();
     await logAuditAuto({
       action: "supporter_flag_rename",
       resource: "Supporter",

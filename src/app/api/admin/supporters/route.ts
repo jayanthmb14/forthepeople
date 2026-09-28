@@ -15,13 +15,22 @@ export async function GET(req: NextRequest) {
   }
   try {
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-    const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "20"));
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
+    // Up to 500, like the Supporters page's own first load (take: 500), so a
+    // reload after adding a supporter does not drop the oldest rows.
+    const limit = Math.min(500, Math.max(1, parseInt(searchParams.get("limit") ?? "20") || 20));
     const status = searchParams.get("status");
     const skip = (page - 1) * limit;
 
     const where = status ? { status } : {};
-    const [supporters, total] = await Promise.all([
+    const success = { status: "success" };
+    const thisMonth = new Date();
+    thisMonth.setDate(1);
+    thisMonth.setHours(0, 0, 0, 0);
+
+    // Summary stats are computed in the database (they used to load every
+    // successful row with all its columns just to add them up).
+    const [supporters, total, all, month, recurringCount, tiers] = await Promise.all([
       prisma.supporter.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -29,30 +38,21 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
       prisma.supporter.count({ where }),
+      prisma.supporter.aggregate({ where: success, _count: { _all: true }, _sum: { amount: true } }),
+      prisma.supporter.aggregate({ where: { ...success, createdAt: { gte: thisMonth } }, _sum: { amount: true } }),
+      prisma.supporter.count({ where: { ...success, isRecurring: true } }),
+      prisma.supporter.groupBy({ by: ["tier"], where: success, _count: { _all: true } }),
     ]);
-
-    // Summary stats
-    const allSuccess = await prisma.supporter.findMany({ where: { status: "success" } });
-    const totalRevenue = allSuccess.reduce((s, x) => s + x.amount, 0);
-    const thisMonth = new Date();
-    thisMonth.setDate(1);
-    thisMonth.setHours(0, 0, 0, 0);
-    const thisMonthRevenue = allSuccess
-      .filter((x) => x.createdAt >= thisMonth)
-      .reduce((s, x) => s + x.amount, 0);
-    const recurringCount = allSuccess.filter((x) => x.isRecurring).length;
-
-    const tierCounts: Record<string, number> = {};
-    allSuccess.forEach((x) => {
-      tierCounts[x.tier] = (tierCounts[x.tier] ?? 0) + 1;
-    });
+    const totalRevenue = all._sum.amount ?? 0;
+    const thisMonthRevenue = month._sum.amount ?? 0;
+    const tierCounts: Record<string, number> = Object.fromEntries(tiers.map((t) => [t.tier, t._count._all]));
 
     return NextResponse.json({
       supporters,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       summary: {
         totalRevenue,
-        totalSupporters: allSuccess.length,
+        totalSupporters: all._count._all,
         thisMonthRevenue,
         recurringCount,
         tierCounts,

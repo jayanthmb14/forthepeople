@@ -12,6 +12,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
+import { planTitleDuplicates } from "@/lib/news-dedupe";
 
 export async function POST() {
   const { ok } = await requireAdmin();
@@ -34,22 +35,22 @@ export async function POST() {
   });
   results.futureArticlesDeleted = futureNews;
 
-  // 3. Delete duplicate news articles — keep the oldest per district+title prefix
+  // 3. Delete duplicate news articles — per district, the same rule the
+  // scrape-news cron uses (planTitleDuplicates: same 50-character title
+  // prefix, first fetched stays). The old key kept only ASCII letters, so
+  // every Hindi or Kannada headline of a district shared one empty key and
+  // all but one would have been deleted.
   const allNews = await prisma.newsItem.findMany({
-    orderBy: { publishedAt: "asc" },
-    select: { id: true, districtId: true, title: true },
+    select: { id: true, districtId: true, title: true, fetchedAt: true },
   });
-  const seen = new Map<string, true>();
-  const dupIds: string[] = [];
+  const byDistrict = new Map<string, typeof allNews>();
   for (const article of allNews) {
-    const words = article.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().split(/\s+/).filter((w) => w.length > 3);
-    const key = `${article.districtId}:${words.slice(0, 5).join(" ")}`;
-    if (seen.has(key)) {
-      dupIds.push(article.id);
-    } else {
-      seen.set(key, true);
-    }
+    const key = article.districtId ?? "";
+    const rows = byDistrict.get(key);
+    if (rows) rows.push(article);
+    else byDistrict.set(key, [article]);
   }
+  const dupIds = [...byDistrict.values()].flatMap((rows) => planTitleDuplicates(rows).flatMap((g) => g.removeIds));
   if (dupIds.length > 0) {
     const { count: dups } = await prisma.newsItem.deleteMany({ where: { id: { in: dupIds } } });
     results.duplicateArticlesDeleted = dups;

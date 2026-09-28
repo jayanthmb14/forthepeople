@@ -22,11 +22,10 @@ export const runtime = "nodejs";
 const VOTE_LIMIT = 20;
 const VOTE_WINDOW_SECONDS = 60 * 60;
 
-// Build a simple fingerprint from IP + User-Agent
+// Build a simple fingerprint from IP + User-Agent (the one-vote key; the
+// rate limit above uses the IP alone, so a new User-Agent cannot dodge it).
 function buildFingerprint(req: NextRequest): string {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    ?? req.headers.get("x-real-ip")
-    ?? "unknown";
+  const ip = getClientIp(req);
   const ua = req.headers.get("user-agent") ?? "unknown";
   return createHash("sha256").update(`${ip}:${ua}`).digest("hex").slice(0, 32);
 }

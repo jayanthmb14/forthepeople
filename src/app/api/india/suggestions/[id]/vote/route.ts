@@ -16,10 +16,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+// The one-vote-per-day key (IP + User-Agent + day). The rate limit uses
+// hashIp(getClientIp()) instead, so a new User-Agent cannot dodge it.
 function buildIpHash(req: NextRequest): string {
   const salt = new Date().toISOString().slice(0, 10);
   const ip =
@@ -57,7 +59,7 @@ export async function POST(
   const ipHash = buildIpHash(req);
 
   // Rate limit: 30 vote attempts per IP per hour (covers retries).
-  const rl = await rateLimit(`india:vote:${ipHash}`, 30, 60 * 60);
+  const rl = await rateLimit(`india:vote:${hashIp(getClientIp(req))}`, 30, 60 * 60);
   if (!rl.success) {
     return NextResponse.json(
       { error: "Too many vote attempts — try again later." },

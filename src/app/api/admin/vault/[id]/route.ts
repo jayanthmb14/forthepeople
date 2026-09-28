@@ -10,34 +10,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
-import { VAULT_COOKIE, checkVaultSession } from "@/lib/vault-session";
+import { requireVaultSession } from "@/lib/vault-session";
 import { logAuditAuto } from "@/lib/audit-log";
-import { requireAdmin } from "@/lib/admin-auth";
-
-const COOKIE = "ftp_admin_v1";
-
-async function requireVault(): Promise<{ ok: true } | { ok: false; res: NextResponse }> {
-  const { ok } = await requireAdmin();
-  if (!ok) {
-    return { ok: false, res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  // Vault session is bound to the raw admin cookie value (see vault-session.ts),
-  // so read it to validate the unlocked-vault layer on top of admin auth.
-  const jar = await cookies();
-  const admin = jar.get(COOKIE)?.value;
-  const sessionToken = jar.get(VAULT_COOKIE)?.value;
-  const status = await checkVaultSession(sessionToken, admin);
-  if (!status.valid) {
-    return {
-      ok: false,
-      res: NextResponse.json({ error: "Vault locked" }, { status: 403 }),
-    };
-  }
-  return { ok: true };
-}
 
 function maskKey(raw: string): string {
   if (raw.length <= 14) return raw.slice(0, 3) + "…" + raw.slice(-2);
@@ -47,7 +23,7 @@ function maskKey(raw: string): string {
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
-  const gate = await requireVault();
+  const gate = await requireVaultSession();
   if (!gate.ok) return gate.res;
   const { id } = await ctx.params;
   const row = await prisma.adminAPIKey.findUnique({
@@ -71,7 +47,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 }
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
-  const gate = await requireVault();
+  const gate = await requireVaultSession();
   if (!gate.ok) return gate.res;
   const { id } = await ctx.params;
   const body = await req.json().catch(() => ({}));
@@ -113,7 +89,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  const gate = await requireVault();
+  const gate = await requireVaultSession();
   if (!gate.ok) return gate.res;
   const { id } = await ctx.params;
   const row = await prisma.adminAPIKey.findUnique({

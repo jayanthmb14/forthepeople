@@ -8,7 +8,10 @@
  */
 
 import { randomUUID, createHash } from "crypto";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import redis from "@/lib/redis";
+import { ADMIN_COOKIE, requireAdminCookie } from "@/lib/admin-auth";
 
 const VAULT_PREFIX = "ftp:vault-session:";
 const VAULT_TTL_SECONDS = 600; // 10 minutes
@@ -107,6 +110,25 @@ export async function bumpReveals(token: string): Promise<{ allowed: boolean; re
 
 export async function destroyVaultSession(token: string): Promise<void> {
   await deleteStored(token);
+}
+
+/**
+ * The gate of every vault route: a signed admin cookie session (never the
+ * password header — the vault is cookie-only, like 2FA management) plus an
+ * unlocked vault session bound to that cookie. Returns the vault token, or
+ * the response to send (401 / 403).
+ */
+export async function requireVaultSession(): Promise<{ ok: true; token: string } | { ok: false; res: NextResponse }> {
+  if (!(await requireAdminCookie()).ok) {
+    return { ok: false, res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  const jar = await cookies();
+  const token = jar.get(VAULT_COOKIE)?.value;
+  const status = await checkVaultSession(token, jar.get(ADMIN_COOKIE)?.value);
+  if (!status.valid || !token) {
+    return { ok: false, res: NextResponse.json({ error: "Vault locked" }, { status: 403 }) };
+  }
+  return { ok: true, token };
 }
 
 export { VAULT_TTL_SECONDS, MAX_REVEALS_PER_SESSION };

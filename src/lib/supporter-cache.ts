@@ -37,3 +37,30 @@ export const CONTRIBUTOR_CACHE_KEYS: readonly string[] = [
 
 /** Patterns for the per-state and per-district lists (Redis SCAN MATCH). */
 export const CONTRIBUTOR_KEY_PATTERNS: readonly string[] = ["ftp:contributors:district:*", "ftp:contributors:state-page:*"];
+
+/**
+ * Clear every public supporter list — the fixed keys and the per-district /
+ * per-state lists — after any change to a Supporter row (payment verify,
+ * webhook, admin edits), so the walls and sponsor banners show it at once.
+ * Best-effort: a Redis problem is logged, never thrown (the lists also
+ * expire on their own within minutes). Redis is imported lazily so the key
+ * list above stays importable anywhere, tests included.
+ */
+export async function bustSupporterCaches(): Promise<void> {
+  const { redis } = await import("@/lib/redis");
+  if (!redis) return;
+  try {
+    await redis.del(...CONTRIBUTOR_CACHE_KEYS);
+    for (const pattern of CONTRIBUTOR_KEY_PATTERNS) {
+      // SCAN (never KEYS, which blocks Redis); "0" ends the walk.
+      let cursor = "0";
+      do {
+        const [next, keys] = await redis.scan(cursor, { match: pattern, count: 1000 });
+        if (keys.length > 0) await redis.del(...keys);
+        cursor = String(next);
+      } while (cursor !== "0");
+    }
+  } catch (err) {
+    console.error("[supporter-cache] clearing the supporter lists failed:", err instanceof Error ? err.message : err);
+  }
+}

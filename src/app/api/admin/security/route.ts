@@ -7,16 +7,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
-import { requireAdmin } from "@/lib/admin-auth";
-
-async function isAuthed() {
-  const { ok } = await requireAdmin();
-  return ok;
-}
+import { verifyTOTP } from "@/lib/totp";
+import { requireAdmin, requireAdminCookie } from "@/lib/admin-auth";
+import { canChangeRecovery } from "@/lib/admin-second-factor";
+import { getClientIp, hashIp, rateLimit, resetRateLimit } from "@/lib/rate-limit";
 
 // GET — return auth info (no secrets)
 export async function GET() {
-  if (!(await isAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await requireAdmin()).ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const auth = await prisma.adminAuth.findUnique({ where: { id: "admin" } });
 
@@ -40,13 +38,19 @@ export async function GET() {
   });
 }
 
-// PATCH — update recovery email/phone
+// PATCH — update recovery email/phone. The recovery e-mail receives the link
+// that switches 2FA off, so changing it needs what switching 2FA off needs:
+// a browser session (not the password header) and, while 2FA is on, a
+// current code (src/lib/admin-second-factor.ts).
 export async function PATCH(req: NextRequest) {
-  if (!(await isAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await requireAdminCookie()).ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const { recoveryEmail, recoveryPhone } = await req.json() as {
+  const { recoveryEmail, recoveryPhone, code } = await req.json() as {
     recoveryEmail?: string;
     recoveryPhone?: string;
+    code?: string;
   };
 
   const data: Record<string, string> = {};
@@ -56,6 +60,27 @@ export async function PATCH(req: NextRequest) {
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
+
+  const auth = await prisma.adminAuth.findUnique({ where: { id: "admin" } });
+  const secret = auth?.totpEnabled ? auth.totpSecret : null;
+  const cleanCode = typeof code === "string" ? code.replace(/\s+/g, "") : "";
+  let codeValid = false;
+  if (secret && cleanCode) {
+    // A code check is a credential check: throttle it (fail closed).
+    const limiterKey = `admin-security-code:${hashIp(getClientIp(req))}`;
+    const rl = await rateLimit(limiterKey, 5, 15 * 60, { failClosed: true });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try again in 15 minutes." },
+        { status: 429, headers: { "Retry-After": "900" } }
+      );
+    }
+    codeValid = verifyTOTP(secret, cleanCode);
+    if (codeValid) await resetRateLimit(limiterKey);
+  }
+
+  const gate = canChangeRecovery({ totpEnabled: Boolean(secret), codeGiven: cleanCode.length > 0, codeValid });
+  if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
 
   await prisma.adminAuth.upsert({
     where: { id: "admin" },

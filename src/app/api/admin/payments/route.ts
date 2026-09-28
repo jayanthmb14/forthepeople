@@ -15,18 +15,25 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const contributions = await prisma.contribution.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
-
-  const paid = contributions.filter((c) => c.status === "paid");
-  const totalPaise = paid.reduce((sum, c) => sum + c.amount, 0);
+  // The list is the newest 100; the summary counts EVERY paid contribution
+  // (it used to total only the paid ones among those 100).
+  const [contributions, paid] = await Promise.all([
+    prisma.contribution.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.contribution.aggregate({
+      where: { status: "paid" },
+      _count: { _all: true },
+      _sum: { amount: true },
+    }),
+  ]);
+  const totalPaise = paid._sum.amount ?? 0;
 
   return NextResponse.json({
     contributions,
     summary: {
-      totalCount: paid.length,
+      totalCount: paid._count._all,
       totalAmount: totalPaise, // in paise
       totalAmountRs: Math.round(totalPaise / 100),
     },

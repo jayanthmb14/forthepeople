@@ -4,40 +4,18 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireAdmin, createAdminSession } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
-const COOKIE = "ftp_admin_v1";
-
-async function loginAction(formData: FormData) {
-  "use server";
-  const pw = formData.get("password") as string;
-  const locale = formData.get("locale") as string;
-  if (pw === (process.env.ADMIN_PASSWORD ?? "")) {
-    const hdrs = await headers();
-    const ip =
-      hdrs.get("x-forwarded-for")?.split(",")[0].trim() ||
-      hdrs.get("x-real-ip") ||
-      "unknown";
-    const token = await createAdminSession(ip);
-    (await cookies()).set(COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 8 * 3600,
-      path: "/",
-      sameSite: "strict",
-    });
-    redirect(`/${locale}/admin/review`);
-  }
-  redirect(`/${locale}/admin/review?error=1`);
-}
-
+// Server actions are public POST endpoints: each one checks the admin
+// session itself (the page's own check does not cover a direct POST).
+// Login lives only in the admin layout (password + 2FA + limiter).
 async function reviewAction(formData: FormData) {
   "use server";
+  if (!(await requireAdmin()).ok) return;
   const id = formData.get("id") as string;
   const action = formData.get("action") as "approve" | "reject";
   const locale = formData.get("locale") as string;
@@ -55,6 +33,7 @@ async function reviewAction(formData: FormData) {
 
 async function feedbackAction(formData: FormData) {
   "use server";
+  if (!(await requireAdmin()).ok) return;
   const id = formData.get("id") as string;
   const status = formData.get("status") as string;
   const locale = formData.get("locale") as string;
@@ -74,27 +53,13 @@ export default async function AdminReviewPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ error?: string; tab?: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { locale } = await params;
-  const { error, tab = "review" } = await searchParams;
+  const { tab = "review" } = await searchParams;
   const { ok: authed } = await requireAdmin();
 
-  if (!authed) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 16 }}>
-        <div style={{ fontSize: 22 }}>🧠</div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>Admin Dashboard</div>
-        <form action={loginAction} style={{ display: "flex", flexDirection: "column", gap: 8, width: 260 }}>
-          <input type="hidden" name="locale" value={locale} />
-          <input type="password" name="password" placeholder="Admin password" autoFocus required
-            style={{ padding: "9px 12px", border: "1px solid #E8E8E4", borderRadius: 8, fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box" }} />
-          {error && <span style={{ fontSize: 12, color: "#DC2626" }}>Incorrect password</span>}
-          <button type="submit" style={{ padding: "9px 0", background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Login</button>
-        </form>
-      </div>
-    );
-  }
+  if (!authed) redirect(`/${locale}/admin`);
 
   // Fetch all data
   const pending = await prisma.reviewQueue.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } });
@@ -107,15 +72,20 @@ export default async function AdminReviewPage({
   const feedbackItems = await prisma.feedback.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { district: { select: { name: true } } } });
   const newFeedbackCount = feedbackItems.filter((f) => f.status === "new").length;
   const logs = await prisma.newsIntelligenceLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
-  const contributions = await prisma.contribution.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
-  const paidContributions = contributions.filter((c) => c.status === "paid");
-  const totalCollectedRs = Math.round(paidContributions.reduce((s, c) => s + c.amount, 0) / 100);
+  // The table lists the newest 100; the totals count every contribution.
+  const [contributions, paidTotals, contributionCount] = await Promise.all([
+    prisma.contribution.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.contribution.aggregate({ where: { status: "paid" }, _count: { _all: true }, _sum: { amount: true } }),
+    prisma.contribution.count(),
+  ]);
+  const paidCount = paidTotals._count._all;
+  const totalCollectedRs = Math.round((paidTotals._sum.amount ?? 0) / 100);
 
   const TABS = [
     { key: "review", label: "Pending Review", badge: pendingItems.length },
     { key: "applied", label: "Applied", badge: appliedItems.length },
     { key: "feedback", label: "Feedback", badge: newFeedbackCount, badgeRed: newFeedbackCount > 0 },
-    { key: "payments", label: "Payments", badge: paidContributions.length },
+    { key: "payments", label: "Payments", badge: paidCount },
     { key: "logs", label: "AI Logs", badge: null },
   ];
 
@@ -243,8 +213,8 @@ export default async function AdminReviewPage({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
             {[
               { label: "Total Collected", value: `₹${totalCollectedRs.toLocaleString("en-IN")}` },
-              { label: "Successful Payments", value: String(paidContributions.length) },
-              { label: "Pending / Failed", value: String(contributions.length - paidContributions.length) },
+              { label: "Successful Payments", value: String(paidCount) },
+              { label: "Pending / Failed", value: String(contributionCount - paidCount) },
             ].map((s) => (
               <div key={s.label} style={{ background: "#fff", border: "1px solid #E8E8E4", borderRadius: 10, padding: "14px 16px" }}>
                 <div style={{ fontSize: 11, color: "#9B9B9B", marginBottom: 4 }}>{s.label}</div>

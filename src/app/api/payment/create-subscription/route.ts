@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+import { subscriptionNotes } from "@/lib/supporter-payment";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
 import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
@@ -131,18 +132,18 @@ export async function POST(req: NextRequest) {
           notify_email: email?.trim() || undefined,
           notify_phone: `+91${phoneDigits}`,
         },
-        notes: {
+        // verify-subscription reads tier, amount and place back from these.
+        notes: subscriptionNotes({
           name: cleanedName,
-          email: email?.trim() || "",
+          email,
           phone: phoneDigits,
           tier,
-          amount: String(amount),
-          districtId: districtId || "",
-          stateId: stateId || "",
-          socialLink: socialLink?.trim() || "",
-          message: cleanedMessage ?? "",
-          platform: "forthepeople.in",
-        },
+          amount,
+          districtId,
+          stateId,
+          socialLink,
+          message: cleanedMessage,
+        }),
       }),
     });
 
