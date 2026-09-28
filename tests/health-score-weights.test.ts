@@ -31,3 +31,32 @@ describe("getDistrictType (which report-card weights a district gets)", () => {
     expect(getDistrictType(800_000, 600, null)).toBe("semi-urban");
   });
 });
+
+describe("report-card measures with nothing behind them are placeholders, not findings", () => {
+  it("health alerts: never collected (no official source publishes district health advisories)", async () => {
+    const { healthAlertsMetric } = await import("@/lib/health-score");
+    expect(healthAlertsMetric()).toMatchObject({ noData: true, score: 50 });
+  });
+
+  it("power outages: a placeholder until a checked outage row exists; then outages in 30 days count", async () => {
+    const { powerReliabilityMetric } = await import("@/lib/health-score");
+    expect(powerReliabilityMetric(0, 0)).toMatchObject({ noData: true, score: 50 });
+    expect(powerReliabilityMetric(12, 0)).toMatchObject({ value: 0, score: 100 });
+    expect(powerReliabilityMetric(12, 4)).toMatchObject({ value: 4, score: 80 });
+    expect(powerReliabilityMetric(12, 4).noData).toBeUndefined();
+  });
+
+  it("soil records and agri advisories: none on file is a placeholder, not a score of 0", async () => {
+    const { soilHealthMetric, agriAdvisoriesMetric } = await import("@/lib/health-score");
+    expect(soilHealthMetric(0)).toMatchObject({ noData: true, score: 50 });
+    expect(soilHealthMetric(10)).toMatchObject({ value: 10, score: 50 });
+    expect(soilHealthMetric(10).noData).toBeUndefined();
+    expect(agriAdvisoriesMetric(0)).toMatchObject({ noData: true, score: 50 });
+    expect(agriAdvisoriesMetric(3)).toMatchObject({ value: 3, score: 60 });
+  });
+
+  it("dataCoverage counts only measures backed by data", async () => {
+    const { dataCoverage, healthAlertsMetric, powerReliabilityMetric, soilHealthMetric } = await import("@/lib/health-score");
+    expect(dataCoverage([healthAlertsMetric(), powerReliabilityMetric(0, 0), soilHealthMetric(4)])).toEqual({ measured: 1, total: 3 });
+  });
+});

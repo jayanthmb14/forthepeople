@@ -138,6 +138,50 @@ export function udiseSchoolInfraPct(udise: UdiseSnapshotData | null): number | n
   return schools > 0 ? weighted / schools : null;
 }
 
+/** Neutral score for a measure with no data behind it (flagged noData). */
+const NO_DATA_SCORE = 50;
+
+/**
+ * Active health alerts. No official source publishes district health
+ * advisories: the only LocalAlert writer (NDMA SACHET) never writes one,
+ * and the old "health_advisory" rows came from news stories. Counting
+ * them scored "0 alerts = 100" for every district, so this is always a
+ * neutral placeholder until a collector exists (Sept 2026 audit).
+ */
+export function healthAlertsMetric(): SubMetric {
+  return { value: 0, max: 0, score: NO_DATA_SCORE, label: "Active Health Alerts (lower is better)", noData: true };
+}
+
+/**
+ * Power outages in the last 30 days (lower is better). A placeholder while
+ * the district has no outage row from a checked source at all — an empty
+ * table is "not collected", not "no outages".
+ */
+export function powerReliabilityMetric(everRecorded: number, last30Days: number): SubMetric {
+  const label = "Power Outages (last 30 days, lower is better)";
+  if (everRecorded === 0) return { value: 0, max: 0, score: NO_DATA_SCORE, label, noData: true };
+  return { value: last30Days, max: 0, score: Math.max(0, 100 - last30Days * 5), label };
+}
+
+/** Soil health records on file (20 or more scores 100); none = a placeholder. */
+export function soilHealthMetric(records: number): SubMetric {
+  const label = "Soil Health Records";
+  if (records === 0) return { value: 0, max: 20, score: NO_DATA_SCORE, label, noData: true };
+  return { value: records, max: 20, score: Math.round(Math.min(100, (records / 20) * 100)), label };
+}
+
+/** Agri advisories issued in the last 14 days (5 or more scores 100); none = a placeholder. */
+export function agriAdvisoriesMetric(active: number): SubMetric {
+  const label = "Active Agri Advisories";
+  if (active === 0) return { value: 0, max: 5, score: NO_DATA_SCORE, label, noData: true };
+  return { value: active, max: 5, score: Math.min(100, active * 20), label };
+}
+
+/** How many measures rest on real data (the rest are placeholders). */
+export function dataCoverage(subs: readonly SubMetric[]): { measured: number; total: number } {
+  return { measured: subs.filter((m) => !m.noData).length, total: subs.length };
+}
+
 function avg(scores: number[]): number {
   if (scores.length === 0) return 50;
   return scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -250,12 +294,8 @@ async function calcHealth(districtId: string): Promise<CategoryResult> {
   // is a neutral placeholder flagged noData.
   sub.healthFacilities = { value: 0, max: 0, score: 50, label: "Health centres (not collected yet)", noData: true };
 
-  // Check for health alerts (more alerts = worse health situation)
-  const healthAlerts = await prisma.localAlert.count({
-    where: { districtId, type: "health_advisory", active: true },
-  });
-  const alertScore = Math.max(0, 100 - healthAlerts * 10);
-  sub.activeHealthAlerts = { value: healthAlerts, max: 0, score: alertScore, label: "Active Health Alerts (lower is better)" };
+  // Health alerts: not collected (healthAlertsMetric).
+  sub.activeHealthAlerts = healthAlertsMetric();
 
   // Literacy as a proxy for health literacy (Census 2011)
   const literacy = (await census2011(districtId))?.literacy ?? null;
@@ -294,12 +334,14 @@ async function calcInfrastructure(districtId: string): Promise<CategoryResult> {
     sub.roadConnectivity = { value: 0, max: 100, score: 50, label: "Village Road Connectivity (%)", noData: true };
   }
 
-  // Power outage frequency (lower is better)
-  const outages = await prisma.powerOutage.count({
-    where: { districtId, ...NOT_FROM_NEWS, createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
-  });
-  const outageScore = Math.max(0, 100 - outages * 5);
-  sub.powerReliability = { value: outages, max: 0, score: outageScore, label: "Power Outages (last 30 days, lower is better)" };
+  // Power outage frequency (lower is better), from checked rows only.
+  const [outagesEver, outages] = await Promise.all([
+    prisma.powerOutage.count({ where: { districtId, ...NOT_FROM_NEWS } }),
+    prisma.powerOutage.count({
+      where: { districtId, ...NOT_FROM_NEWS, createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
+    }),
+  ]);
+  sub.powerReliability = powerReliabilityMetric(outagesEver, outages);
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -436,17 +478,15 @@ async function calcAgriculture(districtId: string): Promise<CategoryResult> {
   const irrigationScore = Math.min(100, (avgStorage / 80) * 80);
   sub.irrigationProxy = { value: Math.round(avgStorage), max: 80, score: Math.round(irrigationScore), label: "Reservoir Storage (Irrigation Proxy, %)", ...noDataIf(dams.length === 0) };
 
-  // Soil health records
-  const soilRecords = await prisma.soilHealth.count({ where: { districtId } });
-  const soilScore = Math.min(100, (soilRecords / 20) * 100);
-  sub.soilHealthData = { value: soilRecords, max: 20, score: Math.round(soilScore), label: "Soil Health Records" };
-
-  // Agri advisories (active = good)
-  const advisories = await prisma.agriAdvisory.count({
-    where: { districtId, active: true, weekOf: { gte: new Date(Date.now() - 14 * 86400000) } },
-  });
-  const advisoryScore = Math.min(100, advisories * 20);
-  sub.agriAdvisories = { value: advisories, max: 5, score: advisoryScore, label: "Active Agri Advisories" };
+  // Soil health records and recent agri advisories (none on file = placeholder).
+  const [soilRecords, advisories] = await Promise.all([
+    prisma.soilHealth.count({ where: { districtId } }),
+    prisma.agriAdvisory.count({
+      where: { districtId, active: true, weekOf: { gte: new Date(Date.now() - 14 * 86400000) } },
+    }),
+  ]);
+  sub.soilHealthData = soilHealthMetric(soilRecords);
+  sub.agriAdvisories = agriAdvisoriesMetric(advisories);
 
   return { score: Math.round(avg(Object.values(sub).map((m) => m.score)) * 10) / 10, subMetrics: sub };
 }
@@ -571,8 +611,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
   const grade = getGrade(overallScore);
 
   // How much of the score rests on real data (the rest are placeholders).
-  const allSubs = Object.values(categories).flatMap((c) => Object.values(c.subMetrics));
-  const dataCoverage = { measured: allSubs.filter((m) => !m.noData).length, total: allSubs.length };
+  const coverage = dataCoverage(Object.values(categories).flatMap((c) => Object.values(c.subMetrics)));
 
   const existing = await prisma.districtHealthScore.findUnique({ where: { districtId } });
   const previousScore = existing?.overallScore ?? null;
@@ -618,7 +657,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
       districtType,
       trendChange: change,
       trendDetails,
-      dataCoverage,
+      dataCoverage: coverage,
     } as unknown as Prisma.InputJsonValue,
     previousScore,
     trend,
@@ -635,7 +674,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
   const district = await prisma.district.findFirst({ where: { id: districtId }, select: { name: true } });
   console.log(
     `[Health Score] ${district?.name ?? districtId}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}` +
-      ` — ${dataCoverage.measured} of ${dataCoverage.total} measures backed by data`,
+      ` — ${coverage.measured} of ${coverage.total} measures backed by data`,
   );
-  return { overallScore, grade, ...dataCoverage };
+  return { overallScore, grade, ...coverage };
 }
