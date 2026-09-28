@@ -38,8 +38,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "prisma db push",
-    "scraper": "npx tsx src/scraper/scheduler.ts",
-    "scraper:dev": "npx tsx --watch src/scraper/scheduler.ts",
     "i18n:index": "node scripts/gen-i18n-namespaces.mjs",
     "geo:rewind": "node scripts/rewind-geo.mjs"
   },
