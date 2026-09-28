@@ -202,6 +202,8 @@ export async function scrapeNews(
     // Load existing URLs to avoid re-inserting
     const existingUrls = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
+      orderBy: { publishedAt: "desc" },
+      take: 5000,
       select: { url: true },
     });
     // Keyed by urlKey (no www / tracking parameters / trailing slash): the same article, one row.

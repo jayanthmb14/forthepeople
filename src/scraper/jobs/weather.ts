@@ -132,6 +132,7 @@ export async function collectWeather(ctx: JobContext): Promise<WeatherCollectRes
       where: { districtId: ctx.districtId },
       orderBy: { recordedAt: "desc" },
       skip: 48,
+      take: 10_000,
       select: { id: true },
     });
     if (old.length > 0) {
