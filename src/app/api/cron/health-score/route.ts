@@ -20,11 +20,12 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { calculateDistrictHealthScore } from "@/lib/health-score";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
+import { listActiveDistricts } from "@/scraper/lib/cron-districts";
+import { withCronErrors } from "@/scraper/lib/cron-run";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -37,11 +38,12 @@ export async function GET(request: Request) {
   }
 
   const runStart = await cronStarted(CRON_NAME);
-  const districts = await prisma.district.findMany({
-    where: { active: true },
-    select: { id: true, slug: true },
-    orderBy: { name: "asc" },
-  });
+  return withCronErrors(CRON_NAME, runStart, () => scoreAll(runStart));
+}
+
+/** Everything after cronStarted(); a throw is recorded by withCronErrors. */
+async function scoreAll(runStart: number): Promise<Response> {
+  const districts = await listActiveDistricts();
 
   const results: Array<{
     district: string;

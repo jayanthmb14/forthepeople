@@ -28,12 +28,12 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@/lib/db";
 import { collectCrops } from "@/scraper/jobs/crops";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
-import type { JobContext } from "@/scraper/types";
+import { jobContextFor, listActiveDistricts } from "@/scraper/lib/cron-districts";
+import { withCronErrors } from "@/scraper/lib/cron-run";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -49,12 +49,12 @@ export async function GET(request: Request) {
   }
 
   const runStart = await cronStarted(CRON_NAME);
+  return withCronErrors(CRON_NAME, runStart, () => collectAll(runStart));
+}
 
-  const sorted = await prisma.district.findMany({
-    where: { active: true },
-    select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-    orderBy: { name: "asc" },
-  });
+/** Everything after cronStarted(); a throw is recorded by withCronErrors. */
+async function collectAll(runStart: number): Promise<Response> {
+  const sorted = await listActiveDistricts();
   // Rotate the starting district by day so a budget cut-off moves around.
   const shift = sorted.length > 0 ? Math.floor(runStart / 86_400_000) % sorted.length : 0;
   const activeDistricts = [...sorted.slice(shift), ...sorted.slice(0, shift)];
@@ -83,21 +83,8 @@ export async function GET(request: Request) {
       break;
     }
 
-    const state = row.state;
-    if (!state) {
-      results.push({ district: row.slug, success: false, newCount: 0, durationMs: 0, error: "Missing state relation" });
-      continue;
-    }
-
     const logs: string[] = [];
-    const ctx: JobContext = {
-      districtSlug: row.slug,
-      districtId: row.id,
-      districtName: row.name,
-      stateSlug: state.slug,
-      stateName: state.name,
-      log: (msg) => logs.push(msg),
-    };
+    const ctx = jobContextFor(row, (msg) => logs.push(msg));
 
     const districtStart = Date.now();
     try {

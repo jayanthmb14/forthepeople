@@ -19,11 +19,11 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@/lib/db";
 import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { listActiveDistricts } from "@/scraper/lib/cron-districts";
 import { collectSachetAlerts, toAlertDistricts } from "@/scraper/jobs/alerts";
 
 export const runtime = "nodejs";
@@ -41,11 +41,7 @@ export async function GET(request: Request) {
   const logs: string[] = [];
 
   try {
-    const rows = await prisma.district.findMany({
-      where: { active: true },
-      select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-      orderBy: { name: "asc" },
-    });
+    const rows = await listActiveDistricts();
     const districts = toAlertDistricts(rows);
 
     const r = await collectSachetAlerts(districts, {

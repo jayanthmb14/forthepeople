@@ -22,13 +22,13 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@/lib/db";
 import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { hasLiveDamSource, scrapeDams } from "@/scraper/jobs/dams";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
-import type { JobContext } from "@/scraper/types";
+import { jobContextFor, listActiveDistricts } from "@/scraper/lib/cron-districts";
+import { withCronErrors } from "@/scraper/lib/cron-run";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -44,13 +44,13 @@ export async function GET(request: Request) {
   }
 
   const runStart = await cronStarted(CRON_NAME);
+  return withCronErrors(CRON_NAME, runStart, () => collectAll(runStart));
+}
 
-  const active = await prisma.district.findMany({
-    where: { active: true },
-    select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-    orderBy: { name: "asc" },
-  });
-  const districts = active.filter((d) => hasLiveDamSource(d.state?.slug ?? "", d.slug));
+/** Everything after cronStarted(); a throw is recorded by withCronErrors. */
+async function collectAll(runStart: number): Promise<Response> {
+  const active = await listActiveDistricts();
+  const districts = active.filter((d) => hasLiveDamSource(d.state.slug, d.slug));
   const notCovered = active.filter((d) => !districts.includes(d)).map((d) => d.slug);
 
   const results: Array<{ district: string; success: boolean; newCount: number; updatedCount: number; error?: string }> = [];
@@ -64,14 +64,7 @@ export async function GET(request: Request) {
     }
 
     const logs: string[] = [];
-    const ctx: JobContext = {
-      districtId: d.id,
-      districtSlug: d.slug,
-      districtName: d.name,
-      stateSlug: d.state?.slug ?? "karnataka",
-      stateName: d.state?.name ?? "Karnataka",
-      log: (msg) => logs.push(msg),
-    };
+    const ctx = jobContextFor(d, (msg) => logs.push(msg));
 
     try {
       const result = await scrapeDams(ctx);

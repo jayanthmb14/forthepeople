@@ -145,7 +145,7 @@ old Docker files are archived in `docs/archive/docker/`.
    the job(s) inside its own time budget, and records a `ScraperLog` row per
    run (success or failure, rows written, duration), which the verification
    panel and admin read. The slow collectors also take a Redis lock
-   (`lock:cron:<name>` or `ftp:lock:<name>`) so overlapping runs cannot
+   (`lock:cron:<name>`) so overlapping runs cannot
    double-write; some routes post an admin alert on failure. Beyond the
    original jobs:
    - `scrape-alerts` reads NDMA SACHET, the official disaster-alert feed.
@@ -335,7 +335,7 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 |---|---|---|
 | All civic data, supporters, logs, settings | Neon PostgreSQL | Prisma; schema changes are manual `db:push` before code push |
 | Cache of API responses | Upstash Redis | short TTL, invalidated by admin edits; the forecast is cached per district (`ftp:forecast:v1:<state>/<district>`) |
-| Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:`; two crons lock with `ftp:lock:<name>` |
+| Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:` (cron locks: `lock:cron:<name>`) |
 | Cron run state | Upstash Redis | `ftp:cron:<name>` hashes + one `ScraperLog` row per run (`docs/RUNBOOKS/crons.md`) |
 | District figures with no table yet | Upstash Redis | `ftp:data:udise:<slug>`, `ftp:data:mgnrega:<slug>` (no expiry), `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` (120 days) |
 | Double-check results | Neon PostgreSQL | `DataVerification` rows (needs `db:push`); review items in `NewsActionQueue` |

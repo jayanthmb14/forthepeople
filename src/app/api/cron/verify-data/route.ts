@@ -10,7 +10,7 @@
 //                                 06:00 UTC dam reading and the 03:30 UTC crop run)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:verify-data" + one ScraperLog row ("verify-data")
-// Lock: Redis "ftp:lock:verify-data" so two runs never overlap.
+// Lock: Redis "lock:cron:verify-data" (src/scraper/lib/cron-lock.ts) so two runs never overlap.
 //
 // Runs the verifiers in src/lib/verification/ (freshness, leaders,
 // weather, dams, mandi) inside a 240 s budget, writes DataVerification
@@ -27,6 +27,7 @@ import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { cacheKey } from "@/lib/cache";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { acquireCronLock, releaseCronLock } from "@/scraper/lib/cron-lock";
 import { runVerification, VERIFIER_NAMES, type VerifierName } from "@/lib/verification/run";
 import { verificationTableReady } from "@/lib/verification/store";
 import { stateCacheKey, VERIFICATION_MODULE } from "@/lib/verification/cache-keys";
@@ -35,7 +36,6 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 const CRON_NAME = "verify-data";
 const TIME_BUDGET_MS = 240_000;
-const LOCK_KEY = "ftp:lock:verify-data";
 const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 export async function GET(request: Request) {
@@ -53,11 +53,10 @@ export async function GET(request: Request) {
     .map((s) => s.trim())
     .filter((s) => SLUG_RE.test(s));
 
-  if (redis) {
-    const got = await redis.set(LOCK_KEY, new Date().toISOString(), { nx: true, ex: 290 }).catch(() => "OK");
-    if (got === null) {
-      return NextResponse.json({ ok: false, skipped: "another verify-data run is in progress" }, { status: 409 });
-    }
+  // One run at a time. The lock outlives maxDuration (it used to expire at
+  // 290 s, before the 300 s limit); Redis down: run anyway.
+  if (!(await acquireCronLock(CRON_NAME, maxDuration + 30))) {
+    return NextResponse.json({ ok: false, skipped: "another verify-data run is in progress" }, { status: 409 });
   }
 
   const runStart = await cronStarted(CRON_NAME);
@@ -102,6 +101,6 @@ export async function GET(request: Request) {
     await cronFinished(CRON_NAME, runStart, { status: "error", error: msg.slice(0, 500) });
     return NextResponse.json({ ok: false, error: msg.slice(0, 300) }, { status: 500 });
   } finally {
-    if (redis) await redis.del(LOCK_KEY).catch(() => {});
+    await releaseCronLock(CRON_NAME);
   }
 }

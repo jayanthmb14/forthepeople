@@ -37,9 +37,9 @@ and one `ScraperLog` row (via `cronStarted()` / `cronFinished()` in
 | `/api/cron/update-exams` | `30 6 * * *` | daily 12:00 | 70 s (official-page pass) / 120 s | Reads UPSC's and SSC's official exam pages, moves exam status forward by date ("open" only with a published closing date), flags exams unconfirmed for over 30 days. Writes `GovernmentExam`. |
 | `/api/cron/platform-report` | `0 0 * * 0` | Sunday 05:30 | 240 s (no AI model attempt after it) / 300 s | Weekly AI platform report. Writes one `PlatformReport` row. |
 | `/api/cron/health-score` | `30 1 * * *` | daily 07:00 | 100 s / 120 s | Recomputes every live district's report card (`calculateDistrictHealthScore()`). Writes `DistrictHealthScore`. Daily because a stored grade expires after 7 days. |
-| `/api/cron/verify-data` | `45 6 * * *` | daily 12:15 (after the 06:00 UTC dam run and the 03:30 UTC crop run) | 240 s / 300 s | The double-check: freshness, leaders, weather, dams and mandi verifiers (`src/lib/verification/`). Writes `DataVerification` rows and, for disagreements, `NewsActionQueue` items (dataType `verify-leaders`, no repeats) plus one admin alert. Never changes the data it checks. Lock `ftp:lock:verify-data`. Needs `npm run db:push` first; until then it logs itself as skipped. |
+| `/api/cron/verify-data` | `45 6 * * *` | daily 12:15 (after the 06:00 UTC dam run and the 03:30 UTC crop run) | 240 s / 300 s | The double-check: freshness, leaders, weather, dams and mandi verifiers (`src/lib/verification/`). Writes `DataVerification` rows and, for disagreements, `NewsActionQueue` items (dataType `verify-leaders`, no repeats) plus one admin alert. Never changes the data it checks. Lock `lock:cron:verify-data`. Needs `npm run db:push` first; until then it logs itself as skipped. |
 | `/api/cron/dedupe-data` | `15 7 * * *` | daily 12:45 (after update-exams and verify-data) | 240 s / 300 s | The duplicate guard (`src/lib/dedupe/guard.ts`). EXACT duplicates (same canonical key in the same district) are merged automatically: best row kept, empty fields filled, child rows moved (`InfraUpdate`, `SchoolResult`, `SugarFactorySeason`, news translations), the rest deleted — or `active=false` for `Leader`, `LocalAlert`, `CitizenTip`, `LocalIndustry`, `FamousPersonality`. Copies of one exam become one national / state / district `GovernmentExam` row; exam statuses and `ElectionResult.electionType` are rewritten in the canonical set. FUZZY pairs (≥ 85 % alike) are never changed: each is queued once in `NewsActionQueue` (dataType `verify-duplicates`). Drops the page caches of the tables it changed. Lock `lock:cron:dedupe-data`. |
-| `/api/cron/scrape-courts` | `40 1,13 * * *` | 07:10 and 19:10 | 250 s / 300 s | Court cases from NJDG's public dashboards (3 requests per NJDG unit, ≥ 3 s apart; oldest district first). Writes Redis `ftp:courts:njdg:<slug>` and `ftp:courts:njdg-hc:<stateCode>` (120-day expiry), this year's filed / decided / waiting to `CourtStat` (source "NJDG district dashboard · read <date>"), and deletes the cached courts response. Lock `ftp:lock:scrape-courts`. |
+| `/api/cron/scrape-courts` | `40 1,13 * * *` | 07:10 and 19:10 | 250 s / 300 s | Court cases from NJDG's public dashboards (3 requests per NJDG unit, ≥ 3 s apart; oldest district first). Writes Redis `ftp:courts:njdg:<slug>` and `ftp:courts:njdg-hc:<stateCode>` (120-day expiry), this year's filed / decided / waiting to `CourtStat` (source "NJDG district dashboard · read <date>"), and deletes the cached courts response. Lock `lock:cron:scrape-courts`. |
 | `/api/cron/scrape-jjm` | `15 4 * * *` | daily 09:45 | 90 s / 120 s | Tap-water coverage from the public JJM dashboard (rural districts; urban ones are "not covered"). Two dashboard endpoints must agree. Writes one district-total `JJMStatus` row per district + `UpdateLog`. Lock `lock:cron:scrape-jjm`. |
 | `/api/cron/scrape-schools` | `40 4 * * 2` | Tuesday 10:10 | 150 s / 180 s | UDISE+ district school statistics (schools, teachers, students, facilities) after totals-add-up checks. Writes Redis `ftp:data:udise:<slug>` (no expiry) + `UpdateLog`. Lock `lock:cron:scrape-schools`. |
 | `/api/cron/scrape-mgnrega` | `50 4 * * *` | daily 10:20 | 250 s / 300 s | MGNREGA "At a glance" page per rural district (about 20 s each). Writes Redis `ftp:data:mgnrega:<slug>` (no expiry) + `UpdateLog`. Lock `lock:cron:scrape-mgnrega`. |
@@ -56,10 +56,15 @@ Notes:
   `src/scraper/lib/collector-registry.ts` (`PORTAL_COLLECTORS`: module, cron,
   schedule, storage, source, expected age). If you change one of their
   schedules, change it there too.
-- Two lock-key styles exist: `lock:cron:<name>` (`src/scraper/lib/cron-lock.ts`)
-  and `ftp:lock:<name>` (courts, verify-data). A locked run returns
-  `skipped` (verify-data answers HTTP 409). Locks expire on their own a little
-  after `maxDuration`.
+- Every lock is `lock:cron:<name>` (`src/scraper/lib/cron-lock.ts`; courts
+  and verify-data used `ftp:lock:<name>` until 2026-09-28, and verify-data's
+  expired at 290 s, before its 300 s limit). A locked run returns `skipped`
+  (verify-data answers HTTP 409). Locks expire on their own 30 s after
+  `maxDuration`.
+- Shared route helpers: `listActiveDistricts()` / `jobContextFor()`
+  (`src/scraper/lib/cron-districts.ts`) and `withCronErrors()`
+  (`src/scraper/lib/cron-run.ts`), which records a run that throws as an
+  error instead of leaving it "running".
 
 ## 2. Auth — how a cron proves it is allowed to run
 
@@ -167,7 +172,9 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
 
 1. Create `src/app/api/cron/<name>/route.ts`. Copy `scrape-weather/route.ts`
    (or `scrape-jjm/route.ts` for a collector with a lock) as the template:
-   `verifyCron`, `cronStarted`, `cronFinished`, `maxDuration`, a time budget.
+   `verifyCron`, `cronStarted`, `withCronErrors` (or your own catch that calls
+   `cronFinished` with "error"), `cronFinished`, `maxDuration`, a time budget,
+   and `listActiveDistricts()` / `jobContextFor()` for the district list.
 2. Add `{ "path": "/api/cron/<name>", "schedule": "..." }` to `vercel.json`.
    Health picks it up automatically.
 3. Add a row to the table in section 1, and to
