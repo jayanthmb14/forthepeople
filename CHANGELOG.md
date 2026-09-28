@@ -16,6 +16,7 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
 ### Changed — v5.6 "White Calm" refresh (branches `v56/*`, 2026-09-28)
 
+- 2026-09-28 (`v57/home`): home brings back the June headline "Your district. Your data. Your right. 🇮🇳" and subtitle; order is now stat row → map + live districts → slim "Explore the whole India" band → new "Your district" tabs (weather now, latest news, district head, report card — live from the public APIs, each with its source/date, "Not available right now" when empty) → how we check the data → support; sections get thin-bordered white cards, one light band and a quick hover/fade.
 - Pages are 80–90 % white: module colour only as a thin left/top rule, the icon chip, key numbers, status dots and chart bars (`docs/DESIGN-SYSTEM.md` §2a).
 - Home rebuilt on the June dashboard layout: centred hero, plain stat row with "last update", India map (60 %) beside the live-district list; "Prices today" section removed (ticker petrol/diesel now open the PPAC source).
 - News everywhere is one line per story (source · when · topic) via the shared `src/components/news/NewsList.tsx`.

@@ -14,17 +14,28 @@
  *   1. PriceTicker        — running prices: gold 24K/22K (per 10 g),
  *                           silver, petrol and diesel (Delhi), Sensex,
  *                           Nifty, dollar — each with its own date
- *   2. HomeHero           — centred: the slogan, the ONE <h1> (a task),
- *                           search, "Find your district" + "Use my
- *                           location"; then the row of white number tiles
- *                           (HeroStats); then the big clickable India map
- *                           with the live districts beside it
- *                           (LiveDistrictsCard; under the map on tablets
- *                           and phones)
- *   3. IndiaGlance        — "Explore all of India": four checked national
- *                           figures and the big button
- *   4. DataChecks         — how we get and check the data (4 steps)
- *   5. SupportBand        — the support ask with a few supporters' names
+ *   2. HomeHero           — centred: the June 2026 headline "Your
+ *                           district. Your data. Your right." with the
+ *                           Indian flag (the ONE <h1>) and the June
+ *                           subtitle, search, "Find your district" + "Use
+ *                           my location"; then "Your district data —
+ *                           tracked and checked" (HeroStats); then the big
+ *                           clickable India map with the live districts
+ *                           beside it (LiveDistrictsCard; under the map on
+ *                           tablets and phones)
+ *   3. IndiaGlance        — "Explore the whole India": a slim band right
+ *                           under the map row — the pill, four checked
+ *                           national figures with their sources
+ *   4. YourDistrict       — "Your district": chip tabs for every live
+ *                           district and a few live figures for the chosen
+ *                           one (weather now, latest news, district head,
+ *                           report card), each with its source or date
+ *   5. DataChecks         — how we get and check the data (4 steps)
+ *   6. SupportBand        — the support ask with a few supporters' names
+ *
+ * Sections are told apart by white cards with a thin border and one very
+ * light band (YourDistrict); SectionReveal fades each one up once as it
+ * scrolls in (never hidden while it waits).
  *
  * Numbers: live districts and states from the District rows loaded here,
  * dashboards per district from the sidebar registry (getPlatformFacts),
@@ -49,6 +60,8 @@ import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance from "@/components/home/IndiaGlance";
 import SupportBand from "@/components/home/SupportBand";
 import DataChecks from "@/components/home/DataChecks";
+import YourDistrict from "@/components/home/YourDistrict";
+import SectionReveal from "@/components/home/SectionReveal";
 import { getDistrict } from "@/lib/constants/districts";
 import { placeName } from "@/i18n/place-name";
 import styles from "@/components/home/home.module.css";
@@ -158,8 +171,10 @@ export default async function HomePage({
       </div>
 
       <IndiaGlance locale={locale} figures={glance} />
+      <YourDistrict locale={locale} districts={activeDistricts} />
       <DataChecks locale={locale} example={example} />
       <SupportBand locale={locale} />
+      <SectionReveal />
     </main>
   );
 }

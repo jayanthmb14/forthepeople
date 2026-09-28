@@ -8,9 +8,8 @@
 //  HomeHero — the top of the home page (Design v5.6, "mostly white")
 // ═══════════════════════════════════════════════════════════════════════
 //
-//          • Your district. Your data. Your right.
-//        See what is happening in **your district**
-//     Weather, dams, crop prices… from government portals …
+//        Your district. Your **data**. Your right. 🇮🇳
+//     India's first free, real-time district transparency platform.
 //        [ 🔍 Type your district, e.g. Mysore            ]
 //          [Find your district]  [⌖ Use my location]
 //
@@ -32,9 +31,11 @@
 //  list sits under the map. `side` is the districts panel (a server-built
 //  element passed in by the page).
 //
-//  The page's ONE <h1> is the task, not the slogan (the slogan is the
-//  kicker above it). Key words are made stronger by weight and colour only
-//  — no highlighter stroke behind them. "Find your district" submits the
+//  The page's ONE <h1> is the June 2026 headline, word for word, with
+//  "data" in brand blue (colour only — no highlighter stroke) and the
+//  Indian flag after it: the flag is the only emoji on the page, an
+//  owner-approved exception to the emoji rule (docs/DESIGN-SYSTEM.md §4),
+//  read out as "India". The June subtitle sits under it. "Find your district" submits the
 //  search box (empty box → the live districts as quick picks). "Use my
 //  location" shows its result once, in the floating LocateResult card.
 "use client";
@@ -65,7 +66,6 @@ export interface HomeHeroProps {
 }
 
 export default function HomeHero({ locale, stats, districts, mapStats, side }: HomeHeroProps) {
-  const t = useTranslations("home");
   const tp = useTranslations("page_home");
   const tl = useTranslations("locate");
   const loc = useLocate();
@@ -73,12 +73,13 @@ export default function HomeHero({ locale, stats, districts, mapStats, side }: H
   return (
     <div className={styles.hero}>
       <div className={styles.heroText}>
-        <p className={styles.kicker}>
-          <span className={styles.kickerDot} aria-hidden />
-          <span>{tp.rich("hero.tagline", { b: (c) => <strong className={styles.kickerEm}>{c}</strong> })}</span>
-        </p>
-        <h1 className={styles.title}>{tp.rich("hero.title", { hl: (c) => <span className={styles.titleHl}>{c}</span> })}</h1>
-        <p className={styles.lead}>{t("sources")}</p>
+        <h1 className={styles.title}>
+          {tp.rich("hero.headline", { hl: (c) => <span className={styles.titleHl}>{c}</span> })}{" "}
+          <span role="img" aria-label={tp("hero.flag")} className={styles.titleFlag}>
+            🇮🇳
+          </span>
+        </h1>
+        <p className={styles.lead}>{tp("hero.sub")}</p>
 
         <div className={styles.heroSearch}>
           <HomeSearch />
