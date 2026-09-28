@@ -33,6 +33,11 @@ export interface NewsClassification {
   articleId: string;
   articleTitle: string;
   articleUrl: string;
+  /** When the outlet published the article. Timeline dates, "announced"
+   *  dates and the prompts' "Published:" line use it — never the sync time. */
+  articlePublishedAt: Date;
+  /** The outlet's name (publisher), when known. */
+  articleSource?: string | null;
   districtId: string;
   targetModule: string;
   moduleAction: string;
@@ -168,6 +173,12 @@ export async function executeNewsAction(
 ): Promise<void> {
   const { districtId, targetModule, extractedData, articleTitle, articleUrl, confidence } = classification;
   const decision = decideNewsAction(classification);
+  const article = {
+    title: articleTitle,
+    url: articleUrl,
+    publishedAt: classification.articlePublishedAt,
+    source: classification.articleSource ?? null,
+  };
 
   if (decision.kind === "skip" || decision.kind === "drop") {
     console.log(`[NewsAction] ${decision.kind === "skip" ? "Skip" : "Drop"} (${decision.reason}): ${articleTitle.slice(0, 60)}`);
@@ -243,10 +254,7 @@ export async function executeNewsAction(
         }
         infraExtractionsThisRun++;
         try {
-          const result = await extractVerifyAndSyncInfra(
-            { title: articleTitle, url: articleUrl, publishedAt: new Date() },
-            districtId
-          );
+          const result = await extractVerifyAndSyncInfra(article, districtId);
           if (!result) {
             console.log(`[NewsAction] infra: skipped (no projectName / low confidence / verify fail): ${articleTitle.slice(0, 60)}`);
           } else {
@@ -275,20 +283,12 @@ export async function executeNewsAction(
         // News-driven exam sync — extract structured metadata then upsert.
         // Failure is non-fatal: the NewsItem still persists via the outer pipeline.
         try {
-          const extraction = await extractExamFromNews({
-            title: articleTitle,
-            url: articleUrl,
-            publishedAt: new Date(),
-          });
+          const extraction = await extractExamFromNews(article);
           if (!extraction) {
             console.log(`[NewsAction] exams: extraction returned null for "${articleTitle.slice(0, 60)}"`);
             break;
           }
-          const result = await syncExamFromNews(
-            extraction,
-            { title: articleTitle, url: articleUrl, publishedAt: new Date() },
-            districtId
-          );
+          const result = await syncExamFromNews(extraction, article, districtId);
           console.log(
             `[NewsAction] ✅ Exam sync: ${extraction.shortName} → ` +
             `created ${result.created}, updated ${result.updated}, skipped ${result.skipped} ` +
