@@ -235,3 +235,44 @@ Added 28 Sep, after the v5.1 round 3 merge:
     `page_weather`, `page_courts`, `page_police` (crime-type names),
     `page_support`
   - new leader rows have no Kannada or Hindi names yet.
+
+## 7. After the zero-error audit (28 Sep 2026)
+
+Applied with your approval: 695 verified corrections (updates, hidden values
+and deletions) from `scripts/fix-audit-2026-09-*.ts`, each re-checked by a
+second agent; backup branch `backup-2026-09-27-pre-cleanup` holds the rows
+from before. What this leaves for you:
+
+**Honest empty states you may want filled (only with official sources):**
+- Budgets: only Pune shows budget figures; the other 9 districts show "not
+  published" (no district publishes sector-wise spending).
+- Trains and buses: listings hidden until each is checked.
+- Famous people: only people born in the district (New Delhi: none; Chennai:
+  A. R. Rahman).
+- New Delhi crops: no mandi in the district — say if you want neighbouring
+  Delhi mandis shown, clearly labelled.
+- Office hours: shown only for Karnataka and Maharashtra (from official
+  orders); send the orders for Delhi, Telangana, West Bengal, Tamil Nadu, UP.
+- India modules with no data now say "coming soon" (police strength,
+  railways and five others).
+
+**Facts that need an official source before they can be shown:**
+- The five new Bengaluru corporations' offices and the khata/property-tax
+  process; the current BEST GM; Mumbai Port, MMRDA and MHADA officer rows;
+  Chennai suburban police stations (Avadi / Tambaram commissionerates).
+- Mandya sugar mills missing from the list (Mysore Sugar Co., NSL, Hemagiri,
+  Prem, MRN) — only unofficial lists found; KSDL revenue.
+- Coconut and tender-coconut price units (hidden until confirmed).
+- Local-body elections (Kolkata corporation after Diwali 2026, Chennai ~2027)
+  — add only from the state election commission's notice.
+
+**Your confirmation:**
+- New Delhi's population on Compare is the Census 2011 figure (1,42,004) for
+  the old district boundary, not the DM site's 11,73,902 for today's
+  district.
+- The support page's "OpenRouter 20%" cost share, and Bengaluru as the
+  operator address on the privacy page.
+- GST figures have no collector — update monthly by hand, or ask for one.
+- Hindi spelling standard: जिला / खर्च (the site's most common forms) vs
+  ज़िला / ख़र्च; plus a list of official titles (designations) in Hindi and
+  Kannada, and checked Kannada spellings of places outside Karnataka.
