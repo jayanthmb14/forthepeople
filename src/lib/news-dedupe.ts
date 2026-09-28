@@ -5,9 +5,12 @@
 
 // Collapse the same story told by several outlets ("Karnataka: Lokayukta
 // raids in Mandya…", "India News | Karnataka: Lokayukta Raids in Mandya…",
-// "Karnataka Lokayukta raids Mandya…"). The ingest-time check (same title
-// prefix within 24 h, src/scraper/jobs/news.ts) misses reworded headlines;
-// this runs on the list a page shows. Pure function, unit-tested.
+// "Karnataka Lokayukta raids Mandya…"). At ingest (src/scraper/jobs/news.ts)
+// a headline whose first five long words match a story of the last 7 days
+// is not saved (titleKey), and a reworded copy of a story from the last
+// 24 h is saved pointing at it (findCanonicalStory → duplicateOf). What
+// slips past both is collapsed on the list a page shows (dedupeStories).
+// Pure functions, unit-tested.
 
 const STOP = new Set([
   "a", "an", "the", "in", "of", "to", "for", "on", "at", "as", "after", "from", "over", "and", "by", "with",

@@ -164,9 +164,8 @@ export function applyScopeOverride(extraction: InfraExtraction): InfraExtraction
   // Pass 3 — the original regex rules (two cities → STATE, NH-/Vande Bharat → NATIONAL)
   const namesTwo = (() => {
     let count = 0;
-    let m: RegExpExecArray | null;
     const rx = new RegExp(NAMED_CITY_RX.source, "gi");
-    while ((m = rx.exec(name)) && count < 3) count++;
+    while (rx.exec(name) && count < 3) count++;
     return count >= 2;
   })();
 
