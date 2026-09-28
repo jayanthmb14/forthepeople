@@ -276,3 +276,35 @@ from before. What this leaves for you:
 - Hindi spelling standard: जिला / खर्च (the site's most common forms) vs
   ज़िला / ख़र्च; plus a list of official titles (designations) in Hindi and
   Kannada, and checked Kannada spellings of places outside Karnataka.
+
+## 8. After the backend clean-up (28 Sep 2026)
+
+82 findings across the backend (payments/admin security, collectors, data
+APIs, AI/news, dead code); fixed with tests, merged, 1,072 tests passing.
+
+**Decide / do:**
+1. **Supporters wall expiry** — `npx tsx scripts/fix-supporter-expiry-2026-09.ts`
+   (dry run shown 28 Sep): 5 cancelled monthly supporters would leave the
+   wall today; 11 one-time supporters get an end date their amount earns
+   (most April/May ones would leave the wall); 6 rows stored as one-time
+   gifts are really monthly debits — decide each. Run with `--confirm` only
+   after you agree.
+2. **Admin recovery link moved** to `/en/admin-recover` (old e-mailed links
+   stop working; they expired within an hour anyway). Changing the recovery
+   e-mail/phone now needs a 2FA code.
+3. **Tenders:** do the legal/robots check on the four state portals
+   (mahatenders, tntenders, wbtenders, Delhi eProcurement), then
+   `npx tsx scripts/activate-tenders-districts.ts` (dry run, then `--confirm`).
+   Karnataka tender pages now show "not tracked yet" (no collector reads
+   Karnataka's portal). Decide whether the red-flag check should run after
+   each tender collection. The long tender disclaimer text lives in the
+   database and may still name Karnataka — check it in the admin panel.
+4. **Disaster alerts speed:** SACHET alerts are fetched faster than our
+   2–3 s-per-site rule so warnings are not delayed. Keep it (recommended) or
+   slow it down.
+5. **Remove the unused `node-cron` package** when convenient (needs a
+   lockfile change: `npm uninstall node-cron @types/node-cron`).
+6. **Report-card grades changed** on 28 Sep because made-up inputs were
+   removed; this is expected.
+7. Old feedback rows still hold raw IP addresses (new ones don't); 146
+   district-request rows include names that are not real districts.
