@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
+import { supporterTotals } from "@/lib/supporter-totals";
 
 async function isAuthed() {
   const { ok } = await requireAdmin();
@@ -114,7 +115,7 @@ export async function GET() {
       prisma.feedback.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
       prisma.supporter.count({ where: { status: "success" } }),
       prisma.supporter.count({ where: { status: "success", createdAt: { gte: sevenDaysAgo } } }),
-      prisma.supporter.findMany({ where: { status: "success" }, select: { amount: true } }),
+      supporterTotals(),
       prisma.featureRequest.aggregate({ _sum: { votes: true } }),
       prisma.featureVote.count({ where: { votedAt: { gte: sevenDaysAgo } } }),
       prisma.districtRequest.aggregate({ _sum: { requestCount: true } }),
@@ -125,7 +126,7 @@ export async function GET() {
       feedbackThisWeek,
       totalContributions,
       contributionsThisWeek,
-      totalRevenue: allRevenue.reduce((s, x) => s + x.amount, 0),
+      totalRevenue: allRevenue.amount,
       totalFeatureVotes: totalFeatureVotes._sum.votes ?? 0,
       featureVotesThisWeek,
       totalDistrictRequests: totalDistrictRequests._sum.requestCount ?? 0,

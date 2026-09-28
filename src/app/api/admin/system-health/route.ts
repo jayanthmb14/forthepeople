@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { redis } from "@/lib/redis";
 import { cronIntervalsFor } from "@/lib/cron-auth";
+import { supporterTotals } from "@/lib/supporter-totals";
 import vercelConfig from "../../../../../vercel.json";
 
 // Expected update frequency per module (minutes), from the cron that
@@ -196,19 +197,10 @@ export async function GET() {
   // ── Contributions
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000);
-    const [last7, allSuccess] = await Promise.all([
-      prisma.supporter.findMany({
-        where: { status: "success", createdAt: { gte: sevenDaysAgo } },
-        select: { amount: true },
-      }),
-      prisma.supporter.findMany({
-        where: { status: "success" },
-        select: { amount: true },
-      }),
-    ]);
+    const [last7, allSuccess] = await Promise.all([supporterTotals(sevenDaysAgo), supporterTotals()]);
     result.contributions = {
-      last7days: last7.reduce((s, x) => s + x.amount, 0),
-      totalRevenue: allSuccess.reduce((s, x) => s + x.amount, 0),
+      last7days: last7.amount,
+      totalRevenue: allSuccess.amount,
     };
   } catch {
     result.contributions = { last7days: 0, totalRevenue: 0 };

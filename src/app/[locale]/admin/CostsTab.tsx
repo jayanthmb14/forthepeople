@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Pencil, RefreshCw } from "lucide-react";
 import ModuleHelp from "@/components/admin/ModuleHelp";
-import { PRICE_TABLE } from "@/lib/ai-models";
+import { INR_PER_USD, PRICE_TABLE } from "@/lib/ai-models";
 
 interface UsageData {
   totalCalls: number;
@@ -190,7 +190,7 @@ export default function CostsTab() {
   const orLimit = or?.limit ?? 10;
   const orRemaining = or?.remaining ?? Math.max(0, orLimit - orSpent);
   const orPct = or?.percentUsed ?? 0;
-  const usdToInr = or?.usdToInr ?? 84;
+  const usdToInr = or?.usdToInr ?? INR_PER_USD;
   const projectedMonthly = (() => {
     if (!usage || !usage.byDay.length) return null;
     const recent = usage.byDay.slice(-7);

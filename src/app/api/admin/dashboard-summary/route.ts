@@ -12,6 +12,7 @@ import redis from "@/lib/redis";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { isTransientError } from "@/lib/admin-alerts";
 import type { OpenRouterUsage } from "../openrouter-usage/route";
+import { supporterTotals } from "@/lib/supporter-totals";
 
 export const runtime = "nodejs";
 
@@ -154,24 +155,18 @@ export async function GET() {
   let supporterCount = 0;
   let latest: DashboardSummary["revenue"]["latest"] = null;
   try {
-    const [weekRows, allRows, latestRow] = await Promise.all([
-      prisma.supporter.findMany({
-        where: { status: "success", createdAt: { gte: sevenDaysAgo } },
-        select: { amount: true },
-      }),
-      prisma.supporter.findMany({
-        where: { status: "success" },
-        select: { amount: true },
-      }),
+    const [weekTotal, allTotal, latestRow] = await Promise.all([
+      supporterTotals(sevenDaysAgo),
+      supporterTotals(),
       prisma.supporter.findFirst({
         where: { status: "success" },
         orderBy: { createdAt: "desc" },
         select: { name: true, amount: true, tier: true, createdAt: true },
       }),
     ]);
-    thisWeek = weekRows.reduce((s, r) => s + r.amount, 0);
-    total = allRows.reduce((s, r) => s + r.amount, 0);
-    supporterCount = allRows.length;
+    thisWeek = weekTotal.amount;
+    total = allTotal.amount;
+    supporterCount = allTotal.count;
     if (latestRow) {
       latest = {
         name: latestRow.name,

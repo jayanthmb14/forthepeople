@@ -9,10 +9,10 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { prisma } from "@/lib/db";
+import { INR_PER_USD } from "@/lib/ai-models";
 
 const CACHE_KEY = "ftp:admin:openrouter-usage";
 const CACHE_TTL = 300; // 5 minutes
-const USD_TO_INR = 84; // approximate conversion; made dynamic in a later prompt
 
 interface OpenRouterKeyResponse {
   data?: {
@@ -55,7 +55,7 @@ async function fetchFromOpenRouter(): Promise<OpenRouterUsage | null> {
       limit,
       remaining,
       percentUsed,
-      usdToInr: USD_TO_INR,
+      usdToInr: INR_PER_USD,
       fetchedAt: new Date().toISOString(),
       source: "api",
     };
@@ -81,7 +81,7 @@ async function fallbackFromUsageLog(): Promise<OpenRouterUsage> {
     limit: 10,
     remaining: Math.max(0, 10 - spent),
     percentUsed: Math.min(100, (spent / 10) * 100),
-    usdToInr: USD_TO_INR,
+    usdToInr: INR_PER_USD,
     fetchedAt: new Date().toISOString(),
     source: "fallback",
     error: "OpenRouter API key missing or unreachable",

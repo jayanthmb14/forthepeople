@@ -11,6 +11,8 @@
 import { prisma } from "@/lib/db";
 import { callAIJSON } from "@/lib/ai-provider";
 import { cacheGet } from "@/lib/cache";
+import { INR_PER_USD } from "@/lib/ai-models";
+import { supporterTotals } from "@/lib/supporter-totals";
 
 export interface PlatformReportActionItem {
   priority: number;
@@ -82,14 +84,8 @@ async function gatherData(): Promise<DataSnapshot> {
       select: { jobName: true, error: true },
       take: 100,
     }),
-    prisma.supporter.findMany({
-      where: { status: "success", createdAt: { gte: sevenDaysAgo } },
-      select: { amount: true },
-    }),
-    prisma.supporter.findMany({
-      where: { status: "success" },
-      select: { amount: true },
-    }),
+    supporterTotals(sevenDaysAgo),
+    supporterTotals(),
     prisma.expense.aggregate({
       _sum: { amountINR: true },
       where: { date: { gte: thirtyDaysAgo } },
@@ -147,9 +143,9 @@ async function gatherData(): Promise<DataSnapshot> {
     scraperTotal: scraperAll,
     scraperFailures: scraperFail,
     commonErrors,
-    revenueThisWeekINR: weekSupporters.reduce((s, x) => s + x.amount, 0),
-    supportersThisWeek: weekSupporters.length,
-    revenueAllTimeINR: allSupporters.reduce((s, x) => s + x.amount, 0),
+    revenueThisWeekINR: weekSupporters.amount,
+    supportersThisWeek: weekSupporters.count,
+    revenueAllTimeINR: allSupporters.amount,
     expenseThisMonthINR: thirtyDayExpense._sum.amountINR ?? 0,
     monthlyServiceCostINR,
     feedbackThisWeek: { total: weekFeedback.length, byType: feedbackByType },
@@ -259,5 +255,5 @@ export async function generatePlatformReport(
 export async function estimateReportCost(): Promise<{ usd: number; inr: number }> {
   // Rough upper bound: 1200 tokens in + 500 out. Mostly input-dominated.
   const usd = (1700 / 1_000_000) * GEMINI_25_PRO_INPUT_RATE_USD;
-  return { usd, inr: Math.ceil(usd * 84) };
+  return { usd, inr: Math.ceil(usd * INR_PER_USD) };
 }
