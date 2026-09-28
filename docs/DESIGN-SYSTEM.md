@@ -60,7 +60,7 @@ Allowed colour (the accents):
 | Icon chip | the module chip in the header, the icon in a stat tile or card head, the drawn mark on an overview tile | `--hue-tint` background, `--hue-deep` icon, 26–44 px |
 | Key numbers | the big figure in a stat tile, overview tile or card | `--hue-deep` text |
 | Status | freshness dots, "On time" / "Late", stale notice | `--ftp-live*` / `--ftp-warn*` as today |
-| Data | chart series, bars, rings, pictograms, a tank | `--hue` / `--hue-pop` fills on neutral tracks (`--ftp-surface-2`) |
+| Data | chart series, bars, rings, pictograms, a tank | `--hue` / `--hue-pop` fills on neutral tracks (`--ftp-surface-2`); inside a `ChartCard` `--hue` is always blue (see Charts below) |
 | Selected | the active filter chip, the active sidebar row | `--hue-tint` + `--hue-deep` text |
 
 Not allowed any more:

@@ -10,6 +10,14 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Changed — v5.6 "White Calm" refresh (branches `v56/*`, 2026-09-28)
+
+- Pages are 80–90 % white: module colour only as a thin left/top rule, the icon chip, key numbers, status dots and chart bars (`docs/DESIGN-SYSTEM.md` §2a).
+- Home rebuilt on the June dashboard layout: centred hero, plain stat row with "last update", India map (60 %) beside the live-district list; "Prices today" section removed (ticker petrol/diesel now open the PPAC source).
+- News everywhere is one line per story (source · when · topic) via the shared `src/components/news/NewsList.tsx`.
+- "What you can do" (every tip visible, Who-to-call card), "Leaders & officers" (Key people first, directory lists) and "Helplines & your rights" reorganised; every chart draws in one soft blue.
+- Date / time / market strip centred on every page; the duplicate district-bar clock removed; calmer header and footer.
+
 ### Changed — v5.5 UI polish (branch `v55/ui-polish`, 2026-09-28)
 - **India dashboard without emoji**: `/india`, its category pages, module pages and the update log
   drew about 120 emoji on `/india` alone. Modules, topics and cards now draw the shared SVG glyphs
