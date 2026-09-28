@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { capturedPaymentFromRazorpay } from "@/lib/supporter-payment";
 import { recordOneTimePayment } from "@/lib/record-supporter-payment";
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 
 export async function POST() {
   const { ok } = await requireAdmin();
@@ -58,6 +59,8 @@ export async function POST() {
       if (await recordOneTimePayment(payment)) synced++;
       else skipped++;
     }
+
+    if (synced > 0) await bustSupporterCaches();
 
     return NextResponse.json({
       success: true,

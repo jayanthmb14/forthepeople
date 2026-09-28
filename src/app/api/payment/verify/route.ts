@@ -6,14 +6,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
-import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 import { validRazorpaySignature } from "@/lib/supporter-payment";
 import { recordOneTimePayment } from "@/lib/record-supporter-payment";
-
-// All cache keys used by the supporter lists — must invalidate ALL on payment.
-// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
-const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
 
 export async function POST(req: NextRequest) {
   try {
@@ -83,8 +78,8 @@ export async function POST(req: NextRequest) {
       console.error("[verify] Supporter upsert failed:", supporterErr);
     }
 
-    // Invalidate ALL contributor caches so walls refresh immediately
-    await Promise.all(CONTRIBUTOR_CACHE_KEYS.map((k) => cacheSet(k, null, 1)));
+    // Clear every supporter list so the walls show it at once
+    await bustSupporterCaches();
 
     return NextResponse.json({ success: true, message: "Payment verified" });
   } catch (err) {

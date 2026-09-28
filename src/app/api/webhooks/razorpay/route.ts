@@ -6,16 +6,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
 import { calculateBadgeLevel } from "@/lib/badge-level";
 import { alertPaymentReceived } from "@/lib/admin-alerts";
 import { capturedPaymentFromRazorpay, expiryOnCancel, validRazorpaySignature } from "@/lib/supporter-payment";
 import { recordOneTimePayment } from "@/lib/record-supporter-payment";
-import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
-
-// All contributor cache keys — bust after any payment event
-// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
-const CONTRIBUTOR_CACHES = SUPPORTER_LIST_KEYS;
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 
 export async function POST(req: NextRequest) {
   // If Razorpay keys aren't configured yet, return 200 gracefully
@@ -160,8 +155,8 @@ export async function POST(req: NextRequest) {
       alertPaymentReceived(Number(paymentEntity.amount ?? 0), "One-time").catch(() => {});
     }
 
-    // Bust all contributor caches so walls refresh immediately
-    await Promise.all(CONTRIBUTOR_CACHES.map((k) => cacheSet(k, null, 1)));
+    // Clear every supporter list so the walls show the change at once
+    await bustSupporterCaches();
 
     return NextResponse.json({ ok: true, event });
   } catch (err) {

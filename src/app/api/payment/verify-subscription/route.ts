@@ -6,16 +6,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { cacheSet } from "@/lib/cache";
 import { subscriptionFieldsFromNotes, validRazorpaySignature } from "@/lib/supporter-payment";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
-import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
-
-// All cache keys used by /api/data/contributors — must invalidate ALL on payment
-// The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
-const CONTRIBUTOR_CACHE_KEYS = SUPPORTER_LIST_KEYS;
+import { bustSupporterCaches } from "@/lib/supporter-cache";
 
 /**
  * The subscription's notes as Razorpay holds them (create-subscription wrote
@@ -167,8 +162,8 @@ export async function POST(req: NextRequest) {
       create: { ...shownAs, ...subscriptionRow, paymentId: razorpay_payment_id },
     });
 
-    // Invalidate ALL contributor caches so walls refresh immediately
-    await Promise.all(CONTRIBUTOR_CACHE_KEYS.map((k) => cacheSet(k, null, 1)));
+    // Clear every supporter list so the walls show it at once
+    await bustSupporterCaches();
 
     return NextResponse.json({ success: true, message: "Subscription verified" });
   } catch (err) {
