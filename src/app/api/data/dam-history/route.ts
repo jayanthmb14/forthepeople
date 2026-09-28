@@ -16,12 +16,12 @@ import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
+import { SLUG_RE } from "@/lib/read-api";
 
 const MODULE = "dam-history";
 const TTL_SECONDS = 300;
 /** 48 readings per dam is what the collector keeps; this covers several dams. */
 const MAX_ROWS = 240;
-const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 type Payload = { data: unknown; meta: Record<string, unknown> };
 

@@ -20,10 +20,10 @@ import { prisma } from "@/lib/db";
 import { collectDatasetDates } from "@/lib/dataset-dates";
 import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import type { DatasetDatesPayload } from "@/lib/constants/dataset-collection";
+import { SLUG_RE } from "@/lib/read-api";
 
 const MODULE = "dataset-dates";
 const TTL_SECONDS = 600;
-const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 export async function GET(req: NextRequest) {
   const districtSlug = req.nextUrl.searchParams.get("district") ?? "";

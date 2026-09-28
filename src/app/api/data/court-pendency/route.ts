@@ -24,10 +24,10 @@ import { hasNjdgSource } from "@/lib/courts/sources";
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { courtStatReadDate } from "@/lib/courts/snapshot";
 import { NJDG_COURTSTAT } from "@/lib/data-filters";
+import { SLUG_RE } from "@/lib/read-api";
 
 const MODULE = "court-pendency";
 const TTL_SECONDS = 600;
-const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 export async function GET(req: NextRequest) {
   const districtSlug = req.nextUrl.searchParams.get("district") ?? "";

@@ -28,11 +28,11 @@ import { stateCacheKey, VERIFICATION_MODULE } from "@/lib/verification/cache-key
 import { readVerificationRows } from "@/lib/verification/store";
 import { summarise, uncheckedSummaries } from "@/lib/verification/summary";
 import type { DatasetVerificationSummary } from "@/lib/verification/types";
+import { SLUG_RE } from "@/lib/read-api";
 
 export const runtime = "nodejs";
 
 const TTL_SECONDS = 600;
-const SLUG_RE = /^[a-z0-9-]{1,64}$/;
 
 interface Payload {
   district: string | null;
