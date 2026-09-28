@@ -62,8 +62,10 @@ cp .env.example .env.local
 npx prisma generate
 npx prisma db push
 
-# 5. (Optional) Seed sample data
-npm run db:seed
+# 5. (Optional) Load districts, states and taluks (upsert only, no deletes)
+npx tsx prisma/seed-hierarchy.ts
+#    There is no demo-data seed: the old one invented figures and wiped
+#    tables, so it lives in prisma/archive/ (never run; see its README).
 
 # 6. Start the dev server
 npm run dev
@@ -164,7 +166,7 @@ Adding a new district is one of the most impactful contributions. Here's the hig
 3. Add GeoJSON boundary data under `public/geo/` (see the existing files for the naming pattern and keep the source attribution)
 4. Verify every module renders for the new district (empty states are fine where no data exists yet — invented data is not)
 
-Look at existing district seeds (e.g., `prisma/seed.ts` for Mandya) as a reference, and read `docs/DISTRICT-EXPANSION-SKILL.md` for the detailed guide. Named officials and projects must be sourced before a district goes live; the maintainer runs seeds against production by hand.
+Look at an existing sourced seed (e.g., `prisma/seed-pune-offices.ts`) as a reference — never the demo seeds in `prisma/archive/`, which contain invented figures — and read `docs/DISTRICT-EXPANSION-SKILL.md` for the detailed guide. Named officials and projects must be sourced before a district goes live; the maintainer runs seeds against production by hand.
 
 ## Need Help?
 

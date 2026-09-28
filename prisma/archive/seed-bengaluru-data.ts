@@ -4,9 +4,15 @@
 // elections · LocalIndustry (IT Parks) · weather · dams · etc.
 // Run standalone: npx tsx prisma/seed-bengaluru-data.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "../../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
+import { exitUnlessLocalSeedAllowed } from "../seed-guard";
+
+// ARCHIVED (prisma/archive/README.md): this seed wipes tables or writes
+// invented demo rows. It refuses to run unless ALLOW_SEED_WIPE=1 and the
+// database is on this machine.
+exitUnlessLocalSeedAllowed();
 
 function makeClient() {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });

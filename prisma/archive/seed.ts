@@ -1,10 +1,17 @@
 // ═══════════════════════════════════════════════════════════
-// ForThePeople.in — Seed: Real Mandya, Karnataka data
-// Run: npx prisma db seed
+// ForThePeople.in — ARCHIVED Mandya pilot seed (March 2026)
+// Deletes every row of ~50 tables, then writes demo rows, some invented
+// (random rainfall, arrears, challans). Provenance only — never run.
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "../../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
+import { exitUnlessLocalSeedAllowed } from "../seed-guard";
+
+// ARCHIVED (prisma/archive/README.md): this seed wipes tables or writes
+// invented demo rows. It refuses to run unless ALLOW_SEED_WIPE=1 and the
+// database is on this machine.
+exitUnlessLocalSeedAllowed();
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,

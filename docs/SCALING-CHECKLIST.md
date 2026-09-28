@@ -373,8 +373,8 @@ Once `active: true` is set in DB:
 ## PART 3: AVAILABLE SEED SCRIPTS
 
 ```bash
-# Full Mandya pilot seed (includes deleteMany cleanup at top)
-npx tsx prisma/seed.ts
+# The Mandya pilot seed (wiped ~50 tables, invented figures) is archived in
+# prisma/archive/ and refuses to run against a non-local database.
 
 # Hierarchy-only seeder (upsert only, safe for production Neon DB, NO deletes)
 npx tsx prisma/seed-hierarchy.ts

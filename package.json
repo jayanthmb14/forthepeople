@@ -38,15 +38,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "prisma db push",
-    "db:seed": "npx tsx prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset && npx tsx prisma/seed.ts",
     "scraper": "npx tsx src/scraper/scheduler.ts",
     "scraper:dev": "npx tsx --watch src/scraper/scheduler.ts",
     "i18n:index": "node scripts/gen-i18n-namespaces.mjs",
     "geo:rewind": "node scripts/rewind-geo.mjs"
-  },
-  "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.84.0",
