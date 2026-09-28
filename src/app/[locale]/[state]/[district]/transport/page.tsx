@@ -162,7 +162,7 @@ function DayColumns({ counts, labels, ariaLabel }: { counts: number[]; labels: s
                 width: "100%",
                 height: Math.max(4, max > 0 ? (n / max) * BAR : 0),
                 borderRadius: "10px 10px 4px 4px",
-                background: n === max ? "linear-gradient(180deg, var(--hue), var(--hue-deep))" : "linear-gradient(180deg, var(--hue-pop), var(--hue))",
+                background: n === max ? "var(--hue)" : "var(--hue-pop)",
                 ["--i" as string]: i,
               }}
             />

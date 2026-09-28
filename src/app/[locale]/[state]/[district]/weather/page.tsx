@@ -783,7 +783,7 @@ function WeatherPageInner({ params }: { params: Promise<{ locale: string; state:
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {[
-                    { key: "actual", label: t("monthly.actual"), v: openMonth.rainfall, bg: "linear-gradient(90deg, var(--hue-pop), var(--hue))" },
+                    { key: "actual", label: t("monthly.actual"), v: openMonth.rainfall, bg: "var(--hue)" },
                     { key: "normal", label: t("monthly.normal"), v: openMonth.normal, bg: "var(--ftp-border-strong)" },
                   ].map((b, i) => (
                     <div key={b.key}>

@@ -132,8 +132,8 @@ function Steps({ steps }: { steps: Array<{ title: React.ReactNode; body?: React.
             gap: 4,
             padding: 12,
             borderRadius: 14,
-            background: "var(--hue-tint)",
-            border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
+            background: "var(--ftp-surface)",
+            border: "1px solid var(--ftp-border)",
           }}
         >
           <span

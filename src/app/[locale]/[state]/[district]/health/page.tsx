@@ -164,9 +164,9 @@ const SUB_HOSPITAL_KEY: Record<string, string> = {
 /** Step colours for the care staircase, lightest (village) to deepest (district). */
 const STEP_BG = [
   "var(--hue-tint)",
-  "color-mix(in srgb, var(--hue-pop) 55%, #fff)",
+  "color-mix(in srgb, var(--hue-pop) 55%, var(--ftp-surface))",
   "var(--hue-pop)",
-  "linear-gradient(160deg, var(--hue) 0%, var(--hue-deep) 100%)",
+  "var(--hue)",
 ];
 
 /** Cards shown before "Show all". */
@@ -185,10 +185,11 @@ function HelplineCard({ number, name, ariaLabel, urgent }: { number: string; nam
         gap: 12,
         minHeight: urgent ? 64 : 48,
         padding: urgent ? "14px 16px" : "12px 14px",
-        background: urgent ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 14%, #fff) 0%, #fff 75%)" : "var(--ftp-surface)",
-        border: urgent ? "2px solid color-mix(in srgb, var(--hue) 45%, var(--ftp-border))" : "1px solid var(--ftp-border)",
+        background: "var(--ftp-surface)",
+        border: urgent ? "1px solid color-mix(in srgb, var(--hue) 45%, var(--ftp-border))" : "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
+        // v5.2 "White Calm": an urgent number is a white card with a hue rule.
+        boxShadow: urgent ? "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
         textDecoration: "none",
         color: "var(--ftp-text)",
       }}

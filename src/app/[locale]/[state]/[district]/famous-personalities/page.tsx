@@ -78,7 +78,7 @@ function Avatar({ p, size }: { p: Person; size: number }) {
           borderRadius: radius,
           flexShrink: 0,
           overflow: "hidden",
-          border: "2px solid color-mix(in srgb, var(--hue) 35%, #fff)",
+          border: "2px solid color-mix(in srgb, var(--hue) 35%, var(--ftp-surface))",
           background: "var(--hue-tint)",
         }}
       >
@@ -242,7 +242,7 @@ function PersonSheet({ p, districtLabel, onClose }: { p: Person; districtLabel: 
         <FieldChip category={p.category} />
       </div>
       {p.notable && (
-        <p style={{ margin: 0, padding: "10px 12px", borderRadius: 12, background: "var(--hue-tint)", color: "var(--hue-deep)", fontSize: 14, lineHeight: "21px", fontWeight: 600 }}>
+        <p style={{ margin: 0, padding: "10px 12px", borderRadius: 12, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", boxShadow: "inset 3px 0 0 var(--hue)", color: "var(--hue-deep)", fontSize: 14, lineHeight: "21px", fontWeight: 600 }}>
           {p.notable}
         </p>
       )}
@@ -281,8 +281,8 @@ function FieldTile({ label, count, total, active, onClick }: { label: string; co
         minHeight: 44,
         padding: "12px 12px 10px",
         borderRadius: 14,
-        border: `2px solid ${active ? "var(--hue)" : "color-mix(in srgb, var(--hue) 18%, var(--ftp-border))"}`,
-        background: active ? "var(--hue-tint)" : "#fff",
+        border: `${active ? 2 : 1}px solid ${active ? "var(--hue)" : "var(--ftp-border)"}`,
+        background: active ? "var(--hue-tint)" : "var(--ftp-surface)",
         cursor: "pointer",
         textAlign: "start",
         font: "inherit",
@@ -294,8 +294,8 @@ function FieldTile({ label, count, total, active, onClick }: { label: string; co
         <span style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "anywhere" }}>{label}</span>
         <span className="ftp-bignum" style={{ fontSize: 20, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
       </span>
-      <span aria-hidden style={{ height: 6, borderRadius: 99, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
-        <span className="ftp-grow-x" style={{ display: "block", height: "100%", width: `${Math.max(4, Math.round(share * 100))}%`, borderRadius: 99, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
+      <span aria-hidden style={{ height: 6, borderRadius: 99, background: "var(--ftp-surface-2)", overflow: "hidden" }}>
+        <span className="ftp-grow-x" style={{ display: "block", height: "100%", width: `${Math.max(4, Math.round(share * 100))}%`, borderRadius: 99, background: "var(--hue)" }} />
       </span>
     </button>
   );
