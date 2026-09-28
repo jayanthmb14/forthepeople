@@ -14,6 +14,10 @@ reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
 - `scrape-news` split the run's AI time per district with a division, so `AbortSignal.timeout()` got e.g. 17742.5 ms and threw on every model — news classification silently fell back to keywords only. The route now floors the per-district deadline and `callAI()` always passes whole milliseconds.
 
+### Changed — v5.7 edges and quick motion (branch `v57/look`, 2026-09-28)
+
+- 2026-09-28: cards stand apart — page ground `--ftp-bg` #FAFBFD → #F2F4F8 with white cards, one 1 px `--ftp-border` (#DAE2EE) and one radius scale (14 / 12 / 10 / pill); card-in-card is a surface-2 panel, not a second border; chips are pills; all motion on `--ftp-dur-fast/-dur/-dur-slow` (120 / 160 / 180 ms) with hover lifts on tappable cards, entrances from a visible state (India hero no longer waits at opacity 0) and reduced-motion off-switches (`docs/DESIGN-SYSTEM.md` §2a, §5, §8).
+
 ### Changed — v5.6 "White Calm" refresh (branches `v56/*`, 2026-09-28)
 
 - Pages are 80–90 % white: module colour only as a thin left/top rule, the icon chip, key numbers, status dots and chart bars (`docs/DESIGN-SYSTEM.md` §2a).
