@@ -62,7 +62,6 @@ const DATA_GOV_BUDGET_LIKE = `${DATA_GOV_BUDGET_PREFIX}%`;
 /** NOT_FROM_NEWS: a row whose source is an article URL. */
 const NEWS_SOURCE_LIKE = `${NEWS_SOURCE_PREFIX}%`;
 
-
 const CACHE_SECONDS = 300;
 
 // Legacy traffic light (modules.*): green within the expected age, amber
