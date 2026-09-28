@@ -356,7 +356,6 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
                 district={district}
                 onOpen={setSelected}
                 groupByDept={officers}
-                partyColumn={byTier[tier].some((l) => l.party?.trim())}
               />
             </Section>
           </section>

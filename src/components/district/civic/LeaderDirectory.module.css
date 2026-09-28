@@ -22,7 +22,8 @@
 .head,
 .row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 2.2fr) minmax(0, 1.4fr) minmax(0, 0.9fr) 20px;
+  /* The list sets --cols: seat and party columns drop out when nobody in the list has one. */
+  grid-template-columns: var(--cols, 40px minmax(0, 2.2fr) minmax(0, 1.4fr) minmax(0, 0.9fr) 20px);
   align-items: center;
   column-gap: 14px;
   padding: 10px 16px;
@@ -133,6 +134,10 @@
 }
 
 .meta {
+  display: none;
+}
+
+.off {
   display: none;
 }
 

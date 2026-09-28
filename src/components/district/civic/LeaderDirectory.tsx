@@ -122,7 +122,7 @@ export function LeaderCard({ l, onOpen, hq = false }: { l: Leader; onOpen: (l: L
 export function KeyPeople({ people, district, onOpen }: { people: Leader[]; district: string; onOpen: (l: Leader) => void }) {
   if (people.length === 0) return null;
   return (
-    <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "250px", gap: 12 } as React.CSSProperties}>
+    <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "200px", gap: 12 } as React.CSSProperties}>
       {people.map((l) => (
         <LeaderCard key={l.id} l={l} onOpen={onOpen} hq={isHeadquartersMla(l, district)} />
       ))}
@@ -157,7 +157,19 @@ export function officerDept(role: string): DeptId {
 }
 const DEPT_ORDER: DeptId[] = ["admin", "police", "development", "health", "education", "city", "other"];
 
-function LeaderRow({ l, onOpen, hq, showParty }: { l: Leader; onOpen: (l: Leader) => void; hq: boolean; showParty: boolean }) {
+function LeaderRow({
+  l,
+  onOpen,
+  hq,
+  showSeat,
+  showParty,
+}: {
+  l: Leader;
+  onOpen: (l: Leader) => void;
+  hq: boolean;
+  showSeat: boolean;
+  showParty: boolean;
+}) {
   const t = useTranslations("page_leadership");
   const f = useFormat();
   const role = roleText(l, f.locale);
@@ -189,14 +201,16 @@ function LeaderRow({ l, onOpen, hq, showParty }: { l: Leader; onOpen: (l: Leader
           <span className={s.meta}>
             {seat && <span>{seat}</span>}
             {hq && <span className={s.hq}>{t("hqBadge")}</span>}
-            {showParty && l.party && <PartyTag party={l.party} />}
+            {l.party && <PartyTag party={l.party} />}
           </span>
         </span>
-        <span className={s.cell}>
+        <span className={showSeat ? s.cell : s.off}>
           {seat ?? <span style={{ color: "var(--ftp-text-2)" }}>—</span>}
           {hq && <span className={s.hq}>{t("hqBadge")}</span>}
         </span>
-        <span className={s.cell}>{showParty && l.party ? <PartyTag party={l.party} /> : <span style={{ color: "var(--ftp-text-2)" }}>—</span>}</span>
+        <span className={showParty ? s.cell : s.off}>
+          {l.party ? <PartyTag party={l.party} /> : <span style={{ color: "var(--ftp-text-2)" }}>—</span>}
+        </span>
         <ChevronRight size={18} aria-hidden className={s.chev} />
       </button>
     </li>
@@ -212,27 +226,33 @@ export function LeaderRows({
   district,
   onOpen,
   groupByDept = false,
-  partyColumn = true,
 }: {
   leaders: Leader[];
   district: string;
   onOpen: (l: Leader) => void;
   groupByDept?: boolean;
-  /** Officers have no party: the column shows a dash, so it can be left out. */
-  partyColumn?: boolean;
 }) {
   const t = useTranslations("page_leadership");
+  // A column nobody in this list fills (officers have no party, the
+  // President no constituency) is left out instead of a row of dashes.
+  const showSeat = leaders.some((l) => l.constituency?.trim());
+  const showParty = leaders.some((l) => l.party?.trim());
+  const cols = ["40px", "minmax(0, 2.2fr)", showSeat ? "minmax(0, 1.4fr)" : null, showParty ? "minmax(0, 0.9fr)" : null, "20px"]
+    .filter(Boolean)
+    .join(" ");
   const groups = new Map<DeptId, Leader[]>();
   if (groupByDept) for (const l of leaders) groups.set(officerDept(l.role), [...(groups.get(officerDept(l.role)) ?? []), l]);
   const split = groupByDept && groups.size > 1;
-  const row = (l: Leader) => <LeaderRow key={l.id} l={l} onOpen={onOpen} hq={isHeadquartersMla(l, district)} showParty={partyColumn} />;
+  const row = (l: Leader) => (
+    <LeaderRow key={l.id} l={l} onOpen={onOpen} hq={isHeadquartersMla(l, district)} showSeat={showSeat} showParty={showParty} />
+  );
   return (
-    <ul className={s.list}>
+    <ul className={s.list} style={{ ["--cols" as string]: cols } as React.CSSProperties}>
       <li className={s.head} aria-hidden>
         <span />
         <span>{t("table.name")}</span>
-        <span>{t("table.seat")}</span>
-        <span>{partyColumn ? t("table.party") : ""}</span>
+        {showSeat && <span>{t("table.seat")}</span>}
+        {showParty && <span>{t("table.party")}</span>}
         <span />
       </li>
       {split
