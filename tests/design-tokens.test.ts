@@ -51,7 +51,8 @@ describe("module hues (v5 Calm)", () => {
 });
 
 describe("text tokens (v5 Calm)", () => {
-  const BG = "#FAFBFD", SURFACE2 = "#F3F6FA", TEXT = "#0F1B2D", TEXT2 = "#4A5A70";
+  // v5.7: the page ground is a touch darker than the white cards.
+  const BG = "#F2F4F8", SURFACE2 = "#F3F6FA", TEXT = "#0F1B2D", TEXT2 = "#4A5A70";
   it("text and text-2 pass AA on every surface", () => {
     for (const bg of [WHITE, BG, SURFACE2]) {
       expect(contrast(TEXT, bg)).toBeGreaterThanOrEqual(7);
@@ -63,5 +64,41 @@ describe("text tokens (v5 Calm)", () => {
     expect(contrast("#1E40AF", "#E8F0FE")).toBeGreaterThanOrEqual(4.5);
     expect(contrast("#B4234F", "#FDECF1")).toBeGreaterThanOrEqual(4.5);
     expect(contrast("#7A4A06", "#FFF6E5")).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("surfaces, edges and motion (v5.7)", () => {
+  const css = readFileSync(path.resolve(__dirname, "../src/app/globals.css"), "utf8");
+  const root = /:root\s*\{[^}]*--ftp-bg:[^}]*\}/.exec(css)![0];
+  const tokenValue = (name: string) => new RegExp(`${name}:\\s*([^;]+);`).exec(root)?.[1].trim();
+
+  it("globals.css carries the v5.7 ground, card and border values", () => {
+    expect(tokenValue("--ftp-bg")).toBe("#F2F4F8");
+    expect(tokenValue("--ftp-surface")).toBe("#FFFFFF");
+    expect(tokenValue("--ftp-border")).toBe("#DAE2EE");
+  });
+  it("the page ground is darker than the white card, so cards stand out", () => {
+    expect(luminance(tokenValue("--ftp-bg")!)).toBeLessThan(luminance(WHITE));
+    expect(contrast(WHITE, tokenValue("--ftp-bg")!)).toBeGreaterThan(1.07);
+  });
+  it("the card border is visible on white and on the ground", () => {
+    expect(contrast(WHITE, tokenValue("--ftp-border")!)).toBeGreaterThan(1.25);
+    expect(contrast(tokenValue("--ftp-bg")!, tokenValue("--ftp-border")!)).toBeGreaterThan(1.1);
+  });
+  it("secondary text stays AA on the darker ground", () => {
+    expect(contrast("#4A5A70", tokenValue("--ftp-bg")!)).toBeGreaterThanOrEqual(4.5);
+  });
+  it("motion tokens are quick: hovers ≤ 160 ms, entrances and sheets ≤ 180 ms", () => {
+    const ms = (n: string) => parseInt(tokenValue(n) ?? "9999", 10);
+    expect(ms("--ftp-dur-fast")).toBeLessThanOrEqual(120);
+    expect(ms("--ftp-dur")).toBeLessThanOrEqual(160);
+    expect(ms("--ftp-dur-slow")).toBeLessThanOrEqual(180);
+    expect(ms("--ftp-dur-draw")).toBeLessThanOrEqual(600);
+  });
+  it("the radius scale is card 14 · tile 12 · small 10 · pill 999", () => {
+    expect(tokenValue("--ftp-radius-card")).toBe("14px");
+    expect(tokenValue("--ftp-radius-tile")).toBe("12px");
+    expect(tokenValue("--ftp-radius-sm")).toBe("10px");
+    expect(tokenValue("--ftp-radius-pill")).toBe("999px");
   });
 });
