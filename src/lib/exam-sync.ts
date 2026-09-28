@@ -25,6 +25,8 @@
  *   - Status is written in the canonical words and never downgrades
  *     (APPLICATIONS_OPEN → NOTIFICATION_OUT is rejected; the reverse is
  *     accepted). Legacy words ("upcoming", "declared") are normalised.
+ *   - A news mention never CONFIRMS an exam, and a link is kept only when
+ *     it is official and written in the article text (src/lib/exam-news.ts).
  */
 
 import { Prisma } from "@/generated/prisma";
@@ -36,20 +38,18 @@ import {
   KNOWN_EXAM_BODIES,
   canonicalExamStatus,
   examBody,
-  examStatusRank,
   sameExam,
   type CanonicalExamStatus,
 } from "./dedupe/keys";
 import {
   classifyExamBody,
-  correctPlacement,
   examBucket,
   examPlacement,
   pickBestExam,
-  urlList,
   type ExamPlacement,
   type ExamScope,
 } from "./dedupe/exam-rules";
+import { examUpdateFromNews, newExamFromNews, officialExamUrlFromArticle, type ExamNewsFacts } from "./exam-news";
 
 // ═══════════════════════════════════════════════════════════
 // Types
@@ -92,6 +92,10 @@ export interface NewsArticleRef {
   title: string;
   url: string;
   publishedAt: Date;
+  /** The outlet's name; the prompt names it instead of the article URL. */
+  source?: string | null;
+  /** The feed's summary, when it says more than the headline. */
+  summary?: string | null;
 }
 
 function parseDate(v: string | null | undefined): Date | null {
@@ -109,11 +113,13 @@ const EXTRACTION_SYSTEM_PROMPT =
   "Return ONLY valid JSON — no markdown, no commentary. Every field you cannot confirm from " +
   "the article text must be null. Do NOT guess dates, vacancies, or URLs. Do NOT hallucinate.";
 
-function buildExtractionPrompt(title: string, source: string, publishedAt: Date): string {
+function buildExtractionPrompt(article: NewsArticleRef): string {
   const today = new Date().toISOString().split("T")[0];
-  return `Article title: "${title}"
-Source: ${source}
-Article published: ${publishedAt.toISOString().split("T")[0]}
+  // The outlet's name, never the article URL: the model copied the Google
+  // News link into applyUrl (Sept 2026 review).
+  return `Article title: "${article.title}"${article.summary ? `\nArticle summary: "${article.summary.slice(0, 300)}"` : ""}
+Source: ${article.source?.trim() || "a news outlet"}
+Article published: ${article.publishedAt.toISOString().split("T")[0]}
 Today: ${today}
 
 Extract the exam metadata. Return JSON in this exact shape:
@@ -130,8 +136,8 @@ Extract the exam metadata. Return JSON in this exact shape:
   "examDate": "YYYY-MM-DD or null",
   "resultDate": "YYYY-MM-DD or null",
   "notificationDate": "YYYY-MM-DD or null",
-  "applyUrl": "official application URL from the article, or null",
-  "notificationUrl": "official notification PDF/page URL, or null",
+  "applyUrl": "application URL written in the article text above, or null",
+  "notificationUrl": "notification PDF/page URL written in the article text above, or null",
   "vacancies": "number (total posts mentioned) or null",
   "scope": "NATIONAL | STATE | DISTRICT",
   "stateName": "If scope=STATE or DISTRICT, the state name; else null"
@@ -142,7 +148,7 @@ Rules:
 - Never invent a date. Missing date → null.
 - NATIONAL = UPSC/SSC/IBPS/RRB/IB/DRDO/ISRO/CDS/NDA/AFCAT/NTA (NEET, JEE, CUET)/CBSE. STATE_PSC / state teacher / state police / state school boards are STATE. DISTRICT = recruitment for ONE city or district body only (a municipal corporation, a district court, a zilla panchayat).
 - organizingBody must be the body that conducts the exam (NEET UG is conducted by NTA). If the organiser is a private university, college, consortium or company, return {"examName": ""} — only government exams are tracked.
-- applyUrl must point to the official portal (upsconline.nic.in, ssc.nic.in, ibps.in, rrbcdg.gov.in, <state>.gov.in). Not the news article URL.
+- applyUrl / notificationUrl: copy a URL only if it is written in the article text above and is an official site. Never a portal you know or guess, never a news link — otherwise null.
 - Respond with the JSON only.`;
 }
 
@@ -158,7 +164,7 @@ export async function extractExamFromNews(
   try {
     const { data } = await callAIJSON<Partial<ExamExtraction>>({
       systemPrompt: EXTRACTION_SYSTEM_PROMPT,
-      userPrompt: buildExtractionPrompt(article.title, article.url, article.publishedAt),
+      userPrompt: buildExtractionPrompt(article),
       purpose: "news-analysis", // free tier
       jsonShape: "object",
       maxTokens: 1024,
@@ -178,6 +184,8 @@ export async function extractExamFromNews(
   // Normalize shape with defaults. Never coerce null → today or similar.
   const scope: ExamScope = parsed.scope === "STATE" ? "STATE" : parsed.scope === "DISTRICT" ? "DISTRICT" : "NATIONAL";
   const status = canonicalExamStatus(parsed.status ?? null, parsed.examName);
+  // Links only when official AND written in the text the model was given.
+  const articleText = `${article.title} ${article.summary ?? ""}`;
   return {
     examName: parsed.examName.trim(),
     shortName: (parsed.shortName ?? parsed.examName)!.toString().trim(),
@@ -193,8 +201,8 @@ export async function extractExamFromNews(
     examDate: parsed.examDate ?? null,
     resultDate: parsed.resultDate ?? null,
     notificationDate: parsed.notificationDate ?? null,
-    applyUrl: parsed.applyUrl ?? null,
-    notificationUrl: parsed.notificationUrl ?? null,
+    applyUrl: officialExamUrlFromArticle(parsed.applyUrl, articleText),
+    notificationUrl: officialExamUrlFromArticle(parsed.notificationUrl, articleText),
     vacancies: typeof parsed.vacancies === "number" ? parsed.vacancies : null,
     scope,
     stateName: parsed.stateName ?? null,
@@ -252,12 +260,6 @@ async function rowsInPlace(p: ExamPlacement) {
   return rows.filter((r) => examBucket(r) === bucket);
 }
 
-function mergeSourceUrls(existing: unknown, nextUrl: string): string[] {
-  const arr = urlList(existing);
-  if (!arr.includes(nextUrl)) arr.push(nextUrl);
-  // keep last 10 unique — prevent the JSON column ballooning
-  return arr.slice(-10);
-}
 
 export interface SyncResult {
   affectedDistricts: number;
@@ -286,15 +288,25 @@ export async function syncExamFromNews(
   if (!place) return { affectedDistricts: 0, created: 0, updated: 0, skipped: 1, rejected: "no-place" };
   const { placement } = place;
 
-  const now = new Date();
-  const appStart = parseDate(extraction.applicationStartDate);
-  const appEnd = parseDate(extraction.applicationEndDate);
-  const admitCard = parseDate(extraction.admitCardDate);
-  const examDate = parseDate(extraction.examDate);
-  const resultDate = parseDate(extraction.resultDate);
-  const notifDate = parseDate(extraction.notificationDate);
   const official = KNOWN_EXAM_BODIES[examBody(identity)];
   const organizingBody = official?.organizingBody ?? extraction.organizingBody;
+  const facts: ExamNewsFacts = {
+    examName: extraction.examName,
+    shortName: extraction.shortName,
+    category: extraction.category,
+    status: extraction.status,
+    organizingBody,
+    officialBody: official ?? null,
+    vacancies: extraction.vacancies,
+    applyUrl: extraction.applyUrl,
+    notificationUrl: extraction.notificationUrl,
+    notificationDate: parseDate(extraction.notificationDate),
+    startDate: parseDate(extraction.applicationStartDate),
+    endDate: parseDate(extraction.applicationEndDate),
+    admitCardDate: parseDate(extraction.admitCardDate),
+    examDate: parseDate(extraction.examDate),
+    resultDate: parseDate(extraction.resultDate),
+  };
 
   // Same exam = shares a canonical key, in the same place. Extra copies
   // (legacy per-district rows) are merged by the duplicate guard.
@@ -306,28 +318,11 @@ export async function syncExamFromNews(
   let recordId: string;
 
   if (matches.length === 0) {
+    // Waits for the official collector's check (needsVerification, no lastVerifiedAt).
     const row = await prisma.governmentExam.create({
       data: {
         ...placement,
-        title: extraction.examName,
-        shortName: extraction.shortName,
-        department: official?.department ?? organizingBody,
-        organizingBody,
-        category: extraction.category,
-        status: extraction.status,
-        vacancies: extraction.vacancies,
-        applyUrl: extraction.applyUrl,
-        notificationUrl: extraction.notificationUrl,
-        notificationDate: notifDate,
-        announcedDate: notifDate ?? now,
-        startDate: appStart,
-        endDate: appEnd,
-        admitCardDate: admitCard,
-        examDate,
-        resultDate,
-        sourceUrls: [article.url] as Prisma.InputJsonValue,
-        lastVerifiedAt: now,
-        needsVerification: false,
+        ...newExamFromNews(facts, article.url),
       },
       select: { id: true },
     });
@@ -340,52 +335,13 @@ export async function syncExamFromNews(
       console.log(`[exam-sync] ${matches.length} stored copies of "${extraction.shortName}" — the duplicate guard merges them`);
     }
 
-    // Status never downgrades; a legacy word is rewritten in the canonical set.
-    const currentStatus = canonicalExamStatus(existing.status, existing.title);
-    const nextStatus = examStatusRank(extraction.status) >= examStatusRank(currentStatus) ? extraction.status : currentStatus;
-
-    const patch: Prisma.GovernmentExamUncheckedUpdateInput = {
-      lastVerifiedAt: now,
-      needsVerification: false,
-      sourceUrls: mergeSourceUrls(existing.sourceUrls, article.url) as Prisma.InputJsonValue,
-    };
-    let facts = 0;
-    if (existing.status !== nextStatus) {
-      patch.status = nextStatus;
-      facts++;
-    }
-    // A legacy per-district copy found here becomes the one row for its place.
-    const fix = correctPlacement(existing);
-    if (fix.misplaced) Object.assign(patch, fix.placement);
-
-    // Fill-only: null values never overwrite concrete existing data
-    const fields = patch as Record<string, unknown>;
-    const fill = (key: string, has: unknown, value: unknown) => {
-      const empty = has === null || has === undefined || has === "" || (typeof has === "string" && /^unknown$/i.test(has));
-      if (empty && value !== null && value !== undefined) {
-        fields[key] = value;
-        facts++;
-      }
-    };
-    fill("shortName", existing.shortName, extraction.shortName);
-    fill("organizingBody", existing.organizingBody, organizingBody === "Unknown" ? null : organizingBody);
-    fill("category", existing.category, extraction.category);
-    fill("applyUrl", existing.applyUrl, extraction.applyUrl);
-    fill("notificationUrl", existing.notificationUrl, extraction.notificationUrl);
-    fill("vacancies", existing.vacancies, extraction.vacancies);
-    fill("notificationDate", existing.notificationDate, notifDate);
-    fill("startDate", existing.startDate, appStart);
-    fill("endDate", existing.endDate, appEnd);
-    fill("admitCardDate", existing.admitCardDate, admitCard);
-    fill("examDate", existing.examDate, examDate);
-    fill("resultDate", existing.resultDate, resultDate);
-    if (official && existing.organizingBody !== official.organizingBody) {
-      patch.organizingBody = official.organizingBody;
-      patch.department = official.department;
-    }
-
-    await prisma.governmentExam.update({ where: { id: existing.id }, data: patch });
-    if (facts > 0) updated++;
+    // Status forward only, fill-only facts, the URL appended; never "confirmed" by news.
+    const update = examUpdateFromNews(existing, facts, article.url);
+    await prisma.governmentExam.update({
+      where: { id: existing.id },
+      data: update.patch as Prisma.GovernmentExamUncheckedUpdateInput,
+    });
+    if (update.facts > 0 || update.moved) updated++;
     else skipped++;
   }
 

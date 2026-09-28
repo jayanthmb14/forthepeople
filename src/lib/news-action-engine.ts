@@ -38,6 +38,9 @@ export interface NewsClassification {
   articlePublishedAt: Date;
   /** The outlet's name (publisher), when known. */
   articleSource?: string | null;
+  /** The feed's summary, when it says more than the headline (the exam
+   *  extractor keeps a link only when it is written in this text). */
+  articleSummary?: string | null;
   districtId: string;
   targetModule: string;
   moduleAction: string;
@@ -178,6 +181,7 @@ export async function executeNewsAction(
     url: articleUrl,
     publishedAt: classification.articlePublishedAt,
     source: classification.articleSource ?? null,
+    summary: classification.articleSummary ?? null,
   };
 
   if (decision.kind === "skip" || decision.kind === "drop") {

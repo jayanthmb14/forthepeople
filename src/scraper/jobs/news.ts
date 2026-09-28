@@ -335,6 +335,7 @@ export async function scrapeNews(
             articleUrl: item.url,
             articlePublishedAt: item.publishedAt,
             articleSource: publisher ?? item.source,
+            articleSummary: cleanedSummary,
             districtId: ctx.districtId,
             targetModule: aiClassification.targetModule,
             moduleAction: aiClassification.moduleAction,
