@@ -15,6 +15,8 @@
 //   isPromotional()      advertorials, price pages and listicles
 //   isPlaceChecked()     a keyword-only row that may be about another place
 //   newsForDisplay()     all of the above over one district's rows
+//   newsDisplayTitle()   one row's headline exactly as the list shows it
+//                        (what its stored translation is made from)
 //
 // Why (Sept 2026 audit): "Aarthi Scans & Labs Ranked #1 in Diagnostics"
 // and "Gold Rate Today in Lucknow" were shown as local news; "… | Latest
@@ -96,6 +98,18 @@ export function displayHeadline(title: string): string {
   const t = title.trim();
   if (!looksTruncated(t)) return t;
   return `${t.replace(/(\.\.\.|…)$/, "").trimEnd()}…`;
+}
+
+/**
+ * A stored row's headline exactly as the district news list shows it
+ * (/api/data/news: newsForDisplay's cleanHeadline, then displayHeadline).
+ * The translation job translates THIS text, so the stored translation's
+ * sourceHash matches what the list overlays; translating the raw stored
+ * title never matched when cleaning changed it (zero-width spaces, "..." →
+ * "…", an outlet suffix).
+ */
+export function newsDisplayTitle(row: { title: string; publisher?: string | null; source?: string | null }): string {
+  return displayHeadline(cleanHeadline(row.title, row.publisher ?? row.source));
 }
 
 // ── Promotions ──────────────────────────────────────────────
