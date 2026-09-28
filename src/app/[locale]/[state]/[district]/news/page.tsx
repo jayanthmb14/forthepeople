@@ -293,11 +293,11 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
       onOpen: () => setSelected(n),
       meta: [
         publisherOf(n) || t("unknownPublisher"),
-        <time key="when" dateTime={n.publishedAt} className="ftp-num" suppressHydrationWarning>
+        <time key="when" dateTime={n.publishedAt} title={f.date(n.publishedAt, { day: "numeric", month: "long", year: "numeric" })} suppressHydrationWarning>
           {f.ago(n.publishedAt)}
         </time>,
         <span key="topic" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <CategoryGlyph pick={newsTopicGlyph(topicOf(n))} hue="slate" size={14} />
+          <CategoryGlyph pick={newsTopicGlyph(topicOf(n))} hue="slate" size={14} style={{ filter: "grayscale(1)" }} />
           {topicName}
         </span>,
       ],
