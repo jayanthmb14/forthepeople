@@ -6,14 +6,15 @@ Owner: Jayanth M B. Last verified: 2026-09-28 (against `vercel.json` at
 Every scheduled job on ForThePeople.in is a Vercel Cron hitting a route
 under `src/app/api/cron/`. The schedule lives in `vercel.json` (`crons`
 array) and is the single source of truth — if it is not in `vercel.json`,
-it does not run. The old Railway node-cron container
-(`src/scraper/scheduler.ts`) expired in April 2026 and is not used by
-production. (Railway itself was still running an old copy on 27 Sep; the
-owner's steps to stop it are in `docs/OWNER-TODO.md` §2.)
+it does not run. The old Railway node-cron container expired in April 2026;
+its scheduler (`src/scraper/scheduler.ts`), the 13 job modules only it ran
+and the `npm run scraper` script were deleted on 2026-09-28, so a redeploy
+from `main` cannot start it again. (Railway itself was still running an old
+copy on 27 Sep; the owner's steps to stop it are in `docs/OWNER-TODO.md` §2.)
 
 ## 1. The crons
 
-19 crons. Schedules are UTC, as Vercel reads them; IST = UTC + 5:30.
+21 crons. Schedules are UTC, as Vercel reads them; IST = UTC + 5:30.
 **Budget** = the route's own time budget (after it, no new district or item
 is started) / Vercel's `maxDuration` for the route.
 
@@ -23,22 +24,22 @@ and one `ScraperLog` row (via `cronStarted()` / `cronFinished()` in
 
 | Route | Schedule (UTC) | When in IST | Budget / max | What it does · what it writes |
 |---|---|---|---|---|
-| `/api/cron/scrape-news` | `10 */4 * * *` | every 4 h at :40 (01:40, 05:40, 09:40 …) | 240 s / 300 s | News per district from RSS. Districts fetched longest ago go first; each gets an equal share of the AI time (max 20 AI calls each, then keyword sorting only). Writes `NewsItem` rows, module rows or `NewsActionQueue` items from the news action engine, deletes duplicate stories, expires `LocalAlert` rows older than 14 days, then translates new text (`ContentTranslation`) with the time left. |
+| `/api/cron/scrape-news` | `10 */4 * * *` | every 4 h at :40 (01:40, 05:40, 09:40 …) | 240 s / 300 s | News per district from RSS. Districts fetched longest ago go first; each gets an equal share of the AI time (max 20 AI calls each, then keyword sorting only). Writes `NewsItem` rows, module rows or `NewsActionQueue` items from the news action engine, deletes duplicate stories, switches off non-official `LocalAlert` rows older than 14 days (never NDMA SACHET alerts — those expire by their CAP date in `scrape-alerts`), then translates new text (`ContentTranslation`) with the time left. |
 | `/api/cron/translate-content` | `20 */3 * * *` | every 3 h at :50 (02:50, 05:50 …) | 270 s / 300 s | Catch-up translation of live text into every switched-on language. Writes `ContentTranslation`. Does nothing (and says why) until the table exists and a provider key is set. |
 | `/api/cron/scrape-crops` | `30 3 * * *` | daily 09:00 | 250 s / 300 s | Mandi prices from AGMARKNET via data.gov.in. District order rotates daily; stops early if data.gov.in is down. Writes `CropPrice` + `UpdateLog`; `partial: true` when the budget ran out. |
 | `/api/cron/scrape-weather` | `*/30 * * * *` | every 30 min | 45 s / 60 s | One reading per district, 5 at a time: OpenWeather, Open-Meteo as the fallback. Writes `WeatherReading` + one `UpdateLog` summary row per run. |
 | `/api/cron/scrape-dams` | `0 */6 * * *` | 05:30, 11:30, 17:30, 23:30 | 100 s / 120 s | Reservoir levels from the Karnataka water portal (only districts with a live feed; the rest are listed as "not covered"). Writes `DamReading`. |
 | `/api/cron/scrape-alerts` | `*/30 * * * *` | every 30 min | 40 s / 60 s | Official disaster alerts from NDMA SACHET (CAP feed), matched by district name or alert area; expires alerts at their CAP expiry. Writes `LocalAlert`. |
-| `/api/cron/generate-insights` | `0 0,12 * * *` | 05:30 and 17:30 | 230 s (insights), 255 s (infra) / 300 s | AI module insights that are missing or expired and whose data changed (oldest first), then up to 10 infra analyses, then translation with the time left. Writes `AIModuleInsight`, infra analyses in Redis, `ContentTranslation`, `AIUsageLog`. |
+| `/api/cron/generate-insights` | `0 0,12 * * *` | 05:30 and 17:30 | 230 s (insights), 255 s (infra) / 300 s | AI module insights that are missing or expired and whose data changed (oldest first; leaders regardless of data at 7 days old, daily during an election in the state — `src/lib/insight-refresh.ts`), then up to 10 infra analyses, then translation with the time left. Writes `AIModuleInsight`, infra analyses in Redis, `ContentTranslation`, `AIUsageLog`. |
 | `/api/cron/news-intelligence` | `0 */4 * * *` | every 4 h at :30 (01:30, 05:30 …) | 240 s / 300 s | AI reading of fresh news, one call per district, new news only. Writes `AIInsight` (low-confidence ones to `ReviewQueue`) and `AIUsageLog`. A run where every AI call failed is recorded as an error and emails the admin. |
 | `/api/cron/scrape-budget` | `0 6 * * 1` | Monday 11:30 | — / 300 s | Deliberate no-op: returns `skipped` until a data.gov.in budget resource id exists (section 7). |
-| `/api/cron/generate-citizen-tips` | `0 6 * * 0` | Sunday 11:30 | 240 s / 300 s | 6 AI tips per district. Writes Redis `ftp:ai:citizen-tips:<slug>` (7-day expiry). |
+| `/api/cron/generate-citizen-tips` | `0 6 * * 0` | Sunday 11:30 | 240 s / 300 s | 6 AI tips per district (prompt context: official alerts only, weather only if under 6 h old). Writes Redis `ftp:ai:citizen-tips:<slug>` (14-day expiry, so a failed week keeps last week's tips). |
 | `/api/cron/update-exams` | `30 6 * * *` | daily 12:00 | 70 s (official-page pass) / 120 s | Reads UPSC's and SSC's official exam pages, moves exam status forward by date ("open" only with a published closing date), flags exams unconfirmed for over 30 days. Writes `GovernmentExam`. |
-| `/api/cron/platform-report` | `0 0 * * 0` | Sunday 05:30 | — / 60 s | Weekly AI platform report. Writes one `PlatformReport` row. |
+| `/api/cron/platform-report` | `0 0 * * 0` | Sunday 05:30 | 240 s (no AI model attempt after it) / 300 s | Weekly AI platform report. Writes one `PlatformReport` row. |
 | `/api/cron/health-score` | `30 1 * * *` | daily 07:00 | 100 s / 120 s | Recomputes every live district's report card (`calculateDistrictHealthScore()`). Writes `DistrictHealthScore`. Daily because a stored grade expires after 7 days. |
-| `/api/cron/verify-data` | `45 6 * * *` | daily 12:15 (after the 06:00 UTC dam run and the 03:30 UTC crop run) | 240 s / 300 s | The double-check: freshness, leaders, weather, dams and mandi verifiers (`src/lib/verification/`). Writes `DataVerification` rows and, for disagreements, `NewsActionQueue` items (dataType `verify-leaders`, no repeats) plus one admin alert. Never changes the data it checks. Lock `ftp:lock:verify-data`. Needs `npm run db:push` first; until then it logs itself as skipped. |
+| `/api/cron/verify-data` | `45 6 * * *` | daily 12:15 (after the 06:00 UTC dam run and the 03:30 UTC crop run) | 240 s / 300 s | The double-check: freshness, leaders, weather, dams and mandi verifiers (`src/lib/verification/`). Writes `DataVerification` rows and, for disagreements, `NewsActionQueue` items (dataType `verify-leaders`, no repeats) plus one admin alert. Never changes the data it checks. Lock `lock:cron:verify-data`. Needs `npm run db:push` first; until then it logs itself as skipped. |
 | `/api/cron/dedupe-data` | `15 7 * * *` | daily 12:45 (after update-exams and verify-data) | 240 s / 300 s | The duplicate guard (`src/lib/dedupe/guard.ts`). EXACT duplicates (same canonical key in the same district) are merged automatically: best row kept, empty fields filled, child rows moved (`InfraUpdate`, `SchoolResult`, `SugarFactorySeason`, news translations), the rest deleted — or `active=false` for `Leader`, `LocalAlert`, `CitizenTip`, `LocalIndustry`, `FamousPersonality`. Copies of one exam become one national / state / district `GovernmentExam` row; exam statuses and `ElectionResult.electionType` are rewritten in the canonical set. FUZZY pairs (≥ 85 % alike) are never changed: each is queued once in `NewsActionQueue` (dataType `verify-duplicates`). Drops the page caches of the tables it changed. Lock `lock:cron:dedupe-data`. |
-| `/api/cron/scrape-courts` | `40 1,13 * * *` | 07:10 and 19:10 | 250 s / 300 s | Court cases from NJDG's public dashboards (3 requests per NJDG unit, ≥ 3 s apart; oldest district first). Writes Redis `ftp:courts:njdg:<slug>` and `ftp:courts:njdg-hc:<stateCode>` (120-day expiry), this year's filed / decided / waiting to `CourtStat` (source "NJDG district dashboard · read <date>"), and deletes the cached courts response. Lock `ftp:lock:scrape-courts`. |
+| `/api/cron/scrape-courts` | `40 1,13 * * *` | 07:10 and 19:10 | 250 s / 300 s | Court cases from NJDG's public dashboards (3 requests per NJDG unit, ≥ 3 s apart; oldest district first). Writes Redis `ftp:courts:njdg:<slug>` and `ftp:courts:njdg-hc:<stateCode>` (120-day expiry), this year's filed / decided / waiting to `CourtStat` (source "NJDG district dashboard · read <date>"), and deletes the cached courts response. Lock `lock:cron:scrape-courts`. |
 | `/api/cron/scrape-jjm` | `15 4 * * *` | daily 09:45 | 90 s / 120 s | Tap-water coverage from the public JJM dashboard (rural districts; urban ones are "not covered"). Two dashboard endpoints must agree. Writes one district-total `JJMStatus` row per district + `UpdateLog`. Lock `lock:cron:scrape-jjm`. |
 | `/api/cron/scrape-schools` | `40 4 * * 2` | Tuesday 10:10 | 150 s / 180 s | UDISE+ district school statistics (schools, teachers, students, facilities) after totals-add-up checks. Writes Redis `ftp:data:udise:<slug>` (no expiry) + `UpdateLog`. Lock `lock:cron:scrape-schools`. |
 | `/api/cron/scrape-mgnrega` | `50 4 * * *` | daily 10:20 | 250 s / 300 s | MGNREGA "At a glance" page per rural district (about 20 s each). Writes Redis `ftp:data:mgnrega:<slug>` (no expiry) + `UpdateLog`. Lock `lock:cron:scrape-mgnrega`. |
@@ -51,14 +52,20 @@ Notes:
   `vercel.json` on 2026-09-28 and have not run in production yet. Before
   the JJM cron's first production run, the 18 seeded `JJMStatus` rows must be
   deleted, or the tap-water page counts them twice (`docs/OWNER-TODO.md` §6).
-- The five collectors are also described in
+- The portal collectors are also described in
   `src/scraper/lib/collector-registry.ts` (`PORTAL_COLLECTORS`: module, cron,
-  schedule, storage, source, expected age). If you change one of their
-  schedules, change it there too.
-- Two lock-key styles exist: `lock:cron:<name>` (`src/scraper/lib/cron-lock.ts`)
-  and `ftp:lock:<name>` (courts, verify-data). A locked run returns
-  `skipped` (verify-data answers HTTP 409). Locks expire on their own a little
-  after `maxDuration`.
+  schedule, storage, source, expected age); nothing at runtime reads it yet.
+  If you change one of their schedules, change it there too —
+  `tests/cron-schedule.test.ts` compares it with `vercel.json`.
+- Every lock is `lock:cron:<name>` (`src/scraper/lib/cron-lock.ts`; courts
+  and verify-data used `ftp:lock:<name>` until 2026-09-28, and verify-data's
+  expired at 290 s, before its 300 s limit). A locked run returns `skipped`
+  (verify-data answers HTTP 409). Locks expire on their own 30 s after
+  `maxDuration`.
+- Shared route helpers: `listActiveDistricts()` / `jobContextFor()`
+  (`src/scraper/lib/cron-districts.ts`) and `withCronErrors()`
+  (`src/scraper/lib/cron-run.ts`), which records a run that throws as an
+  error instead of leaving it "running".
 
 ## 2. Auth — how a cron proves it is allowed to run
 
@@ -146,7 +153,7 @@ district totals yet):
 | `ftp:data:mgnrega:<slug>` | `scrape-mgnrega` | none |
 | `ftp:data:fuel` | `scrape-fuel` | none (read by `/api/data/prices` → `fuel` and the home page) |
 | `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` | `scrape-courts` | 120 days (housekeeping only) |
-| `ftp:ai:citizen-tips:<slug>` | `generate-citizen-tips` | 7 days |
+| `ftp:ai:citizen-tips:<slug>` | `generate-citizen-tips` | 14 days (two weekly runs) |
 
 ## 5. Health — what "stale" means
 
@@ -166,7 +173,9 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
 
 1. Create `src/app/api/cron/<name>/route.ts`. Copy `scrape-weather/route.ts`
    (or `scrape-jjm/route.ts` for a collector with a lock) as the template:
-   `verifyCron`, `cronStarted`, `cronFinished`, `maxDuration`, a time budget.
+   `verifyCron`, `cronStarted`, `withCronErrors` (or your own catch that calls
+   `cronFinished` with "error"), `cronFinished`, `maxDuration`, a time budget,
+   and `listActiveDistricts()` / `jobContextFor()` for the district list.
 2. Add `{ "path": "/api/cron/<name>", "schedule": "..." }` to `vercel.json`.
    Health picks it up automatically.
 3. Add a row to the table in section 1, and to
@@ -181,7 +190,10 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
   than being killed mid-write.
 - `scrape-budget` is a deliberate no-op: `STATE_BUDGET_RESOURCES` in
   `src/scraper/jobs/budget.ts` has no live dataset ids. It stays scheduled so
-  adding an id starts collection without touching `vercel.json`.
+  adding an id starts collection without touching `vercel.json`. An entry
+  must name the dataset's district field and year field: the request is
+  filtered by district, and a record without our district or a readable
+  financial year is skipped (`src/scraper/lib/budget-records.ts`).
 - Crops need `DATA_GOV_API_KEY`. Weather works without `OPENWEATHER_API_KEY`
   (Open-Meteo is the fallback), but the key also feeds the second-source
   check on the weather page. If a key is missing and the source fails, the
@@ -189,9 +201,8 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
 - Be polite to sources: at most one request every 2–3 s per portal. NJDG
   gets ≥ 3 s between requests; the collectors identify themselves honestly
   in the user agent and never use captcha-protected pages.
-- `src/scraper/scheduler.ts` (local runner) still points at the old
-  `jobs/courts.ts`, `jobs/jjm.ts`, `jobs/mgnrega.ts`, `jobs/schools.ts` and
-  `jobs/power.ts`. Those jobs call dead APIs; the crons above replaced them.
-- The comment at the top of `health-score/route.ts` still says weekly; the
-  schedule in `vercel.json` (daily) is the one that counts.
+- `vercel.json` is the schedule that counts. `tests/cron-schedule.test.ts`
+  fails when a route's header `schedule "…"`, a `PORTAL_COLLECTORS` entry or
+  a data-sources `cron` disagrees with it, or a route and `vercel.json` do
+  not list each other.
 - Never use the word "scraper" in citizen-facing text (CLAUDE.md).

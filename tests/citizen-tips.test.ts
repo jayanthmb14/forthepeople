@@ -6,7 +6,7 @@
 // Weekly citizen tips: validation and the "never overwrite good tips with
 // an empty list" rule (src/lib/citizen-tips.ts).
 import { describe, expect, it } from "vitest";
-import { MAX_TIPS, normalizeCitizenTips, tipsToStore, type StoredTips } from "@/lib/citizen-tips";
+import { CITIZEN_TIPS_TTL_S, MAX_TIPS, citizenTipsKey, normalizeCitizenTips, tipsToStore, type StoredTips } from "@/lib/citizen-tips";
 
 const tip = (over: Record<string, unknown> = {}) => ({
   category: "health",
@@ -52,5 +52,17 @@ describe("tipsToStore", () => {
   it("writes nothing when there are no tips at all", () => {
     expect(tipsToStore(week([], "2026-09-27"), null)).toBeNull();
     expect(tipsToStore(week([], "2026-09-27"), week([], "2026-09-20"))).toBeNull();
+  });
+});
+
+describe("stored tips key and lifetime", () => {
+  it("one key for the cron and the page", () => {
+    expect(citizenTipsKey("mandya")).toBe("ftp:ai:citizen-tips:mandya");
+  });
+
+  it("outlive the next weekly run, so a failed week can keep last week's tips", () => {
+    const week = 7 * 24 * 60 * 60;
+    // The next run may reach a district up to its 240 s budget later than last week.
+    expect(CITIZEN_TIPS_TTL_S).toBeGreaterThan(week + 300);
   });
 });

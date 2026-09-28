@@ -5,20 +5,12 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// ForThePeople.in — Scraper logger + DB log writer
+// ForThePeople.in — ScraperLog writer for the admin "run now" button
+// (src/app/api/admin/run-scraper). Cron routes log through
+// cronStarted()/cronFinished() in src/lib/cron-auth.ts instead.
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
 import { ScraperResult } from "./types";
-
-export function makeLogger(jobName: string) {
-  const lines: string[] = [];
-  const log = (msg: string) => {
-    const line = `[${new Date().toISOString()}] [${jobName}] ${msg}`;
-    console.log(line);
-    lines.push(line);
-  };
-  return { log, lines };
-}
 
 export async function writeLog(
   jobName: string,

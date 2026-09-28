@@ -6,7 +6,7 @@
 
 // ═══════════════════════════════════════════════════════════
 // Job: News — Google News RSS + The Hindu state/city feeds
-// Schedule: every 4 hours (cron scrape-news, vercel.json)
+// Schedule: every 4 hours (cron scrape-news, "10 */4 * * *", vercel.json)
 //
 // v5 (Sept 2026 audit): queries and feeds use the district's OWN state
 // (they said "Karnataka" for every district); the keyword classifier
@@ -228,7 +228,9 @@ export async function scrapeNews(
   // Module actions run alongside the fetching, but the job waits for them
   // before it returns: started and forgotten, they outlived the cron's
   // response and Vercel could freeze one half-way (a project created
-  // without its timeline row). Their AI calls respect the same deadline.
+  // without its timeline row). Their AI calls respect the same deadline as
+  // the classification: this district's share (aiDeadline), so waiting for
+  // them cannot eat the next districts' time.
   const pendingActions: Promise<void>[] = [];
   try {
     const queries = buildNewsQueries(ctx.districtName, ctx.stateName);
@@ -242,8 +244,9 @@ export async function scrapeNews(
     // Load existing URLs to avoid re-inserting
     const existingUrls = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
-      select: { url: true },
+      orderBy: { publishedAt: "desc" },
       take: 5000,
+      select: { url: true },
     });
     // Keyed by urlKey (no www / tracking parameters / trailing slash): the same article, one row.
     existingUrls.forEach((n) => { if (n.url) seenUrls.add(urlKey(n.url)); });
@@ -313,7 +316,11 @@ export async function scrapeNews(
             item.source,
             ctx.districtName,
             item.publishedAt,
-            { stateName: ctx.stateName, summary: item.summary, deadlineAt: opts.deadlineAt },
+            // This district's share (aiDeadline), not the run's deadline: one
+            // call walking the whole model chain (3 free models + the paid
+            // backstop, 25 s each) used to eat most of the run, leaving 8–9
+            // of 10 districts unreached (ScraperLog news, 27 Sep 2026).
+            { stateName: ctx.stateName, summary: item.summary, deadlineAt: aiDeadline },
           ).catch(() => null);
         }
 
@@ -387,7 +394,7 @@ export async function scrapeNews(
             extractedData: aiClassification.extractedData,
             confidence: aiClassification.confidence,
             isAboutDistrict: aiClassification.isAboutDistrict,
-          }, { deadlineAt: opts.deadlineAt }).catch((err) => {
+          }, { deadlineAt: aiDeadline }).catch((err) => {
             ctx.log(`[News] action failed for "${item.headline.slice(0, 60)}": ${err instanceof Error ? err.message : String(err)}`);
           });
           pendingActions.push(action);
@@ -425,8 +432,9 @@ export async function scrapeNews(
 
     // Keep the newest 50 stories, and every story still inside the feeds'
     // window: deleting one of those made the next run fetch, classify and
-    // act on it again (planNewsRetention). Copies of a deleted original are
-    // re-pointed and its translations removed (deleteNewsItems).
+    // act on it again (planNewsRetention). A district never keeps more than
+    // NEWS_HARD_MAX (150) rows, so storage stays bounded. Copies of a deleted
+    // original are re-pointed and its translations removed (deleteNewsItems).
     const stored = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
       orderBy: { publishedAt: "desc" },

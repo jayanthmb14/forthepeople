@@ -132,6 +132,7 @@ export async function collectWeather(ctx: JobContext): Promise<WeatherCollectRes
       where: { districtId: ctx.districtId },
       orderBy: { recordedAt: "desc" },
       skip: 48,
+      take: 10_000,
       select: { id: true },
     });
     if (old.length > 0) {
@@ -147,7 +148,7 @@ export async function collectWeather(ctx: JobContext): Promise<WeatherCollectRes
   }
 }
 
-/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
+/** ScraperJob signature for the admin "run now" button (src/app/api/admin/run-scraper). */
 export async function scrapeWeather(ctx: JobContext): Promise<ScraperResult> {
   const { success, recordsNew, recordsUpdated, error } = await collectWeather(ctx);
   return { success, recordsNew, recordsUpdated, error };

@@ -29,8 +29,8 @@ are copied into prose. Read `CHANGELOG.md` for what changed and when.
 ```
 
 Everything runs inside Vercel serverless functions. There is no long-running
-worker in production any more: `src/scraper/scheduler.ts` (`npm run scraper`) is
-a local runner for the same job modules, not part of the deployed system. The
+worker: the old Railway scheduler (`src/scraper/scheduler.ts`, `npm run
+scraper`) and the job modules only it ran were deleted on 2026-09-28. The
 old Docker files are archived in `docs/archive/docker/`.
 
 ## 2. Routing
@@ -141,14 +141,12 @@ old Docker files are archived in `docs/archive/docker/`.
      with module, cron, schedule, storage, source and expected age, for the
      "Where our data comes from" page and the freshness checks. Nothing reads
      it yet.
-   - The old `jobs/courts.ts`, `jjm.ts`, `mgnrega.ts`, `schools.ts` and
-     `power.ts` call dead APIs and run only from the local scheduler.
 2. **Scheduling** — `vercel.json` `crons` calls `src/app/api/cron/<job>/route.ts`
    on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, runs
    the job(s) inside its own time budget, and records a `ScraperLog` row per
    run (success or failure, rows written, duration), which the verification
    panel and admin read. The slow collectors also take a Redis lock
-   (`lock:cron:<name>` or `ftp:lock:<name>`) so overlapping runs cannot
+   (`lock:cron:<name>`) so overlapping runs cannot
    double-write; some routes post an admin alert on failure. Beyond the
    original jobs:
    - `scrape-alerts` reads NDMA SACHET, the official disaster-alert feed.
@@ -367,7 +365,7 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 |---|---|---|
 | All civic data, supporters, logs, settings | Neon PostgreSQL | Prisma; schema changes are manual `db:push` before code push |
 | Cache of API responses | Upstash Redis | short TTL, invalidated by admin edits; the forecast is cached per district (`ftp:forecast:v1:<state>/<district>`) |
-| Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:`; two crons lock with `ftp:lock:<name>` |
+| Admin + vault sessions, rate limits, cron locks | Upstash Redis | keys prefixed `admin:`, `rate:`, `lock:` (cron locks: `lock:cron:<name>`) |
 | Cron run state | Upstash Redis | `ftp:cron:<name>` hashes + one `ScraperLog` row per run (`docs/RUNBOOKS/crons.md`) |
 | District figures with no table yet | Upstash Redis | `ftp:data:udise:<slug>`, `ftp:data:mgnrega:<slug>` (no expiry), `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` (120 days) |
 | Double-check results | Neon PostgreSQL | `DataVerification` rows (needs `db:push`); review items in `NewsActionQueue` |
@@ -418,10 +416,9 @@ src/lib/          everything shared: db, redis, cache, ai-provider, ai-models, a
                   tenders, validators; verification/ (double-check), weather/
                   (forecast), courts/ (NJDG snapshot), dedupe/ (canonical keys,
                   duplicate guard)
-src/scraper/      collection job modules + parsers (lib/); the cron routes run news,
+src/scraper/      collection job modules + parsers (lib/), run by the cron routes: news,
                   crops, weather, dams, alerts, exams, budget, AI analysis, courts,
-                  JJM, schools, MGNREGA and tenders; the rest only from the local
-                  scheduler (`npm run scraper`)
+                  JJM, schools, MGNREGA, tenders and fuel
 tests/            Vitest suites
 ```
 

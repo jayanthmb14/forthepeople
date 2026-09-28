@@ -198,7 +198,9 @@ Return JSON with exactly this schema (no prose, no markdown fences):
 }
 
 export async function generatePlatformReport(
-  type: "weekly" | "manual" = "weekly"
+  type: "weekly" | "manual" = "weekly",
+  /** deadlineAt: no model attempt starts after it (the cron's time budget). */
+  opts: { deadlineAt?: number } = {},
 ): Promise<{
   id: string;
   summary: string;
@@ -222,6 +224,7 @@ export async function generatePlatformReport(
     purpose: "insight", // routes to Gemini 2.5 Pro
     maxTokens: 2048,
     temperature: 0.3,
+    deadlineAt: opts.deadlineAt,
   });
 
   // Rough estimate: userPrompt + systemPrompt length, ~4 chars / token, Gemini input rate.

@@ -115,7 +115,7 @@ Still yours:
    (seeded rows have placeholder runners-up and wrong margins); results stay
    hidden on the site until then.
 1. **Mysuru rainfall 2023–24 ("IMD Mysuru", 24 rows)** were typed by hand in
-   `prisma/seed-mysuru-data.ts`; they are hidden on the site. Delete them
+   `prisma/archive/seed-mysuru-data.ts`; they are hidden on the site. Delete them
    if you agree (they were not in the dry run you approved, so I did not).
 2. **Election results are withheld.** The stored rows were seeded, not taken
    from ECI (e.g. the 2024 Mandya winner is wrong). Reload them from

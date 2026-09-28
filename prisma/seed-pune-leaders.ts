@@ -6,7 +6,7 @@
  * SCOPE:
  *   District-level governance (no MLAs, no Rajya Sabha, no Baramati/Maval/
  *   Shirur MPs — those come in Prompt 4 Elections). Leaders grouped by the
- *   codebase's existing tier convention (see prisma/seed-mumbai-data.ts):
+ *   codebase's existing tier convention (see prisma/archive/seed-mumbai-data.ts):
  *     Tier 1 — Lok Sabha MP
  *     Tier 3 — Municipal Corporation (Mayor + Commissioner, PMC and PCMC)
  *     Tier 4 — Administration + state-level political (Collector, Div Comm,

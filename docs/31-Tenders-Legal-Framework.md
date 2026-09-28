@@ -41,8 +41,11 @@
 
 ## PII redaction
 
-`src/scraper/parsers/pii-redactor.ts` — runs on every `extractedText`
-body before DB write:
+**Status 2026-09-28:** nothing stores tender document text today — the PDF
+extractor never ran and was deleted with `src/scraper/parsers/pii-redactor.ts`
+(`git log --all -- src/scraper/parsers/pii-redactor.ts` finds it). The live
+GePNIC collector stores listing and detail fields only, and no person's name.
+Any future feature that stores document text must redact, before the DB write:
 
 | Token | Regex | Replacement |
 |-------|-------|-------------|

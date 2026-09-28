@@ -107,7 +107,7 @@ the 06:00 UTC dam reading and the 03:30 UTC crop run; weather is
 collected every 30 minutes, so it is always fresh).
 
 1. `verifyCron()` (Bearer `CRON_SECRET`), then a Redis lock
-   `ftp:lock:verify-data` (290 s) so two runs never overlap.
+   `lock:cron:verify-data` (`maxDuration` + 30 s) so two runs never overlap.
 2. `cronStarted()` → Redis `ftp:cron:verify-data` + a `ScraperLog` row
    (`jobName = "verify-data"`), like every other cron.
 3. If the `DataVerification` table does not exist yet, the run ends as

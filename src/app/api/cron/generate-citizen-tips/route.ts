@@ -10,7 +10,8 @@
 // Schedule: Weekly, Sunday 06:00 UTC (Vercel cron — see vercel.json)
 // Auth: verifyCron() — "Authorization: Bearer <CRON_SECRET>" (Vercel)
 //       or "x-cron-secret: <CRON_SECRET>" (manual curl)
-// Generates tips via callAI (free tier) and stores in Redis (7-day TTL)
+// Generates tips via callAI (free tier) and stores in Redis (14-day TTL:
+// two weekly runs, so a failed week keeps last week's tips)
 //
 // Sept 2026 fix: Vercel Cron only ever sends GET, but this file exported
 // POST only, so every Sunday run got a 405 before the handler ran and the
@@ -28,15 +29,26 @@ import { cacheGet, cacheSet } from "@/lib/cache";
 import { callAIJSON } from "@/lib/ai-provider";
 import { alertCronFailed } from "@/lib/admin-alerts";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
-import { normalizeCitizenTips, tipsToStore, type CitizenTip, type StoredTips } from "@/lib/citizen-tips";
+import {
+  CITIZEN_TIPS_TTL_S,
+  citizenTipsKey,
+  normalizeCitizenTips,
+  tipsToStore,
+  type CitizenTip,
+  type StoredTips,
+} from "@/lib/citizen-tips";
+import { OFFICIAL_ALERTS } from "@/lib/data-filters";
 
 export const runtime = "nodejs";
 // 10 districts × (AI call + 2 s pause) comfortably fits; cap at 5 min.
 export const maxDuration = 300;
 const CRON_NAME = "generate-citizen-tips";
 
-const TIPS_TTL = 7 * 24 * 60 * 60; // 7 days
+/** The cron runs weekly (vercel.json "0 6 * * 0"). */
+const REFRESH_DAYS = 7;
 const BUDGET_MS = 240_000;
+/** A weather reading older than this is not "current" context for the prompt. */
+const WEATHER_MAX_AGE_MS = 6 * 3600_000;
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -145,9 +157,9 @@ export async function POST(req: NextRequest) {
   const year = now.getFullYear();
   const generatedAt = now.toISOString();
 
-  // Next refresh: 7 days from now
-  const nextRefreshDate = new Date(now.getTime() + TIPS_TTL * 1000);
-  const nextRefreshDays = 7;
+  // Next refresh: the next weekly run
+  const nextRefreshDate = new Date(now.getTime() + REFRESH_DAYS * 86_400_000);
+  const nextRefreshDays = REFRESH_DAYS;
 
   const results: { district: string; ok: boolean; count: number; keptPrevious?: boolean; error?: string }[] = [];
   const deadlineAt = runStart + BUDGET_MS;
@@ -169,13 +181,15 @@ export async function POST(req: NextRequest) {
       }
       // Gather context (lightweight)
       const [weather, alerts, schemes] = await Promise.all([
+        // Only a recent reading is "current" weather for the prompt.
         prisma.weatherReading.findFirst({
-          where: { districtId: district.id },
+          where: { districtId: district.id, recordedAt: { gte: new Date(Date.now() - WEATHER_MAX_AGE_MS) } },
           orderBy: { recordedAt: "desc" },
           select: { temperature: true, conditions: true, rainfall: true },
         }),
+        // Official warnings only (NDMA SACHET), as everywhere else on the site.
         prisma.localAlert.findMany({
-          where: { districtId: district.id, active: true },
+          where: { districtId: district.id, active: true, ...OFFICIAL_ALERTS },
           take: 3,
           select: { title: true, type: true, severity: true },
         }),
@@ -198,13 +212,13 @@ export async function POST(req: NextRequest) {
         deadlineAt,
       );
 
-      const cacheKey = `ftp:ai:citizen-tips:${district.slug}`;
+      const cacheKey = citizenTipsKey(district.slug);
       const fresh: StoredTips = { tips, month, year, generatedAt, generatedBy: "cron" };
 
       // Never overwrite good tips with an empty list: keep last week's.
       const previous = tips.length > 0 ? null : await cacheGet<StoredTips>(cacheKey);
       const toStore = tipsToStore(fresh, previous);
-      if (toStore) await cacheSet(cacheKey, toStore.payload, TIPS_TTL);
+      if (toStore) await cacheSet(cacheKey, toStore.payload, CITIZEN_TIPS_TTL_S);
 
       results.push({
         district: district.slug,
@@ -232,7 +246,7 @@ export async function POST(req: NextRequest) {
         ? `time budget used; not reached: ${notReached.join(", ")}`
         : undefined;
     await cronFinished(CRON_NAME, runStart, {
-      status: allFailed ? "error" : "ok",
+      status: allFailed ? "error" : notReached.length > 0 ? "partial" : "ok",
       count: okCount,
       error: errorText,
     });

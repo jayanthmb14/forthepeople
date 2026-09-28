@@ -18,11 +18,11 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@/lib/db";
 import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { listActiveDistricts } from "@/scraper/lib/cron-districts";
 import { runOutcome } from "@/scraper/lib/run-log";
 import { acquireCronLock, releaseCronLock } from "@/scraper/lib/cron-lock";
 import { toCollectorDistricts } from "@/scraper/lib/source-districts";
@@ -44,11 +44,7 @@ export async function GET(request: Request) {
   const runStart = await cronStarted(CRON_NAME);
   const logs: string[] = [];
   try {
-    const rows = await prisma.district.findMany({
-      where: { active: true },
-      select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-      orderBy: { name: "asc" },
-    });
+    const rows = await listActiveDistricts();
     const districts = toCollectorDistricts(rows);
     const r = await collectJjmCoverage(districts, { deadlineMs: runStart + TIME_BUDGET_MS, log: (m) => logs.push(m) });
     console.log(`[scrape-jjm] ${logs.join(" | ")}`);

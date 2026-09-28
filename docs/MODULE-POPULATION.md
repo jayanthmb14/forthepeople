@@ -239,7 +239,7 @@ All 9 smoke-test URLs returned HTTP 200 on 2026-04-21:
 | Karnataka GeoJSON choropleth | If `public/geo/karnataka-districts.json` missing, shows placeholder | Verified present as of Group B |
 | Vijayanagara district | No Census 2011 or NITI MPI 2023 row (bifurcated 2021) | Phase 2: add Karnataka DES current estimates at state level; full data with Census 2027 |
 | Other state-specific sources | PRS India, Karnataka DES economic handbook, BBMP ward-level | Phase 3: state-by-state onboarding |
-| `tender-pdf-extractor.ts` | Pre-existing dormancy, unrelated to Population module | Tender team to fix |
+| `tender-pdf-extractor.ts` | Never ran; deleted 2026-09-28 with the old tender engines | — |
 
 ## Revision history
 

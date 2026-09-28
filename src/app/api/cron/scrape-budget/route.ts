@@ -15,14 +15,15 @@
 // src/scraper/jobs/budget.ts — every entry is null). Until one is found,
 // this route returns {skipped: true, reason} immediately instead of
 // pretending to collect. The cron stays scheduled so the day a resource
-// id is added, collection starts without a vercel.json change.
+// id is added (with the dataset's district and year fields — records of
+// other districts or without a year are skipped), collection starts
+// without a vercel.json change.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { scrapeBudget, hasAnyLiveBudgetSource } from "@/scraper/jobs/budget";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
-import type { JobContext } from "@/scraper/types";
+import { jobContextFor, listActiveDistricts } from "@/scraper/lib/cron-districts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -45,22 +46,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const activeDistricts = await prisma.district.findMany({
-      where: { active: true },
-      include: { state: true },
-    });
+    const activeDistricts = await listActiveDistricts();
 
     const results: { district: string; new: number; updated: number; error?: string }[] = [];
 
     for (const district of activeDistricts) {
-      const ctx: JobContext = {
-        districtId: district.id,
-        districtSlug: district.slug,
-        districtName: district.name,
-        stateSlug: district.state.slug,
-        stateName: district.state.name,
-        log: (msg: string) => console.log(`[Budget/${district.slug}] ${msg}`),
-      };
+      const ctx = jobContextFor(district, (msg) => console.log(`[Budget/${district.slug}] ${msg}`));
 
       const result = await scrapeBudget(ctx);
       results.push({

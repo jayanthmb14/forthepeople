@@ -6,7 +6,8 @@
 
 // ═══════════════════════════════════════════════════════════
 // Vercel Cron: News collector (every 4 hours, vercel.json)
-// Also: auto-expires stale alerts (>14 days) + deduplicates news
+// Also: deduplicates news; switches off non-official LocalAlerts older than
+// 14 days (official SACHET alerts expire in scrape-alerts, by their CAP date)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-news"
 //
@@ -28,7 +29,9 @@ import { translationTargets } from "@/lib/translation/content";
 import { translatePendingContent } from "@/lib/translation/job";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { planTitleDuplicates } from "@/lib/news-dedupe";
-import type { JobContext } from "@/scraper/types";
+import { OFFICIAL_ALERTS } from "@/lib/data-filters";
+import { jobContextFor, listActiveDistricts } from "@/scraper/lib/cron-districts";
+import { withCronErrors } from "@/scraper/lib/cron-run";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -45,7 +48,11 @@ export async function GET(request: Request) {
   }
 
   const runStart = await cronStarted(CRON_NAME);
+  return withCronErrors(CRON_NAME, runStart, () => collectAll(runStart));
+}
 
+/** Everything after cronStarted(); a throw is recorded by withCronErrors. */
+async function collectAll(runStart: number): Promise<Response> {
   // Reset module-scoped extraction counters so this cron starts fresh.
   // (news-action-engine caps expensive extractions like infrastructure at
   //  10 per cron run to bound AI spend.)
@@ -55,11 +62,7 @@ export async function GET(request: Request) {
   let totalAlertsExpired = 0;
   const deadlineAt = runStart + BUDGET_MS;
 
-  const districtRows = await prisma.district.findMany({
-    where: { active: true },
-    select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-    orderBy: { name: "asc" },
-  });
+  const districtRows = await listActiveDistricts();
 
   // Least-recently-fetched district first (never-fetched first of all).
   const lastFetch = new Map<string, number>();
@@ -86,19 +89,9 @@ export async function GET(request: Request) {
     // of what is left, so every district gets fresh news every run.
     const districtsLeft = activeDistrictRows.length - i;
     const aiDeadlineAt = Math.min(deadlineAt, Date.now() + (deadlineAt - Date.now()) / districtsLeft);
-    const stateSlug = (row as { state?: { slug: string } }).state?.slug ?? "karnataka";
-    const stateName = (row as { state?: { name: string } }).state?.name ?? "Karnataka";
     const districtId = row.id;
-
     const logs: string[] = [];
-    const ctx: JobContext = {
-      districtSlug: slug,
-      districtId,
-      districtName: row.name,
-      stateSlug,
-      stateName,
-      log: (msg) => logs.push(msg),
-    };
+    const ctx = jobContextFor(row, (msg) => logs.push(msg));
 
     // ── 1. Scrape news ──
     let result: { success: boolean; recordsNew: number; error?: string };
@@ -135,6 +128,9 @@ export async function GET(request: Request) {
     } catch { /* non-fatal */ }
 
     // ── 3. Expire stale LocalAlerts (>14 days, still active) ──
+    // Never official NDMA SACHET alerts: those follow their own CAP expiry
+    // (scrape-alerts). This sweep used to switch off valid long-running
+    // warnings, which the next SACHET re-issue switched back on (v5.5).
     let alertsExpired = 0;
     try {
       const staleDate = new Date(Date.now() - STALE_ALERT_DAYS * 86_400_000);
@@ -143,6 +139,8 @@ export async function GET(request: Request) {
           districtId: districtId,
           active: true,
           createdAt: { lt: staleDate },
+          // sourceUrl is nullable: NOT(startsWith) alone would skip NULL rows.
+          OR: [{ sourceUrl: null }, { NOT: OFFICIAL_ALERTS }],
         },
         data: { active: false },
       });
@@ -178,7 +176,9 @@ export async function GET(request: Request) {
     console.warn(`[scrape-news] time budget used; not reached this run: ${notReached.join(", ")}`);
   }
   await cronFinished(CRON_NAME, runStart, {
-    status: allFailed ? "error" : "ok",
+    // Districts left for the next run make it "partial" (ScraperLog shows
+    // it); it used to say "success" while 8 of 10 districts got nothing.
+    status: allFailed ? "error" : notReached.length > 0 ? "partial" : "ok",
     count: totalNew,
     error: allFailed
       ? `all ${results.length} districts failed: ${failedDistricts[0]?.error ?? "unknown"}`

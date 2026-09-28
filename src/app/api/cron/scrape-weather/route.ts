@@ -25,14 +25,14 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@/lib/db";
 import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { collectWeather } from "@/scraper/jobs/weather";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
-import type { JobContext } from "@/scraper/types";
+import { jobContextFor, listActiveDistricts } from "@/scraper/lib/cron-districts";
+import { withCronErrors } from "@/scraper/lib/cron-run";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -50,12 +50,12 @@ export async function GET(request: Request) {
   }
 
   const runStart = await cronStarted(CRON_NAME);
+  return withCronErrors(CRON_NAME, runStart, () => collectAll(runStart));
+}
 
-  const districts = await prisma.district.findMany({
-    where: { active: true },
-    select: { id: true, slug: true, name: true, state: { select: { slug: true, name: true } } },
-    orderBy: { name: "asc" },
-  });
+/** Everything after cronStarted(); a throw is recorded by withCronErrors. */
+async function collectAll(runStart: number): Promise<Response> {
+  const districts = await listActiveDistricts();
 
   const results: Array<{ district: string; success: boolean; stored: boolean; source?: string; error?: string }> = [];
   let partial = false;
@@ -71,15 +71,7 @@ export async function GET(request: Request) {
     const settled = await Promise.allSettled(
       batch.map(async (d) => {
         const logs: string[] = [];
-        const ctx: JobContext = {
-          districtId: d.id,
-          districtSlug: d.slug,
-          districtName: d.name,
-          stateSlug: d.state?.slug ?? "karnataka",
-          stateName: d.state?.name ?? "Karnataka",
-          log: (msg) => logs.push(msg),
-        };
-        const result = await collectWeather(ctx);
+        const result = await collectWeather(jobContextFor(d, (msg) => logs.push(msg)));
         console.log(`[scrape-weather/${d.slug}] ${result.success ? "ok" : "fail"} | ${logs.join(" | ")}`);
 
         // Bust the district's cached weather so the page shows the new reading.

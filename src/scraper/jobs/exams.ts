@@ -33,7 +33,7 @@
 // ═══════════════════════════════════════════════════════════
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
-import { JobContext, ScraperResult } from "../types";
+import type { ScraperResult } from "../types";
 import { canonicalExamStatus, examStatusRank, sameExam } from "@/lib/dedupe/keys";
 import { correctPlacement, examBucket, pickBestExam } from "@/lib/dedupe/exam-rules";
 import {
@@ -237,10 +237,4 @@ export async function collectOfficialExams(
     error: failed.length ? failed.map((s) => `${s.source}: ${s.error}`).join("; ") : undefined,
     sources,
   };
-}
-
-/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
-export async function scrapeExams(ctx: JobContext): Promise<ScraperResult> {
-  const { success, recordsNew, recordsUpdated, error } = await collectOfficialExams(ctx.log);
-  return { success, recordsNew, recordsUpdated, error };
 }

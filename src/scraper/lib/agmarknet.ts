@@ -73,8 +73,13 @@ export const MIN_PRICE_PER_QUINTAL = 100;
  *   - coconut is priced per 1,000 nuts ("Coconut (Per 1000)") and tender
  *     coconut by the nut, in a unit the record does not state;
  *   - cut flowers are sold by the stem or bunch (Delhi's Gazipur flower
- *     market: tulip 1,30,000, lotus 8, gerbera 25–45).
- * Loose flowers sold by weight (marigold, jasmine, loose rose …) stay.
+ *     market: tulip 1,30,000, lotus 8, gerbera 25–45);
+ *   - v5.5 (Sept 2026 review): "Flowers-Others" is a mixed bucket of
+ *     flowers whose unit cannot be known (Lucknow 4,285), and firewood /
+ *     wood are not crops (Lucknow "Firewood" 350–410, "Wood" 485–1,515
+ *     were shown among crop prices).
+ * Loose flowers sold by weight (marigold, jasmine, loose rose …) stay —
+ * except at a flower market (see isFlowerMarket).
  */
 export const NOT_PER_QUINTAL_COMMODITIES: readonly string[] = [
   // Livestock, poultry, fish
@@ -85,6 +90,8 @@ export const NOT_PER_QUINTAL_COMMODITIES: readonly string[] = [
   // Cut flowers, sold by the stem or bunch
   "Tulip", "Lotus", "Jarbara", "Gerbera", "Anthorium", "Orchid", "Carnation", "Lilly", "Rose(Local)",
   "Chrysanthemum", "Gladiolus Cut Flower", "Tube Rose(Single)", "Tube Rose(Double)",
+  // A mixed bucket (unit unknown); not crops
+  "Flowers-Others", "Firewood", "Wood",
 ];
 
 const NOT_PER_QUINTAL = new Set(NOT_PER_QUINTAL_COMMODITIES.map((c) => c.trim().toLowerCase()));
@@ -92,6 +99,16 @@ const NOT_PER_QUINTAL = new Set(NOT_PER_QUINTAL_COMMODITIES.map((c) => c.trim().
 /** True when AGMARKNET prices this commodity per quintal (it can be shown as ₹/kg). */
 export function isPricedPerQuintal(commodity: string): boolean {
   return !NOT_PER_QUINTAL.has(commodity.trim().toLowerCase());
+}
+
+/**
+ * A flower market (e.g. "Flower Market Gazipur"): its figures are by the
+ * stem, bunch or basket, and not stable — the same market's "Marigold
+ * (loose)" went 1,500 → 11,000 and "Marget" 3,000 → 20,000 between April
+ * and June 2026. Its records are not stored as per-quintal prices.
+ */
+export function isFlowerMarket(market: string): boolean {
+  return /\bflower\s*market\b/i.test(market);
 }
 /** Highest believable max ÷ min ratio within one record. */
 export const MAX_PRICE_SPREAD = 20;
@@ -128,6 +145,7 @@ export function toCropRow(r: AgmarkRecord, nowMs: number): { row: CropRow } | { 
   const market = (r.market ?? "").trim();
   if (!commodity || !market) return { reason: "no commodity or market" };
   if (!isPricedPerQuintal(commodity)) return { reason: "not priced per quintal (livestock, by count or by stem)" };
+  if (isFlowerMarket(market)) return { reason: "flower market (prices by stem, bunch or basket)" };
   const date = parseArrivalDate(r.arrival_date);
   if (!date) return { reason: "no valid arrival date" };
   if (date.getTime() > nowMs + 36 * 3600_000) return { reason: "arrival date is in the future" };

@@ -33,6 +33,7 @@ import { alertCronFailed } from "@/lib/admin-alerts";
 import { selectProjectsNeedingAnalysis, generateInfraAnalysis } from "@/lib/infra-analysis";
 import { translatePendingContent } from "@/lib/translation/job";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
+import { insightExpired, leadersNeedsRefresh } from "@/lib/insight-refresh";
 
 const INFRA_ANALYSIS_CAP_PER_RUN = 10;
 const CRON_NAME = "generate-insights";
@@ -71,18 +72,44 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const existingRows = await prisma.aIModuleInsight.findMany({
       where: { districtId: { in: districts.map((d) => d.id) } },
-      select: { districtId: true, module: true, expiresAt: true },
+      select: { districtId: true, module: true, expiresAt: true, generatedAt: true },
     });
-    const expiresAtOf = new Map(existingRows.map((r) => [`${r.districtId}:${r.module}`, r.expiresAt]));
+    const timesOf = new Map(existingRows.map((r) => [`${r.districtId}:${r.module}`, r]));
+
+    // Leaders (Apr 15 2026): hard 7-day age limit, daily during an active
+    // election period (any active ElectionEvent polling within 30 days for
+    // the district's state) — see src/lib/insight-refresh.ts.
+    const liveElectionStates = new Set(
+      (
+        await prisma.electionEvent.findMany({
+          where: {
+            isActive: true,
+            state: { in: [...new Set(districts.map((d) => d.state.slug))] },
+            pollingDate: {
+              gte: new Date(now.getTime() - 1 * 86_400_000),
+              lte: new Date(now.getTime() + 30 * 86_400_000),
+            },
+          },
+          select: { state: true },
+          take: 500,
+        })
+      ).map((e) => e.state),
+    );
+
     const work: Array<{ district: (typeof districts)[number]; config: (typeof MODULE_INSIGHT_CONFIGS)[number]; expiresAt: Date | null }> = [];
     for (const district of districts) {
       for (const config of MODULE_INSIGHT_CONFIGS) {
-        const expiresAt = expiresAtOf.get(`${district.id}:${config.module}`) ?? null;
-        if (expiresAt && expiresAt > now) {
+        const row = timesOf.get(`${district.id}:${config.module}`);
+        const times = { generatedAt: row?.generatedAt ?? null, expiresAt: row?.expiresAt ?? null };
+        const due =
+          config.module === "leaders"
+            ? leadersNeedsRefresh({ ...times, electionLive: liveElectionStates.has(district.state.slug), now })
+            : insightExpired(times, now);
+        if (!due) {
           skipped.fresh++;
           continue;
         }
-        work.push({ district, config, expiresAt });
+        work.push({ district, config, expiresAt: times.expiresAt });
       }
     }
     work.sort((a, b) => (a.expiresAt?.getTime() ?? -Infinity) - (b.expiresAt?.getTime() ?? -Infinity));
@@ -94,37 +121,14 @@ export async function POST(req: NextRequest) {
         console.log(`[generate-insights] Time budget used; ${skipped.notReached} insight(s) left for the next run`);
         break;
       }
-      const { district, config, expiresAt: existingExpiresAt } = work[i];
+      const { district, config } = work[i];
 
       // April 13, 2026 — skip regeneration if underlying data hasn't changed
-      // since the last insight. Static modules (leaders, budget, schools)
-      // rarely change and were burning paid calls on every run.
-      // Exception (Apr 15 2026): the leaders module gets a hard 7-day TTL
-      // even without data change so the page never shows >2-week-old
-      // analysis. During an active election period (any ElectionEvent
-      // with polling within 30 days for this district's state), the
-      // leaders module refreshes daily.
-      if (config.module === "leaders") {
-        const electionLive = await prisma.electionEvent.findFirst({
-          where: {
-            isActive: true,
-            state: district.state.slug,
-            pollingDate: {
-              gte: new Date(Date.now() - 1 * 86_400_000),
-              lte: new Date(Date.now() + 30 * 86_400_000),
-            },
-          },
-          select: { id: true },
-        });
-        const refreshAfterMs = electionLive ? 1 * 86_400_000 : 7 * 86_400_000;
-        const generatedAt = existingExpiresAt ? new Date(existingExpiresAt.getTime() - 24 * 3600_000) : null;
-        const ageMs = generatedAt ? Date.now() - generatedAt.getTime() : Infinity;
-        if (ageMs < refreshAfterMs) {
-          skipped.noChange++;
-          continue;
-        }
-        // Fall through to regenerate, ignoring hasDataChanged for leaders.
-      } else if (!(await hasDataChanged(district.id, config.module))) {
+      // since the last insight. Static modules (budget, schools) rarely
+      // change and were burning paid calls on every run. Leaders are on the
+      // work list only when their age limit says so (above), and then
+      // regenerate whether or not the data changed.
+      if (config.module !== "leaders" && !(await hasDataChanged(district.id, config.module))) {
         skipped.noChange++;
         continue;
       }

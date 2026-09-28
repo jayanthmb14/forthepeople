@@ -140,6 +140,8 @@ export async function collectCrops(ctx: JobContext, opts: CropsCollectOptions = 
     // of a row is (commodity, market, date).
     const existingRows = await prisma.cropPrice.findMany({
       where: { districtId: ctx.districtId },
+      orderBy: { date: "desc" },
+      take: 10_000,
       select: { commodity: true, market: true, date: true },
     });
     const seen = new Set(existingRows.map((e) => `${e.commodity}|${e.market}|${e.date.toISOString()}`));
@@ -183,6 +185,7 @@ export async function collectCrops(ctx: JobContext, opts: CropsCollectOptions = 
       where: { districtId: ctx.districtId },
       orderBy: { date: "desc" },
       skip: 100,
+      take: 10_000,
       select: { id: true },
     });
     if (old.length > 0) {
@@ -216,7 +219,7 @@ export async function collectCrops(ctx: JobContext, opts: CropsCollectOptions = 
   }
 }
 
-/** ScraperJob signature kept for the admin "run now" button and the old scheduler. */
+/** ScraperJob signature for the admin "run now" button (src/app/api/admin/run-scraper). */
 export async function scrapeCrops(ctx: JobContext): Promise<ScraperResult> {
   const { success, recordsNew, recordsUpdated, error } = await collectCrops(ctx);
   return { success, recordsNew, recordsUpdated, error };

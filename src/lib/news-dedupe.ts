@@ -164,23 +164,28 @@ export function planTitleDuplicates<T extends { id: string; title: string; fetch
 export const NEWS_MAX_AGE_DAYS = 3;
 /** Stories kept per district beyond the fetch window. */
 export const NEWS_KEEP_PER_DISTRICT = 50;
+/** Never more than this per district, even inside the fetch window, so
+ *  storage stays bounded (busiest districts hold ~47 stories in 3 days). */
+export const NEWS_HARD_MAX = 150;
 
 /**
- * Ids to delete: beyond the newest `keep`, and only those older than the
- * fetch window — a story the feeds can still return is never deleted, so
- * it is never fetched, classified and acted on twice.
+ * Ids to delete: beyond the newest `keep`, only those older than the fetch
+ * window — a story the feeds can still return is never deleted, so it is
+ * never fetched, classified and acted on twice — plus anything past
+ * `hardMax` in the district's list (newest first).
  */
 export function planNewsRetention<T extends { id: string; publishedAt: Date | string }>(
   rows: readonly T[],
   now: number,
   keep = NEWS_KEEP_PER_DISTRICT,
   maxAgeDays = NEWS_MAX_AGE_DAYS,
+  hardMax = NEWS_HARD_MAX,
 ): string[] {
   const cutoff = now - maxAgeDays * DAY_MS;
   return [...rows]
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(keep)
-    .filter((r) => new Date(r.publishedAt).getTime() < cutoff)
+    .filter((r, i) => keep + i >= hardMax || new Date(r.publishedAt).getTime() < cutoff)
     .map((r) => r.id);
 }
 

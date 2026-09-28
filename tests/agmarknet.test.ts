@@ -6,7 +6,7 @@
 // AGMARKNET record checks (src/scraper/lib/agmarknet.ts): only sane,
 // complete price records are stored; everything else is counted and dropped.
 import { describe, expect, it } from "vitest";
-import { cropPriceProblems, isPricedPerQuintal, isRetryableStatus, parseArrivalDate, toCropRow } from "@/scraper/lib/agmarknet";
+import { cropPriceProblems, isFlowerMarket, isPricedPerQuintal, isRetryableStatus, parseArrivalDate, toCropRow } from "@/scraper/lib/agmarknet";
 
 const NOW = Date.UTC(2026, 8, 27, 12, 0, 0);
 const good = {
@@ -88,6 +88,26 @@ describe("prices that are not per quintal (Sept 2026 audit)", () => {
     }
     expect(toCropRow({ ...good, commodity: "Ox", min_price: 70000, max_price: 90000, modal_price: 80000 }, NOW)).toEqual({
       reason: "not priced per quintal (livestock, by count or by stem)",
+    });
+  });
+  it("rejects firewood, wood and the mixed 'Flowers-Others' bucket (v5.5)", () => {
+    for (const c of ["Firewood", "Wood", "Flowers-Others"]) {
+      expect(isPricedPerQuintal(c)).toBe(false);
+    }
+    expect(toCropRow({ ...good, commodity: "Firewood", min_price: 350, max_price: 410, modal_price: 380 }, NOW)).toEqual({
+      reason: "not priced per quintal (livestock, by count or by stem)",
+    });
+    expect(toCropRow({ ...good, commodity: "Flowers-Others", min_price: 4000, max_price: 4500, modal_price: 4285 }, NOW)).toEqual({
+      reason: "not priced per quintal (livestock, by count or by stem)",
+    });
+  });
+  it("rejects every record from a flower market, even loose flowers (v5.5)", () => {
+    expect(isFlowerMarket("Flower Market Gazipur")).toBe(true);
+    expect(isFlowerMarket("Gazipur Flower  market")).toBe(true);
+    expect(isFlowerMarket("Bangalore")).toBe(false);
+    expect(isFlowerMarket("Sunflower Seed Yard")).toBe(false);
+    expect(toCropRow({ ...good, commodity: "Marigold(loose)", market: "Flower Market Gazipur", min_price: 9000, max_price: 13000, modal_price: 11000 }, NOW)).toEqual({
+      reason: "flower market (prices by stem, bunch or basket)",
     });
   });
   it("keeps crops sold by weight, including loose flowers and copra", () => {

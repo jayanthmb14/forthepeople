@@ -28,6 +28,7 @@ import { cacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
+import { acquireCronLock, releaseCronLock } from "@/scraper/lib/cron-lock";
 import { hasNjdgSource } from "@/lib/courts/sources";
 import { snapshotAges } from "@/lib/courts/store";
 import { NjdgClient, scrapeCourtsNjdg } from "@/scraper/jobs/courts-njdg";
@@ -38,7 +39,6 @@ export const maxDuration = 300;
 const CRON_NAME = "scrape-courts";
 /** Stop starting new work after this; one unit takes ≤ ~40 s even with a retry. */
 const TIME_BUDGET_MS = 250_000;
-const LOCK_KEY = "ftp:lock:scrape-courts";
 
 export async function GET(request: Request) {
   if (!verifyCron(request)) {
@@ -46,14 +46,9 @@ export async function GET(request: Request) {
   }
 
   // One run at a time (a manual trigger during the scheduled run would
-  // double the load on NJDG).
-  if (redis) {
-    try {
-      const got = await redis.set(LOCK_KEY, String(Date.now()), { nx: true, ex: maxDuration + 20 });
-      if (got !== "OK") return NextResponse.json({ ok: true, skipped: "already running" });
-    } catch {
-      // Redis down: run anyway; Vercel does not overlap scheduled runs.
-    }
+  // double the load on NJDG). Redis down: run anyway.
+  if (!(await acquireCronLock(CRON_NAME, maxDuration + 30))) {
+    return NextResponse.json({ ok: true, skipped: "already running" });
   }
 
   const runStart = await cronStarted(CRON_NAME);
@@ -131,6 +126,6 @@ export async function GET(request: Request) {
     await cronFinished(CRON_NAME, runStart, { status: "error", error: msg });
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   } finally {
-    if (redis) await redis.del(LOCK_KEY).catch(() => {});
+    await releaseCronLock(CRON_NAME);
   }
 }
