@@ -7,31 +7,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
-import { VAULT_COOKIE, bumpReveals, checkVaultSession } from "@/lib/vault-session";
+import { bumpReveals, requireVaultSession } from "@/lib/vault-session";
 import { logAuditAuto } from "@/lib/audit-log";
-import { requireAdmin } from "@/lib/admin-auth";
-
-const COOKIE = "ftp_admin_v1";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(_req: NextRequest, ctx: Ctx) {
-  const { ok } = await requireAdmin();
-  if (!ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const jar = await cookies();
-  const admin = jar.get(COOKIE)?.value;
-  const sessionToken = jar.get(VAULT_COOKIE)?.value;
-  const status = await checkVaultSession(sessionToken, admin);
-  if (!status.valid || !sessionToken) {
-    return NextResponse.json({ error: "Vault locked" }, { status: 403 });
-  }
+  const gate = await requireVaultSession();
+  if (!gate.ok) return gate.res;
 
-  const bump = await bumpReveals(sessionToken);
+  const bump = await bumpReveals(gate.token);
   if (!bump.allowed) {
     return NextResponse.json(
       { error: "Reveal limit reached for this vault session" },

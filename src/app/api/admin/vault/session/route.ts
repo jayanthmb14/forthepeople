@@ -13,9 +13,7 @@ import {
   VAULT_TTL_SECONDS,
   MAX_REVEALS_PER_SESSION,
 } from "@/lib/vault-session";
-import { requireAdmin } from "@/lib/admin-auth";
-
-const COOKIE = "ftp_admin_v1";
+import { ADMIN_COOKIE, requireAdmin } from "@/lib/admin-auth";
 
 export async function GET() {
   const { ok } = await requireAdmin();
@@ -24,7 +22,7 @@ export async function GET() {
   }
   const jar = await cookies();
   const sessionToken = jar.get(VAULT_COOKIE)?.value;
-  const status = await checkVaultSession(sessionToken, jar.get(COOKIE)?.value);
+  const status = await checkVaultSession(sessionToken, jar.get(ADMIN_COOKIE)?.value);
   return NextResponse.json({
     unlocked: status.valid,
     remainingSeconds: Math.round(status.remainingSeconds),
