@@ -269,7 +269,11 @@ export async function scrapeNews(
             item.source,
             ctx.districtName,
             item.publishedAt,
-            { stateName: ctx.stateName, summary: item.summary, deadlineAt: opts.deadlineAt },
+            // This district's share (aiDeadline), not the run's deadline: one
+            // call walking the whole model chain (3 free models + the paid
+            // backstop, 25 s each) used to eat most of the run, leaving 8–9
+            // of 10 districts unreached (ScraperLog news, 27 Sep 2026).
+            { stateName: ctx.stateName, summary: item.summary, deadlineAt: aiDeadline },
           ).catch(() => null);
         }
 

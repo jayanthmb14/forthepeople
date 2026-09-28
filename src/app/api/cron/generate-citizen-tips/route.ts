@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
         ? `time budget used; not reached: ${notReached.join(", ")}`
         : undefined;
     await cronFinished(CRON_NAME, runStart, {
-      status: allFailed ? "error" : "ok",
+      status: allFailed ? "error" : notReached.length > 0 ? "partial" : "ok",
       count: okCount,
       error: errorText,
     });

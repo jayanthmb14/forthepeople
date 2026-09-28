@@ -178,7 +178,9 @@ export async function GET(request: Request) {
     console.warn(`[scrape-news] time budget used; not reached this run: ${notReached.join(", ")}`);
   }
   await cronFinished(CRON_NAME, runStart, {
-    status: allFailed ? "error" : "ok",
+    // Districts left for the next run make it "partial" (ScraperLog shows
+    // it); it used to say "success" while 8 of 10 districts got nothing.
+    status: allFailed ? "error" : notReached.length > 0 ? "partial" : "ok",
     count: totalNew,
     error: allFailed
       ? `all ${results.length} districts failed: ${failedDistricts[0]?.error ?? "unknown"}`
