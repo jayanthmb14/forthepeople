@@ -1,0 +1,186 @@
+/* NewsList — one quiet row per story (v5.6, Sept 2026).
+   White list, hairline dividers, the headline on one line, a small grey
+   meta line under it. The only colour is the brand blue on hover/focus. */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card);
+  overflow: hidden;
+}
+
+/* Inside a Card that already draws the frame. */
+.flush {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--ftp-border);
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 16px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ftp-text);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+div.main {
+  cursor: default;
+}
+
+a.main:hover,
+button.main:hover {
+  background: var(--ftp-surface-2);
+}
+
+a.main:hover .title,
+button.main:hover .title {
+  color: var(--ftp-brand-deep);
+}
+
+.main:focus-visible,
+.ext:focus-visible {
+  outline: 2px solid var(--ftp-focus);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.titleLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--ftp-text);
+  transition: color 150ms ease;
+}
+
+.inlineIcon {
+  flex: 0 0 auto;
+  color: var(--ftp-text-2);
+}
+
+.summary {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ftp-text-2);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sep {
+  color: var(--ftp-text-2);
+}
+
+/* A tiny neutral tag: "Police", "AI summary". */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 6px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text-2);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The "open the original" button beside a row that opens a sheet. */
+.ext {
+  flex: 0 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--ftp-text-2);
+  text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.ext:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-brand);
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 10px 12px;
+  }
+  .title {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .ext {
+    flex-basis: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main,
+  .title,
+  .ext {
+    transition: none;
+  }
+}

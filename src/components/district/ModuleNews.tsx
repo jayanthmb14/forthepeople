@@ -14,25 +14,28 @@
 //  that tag (related, from src/lib/related-news.ts). Renders nothing when
 //  there are none — an empty "Related news" heading helps no one.
 //
-//  Each article is a quiet Card: source + date on top (so a reader knows
-//  where and when it came from), the headline below. The whole card is the
-//  link to the original article when we have one (big touch target on
-//  phones). No emoji, no colours other than tokens.
+//  v5.6 (Sept 2026): the same quiet list as the news page (NewsList,
+//  src/components/news): one row per story, the headline on one line, then
+//  "publisher · when" in small grey text. The whole row is the link to the
+//  original article when we have one (big touch target on phones). No
+//  emoji, no colours other than tokens.
 //
 "use client";
 
 import { useTranslations } from "next-intl";
 import { useFormat } from "@/i18n/client";
 import { useState, useEffect } from "react";
-import { ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { Section, Card } from "@/components/district/ui";
+import { Section } from "@/components/district/ui";
+import NewsList from "@/components/news/NewsList";
 
 interface NewsItem {
   id: string;
   headline: string;
   summary?: string | null;
   source: string;
+  /** The paper or site, when the feed names it (else `source`). */
+  publisher?: string | null;
   url?: string | null;
   category: string;
   publishedAt: string;
@@ -110,61 +113,21 @@ export default function ModuleNews({ district, state, locale, module, limit = 5 
         </Link>
       }
     >
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-        {news.map((n) => {
-          // Card body: "Source · 5h ago" line, then the headline.
-          const body = (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minHeight: 44 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="ftp-label" style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
-                  <span>{n.source}</span>
-                  <span aria-hidden> · </span>
-                  <time dateTime={n.publishedAt} className="ftp-num" style={{ fontWeight: 400 }}>
-                    {f.ago(n.publishedAt)}
-                  </time>
-                </p>
-                <p className="ftp-title" lang={n.lang ?? "en"} style={{ fontSize: 13, lineHeight: "20px", marginTop: 2 }}>
-                  {cleanHtml(n.headline)}
-                </p>
-              </div>
-              {n.url && (
-                <ExternalLink size={16} aria-hidden style={{ color: "var(--ftp-text-2)", flexShrink: 0, marginTop: 2 }} />
-              )}
-            </div>
-          );
-
-          return (
-            <li key={n.id}>
-              {n.url ? (
-                // External article: the whole card is the link. Uses a plain
-                // <a> (not Card href) because it leaves the site in a new tab.
-                <a
-                  href={n.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ftp-card-link"
-                  style={{
-                    display: "block",
-                    textDecoration: "none",
-                    color: "inherit",
-                    background: "var(--ftp-surface)",
-                    border: "1px solid var(--ftp-border)",
-                    borderRadius: "var(--ftp-radius-card)",
-                    padding: "12px 16px",
-                  }}
-                >
-                  {body}
-                  <span className="sr-only"> {t("opensOriginal")}</span>
-                </a>
-              ) : (
-                <Card padding={12} style={{ padding: "12px 16px" }}>
-                  {body}
-                </Card>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <NewsList
+        newTabLabel={t("opensOriginal")}
+        items={news.map((n) => ({
+          id: n.id,
+          headline: cleanHtml(n.headline),
+          lang: n.lang ?? "en",
+          href: n.url,
+          meta: [
+            (n.publisher || n.source || "").trim(),
+            <time key="when" dateTime={n.publishedAt} suppressHydrationWarning>
+              {f.ago(n.publishedAt)}
+            </time>,
+          ],
+        }))}
+      />
     </Section>
   );
 }

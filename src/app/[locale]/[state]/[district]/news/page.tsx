@@ -12,22 +12,21 @@
 //
 //  ModulePage → PageHeader (freshness of the feed, source) →
 //  Explainer (how many stories, the biggest topic, how fresh the newest is)
-//  → 4 StatTiles → ONE picture: "What the news is about", a tile per topic
-//  (name, count, a bar for its share). The tiles are also the filter: tap
-//  one to see only that topic → the stories, grouped by topic, as TapCards
-//  (headline, publisher, time, a line of summary) → tapping a story opens a
-//  DetailSheet: the summary, publisher, date and time, topic, the data page
-//  it is about, and "Open the story" → AI summary → charts (2 per row on
-//  laptop/PC): who reported it, and when the stories came out → Share /
-//  Compare. No emoji: each topic has its own crafted glyph and pastel
-//  colour (src/components/graphics), on its tile, its group heading and
-//  every story card, so crime, weather and farming look different at a
-//  glance. Sources are in the layout's verification panel; reports go
-//  through the site-wide "Report a problem" button.
+//  → 4 StatTiles → "Latest stories": a row of neutral topic chips with
+//  counts (the filter), then ONE quiet list, newest first (NewsList,
+//  src/components/news): the headline on one line, then "publisher · when ·
+//  topic" in small grey text and, when the story is about a data page, a
+//  tiny neutral tag. Tapping a row opens a DetailSheet (the summary,
+//  publisher, date and time, topic, the data page it is about, "Open the
+//  story"); the small arrow at the end of the row opens the original story
+//  in a new tab → AI summary → charts (2 per row on laptop/PC): who
+//  reported it, and when the stories came out → Share / Compare.
 //
-//  v5.3: headlines read quietly — story cards use TapCard density="compact"
-//  (15 px regular-weight titles, 14 px on phones, no shadow, less padding),
-//  a smaller glyph, smaller topic headings and a smaller sheet title.
+//  v5.6 (Sept 2026, owner feedback): back to the June "News and Updates"
+//  list — one row per story, mostly white. The coloured topic tiles, the
+//  per-topic groups of cards and the coloured glyph on every story are gone;
+//  a topic keeps a tiny glyph in muted slate on its meta line. Stories with
+//  the same headline from the feed are shown once (the newest).
 //
 //  Every story says WHERE it came from and WHEN. Headlines and summaries are
 //  live data (translated once in the backend when a translation exists; the
@@ -44,24 +43,22 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useNews, type NewsItem } from "@/hooks/useRealtimeData";
 import { useFreshness } from "@/hooks/useFreshness";
 import {
-  ModulePage, PageHeader, LoadingShell, ErrorBlock, StatStrip, StatTile, Section,
+  ModulePage, PageHeader, LoadingShell, ErrorBlock, StatStrip, StatTile, Section, Chips,
 } from "@/components/district/ui";
 import { ChartCard, ChartGradients, CHART_AXIS, Explainer, chartTooltipStyle } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { OTHER_SHADE, ShareDonut, type DonutSlice } from "@/components/community/CommunityVisuals";
-import { TapCard } from "@/components/community/TapCard";
 import { cleanText, useNow } from "@/components/community/pageTools";
 import { PageActions } from "@/components/district/page-kit";
 import AIInsightCard from "@/components/common/AIInsightCard";
+import NewsList, { type NewsRowItem } from "@/components/news/NewsList";
 import { hueClass } from "@/lib/design/hues";
 import {
   CategoryGlyph,
   GlyphEmptyState,
-  GlyphStack,
   glyphPick,
   newsStoryGlyph,
   newsTopicGlyph,
-  type GlyphPick,
 } from "@/components/graphics";
 import { useDistrictName, useFormat, useModuleText } from "@/i18n/client";
 
@@ -143,146 +140,34 @@ function publisherOf(n: Story): string {
   return (n.publisher ?? n.source ?? "").trim();
 }
 
-/** A small pill in a module's hue: "Water and dams". */
-function ModulePill({ slug }: { slug: string }) {
-  const t = useTranslations("page_news");
-  const tag = MODULE_TAGS[slug];
-  if (!tag) return null;
+/** The data page a story is about, as plain text: "Water and dams". */
+function moduleTagLabel(t: T, slug: string): string {
   const key = `moduleTags.${slug}`;
-  return (
-    <span
-      className={hueClass(tag.hue)}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        height: 24,
-        padding: "0 9px",
-        borderRadius: "var(--ftp-radius-pill)",
-        background: "var(--hue-tint)",
-        border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
-        color: "var(--hue-deep)",
-        fontSize: 11,
-        lineHeight: "16px",
-        fontWeight: 600,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {t.has(key) ? t(key) : slug}
-    </span>
-  );
+  return t.has(key) ? t(key) : slug;
+}
+
+/** Headline, for spotting the same story twice in the feed. */
+function headlineKey(n: Story): string {
+  return cleanText(n.headline).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
 /**
- * One topic tile in the picture, in the topic's own pastel colour with its
- * glyph (or, for "All stories", the busiest topics' glyphs stacked). It is
- * also the filter button for that topic.
+ * Newest first, each story once: the feed can carry the same headline
+ * twice (two fetches, or a paper and its syndication); keep the newest.
  */
-function TopicTile({
-  label,
-  count,
-  total,
-  active,
-  onClick,
-  pick,
-  stack,
-}: {
-  label: string;
-  count: number;
-  total: number;
-  active: boolean;
-  onClick: () => void;
-  /** The topic's glyph; its hue colours the whole tile. */
-  pick?: GlyphPick;
-  /** For "All stories": the glyphs of the busiest topics. */
-  stack?: GlyphPick[];
-}) {
-  const f = useFormat();
-  const share = total > 0 ? count / total : 0;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`ftp-card-link${pick ? ` ${hueClass(pick.hue)}` : ""}`}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        gap: 8,
-        minHeight: 44,
-        padding: "12px 12px 10px",
-        borderRadius: 14,
-        border: `2px solid ${active ? "var(--hue)" : "color-mix(in srgb, var(--hue) 18%, var(--ftp-border))"}`,
-        background: active
-          ? "var(--hue-tint)"
-          : "linear-gradient(160deg, var(--ftp-surface) 45%, color-mix(in srgb, var(--hue-tint) 85%, var(--ftp-surface)))",
-        cursor: "pointer",
-        textAlign: "start",
-        font: "inherit",
-        color: "var(--ftp-text)",
-        minWidth: 0,
-      }}
-    >
-      {/* Picture and count on top, the name on its own line (it wraps at word breaks, never mid-word). */}
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}>
-        {pick && <CategoryGlyph pick={pick} size={36} chip />}
-        {!pick && stack && <GlyphStack picks={stack} size={32} />}
-        <span className="ftp-bignum" style={{ fontSize: 20, lineHeight: 1, color: "var(--hue-deep)" }}>{f.number(count)}</span>
-      </span>
-      <span style={{ minWidth: 0, fontSize: 13, lineHeight: "18px", fontWeight: 600, overflowWrap: "break-word" }}>{label}</span>
-      <span aria-hidden style={{ height: 6, borderRadius: 99, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
-        <span className="ftp-grow-x" style={{ display: "block", height: "100%", width: `${Math.max(4, Math.round(share * 100))}%`, borderRadius: 99, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }} />
-      </span>
-    </button>
-  );
-}
-
-/** One story as a card; tapping it opens the detail sheet. */
-function StoryCard({ n, onOpen }: { n: Story; onOpen: (n: Story) => void }) {
-  const t = useTranslations("page_news");
-  const f = useFormat();
-  const headline = cleanText(n.headline);
-  const summary = n.summary ? cleanText(n.summary) : "";
-  const showSummary = summary && summary !== headline && !headline.startsWith(summary);
-  return (
-    <TapCard
-      density="compact"
-      onOpen={() => onOpen(n)}
-      leading={<CategoryGlyph pick={newsStoryGlyph(n)} size={32} chip />}
-      title={headline}
-      titleLang={n.lang}
-      subtitle={
-        <span suppressHydrationWarning>
-          {t("byLine", { publisher: publisherOf(n) || t("unknownPublisher"), when: f.ago(n.publishedAt) })}
-        </span>
-      }
-      hint={t("readMore")}
-    >
-      {showSummary && (
-        <p
-          lang={n.lang}
-          style={{
-            margin: 0,
-            fontSize: 13,
-            lineHeight: "19px",
-            color: "var(--ftp-text-2)",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {summary}
-        </p>
-      )}
-      {linksToPage(n.targetModule) && (
-        <div>
-          <ModulePill slug={n.targetModule} />
-        </div>
-      )}
-    </TapCard>
-  );
+function newestFirstOnce(list: Story[]): Story[] {
+  const seenIds = new Set<string>();
+  const seenHeadlines = new Set<string>();
+  const out: Story[] = [];
+  const sorted = [...list].sort((x, y) => (y.publishedAt ?? "").localeCompare(x.publishedAt ?? ""));
+  for (const n of sorted) {
+    const key = headlineKey(n);
+    if (seenIds.has(n.id) || (key && seenHeadlines.has(key))) continue;
+    seenIds.add(n.id);
+    if (key) seenHeadlines.add(key);
+    out.push(n);
+  }
+  return out;
 }
 
 const sheetButton: React.CSSProperties = {
@@ -329,7 +214,7 @@ function StorySheet({ n, base, onClose }: { n: Story; base: string; onClose: () 
             </a>
           )}
           {tag && route && (
-            <Link href={`${base}/${route}`} className={hueClass(tag.hue)} style={{ ...sheetButton, background: "var(--ftp-surface)", color: "var(--hue-deep)", border: "1px solid var(--ftp-border)" }}>
+            <Link href={`${base}/${route}`} style={{ ...sheetButton, background: "var(--ftp-surface)", color: "var(--ftp-brand-deep)", border: "1px solid var(--ftp-border)" }}>
               {t("seePage", { page: mt.label(route) })}
             </Link>
           )}
@@ -357,7 +242,7 @@ function StorySheet({ n, base, onClose }: { n: Story; base: string; onClose: () 
             ),
           },
           { label: t("sheet.topic"), value: topicLabel(t, topic) },
-          { label: t("sheet.about"), value: n.targetModule && tag ? <ModulePill slug={n.targetModule} /> : null },
+          { label: t("sheet.about"), value: n.targetModule && tag ? moduleTagLabel(t, n.targetModule) : null },
           { label: t("sheet.change"), value: n.moduleAction ?? null },
         ]}
       />
@@ -387,7 +272,7 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
   const [selected, setSelected] = useState<Story | null>(null);
   const close = useCallback(() => setSelected(null), []);
 
-  const news = (data?.data ?? []) as Story[];
+  const news = newestFirstOnce((data?.data ?? []) as Story[]);
 
   // Topics, biggest first (counted from the same list shown below).
   const topicCounts = Array.from(
@@ -396,9 +281,30 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
   ).sort((a, b) => b.count - a.count);
   const topTopic = topicCounts[0];
   const activeTopic = topic === "all" || topicCounts.some((c) => c.category === topic) ? topic : "all";
-  const groups = topicCounts
-    .filter((c) => activeTopic === "all" || c.category === activeTopic)
-    .map((c) => ({ ...c, stories: news.filter((n) => topicOf(n) === c.category) }));
+  const shown = activeTopic === "all" ? news : news.filter((n) => topicOf(n) === activeTopic);
+  const rows: NewsRowItem[] = shown.map((n) => {
+    const topicName = topicLabel(t, topicOf(n));
+    const pageLabel = linksToPage(n.targetModule) ? moduleTagLabel(t, n.targetModule) : null;
+    return {
+      id: n.id,
+      headline: cleanText(n.headline),
+      lang: n.lang,
+      href: n.url,
+      onOpen: () => setSelected(n),
+      meta: [
+        publisherOf(n) || t("unknownPublisher"),
+        <time key="when" dateTime={n.publishedAt} title={f.date(n.publishedAt, { day: "numeric", month: "long", year: "numeric" })} suppressHydrationWarning>
+          {f.ago(n.publishedAt)}
+        </time>,
+        <span key="topic" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <CategoryGlyph pick={newsTopicGlyph(topicOf(n))} hue="slate" size={14} style={{ filter: "grayscale(1)" }} />
+          {topicName}
+        </span>,
+      ],
+      // The data page the story is about, when it is not just the topic again.
+      tag: pageLabel && pageLabel !== topicName ? pageLabel : undefined,
+    };
+  });
 
   const latest = news.reduce<string | null>((max, n) => (!max || n.publishedAt > max ? n.publishedAt : max), null);
   // Stories tagged with a real data page ("news" = no particular page).
@@ -487,53 +393,26 @@ function NewsPageInner({ params }: { params: Promise<{ locale: string; state: st
             <StatTile label={t("statLinked")} value={f.number(linkedCount)} sub={t("statLinkedSub")} />
           </StatStrip>
 
-          {/* The one picture: what the news is about. Each tile is also the topic filter. */}
-          <Section title={t("aboutTitle")}>
-            <p className="ftp-prose" style={{ margin: "-4px 0 12px", fontSize: 14, lineHeight: "21px", color: "var(--ftp-text-2)" }}>{t("aboutIntro")}</p>
-            <div role="group" aria-label={t("filterLabel")} className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "min(148px, calc(50% - 5px))", gap: 10 }}>
-              <TopicTile
-                label={t("all")}
-                count={news.length}
-                total={news.length}
-                active={activeTopic === "all"}
-                onClick={() => setTopic("all")}
-                stack={topicCounts.slice(0, 3).map((c) => newsTopicGlyph(c.category))}
+          {/* The stories: topic chips (the filter), then one row per story, newest first. */}
+          <Section title={t("listTitle")}>
+            <div style={{ marginBottom: 12 }}>
+              <Chips
+                label={t("filterLabel")}
+                value={activeTopic}
+                onChange={setTopic}
+                items={[
+                  { value: "all", label: t("all"), count: news.length },
+                  ...topicCounts.map((c) => ({ value: c.category, label: topicLabel(t, c.category), count: c.count })),
+                ]}
               />
-              {topicCounts.map((c) => (
-                <TopicTile
-                  key={c.category}
-                  label={topicLabel(t, c.category)}
-                  count={c.count}
-                  total={news.length}
-                  active={activeTopic === c.category}
-                  onClick={() => setTopic(c.category)}
-                  pick={newsTopicGlyph(c.category)}
-                />
-              ))}
             </div>
+            <NewsList
+              items={rows}
+              label={activeTopic === "all" ? t("all") : topicLabel(t, activeTopic)}
+              newTabLabel={t("opensNewTab")}
+              openOriginalLabel={t("openStory")}
+            />
           </Section>
-
-          {/* The stories, grouped by topic. */}
-          {groups.map((g) => (
-            <Section
-              key={g.category}
-              title={
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <CategoryGlyph pick={newsTopicGlyph(g.category)} size={28} chip />
-                  <span style={{ fontSize: 17, lineHeight: "24px", fontWeight: 650 }}>
-                    {topicLabel(t, g.category)}{" "}
-                    <span className="ftp-num" style={{ color: "var(--ftp-text-2)", fontWeight: 400 }}>{t("groupCount", { n: f.number(g.count) })}</span>
-                  </span>
-                </span>
-              }
-            >
-              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "300px", gap: 12 }}>
-                {g.stories.map((n) => (
-                  <StoryCard key={n.id} n={n} onOpen={setSelected} />
-                ))}
-              </div>
-            </Section>
-          ))}
 
           <div style={{ marginTop: 20 }}>
             <AIInsightCard module="news" district={district} />

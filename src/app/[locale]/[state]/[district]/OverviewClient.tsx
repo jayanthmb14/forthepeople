@@ -40,8 +40,9 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, BookOpen, ExternalLink, MapPin, Wheat } from "lucide-react";
+import { AlertTriangle, BookOpen, MapPin, Wheat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import NewsList from "@/components/news/NewsList";
 import { useFormat, useModuleText } from "@/i18n/client";
 import { placeName, placeNamePair } from "@/i18n/place-name";
 import { getDistrict } from "@/lib/constants/districts";
@@ -228,25 +229,24 @@ export default function OverviewClient({ locale, stateSlug, districtSlug, stateN
       >
         <Card padding={0}>
           {headlines.length > 0 ? (
-            <ul className="ftp-ov-news">
-              {headlines.map((n) => (
-                <li key={n.id}>
-                  <a href={n.url ?? `${base}/news`} target={n.url ? "_blank" : undefined} rel={n.url ? "noopener noreferrer" : undefined} className="ftp-ov-news-link">
-                    <span className="ftp-ov-news-title">{n.headline}</span>
-                    <span className="ftp-ov-news-meta">
-                      {to("v5.newsMeta", { publisher: n.publisher || n.source, date: f.ago(n.publishedAt) })}
-                      {n.url && (
-                        <>
-                          {" "}
-                          <ExternalLink size={11} aria-hidden />
-                          <span className="sr-only">{to("v5.opensNewTab")}</span>
-                        </>
-                      )}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+            // One quiet row per story, the headline on one line (NewsList, shared with the news page).
+            <NewsList
+              flush
+              newTabLabel={to("v5.opensNewTab")}
+              items={headlines.map((n) => ({
+                id: n.id,
+                headline: n.headline,
+                lang: (n as { lang?: string }).lang,
+                href: n.url ?? `${base}/news`,
+                internal: !n.url,
+                meta: [
+                  n.publisher || n.source,
+                  <time key="when" dateTime={n.publishedAt} suppressHydrationWarning>
+                    {f.ago(n.publishedAt)}
+                  </time>,
+                ],
+              }))}
+            />
           ) : (
             !newsLoading && <p className="ftp-ov-empty">{to("v5.noNews")}</p>
           )}

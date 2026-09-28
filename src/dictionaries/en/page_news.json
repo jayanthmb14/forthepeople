@@ -1,6 +1,6 @@
 {
   "title": "Local news",
-  "description": "What the papers are saying about the district, grouped by topic",
+  "description": "What the papers are saying about the district, newest first",
   "topics": {
     "politics": "Politics",
     "development": "Development",
@@ -54,11 +54,13 @@
   "aboutTitle": "What the news is about",
   "aboutIntro": "Tap a topic to see only those stories.",
   "filterLabel": "Show stories about",
+  "listTitle": "Latest stories",
   "all": "All stories",
   "groupCount": "({n})",
   "byLine": "{publisher} · {when}",
   "unknownPublisher": "Publisher not given",
   "readMore": "Read more",
+  "opensNewTab": "(opens the original story in a new tab)",
   "openStory": "Open the story",
   "seePage": "See {page}",
   "sheet": {

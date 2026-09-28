@@ -11,13 +11,17 @@
  * the stored translation when one exists (localizeRows), otherwise in
  * English marked lang="en". Per file 31 §4: headline, one meta line and
  * the outbound link only.
+ *
+ * v5.6 (Sept 2026): the same quiet list as the district news page
+ * (NewsList): one row per story, the headline on one line, then
+ * "district · publisher · date" in small grey text; the row is the link.
  */
 
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { localizeRows } from "@/lib/translation/overlay";
 import { EmptyState, Section } from "@/components/district/ui";
-import { CategoryGlyph } from "@/components/graphics";
+import NewsList from "@/components/news/NewsList";
 import { fmtDate } from "../format";
 
 interface Props {
@@ -74,55 +78,22 @@ export default async function ModuleNewsStrip({ locale, newsKeywords, moduleTitl
           body={t("news.emptyBody")}
         />
       ) : (
-        <ul
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-            gap: 12,
-          }}
-        >
-          {items.map((n) => {
-            const lang = (n as { lang?: string }).lang;
-            return (
-              <li key={n.id}>
-                <a
-                  href={n.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ftp-card-link"
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    height: "100%",
-                    background: "var(--ftp-surface)",
-                    border: "1px solid var(--ftp-border)",
-                    borderRadius: "var(--ftp-radius-card)",
-                    boxShadow: "var(--ftp-shadow-1)",
-                    padding: "14px 16px",
-                    textDecoration: "none",
-                    color: "var(--ftp-text)",
-                  }}
-                >
-                  <CategoryGlyph glyph="general" size={32} chip />
-                  <span style={{ minWidth: 0 }}>
-                    <span lang={lang} style={{ display: "block", fontSize: 14, fontWeight: 500, lineHeight: 1.45, marginBottom: 4 }}>
-                      {n.title}
-                    </span>
-                    <span style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: "var(--ftp-text-2)" }}>
-                      <span>{n.district?.name ?? t("news.india")}</span>
-                      <span>{n.publisher ?? n.source}</span>
-                      <span className="ftp-num">{fmtDate(locale, n.publishedAt, { day: "numeric", month: "short" })}</span>
-                    </span>
-                    <span className="sr-only">{tn("opensOriginal")}</span>
-                  </span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+        <NewsList
+          newTabLabel={tn("opensOriginal")}
+          items={items.map((n) => ({
+            id: n.id,
+            headline: n.title,
+            lang: (n as { lang?: string }).lang,
+            href: n.url,
+            meta: [
+              n.district?.name ?? t("news.india"),
+              n.publisher ?? n.source,
+              <time key="when" dateTime={n.publishedAt.toISOString()}>
+                {fmtDate(locale, n.publishedAt, { day: "numeric", month: "short" })}
+              </time>,
+            ],
+          }))}
+        />
       )}
     </Section>
   );
