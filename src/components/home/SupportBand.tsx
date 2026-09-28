@@ -8,7 +8,7 @@
 //  SupportBand — the support ask, with a few real supporters' names
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌ soft rose band ──────────────────────────────────────────────────┐
+//   ┌ white card ──────────────────────────────────────────────────────┐
 //   │ (heart)  Free for everyone. Citizens like you keep it running.   │
 //   │          (★ Name · Founding Builder) (Name · Mandya) (Name) …    │
 //   │          [ Support the project ]   See all supporters →          │

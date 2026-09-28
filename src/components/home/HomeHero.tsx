@@ -5,25 +5,38 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  HomeHero — Design v5.1 "Warm Calm"
+//  HomeHero — the top of the home page (Design v5.6, "mostly white")
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌───────────────────────────────────────────┬────────────────────────┐
-//   │ • Your district. **Your data.** Your right.│                        │
-//   │ See what is happening in **your district**│   India map: states    │
-//   │ Weather, dams, crop prices… (one line)    │   open their page,     │
-//   │ [ 🔍 Type your district, e.g. Mysore    ] │   live districts ping; │
-//   │ [Find your district] [⌖ Use my location]  │   tap one for its      │
-//   │ (10 districts live)(7 states)(5,874 data  │   live facts           │
-//   │  points)(36 dashboards each)(● Updated …) │                        │
-//   └───────────────────────────────────────────┴────────────────────────┘
-//   On a phone the map sits right under the hero text.
+//          • Your district. Your data. Your right.
+//        See what is happening in **your district**
+//     Weather, dams, crop prices… from government portals …
+//        [ 🔍 Type your district, e.g. Mysore            ]
+//          [Find your district]  [⌖ Use my location]
+//
+//   Your district data — tracked and checked
+//   ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌──────────────┐
+//   │  10   │ │   7   │ │  36   │ │ 4,750 │ │ ● 2 hours ago│   (HeroStats)
+//   └───────┘ └───────┘ └───────┘ └───────┘ └──────────────┘
+//
+//   ┌ India, live ─────────────────────┐ ┌ Live districts (10) ─────┐
+//   │                                  │ │ (art) Pune पुणे       C+ │
+//   │   the clickable India map        │ │ (art) Lucknow लखनऊ    C  │
+//   │   (states open their page,       │ │ …                        │
+//   │    pins = live districts)        │ │ Is your district next? → │
+//   └──────────────────────────────────┘ └──────────────────────────┘
+//
+//  The page's first dashboard look (centred title, a row of plain white
+//  number tiles, the big map with the districts beside it) with the new
+//  map, search and "Use my location". On tablets and phones the districts
+//  list sits under the map. `side` is the districts panel (a server-built
+//  element passed in by the page).
 //
 //  The page's ONE <h1> is the task, not the slogan (the slogan is the
-//  kicker above it, "Your data." in bold brand blue). Key words are made
-//  stronger by weight and colour only — no highlighter stroke behind them. "Find your district" submits the search box
-//  (empty box → the live districts as quick picks). "Use my location"
-//  shows its result once, in the floating LocateResult card.
+//  kicker above it). Key words are made stronger by weight and colour only
+//  — no highlighter stroke behind them. "Find your district" submits the
+//  search box (empty box → the live districts as quick picks). "Use my
+//  location" shows its result once, in the floating LocateResult card.
 "use client";
 
 import dynamic from "next/dynamic";
@@ -47,9 +60,11 @@ export interface HomeHeroProps {
   stats: PlatformStats;
   districts: HomeDistrict[];
   mapStats: Record<string, MapDistrictStat>;
+  /** The live districts panel shown beside (or under) the map. */
+  side?: React.ReactNode;
 }
 
-export default function HomeHero({ locale, stats, districts, mapStats }: HomeHeroProps) {
+export default function HomeHero({ locale, stats, districts, mapStats, side }: HomeHeroProps) {
   const t = useTranslations("home");
   const tp = useTranslations("page_home");
   const tl = useTranslations("locate");
@@ -65,24 +80,28 @@ export default function HomeHero({ locale, stats, districts, mapStats }: HomeHer
         <h1 className={styles.title}>{tp.rich("hero.title", { hl: (c) => <span className={styles.titleHl}>{c}</span> })}</h1>
         <p className={styles.lead}>{t("sources")}</p>
 
-        <HomeSearch />
-
-        <div className={styles.actions}>
-          <button type="submit" form={HOME_SEARCH_FORM_ID} className={styles.btnPrimary}>
-            <Search size={18} aria-hidden />
-            {tp("hero.find")}
-          </button>
-          <button type="button" className={styles.btnOutline} onClick={loc.locate} disabled={loc.busy}>
-            <LocateFixed size={18} aria-hidden />
-            {loc.busy ? tl("findingYou") : tl("useLocation")}
-          </button>
+        <div className={styles.heroSearch}>
+          <HomeSearch />
+          <div className={styles.actions}>
+            <button type="submit" form={HOME_SEARCH_FORM_ID} className={styles.btnPrimary}>
+              <Search size={18} aria-hidden />
+              {tp("hero.find")}
+            </button>
+            <button type="button" className={styles.btnOutline} onClick={loc.locate} disabled={loc.busy}>
+              <LocateFixed size={18} aria-hidden />
+              {loc.busy ? tl("findingYou") : tl("useLocation")}
+            </button>
+          </div>
         </div>
-
-        <HeroStats stats={stats} />
       </div>
 
-      <div className={styles.heroMap}>
-        <HomeMap locale={locale} districts={districts} stats={mapStats} />
+      <HeroStats stats={stats} />
+
+      <div className={styles.mapRow}>
+        <div className={styles.heroMap}>
+          <HomeMap locale={locale} districts={districts} stats={mapStats} />
+        </div>
+        {side && <div className={styles.mapSide}>{side}</div>}
       </div>
 
       {loc.status.kind !== "idle" && loc.status.kind !== "locating" && (

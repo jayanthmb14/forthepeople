@@ -8,11 +8,16 @@
 //  DataChecks — "How we get and check the data", four picture steps
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ① (portal→tray)  ─→  ② (gear ✓)  ─→  ③ (two papers =)  ─→  ④ (card)
-//   Collect              Check             Double-check           Show it with
-//   from government      automatically     with a second          its date and
-//   portals and …        …                 source …               source …
-//                    [ See it on a district: Check this data → ]
+//   ┌──────────────┬──────────────┬──────────────┬──────────────┐
+//   │ (pic) 1      │ (pic) 2      │ (pic) 3      │ (pic) 4      │
+//   │ Collect      │ Check        │ Double-check │ Show it with │
+//   │ from govern- │ automatically│ with a second│ its date and │
+//   │ ment portals │ …            │ source …     │ source …     │
+//   └──────────────┴──────────────┴──────────────┴──────────────┘
+//   See it on a district: Check this data →
+//
+//  Quiet on purpose: one white box split into four steps by thin lines,
+//  the pictures all in the brand blue, numbers in small circles.
 //
 //  Every sentence describes what really happens (docs/BLUEPRINT-UNIFIED
 //  §6–7): automatic feeds plus researched rows; empty / zero / impossible
@@ -29,10 +34,10 @@ import { StepCheck, StepCollect, StepCompare, StepShow } from "./HomeGlyphs";
 import styles from "./home.module.css";
 
 const STEPS = [
-  { key: "collect", hue: "blue", Pic: StepCollect },
-  { key: "check", hue: "violet", Pic: StepCheck },
-  { key: "compare", hue: "teal", Pic: StepCompare },
-  { key: "show", hue: "amber", Pic: StepShow },
+  { key: "collect", Pic: StepCollect },
+  { key: "check", Pic: StepCheck },
+  { key: "compare", Pic: StepCompare },
+  { key: "show", Pic: StepShow },
 ] as const;
 
 export default function DataChecks({ locale, example }: { locale: string; example: { stateSlug: string; slug: string; name: string } | null }) {
@@ -46,10 +51,10 @@ export default function DataChecks({ locale, example }: { locale: string; exampl
         <p className={styles.sectionNote}>{t("checks.lead")}</p>
       </div>
       <ol className={styles.steps}>
-        {STEPS.map(({ key, hue, Pic }, i) => (
-          <li key={key} className={`${styles.step} ftp-hue-${hue}`}>
+        {STEPS.map(({ key, Pic }, i) => (
+          <li key={key} className={`${styles.step} ftp-hue-blue`}>
             <span className={styles.stepTop}>
-              <Pic size={48} />
+              <Pic size={36} />
               <span className={styles.stepNum} aria-hidden>
                 {i + 1}
               </span>

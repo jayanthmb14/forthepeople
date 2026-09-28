@@ -5,33 +5,40 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  LiveDistrictsCard — the live districts as small, tight chips
+//  LiveDistrictsCard — the live districts, as a list beside the map
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   Live districts (10)                    ● updated today  ● older
-//   ┌─────────────────────────┐ ┌─────────────────────────┐
-//   │ (art) Mandya ಮಂಡ್ಯ   [C+]│ │ (art) Pune पुणे      New │ …
-//   │       Karnataka · ● today│ │       Maharashtra · ● 2h │
-//   └─────────────────────────┘ └─────────────────────────┘
-//   ┌ - - - - - - - - - - - - ┐
-//   │ Is your district next? →│
-//   └ - - - - - - - - - - - - ┘
+//   ┌ Live districts (10)       ● new data in the last day  ● older ┐
+//   │ (art) Pune पुणे                                     New     │
+//   │       Maharashtra · ● 2 h ago                              │
+//   │ ─────────────────────────────────────────────────────────── │
+//   │ (art) Mandya ಮಂಡ್ಯ                                  C+      │
+//   │       Karnataka · ● 10 h ago                               │
+//   │ …                                                          │
+//   │ ┌ - - - - - - - - - - - - - - - - - - - - - - - - - - - ┐  │
+//   │ │ Is your district next? · Vote for your district     → │  │
+//   │ └ - - - - - - - - - - - - - - - - - - - - - - - - - - - ┘  │
+//   └────────────────────────────────────────────────────────────┘
 //
-//  The list grows one district at a time, so each chip is one compact
-//  row: the landmark picture in the district's hue, the name in the page
-//  language with its local-script name, the state, and one status detail:
+//  The first dashboard's "districts beside the map", in the new look: a
+//  white panel, one plain row per district (divider lines, no coloured
+//  cards). Beside the map on laptops (the list scrolls inside the panel
+//  when it is longer than the map); under the map on tablets (two
+//  columns) and phones. Each row: the landmark picture (the district's
+//  one touch of colour), the name in the page language with its
+//  local-script name, the state, and one status detail:
 //    - a dot: green when we collected something for it in the last day,
 //      amber when the newest data is older (with how long ago);
 //    - the report-card grade, only while that grade is current (an old
 //      grade is shown, with its date, on the map card — never as a badge);
 //    - "New" for 30 days after the district goes live.
-//  Newest launch first. The vote chip carries no vote counts (they are not
+//  Newest launch first. The vote row carries no vote counts (they are not
 //  de-duplicated).
 "use client";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, ChevronRight, MapPin } from "lucide-react";
 import { DISTRICT_META } from "@/lib/data/district-meta";
 import { getDistrict } from "@/lib/constants/districts";
 import { getDistrictHue } from "@/lib/design/hues";
@@ -72,9 +79,9 @@ export default function LiveDistrictsCard({
   });
 
   return (
-    <section aria-labelledby="home-live-districts" className={`ftp-container ${styles.section}`}>
-      <div className={styles.sectionHeadRow}>
-        <h2 id="home-live-districts" className={styles.h2}>
+    <section aria-labelledby="home-live-districts" className={styles.live}>
+      <div className={styles.liveHead}>
+        <h2 id="home-live-districts" className={styles.liveTitle}>
           {tp("live.title")} <span className={styles.countPill}>{f.number(districts.length)}</span>
         </h2>
         <p className={styles.liveLegend}>
@@ -85,7 +92,7 @@ export default function LiveDistrictsCard({
         </p>
       </div>
 
-      <ul className={styles.chips}>
+      <ul className={styles.liveList}>
         {sorted.map((d) => {
           const reg = getDistrict(d.stateSlug, d.slug);
           const meta = DISTRICT_META[d.slug];
@@ -102,25 +109,25 @@ export default function LiveDistrictsCard({
           const stateName = place.state(d.stateSlug, d.stateName);
           return (
             <li key={`${d.stateSlug}/${d.slug}`}>
-              <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.chip} ftp-hue-${getDistrictHue(d.slug)}`}>
-                <span className={styles.chipArt} aria-hidden>
-                  {hasLandmark(d.slug) ? <DistrictLandmark slug={d.slug} size={24} /> : <MapPin size={18} />}
+              <Link href={`/${locale}/${d.stateSlug}/${d.slug}`} className={`${styles.row} ftp-hue-${getDistrictHue(d.slug)}`}>
+                <span className={styles.rowArt} aria-hidden>
+                  {hasLandmark(d.slug) ? <DistrictLandmark slug={d.slug} size={26} /> : <MapPin size={18} />}
                 </span>
-                <span className={styles.chipText}>
-                  <span className={styles.chipName}>
+                <span className={styles.rowText}>
+                  <span className={styles.rowName}>
                     <span lang={names.primaryLang}>{names.primary}</span>
                     {names.secondary && (
-                      <span lang={names.secondaryLang} className={styles.chipLocal}>
+                      <span lang={names.secondaryLang} className={styles.rowLocal}>
                         {names.secondary}
                       </span>
                     )}
                   </span>
-                  <span className={styles.chipMeta}>
+                  <span className={styles.rowMeta}>
                     {stateName}
                     {newest && (
                       <>
                         <span className={styles.legendDot} data-fresh={fresh === false ? "false" : "true"} aria-hidden />
-                        <span className={styles.chipAgo}>
+                        <span className={styles.rowAgo}>
                           {minute === null ? f.date(newest, { day: "numeric", month: "short" }) : agoShort(newest, minute, locale)}
                         </span>
                       </>
@@ -130,25 +137,24 @@ export default function LiveDistrictsCard({
                 {isNew ? (
                   <span className={styles.newTag}>{t("new")}</span>
                 ) : grade ? (
-                  <span className={styles.chipGrade} title={tp("map.grade")}>
+                  <span className={styles.rowGrade} title={tp("map.grade")}>
                     {grade}
                   </span>
                 ) : null}
+                <ChevronRight size={16} aria-hidden className={styles.rowChevron} />
               </Link>
             </li>
           );
         })}
-
-        <li>
-          <Link href={`/${locale}/vote-district`} className={`${styles.chip} ${styles.voteChip}`}>
-            <span className={styles.chipText}>
-              <span className={styles.chipName}>{t("voteTitle")}</span>
-              <span className={styles.chipMeta}>{t("voteLink")}</span>
-            </span>
-            <ArrowRight size={18} aria-hidden className={styles.voteArrow} />
-          </Link>
-        </li>
       </ul>
+
+      <Link href={`/${locale}/vote-district`} className={styles.voteRow}>
+        <span className={styles.rowText}>
+          <span className={styles.voteTitle}>{t("voteTitle")}</span>
+          <span className={styles.voteLink}>{t("voteLink")}</span>
+        </span>
+        <ArrowRight size={18} aria-hidden className={styles.voteArrow} />
+      </Link>
     </section>
   );
 }

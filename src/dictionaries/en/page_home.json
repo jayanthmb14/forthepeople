@@ -19,7 +19,8 @@
     "petrol": "Petrol",
     "diesel": "Diesel",
     "perLitre": "/litre",
-    "per10g": "/10 g"
+    "per10g": "/10 g",
+    "srcPpac": "Source: PPAC (Indian Oil pumps), opens in a new tab"
   },
   "hero": {
     "title": "See what is happening in <hl>your district</hl>",
@@ -33,9 +34,9 @@
     "states": "{n, plural, one {state} other {states}}",
     "dataPoints": "data points tracked",
     "dashboards": "dashboards each",
-    "updatedAgo": "Updated {ago}",
-    "updatedAt": "Updated {date}, {time} IST",
-    "line": "<b>Your district data</b> — tracked and checked"
+    "line": "<b>Your district data</b> — tracked and checked",
+    "when": "{date}, {time} IST",
+    "lastUpdate": "last update"
   },
   "intro": {
     "skip": "Tap anywhere to skip"
@@ -82,26 +83,6 @@
     "title": "Live districts",
     "legendFresh": "new data in the last day",
     "legendOld": "older"
-  },
-  "prices": {
-    "title": "Prices today",
-    "more": "See all prices",
-    "move": "{abs} · {pct}",
-    "since": "since {date}",
-    "upSr": "Up {abs} ({pct}) since {date}.",
-    "downSr": "Down {abs} ({pct}) since {date}.",
-    "same": "No change from the day before",
-    "noChange": "Only one day's price so far",
-    "gold22": "22K {price}",
-    "old": "{days} days old — nothing newer found",
-    "srcIbja": "IBJA",
-    "srcYahoo": "Yahoo Finance",
-    "none": "Prices could not be loaded just now. The prices page may have them.",
-    "note": "Gold (per 10 grams) and silver (per kg) as IBJA (India Bullion and Jewellers Association) publishes them. Petrol and diesel at Indian Oil pumps from PPAC (Petroleum Planning & Analysis Cell, Government of India); the Delhi price is also checked against BPCL's. Shares and the dollar from Yahoo Finance.",
-    "fuelOthers": "Other metro cities",
-    "fuelChecked": "Delhi price matches <a>BPCL</a>'s",
-    "srcPpac": "PPAC (Indian Oil pumps)",
-    "marketsLabel": "Shares and the dollar"
   },
   "checks": {
     "title": "How we get and check the data",
