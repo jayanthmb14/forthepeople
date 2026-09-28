@@ -60,7 +60,7 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
         <HeroJaaliBottomLeft />
         <HeroMandala />
 
-        {/* 4px vertical tricolor stripe on left edge — fades in over 400ms */}
+        {/* 4px vertical tricolor stripe on left edge — fades in over 180ms */}
         <span
           aria-hidden
           className="india-hero-stripe"
@@ -197,7 +197,7 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
 
         <style>{`
           @keyframes ftp-hero-fade-in-up {
-            0%   { opacity: 0; transform: translateY(8px); }
+            0%   { opacity: 0.35; transform: translateY(4px); }
             100% { opacity: 1; transform: translateY(0); }
           }
           @keyframes ftp-hero-stripe-fade {
@@ -206,19 +206,19 @@ export function IndiaHero({ locale }: IndiaHeroProps) {
           }
           @media (prefers-reduced-motion: no-preference) {
             .india-hero-banner {
-              animation: ftp-hero-fade-in-up 250ms ease-out forwards;
+              animation: ftp-hero-fade-in-up 180ms ease-out backwards;
               animation-delay: 0ms;
             }
             .india-hero-identity {
-              animation: ftp-hero-fade-in-up 250ms ease-out forwards;
-              animation-delay: 50ms;
+              animation: ftp-hero-fade-in-up 180ms ease-out backwards;
+              animation-delay: 30ms;
             }
             .india-hero-quick {
-              animation: ftp-hero-fade-in-up 250ms ease-out forwards;
-              animation-delay: 100ms;
+              animation: ftp-hero-fade-in-up 180ms ease-out backwards;
+              animation-delay: 60ms;
             }
             .india-hero-stripe {
-              animation: ftp-hero-stripe-fade 400ms ease-out forwards;
+              animation: ftp-hero-stripe-fade 180ms ease-out backwards;
             }
           }
           @media (prefers-reduced-motion: reduce) {

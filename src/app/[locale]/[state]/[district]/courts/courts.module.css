@@ -22,8 +22,8 @@
   background: var(--hue-pop);
   box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--hue) 35%, transparent);
   transform-origin: left center;
-  animation: grow 760ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+  animation: grow var(--ftp-dur-draw) var(--ftp-ease) both;
+  animation-delay: min(calc(var(--i, 0) * 40ms + 60ms), 240ms);
 }
 .legend {
   list-style: none;
@@ -59,12 +59,12 @@
 }
 .beam {
   transform-origin: 130px 46px;
-  animation: settle 1300ms cubic-bezier(0.25, 1.4, 0.4, 1) both;
-  animation-delay: 250ms;
+  animation: settle var(--ftp-dur-draw) var(--ftp-ease) both;
+  animation-delay: 60ms;
 }
 .pan {
-  animation: settle 1300ms cubic-bezier(0.25, 1.4, 0.4, 1) both;
-  animation-delay: 250ms;
+  animation: settle var(--ftp-dur-draw) var(--ftp-ease) both;
+  animation-delay: 60ms;
 }
 .sway {
   transform-box: view-box;
@@ -112,8 +112,8 @@
   background: var(--hue-pop);
   box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--hue) 40%, transparent);
   transform-origin: left center;
-  animation: grow 760ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--i, 0) * 80ms + 100ms);
+  animation: grow var(--ftp-dur-draw) var(--ftp-ease) both;
+  animation-delay: min(calc(var(--i, 0) * 40ms + 60ms), 240ms);
 }
 
 /* ── Checks list ────────────────────────────────────────────── */

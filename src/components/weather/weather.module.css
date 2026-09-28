@@ -49,7 +49,7 @@
   font: inherit;
   cursor: pointer;
   text-align: center;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  transition: border-color var(--ftp-dur-fast) ease, box-shadow var(--ftp-dur-fast) ease, transform var(--ftp-dur-fast) ease;
 }
 .day:hover { border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border)); box-shadow: var(--ftp-shadow-2); transform: translateY(-1px); }
 .day[data-when="tomorrow"] {
@@ -150,7 +150,7 @@
 
 /* Rain-chance meter inside the tomorrow card. */
 .meter { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ftp-surface) 70%, var(--hue-pop)); overflow: hidden; margin-top: 6px; max-width: 260px; }
-.meterFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--hue-pop), var(--hue)); transform-origin: left center; animation: wx-grow 800ms var(--ftp-ease-out, ease-out) both; }
+.meterFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--hue-pop), var(--hue)); transform-origin: left center; animation: wx-grow var(--ftp-dur-draw) var(--ftp-ease-out, ease-out) both; }
 @keyframes wx-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* Loading: a cloud drifting across a soft sky. */

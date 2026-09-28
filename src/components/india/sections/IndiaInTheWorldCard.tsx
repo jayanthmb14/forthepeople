@@ -248,7 +248,7 @@ function RankRow({ ranking, t, onOpen }: { ranking: Ranking; t: Tr; onOpen: () =
         gridTemplateColumns: "36px minmax(0, 1fr) auto",
         gap: "10px",
         alignItems: "center",
-        transition: "background 150ms",
+        transition: "background var(--ftp-dur-fast)",
         width: "100%",
         minHeight: 56,
         border: 0,
@@ -399,7 +399,7 @@ export function IndiaInTheWorldCard() {
           border: "0.5px solid rgba(0, 0, 0, 0.06)",
           borderRadius: "6px",
           overflow: "hidden",
-          transition: "max-height 240ms ease",
+          transition: "max-height var(--ftp-dur) ease",
         }}
         className="india-rankings-grid"
       >
@@ -431,7 +431,7 @@ export function IndiaInTheWorldCard() {
             color: "var(--color-text-info)",
             fontSize: "12px",
             cursor: "pointer",
-            transition: "color 150ms",
+            transition: "color var(--ftp-dur-fast)",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";

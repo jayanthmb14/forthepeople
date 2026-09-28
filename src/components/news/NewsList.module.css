@@ -46,7 +46,7 @@
   text-align: start;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease;
+  transition: background-color var(--ftp-dur-fast) ease;
 }
 
 div.main {
@@ -87,7 +87,7 @@ button.main:hover .title {
   line-height: 22px;
   font-weight: 500;
   color: var(--ftp-text);
-  transition: color 150ms ease;
+  transition: color var(--ftp-dur-fast) ease;
 }
 
 .inlineIcon {
@@ -156,7 +156,7 @@ button.main:hover .title {
   min-height: 44px;
   color: var(--ftp-text-2);
   text-decoration: none;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--ftp-dur-fast) ease, color var(--ftp-dur-fast) ease;
 }
 
 .ext:hover {

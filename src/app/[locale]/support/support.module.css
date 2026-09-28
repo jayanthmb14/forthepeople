@@ -72,7 +72,7 @@
   border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
   border-radius: var(--ftp-radius-card);
   box-shadow: var(--ftp-shadow-1);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: transform var(--ftp-dur) ease, box-shadow var(--ftp-dur) ease;
 }
 .tierCard::before {
   content: "";
@@ -225,7 +225,7 @@
 }
 .summary::-webkit-details-marker { display: none; }
 .summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: var(--ftp-radius-card); }
-.chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform 150ms ease; }
+.chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform var(--ftp-dur-fast) ease; }
 .disclosure[open] .chevron { transform: rotate(180deg); }
 
 @media (prefers-reduced-motion: reduce) {

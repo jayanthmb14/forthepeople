@@ -435,7 +435,7 @@ export default function VoteDistrictPage({
           font-family: inherit;
           cursor: pointer;
           flex-shrink: 0;
-          transition: background-color 150ms ease, color 150ms ease;
+          transition: background-color var(--ftp-dur-fast) ease, color var(--ftp-dur-fast) ease;
         }
         .ftp-vote-btn:hover { background: var(--hue); color: #fff; }
         .ftp-vote-error {

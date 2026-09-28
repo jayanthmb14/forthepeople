@@ -161,7 +161,7 @@ export default function TalukMap({ locale, state, district, taluks = [], unitLab
                     }}
                     onMouseLeave={() => setTooltip(null)}
                     style={{
-                      default: { fill: colors.fill, stroke: colors.stroke, strokeWidth: 1.5, outline: "none", cursor: "pointer", transition: "fill 150ms" },
+                      default: { fill: colors.fill, stroke: colors.stroke, strokeWidth: 1.5, outline: "none", cursor: "pointer", transition: "fill var(--ftp-dur-fast)" },
                       hover:   { fill: colors.hover, stroke: colors.strokeHover, strokeWidth: 2.5, outline: "none", cursor: "pointer" },
                       pressed: { fill: colors.pressed, outline: "none" },
                     }}

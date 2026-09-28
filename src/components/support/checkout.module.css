@@ -119,7 +119,7 @@
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border-strong);
   border-radius: var(--ftp-radius-tile);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color var(--ftp-dur-fast) ease, box-shadow var(--ftp-dur-fast) ease;
 }
 .input::placeholder { color: var(--ftp-text-2); opacity: 0.8; }
 .input:focus {
@@ -363,7 +363,7 @@ textarea.input {
   text-align: center;
   cursor: pointer;
   box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--hue) 75%, transparent);
-  transition: background-color 120ms ease, transform 120ms ease;
+  transition: background-color var(--ftp-dur-fast) ease, transform var(--ftp-dur-fast) ease;
 }
 .mainBtn:hover:not(:disabled) { background: var(--hue-deep); }
 .mainBtn:active:not(:disabled) { transform: translateY(1px); }

@@ -210,7 +210,7 @@ export default function DistrictBreadcrumb({
           text-decoration: none;
           font-weight: 500;
           line-height: 1;
-          transition: background 150ms ease;
+          transition: background var(--ftp-dur-fast) ease;
           /* Session 19.10: when the placeholder crumb renders as a <button>
              (so users can click "Select Taluka" to open the menu), reset
              native button styling so it looks identical to the link case. */
@@ -262,7 +262,7 @@ export default function DistrictBreadcrumb({
           font-size: 10px;
           line-height: 1;
           cursor: pointer;
-          transition: background 150ms ease, color 150ms ease;
+          transition: background var(--ftp-dur-fast) ease, color var(--ftp-dur-fast) ease;
         }
         .ftp-breadcrumb-caret:hover {
           background: var(--ftp-surface-2);
@@ -318,7 +318,7 @@ export default function DistrictBreadcrumb({
           font-size: 13px;
           line-height: 1.2;
           white-space: nowrap;
-          transition: background 120ms ease;
+          transition: background var(--ftp-dur-fast) ease;
         }
         .ftp-breadcrumb-menu-item-label {
           flex: 1;
