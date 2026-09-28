@@ -10,6 +10,26 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — payments and admin backend (branch `v55/be-payments-admin`, 2026-09-28)
+Security and data fixes from the backend review. Not deployed; no schema change; the data script
+is a dry run until the owner runs it with `--confirm`.
+- **Supporter wall shows only what was paid**: verify-subscription takes tier, amount and place
+  from Razorpay (not the browser); verify confirms only its own order; one-time orders are always
+  a one-time tier within its bounds. One writer (`recordOneTimePayment`) for verify, webhook and
+  the admin Sync: checkout name (never the payer's phone / e-mail), checkout visibility, an expiry
+  by amount, no row for monthly debits. Cancelled / halted monthly supporters now expire at the
+  end of the paid period. Monthly-checkout notes kept within Razorpay's 256 characters.
+- **Admin**: a leaked password alone can no longer switch 2FA off (recovery e-mail change is
+  cookie-only + current code; setup refuses while 2FA is on); the review page's password-only
+  login and unguarded actions are gone; vault unlock and 2FA verify are throttled; the vault and
+  stored-login reveal are cookie-only; the 2FA recovery page moved to `/[locale]/admin-recover` so
+  it opens while logged out; admin money summaries count every row.
+- **Public writes**: district-request votes only for real not-yet-live districts (its cache clear
+  now works); feedback stores a salted IP hash; India suggestion limits key on the IP.
+- **Simpler**: one `bustSupporterCaches()`, one `requireVaultSession()`; three uncalled admin
+  routes deleted; cleanup-news no longer collapses non-Latin headlines.
+- **Data**: `scripts/fix-supporter-expiry-2026-09.ts` (dry run by default).
+
 ### Fixed — money: budgets, projects, industries, tenders, schemes (branch `v54/fix-money`, 2026-09-28)
 Owner rule: verified or hidden. Nothing here is deployed or applied to the database yet.
 - **Budgets**: seeded sector rows (state or city totals filed under one district, "spent" as a
