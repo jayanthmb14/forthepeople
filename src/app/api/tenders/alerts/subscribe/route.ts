@@ -74,23 +74,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: { code: "TENDER_NOT_FOUND", message: `Tender ${body.tenderId} does not exist` } }, { status: 404 });
   }
 
-  await prisma.tenderSavedByUser.upsert({
-    where: { tenderId_userIdentifier: { tenderId: body.tenderId, userIdentifier: body.userIdentifier } },
-    update: {
-      alertChannelEmail: body.alertChannelEmail ?? null,
-      alertChannelWhatsapp: body.alertChannelWhatsapp ?? null,
-      alertOnDeadline: body.alertOnDeadline ?? true,
-      alertOnCorrigendum: body.alertOnCorrigendum ?? true,
-    },
-    create: {
-      tenderId: body.tenderId,
-      userIdentifier: body.userIdentifier,
-      alertChannelEmail: body.alertChannelEmail ?? null,
-      alertChannelWhatsapp: body.alertChannelWhatsapp ?? null,
-      alertOnDeadline: body.alertOnDeadline ?? true,
-      alertOnCorrigendum: body.alertOnCorrigendum ?? true,
-    },
-  });
+  // Create only. There is no sign-in, so a request cannot prove it owns an
+  // identifier: an upsert let anyone who knew (or guessed) another
+  // person's identifier replace that person's e-mail / WhatsApp number.
+  try {
+    await prisma.tenderSavedByUser.create({
+      data: {
+        tenderId: body.tenderId,
+        userIdentifier: body.userIdentifier,
+        alertChannelEmail: body.alertChannelEmail ?? null,
+        alertChannelWhatsapp: body.alertChannelWhatsapp ?? null,
+        alertOnDeadline: body.alertOnDeadline ?? true,
+        alertOnCorrigendum: body.alertOnCorrigendum ?? true,
+      },
+    });
+  } catch (err) {
+    // P2002: a row for this tender and identifier exists (@@unique).
+    if ((err as { code?: string }).code === "P2002") {
+      return NextResponse.json(
+        { error: { code: "ALREADY_SUBSCRIBED", message: "An alert already exists for this tender and identifier." } },
+        { status: 409 },
+      );
+    }
+    throw err;
+  }
 
   return NextResponse.json({ ok: true, note: "Alert intent captured. Delivery pipeline rolls out in v2." });
 }
