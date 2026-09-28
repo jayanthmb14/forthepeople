@@ -636,9 +636,11 @@
 }
 .ftp-live-dot { animation: ftp-live-pulse 2s ease-in-out infinite; }
 
-/* Skeleton rows for LoadingShell: flat surface-2 blocks, gentle fade. */
+/* Skeleton rows for LoadingShell: flat blocks, gentle fade. v5.7: a tone
+   between surface-2 and the border, so a skeleton shows both on a white
+   card and on the (now darker) page ground. */
 @keyframes ftp-skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-.ftp-skeleton { background: var(--ftp-surface-2); animation: ftp-skeleton 1.6s ease-in-out infinite; }
+.ftp-skeleton { background: color-mix(in srgb, var(--ftp-border) 55%, var(--ftp-surface-2)); animation: ftp-skeleton 1.6s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .ftp-live-dot, .ftp-skeleton { animation: none; }
