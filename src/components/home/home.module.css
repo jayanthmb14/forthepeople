@@ -488,6 +488,12 @@
   border-radius: 12px;
   background: var(--ftp-surface);
   text-align: center;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+.stat:hover {
+  transform: translateY(-1px);
+  border-color: var(--ftp-border-strong);
+  box-shadow: var(--ftp-shadow-1);
 }
 .statNum {
   font-size: 30px;
@@ -623,6 +629,7 @@
   border-radius: 16px;
   /* Plain white, so the pastel land stands out clearly. */
   background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
 }
 .mapHead {
   display: flex;
@@ -836,6 +843,7 @@
   border: 1px solid var(--ftp-border);
   border-radius: 16px;
   background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
 }
 .liveHead {
   display: flex;
@@ -1491,6 +1499,7 @@
   border: 1px solid var(--ftp-border);
   border-radius: 16px;
   background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
   overflow: hidden;
 }
 .step {
@@ -1543,6 +1552,7 @@
   border: 1px solid var(--ftp-border);
   border-radius: 16px;
   background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
 }
 .supportArt {
   width: 44px;
@@ -1925,8 +1935,12 @@
   }
   .ydTab,
   .ydOpen,
-  .ydCard {
+  .ydCard,
+  .stat {
     transition: none;
+  }
+  .stat:hover {
+    transform: none;
   }
   .indiaPill:hover,
   .indiaPill:hover .indiaArrow,
