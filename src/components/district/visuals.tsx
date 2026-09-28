@@ -439,14 +439,15 @@ export const chartTooltipStyle: React.CSSProperties = {
 export function ChartGradients() {
   return (
     <defs>
-      {/* v5: near-flat fills — the hue fading only slightly into its pastel. */}
+      {/* v5.5: softer near-flat fills (owner: "no heavy colour") — the chart
+          blue at 84 % fading to 66 %, still ≥ 3 : 1 against white at the top. */}
       <linearGradient id="ftpHueFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="var(--hue)" />
-        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.72} />
+        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.84} />
+        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.66} />
       </linearGradient>
       <linearGradient id="ftpHueFillH" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.72} />
-        <stop offset="100%" stopColor="var(--hue)" />
+        <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.66} />
+        <stop offset="100%" stopColor="var(--hue)" stopOpacity={0.84} />
       </linearGradient>
       <linearGradient id="ftpHueArea" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="var(--hue)" stopOpacity={0.22} />
