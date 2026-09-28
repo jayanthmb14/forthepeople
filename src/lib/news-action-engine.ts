@@ -114,7 +114,7 @@ Return ONLY valid JSON (no markdown):
 
 Module-specific extractedData fields:
 - alerts: {"alertType":"security","alertTitle":"...","alertDescription":"...","location":"...","severity":"warning","startDate":"2026-03-28","endDate":"2026-03-29"}
-- infrastructure: {"projectName":"...","budgetCrores":120,"status":"Announced","category":"Road","progressPct":0}
+- infrastructure: {"projectName":"...","budgetRupees":1200000000,"status":"Announced","category":"Road","progressPct":0}
 - police: {"crimeCategory":"theft","count":15,"description":"..."}
 - schemes: {"schemeName":"PM Kisan","beneficiaryCount":5000}
 - leaders: {"personName":"...","role":"District Collector","party":null,"tier":2}
