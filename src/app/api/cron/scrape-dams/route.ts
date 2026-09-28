@@ -77,8 +77,9 @@ async function collectAll(runStart: number): Promise<Response> {
       });
       console.log(`[scrape-dams/${d.slug}] ${result.success ? "ok" : "fail"}, ${result.recordsNew} new, ${result.recordsUpdated} revised | ${logs.join(" | ")}`);
       if (result.success && result.recordsNew + result.recordsUpdated > 0 && redis) {
-        await redis.del(cacheKey(d.slug, "dam")).catch(() => {});
+        // The water page (module "water") and its level chart (/api/data/dam-history).
         await redis.del(cacheKey(d.slug, "water")).catch(() => {});
+        await redis.del(cacheKey(d.slug, "dam-history")).catch(() => {});
       }
     } catch (err) {
       Sentry.captureException(err);
