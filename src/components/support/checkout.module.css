@@ -40,8 +40,10 @@
   gap: 10px;
   padding: 14px;
   border-radius: var(--ftp-radius-card);
-  background: linear-gradient(150deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-pop) 30%, var(--ftp-surface)) 100%);
-  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
+  /* v5.2 White Calm: a white card with a 3 px plan-colour rule, no wash. */
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  box-shadow: inset 3px 0 0 var(--hue);
 }
 .summaryLabel {
   margin: 0;

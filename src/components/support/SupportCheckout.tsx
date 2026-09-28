@@ -1011,7 +1011,7 @@ export default function SupportCheckout({ tier }: Props) {
   return (
     <div className={css.cardAction}>
       {stepper("card")}
-      <button type="button" onClick={openCheckout} aria-haspopup="dialog" className={css.mainBtn}>
+      <button type="button" onClick={openCheckout} aria-haspopup="dialog" aria-expanded={open && hydrated} className={css.mainBtn}>
         {tier.isMonthly
           ? t("co_subscribeMo", { amount: inr(amount) })
           : t("co_contribute", { amount: inr(amount) })}

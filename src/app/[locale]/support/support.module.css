@@ -1,22 +1,55 @@
-/* /support — Design v5.1 "Warm Calm". Colours come from tokens, the plan
-   hue classes (tier-look.ts) and the gold family on `.metal`
-   (src/components/support/look.module.css) only. */
+/* /support — Design v5.2 "White Calm" (refresh, 28 Sep 2026).
+   The owner's brief for the whole site: mostly white, light rounded borders
+   here and there, a slightly darker background behind groups so the white
+   cards stand out, not too many borders, quick animations.
 
-/* ── Hero: a soft rose-and-blue wash, with three plan pictures ─────────── */
+   Top to bottom:
+     hero      white card, 3 px rose rule on the left (the support colour)
+     plans     a soft grey-blue BAND holding five white plan cards; each
+               card has a 2 px plan-colour rule on top, a hover lift and
+               its checkout (amount + button) in its own inset card
+     how       three white step cards straight on the page
+     wall      a second soft band holding the white supporter cards
+     more      two white disclosures, then one quiet line of links
+
+   Colours come from tokens, the plan hue classes (tier-look.ts) and the
+   gold family on `.metal` (src/components/support/look.module.css) only. */
+
+.page {
+  background: var(--ftp-bg);
+  min-height: calc(100vh - 56px);
+  padding-bottom: 48px;
+}
+
+/* ── Quick entrance: each block rises 6 px as it appears (≤ 180 ms) ───── */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 180ms var(--ftp-ease-out, ease-out) both;
+  animation-delay: calc(var(--d, 0) * 40ms);
+}
+
+/* ── Hero: a white card with a rose rule, three plan pictures ─────────── */
 .hero {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 8px 0 8px;
+  margin: 8px 0 0;
   padding: 4px 20px 0;
-  border-radius: 22px;
-  background:
-    radial-gradient(120% 150% at 0% 0%, var(--ftp-support-tint) 0%, transparent 55%),
-    radial-gradient(110% 140% at 100% 10%, var(--ftp-brand-tint) 0%, transparent 60%),
-    var(--ftp-surface);
+  border-radius: 18px;
+  background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
+  box-shadow: inset 3px 0 0 var(--ftp-support), var(--ftp-shadow-1);
 }
 .hero > header { flex: 1 1 auto; min-width: 0; }
 .heroArt {
@@ -37,7 +70,40 @@
   .heroArt { display: flex; }
 }
 @media (max-width: 639px) {
-  .hero { padding: 0 14px; border-radius: 18px; }
+  .hero { padding: 0 14px; border-radius: 16px; }
+}
+
+/* ── A band: the slightly darker surface that groups white cards ─────── */
+.band {
+  margin-top: 24px;
+  padding: 4px 16px 18px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--ftp-surface-2) 72%, var(--ftp-bg));
+  border: 1px solid color-mix(in srgb, var(--ftp-border) 70%, transparent);
+}
+.plain {
+  margin-top: 24px;
+}
+.bandHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin: 16px 0 14px;
+}
+.plain .bandHead { margin-top: 8px; }
+.bandTitle {
+  margin: 0;
+}
+.bandNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ftp-text-2);
+}
+@media (max-width: 639px) {
+  .band { padding: 2px 12px 14px; border-radius: 18px; margin-left: -4px; margin-right: -4px; }
 }
 
 /* ── Five plans. The column count avoids one card alone on a row:
@@ -45,7 +111,7 @@
    phones, then one column. ─────────────────────────────────────────── */
 .tierGrid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 @media (max-width: 1199px) {
@@ -58,42 +124,54 @@
   .tierGrid { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Each card wears its plan colour: a pastel wash at the top fading to
-   white, a thin colour line along the top edge, the price in the deep tone. */
+/* A plan card: white, a 1 px border, a 2 px plan-colour rule on top. */
 .tierCard {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  padding: 18px 16px 16px;
-  overflow: hidden;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--hue-tint) 92%, var(--ftp-surface)) 0px, var(--ftp-surface) 150px);
-  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
-  border-radius: var(--ftp-radius-card);
-  box-shadow: var(--ftp-shadow-1);
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-.tierCard::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--hue-pop), color-mix(in srgb, var(--hue) 55%, var(--hue-pop)), var(--hue-pop));
+  padding: 16px 14px 14px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  box-shadow: inset 0 2px 0 var(--hue), var(--ftp-shadow-1);
+  scroll-margin-top: 96px;
+  transition: transform 150ms var(--ftp-ease-out, ease-out), box-shadow 150ms ease, border-color 150ms ease;
 }
 .tierCard:hover {
   transform: translateY(-2px);
-  box-shadow: var(--ftp-shadow-2);
+  border-color: color-mix(in srgb, var(--hue) 35%, var(--ftp-border));
+  box-shadow: inset 0 2px 0 var(--hue), var(--ftp-shadow-2);
 }
 
-/* The Founding Builder: soft gold, a gold edge and a warm glow. */
-.tierCard[data-tier="founder"] {
-  background: linear-gradient(180deg, var(--sup-gold-tint) 0px, var(--ftp-surface) 160px);
-  border-color: color-mix(in srgb, var(--sup-gold) 45%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1), 0 12px 28px -18px color-mix(in srgb, var(--sup-gold) 80%, transparent);
+/* Selected: the plan whose popup is open (also when ?tier= opened it),
+   the plan linked as #plan-<key>, or the plan being used by keyboard. */
+.tierCard:has([aria-expanded="true"]),
+.tierCard:target,
+.tierCard:focus-within {
+  border-color: var(--hue);
+  box-shadow: inset 0 2px 0 var(--hue), 0 0 0 3px color-mix(in srgb, var(--hue) 22%, transparent), var(--ftp-shadow-2);
 }
-.tierCard[data-tier="founder"]::before {
-  background: linear-gradient(90deg, var(--sup-gold-soft), var(--sup-gold), var(--sup-gold-soft));
+.tierCard:has([aria-expanded="true"]) .planChip,
+.tierCard:target .planChip {
+  background: var(--hue-tint);
+  border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border));
+}
+
+/* The Founding Builder: a gold rule and gold price, still a white card. */
+.tierCard[data-tier="founder"] {
+  box-shadow: inset 0 2px 0 var(--sup-gold), var(--ftp-shadow-1);
+}
+.tierCard[data-tier="founder"]:hover {
+  border-color: color-mix(in srgb, var(--sup-gold) 45%, var(--ftp-border));
+  box-shadow: inset 0 2px 0 var(--sup-gold), var(--ftp-shadow-2);
+}
+.tierCard[data-tier="founder"]:has([aria-expanded="true"]),
+.tierCard[data-tier="founder"]:target,
+.tierCard[data-tier="founder"]:focus-within {
+  border-color: var(--sup-gold);
+  box-shadow: inset 0 2px 0 var(--sup-gold), 0 0 0 3px color-mix(in srgb, var(--sup-gold) 25%, transparent), var(--ftp-shadow-2);
 }
 
 .tierHead {
@@ -124,6 +202,7 @@
   line-height: 18px;
   font-weight: 650;
   white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .price {
@@ -144,18 +223,36 @@
   font-size: 14px;
   color: var(--ftp-text-2);
 }
-
-.tierAction {
-  margin-top: auto;
-  padding-top: 8px;
+.tierDesc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ftp-text);
 }
+.tierNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ftp-text-2);
+}
+
+/* The checkout (amount + button): its own area at the foot of the card,
+   edge to edge, on a faintly darker surface under a thin rule. */
+.tierAction {
+  margin: auto -14px -14px;
+  padding: 12px;
+  border-top: 1px solid var(--ftp-border);
+  border-radius: 0 0 15px 15px;
+  background: color-mix(in srgb, var(--ftp-surface-2) 55%, var(--ftp-surface));
+}
+
 /* Placeholder while the amount row + button load (44 + 10 + 48 px). */
 .actionSkeleton {
   height: 102px;
   border-radius: var(--ftp-radius-tile);
 }
 
-/* ── How to subscribe: three coloured steps, side by side from tablet up ── */
+/* ── How to subscribe: three white step cards ─────────────────────────── */
 .steps {
   list-style: none;
   margin: 0;
@@ -169,9 +266,10 @@
   gap: 14px;
   align-items: flex-start;
   padding: 16px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--hue-tint) 80%, var(--ftp-surface)) 0%, var(--ftp-surface) 75%);
-  border: 1px solid color-mix(in srgb, var(--hue) 16%, var(--ftp-border));
-  border-radius: var(--ftp-radius-card);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  box-shadow: var(--ftp-shadow-1);
 }
 .stepBadge {
   position: relative;
@@ -182,9 +280,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ftp-surface);
-  border: 1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border));
-  color: var(--hue);
+  background: var(--hue-tint);
+  color: var(--hue-deep);
 }
 .stepNum {
   position: absolute;
@@ -198,18 +295,46 @@
   align-items: center;
   justify-content: center;
   background: var(--hue);
-  color: white;
+  color: var(--ftp-surface);
   font-size: 11px;
   font-weight: 700;
   box-shadow: 0 0 0 2px var(--ftp-surface);
 }
+.stepTitle {
+  display: block;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--ftp-text);
+}
+.stepBody {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ftp-text-2);
+}
+.howNote {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ftp-text-2);
+}
 
 /* ── Closed-by-default sections ("Where the money goes", "Why this exists") ── */
+.more {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
 .disclosure {
   background: var(--ftp-surface);
   border: 1px solid var(--ftp-border);
-  border-radius: var(--ftp-radius-card);
+  border-radius: 16px;
+  box-shadow: var(--ftp-shadow-1);
+  transition: border-color 150ms ease;
 }
+.disclosure:hover { border-color: var(--ftp-border-strong); }
 .summary {
   display: flex;
   align-items: center;
@@ -224,12 +349,34 @@
   color: var(--ftp-text);
 }
 .summary::-webkit-details-marker { display: none; }
-.summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: var(--ftp-radius-card); }
+.summary:focus-visible { outline: 2px solid var(--ftp-brand); outline-offset: 2px; border-radius: 16px; }
 .chevron { color: var(--ftp-text-2); flex-shrink: 0; transition: transform 150ms ease; }
 .disclosure[open] .chevron { transform: rotate(180deg); }
+.disclosureBody {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--ftp-border);
+  margin: 0 16px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 14px;
+}
+.disclosure[open] .disclosureBody { animation: rise 160ms var(--ftp-ease-out, ease-out) both; }
+
+/* ── Other ways to help: one quiet line ─────────────────────────────── */
+.helpLine {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0 16px;
+  flex-wrap: wrap;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .chevron { transition: none; }
-  .tierCard { transition: none; }
+  .rise,
+  .disclosure[open] .disclosureBody { animation: none; }
+  .chevron,
+  .tierCard,
+  .planChip,
+  .disclosure { transition: none; }
   .tierCard:hover { transform: none; }
 }

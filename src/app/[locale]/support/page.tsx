@@ -32,11 +32,15 @@
 //  also the Razorpay description), and `?tier=&state=&district=` still opens
 //  the right form.
 //
-//  Colour (v5.1 "Warm Calm"): the page runs in the brand-blue hue, over a
-//  soft rose-and-blue wash at the top. Each plan card carries its own
-//  pastel colour and a small drawn picture (TierArt): one-time rose,
-//  District blue, State teal, All-India violet, Founding Builder gold
-//  (tier-look.ts). The same colours follow a supporter onto the wall.
+//  Look (v5.2 "White Calm" refresh, 28 Sep 2026): white cards with light
+//  1 px borders on the page, and two slightly darker rounded BANDS (the
+//  plans, the supporters) so their white cards stand out. Each plan keeps
+//  its colour only as a 2 px rule on top, its chip, its price and its
+//  drawn picture (TierArt): one-time rose, District blue, State teal,
+//  All-India violet, Founding Builder gold (tier-look.ts). Plan cards lift
+//  on hover; the plan whose checkout is open (or linked as #plan-<key>) is
+//  outlined in its colour. The checkout sits in its own inset card. Blocks
+//  rise in quickly (180 ms, none under reduced motion).
 
 import { Suspense } from "react";
 import Link from "next/link";
@@ -50,7 +54,7 @@ import TierArt from "@/components/support/TierArt";
 import { tierHueClass, tierKeyOf, type TierKey } from "@/components/support/tier-look";
 import look from "@/components/support/look.module.css";
 import FeedbackModal from "@/components/common/FeedbackModal";
-import { ModulePage, Section } from "@/components/district/ui";
+import { ModulePage } from "@/components/district/ui";
 import PlainPageHeader from "@/components/site/PlainPageHeader";
 import { TIER_CONFIG, TIER_ORDER } from "@/lib/constants/razorpay-plans";
 import { getPlatformFacts } from "@/lib/platform-facts";
@@ -129,8 +133,45 @@ function Disclosure({ title, children }: { title: string; children: React.ReactN
         <span>{title}</span>
         <ChevronDown size={18} aria-hidden className={styles.chevron} />
       </summary>
-      <div style={{ padding: "0 16px 16px" }}>{children}</div>
+      <div className={styles.disclosureBody}>{children}</div>
     </details>
+  );
+}
+
+/**
+ * A page section. `band` puts it on the slightly darker rounded surface
+ * that groups white cards; otherwise it sits straight on the page.
+ */
+function Band({
+  id,
+  title,
+  note,
+  band = false,
+  delay = 0,
+  children,
+}: {
+  id: string;
+  title: string;
+  note?: React.ReactNode;
+  band?: boolean;
+  delay?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className={`${band ? styles.band : styles.plain} ${styles.rise}`}
+      style={{ ["--d" as string]: delay } as React.CSSProperties}
+    >
+      <div className={styles.bandHead}>
+        <h2 id={`${id}-title`} className={`ftp-h2 ${styles.bandTitle}`}>
+          {title}
+        </h2>
+        {note}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -176,10 +217,10 @@ export default async function SupportPage({ params }: Props) {
   const heroArt: TierKey[] = ["custom", "district", "founder"];
 
   return (
-    <main className={`ftp-hue-blue ${look.metal}`} style={{ background: "var(--ftp-bg)", minHeight: "calc(100vh - 56px)", paddingBottom: 48 }}>
+    <main className={`ftp-hue-blue ${look.metal} ${styles.page}`}>
       <ModulePage>
         {/* ── 1. What support does ─────────────────────────────────── */}
-        <div className={styles.hero}>
+        <div className={`${styles.hero} ${styles.rise}`}>
           <PlainPageHeader title={t("title")} description={t("lead")} backHref={`/${locale}`} />
           <div className={styles.heroArt} aria-hidden>
             {heroArt.map((k, i) => (
@@ -191,7 +232,7 @@ export default async function SupportPage({ params }: Props) {
         </div>
 
         {/* ── 2. The plans ─────────────────────────────────────────── */}
-        <Section title={t("tiersTitle")} id="tiers">
+        <Band id="tiers" title={t("tiersTitle")} band delay={1}>
           <div className={styles.tierGrid}>
             {TIER_ORDER.map((key) => {
               const tier = TIER_CONFIG[key];
@@ -200,7 +241,7 @@ export default async function SupportPage({ params }: Props) {
               const name = t.has(`tier_${key}_name`) ? t(`tier_${key}_name`) : tier.name;
               const desc = t.has(`tier_${key}_desc`) ? t(`tier_${key}_desc`, tierValues) : tier.description;
               return (
-                <article key={key} aria-label={name} className={`${styles.tierCard} ${tierHueClass(plan)}`} data-tier={plan}>
+                <article key={key} id={`plan-${key}`} aria-label={name} className={`${styles.tierCard} ${tierHueClass(plan)}`} data-tier={plan}>
                   <div className={styles.tierHead}>
                     <TierArt tier={plan} size={64} />
                     <span className={styles.planChip}>{tier.isRecurring ? t("pillMonthly") : t("pillOneTime")}</span>
@@ -212,8 +253,8 @@ export default async function SupportPage({ params }: Props) {
                       {tier.isRecurring ? t("priceMonthly") : t("priceOnce", { min: inr(tier.minAmount) })}
                     </span>
                   </p>
-                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text)" }}>{desc}</p>
-                  {tier.isRecurring && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("noteMonthly")}</p>}
+                  <p className={styles.tierDesc}>{desc}</p>
+                  {tier.isRecurring && <p className={styles.tierNote}>{t("noteMonthly")}</p>}
                   <div className={styles.tierAction}>
                     {/* Same height as the amount row + button, so nothing jumps when it loads. */}
                     <Suspense fallback={<div aria-hidden className={`ftp-skeleton ${styles.actionSkeleton}`} />}>
@@ -240,10 +281,10 @@ export default async function SupportPage({ params }: Props) {
               );
             })}
           </div>
-        </Section>
+        </Band>
 
         {/* ── 3. How to subscribe ──────────────────────────────────── */}
-        <Section title={t("howTitle")} id="how">
+        <Band id="how" title={t("howTitle")} delay={2}>
           <ol className={styles.steps}>
             {steps.map((s, i) => (
               <li key={i} className={`${styles.step} ${s.hue}`}>
@@ -252,13 +293,13 @@ export default async function SupportPage({ params }: Props) {
                   <span className={`ftp-num ${styles.stepNum}`}>{i + 1}</span>
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 15, lineHeight: 1.45, fontWeight: 600, color: "var(--ftp-text)" }}>{s.title}</span>
-                  <span style={{ display: "block", marginTop: 2, fontSize: 14, lineHeight: 1.55, color: "var(--ftp-text-2)" }}>{s.body}</span>
+                  <span className={styles.stepTitle}>{s.title}</span>
+                  <span className={styles.stepBody}>{s.body}</span>
                 </span>
               </li>
             ))}
           </ol>
-          <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--ftp-text-2)" }}>
+          <p className={styles.howNote}>
             {t.rich("howNote", {
               link: (c) => (
                 <a href="mailto:support@forthepeople.in" style={{ color: "var(--ftp-brand)", fontWeight: 600, textDecoration: "none" }}>
@@ -267,19 +308,19 @@ export default async function SupportPage({ params }: Props) {
               ),
             })}
           </p>
-        </Section>
+        </Band>
 
         {/* ── 4. Supporters ────────────────────────────────────────── */}
-        <Section title={t("supportersTitle")} id="supporters">
+        <Band id="supporters" title={t("supportersTitle")} band delay={3}>
           <NationalSupporters style={{ marginBottom: 8 }} />
           <ContributorWallClient />
           <Link href={`/${locale}/contributors`} style={TEXT_LINK}>
             {t("leaderboardLink")}
           </Link>
-        </Section>
+        </Band>
 
         {/* ── 5. One tap away: money and the founder's note ────────── */}
-        <div style={{ display: "grid", gap: 12, marginTop: 28 }}>
+        <div className={styles.more}>
           {costRows.length > 0 && (
             <Disclosure title={t("moneyTitle")}>
               <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--ftp-text-2)" }}>{t("moneyNote")}</p>
@@ -322,7 +363,7 @@ export default async function SupportPage({ params }: Props) {
         </div>
 
         {/* ── 6. Other ways to help — one quiet line ───────────────── */}
-        <nav aria-label={t("helpTitle")} style={{ marginTop: 28, display: "flex", alignItems: "center", gap: "0 16px", flexWrap: "wrap" }}>
+        <nav aria-label={t("helpTitle")} className={styles.helpLine}>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ftp-text-2)" }}>{t("helpTitle")}</span>
           {content.helpItems.map((item) => (
             <a
