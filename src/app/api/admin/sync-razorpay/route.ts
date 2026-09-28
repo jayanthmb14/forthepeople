@@ -7,6 +7,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
+import { capturedPaymentFromRazorpay } from "@/lib/supporter-payment";
+import { recordOneTimePayment } from "@/lib/record-supporter-payment";
 
 export async function POST() {
   const { ok } = await requireAdmin();
@@ -40,36 +42,21 @@ export async function POST() {
     let synced = 0;
     let skipped = 0;
 
-    for (const payment of payments) {
-      if (payment.status !== "captured") { skipped++; continue; }
+    // Adds captured one-time payments that have no Supporter row yet (the
+    // browser never came back and the webhook was missed), through the same
+    // writer as /api/payment/verify and the webhook: the name, visibility,
+    // message and tier typed at checkout, an expiry, and never a row for a
+    // monthly subscription debit (src/lib/supporter-payment.ts).
+    for (const item of payments) {
+      if (item.status !== "captured") { skipped++; continue; }
+      const payment = capturedPaymentFromRazorpay(item);
+      if (!payment.paymentId || payment.invoiceId) { skipped++; continue; }
 
-      const paymentId = String(payment.id ?? "");
-      if (!paymentId) { skipped++; continue; }
-
-      const existing = await prisma.supporter.findUnique({ where: { paymentId } });
+      const existing = await prisma.supporter.findUnique({ where: { paymentId: payment.paymentId }, select: { id: true } });
       if (existing) { skipped++; continue; }
 
-      const notes = (payment.notes as Record<string, string>) ?? {};
-      const amountPaise = Number(payment.amount ?? 0);
-
-      await prisma.supporter.create({
-        data: {
-          name: notes.name ?? String(payment.email ?? payment.contact ?? "Supporter"),
-          email: payment.email ? String(payment.email) : null,
-          phone: payment.contact ? String(payment.contact) : null,
-          amount: amountPaise / 100,
-          currency: String(payment.currency ?? "INR"),
-          tier: notes.tier ?? "one-time",
-          paymentId,
-          orderId: payment.order_id ? String(payment.order_id) : null,
-          method: payment.method ? String(payment.method) : null,
-          status: "success",
-          message: notes.message ?? null,
-          district: notes.district ?? null,
-          razorpayData: payment as object,
-        },
-      });
-      synced++;
+      if (await recordOneTimePayment(payment)) synced++;
+      else skipped++;
     }
 
     return NextResponse.json({

@@ -5,12 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { calculateBadgeLevel } from "@/lib/badge-level";
 import { alertPaymentReceived } from "@/lib/admin-alerts";
-import { MASKED_NAME, looksLikeContactInfo } from "@/lib/supporter-name";
+import { capturedPaymentFromRazorpay, validRazorpaySignature } from "@/lib/supporter-payment";
+import { recordOneTimePayment } from "@/lib/record-supporter-payment";
 import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
 
 // All contributor cache keys — bust after any payment event
@@ -31,11 +31,7 @@ export async function POST(req: NextRequest) {
   if (!signature) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
-  const expected = createHmac("sha256", webhookSecret).update(body).digest("hex");
-  const sigsMatch =
-    expected.length === signature.length &&
-    timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
-  if (!sigsMatch) {
+  if (!validRazorpaySignature(body, signature, webhookSecret)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -76,34 +72,11 @@ export async function POST(req: NextRequest) {
           data: { status: "success" },
         });
       } else {
-        // The name comes from what the supporter typed at checkout (the
-        // Contribution row of this order), never from the payer's phone or
-        // e-mail. No usable name → "Supporter", and not shown publicly unless
-        // the checkout said so (src/lib/supporter-name.ts).
-        const orderId = paymentEntity.order_id ? String(paymentEntity.order_id) : null;
-        const checkout = orderId
-          ? await prisma.contribution.findFirst({ where: { razorpayOrderId: orderId }, select: { name: true, isPublic: true, message: true } })
-          : null;
-        const typedName = checkout?.name?.trim() ?? "";
-        const safeName = typedName && !looksLikeContactInfo(typedName) ? typedName : MASKED_NAME;
-        await prisma.supporter.upsert({
-          where: { paymentId },
-          update: { status: "success" },
-          create: {
-            name: safeName,
-            isPublic: checkout ? checkout.isPublic : false,
-            message: checkout?.message ?? null,
-            email: paymentEntity.email ? String(paymentEntity.email) : null,
-            phone: paymentEntity.contact ? String(paymentEntity.contact) : null,
-            amount: Number(paymentEntity.amount ?? 0) / 100, // paise → rupees
-            currency: String(paymentEntity.currency ?? "INR"),
-            paymentId,
-            orderId: paymentEntity.order_id ? String(paymentEntity.order_id) : null,
-            method: paymentEntity.method ? String(paymentEntity.method) : null,
-            status: "success",
-            razorpayData: paymentEntity as object,
-          },
-        });
+        // Same row as /api/payment/verify writes (whichever runs first
+        // creates it): the name, visibility, message and tier typed at
+        // checkout, never the payer's phone or e-mail as a name, and the
+        // expiry the amount earns (src/lib/supporter-payment.ts).
+        await recordOneTimePayment(capturedPaymentFromRazorpay(paymentEntity));
       }
     } else if (event === "payment.failed" && paymentEntity) {
       // Policy (2026-04-25): no successful payment = no DB row.
