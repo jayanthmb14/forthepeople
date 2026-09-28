@@ -9,6 +9,8 @@
 import { describe, expect, it } from "vitest";
 import { buildMapStat, fuelFigures, pickSupporters, type PublicSupporter } from "@/components/home/home-picks";
 import { agoShort, dayWords, money, pct, shortDay } from "@/components/home/home-format";
+import { pickDistrictHead, pickHeadline, pickWeatherNow } from "@/components/home/your-district";
+import type { Leader, WeatherReading } from "@/hooks/useRealtimeData";
 
 // 27 Sep 2026, 17:30 IST
 const NOW = Date.parse("2026-09-27T12:00:00Z");
@@ -132,5 +134,42 @@ describe("home formats", () => {
     expect(dayWords("2026-09-25", 2, "en")).toMatch(/25 Sep/);
     expect(agoShort(new Date(NOW - 6 * 3600_000), NOW, "en")).toMatch(/6 hr\.? ago/);
     expect(agoShort(new Date(NOW - 3 * 86400_000), NOW, "en")).toMatch(/3 days ago/);
+  });
+});
+
+describe("Your district cards (your-district.ts)", () => {
+  it("pickHeadline: the first story with a headline and a date; null when there is none", () => {
+    expect(pickHeadline(null)).toBeNull();
+    expect(pickHeadline([{ title: "  ", publishedAt: "2026-09-27T10:00:00Z" }])).toBeNull();
+    expect(
+      pickHeadline([
+        { title: "No date" },
+        { headline: "Dam gates opened", title: "Dam gates opened", source: "Google News", publisher: "The Hindu", publishedAt: "2026-09-27T10:00:00Z" },
+      ]),
+    ).toEqual({ title: "Dam gates opened", source: "The Hindu", publishedAt: "2026-09-27T10:00:00Z" });
+  });
+
+  it("pickDistrictHead: the Collector / DC / DM, never a placeholder or a police post", () => {
+    const L = (name: string, role: string): Leader => ({ id: name, name, role, tier: 3 });
+    expect(pickDistrictHead([L("[Verify at mandya.nic.in]", "Deputy Commissioner"), L("A B", "Deputy Commissioner of Police")])).toBeNull();
+    const two = pickDistrictHead([L("X Y", "Collector, Mumbai City"), L("P Q", "Collector, Mumbai Suburban"), L("R S", "Superintendent of Police")]);
+    expect(two?.leader.name).toBe("X Y");
+    expect(two?.more).toBe(1);
+  });
+
+  it("pickWeatherNow: a stored reading only while it is at most 3 hours old", () => {
+    const reading = (hoursAgo: number): WeatherReading => ({
+      id: "w",
+      temperature: 27.4,
+      conditions: "Partly cloudy",
+      source: "OpenWeatherMap",
+      recordedAt: new Date(NOW - hoursAgo * 3600_000).toISOString(),
+    });
+    expect(pickWeatherNow(reading(1), null, null, NOW)?.temp).toBe(27.4);
+    // Old reading and no forecast: nothing is "now".
+    expect(pickWeatherNow(reading(30), null, null, NOW)).toBeNull();
+    // Old reading, fresh forecast value: the forecast wins, with its source.
+    const live = { time: new Date(NOW - 15 * 60_000).toISOString(), temperature: 25, kind: "clear" as const, isDay: false };
+    expect(pickWeatherNow(reading(30), live, "Open-Meteo.com", NOW)).toMatchObject({ temp: 25, night: true, source: "Open-Meteo.com" });
   });
 });
