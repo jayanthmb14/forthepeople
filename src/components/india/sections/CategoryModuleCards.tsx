@@ -4,7 +4,7 @@
  *
  * The module cards on /[locale]/india/category/<slug> (v4.1).
  *
- * Each card shows the module's emoji, title, Live/Soon pill, its headline
+ * Each card shows the module's glyph, title, Live/Soon pill, its headline
  * figure (with label and date) and tagline. Tapping the card opens a
  * DetailSheet with everything the page knows about the module: what it
  * covers, every published figure (value, date, source), where the
@@ -23,13 +23,17 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { DetailSheet } from "@/components/district/DetailSheet";
+import { CategoryGlyph } from "@/components/graphics";
 import { useFormat } from "@/i18n/client";
+import { KitIcon, emojiIcon } from "@/lib/design/emoji-icons";
 import type { FigureDetail } from "../FigureSheet";
+import { indiaModuleGlyph } from "../glyphs";
 import styles from "../india-tap.module.css";
 
 export interface CategoryCard {
   slug: string;
   href: string;
+  /** Kept for the kit's detail sheet, which draws its Lucide icon (never the emoji). */
   emoji: string;
   title: string;
   tagline: string;
@@ -83,9 +87,7 @@ export function CategoryModuleCards({
             <article className={styles.card}>
               <button type="button" className={styles.cardButton} onClick={() => setOpen(c)} aria-label={t("grid.details", { module: c.title })}>
                 <span style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 42, height: 42, fontSize: 22, borderRadius: 13, flexShrink: 0 }}>
-                    {c.emoji}
-                  </span>
+                  <CategoryGlyph pick={indiaModuleGlyph(c.slug)} size={42} chip />
                   <span className="ftp-display" style={{ flex: 1, minWidth: 0, fontSize: 17, fontWeight: 650, lineHeight: 1.3 }}>
                     {c.title}
                   </span>
@@ -147,17 +149,15 @@ export function CategoryModuleCards({
 
             <section>
               <h3 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 650 }}>
-                <span className="ftp-emoji" aria-hidden>
-                  📊{" "}
-                </span>
                 {t("sheet.figures")}
               </h3>
               {open.figures.length > 0 ? (
                 <ul className={styles.figList}>
                   {open.figures.map((fig) => (
                     <li key={fig.key} className={styles.figItem}>
-                      <span className="ftp-emoji" aria-hidden style={{ fontSize: 20, lineHeight: "26px" }}>
-                        {fig.emoji}
+                      {/* The figure's kind (rank, share, year) as the kit's Lucide icon, else the module's glyph. */}
+                      <span aria-hidden style={{ display: "inline-flex", height: 26, alignItems: "center", color: "var(--hue-deep)" }}>
+                        {emojiIcon(fig.emoji) ? <KitIcon emoji={fig.emoji} size={20} /> : <CategoryGlyph pick={indiaModuleGlyph(open.slug)} size={20} />}
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <span style={{ display: "block", fontSize: 14, color: "var(--ftp-text)" }} lang={fig.labelLang}>
@@ -189,9 +189,6 @@ export function CategoryModuleCards({
             {open.sources.length > 0 ? (
               <section>
                 <h3 className="ftp-display" style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 650 }}>
-                  <span className="ftp-emoji" aria-hidden>
-                    📚{" "}
-                  </span>
                   {t("sheet.sources")}
                 </h3>
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
