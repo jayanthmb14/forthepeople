@@ -79,6 +79,23 @@ export const GLYPH_HUE: Record<GlyphName, Hue> = {
   parks: "green",
   industry: "amber",
   hardhat: "slate",
+  // India dashboard (national topics)
+  people: "indigo",
+  globe: "sky",
+  paw: "orange",
+  rocket: "violet",
+  sun: "yellow",
+  medal: "amber",
+  book: "indigo",
+  map: "teal",
+  lock: "slate",
+  flask: "cyan",
+  phone: "blue",
+  briefcase: "amber",
+  fish: "sky",
+  cow: "lime",
+  speech: "pink",
+  lotus: "rose",
 };
 
 /** A glyph with its default hue. */

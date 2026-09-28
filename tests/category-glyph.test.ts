@@ -5,8 +5,8 @@
 
 // The shared category glyphs (src/components/graphics): every drawing is
 // well formed and coloured only by design tokens, and every category the
-// data carries today (news topics, NCRB crime types, kinds of project)
-// gets the picture and pastel hue it should.
+// data carries today (news topics, NCRB crime types, kinds of project,
+// India dashboard modules) gets the picture and pastel hue it should.
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -23,6 +23,15 @@ import {
   newsTopicGlyph,
   projectKindGlyph,
 } from "@/components/graphics/category-map";
+import { INDIA_MODULES } from "@/lib/india/india-modules";
+import { INDIA_SUPER_CATEGORIES } from "@/lib/india/india-super-categories";
+import {
+  INDIA_MODULE_GLYPH_SLUGS,
+  indiaCategoryGlyph,
+  indiaModuleGlyph,
+  indiaSuperCategoryGlyph,
+  medalPick,
+} from "@/components/india/glyphs";
 
 const PATH_CHARS = /^[MmLlHhVvCcSsQqTtAaZz0-9.\-\s,]+$/;
 /** Every number in a path, for a rough "stays on the 24 × 24 grid" check on absolute commands. */
@@ -170,5 +179,32 @@ describe("anything else", () => {
     expect(categoryGlyph("Airport expansion").glyph).toBe("airport");
     expect(categoryGlyph("").glyph).toBe("general");
     expect(categoryGlyph("Cyber Crimes", "crime").glyph).toBe("cyber");
+  });
+});
+
+describe("India dashboard", () => {
+  it("gives every India module, category and super-category a drawn glyph", () => {
+    for (const m of INDIA_MODULES) {
+      expect(INDIA_MODULE_GLYPH_SLUGS, m.slug).toContain(m.slug);
+      expect(GLYPH_NAMES, m.slug).toContain(indiaModuleGlyph(m.slug).glyph);
+      expect(indiaCategoryGlyph(m.category).glyph, m.category).not.toBe("general");
+    }
+    for (const sc of INDIA_SUPER_CATEGORIES) expect(indiaSuperCategoryGlyph(sc.slug).glyph, sc.slug).not.toBe("general");
+  });
+
+  it("draws the national topics with their own pictures", () => {
+    expect(indiaModuleGlyph("wildlife-tigers").glyph).toBe("paw");
+    expect(indiaModuleGlyph("demographics-population").glyph).toBe("people");
+    expect(indiaModuleGlyph("science-isro").glyph).toBe("rocket");
+    expect(indiaModuleGlyph("energy-fuels")).toEqual({ glyph: "water", hue: "slate" });
+    expect(indiaModuleGlyph("no-such-module", "energy").glyph).toBe("power");
+    expect(indiaModuleGlyph("no-such-module").glyph).toBe("general");
+  });
+
+  it("gives the top three ranks gold, silver and bronze medals", () => {
+    expect(medalPick(1)).toEqual({ glyph: "medal", hue: "yellow" });
+    expect(medalPick(2)).toEqual({ glyph: "medal", hue: "slate" });
+    expect(medalPick(3)).toEqual({ glyph: "medal", hue: "orange" });
+    expect(medalPick(4)).toBeNull();
   });
 });
