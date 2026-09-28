@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDistrictName, serializeForJson } from "@/lib/tenders/tender-helpers";
 import { NOT_STUB_TENDER } from "@/lib/data-filters";
+import { redFlagsComputed } from "@/lib/tenders/tender-redflags";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
 
   const sixtyDaysAgo = new Date(Date.now() - 60 * 86400_000);
 
+  // Until the red-flag check has run, an empty list means "not checked".
+  const flagsChecked = await redFlagsComputed();
   const tenders = await prisma.tender.findMany({
     where: {
       locationDistrict: districtName,
@@ -53,5 +56,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
     districtName,
     flagGroups: byFlag,
     totalTenders: tenders.length,
+    flagsChecked,
   }));
 }

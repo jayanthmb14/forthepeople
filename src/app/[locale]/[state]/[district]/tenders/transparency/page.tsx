@@ -34,6 +34,8 @@ type TransparencyResp = {
   districtName: string;
   flagGroups: Record<string, Array<{ tenderId: string; title: string; factualStatement: string; referenceRule: string | null; authority: string; value: string | null }>>;
   totalTenders: number;
+  /** False until the red-flag check has run: then no tender is marked either way. */
+  flagsChecked?: boolean;
 };
 
 const b = (c: React.ReactNode) => <strong>{c}</strong>;
@@ -82,7 +84,11 @@ export default function TransparencyPage({ params }: { params: Promise<{ locale:
 
         {isLoading && <LoadingShell rows={3} />}
         {error && <ErrorBlock message={t("transparency.loadError")} />}
-        {data && data.totalTenders === 0 && (
+        {data && data.flagsChecked === false && (
+          // The check has never run: say so rather than "no flagged tenders".
+          <EmptyState title={t("transparency.uncheckedTitle")} body={t("transparency.uncheckedBody")} />
+        )}
+        {data && data.flagsChecked !== false && data.totalTenders === 0 && (
           // Honest cadence: no tender cron is scheduled, so no fixed interval is promised.
           <EmptyState
             title={t("transparency.emptyTitle", { district: data.districtName })}

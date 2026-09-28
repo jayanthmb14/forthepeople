@@ -194,7 +194,8 @@
     "value": "Value of open tenders",
     "closing48": "Closing in 48h",
     "flagged": "Flagged",
-    "flaggedSub": "Factual indicators, not allegations"
+    "flaggedSub": "Factual indicators, not allegations",
+    "flaggedUnchecked": "Not checked yet"
   },
   "explainer": {
     "plainIn": "Right now <num>{n}</num> government {n, plural, one {tender is} other {tenders are}} open for bids in {district}. <num>{closing}</num> of them close within two days.",
@@ -356,6 +357,8 @@
     "loadError": "Couldn't load flag data.",
     "emptyTitle": "No flagged tenders in {district} right now.",
     "emptyBody": "Tenders are added when the source portal publishes them; red-flag labels are recalculated when new tenders arrive.",
+    "uncheckedTitle": "Red-flag indicators are not checked yet.",
+    "uncheckedBody": "We have not run the checks on these tenders yet, so no tender here is marked either way. The tenders themselves are on the main tenders page.",
     "chartTitle": "Which indicators come up most",
     "chartUnits": "Number of tenders carrying each indicator",
     "chartSimple": "The most common is <b>{name}</b>, on {n, plural, one {# tender} other {# tenders}}.",
