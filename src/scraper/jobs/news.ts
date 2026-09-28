@@ -31,6 +31,7 @@ import { JobContext, ScraperResult } from "../types";
 import { findCanonicalStory, titleKey, type StoredStory } from "@/lib/news-dedupe";
 import { cleanHeadline, isPromotional, stripFeedSuffix } from "@/lib/news-quality";
 import { urlKey } from "@/lib/dedupe/keys";
+import { NEWS_KEEP, NEWS_MAX_AGE_DAYS, newsIdsToPrune } from "../lib/news-prune";
 
 // Keyword-matcher categories that still benefit from AI-driven data extraction
 // (because we act on them downstream — create Infrastructure projects, exam
@@ -58,7 +59,7 @@ function parseRSSDate(dateStr: string): Date {
 }
 
 // Reject articles older than maxAgeDays, future-dated, or from year < current-1
-function isArticleFresh(publishedDate: Date, maxAgeDays = 3): boolean {
+function isArticleFresh(publishedDate: Date, maxAgeDays = NEWS_MAX_AGE_DAYS): boolean {
   const now = new Date();
   const ageMs = now.getTime() - publishedDate.getTime();
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
@@ -376,15 +377,18 @@ export async function scrapeNews(
       }
     }
 
-    // Keep only last 50 news items
-    const old = await prisma.newsItem.findMany({
+    // Keep the newest 50, plus anything still inside the freshness window
+    // (a pruned fresh article came back as "new" next run) — see news-prune.ts.
+    const beyondKeep = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
       orderBy: { publishedAt: "desc" },
-      skip: 50,
-      select: { id: true },
+      skip: NEWS_KEEP,
+      take: 5000,
+      select: { id: true, publishedAt: true },
     });
-    if (old.length > 0) {
-      await prisma.newsItem.deleteMany({ where: { id: { in: old.map((n) => n.id) } } });
+    const pruneIds = newsIdsToPrune(beyondKeep, Date.now());
+    if (pruneIds.length > 0) {
+      await prisma.newsItem.deleteMany({ where: { id: { in: pruneIds } } });
     }
 
     const summary =
