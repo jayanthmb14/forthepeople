@@ -53,6 +53,9 @@ export const GEPNIC_PORTALS: Record<string, GepnicPortal> = {
   delhi: { host: "govtprocurement.delhi.gov.in", app: "https://govtprocurement.delhi.gov.in/nicgep/app" },
 };
 
+/** Every GePNIC portal host (Tender.sourcePortal) we collect from. */
+export const GEPNIC_HOSTS: string[] = [...new Set(Object.values(GEPNIC_PORTALS).map((p) => p.host))];
+
 export const orgListUrl = (p: GepnicPortal) => `${p.app}?page=FrontEndTendersByOrganisation&service=page`;
 
 export interface FollowedOrg {

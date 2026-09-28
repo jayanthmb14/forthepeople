@@ -25,8 +25,9 @@
 //      and a fair share per organisation; the rest follow next run;
 //   4. each page must agree with the listing (tender id, closing date,
 //      organisation) or the tender is skipped;
-//   5. our tenders of that organisation that have passed their closing
-//      date are marked BID_CLOSED.
+//   5. after all portals: every stored GePNIC tender whose closing date
+//      has passed is marked BID_CLOSED (by date, not by today's lists: a
+//      body whose last tender closed drops off the organisation list).
 // Money is whole rupees (Tender.*Inr). "Tender value" left blank or
 // 0.00 by the portal is stored as null, never 0. No person's name from
 // the page is stored.
@@ -36,6 +37,7 @@ import { prisma } from "@/lib/db";
 import { CookieSession } from "../lib/source-fetch";
 import { normName, type CollectorDistrict } from "../lib/source-districts";
 import {
+  GEPNIC_HOSTS,
   GEPNIC_ORGS,
   GEPNIC_PORTALS,
   detailProblems,
@@ -231,12 +233,6 @@ async function runPortal(
       stats.pending += pending;
       out.pending += pending;
       if (pending > 0) out.budgetExhausted = true;
-
-      const closed = await prisma.tender.updateMany({
-        where: { sourcePortal: portal.host, authorityId, status: "OPEN_FOR_BIDS", bidSubmissionEnd: { lt: now } },
-        data: { status: "BID_CLOSED", statusChangedAt: now },
-      });
-      out.closed += closed.count;
       opts.log(`${portal.host}: ${e.org.org} — ${listed.length} listed, ${done} pages read, ${pending} left for next run`);
     } catch (err) {
       out.failures.push({ district: e.district.slug, error: err instanceof Error ? err.message : String(err) });
@@ -279,5 +275,16 @@ export async function collectGepnicTenders(
       runPortal(portal, entries, out, { ...opts, maxDetails: opts.maxDetailsPerPortal ?? 80 }),
     ),
   );
+
+  // Close by date, whatever happened to the lists this run. The sweep used
+  // to run per body, only for bodies on today's list and reached in time,
+  // so a body whose last tender closed (it drops off the list) kept its
+  // stored tenders "Open" for ever next to a passed deadline.
+  const now = new Date();
+  const closed = await prisma.tender.updateMany({
+    where: { sourcePortal: { in: GEPNIC_HOSTS }, status: "OPEN_FOR_BIDS", bidSubmissionEnd: { lt: now } },
+    data: { status: "BID_CLOSED", statusChangedAt: now },
+  });
+  out.closed += closed.count;
   return out;
 }
