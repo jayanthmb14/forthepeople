@@ -4,17 +4,17 @@
  */
 
 // OverviewCard — the frame of the four summary cards on the district
-// overview (leaders, people, projects, money), v5.1 "Warm Calm":
+// overview (leaders, people, projects, money), v5.2 "White Calm":
 //
-//   ┌──────────────────────────────────────────────┐
-//   │ [drawn mark]  District leaders     View all → │  ← pastel wash of the hue
+//   ┌──────────────────────────────────────────────┐  ← 2 px hue rule on top
+//   │ [drawn mark]  District leaders     View all → │
 //   │ …body…                                        │
 //   └──────────────────────────────────────────────┘
 //
-// A soft wash of the card's hue at the top fading into white, a drawn
-// picture (overview-art.tsx) in a white medallion, the title in the deep
-// hue, and "View all" as a small pill link to the module. `tone="gold"`
-// paints the money card in the gold accent instead of its hue.
+// A white card with a thin rule of the card's hue along the top, a drawn
+// picture (overview-art.tsx) on the module tint, the title in the text
+// colour, and "View all" as a small link to the module. `tone="gold"`
+// uses the gold accent for the rule and the mark instead of the hue.
 "use client";
 
 import Link from "next/link";

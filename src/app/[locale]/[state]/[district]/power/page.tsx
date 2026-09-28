@@ -298,7 +298,7 @@ function PowerPageInner({ params }: { params: Promise<{ locale: string; state: s
                           padding: "8px 2px",
                           borderRadius: 12,
                           minWidth: 0,
-                          background: isToday ? "var(--hue)" : n > 0 ? "var(--ftp-surface)" : "color-mix(in srgb, var(--hue-tint) 60%, #fff)",
+                          background: isToday ? "var(--hue)" : n > 0 ? "var(--ftp-surface)" : "var(--ftp-surface-2)",
                           color: isToday ? "#fff" : "var(--ftp-text)",
                           border: n > 0 && !isToday ? "1px solid color-mix(in srgb, var(--hue) 40%, var(--ftp-border))" : "1px solid transparent",
                         }}

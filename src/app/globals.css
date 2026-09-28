@@ -9,7 +9,7 @@
   /* ── Colors ── */
   /* v5 "Calm": the legacy names now carry the cool blue-white palette
      (see the v5 token block further down for the canonical --ftp-* set). */
-  --color-background: #F5F8FC;
+  --color-background: #FAFBFD;
   --color-surface: #FFFFFF;
   --color-border: #E1E8F2;
   --color-text-primary: #0F1B2D;
@@ -20,7 +20,7 @@
   --color-accent-amber: #D97706;
   --color-accent-red: #DC2626;
   --color-accent-purple: #7C3AED;
-  --color-hover-bg: #EEF3FA;
+  --color-hover-bg: #F3F6FA;
   --color-selected-bg: #E8F0FE;
 
   /* ── Fonts ── */
@@ -76,7 +76,7 @@
      Aliases the new India dashboard components (and Phase 3A
      design-tokens.ts) reference. Additive — does not replace
      any of the older project tokens above. */
-  --color-background-secondary: #EEF3FA;
+  --color-background-secondary: #F3F6FA;
   --color-text-tertiary:        #5F6F86;
   --color-text-info:            #2563EB;
   --color-background-info:      #E8F0FE;
@@ -411,7 +411,7 @@
  *
  *  Contrast (WCAG AA, checked 27 Sep 2026):
  *    --ftp-text   on --ftp-bg       16.2 : 1
- *    --ftp-text-2 on --ftp-surface   7.0 : 1   (on --ftp-bg 6.6, on surface-2 6.3)
+ *    --ftp-text-2 on --ftp-surface   7.0 : 1   (on --ftp-bg 6.8, on surface-2 6.5)
  *    --ftp-brand  on --ftp-surface   5.2 : 1   (white text on brand 5.2)
  *    --ftp-brand-deep on brand-tint  7.6 : 1
  *    --ftp-warn-text on warn-tint    7.0 : 1
@@ -423,10 +423,11 @@
  *  calm tinted notice — never as a stripe or a gradient.
  */
 :root {
-  /* Surfaces: soft blue-white page, crisp white cards */
-  --ftp-bg:              #F5F8FC;
+  /* Surfaces (v5.2 "White Calm"): a near-white page, white cards, a very
+     quiet grey-blue for hovers and skeletons. 80–90 % of a screen is white. */
+  --ftp-bg:              #FAFBFD;
   --ftp-surface:         #FFFFFF;
-  --ftp-surface-2:       #EEF3FA;
+  --ftp-surface-2:       #F3F6FA;
   --ftp-border:          #E1E8F2;
   --ftp-border-strong:   #C9D5E6;
 
@@ -909,7 +910,7 @@ body {
 @keyframes ftp-draw { from { stroke-dashoffset: var(--len, 1000); } }
 .ftp-draw-path { animation: ftp-draw 900ms var(--ftp-ease-out) both; animation-delay: calc(var(--i, 0) * 60ms + 100ms); }
 .ftp-dt-row { transition: background-color 120ms ease; }
-.ftp-dt-row:hover { background: var(--hue-tint) !important; }
+.ftp-dt-row:hover { background: var(--ftp-surface-2) !important; }
 @keyframes ftp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes ftp-ping { 0% { transform: scale(1); opacity: 0.4; } 100% { transform: scale(2.2); opacity: 0; } }
 @keyframes ftp-wave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
@@ -924,7 +925,13 @@ body {
 
 /* Kit surfaces */
 .ftp-v4-card, .ftp-card { background: var(--ftp-surface); border: 1px solid var(--ftp-border); border-radius: var(--ftp-radius-card); box-shadow: var(--ftp-shadow-1); }
-.ftp-v4-tinted, .ftp-card-tinted { background: color-mix(in srgb, var(--hue-tint) 65%, var(--ftp-surface)); border-color: color-mix(in srgb, var(--hue) 16%, var(--ftp-border)); }
+.ftp-v4-tinted, .ftp-card-tinted { background: var(--ftp-surface); border-color: var(--ftp-border); box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1); }
+/* v5.2 "White Calm" accents: the ONLY places a module hue may touch a card.
+   .ftp-rule-left = a 3 px hue rule on the left edge (explainers, the page
+   header, highlighted cards); .ftp-rule-top = a 2 px rule along the top
+   (a card that heads a group). Both keep the card itself white. */
+.ftp-rule-left { box-shadow: inset 3px 0 0 var(--hue, var(--ftp-brand)), var(--ftp-shadow-1); }
+.ftp-rule-top { box-shadow: inset 0 2px 0 var(--hue, var(--ftp-brand)), var(--ftp-shadow-1); }
 .ftp-icon-chip { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 10px; background: var(--hue-tint); color: var(--hue-deep); }
 
 /* Buttons. .ftp-btn-primary picks up the page hue (calm mid tone, AA with
@@ -996,7 +1003,7 @@ html { scroll-padding-top: 100px; }
 
 /* Chips: pastel. Active = hue tint + deep text + hue border; hover = tint. */
 .ftp-chip { transition: border-color 150ms ease, background-color 150ms ease; }
-.ftp-chip:hover[aria-pressed="false"] { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)) !important; background: var(--hue-tint) !important; }
+.ftp-chip:hover[aria-pressed="false"] { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)) !important; background: var(--ftp-surface-2) !important; }
 header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-decoration: underline; }
 .ftp-h1, .ftp-h2 { text-wrap: balance; }
 
@@ -1104,8 +1111,9 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(var(--ftp-grid-min, 280px), 100%), 1fr)); }
 .ftp-prose { max-width: 72ch; }
 
-/* PageHeader (kit): a calm pastel band — white washing into the module
-   tint, the deep hue for the title, a small module chip. A grid: chip and
+/* PageHeader (kit), v5.2 "White Calm": a white card with a 3 px module-hue
+   rule on its left edge and the module chip on a light tint — the only
+   colour in the header. The title is in the text colour. A grid: chip and
    title on row 1; description and pills under the title (full width on
    phones so they wrap less). About 120–150 px tall on a phone. */
 .ftp-page-header { margin-bottom: 20px; }
@@ -1115,18 +1123,19 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-page-band {
   position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 14px;
   padding: 18px 20px; border-radius: var(--ftp-radius-card);
-  background: linear-gradient(120deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-tint) 35%, var(--ftp-surface)) 55%, var(--ftp-surface) 100%);
-  border: 1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border));
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1);
 }
 .ftp-page-chip {
   grid-column: 1; grid-row: 1;
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: 12px; font-size: 22px;
-  background: var(--ftp-surface); border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border)); color: var(--hue-deep);
+  background: var(--hue-tint); border: 1px solid color-mix(in srgb, var(--hue) 16%, transparent); color: var(--hue-deep);
 }
 .ftp-page-titlerow { grid-column: 2; grid-row: 1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 12px; min-width: 0; }
-.ftp-page-title { margin: 0; font-family: var(--ftp-font-h1); font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; color: var(--hue-deep); text-wrap: balance; }
-.ftp-page-local { font-size: 18px; line-height: 24px; font-weight: 600; color: var(--hue-deep); opacity: 0.8; }
+.ftp-page-title { margin: 0; font-family: var(--ftp-font-h1); font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; color: var(--ftp-text); text-wrap: balance; }
+.ftp-page-local { font-size: 18px; line-height: 24px; font-weight: 600; color: var(--hue-deep); }
 .ftp-page-desc { grid-column: 2; margin: 4px 0 0; max-width: 68ch; font-size: 15px; line-height: 22px; color: var(--ftp-text-2); }
 .ftp-page-meta { grid-column: 2; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .ftp-page-stale { margin-top: 10px; }
@@ -1152,9 +1161,9 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
   .ftp-sheet-grip { display: none; }
 }
 .ftp-sheet-grip { width: 44px; height: 5px; border-radius: 99px; background: var(--ftp-border-strong); margin: 8px auto 0; flex-shrink: 0; }
-.ftp-sheet-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--ftp-border); background: linear-gradient(180deg, var(--hue-tint, var(--ftp-surface)) 0%, var(--ftp-surface) 100%); }
-.ftp-sheet-emoji { width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; background: var(--ftp-surface); border: 1px solid color-mix(in srgb, var(--hue, var(--ftp-brand)) 18%, var(--ftp-border)); color: var(--hue-deep, var(--ftp-brand-deep)); flex-shrink: 0; }
-.ftp-sheet-title { margin: 0; font-family: var(--ftp-font-sans); font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--hue-deep, var(--ftp-text)); outline: none; }
+.ftp-sheet-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--ftp-border); background: var(--ftp-surface); box-shadow: inset 0 3px 0 var(--hue, var(--ftp-brand)); }
+.ftp-sheet-emoji { width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; background: var(--hue-tint, var(--ftp-brand-tint)); border: 1px solid color-mix(in srgb, var(--hue, var(--ftp-brand)) 16%, transparent); color: var(--hue-deep, var(--ftp-brand-deep)); flex-shrink: 0; }
+.ftp-sheet-title { margin: 0; font-family: var(--ftp-font-sans); font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--ftp-text); outline: none; }
 .ftp-sheet-sub { margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--ftp-text-2); }
 .ftp-sheet-close { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--ftp-border); background: var(--ftp-surface); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: var(--ftp-text); }
 .ftp-sheet-close:hover { background: var(--ftp-surface-2); }
@@ -1169,15 +1178,15 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 @keyframes ftp-sheet-left { from { transform: translateX(32px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes ftp-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-/* HowItWorks steps: numbered pastel cards, a small monochrome icon each */
+/* HowItWorks steps: numbered white cards, a small hue icon each */
 .ftp-how-title { font-weight: 650; font-size: 15px; margin-bottom: 10px; color: var(--ftp-text); }
 .ftp-how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); counter-reset: none; }
-.ftp-how-step { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; border-radius: var(--ftp-radius-tile); background: color-mix(in srgb, var(--hue-tint, var(--ftp-surface-2)) 70%, var(--ftp-surface)); border: 1px solid color-mix(in srgb, var(--hue, #64748B) 14%, var(--ftp-border)); }
+.ftp-how-step { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; border-radius: var(--ftp-radius-tile); background: var(--ftp-surface); border: 1px solid var(--ftp-border); }
 .ftp-how-head { display: flex; align-items: center; gap: 8px; }
-.ftp-how-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ftp-surface); border: 1px solid color-mix(in srgb, var(--hue, #64748B) 30%, var(--ftp-border)); font-size: 12px; font-weight: 700; color: var(--hue-deep, var(--ftp-text-2)); font-variant-numeric: tabular-nums; }
+.ftp-how-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--hue-tint, var(--ftp-surface-2)); border: 1px solid color-mix(in srgb, var(--hue, var(--ftp-text-2)) 20%, transparent); font-size: 12px; font-weight: 700; color: var(--hue-deep, var(--ftp-text-2)); font-variant-numeric: tabular-nums; }
 .ftp-how-icon { color: var(--hue, var(--ftp-text-2)); }
 .ftp-how-emoji { display: none; }
-.ftp-how-step-title { font-weight: 650; font-size: 14px; line-height: 20px; color: var(--hue-deep, var(--ftp-text)); }
+.ftp-how-step-title { font-weight: 650; font-size: 14px; line-height: 20px; color: var(--ftp-text); }
 .ftp-how-step-body { font-size: 13px; line-height: 19px; color: var(--ftp-text-2); }
 @media (min-width: 640px) {
   .ftp-how-step:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--hue, var(--ftp-text-2)); background: var(--ftp-surface); border-radius: 99px; width: 16px; text-align: center; z-index: 1; }
@@ -1187,7 +1196,7 @@ header a[href]:not([class]):hover { color: var(--ftp-text) !important; text-deco
 .ftp-countdown { display: grid; gap: 6px; }
 .ftp-countdown-label { display: flex; align-items: center; gap: 6px; font-weight: 650; font-size: 14px; color: var(--ftp-text); }
 .ftp-countdown-label > svg { flex-shrink: 0; color: var(--hue, var(--ftp-text-2)); }
-.ftp-countdown-track { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--hue-pop, #C9D5E6) 45%, var(--ftp-surface-2)); overflow: hidden; }
+.ftp-countdown-track { height: 8px; border-radius: 99px; background: var(--ftp-surface-2); overflow: hidden; }
 .ftp-countdown-fill { height: 100%; border-radius: 99px; background: var(--hue, var(--ftp-brand)); transition: width 600ms ease-out; }
 .ftp-countdown-fill.is-soon { background: var(--ftp-warn); }
 .ftp-countdown-sub { font-size: 12px; color: var(--ftp-text-2); }

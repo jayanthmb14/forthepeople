@@ -403,8 +403,8 @@ export function CountChips({ items, ariaLabel }: { items: CountChip[]; ariaLabel
             gap: 10,
             padding: "10px 12px",
             borderRadius: "var(--ftp-radius-tile)",
-            background: "linear-gradient(135deg, var(--hue-tint) 0%, var(--ftp-surface) 90%)",
-            border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
+            background: "var(--ftp-surface)",
+            border: "1px solid var(--ftp-border)",
             minWidth: 0,
             ["--i" as string]: i,
           }}

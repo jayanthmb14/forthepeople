@@ -192,7 +192,7 @@ function Initials({ name, size = 40 }: { name: string; size?: number }) {
         width: size,
         height: size,
         borderRadius: Math.round(size * 0.35),
-        background: "linear-gradient(135deg, var(--hue-tint) 0%, color-mix(in srgb, var(--hue-pop) 45%, #fff) 100%)",
+        background: "var(--hue-tint)",
         border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
         color: "var(--hue-deep)",
         display: "flex",
@@ -249,7 +249,7 @@ function ContributorCard({ c, onOpen }: { c: Contributor; onOpen: (c: Contributo
             color: "var(--ftp-text-2)",
             padding: "6px 10px",
             borderRadius: 10,
-            background: "color-mix(in srgb, var(--hue-tint) 60%, #fff)",
+            background: "var(--ftp-surface-2)",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -273,7 +273,7 @@ function SupporterDetails({ c }: { c: Contributor }) {
   return (
     <>
       {c.message && (
-        <p style={{ margin: 0, padding: "12px 14px", borderRadius: 14, background: "var(--hue-tint)", color: "var(--ftp-text)", fontSize: 15, lineHeight: "23px" }}>
+        <p style={{ margin: 0, padding: "12px 14px", borderRadius: 14, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", boxShadow: "inset 3px 0 0 var(--hue)", color: "var(--ftp-text)", fontSize: 15, lineHeight: "23px" }}>
           &ldquo;{c.message}&rdquo;
         </p>
       )}

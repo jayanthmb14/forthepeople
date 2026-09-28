@@ -16,8 +16,9 @@
 }
 
 .tinted {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%);
-  border-color: color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  /* v5.2 "White Calm": white, with a 3 px hue rule on the left edge. */
+  background: var(--ftp-surface);
+  box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1);
 }
 
 .card:focus-within {

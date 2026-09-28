@@ -358,7 +358,7 @@ function ExamSheet({
       )}
 
       {confirmed && view.next && (
-        <div style={{ padding: 14, borderRadius: "var(--ftp-radius-card)", background: "var(--hue-tint)" }}>
+        <div style={{ padding: 14, borderRadius: "var(--ftp-radius-card)", background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)", boxShadow: "inset 3px 0 0 var(--hue)" }}>
           <ExamCountdown view={view} now={now} withName />
         </div>
       )}

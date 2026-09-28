@@ -120,11 +120,11 @@ function TalukCard({
         <div
           aria-hidden
           title={t("villageShare", { n: f.number(villages), total: f.number(totalVillages) })}
-          style={{ height: 6, borderRadius: 999, overflow: "hidden", background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))" }}
+          style={{ height: 6, borderRadius: 999, overflow: "hidden", background: "var(--ftp-surface-2)" }}
         >
           <div
             className="ftp-grow-x"
-            style={{ height: "100%", width: `${Math.max(2, Math.round(share * 100))}%`, borderRadius: 999, background: "linear-gradient(90deg, var(--hue-pop), var(--hue))" }}
+            style={{ height: "100%", width: `${Math.max(2, Math.round(share * 100))}%`, borderRadius: 999, background: "var(--hue)" }}
           />
         </div>
       )}
@@ -375,8 +375,8 @@ export default function MapPage({ params }: { params: Promise<{ locale: string; 
                     margin: "0 0 12px",
                     padding: "10px 14px",
                     borderRadius: "var(--ftp-radius-card)",
-                    background: "var(--hue-tint)",
-                    border: "1px dashed color-mix(in srgb, var(--hue) 30%, var(--ftp-border))",
+                    background: "var(--ftp-surface)",
+                    border: "1px dashed var(--ftp-border-strong)",
                   }}
                 >
                   <span>

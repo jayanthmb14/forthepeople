@@ -57,8 +57,9 @@ import { KitIcon, emojiIcon } from "@/lib/design/emoji-icons";
  * Explainer — the plain-language line under a page header.
  * Example: <Explainer>Out of every ₹100 given to Mandya, ₹82 was spent.</Explainer>
  *
- * v5: a small lightbulb icon chip (or `icon`, or the icon for a passed
- * `emoji`) on a flat pastel card. Never an emoji.
+ * v5.2 "White Calm": a white card with a 3 px module-hue rule on its left
+ * edge and a small lightbulb icon chip (or `icon`, or the icon for a passed
+ * `emoji`). Never an emoji, never a pastel wash.
  */
 export function Explainer({
   children,
@@ -86,11 +87,12 @@ export function Explainer({
         padding: "14px 16px",
         margin: "0 0 20px",
         borderRadius: "var(--ftp-radius-card)",
-        background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface))",
-        border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        boxShadow: "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)",
       }}
     >
-      <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, background: "var(--ftp-surface)", marginTop: 1 }}>
+      <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10, marginTop: 1 }}>
         <KitIcon icon={chipIcon} size={17} />
       </span>
       <div style={{ minWidth: 0 }}>
@@ -226,7 +228,7 @@ export function Gauge({
         aria-hidden
         style={{ maxWidth: "100%", overflow: "visible" }}
       >
-        <path d={arc} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} strokeLinecap="round" />
+        <path d={arc} fill="none" stroke="var(--ftp-surface-2)" strokeWidth={stroke} strokeLinecap="round" />
         <path
           className="ftp-draw-path"
           d={arc}

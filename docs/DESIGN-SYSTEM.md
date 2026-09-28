@@ -1,4 +1,4 @@
-# ForThePeople.in — Design System v5.1 "Warm Calm"
+# ForThePeople.in — Design System v5.2 "White Calm"
 
 The site should feel **calm, clear and trustworthy**: a quiet blue-white page,
 white cards, one blue for actions, and colour only where it tells you which
@@ -13,6 +13,13 @@ warmth: soft pastel washes on heroes, tiles and cards, a 2 px pastel ribbon
 under the header and footer, gold and silver for money and metals, crafted
 SVG pictures instead of emoji for categories, and a little motion that has a
 job (§8).
+
+**v5.2 "White Calm"** (28 Sept 2026) takes most of that warmth back out of
+the *surfaces*. The owner compared the site with the June dashboard and
+asked for the old feel: a white page where only what is needed is shown, a
+few blue accents, "so it does not look fabricated or made by AI". The rule
+is in §2a and wins over any older line in this file that talks about
+pastel washes.
 
 Reference implementation: the kit in `src/components/district/ui.tsx`,
 `visuals.tsx` and `DetailSheet.tsx`; shared SVG glyphs in
@@ -38,6 +45,47 @@ the district shell in `src/components/district/shell/`; tokens in
 5. **Sources are "government portals and other reputed sources"** — never
    claim "official only" when a page also shows other sources.
 
+## 2a. White Calm — the 80/20 rule (v5.2)
+
+**80–90 % of every screen is white. Colour is 10–20 %, and only in small
+accents.** Every module uses the same template; the only thing that differs
+from one module to the next is its hue in those accents.
+
+Allowed colour (the accents):
+
+| Accent | Where | How |
+|---|---|---|
+| Hue rule, left, 3 px | page header (`PageHeader`, the overview hero), `Explainer`, `CalmNote`, a highlighted card (`Card tinted`, `TapCard wash`, `.ftp-card-tinted`), in-card notes | `box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1)` or `.ftp-rule-left` |
+| Hue rule, top, 2 px | a card that heads a group (the four overview picture cards, tomorrow's weather) | `inset 0 2px 0 var(--hue)` or `.ftp-rule-top` |
+| Icon chip | the module chip in the header, the icon in a stat tile or card head, the drawn mark on an overview tile | `--hue-tint` background, `--hue-deep` icon, 26–44 px |
+| Key numbers | the big figure in a stat tile, overview tile or card | `--hue-deep` text |
+| Status | freshness dots, "On time" / "Late", stale notice | `--ftp-live*` / `--ftp-warn*` as today |
+| Data | chart series, bars, rings, pictograms, a tank | `--hue` / `--hue-pop` fills on neutral tracks (`--ftp-surface-2`) |
+| Selected | the active filter chip, the active sidebar row | `--hue-tint` + `--hue-deep` text |
+
+Not allowed any more:
+
+- pastel **washes** on cards, tiles, heroes, headers, sheets, notes or
+  steps (`linear-gradient(… var(--hue-tint) …)`, `color-mix(… --hue-tint 60 % …)`
+  as a card background);
+- corner circles / "sun" blobs, sky gradients, hue-coloured card borders at
+  rest (borders are `--ftp-border`; the hue border is for hover and the
+  selected state);
+- titles in the hue: the page H1 and card titles are `--ftp-text`
+  (a local-script name beside the H1 may stay `--hue-deep`);
+- tinted table headers and zebra rows (use `--ftp-surface-2`);
+- `#fff` in components (use `var(--ftp-surface)`).
+
+Page: `--ftp-bg` is a near-white `#FAFBFD`, cards are white with a 1 px
+`--ftp-border`, `--ftp-surface-2` (`#F3F6FA`) is only for hovers, tracks,
+skeletons and table headers. Gold stays for money (a gold rule / chip /
+number, not a gold wash). The landmark drawing on the overview hero stays,
+kept small (about 30 % of the hero width on a PC, a 96 px band on a phone).
+
+Self-check for a screen: squint at a screenshot. If any block reads as a
+coloured panel rather than a white card with a thin coloured edge, it is
+too much.
+
 ## 2. Colour
 
 All colours are CSS variables in `globals.css`. **No hex in components** —
@@ -47,11 +95,11 @@ exception).
 
 | Token | Value | Use | Contrast |
 |---|---|---|---|
-| `--ftp-bg` | `#F5F8FC` | page (soft blue-white) | — |
+| `--ftp-bg` | `#FAFBFD` | page (near-white, v5.2) | — |
 | `--ftp-surface` | `#FFFFFF` | cards, tiles, sheets | — |
-| `--ftp-surface-2` | `#EEF3FA` | quiet fills, hovers, skeletons | — |
+| `--ftp-surface-2` | `#F3F6FA` | hovers, tracks, skeletons, table headers (v5.2) | — |
 | `--ftp-text` | `#0F1B2D` | body text, titles | 16.2 : 1 on bg |
-| `--ftp-text-2` | `#4A5A70` | secondary text, labels | 7.0 on white, 6.3 on surface-2 |
+| `--ftp-text-2` | `#4A5A70` | secondary text, labels | 7.0 on white, 6.5 on surface-2 |
 | `--ftp-border` | `#E1E8F2` | card and table borders | — |
 | `--ftp-border-strong` | `#C9D5E6` | inputs, hovered borders | — |
 | `--ftp-brand` | `#2563EB` | links, primary buttons, focus ring | 5.2 on white (white text on it 5.2) |
@@ -111,7 +159,7 @@ A hue sets four variables:
 
 | Variable | What it is | Where it goes |
 |---|---|---|
-| `--hue-tint` | very light | chip and card backgrounds, table headers, the PageHeader wash |
+| `--hue-tint` | very light | icon chips, the selected chip / row (v5.2: never a card background) |
 | `--hue-pop` | pastel | second chart series, light fills, water in a tank, bar tracks |
 | `--hue` | calm mid tone, ≥ 4.5 : 1 on white | small icons, bars, active borders, hue buttons (white text passes AA) |
 | `--hue-deep` | ≥ 6.5 : 1 on white and on the tint | numbers, the page title, text on a tint |
@@ -135,8 +183,9 @@ A hue sets four variables:
 
 Rules:
 
-- Big areas use the **tint** or **pop**, never `--hue`. **No saturated
-  gradient bands**, no full-card hue gradients.
+- v5.2: big areas are **white**. The tint is for chips and the selected
+  state only; **no pastel washes**, no saturated gradient bands, no
+  full-card hue gradients (§2a).
 - The deep tone is for small things: an icon, a number, a title.
 - To colour one element differently, wrap it in `className="ftp-hue-<name>"`.
   For SVG/canvas that cannot read CSS variables, use `HUE_HEX` (it must match
@@ -235,8 +284,9 @@ replace it with a Lucide icon or remove it.
 `src/components/district/ui.tsx`:
 
 - **`ModulePage`** — the frame (see `docs/LAYOUT.md`).
-- **`PageHeader`** — a calm pastel band: white washing into the module tint,
-  a small module emoji chip, the H1 in `--hue-deep`, one description line,
+- **`PageHeader`** — (v5.2) a white card with a 3 px hue rule on its left
+  edge, a small module emoji chip on the tint, the H1 in `--ftp-text`, one
+  description line,
   then the freshness pill, source pill and actions. About 120–150 px on a
   phone. No gradient slab, no watermark, no group chip. The back link shows
   only on nested pages (a tender inside Tenders, a taluk, admin); on a
@@ -246,8 +296,8 @@ replace it with a Lucide icon or remove it.
 - **`StatTile`** / **`StatStrip`** — a white tile: small icon chip + label,
   the number in `--hue-deep` (counts up once), a sub line, "As of" + source.
 - **`Card`** — white, 1 px `--ftp-border`, 14 px radius, `--ftp-shadow-1`.
-  With `href` it lifts 1 px and takes a hue border on hover. `tinted` = a flat
-  pastel wash.
+  With `href` it lifts 1 px and takes a hue border on hover. `tinted` = a
+  3 px hue rule on the left (v5.2; no wash).
 - **`Section`** / **`SectionHeader`** — an H2 with an optional action; no emoji.
 - **`Chips`** — pastel filter chips, 12 px radius, 34 px (44 on phones).
   Active = hue tint + deep text + hue border.
@@ -255,7 +305,7 @@ replace it with a Lucide icon or remove it.
   text, 12 px radius, 40 px (44 on phones), darker on hover
   (`.ftp-btn-brand`). **`ToolbarButton`** — the quiet white one.
   `.ftp-btn-primary` (class only) = a button in the page hue.
-- **`DataTable`** — tint header, faint zebra, tabular numbers.
+- **`DataTable`** — neutral `--ftp-surface-2` header in `--ftp-text-2`, faint neutral zebra, tabular numbers.
 - **`EmptyState`** — one honest sentence with a small Lucide icon.
 - **`DetailSheet`** + **`DetailList`** (`DetailSheet.tsx`) — tap anything to
   see everything; bottom sheet on phones, right panel on laptops. Icons, not
@@ -269,7 +319,7 @@ where a category needs a picture.
 
 `src/components/district/visuals.tsx`:
 
-- **`Explainer`** — "In simple words": a lightbulb icon + one plain sentence.
+- **`Explainer`** — "In simple words": a white card with a 3 px hue rule, a lightbulb icon chip + one plain sentence.
 - **`Pictogram`** — 10 Lucide icons, N lit in the hue (`icon={House}`).
 - **`Gauge`**, **`WaterTank`** — a dial and a tank in pastel hue.
 - **`WeatherGlyph`** / **`weatherIcon()`** — a weather icon (`weatherEmoji()`
@@ -431,7 +481,17 @@ Built in `src/components/home/` (`chrome.module.css`) and
   end clear of the Report button. Rule: `footer-mode.ts`; frame:
   `FooterFrame.tsx`.
 
-## 10. District overview (v5.1)
+## 10. District overview (v5.1, calmed in v5.2)
+
+v5.2 "White Calm" overrides the washes below: the hero is a white card with
+the 3 px hue rule, a neutral line of hills and a small landmark drawing (no
+sky, no sun glow); number tiles are white with the drawn picture on a small
+tint chip and the number in `--hue-deep` (gold number and chip for the
+budget; amber / red border and chip for warnings); the four picture cards
+are white with a 2 px hue rule on top, the mark on a tint chip and the
+title in `--ftp-text`; the report card is white with a brand-blue rule;
+taluk chips and topic rows are white with a neutral hover.
+
 
 Styles in `district-shell.css`; parts in `src/components/district/shell/`:
 
@@ -490,7 +550,8 @@ Styles in `district-shell.css`; parts in `src/components/district/shell/`:
 - [ ] No emoji outside the module chip / sidebar / overview tile; categories
       use glyphs from `src/components/graphics`.
 - [ ] Gold / silver only for money and metals, from a token (§2).
-- [ ] No saturated gradient band; big areas use the tint.
+- [ ] No saturated gradient band and no pastel wash; big areas are white,
+      colour only as the accents in §2a (80–90 % white).
 - [ ] No hex colours in the component; tokens and hue variables only.
 - [ ] The first screen shows the answer and the main action.
 - [ ] Every dataset has a date; old data shows the stale notice; undated data

@@ -44,8 +44,8 @@ export function GlyphEmptyState({
         alignItems: "center",
         gap: "12px 22px",
         padding: "18px 20px",
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface)) 0%, var(--ftp-surface) 75%)",
-        border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
       }}
     >

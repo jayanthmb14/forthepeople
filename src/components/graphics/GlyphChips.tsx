@@ -64,10 +64,8 @@ export function GlyphChips({
               minHeight: 34,
               padding: item.pick ? "0 12px 0 8px" : "0 12px",
               borderRadius: "var(--ftp-radius-tile)",
-              border: `1px solid ${active ? "var(--hue)" : "color-mix(in srgb, var(--hue) 22%, var(--ftp-border))"}`,
-              background: active
-                ? "var(--hue-tint)"
-                : "linear-gradient(150deg, var(--ftp-surface) 55%, color-mix(in srgb, var(--hue-tint) 80%, var(--ftp-surface)))",
+              border: `1px solid ${active ? "var(--hue)" : "var(--ftp-border)"}`,
+              background: active ? "var(--hue-tint)" : "var(--ftp-surface)",
               color: active ? "var(--hue-deep)" : "var(--ftp-text)",
               boxShadow: active ? "inset 0 0 0 1px var(--hue)" : undefined,
               transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",

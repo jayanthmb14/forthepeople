@@ -51,7 +51,7 @@ describe("module hues (v5 Calm)", () => {
 });
 
 describe("text tokens (v5 Calm)", () => {
-  const BG = "#F5F8FC", SURFACE2 = "#EEF3FA", TEXT = "#0F1B2D", TEXT2 = "#4A5A70";
+  const BG = "#FAFBFD", SURFACE2 = "#F3F6FA", TEXT = "#0F1B2D", TEXT2 = "#4A5A70";
   it("text and text-2 pass AA on every surface", () => {
     for (const bg of [WHITE, BG, SURFACE2]) {
       expect(contrast(TEXT, bg)).toBeGreaterThanOrEqual(7);

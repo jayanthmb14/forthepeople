@@ -333,8 +333,9 @@ function AlertsPageInner({ params }: { params: Promise<{ locale: string; state: 
                       hint={t("list.hint")}
                       onOpen={() => setOpenId(a.id)}
                       style={{
-                        background: st === "ended" ? "var(--ftp-surface)" : "linear-gradient(135deg, var(--hue-tint) 0%, #fff 80%)",
-                        border: `1px solid color-mix(in srgb, var(--hue) ${st === "ended" ? 15 : 45}%, var(--ftp-border))`,
+                        background: "var(--ftp-surface)",
+                        border: `1px solid ${st === "ended" ? "var(--ftp-border)" : "color-mix(in srgb, var(--hue) 30%, var(--ftp-border))"}`,
+                        boxShadow: st === "ended" ? undefined : "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)",
                         opacity: st === "ended" ? 0.75 : 1,
                       }}
                     >

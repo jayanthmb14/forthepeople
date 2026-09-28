@@ -133,10 +133,10 @@ function ElectionCard({ e, onOpen }: { e: ElectionEvent; onOpen: (e: ElectionEve
         font: "inherit",
         color: "var(--ftp-text)",
         cursor: "pointer",
-        background: past ? "var(--ftp-surface)" : "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, #fff) 0%, #fff 70%)",
-        border: past ? "1px solid var(--ftp-border)" : "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
+        boxShadow: past ? "var(--ftp-shadow-1)" : "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)",
       }}
     >
       <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -294,8 +294,9 @@ export default function ElectionSection({ events }: { events: ElectionEvent[] })
         role="note"
         className="ftp-prose"
         style={{
-          background: "color-mix(in srgb, var(--hue-tint) 70%, #fff)",
-          border: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
+          background: "var(--ftp-surface)",
+          border: "1px solid var(--ftp-border)",
+          boxShadow: "inset 3px 0 0 var(--hue)",
           borderRadius: "var(--ftp-radius-tile)",
           padding: 14,
           margin: "16px 0 0",
