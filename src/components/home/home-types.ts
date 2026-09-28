@@ -51,6 +51,8 @@ export interface FuelFigure {
   ageDays: number;
   /** Older than a normal weekend / holiday gap in PPAC's posting. */
   old: boolean;
+  /** PPAC's page (the source the ticker item opens). */
+  sourceUrl: string;
 }
 
 /** Live facts for one district on the home map (same rules as the district pages). */

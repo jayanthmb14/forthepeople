@@ -43,6 +43,7 @@ describe("fuelFigures", () => {
       day: "2026-09-25",
       ageDays: 2,
       old: false,
+      sourceUrl: "https://ppac.gov.in/",
     });
     expect(diesel.value).toBe(95.2);
   });

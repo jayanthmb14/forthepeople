@@ -10,7 +10,7 @@
 //
 //  The rules that decide WHICH figure the home page shows, kept apart from
 //  the queries so they can be tested:
-//    fuelFigures     petrol and diesel for the ticker and the price cards
+//    fuelFigures     petrol and diesel for the running prices ticker
 //    buildMapStat    a live district's facts on the map card (the same
 //                    order of sources as the district pages)
 //    pickSupporters  which supporters' names the support band lists
@@ -22,8 +22,9 @@ import type { FuelFigure, MapDistrictStat } from "./home-types";
 // ── Petrol and diesel ──────────────────────────────────────────────────
 
 /**
- * The price cards' petrol and diesel from the stored PPAC snapshot: Delhi
- * as the headline (the national reference), the other metros beside it.
+ * The ticker's petrol and diesel from the stored PPAC snapshot: Delhi as
+ * the headline (the national reference), the other metros kept beside it,
+ * and PPAC's page as the source the ticker item links to.
  * Nothing without a readable snapshot or without Delhi; the day's age uses
  * the markets' rule (a normal weekend / holiday gap is not "old").
  */
@@ -43,6 +44,7 @@ export function fuelFigures(snap: FuelSnapshot | null, nowMs: number = Date.now(
     day: snap.asOf,
     ageDays,
     old,
+    sourceUrl: snap.sources.ppacHome,
   }));
 }
 

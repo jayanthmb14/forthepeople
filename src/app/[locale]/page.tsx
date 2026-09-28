@@ -20,8 +20,6 @@
  *   3. IndiaGlance        — "Explore all of India": four checked national
  *                           figures and the big button
  *   4. LiveDistrictsCard  — the live districts as tight chips
- *   5. PricesToday        — gold / silver / petrol / diesel cards, and a
- *                           slim Sensex / Nifty / dollar row
  *   6. DataChecks         — how we get and check the data (4 steps)
  *   7. SupportBand        — the support ask with a few supporters' names
  *
@@ -46,7 +44,6 @@ import { loadFuelFigures, loadMarketFigures } from "@/components/home/home-marke
 import HomeHero from "@/components/home/HomeHero";
 import LiveDistrictsCard from "@/components/home/LiveDistrictsCard";
 import IndiaGlance from "@/components/home/IndiaGlance";
-import PricesToday from "@/components/home/PricesToday";
 import SupportBand from "@/components/home/SupportBand";
 import DataChecks from "@/components/home/DataChecks";
 import { getDistrict } from "@/lib/constants/districts";
@@ -153,7 +150,6 @@ export default async function HomePage({
 
       <IndiaGlance locale={locale} figures={glance} />
       <LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />
-      <PricesToday locale={locale} markets={markets} fuel={fuel} />
       <DataChecks locale={locale} example={example} />
       <SupportBand locale={locale} />
     </main>

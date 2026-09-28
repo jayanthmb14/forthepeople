@@ -21,8 +21,8 @@
 //  oil are no longer shown here; the date and IST time are in the status
 //  strip right above, so the ticker does not repeat them.)
 //
-//  - Metals and markets link to /prices; petrol and diesel to the home
-//    page's price cards (#home-prices), which name the sources.
+//  - Metals and markets link to /prices; petrol and diesel (which /prices
+//    does not carry) open PPAC's own page, the source, in a new tab.
 //  - The strip moves slowly (CSS only). It stops while the pointer or the
 //    keyboard focus is on it, and the ❚❚ button stops it for good. With
 //    "reduce motion" it does not move at all: it becomes a row you can
@@ -82,7 +82,14 @@ function FuelItem({ f, locale, tab }: { f: FuelFigure; locale: string; tab: 0 | 
   const t = useTranslations("page_home");
   return (
     <li className={styles.tickItemWrap}>
-      <a href="#home-prices" className={`${styles.tickItem} ftp-hue-${FUEL_HUE[f.fuel]}`} tabIndex={tab}>
+      <a
+        href={f.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.tickItem} ftp-hue-${FUEL_HUE[f.fuel]}`}
+        tabIndex={tab}
+        title={t("ticker.srcPpac")}
+      >
         <Glyph kind="fuel" size={20} />
         <span className={styles.tickLabel}>
           {t(`ticker.${f.fuel}`)}
@@ -95,6 +102,7 @@ function FuelItem({ f, locale, tab }: { f: FuelFigure; locale: string; tab: 0 | 
         <span className={styles.tickDate} data-old={f.old ? "true" : undefined}>
           {f.old ? t("ticker.oldDate", { date: shortDay(f.day, locale), days: f.ageDays }) : dayWords(f.day, f.ageDays, locale)}
         </span>
+        <span className="sr-only">{t("ticker.srcPpac")}</span>
       </a>
     </li>
   );
