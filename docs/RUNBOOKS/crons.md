@@ -14,7 +14,7 @@ copy on 27 Sep; the owner's steps to stop it are in `docs/OWNER-TODO.md` §2.)
 
 ## 1. The crons
 
-19 crons. Schedules are UTC, as Vercel reads them; IST = UTC + 5:30.
+21 crons. Schedules are UTC, as Vercel reads them; IST = UTC + 5:30.
 **Budget** = the route's own time budget (after it, no new district or item
 is started) / Vercel's `maxDuration` for the route.
 
@@ -52,10 +52,11 @@ Notes:
   `vercel.json` on 2026-09-28 and have not run in production yet. Before
   the JJM cron's first production run, the 18 seeded `JJMStatus` rows must be
   deleted, or the tap-water page counts them twice (`docs/OWNER-TODO.md` §6).
-- The five collectors are also described in
+- The portal collectors are also described in
   `src/scraper/lib/collector-registry.ts` (`PORTAL_COLLECTORS`: module, cron,
-  schedule, storage, source, expected age). If you change one of their
-  schedules, change it there too.
+  schedule, storage, source, expected age); nothing at runtime reads it yet.
+  If you change one of their schedules, change it there too —
+  `tests/cron-schedule.test.ts` compares it with `vercel.json`.
 - Every lock is `lock:cron:<name>` (`src/scraper/lib/cron-lock.ts`; courts
   and verify-data used `ftp:lock:<name>` until 2026-09-28, and verify-data's
   expired at 290 s, before its 300 s limit). A locked run returns `skipped`
@@ -200,6 +201,8 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
 - Be polite to sources: at most one request every 2–3 s per portal. NJDG
   gets ≥ 3 s between requests; the collectors identify themselves honestly
   in the user agent and never use captcha-protected pages.
-- The comment at the top of `health-score/route.ts` still says weekly; the
-  schedule in `vercel.json` (daily) is the one that counts.
+- `vercel.json` is the schedule that counts. `tests/cron-schedule.test.ts`
+  fails when a route's header `schedule "…"`, a `PORTAL_COLLECTORS` entry or
+  a data-sources `cron` disagrees with it, or a route and `vercel.json` do
+  not list each other.
 - Never use the word "scraper" in citizen-facing text (CLAUDE.md).

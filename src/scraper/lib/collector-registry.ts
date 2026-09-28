@@ -14,6 +14,8 @@
 // module, which cron, how often, where the figures are stored, the
 // source a reader can open, and which districts it can cover. Proper
 // nouns only; every sentence around them comes from the dictionaries.
+// Nothing at runtime reads it yet (only tests). tests/cron-schedule.test.ts
+// keeps each schedule equal to vercel.json, the schedule that runs.
 // ═══════════════════════════════════════════════════════════
 import { GEPNIC_ORGS } from "./gepnic";
 import { JJM_PUBLIC_URL, JJM_SOURCE } from "./jjm";
