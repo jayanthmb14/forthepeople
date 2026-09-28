@@ -10,6 +10,10 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Added — first-visit tour (branch `v57/tour`, 2026-09-28)
+
+- A first-time visitor gets a small "New here? Take a 30-second tour" card (home and live district pages, once, after the page settles); the tours are 6 steps on home and 5 on a district page, each with "Skip tour" and ✕ on every step, remembered in `localStorage` `ftp.tour.v1` (no cookie, nothing sent to the server) and replayable from "Take the tour" in the footer and the phone menu (`src/lib/tour`, `src/components/tour`, `docs/DESIGN-SYSTEM.md` §9a).
+
 ### Fixed — AI calls failing on a fractional timeout (2026-09-28)
 
 - `scrape-news` split the run's AI time per district with a division, so `AbortSignal.timeout()` got e.g. 17742.5 ms and threw on every model — news classification silently fell back to keywords only. The route now floors the per-district deadline and `callAI()` always passes whole milliseconds.

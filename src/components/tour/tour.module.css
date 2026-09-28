@@ -1,0 +1,322 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * tour.module.css — the first-visit tour (TourLayer) and the "Take the
+ * tour" link (TourReplayButton). Design v5.2 "White Calm": white cards,
+ * 1 px border, 14 px radius, soft shadow, brand blue for the one action.
+ * Tokens only. Every transition ≤ 160 ms and off under reduced motion.
+ *
+ * Layers: the offer card sits just above the "Report a problem" button
+ * (40) and under the header menus (60) and sheets (90). The tour sits
+ * above everything on the page (120–122); the page is inert under it.
+ */
+
+.layer {
+  font-family: var(--ftp-font-sans);
+  color: var(--ftp-text);
+}
+
+/* ── Shared bits ── */
+.x {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px 0 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+}
+.x:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+}
+.primary,
+.quiet,
+.skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.primary {
+  border: 1px solid var(--ftp-brand);
+  background: var(--ftp-brand);
+  color: var(--ftp-surface);
+}
+.primary:hover {
+  background: var(--ftp-brand-deep);
+  border-color: var(--ftp-brand-deep);
+}
+.quiet {
+  border: 1px solid var(--ftp-border-strong);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+}
+.quiet:hover {
+  background: var(--ftp-surface-2);
+}
+/* "Skip tour": a plain text button, clearly visible, never hidden. */
+.skip {
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.skip:hover {
+  color: var(--ftp-brand);
+}
+.x:focus-visible,
+.primary:focus-visible,
+.quiet:focus-visible,
+.skip:focus-visible,
+.replay:focus-visible {
+  outline: 2px solid var(--ftp-focus, var(--ftp-brand));
+  outline-offset: 2px;
+}
+
+/* ── The offer: non-modal corner card ── */
+.offer {
+  position: fixed;
+  z-index: 45;
+  left: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  width: min(360px, calc(100vw - 40px));
+  padding: 16px 16px 14px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card, 14px);
+  background: var(--ftp-surface);
+  box-shadow: inset 3px 0 0 var(--ftp-brand), var(--ftp-shadow-2);
+  animation: tourIn 160ms var(--ftp-ease-out, ease-out) both;
+}
+.offer:not([data-ready]) {
+  visibility: hidden;
+}
+.offerHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.offerIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+}
+.offerTitle {
+  flex: 1;
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.offerBody {
+  margin: 6px 0 12px 40px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ftp-text-2);
+}
+.offerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: 40px;
+}
+
+/* ── The tour ── */
+.blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: transparent;
+}
+.dim {
+  position: fixed;
+  inset: 0;
+  z-index: 121;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ftp-text) 35%, transparent);
+}
+/* The cut-out: a rounded box whose huge shadow dims everything else. */
+.spot {
+  position: fixed;
+  z-index: 121;
+  pointer-events: none;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--ftp-brand) 75%, transparent),
+    0 0 0 200vmax color-mix(in srgb, var(--ftp-text) 35%, transparent);
+}
+
+.card {
+  position: fixed;
+  z-index: 122;
+  width: min(360px, calc(100vw - 24px));
+  padding: 14px 16px 12px;
+  border: 1px solid var(--ftp-border);
+  border-radius: var(--ftp-radius-card, 14px);
+  background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-2);
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.count {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.dots {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ftp-border-strong);
+}
+.dot[data-state="done"] {
+  background: color-mix(in srgb, var(--ftp-brand) 45%, var(--ftp-surface));
+}
+.dot[data-state="now"] {
+  width: 16px;
+  background: var(--ftp-brand);
+}
+.cardBody {
+  animation: tourFade 140ms ease-out both;
+}
+.cardTitle {
+  margin: 6px 0 4px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.cardTitle:focus {
+  outline: none;
+}
+.cardTitle:focus-visible {
+  outline: 2px solid var(--ftp-focus, var(--ftp-brand));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.cardText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ftp-text-2);
+}
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+.nav {
+  display: inline-flex;
+  gap: 8px;
+}
+
+@keyframes tourIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tourFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Phones: the offer is a bottom card above the round report flag; the
+   tour card is docked (TourLayer sets top/left/width). */
+@media (max-width: 639px) {
+  .offer {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+  .card {
+    width: calc(100vw - 24px);
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .primary,
+  .quiet,
+  .skip,
+  .x {
+    min-height: 44px;
+  }
+  .x {
+    width: 44px;
+    height: 44px;
+    margin: -10px -12px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offer,
+  .cardBody {
+    animation: none;
+  }
+}
+
+/* ── "Take the tour" link (footer, slim footer) ── */
+.replay {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ftp-text-2);
+  text-align: start;
+  cursor: pointer;
+}
+.replay:hover {
+  color: var(--ftp-brand-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 639px) {
+  .replay {
+    min-height: 44px;
+  }
+}

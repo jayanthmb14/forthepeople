@@ -575,6 +575,18 @@
 .menuLink:hover {
   background: var(--ftp-surface-2);
 }
+/* "Take the tour" is a button in the same list. */
+button.menuLink {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+button.menuLink:hover {
+  background: var(--ftp-surface-2);
+}
 .menuLink:focus-visible {
   outline: 2px solid var(--ftp-brand);
   outline-offset: -2px;

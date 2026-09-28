@@ -40,6 +40,7 @@ import type { LucideIcon } from "lucide-react";
 import { NUMBER_LOCALE } from "@/i18n/languages";
 import { PRODUCTS, ProductMark } from "./products";
 import FooterFrame from "./FooterFrame";
+import TourReplayButton from "@/components/tour/TourReplayButton";
 import styles from "./chrome.module.css";
 
 const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
@@ -60,7 +61,7 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
   const tp = useTranslations("page_home");
   const stars = githubStars !== null ? githubStars.toLocaleString(NUMBER_LOCALE) : null;
 
-  const groups: { title: string; hue: string; Icon: LucideIcon; links: FooterLink[] }[] = [
+  const groups: { title: string; hue: string; Icon: LucideIcon; links: FooterLink[]; tour?: boolean }[] = [
     {
       title: t("explore"),
       hue: "ftp-hue-blue",
@@ -89,6 +90,7 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
       title: t("about"),
       hue: "ftp-hue-teal",
       Icon: Info,
+      tour: true,
       links: [
         { href: `/${locale}/about`, label: t("aboutUs") },
         { href: `/${locale}/privacy`, label: t("privacy") },
@@ -170,6 +172,8 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
                     )}
                   </li>
                 ))}
+                {/* "Take the tour" (home and district pages only). */}
+                {g.tour && <TourReplayButton />}
               </ul>
             </div>
           ))}
@@ -246,6 +250,13 @@ export default function Footer({ locale, githubStars = null }: FooterProps) {
           </span>
           <Link href={`/${locale}/disclaimer`}>{t("disclaimer")}</Link>
         </li>
+        <TourReplayButton
+          before={
+            <span className={styles.slimDot} aria-hidden>
+              ·
+            </span>
+          }
+        />
       </ul>
     </>
   );

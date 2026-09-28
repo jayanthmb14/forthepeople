@@ -22,12 +22,18 @@
 //
 //  (Tablets reach the apps from the ▾ next to the logo.)
 //
+//  On the home page and live district pages the list ends with "Take the
+//  tour", which starts the first-visit tour again (src/components/tour).
+//
 "use client";
 
 import Link from "next/link";
 import { useCallback, useId, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Github, Heart, Lightbulb, Menu, Star, X } from "lucide-react";
+import { Compass, Github, Heart, Lightbulb, Menu, Star, X } from "lucide-react";
+import { requestTour } from "@/lib/tour/coordination";
+import { tourKindForPath } from "@/lib/tour/route";
 import { useFormat } from "@/i18n/client";
 import { ProductList } from "./products";
 import { focusFirstItem, onMenuKeyDown, usePopover } from "./use-popover";
@@ -37,7 +43,9 @@ export const GITHUB_URL = "https://github.com/jayanthmb14/forthepeople";
 
 export default function HeaderMenu({ githubStars }: { githubStars: number | null }) {
   const t = useTranslations("header");
+  const tt = useTranslations("page_tour");
   const locale = useLocale();
+  const hasTour = tourKindForPath(usePathname()) !== null;
   const fmt = useFormat();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -108,6 +116,24 @@ export default function HeaderMenu({ githubStars }: { githubStars: number | null
                 {t("support")}
               </Link>
             </li>
+            {hasTour && (
+              <li>
+                <button
+                  type="button"
+                  className={styles.menuLink}
+                  onClick={() => {
+                    close();
+                    requestTour();
+                  }}
+                  data-menu-item
+                >
+                  <span className={`ftp-hue-blue ${styles.menuIcon}`} aria-hidden>
+                    <Compass size={17} />
+                  </span>
+                  {tt("replay")}
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       )}

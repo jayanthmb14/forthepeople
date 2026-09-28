@@ -24,6 +24,9 @@ import { getGithubStars } from "@/components/home/github-stars";
 import Footer from "@/components/home/Footer";
 import SkipLink from "@/components/common/SkipLink";
 import ReportButton from "@/components/common/ReportButton";
+// First-visit tour: a tiny client mount that loads the tour lazily (only
+// when it is offered or asked for) — src/components/tour/TourMount.tsx.
+import TourMount from "@/components/tour/TourMount";
 
 /**
  * Only the locales in src/i18n/routing.ts may render this layout.
@@ -83,6 +86,7 @@ export default async function LocaleLayout({
           {children}
           <Footer locale={locale} githubStars={githubStars} />
           <ReportButton />
+          <TourMount />
         </QueryProvider>
       </div>
     </NextIntlClientProvider>

@@ -492,6 +492,64 @@ Built in `src/components/home/` (`chrome.module.css`) and
   end clear of the Report button. Rule: `footer-mode.ts`; frame:
   `FooterFrame.tsx`.
 
+## 9a. First-visit tour (v5.7, Sept 2026)
+
+A short guide for people who are new, then out of the way. Code:
+`src/lib/tour/` (pure rules, `tests/tour.test.ts`) and
+`src/components/tour/` (mounted once in the locale layout; the card and
+the tour load lazily, so the first paint is unchanged).
+
+- **The offer.** Only on the home page and live district pages, only when
+  nothing is stored for that tour, about 2.5 s after the page settles and
+  never while the intro, a dialog or a sheet is open. A small white card
+  (3 px brand rule on the left) in the bottom-left corner on PCs, a bottom
+  card on phones above the round report flag: "New here? Take a 30-second
+  tour", one line on what the site is, **Show me**, **No thanks** and ✕.
+  It never takes focus (a polite live region). At most one offer per
+  browser session, unless the visitor took a tour.
+- **The tours.** Home (6 steps): search and "Use my location" → the stat
+  row → the India map and live districts → "Explore all of India" → the
+  language menu → Support. District (5 steps): the district bar → the
+  topics (sidebar on PCs, "Topics" on phones) → the overview cards →
+  "Check this data" → "Report a problem". A title and at most two short
+  sentences per step, in en / hi / kn (`page_tour`).
+- **Step look.** The page dims to 35 % (`--ftp-text` mixed with
+  transparent) except a rounded cut-out 8 px around the element (a 2 px
+  brand ring). A white card (1 px `--ftp-border`, 14 px radius,
+  `--ftp-shadow-2`) sits below, above or beside it; on phones it is docked
+  at the bottom (at the top when the element is down there). The card
+  shows "Step 2 of 5" with dots, **Back** / **Next** (last step: "Done —
+  start exploring"), and on every step a visible **Skip tour** text button
+  and ✕. Brand blue is the only colour. Fades are 140–160 ms and off under
+  reduced motion; the element scrolls into view (instantly under reduced
+  motion).
+- **Keys and focus.** Escape = skip; ← / → = back / next. Focus moves into
+  the card (`role="dialog"`, `aria-modal`), stays there (the page behind
+  is `inert`) and returns afterwards. Clicking the dimmed page does
+  nothing, so a stray tap never ends the tour.
+- **Anchors.** A step points at `data-tour="<id>"` on the element itself
+  (`src/lib/tour/steps.ts` lists them). The first *visible* match is used,
+  so the header Support link and the home support band, or the PC sidebar
+  and the phone "Topics" button, can share one id. A missing or hidden
+  target is skipped silently; a page with fewer than two is not offered a
+  tour. Moving a section? Keep its `data-tour` attribute.
+- **Memory — no cookies.** `localStorage["ftp.tour.v1"]` =
+  `{ home?, district?: "done" | "skipped" | "offered-dismissed", at }`.
+  Any value means the tour is never offered again by itself; the card is
+  recorded as soon as it appears, so closing the tab counts as "No
+  thanks". Nothing leaves the browser, so no consent banner is needed. If
+  storage is blocked, the tour is never auto-offered. A redesign can bump
+  the key to `.v2` to offer the new tour once.
+- **Replay.** "Take the tour" in the footer's About column, in the slim
+  footer line on district pages, and in the header "Menu" on phones and
+  tablets — on home and district pages only; it starts that page's tour
+  whatever was stored.
+- **Other pop-ups.** While the card or a tour is on screen,
+  `<html data-ftp-tour="active">`; the session where a tour was first
+  offered has `sessionStorage["ftp.tour.firstSession"] = "1"`.
+  `isTourBusy()` (`src/lib/tour/coordination.ts`) is true in either case —
+  a card that opens by itself (the support nudge) checks it first.
+
 ## 10. District overview (v5.1, calmed in v5.2)
 
 v5.2 "White Calm" overrides the washes below: the hero is a white card with
