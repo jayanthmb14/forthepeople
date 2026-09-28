@@ -10,6 +10,33 @@ Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-
 production site (prod = `38df958`, deployed 2026-06-11). Nothing here is deployed until it is
 reviewed and pushed; see "Manual actions" at the bottom of this entry.
 
+### Fixed — read APIs, freshness, report card (branch `v55/be-data-apis`, 2026-09-28)
+Review of `src/app/api/data/**`, `/api/public`, `/api/tenders` and their helpers. Not deployed.
+- **Freshness** (`/api/data/freshness`, now `freshness:v8`; pure part in `src/lib/freshness-facts.ts`):
+  finance counts budget allocations too (Pune no longer reads "not collected"); schemes and
+  industries are reference lists with no date (a maintenance edit is not a check date); exams use
+  `lastVerifiedAt`; schools without UDISE+ have no date; retired schemes, inactive mills, hidden
+  health offices, placeholder tenders and fractional seed traffic fines are no longer counted.
+  The data-sources page and the daily double-check date alerts by the last good SACHET read, as
+  the page does.
+- **Report card grades change at the next `health-score` run**: health alerts, power outages,
+  soil records and agri advisories with nothing behind them are "not collected" placeholders (they
+  scored 100 or 0 as findings); district type uses the Census urban share (Mandya → rural;
+  all-urban districts → metro); crop price stability is per crop over time with the crops page's
+  price rule. `/api/data/health-score` sends the weights each grade used.
+- **Taluks**: the seeded taluk population and area are not sent (`SHOW_TALUK_FIGURES`), so the map's
+  land ring and taluk tiles hide them.
+- **Security**: `/api/data/[module]` validates the district and module before any cache or DB work
+  and no longer keys the cache on `?taluk=`; unknown districts are not cached; election-events and
+  the tenders disclaimer no longer echo database errors; the tenders list answers 400 for malformed
+  numbers; tender alert subscribe can no longer overwrite someone else's contact.
+- **Public API** (`/api/public/district/<slug>`): every item carries its own source; people figures
+  come only from the Census 2011 row.
+- **Removed** (no caller): `/api/data/ai-insight` (+ `src/lib/ai/insight-templates.ts`),
+  `homepage-preview`, `market-ticker`, `population/state`.
+- **Simpler**: shared `bySeverity`, `loadCensus2011`, `publicCacheControl` / `isSlug`
+  (`src/lib/read-api.ts`); `NOT_SEEDED_BUDGET` and the v54 merge note removed from `data-filters.ts`.
+
 ### Fixed — money: budgets, projects, industries, tenders, schemes (branch `v54/fix-money`, 2026-09-28)
 Owner rule: verified or hidden. Nothing here is deployed or applied to the database yet.
 - **Budgets**: seeded sector rows (state or city totals filed under one district, "spent" as a
