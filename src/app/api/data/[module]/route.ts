@@ -142,6 +142,11 @@ async function localizeModule(module: string, result: ModuleResult, locale: stri
   return result;
 }
 
+/** ISO time of the first row's date field (rows come newest first), or null. */
+function newestDate<K extends string>(rows: ReadonlyArray<{ [k in K]: Date | null }>, field: K): string | null {
+  return rows[0]?.[field]?.toISOString() ?? null;
+}
+
 // ── Module resolver ──────────────────────────────────────
 /** One module's payload for a district; null when we hold no such district. */
 async function fetchModule(module: string, districtSlug: string, stateSlug: string): Promise<ModuleResult | null> {
@@ -151,7 +156,7 @@ async function fetchModule(module: string, districtSlug: string, stateSlug: stri
   // Resolve district id once
   const district = await prisma.district.findFirst({
     where: { slug: districtSlug },
-    select: { id: true, name: true, nameLocal: true },
+    select: { id: true, name: true, nameLocal: true, state: { select: { name: true } } },
   });
 
   if (!district) return null;
@@ -278,7 +283,7 @@ async function fetchModule(module: string, districtSlug: string, stateSlug: stri
         orderBy: [{ date: "desc" }, { commodity: "asc" }],
         take: 100,
       });
-      return { data, meta: { ...meta, lastUpdated: data[0]?.date?.toISOString() ?? null } };
+      return { data, meta: { ...meta, lastUpdated: newestDate(data, "date") } };
     }
 
     // ══════════════════════════════════════════════════
@@ -290,7 +295,7 @@ async function fetchModule(module: string, districtSlug: string, stateSlug: stri
         orderBy: { recordedAt: "desc" },
         take: 48,
       });
-      return { data, meta: { ...meta, lastUpdated: data[0]?.recordedAt?.toISOString() ?? null } };
+      return { data, meta: { ...meta, lastUpdated: newestDate(data, "recordedAt") } };
     }
 
     // ══════════════════════════════════════════════════
@@ -340,7 +345,7 @@ async function fetchModule(module: string, districtSlug: string, stateSlug: stri
           take: 20,
         }),
       ]);
-      return { data: { dams, canals }, meta: { ...meta, lastUpdated: dams[0]?.recordedAt?.toISOString() ?? null } };
+      return { data: { dams, canals }, meta: { ...meta, lastUpdated: newestDate(dams, "recordedAt") } };
     }
 
     // ══════════════════════════════════════════════════
@@ -392,15 +397,12 @@ async function fetchModule(module: string, districtSlug: string, stateSlug: stri
     case "news": {
       // Filter out near-duplicates (duplicateOf != null) so the public list
       // shows one article per story. Admin retains full visibility.
-      const [rows, place] = await Promise.all([
-        prisma.newsItem.findMany({
-          where: { districtId: did, duplicateOf: null },
-          orderBy: { publishedAt: "desc" },
-          take: 60,
-        }),
-        prisma.district.findUnique({ where: { id: did }, select: { state: { select: { name: true } } } }),
-      ]);
-      const stateName = place?.state.name || getStateConfig(stateSlug)?.name || "";
+      const rows = await prisma.newsItem.findMany({
+        where: { districtId: did, duplicateOf: null },
+        orderBy: { publishedAt: "desc" },
+        take: 60,
+      });
+      const stateName = district.state.name || getStateConfig(stateSlug)?.name || "";
       // Sept 2026 audit (src/lib/news-quality.ts): no promotions, no
       // keyword-only rows that may be about another place, clean headlines,
       // today's topic rules — for rows saved by older code too.
@@ -719,20 +721,16 @@ async function fetchModule(module: string, districtSlug: string, stateSlug: stri
     case "population": {
       // Exclude non-district metro-area estimates (e.g. "Mumbai Metropolitan Region")
       // so Overview (district) and Population page (district census) stay consistent.
-      const [data, profile] = await Promise.all([
-        prisma.populationHistory.findMany({
-          where: {
-            districtId: did,
-            NOT: { source: { contains: "Metropolitan Region", mode: "insensitive" } },
-          },
-          orderBy: { year: "asc" },
-        }),
-        prisma.demographicProfile.findFirst({
-          where: { districtId: did },
-          orderBy: [{ year: "desc" }, { updatedAt: "desc" }],
-        }),
-      ]);
-      return { data, profile, meta };
+      // (The profile comes from /api/data/population/profile, reconciled with
+      // the Census row; this payload no longer carries an unreconciled copy.)
+      const data = await prisma.populationHistory.findMany({
+        where: {
+          districtId: did,
+          NOT: { source: { contains: "Metropolitan Region", mode: "insensitive" } },
+        },
+        orderBy: { year: "asc" },
+      });
+      return { data, meta };
     }
 
     // ══════════════════════════════════════════════════

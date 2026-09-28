@@ -32,7 +32,7 @@ provenance-transparent, culturally neutral UI.
 
 | Endpoint | Method | Purpose | Cache |
 |---|---|---|---|
-| `/api/data/population` | GET | Backward-compatible. Returns `{data: PopulationHistory[], profile: DemographicProfile \| null, meta}` | 24h |
+| `/api/data/population` | GET | Backward-compatible. Returns `{data: PopulationHistory[], meta}` (the profile is served, reconciled with the Census row, by `/population/profile`) | 24h |
 | `/api/data/population/profile` | GET | Rich profile for one district. Default `dataset="Census 2011"` with `economicClass` overlay from latest NITI MPI row | 24h |
 | `/api/admin/population-audit` | GET | Admin-only completeness audit. Cookie: `ftp_admin_v1` | no cache |
 
@@ -167,7 +167,7 @@ src/app/
   [locale]/[state]/[district]/population/page.tsx   (16-section dashboard)
   [locale]/[state]/[district]/page.tsx              (overview with PopulationSnippet)
   [locale]/admin/population/page.tsx                (admin audit grid)
-  api/data/population/route.ts                      (backward-compatible + profile overlay)
+  api/data/[module]/route.ts  case "population"     (population history, backward-compatible)
   api/data/population/profile/route.ts              (default: Census 2011 + MPI overlay)
   api/admin/population-audit/route.ts               (admin summary + completeness)
 
