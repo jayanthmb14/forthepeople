@@ -23,8 +23,10 @@
  *   requireAdmin()        — cookie session OR the header path (below).
  *                           Use for ordinary admin API routes.
  *   requireAdminCookie()  — cookie session ONLY. Use for anything that must
- *                           have passed 2FA: 2FA setup/disable, logout-all,
- *                           the API-key vault.
+ *                           have passed 2FA: 2FA setup/verify/disable, the
+ *                           recovery e-mail/phone, logout-all, the API-key
+ *                           vault (requireVaultSession) and revealing a
+ *                           stored service login.
  *
  * The header path (`x-admin-secret` / `x-admin-password` == ADMIN_PASSWORD)
  * exists for curl/ops scripts. It is compared in constant time, its FAILURES
@@ -210,7 +212,8 @@ async function headerAttemptAllowed(ipHash: string): Promise<boolean> {
  * Accepts a valid signed session cookie OR a valid timing-safe admin secret
  * header. Call this from every admin route handler, server action and page.
  *
- * Prefer requireAdminCookie() for 2FA management, logout-all and the vault.
+ * Prefer requireAdminCookie() for 2FA management, recovery details,
+ * logout-all, the vault and stored-login reveals.
  */
 export async function requireAdmin(): Promise<{ ok: boolean }> {
   // 1. Cookie session (primary path).

@@ -18,9 +18,10 @@ const UNSHIPPED_LOCALES = PLANNED_LOCALES;
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // /hi and /hi/* → /en (temporary, see UNSHIPPED_LOCALES above). Before
-  // this, /hi fell into the [locale] segment and rendered the English
-  // homepage with a 200 — a soft 404 that the audit flagged.
+  // /<planned locale> and /<planned locale>/* → /en (see UNSHIPPED_LOCALES
+  // above; hi and kn are routed beta locales, not in this list). Before
+  // this, such a path fell into the [locale] segment and rendered the
+  // English homepage with a 200 — a soft 404 that the audit flagged.
   for (const locale of UNSHIPPED_LOCALES) {
     if (pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)) {
       const url = req.nextUrl.clone();

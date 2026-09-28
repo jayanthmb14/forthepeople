@@ -71,9 +71,12 @@ door to the API-key vault or donor data.
 | 2FA recovery e-mails, all IPs | `rate:admin-2fa-recover:global` | 10 | 1 h | 429 |
 | Recovery-link verify per IP | `rate:admin-2fa-recover-verify:<ipHash>` | 10 | 15 min | 429 |
 | 2FA disable attempts per IP | `rate:admin-2fa-disable:<ipHash>` | 5 | 15 min | 429 |
+| 2FA setup-verify attempts per IP | `rate:admin-2fa-verify:<ipHash>` | 5 | 15 min | 429 (reset on success) |
+| Recovery-change code attempts per IP | `rate:admin-security-code:<ipHash>` | 5 | 15 min | 429 (reset on success) |
+| Vault unlock attempts per IP | `rate:admin-vault-unlock:<ipHash>` | 5 | 15 min | 429 (reset on success; also 429 while the login lock is on) |
 
-**Lockout.** Every wrong password *or* wrong code increments
-`admin:auth-failures`. At **10** failures (from any IPs combined) the key
+**Lockout.** Every wrong password *or* wrong code (login, vault unlock,
+2FA setup-verify) increments `admin:auth-failures`. At **10** failures (from any IPs combined) the key
 `admin:login-lock` is set for **15 minutes** and both steps redirect to
 `/admin?error=locked`. A successful login clears the counter. The count is
 also mirrored to `AdminAuth.failedAttempts` / `lockedUntil` in Postgres for
