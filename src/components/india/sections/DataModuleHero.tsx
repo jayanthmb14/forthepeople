@@ -26,6 +26,8 @@ import { SourceHealthDot, type ScraperCadence } from "@/components/india/primiti
 import { SourcePill } from "@/components/india/primitives/SourcePill";
 import { CountUpNumber } from "@/components/india/primitives/CountUpNumber";
 import { INDIA_NS, indiaText } from "@/components/india/i18n";
+import { Glyph } from "@/components/graphics";
+import { indiaModuleGlyph, indiaSuperCategoryGlyph } from "@/components/india/glyphs";
 import { domainOf, fmtAgo, fmtDate, fmtDecimal, formatIndicator } from "@/components/india/format";
 
 export interface DataModuleHeroProps {
@@ -35,20 +37,6 @@ export interface DataModuleHeroProps {
   expectedCadence?: ScraperCadence;
   scraperKey?: string; // overrides module.scraperKeys[0] if needed
 }
-
-/** Faint super-category glyphs behind the hero (decoration only). */
-const WATERMARK: Record<string, string> = {
-  "macro-snapshot": "📊",
-  "know-india": "📖",
-  "living-standards": "🌐",
-  "wildlife-forests": "🐾",
-  "agriculture-livestock": "🌾",
-  "natural-resources-energy": "⛏",
-  infrastructure: "🏗",
-  governance: "⚖",
-  innovation: "🚀",
-  culture: "🎭",
-};
 
 export async function DataModuleHero({
   module,
@@ -86,12 +74,12 @@ export async function DataModuleHero({
   const methodologyUrl = indicator?.methodologyUrl;
   const unit = value !== null ? formatIndicator(tp, locale, value, indicator?.unit ?? null).unit : "";
   const resolvedScraperKey = scraperKey ?? module.scraperKeys[0] ?? `${module.slug}-no-scraper`;
-  const glyph = WATERMARK[module.superCategory] ?? sc?.icon ?? "·";
+  // Faint super-category glyph behind the hero (decoration only), in the page hue.
+  const watermark = indiaSuperCategoryGlyph(module.superCategory).glyph;
   const decoration: React.CSSProperties = {
     position: "absolute",
     pointerEvents: "none",
     userSelect: "none",
-    color: "var(--hue)",
     lineHeight: 1,
   };
 
@@ -109,20 +97,18 @@ export async function DataModuleHero({
         marginBottom: "1.5rem",
       }}
     >
-      <span aria-hidden style={{ ...decoration, right: "-28px", bottom: "-36px", fontSize: "200px", opacity: 0.08, transform: "rotate(-12deg)" }}>
-        {glyph}
+      <span aria-hidden style={{ ...decoration, right: "-28px", bottom: "-36px", opacity: 0.08, transform: "rotate(-12deg)" }}>
+        <Glyph name={watermark} size={200} />
       </span>
-      <span aria-hidden style={{ ...decoration, right: "60px", top: "30%", fontSize: "80px", opacity: 0.05, transform: "rotate(15deg)" }}>
-        {glyph}
+      <span aria-hidden style={{ ...decoration, right: "60px", top: "30%", opacity: 0.05, transform: "rotate(15deg)" }}>
+        <Glyph name={watermark} size={80} />
       </span>
 
       <div className="data-hero-grid" style={{ position: "relative" }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
             <span className="data-hero-chip">
-              <span className="ftp-emoji" aria-hidden>
-                {module.icon}
-              </span>
+              <Glyph name={indiaModuleGlyph(module.slug, module.category).glyph} size={16} />
               {sc ? x.scTitle(sc) : module.superCategory}
             </span>
             {module.subGroup ? <span className="data-hero-chip">{x.subGroup(module.subGroup)}</span> : null}
@@ -216,9 +202,7 @@ export async function DataModuleHero({
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 650, color: "var(--hue-deep)", marginBottom: 8 }}>
-            <span className="ftp-emoji" aria-hidden style={{ marginInlineEnd: 6 }}>
-              📚
-            </span>
+            <Glyph name="book" size={16} style={{ display: "inline-block", verticalAlign: "-3px", marginInlineEnd: 6 }} />
             {t("data.sources")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>

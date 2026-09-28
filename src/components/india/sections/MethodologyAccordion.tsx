@@ -11,7 +11,8 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { Camera, ChevronDown, Compass, ExternalLink, FileText, Hash, Search, type LucideIcon } from "lucide-react";
+import { Glyph } from "@/components/graphics";
 
 export interface MethodologyRow {
   key: string;
@@ -25,7 +26,8 @@ export interface MethodologyAccordionProps {
   className?: string;
 }
 
-const ROW_EMOJI = ["📷", "🔢", "🧭", "📄", "🔍"];
+/** A small monochrome icon per row (v5.1: were emoji). */
+const ROW_ICONS: LucideIcon[] = [Camera, Hash, Compass, FileText, Search];
 
 export function MethodologyAccordion({ rows, group, className }: MethodologyAccordionProps) {
   const t = useTranslations("page_india-module");
@@ -45,8 +47,8 @@ export function MethodologyAccordion({ rows, group, className }: MethodologyAcco
       }}
     >
       <h2 className="ftp-h2" style={{ fontSize: 20, lineHeight: "26px", display: "flex", alignItems: "center", gap: 10, margin: "0 0 8px" }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>
-          🔬
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10 }}>
+          <Glyph name="flask" size={19} />
         </span>
         {t("data.methodTitle")}
       </h2>
@@ -54,6 +56,7 @@ export function MethodologyAccordion({ rows, group, className }: MethodologyAcco
         {rows.map((row, i) => {
           const isOpen = open === i;
           const panelId = `${baseId}-${i}`;
+          const RowIcon = ROW_ICONS[i % ROW_ICONS.length];
           return (
             <li key={row.key} style={{ borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
               <button
@@ -77,9 +80,7 @@ export function MethodologyAccordion({ rows, group, className }: MethodologyAcco
                   gap: 10,
                 }}
               >
-                <span className="ftp-emoji" aria-hidden>
-                  {ROW_EMOJI[i % ROW_EMOJI.length]}
-                </span>
+                <RowIcon size={16} aria-hidden style={{ color: "var(--hue-deep)", flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{t(`${group}.${row.key}.title`)}</span>
                 <ChevronDown
                   size={16}

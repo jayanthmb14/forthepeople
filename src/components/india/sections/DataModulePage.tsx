@@ -36,6 +36,8 @@ import { TopStatesBars } from "@/components/india/module-page/ModuleVisuals";
 import TrendLine from "@/components/india/module-page/TrendLine";
 import IndiaReportIssueButton from "@/components/india/IndiaReportIssueButton";
 import { indiaCategoryHue } from "@/components/india/module-page/v4";
+import { Glyph } from "@/components/graphics";
+import { indiaSuperCategoryGlyph } from "@/components/india/glyphs";
 import { getModuleIndicators, getModuleSeries, getModuleStates } from "@/components/india/module-page/data";
 import type { ScraperCadence } from "@/components/india/primitives/SourceHealthDot";
 import { INDIA_NS, indiaText } from "@/components/india/i18n";
@@ -130,7 +132,7 @@ export async function DataModulePage({
           ) : null}
           <ChevronRight size={13} aria-hidden style={{ color: "var(--ftp-border-strong)" }} />
           <ModuleDropdown
-            currentLabel={`${module.icon} ${title}`}
+            currentLabel={title}
             scope="super-category"
             superCategorySlug={module.superCategory}
             locale={locale}
@@ -234,8 +236,8 @@ export async function DataModulePage({
               color: "var(--ftp-text)",
             }}
           >
-            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
-              {sc.icon}
+            <span className="ftp-icon-chip" aria-hidden style={{ width: 44, height: 44, borderRadius: 14 }}>
+              <Glyph name={indiaSuperCategoryGlyph(sc.slug).glyph} size={26} />
             </span>
             <span>
               <span style={{ display: "block", fontSize: 12, color: "var(--ftp-text-2)" }}>{t("data.continue")}</span>

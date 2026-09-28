@@ -20,6 +20,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { Target } from "lucide-react";
 import { ChartCard } from "@/components/district/visuals";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
 import { useFormat } from "@/i18n/client";
@@ -171,7 +172,6 @@ const SHADES = [
 
 export interface MixPart {
   label: string;
-  emoji?: string;
   pct: number;
   /** Formatted share, e.g. "47%". */
   display: string;
@@ -200,7 +200,7 @@ export function MixDonut({
   return (
     <ChartCard
       {...card}
-      legend={parts.map((p, i) => ({ label: `${p.emoji ? `${p.emoji} ` : ""}${p.label} ${p.display}`, swatch: p.color ?? SHADES[i % SHADES.length] }))}
+      legend={parts.map((p, i) => ({ label: `${p.label} ${p.display}`, swatch: p.color ?? SHADES[i % SHADES.length] }))}
       table={parts.map((p) => ({ label: p.label, value: p.display }))}
     >
       <div style={{ display: "flex", justifyContent: "center" }}>
@@ -349,9 +349,7 @@ export function GoalBars({ items, ...card }: CardBase & { items: GoalItem[] }) {
                   ["--i" as string]: i,
                 }}
               />
-              <span className="ftp-emoji" style={{ position: "absolute", right: 4, top: 0, fontSize: 12, lineHeight: "16px" }}>
-                🎯
-              </span>
+              <Target size={12} strokeWidth={2.25} style={{ position: "absolute", right: 4, top: 2, color: "var(--hue-deep)" }} />
             </div>
             <p style={{ margin: "6px 0 0", fontSize: 12, lineHeight: "17px", color: "var(--ftp-text-2)" }}>{it.line}</p>
           </li>

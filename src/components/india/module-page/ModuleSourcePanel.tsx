@@ -16,7 +16,7 @@
 
 import type * as React from "react";
 import { getTranslations } from "next-intl/server";
-import { ExternalLink } from "lucide-react";
+import { BookOpen, ExternalLink, FileText, Files, Landmark, Plug, Rss, type LucideIcon } from "lucide-react";
 import type { IndiaModuleDef } from "@/lib/india/india-modules";
 import { INDIA_SOURCES } from "@/lib/india/india-sources";
 import { Section } from "@/components/district/ui";
@@ -29,12 +29,13 @@ interface Props {
   figureSources?: Array<{ label: string; href: string | null }>;
 }
 
-const TYPE_EMOJI: Record<string, string> = {
-  API: "🔌",
-  Static: "📘",
-  Collected: "📑",
-  RSS: "📰",
-  Institutional: "🏛️",
+/** A small monochrome icon per kind of source (v5.1: were emoji). */
+const TYPE_ICON: Record<string, LucideIcon> = {
+  API: Plug,
+  Static: BookOpen,
+  Collected: Files,
+  RSS: Rss,
+  Institutional: Landmark,
 };
 
 const LIST_STYLE: React.CSSProperties = {
@@ -52,7 +53,7 @@ export default async function ModuleSourcePanel({ locale, module, moduleTitle, f
   const t = await getTranslations({ locale, namespace: "page_india-module" });
   if (figureSources.length > 0) {
     return (
-      <Section title={t("sources.title", { module: moduleTitle })} emoji="📚">
+      <Section title={t("sources.title", { module: moduleTitle })}>
         <p style={{ margin: "0 0 10px", fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>{t("sources.ofFigures")}</p>
         <ul style={LIST_STYLE}>
           {figureSources.map((s, idx) => (
@@ -60,8 +61,8 @@ export default async function ModuleSourcePanel({ locale, module, moduleTitle, f
               key={`${s.label}|${s.href ?? ""}`}
               style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", borderTop: idx === 0 ? "none" : "1px solid var(--ftp-border)" }}
             >
-              <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 30, height: 30, fontSize: 15, borderRadius: 10 }}>
-                📑
+              <span className="ftp-icon-chip" aria-hidden style={{ width: 30, height: 30, borderRadius: 10 }}>
+                <Files size={15} />
               </span>
               {s.href ? (
                 <a
@@ -91,44 +92,47 @@ export default async function ModuleSourcePanel({ locale, module, moduleTitle, f
   if (rows.length === 0) return null;
 
   return (
-    <Section title={t("sources.title", { module: moduleTitle })} emoji="📚">
+    <Section title={t("sources.title", { module: moduleTitle })}>
       <ul style={LIST_STYLE}>
-        {rows.map(({ s, src }, idx) => (
-          <li
-            key={s.sourceKey}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 12,
-              padding: "14px 16px",
-              borderTop: idx === 0 ? "none" : "1px solid var(--ftp-border)",
-            }}
-          >
-            <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 34, height: 34, fontSize: 17, borderRadius: 11 }}>
-              {TYPE_EMOJI[s.type] ?? "📄"}
-            </span>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <a
-                href={src!.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--hue-deep)", fontWeight: 650, fontSize: 14, textDecoration: "none" }}
-              >
-                {src!.name}
-                <ExternalLink size={12} aria-hidden />
-              </a>
-              {src!.blurb ? (
-                <p lang="en" style={{ margin: "2px 0 0", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
-                  {src!.blurb}
-                </p>
-              ) : null}
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                <span className="india-src-tag">{t(`sources.type.${s.type}`)}</span>
-                <span className="india-src-tag">{t(`sources.refresh.${s.refresh}`)}</span>
+        {rows.map(({ s, src }, idx) => {
+          const TypeIcon = TYPE_ICON[s.type] ?? FileText;
+          return (
+            <li
+              key={s.sourceKey}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                padding: "14px 16px",
+                borderTop: idx === 0 ? "none" : "1px solid var(--ftp-border)",
+              }}
+            >
+              <span className="ftp-icon-chip" aria-hidden style={{ width: 34, height: 34, borderRadius: 11 }}>
+                <TypeIcon size={17} />
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <a
+                  href={src!.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--hue-deep)", fontWeight: 650, fontSize: 14, textDecoration: "none" }}
+                >
+                  {src!.name}
+                  <ExternalLink size={12} aria-hidden />
+                </a>
+                {src!.blurb ? (
+                  <p lang="en" style={{ margin: "2px 0 0", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
+                    {src!.blurb}
+                  </p>
+                ) : null}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                  <span className="india-src-tag">{t(`sources.type.${s.type}`)}</span>
+                  <span className="india-src-tag">{t(`sources.refresh.${s.refresh}`)}</span>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       <style>{`
         .india-src-tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 12px; line-height: 18px; background: var(--hue-tint); color: var(--hue-deep); font-weight: 500; }

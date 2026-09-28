@@ -17,6 +17,7 @@ import { SourceHealthDot, type ScraperCadence } from "@/components/india/primiti
 import { SourcePill } from "@/components/india/primitives/SourcePill";
 import { INDIA_SOURCES } from "@/lib/india/india-sources";
 import { domainOf } from "@/components/india/format";
+import { Glyph } from "@/components/graphics";
 
 export interface SourcesCardProps {
   module: IndiaModuleDef;
@@ -61,8 +62,8 @@ export async function SourcesCard({ module, locale, expectedCadence = "annual", 
       }}
     >
       <h2 className="ftp-h2" style={{ fontSize: 20, lineHeight: "26px", display: "flex", alignItems: "center", gap: 10, margin: "0 0 8px" }}>
-        <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 17, borderRadius: 10 }}>
-          📚
+        <span className="ftp-icon-chip" aria-hidden style={{ width: 32, height: 32, borderRadius: 10 }}>
+          <Glyph name="book" size={19} />
         </span>
         {t("data.sources")}
       </h2>

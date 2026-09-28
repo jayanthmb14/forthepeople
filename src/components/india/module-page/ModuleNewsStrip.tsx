@@ -17,6 +17,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { localizeRows } from "@/lib/translation/overlay";
 import { EmptyState, Section } from "@/components/district/ui";
+import { CategoryGlyph } from "@/components/graphics";
 import { fmtDate } from "../format";
 
 interface Props {
@@ -65,7 +66,7 @@ export default async function ModuleNewsStrip({ locale, newsKeywords, moduleTitl
   }
 
   return (
-    <Section title={t("news.title", { module: moduleTitle })} emoji="📰">
+    <Section title={t("news.title", { module: moduleTitle })}>
       {items.length === 0 ? (
         <EmptyState
           emoji="📰"
@@ -105,9 +106,7 @@ export default async function ModuleNewsStrip({ locale, newsKeywords, moduleTitl
                     color: "var(--ftp-text)",
                   }}
                 >
-                  <span className="ftp-icon-chip ftp-emoji" aria-hidden style={{ width: 32, height: 32, fontSize: 16, borderRadius: 10 }}>
-                    🗞️
-                  </span>
+                  <CategoryGlyph glyph="general" size={32} chip />
                   <span style={{ minWidth: 0 }}>
                     <span lang={lang} style={{ display: "block", fontSize: 14, fontWeight: 500, lineHeight: 1.45, marginBottom: 4 }}>
                       {n.title}
