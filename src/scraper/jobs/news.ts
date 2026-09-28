@@ -429,6 +429,7 @@ export async function scrapeNews(
     // re-pointed and its translations removed (deleteNewsItems).
     const stored = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
+      orderBy: { publishedAt: "desc" },
       select: { id: true, publishedAt: true },
       take: 5000,
     });

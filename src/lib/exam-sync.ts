@@ -264,7 +264,6 @@ async function rowsInPlace(p: ExamPlacement) {
   return rows.filter((r) => examBucket(r) === bucket);
 }
 
-
 export interface SyncResult {
   affectedDistricts: number;
   created: number;
