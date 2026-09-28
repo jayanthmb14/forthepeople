@@ -15,7 +15,9 @@
 // src/scraper/jobs/budget.ts — every entry is null). Until one is found,
 // this route returns {skipped: true, reason} immediately instead of
 // pretending to collect. The cron stays scheduled so the day a resource
-// id is added, collection starts without a vercel.json change.
+// id is added (with the dataset's district and year fields — records of
+// other districts or without a year are skipped), collection starts
+// without a vercel.json change.
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";

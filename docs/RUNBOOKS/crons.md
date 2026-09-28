@@ -181,7 +181,10 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
   than being killed mid-write.
 - `scrape-budget` is a deliberate no-op: `STATE_BUDGET_RESOURCES` in
   `src/scraper/jobs/budget.ts` has no live dataset ids. It stays scheduled so
-  adding an id starts collection without touching `vercel.json`.
+  adding an id starts collection without touching `vercel.json`. An entry
+  must name the dataset's district field and year field: the request is
+  filtered by district, and a record without our district or a readable
+  financial year is skipped (`src/scraper/lib/budget-records.ts`).
 - Crops need `DATA_GOV_API_KEY`. Weather works without `OPENWEATHER_API_KEY`
   (Open-Meteo is the fallback), but the key also feeds the second-source
   check on the weather page. If a key is missing and the source fails, the
