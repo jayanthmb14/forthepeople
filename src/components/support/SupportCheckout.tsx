@@ -197,7 +197,6 @@ export default function SupportCheckout({ tier }: Props) {
     queryClient.invalidateQueries({ queryKey: ["contributors"] });
     queryClient.invalidateQueries({ queryKey: ["contributors-all"] });
     queryClient.invalidateQueries({ queryKey: ["district-sponsors"] });
-    queryClient.invalidateQueries({ queryKey: ["homepage-preview"] });
   }
 
   // `?tier=district&state=karnataka&district=mandya` opens this plan's popup

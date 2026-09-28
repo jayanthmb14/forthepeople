@@ -9,7 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 //
 //  Used by the /[locale]/prices page (server component), /api/data/prices
-//  and /api/data/market-ticker. One snapshot = every series with ~4 months
+//  and the home page ticker. One snapshot = every series with ~4 months
 //  of daily values, fetched in parallel. Two ways to cache it:
 //    • API routes: a Redis snapshot, kept
 //        – 15 min while Indian markets are open (Mon–Fri 09:15–15:30 IST),

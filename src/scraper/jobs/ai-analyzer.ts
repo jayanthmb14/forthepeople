@@ -22,7 +22,7 @@
 // Model routing: purpose "news-analysis" = free Tier 1 (src/lib/ai-models.ts).
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
-import { NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERTS, SHOWN_CROP_PRICE } from "@/lib/data-filters";
+import { NOT_FROM_NEWS_OPTIONAL, OFFICIAL_ALERTS, shownCropPrices } from "@/lib/data-filters";
 import { AIDeadlineError, callAIJSON } from "@/lib/ai-provider";
 import {
   NEWS_INTEL_MODULES,
@@ -61,7 +61,7 @@ async function log(
 }
 
 // ── Context for the prompt ────────────────────────────────
-async function fetchContextLines(districtId: string): Promise<string[]> {
+async function fetchContextLines(districtId: string, districtSlug: string): Promise<string[]> {
   const [leaders, latestCrops, latestWeather, activeAlerts] = await Promise.all([
     // Curated leaders only: rows once written from headlines ("D K Shivakumar —
     // Chief Minister — BJP" under Mumbai) must not reach the prompt as fact.
@@ -73,7 +73,8 @@ async function fetchContextLines(districtId: string): Promise<string[]> {
       take: 5,
     }),
     prisma.cropPrice.findMany({
-      where: { districtId, ...SHOWN_CROP_PRICE },
+      // Only mandis in this district (same rule as the crops page).
+      where: { districtId, ...shownCropPrices(districtSlug) },
       orderBy: { date: "desc" },
       take: 3,
       select: { commodity: true, modalPrice: true },
@@ -258,7 +259,7 @@ export async function runAIAnalyzer(opts: { budgetMs?: number } = {}): Promise<A
     });
     if (articles.length === 0) continue;
 
-    const contextLines = await fetchContextLines(district.id);
+    const contextLines = await fetchContextLines(district.id, district.slug);
     const { systemPrompt, userPrompt } = buildNewsIntelPrompt({
       districtName: district.name,
       stateName: district.state?.name ?? "",

@@ -138,9 +138,9 @@ export const DATASETS: readonly DatasetInfo[] = [
   // Money & projects
   { key: "budget", slug: "finance", collection: "hand", dateKind: "period" },
   { key: "infrastructure", slug: "infrastructure", collection: "hand", dateKind: "checked", maxAgeHours: 60 * DAY },
-  { key: "industries", slug: "industries", collection: "hand", dateKind: "checked", maxAgeHours: 365 * DAY },
+  { key: "industries", slug: "industries", collection: "hand", dateKind: "none", maxAgeHours: 365 * DAY },
   // Help for you
-  { key: "schemes", slug: "schemes", collection: "hand", dateKind: "checked", maxAgeHours: 90 * DAY, url: "https://www.myscheme.gov.in" },
+  { key: "schemes", slug: "schemes", collection: "hand", dateKind: "none", maxAgeHours: 90 * DAY, url: "https://www.myscheme.gov.in" },
   { key: "housing", slug: "housing", collection: "hand", dateKind: "period", url: "https://pmayg.nic.in" },
   { key: "services", slug: "services", collection: "hand", dateKind: "checked", maxAgeHours: 180 * DAY },
   { key: "offices", slug: "offices", collection: "hand", dateKind: "checked", maxAgeHours: 90 * DAY },

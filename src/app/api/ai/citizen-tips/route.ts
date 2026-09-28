@@ -12,6 +12,7 @@
 // Cache TTL: 7 days. When empty, returns no tips and no promised date.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
+import { citizenTipsKey } from "@/lib/citizen-tips";
 import { cacheGet } from "@/lib/cache";
 
 const CACHE_TTL = 7 * 24 * 60 * 60; // 7 days — must match cron TTL
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "district param required" }, { status: 400 });
   }
 
-  const cacheKey = `ftp:ai:citizen-tips:${districtSlug}`;
+  const cacheKey = citizenTipsKey(districtSlug);
 
   const cached = await cacheGet<TipsResponse>(cacheKey);
   if (cached && cached.tips && cached.tips.length > 0) {

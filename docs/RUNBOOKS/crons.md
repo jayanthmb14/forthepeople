@@ -152,6 +152,7 @@ district totals yet):
 | `ftp:data:udise:<slug>` | `scrape-schools` | none (a failed run keeps the last good one) |
 | `ftp:data:mgnrega:<slug>` | `scrape-mgnrega` | none |
 | `ftp:data:fuel` | `scrape-fuel` | none (read by `/api/data/prices` → `fuel` and the home page) |
+| `ftp:news:rejected:<districtId>` | `scrape-news` | sorted set trimmed to 4 days — articles the AI placed in another district, so they are not re-classified every run |
 | `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` | `scrape-courts` | 120 days (housekeeping only) |
 | `ftp:ai:citizen-tips:<slug>` | `generate-citizen-tips` | 14 days (two weekly runs) |
 
