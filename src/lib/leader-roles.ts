@@ -54,3 +54,8 @@ export function isHeadquartersMla(l: { role: string; constituency?: string | nul
   const key = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
   return key(seat) !== "" && key(seat) === key(districtSlug);
 }
+
+/** The state minister put in charge of the district ("Minister in charge of Mandya district"). */
+export function isInChargeMinisterRole(role: string): boolean {
+  return /^minister in charge of\b|^district in-charge minister\b/i.test(role.trim());
+}

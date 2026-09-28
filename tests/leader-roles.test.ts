@@ -52,3 +52,12 @@ describe("isHeadquartersMla — the MLA for the district's own seat", () => {
     expect(isHeadquartersMla({ role: "MLA, Malavalli (SC)", constituency: "Malavalli (SC) — 186" }, "malavalli")).toBe(true);
   });
 });
+
+describe("isInChargeMinisterRole", () => {
+  it("matches the district in-charge minister only", async () => {
+    const { isInChargeMinisterRole } = await import("@/lib/leader-roles");
+    expect(isInChargeMinisterRole("Minister in charge of Mandya district")).toBe(true);
+    expect(isInChargeMinisterRole("Minister for Agriculture, Karnataka")).toBe(false);
+    expect(isInChargeMinisterRole("Chief Minister of Karnataka")).toBe(false);
+  });
+});

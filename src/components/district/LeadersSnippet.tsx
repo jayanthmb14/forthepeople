@@ -35,7 +35,7 @@ import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import OverviewCard from "@/components/district/shell/OverviewCard";
 import { LeadersMark } from "@/components/district/shell/overview-art";
-import { isCollectorRole, isHeadquartersMla, isPoliceCommissionerRole, isSPRole } from "@/lib/leader-roles";
+import { isCollectorRole, isHeadquartersMla, isInChargeMinisterRole, isPoliceCommissionerRole, isSPRole } from "@/lib/leader-roles";
 
 interface ApiResponse { data: Leader[]; meta?: unknown }
 
@@ -102,6 +102,7 @@ export default function LeadersSnippet({
   const cp = cps[0];
   // Some districts have several MPs (Pune: 4); list them all.
   const mps = leaders.filter(isMP);
+  const inCharge = leaders.find((l) => isInChargeMinisterRole(l.role));
   const mlas = leaders.filter(isMLA);
   // The MLA for the district headquarters seat is named, not only counted.
   const hqMla = mlas.find((l) => isHeadquartersMla(l, district));
@@ -152,6 +153,19 @@ export default function LeadersSnippet({
         {cp && (
           <Row badge={named(cp) ? initials(cp.name) : null} role={t("cp")}>
             {renderName(cp, t("spPending"), cps.length - 1)}
+          </Row>
+        )}
+        {named(inCharge) && (
+          <Row badge={initials(inCharge.name)} role={t("inCharge")}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span lang="en" style={{ fontWeight: 600 }}>{inCharge.name}</span>
+              {inCharge.party && (
+                <span className="ftp-ovl-party">
+                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: getPartyColor(inCharge.party).text }} />
+                  {inCharge.party}
+                </span>
+              )}
+            </span>
           </Row>
         )}
         <Row badge={named(mp) ? initials(mp.name) : null} role={mps.length > 1 ? t("mps") : t("mp")}>

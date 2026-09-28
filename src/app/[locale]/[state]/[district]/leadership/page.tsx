@@ -87,6 +87,7 @@ const ROLE_ORDER: RegExp[] = [
   /^governor/i,
   /^chief minister/i,
   /^deputy chief minister/i,
+  /^minister in charge of|^minister for/i,
   /\bunion minister\b|\bmp\b|member of parliament/i,
   /^district collector|deputy commissioner/i,
   /^superintendent of police|commissioner of police/i,
