@@ -480,15 +480,18 @@
   color: var(--ftp-text);
 }
 .stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* Phones: the "last update" tile takes the whole last row, as one line. */
+.stats > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
 .stat {
-  flex: 1 1 170px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -526,6 +529,12 @@
   opacity: 0.8;
 }
 /* The last tile: when we last collected something. */
+.statWhen:nth-child(odd) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-height: 0;
+}
 .statAgo {
   display: inline-flex;
   align-items: center;
@@ -1388,6 +1397,21 @@
 /* ───────────── Wider screens ───────────── */
 
 @media (min-width: 640px) {
+  /* One row of number tiles from tablets up. */
+  .stats {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .stats > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+  .statWhen:nth-child(odd) {
+    flex-direction: column;
+    gap: 6px;
+    min-height: 96px;
+  }
   /* Tablets: the districts in two columns under the map. */
   .liveList {
     display: grid;
@@ -1417,6 +1441,18 @@
   }
   .supportBand {
     padding: 24px;
+  }
+}
+@media (min-width: 640px) and (max-width: 899px) {
+  .stat {
+    padding: 14px 8px;
+  }
+  .statNum {
+    font-size: 26px;
+    line-height: 30px;
+  }
+  .statAgo {
+    font-size: 16px;
   }
 }
 @media (min-width: 640px) and (max-width: 1023px) {
@@ -1499,12 +1535,8 @@
     border-radius: 14px;
   }
   /* Stats: two tiles a row; the last one takes the whole row. */
-  .stats {
-    gap: 8px;
-  }
   .stat {
-    flex-basis: 130px;
-    min-height: 80px;
+    min-height: 76px;
     padding: 12px 10px;
   }
   .statNum {
@@ -1567,6 +1599,19 @@
   /* Tighter sections on phones: no big gaps. */
   .section {
     margin-top: 36px;
+  }
+}
+
+@media (max-width: 399px) {
+  /* The smallest phones: the four India figures one under another. */
+  .indiaFigures {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .figure:nth-child(odd) {
+    border-right-width: 0;
+  }
+  .figure:nth-child(n + 2) {
+    border-top-width: 1px;
   }
 }
 
