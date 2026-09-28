@@ -12,6 +12,7 @@
 // as in /api/data/[module]. One read-only
 // aggregate per table (plus the courts snapshot from Redis).
 import { prisma } from "@/lib/db";
+import { getCronRun } from "@/lib/cron-auth";
 import {
   ACTIVE_TRANSPORT,
   BORN_HERE_PERSONALITY,
@@ -23,7 +24,6 @@ import {
   NOT_SEEDED_RAINFALL,
   OFFICIAL_ALERTS,
   SHOWN_CRIME,
-  SHOWN_CROP_PRICE,
   VERIFIED_PANCHAYAT,
   ELECTION_RESULTS_WITHHELD,
 
@@ -47,15 +47,33 @@ const LAST_CENSUS_YEAR = 2011;
 const endOfMonth = (year: number, month: number) => new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
 /**
+ * When the NDMA SACHET alerts feed was last read without an error: the
+ * cron's run record (Redis) or the collector's ScraperLog "alerts" row,
+ * the newer one. "No warning" is an answer too, so this — not the newest
+ * alert row — dates the alerts dataset (Sept 2026 audit). Shared with
+ * /api/data/freshness so the page and the daily double-check agree.
+ */
+export async function lastAlertsFeedRead(): Promise<Date | null> {
+  const [run, log] = await Promise.all([
+    getCronRun("scrape-alerts"),
+    prisma.scraperLog.aggregate({
+      where: { jobName: "alerts", status: { in: ["success", "partial"] } },
+      _max: { completedAt: true },
+    }),
+  ]);
+  const fromRun = run?.lastSuccessAt ? new Date(run.lastSuccessAt) : null;
+  return latest(fromRun && !Number.isNaN(fromRun.getTime()) ? fromRun : null, log._max.completedAt);
+}
+
+/**
  * `districtSlug` lets courts, schools and village councils use the
- * collectors' snapshots in Redis (NJDG, UDISE+, MGNREGA); without it
- * courts fall back to the CourtStat rows' read date and the other two
- * count only table rows.
+ * collectors' snapshots in Redis (NJDG, UDISE+, MGNREGA) and mandi prices
+ * keep only the district's own markets (shownCropPrices).
  */
 export async function collectDatasetDates(
   districtId: string,
   stateId: string,
-  districtSlug?: string,
+  districtSlug: string,
 ): Promise<Record<string, DatasetDate>> {
   const d = { districtId };
   const [
@@ -64,7 +82,7 @@ export async function collectDatasetDates(
     budgetE, budgetA, budgetTop, infra, industries,
     schemes, housing, housingTop, services, offices, exams,
     jjm, dams, power, buses, trains, schools, crops, soil, advisories,
-    profiles, popHistory, famous, insights, courtsSnapshot, udise, nrega,
+    profiles, popHistory, famous, insights, courtsSnapshot, udise, nrega, alertsRead,
   ] = await Promise.all([
     prisma.newsItem.aggregate({ where: d, _count: { _all: true }, _max: { publishedAt: true } }),
     prisma.localAlert.aggregate({ where: { ...d, ...OFFICIAL_ALERTS }, _count: { _all: true }, _max: { createdAt: true } }),
@@ -85,7 +103,11 @@ export async function collectDatasetDates(
     prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _count: { _all: true }, _max: { fetchedAt: true } }),
     prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _max: { fiscalYear: true } }),
     prisma.infraProject.aggregate({ where: { ...d, ...LOCAL_INFRA }, _count: { _all: true }, _max: { lastVerifiedAt: true, updatedAt: true } }),
-    prisma.localIndustry.count({ where: { ...d, active: true } }),
+    // The industries page lists both (active rows only).
+    Promise.all([
+      prisma.localIndustry.count({ where: { ...d, active: true } }),
+      prisma.sugarFactory.count({ where: { ...d, active: true } }),
+    ]).then(([local, sugar]) => local + sugar),
     prisma.scheme.count({ where: { ...d, active: true } }),
     prisma.housingScheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.housingScheme.aggregate({ where: d, _max: { fiscalYear: true } }),
@@ -102,16 +124,17 @@ export async function collectDatasetDates(
     prisma.busRoute.count({ where: { ...d, ...ACTIVE_TRANSPORT } }),
     prisma.trainSchedule.count({ where: { ...d, ...ACTIVE_TRANSPORT } }),
     prisma.school.count({ where: d }),
-    prisma.cropPrice.aggregate({ where: { ...d, ...(districtSlug ? shownCropPrices(districtSlug) : SHOWN_CROP_PRICE) }, _count: { _all: true }, _max: { date: true } }),
+    prisma.cropPrice.aggregate({ where: { ...d, ...shownCropPrices(districtSlug) }, _count: { _all: true }, _max: { date: true } }),
     prisma.soilHealth.aggregate({ where: d, _count: { _all: true }, _max: { testedAt: true } }),
     prisma.agriAdvisory.aggregate({ where: d, _count: { _all: true }, _max: { weekOf: true } }),
     prisma.demographicProfile.findMany({ where: d, select: { dataset: true, year: true }, orderBy: { year: "asc" } }),
     prisma.populationHistory.findMany({ where: d, select: { year: true, source: true } }),
     prisma.famousPersonality.aggregate({ where: { ...d, ...BORN_HERE_PERSONALITY }, _count: { _all: true }, _max: { createdAt: true } }),
     prisma.aIModuleInsight.aggregate({ where: d, _count: { _all: true }, _max: { generatedAt: true } }),
-    districtSlug ? readCourtsSnapshot(districtSlug) : Promise.resolve(null),
-    districtSlug ? readDistrictSnapshot("udise", districtSlug) : Promise.resolve(null),
-    districtSlug ? readDistrictSnapshot("mgnrega", districtSlug) : Promise.resolve(null),
+    readCourtsSnapshot(districtSlug),
+    readDistrictSnapshot("udise", districtSlug),
+    readDistrictSnapshot("mgnrega", districtSlug),
+    lastAlertsFeedRead(),
   ]);
 
   // MGNREGA: the source's own "as on" day (IST noon), else when we read it.
@@ -134,7 +157,9 @@ export async function collectDatasetDates(
 
   return {
     news: { rows: news._count._all, newest: iso(news._max.publishedAt), period: null },
-    alerts: { rows: alerts._count._all, newest: iso(alerts._max.createdAt), period: null, active: alertsActive },
+    // Dated by the last good read of the SACHET feed (a quiet spell is not
+    // late), as on the page; rows are only the warnings we hold.
+    alerts: { rows: alerts._count._all, newest: iso(latest(alerts._max.createdAt, alertsRead)), period: null, active: alertsActive },
     weather: { rows: weather._count._all, newest: iso(weather._max.recordedAt), period: null },
     rainfall: { rows: rainCount, newest: rain ? iso(endOfMonth(rain.year, rain.month)) : null, period: rain ? `${rain.year}-${String(rain.month).padStart(2, "0")}` : null },
     rti: { rows: rtiCount, newest: null, period: rtiTop._max.year ? String(rtiTop._max.year) : null },

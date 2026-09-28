@@ -35,13 +35,17 @@ import { JJM_SOURCE } from "@/scraper/lib/jjm";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import {
   COLLECTED_BUDGET_SOURCES,
+  GOVERNMENT_URL_PATTERN,
+  LOCAL_INFRA_SCOPES,
+  NEWS_SOURCE_PREFIX,
   SEEDED_RAINFALL_LAST_YEAR,
   SEEDED_RAINFALL_SOURCES,
+  TENDER_STUB_MARKER,
   VERIFIED_PANCHAYAT,
   shownCropPrices,
 } from "@/lib/data-filters";
 import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
-import { getCronRun } from "@/lib/cron-auth";
+import { lastAlertsFeedRead } from "@/lib/dataset-dates";
 
 export const runtime = "nodejs";
 
@@ -51,6 +55,9 @@ const NJDG_COURTSTAT_LIKE = `${COURTSTAT_SOURCE_PREFIX}%`;
 const SACHET_ALERT_LIKE = `${SACHET_SOURCE_PREFIX}%`;
 /** SHOWN_BUDGET_ENTRY's `startsWith: "data.gov.in ("` as a LIKE pattern (collector rows only). */
 const DATA_GOV_BUDGET_LIKE = "data.gov.in (%";
+/** NOT_FROM_NEWS: a row whose source is an article URL. */
+const NEWS_SOURCE_LIKE = `${NEWS_SOURCE_PREFIX}%`;
+
 
 const CACHE_SECONDS = 300;
 
@@ -97,7 +104,6 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       (SELECT max(x."updatedAt") FROM "LocalAlert" x WHERE x."districtId" = d.id AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE}) AS alerts_date,
       (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE})::int AS alerts_rows,
       (SELECT count(*) FROM "LocalAlert" x WHERE x."districtId" = d.id AND x.active AND x."sourceUrl" LIKE ${SACHET_ALERT_LIKE})::int AS alerts_active,
-      (SELECT max(x."completedAt") FROM "ScraperLog" x WHERE x."jobName" = 'alerts' AND x.status IN ('success', 'partial')) AS alerts_checked,
       (SELECT max(x."recordedAt") FROM "WeatherReading" x WHERE x."districtId" = d.id) AS weather_date,
       (SELECT count(*) FROM "WeatherReading" x WHERE x."districtId" = d.id)::int AS weather_rows,
       (SELECT max(x.year) FROM "RainfallHistory" x WHERE x."districtId" = d.id
@@ -107,8 +113,8 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       (SELECT count(*) FROM "RtiTemplate" x WHERE x."districtId" = d.id OR x."districtId" IS NULL)::int AS rtitpl_rows,
       (SELECT max(x.year) FROM "RtiStat" x WHERE x."districtId" = d.id) AS rti_year,
       (SELECT count(*) FROM "RtiStat" x WHERE x."districtId" = d.id)::int AS rti_rows,
-      (SELECT max(x."lastVerifiedAt") FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE 'http%')) AS leaders_date,
-      (SELECT count(*) FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE 'http%'))::int AS leaders_rows,
+      (SELECT max(x."lastVerifiedAt") FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE ${NEWS_SOURCE_LIKE})) AS leaders_date,
+      (SELECT count(*) FROM "Leader" x WHERE x."districtId" = d.id AND x.active AND (x.source IS NULL OR x.source NOT LIKE ${NEWS_SOURCE_LIKE}))::int AS leaders_rows,
       (SELECT max(x.year) FROM "ElectionResult" x WHERE x."districtId" = d.id) AS elections_year,
       (SELECT count(*) FROM "ElectionResult" x WHERE x."districtId" = d.id)::int AS elections_rows,
       (SELECT max(COALESCE(e."resultDate", e."pollingDate", e."lastHeld")) FROM "ElectionEvent" e
@@ -118,11 +124,13 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
           AND COALESCE(e."resultDate", e."pollingDate", e."lastHeld") <= now()) AS elections_held,
       (SELECT max(x.source) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE}) AS courts_source,
       (SELECT count(*) FROM "CourtStat" x WHERE x."districtId" = d.id AND x.source LIKE ${NJDG_COURTSTAT_LIKE})::int AS courts_rows,
-      (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%') AS crime_year,
-      (SELECT count(*) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%' AND x.source NOT ILIKE '%estimat%')::int AS crime_rows,
-      (SELECT max(x."date") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%') AS traffic_date,
-      (SELECT max(x."fetchedAt") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%') AS traffic_checked,
-      (SELECT count(*) FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%')::int AS traffic_rows,
+      (SELECT max(x.year) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE ${NEWS_SOURCE_LIKE} AND x.source NOT ILIKE '%estimat%') AS crime_year,
+      (SELECT count(*) FROM "CrimeStat" x WHERE x."districtId" = d.id AND x.source NOT LIKE ${NEWS_SOURCE_LIKE} AND x.source NOT ILIKE '%estimat%')::int AS crime_rows,
+      -- SHOWN_TRAFFIC, and whole rupees only: the police page drops the
+      -- seeded Math.random() amounts (fractional paise), so they are not counted.
+      (SELECT max(x."date") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%' AND x.amount = trunc(x.amount)) AS traffic_date,
+      (SELECT max(x."fetchedAt") FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%' AND x.amount = trunc(x.amount)) AS traffic_checked,
+      (SELECT count(*) FROM "TrafficCollection" x WHERE x."districtId" = d.id AND x.source IS NOT NULL AND x.source NOT ILIKE 'estimat%' AND x.amount = trunc(x.amount))::int AS traffic_rows,
       (SELECT count(*) FROM "PoliceStation" x WHERE x."districtId" = d.id)::int AS stations_rows,
       (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})) AS budget_fy,
       (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})) AS budget_checked,
@@ -135,14 +143,17 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
         WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%' AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})
           AND x."fiscalYear" = (SELECT max(y."fiscalYear") FROM "BudgetEntry" y WHERE y."districtId" = d.id AND (y.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR y.source LIKE ${DATA_GOV_BUDGET_LIKE}))
       ) AS budget_estimate,
-      (SELECT max(x."lastVerifiedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY'))) AS infra_date,
-      (SELECT max(x."updatedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY'))) AS infra_checked,
-      (SELECT count(*) FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY')))::int AS infra_rows,
-      (SELECT max(x."lastCheckedAt") FROM "Tender" x WHERE x."locationDistrict" = d.name) AS tenders_date,
-      (SELECT count(*) FROM "Tender" x WHERE x."locationDistrict" = d.name)::int AS tenders_rows,
+      (SELECT max(x."lastVerifiedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope = ANY(${LOCAL_INFRA_SCOPES}))) AS infra_date,
+      (SELECT max(x."updatedAt") FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope = ANY(${LOCAL_INFRA_SCOPES}))) AS infra_checked,
+      (SELECT count(*) FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope = ANY(${LOCAL_INFRA_SCOPES})))::int AS infra_rows,
+      -- NOT_STUB_TENDER: the seeded placeholder tenders are never listed.
+      (SELECT max(x."lastCheckedAt") FROM "Tender" x WHERE x."locationDistrict" = d.name
+        AND (x."rawHtmlSnapshot" IS NULL OR x."rawHtmlSnapshot" <> ${TENDER_STUB_MARKER})) AS tenders_date,
+      (SELECT count(*) FROM "Tender" x WHERE x."locationDistrict" = d.name
+        AND (x."rawHtmlSnapshot" IS NULL OR x."rawHtmlSnapshot" <> ${TENDER_STUB_MARKER}))::int AS tenders_rows,
       ((SELECT count(*) FROM "LocalIndustry" x WHERE x."districtId" = d.id AND x.active)
-        + (SELECT count(*) FROM "SugarFactory" x WHERE x."districtId" = d.id))::int AS industries_rows,
-      (SELECT count(*) FROM "Scheme" x WHERE x."districtId" = d.id)::int AS schemes_rows,
+        + (SELECT count(*) FROM "SugarFactory" x WHERE x."districtId" = d.id AND x.active))::int AS industries_rows,
+      (SELECT count(*) FROM "Scheme" x WHERE x."districtId" = d.id AND x.active)::int AS schemes_rows,
       (SELECT max(x."fiscalYear") FROM "HousingScheme" x WHERE x."districtId" = d.id) AS housing_fy,
       (SELECT max(x."updatedAt") FROM "HousingScheme" x WHERE x."districtId" = d.id) AS housing_checked,
       (SELECT count(*) FROM "HousingScheme" x WHERE x."districtId" = d.id)::int AS housing_rows,
@@ -165,8 +176,8 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       (SELECT max(x."scheduledDate") FROM "CanalRelease" x WHERE x."districtId" = d.id) AS canals_date,
       (SELECT max(x."createdAt") FROM "CanalRelease" x WHERE x."districtId" = d.id) AS canals_checked,
       (SELECT count(*) FROM "CanalRelease" x WHERE x."districtId" = d.id)::int AS canals_rows,
-      (SELECT max(x."createdAt") FROM "PowerOutage" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%') AS power_date,
-      (SELECT count(*) FROM "PowerOutage" x WHERE x."districtId" = d.id AND x.source NOT LIKE 'http%')::int AS power_rows,
+      (SELECT max(x."createdAt") FROM "PowerOutage" x WHERE x."districtId" = d.id AND x.source NOT LIKE ${NEWS_SOURCE_LIKE}) AS power_date,
+      (SELECT count(*) FROM "PowerOutage" x WHERE x."districtId" = d.id AND x.source NOT LIKE ${NEWS_SOURCE_LIKE})::int AS power_rows,
       (SELECT count(*) FROM "BusRoute" x WHERE x."districtId" = d.id AND x.active)::int AS buses_rows,
       (SELECT count(*) FROM "TrainSchedule" x WHERE x."districtId" = d.id AND x.active)::int AS trains_rows,
       -- Health: the data date is the staffing figures' own "as of" date
@@ -175,15 +186,12 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       -- which any maintenance edit moves — is never used as one (Sept 2026
       -- audit: a clean-up made March seed rows read "Data date 28 Sept").
       (SELECT max(x."asOfDate") FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'
-        AND x."sourceUrl" ~* '^https?://([a-z0-9-]+\.)*(gov\.in|nic\.in)(/|:|$)') AS health_date,
-      ((SELECT count(*) FROM "GovOffice" x WHERE x."districtId" = d.id
+        AND x."sourceUrl" ~* ${GOVERNMENT_URL_PATTERN}) AS health_date,
+      ((SELECT count(*) FROM "GovOffice" x WHERE x."districtId" = d.id AND x.active
           AND (x.department ILIKE '%health%' OR x.type ILIKE '%hospital%' OR x.type ILIKE '%health%'))
         + (SELECT count(*) FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'
-          AND x."sourceUrl" ~* '^https?://([a-z0-9-]+\.)*(gov\.in|nic\.in)(/|:|$)'))::int AS health_rows,
+          AND x."sourceUrl" ~* ${GOVERNMENT_URL_PATTERN}))::int AS health_rows,
       (SELECT count(*) FROM "School" x WHERE x."districtId" = d.id)::int AS schools_rows,
-      (SELECT max(x."date") FROM "CropPrice" x WHERE x."districtId" = d.id) AS crops_date,
-      (SELECT max(x."fetchedAt") FROM "CropPrice" x WHERE x."districtId" = d.id) AS crops_checked,
-      (SELECT count(*) FROM "CropPrice" x WHERE x."districtId" = d.id)::int AS crops_rows,
       (SELECT max(x."weekOf") FROM "AgriAdvisory" x WHERE x."districtId" = d.id) AS agri_date,
       (SELECT max(x."createdAt") FROM "AgriAdvisory" x WHERE x."districtId" = d.id) AS agri_checked,
       (SELECT count(*) FROM "AgriAdvisory" x WHERE x."districtId" = d.id)::int AS agri_rows,
@@ -235,12 +243,12 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const [courtsSnapshot, udise, nrega, gp, alertsRun, crops] = await Promise.all([
+  const [courtsSnapshot, udise, nrega, gp, alertsCheckedAt, crops] = await Promise.all([
     readCourtsSnapshot(districtSlug),
     readDistrictSnapshot("udise", districtSlug),
     readDistrictSnapshot("mgnrega", districtSlug),
     prisma.gramPanchayat.aggregate({ where: { districtId: district.id, ...VERIFIED_PANCHAYAT }, _count: { _all: true }, _max: { updatedAt: true } }),
-    getCronRun("scrape-alerts"),
+    lastAlertsFeedRead(),
     // Mandi prices the crops page may show (shownCropPrices: no seed rows,
     // no livestock / per-nut / per-stem, only mandis in the district).
     prisma.cropPrice.aggregate({
@@ -249,11 +257,6 @@ export async function GET(req: NextRequest) {
       _max: { date: true, fetchedAt: true },
     }),
   ]);
-  const alertsCheckedAt = alertsRun?.lastSuccessAt ? new Date(alertsRun.lastSuccessAt) : null;
-  // The crops dataset counts only the prices the page shows (Sept 2026 audit).
-  row.crops_rows = crops._count._all;
-  row.crops_date = crops._max.date;
-  row.crops_checked = crops._max.fetchedAt;
   const courtsDate = courtsReadAt(courtsSnapshot?.fetchedAt ?? null, row.courts_source);
   // A snapshot without CourtStat rows (the row write failed) still counts.
   if (courtsSnapshot && row.courts_rows === 0) row.courts_rows = courtsSnapshot.units.length;
@@ -264,13 +267,15 @@ export async function GET(req: NextRequest) {
       ? { date: new Date(nrega.asOf ? `${nrega.asOf}T12:00:00+05:30` : nrega.fetchedAt), checked: new Date(nrega.fetchedAt) }
       : null,
     udiseAt: udise ? new Date(udise.fetchedAt) : null,
-    alertsCheckedAt: alertsCheckedAt && !Number.isNaN(alertsCheckedAt.getTime()) ? alertsCheckedAt : null,
+    alertsCheckedAt,
+    // The crops dataset counts only the prices the page shows (Sept 2026 audit).
+    crops: { rows: crops._count._all, date: crops._max.date, checked: crops._max.fetchedAt },
   });
 
   const ageMin = (date: Date | null | undefined): number | null =>
     date ? (now.getTime() - new Date(date).getTime()) / 60000 : null;
   const weatherAge = ageMin(row.weather_date);
-  const cropsAge = ageMin(row.crops_date);
+  const cropsAge = ageMin(crops._max.date);
   const damAge = ageMin(row.dams_date);
   const newsAge = ageMin(row.news_date);
   const insightAge = ageMin(row.ai_date);
@@ -284,8 +289,8 @@ export async function GET(req: NextRequest) {
     crops: {
       status: trafficLight(cropsAge, EXPECTED_MAX_AGE.crops),
       age: formatAge(cropsAge),
-      lastUpdated: iso(row.crops_checked),
-      dataDate: iso(row.crops_date),
+      lastUpdated: iso(crops._max.fetchedAt),
+      dataDate: iso(crops._max.date),
     },
     dam: {
       status: trafficLight(damAge, EXPECTED_MAX_AGE.dam),

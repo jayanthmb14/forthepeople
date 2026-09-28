@@ -30,7 +30,7 @@ import { ELECTION_RESULTS_WITHHELD } from "@/lib/data-filters";
 export interface FreshnessRow {
   tenders_active: boolean;
   news_date: Date | null; news_checked: Date | null; news_rows: number;
-  alerts_date: Date | null; alerts_rows: number; alerts_active: number; alerts_checked: Date | null;
+  alerts_date: Date | null; alerts_rows: number; alerts_active: number;
   weather_date: Date | null; weather_rows: number;
   rain_year: number | null; rain_rows: number;
   rtitpl_rows: number;
@@ -59,7 +59,6 @@ export interface FreshnessRow {
   buses_rows: number; trains_rows: number;
   health_date: Date | null; health_rows: number;
   schools_rows: number;
-  crops_date: Date | null; crops_checked: Date | null; crops_rows: number;
   agri_date: Date | null; agri_checked: Date | null; agri_rows: number;
   soil_date: Date | null; soil_rows: number;
   census_year: number | null; census_dataset: string | null; census_checked: Date | null; census_rows: number;
@@ -99,8 +98,14 @@ export interface FreshnessExtra {
   nrega: { date: Date; checked: Date } | null;
   /** UDISE+ snapshot: when we read it. */
   udiseAt: Date | null;
-  /** When the NDMA SACHET alerts cron last finished without an error (Redis run record). */
+  /**
+   * When the NDMA SACHET feed was last read without an error: the cron's
+   * run record (Redis) or the collector's ScraperLog row, the newer one
+   * (lastAlertsFeedRead in src/lib/dataset-dates.ts).
+   */
   alertsCheckedAt: Date | null;
+  /** Mandi prices the crops page shows (shownCropPrices): count, newest market day, newest fetch. */
+  crops: { rows: number; date: Date | null; checked: Date | null };
 }
 
 /** The later of two dates (either may be missing). */
@@ -127,9 +132,9 @@ export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw
     // "late"). A good read is either the cron's run record (Redis) or the
     // collector's ScraperLog "alerts" row — the newer one counts.
     alerts: {
-      rows: r.alerts_rows > 0 ? r.alerts_rows : newer(x.alertsCheckedAt, r.alerts_checked) ? 1 : 0,
-      date: newer(newer(x.alertsCheckedAt, r.alerts_checked), r.alerts_date),
-      checked: newer(newer(x.alertsCheckedAt, r.alerts_checked), r.alerts_date),
+      rows: r.alerts_rows > 0 ? r.alerts_rows : x.alertsCheckedAt ? 1 : 0,
+      date: newer(x.alertsCheckedAt, r.alerts_date),
+      checked: newer(x.alertsCheckedAt, r.alerts_date),
     },
     weather: { rows: r.weather_rows, date: r.weather_date, checked: r.weather_date },
     rainfall: { rows: r.rain_rows, date: year(r.rain_year), period: r.rain_year ? String(r.rain_year) : null, periodKind: "year" },
@@ -190,7 +195,7 @@ export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw
     // The UDISE+ totals date the schools page; the schools listed by name
     // were typed in and their @updatedAt is not a data date.
     schools: x.udiseAt ? { rows: r.schools_rows + 1, date: x.udiseAt, checked: x.udiseAt } : { rows: r.schools_rows },
-    mandi: { rows: r.crops_rows, date: r.crops_date, checked: r.crops_checked },
+    mandi: { rows: x.crops.rows, date: x.crops.date, checked: x.crops.checked },
     advice: { rows: r.agri_rows, date: r.agri_date, checked: r.agri_checked },
     soil: { rows: r.soil_rows, date: r.soil_date, checked: r.soil_date },
     // The census row with a head count; else the newest census year in the

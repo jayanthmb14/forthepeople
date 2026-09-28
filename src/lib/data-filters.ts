@@ -18,7 +18,8 @@ import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
  * wrong far too often, so they are never shown or counted. Curated rows name
  * their source ("NCRB", "BESCOM", "manual-research").
  */
-export const NOT_FROM_NEWS = { NOT: { source: { startsWith: "http" } } };
+export const NEWS_SOURCE_PREFIX = "http";
+export const NOT_FROM_NEWS = { NOT: { source: { startsWith: NEWS_SOURCE_PREFIX } } };
 
 /** Same, for tables where `source` is optional (Leader). */
 export const NOT_FROM_NEWS_OPTIONAL = { OR: [{ source: null }, NOT_FROM_NEWS] };
@@ -28,7 +29,8 @@ export const NOT_FROM_NEWS_OPTIONAL = { OR: [{ source: null }, NOT_FROM_NEWS] };
  * were copied onto many districts by the old sync (one Delhi project was on
  * all ten), so district pages list DISTRICT and CITY projects only.
  */
-export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: ["DISTRICT", "CITY"] } }] };
+export const LOCAL_INFRA_SCOPES = ["DISTRICT", "CITY"];
+export const LOCAL_INFRA = { OR: [{ scope: null }, { scope: { in: LOCAL_INFRA_SCOPES } }] };
 
 /**
  * Monthly rainfall rows that the seed scripts generated with Math.random()
@@ -255,6 +257,14 @@ function isGovernmentUrl(raw: string | null | undefined): boolean {
     return false;
   }
 }
+
+/**
+ * isGovernmentUrl as a case-insensitive regular expression, for raw SQL
+ * (`"sourceUrl" ~* GOVERNMENT_URL_PATTERN` in /api/data/freshness): the host
+ * ends in gov.in, nic.in or .gov, with or without the http(s):// scheme.
+ * tests/people-services-filters.test.ts keeps the two in step.
+ */
+export const GOVERNMENT_URL_PATTERN = "^(https?://)?([a-z0-9-]+\\.)*(gov\\.in|nic\\.in|gov)([/:?#]|$)";
 
 /**
  * DepartmentStaffing (sanctioned vs working posts) is shown only when its

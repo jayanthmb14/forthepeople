@@ -24,6 +24,7 @@ const noExtra: FreshnessExtra = {
   nrega: null,
   udiseAt: null,
   alertsCheckedAt: null,
+  crops: { rows: 0, date: null, checked: null },
 };
 
 const dataset = (row: FreshnessRow, key: string, extra: FreshnessExtra = noExtra) => {
@@ -103,5 +104,21 @@ describe("freshness facts — no maintenance edit counts as a data date (Sept 20
     expect(d.rows).toBe(41);
     expect(d.dataDate).toBe(udiseAt.toISOString());
     expect(d.status).toBe("current");
+  });
+});
+
+describe("freshness facts — live feeds", () => {
+  it("alerts: a good SACHET read with no warnings is current, not 'not collected'", () => {
+    const read = new Date("2026-09-28T05:30:00Z");
+    const d = dataset(emptyRow(), "alerts", { ...noExtra, alertsCheckedAt: read });
+    expect(d.status).toBe("current");
+    expect(d.dataDate).toBe(read.toISOString());
+  });
+
+  it("mandi: only the prices the crops page shows (shownCropPrices aggregate)", () => {
+    const date = new Date("2026-09-27T00:00:00Z");
+    const d = dataset(emptyRow(), "mandi", { ...noExtra, crops: { rows: 14, date, checked: date } });
+    expect(d.rows).toBe(14);
+    expect(d.dataDate).toBe(date.toISOString());
   });
 });
