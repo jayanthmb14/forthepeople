@@ -79,6 +79,22 @@
     "areaUnit": "lakh sq km",
     "checked": "checked {date}"
   },
+  "yours": {
+    "title": "Your district",
+    "lead": "Pick a district to see a few of its latest figures.",
+    "tabs": "Pick a district",
+    "open": "Open {name} dashboard",
+    "weather": "Weather now",
+    "news": "Latest news",
+    "head": "District head",
+    "grade": "Report card",
+    "gradeScore": "{score} out of 100",
+    "empty": "Not available right now",
+    "loading": "Loading…",
+    "checked": "Checked {date}",
+    "undated": "Date not published by the source",
+    "sourceTime": "{source} · {time} IST"
+  },
   "live": {
     "title": "Live districts",
     "legendFresh": "new data in the last day",

@@ -1223,6 +1223,262 @@
   color: var(--ftp-brand-deep);
 }
 
+/* ───────────── Your district (YourDistrict) ───────────── */
+
+/* A very light band (the page's own near-white) with a thin line above and
+   below, so this section reads apart from the white ones around it. */
+.bandAlt {
+  margin-top: 48px;
+  padding: 36px 0 40px;
+  border-top: 1px solid var(--ftp-border);
+  border-bottom: 1px solid var(--ftp-border);
+  background: var(--ftp-bg);
+}
+.ydTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ydTab {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: var(--ftp-radius-pill, 999px);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease, transform 130ms ease;
+}
+.ydTab:hover {
+  border-color: var(--ftp-brand);
+  color: var(--ftp-brand-deep);
+  transform: translateY(-1px);
+}
+.ydTab[aria-selected="true"] {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-brand);
+  color: var(--ftp-surface);
+}
+.ydTab:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.ydPanel {
+  padding: 16px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
+  box-shadow: var(--ftp-shadow-1);
+  animation: ydFade 140ms ease-out;
+}
+@keyframes ydFade {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ydHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+.ydName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--ftp-text);
+}
+.ydName strong {
+  font-weight: 800;
+}
+.ydState {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ftp-text-2);
+}
+.ydOpen {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--ftp-brand);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-brand-deep);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+.ydOpen:hover {
+  background: var(--ftp-brand-tint);
+  transform: translateY(-1px);
+  box-shadow: var(--ftp-shadow-1);
+}
+.ydOpen:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.ydGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.ydItem {
+  min-width: 0;
+  display: flex;
+}
+.ydCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 132px;
+  padding: 14px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 12px;
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+  text-decoration: none;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+.ydCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--ftp-border-strong);
+  box-shadow: var(--ftp-shadow-2);
+}
+.ydCard:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.ydCardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--ftp-text-2);
+}
+.ydIcon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+}
+.ydWeather {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ydValue {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ftp-brand-deep);
+}
+.ydSub {
+  font-size: 13.5px;
+  line-height: 19px;
+  font-weight: 600;
+  color: var(--ftp-text);
+  overflow-wrap: anywhere;
+}
+.ydHeadline {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 14.5px;
+  line-height: 21px;
+  font-weight: 650;
+  color: var(--ftp-text);
+}
+.ydPerson {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 17px;
+  line-height: 23px;
+  font-weight: 800;
+  color: var(--ftp-text);
+  overflow-wrap: anywhere;
+}
+.ydMore {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ftp-text-2);
+}
+.ydFoot {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+  overflow-wrap: anywhere;
+}
+.ydEmpty {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 19px;
+  color: var(--ftp-text-2);
+}
+.ydSkeleton {
+  display: block;
+  height: 44px;
+  margin-top: 4px;
+  border-radius: 8px;
+  background: var(--ftp-surface-2);
+}
+
+/* ───────────── Section reveal (SectionReveal) ───────────── */
+
+/* Sections are always visible. When one scrolls into view for the first
+   time it fades up from 60 % in 180 ms — it never waits hidden. */
+.home [data-reveal="in"] {
+  animation: revealIn 180ms ease-out;
+}
+@keyframes revealIn {
+  from {
+    opacity: 0.6;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ───────────── How we get and check the data (DataChecks) ───────────── */
 
 /* One white box split into four steps by thin lines. */
@@ -1456,6 +1712,12 @@
   .supportBand {
     padding: 24px;
   }
+  .ydGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ydPanel {
+    padding: 20px;
+  }
 }
 @media (min-width: 640px) and (max-width: 899px) {
   .stat {
@@ -1512,6 +1774,14 @@
   }
   .section {
     margin-top: 64px;
+  }
+  .bandAlt {
+    margin-top: 64px;
+    padding: 48px 0 52px;
+  }
+  .ydGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
   }
   .india {
     grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
@@ -1619,6 +1889,28 @@
   .section {
     margin-top: 36px;
   }
+  .bandAlt {
+    margin-top: 36px;
+    padding: 28px 0 32px;
+  }
+  /* Phones: the chips scroll sideways inside the section (never the page). */
+  .ydTabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px 12px;
+    padding: 2px 16px 6px;
+    scrollbar-width: thin;
+  }
+  .ydPanel {
+    padding: 14px;
+  }
+  .ydOpen {
+    width: 100%;
+    justify-content: center;
+  }
+  .ydCard {
+    min-height: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1631,8 +1923,20 @@
   .indiaArrow {
     transition: none;
   }
+  .ydTab,
+  .ydOpen,
+  .ydCard {
+    transition: none;
+  }
   .indiaPill:hover,
-  .indiaPill:hover .indiaArrow {
+  .indiaPill:hover .indiaArrow,
+  .ydTab:hover,
+  .ydOpen:hover,
+  .ydCard:hover {
     transform: none;
+  }
+  .ydPanel,
+  .home [data-reveal="in"] {
+    animation: none;
   }
 }

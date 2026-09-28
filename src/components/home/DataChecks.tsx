@@ -43,7 +43,7 @@ const STEPS = [
 export default function DataChecks({ locale, example }: { locale: string; example: { stateSlug: string; slug: string; name: string } | null }) {
   const t = useTranslations("page_home");
   return (
-    <section aria-labelledby="home-checks" className={`ftp-container ${styles.section}`}>
+    <section aria-labelledby="home-checks" className={`ftp-container ${styles.section}`} data-reveal>
       <div className={styles.sectionHead}>
         <h2 id="home-checks" className={styles.h2}>
           {t("checks.title")}
