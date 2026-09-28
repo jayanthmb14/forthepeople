@@ -3,44 +3,36 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * home.module.css — the home page, Design v5 "calm".
+ * home.module.css — the home page, Design v5.6 "mostly white".
  *
- * Soft blue-white page, white cards with a thin border, one brand blue
- * for actions, pastel-blue tints for selection and the India band. No
- * gradients, no emoji, sentence case. Phone first:
- *   phone   < 640   one column, 2 district cards per row, no map
- *   tablet  640+    3 cards per row; the map sits beside the hero from 768
- *   laptop  1024+   4 cards per row, 5 prices in a row
+ * The first (June) dashboard's feel in the new look: a white page, white
+ * cards with a thin grey border, bold dark headings, and colour used
+ * sparingly (80–90 % white): brand blue for the numbers, the key words and
+ * the main buttons; the district pictures and the map pins; the rose
+ * heart for support. No gradients, no emoji, sentence case. Phone first:
+ *   phone   < 640   one column; the districts list under the map
+ *   tablet  640+    the districts in two columns under the map
+ *   laptop  1024+   the map 60 % with the districts beside it (40 %)
  * Touch targets 44 px or more. Indic headings keep line-height >= 1.35.
  * Colours come from --ftp-* tokens (globals.css).
  */
 
 .home {
-  /* v5.1 "Warm Calm" local palette (pastel tints from the hue table,
-     docs/DESIGN-SYSTEM.md §2; gold/silver families for metals). */
+  /* Local palette for the intro moment and the founder's star (from the
+     hue table, docs/DESIGN-SYSTEM.md §2). */
   --home-sky: #2f77ae;
   --home-sky-tint: #eaf6fc;
   --home-violet: #7152c9;
   --home-violet-tint: #f4f0fd;
-  --home-indigo-tint: #eff0fd;
   --home-gold: #c8950f;
-  --home-gold-tint: #fdf3d3;
-  --home-gold-ring: #efd99a;
-  --home-silver: #7c8594;
-  --home-silver-tint: #eef0f3;
-  --home-silver-ring: #d3d8df;
   padding-bottom: 8px;
+  /* White like the first dashboard (the site background is a soft blue). */
+  background: var(--ftp-surface);
 }
 :global([data-theme="dark"]) .home {
   --home-sky-tint: rgba(47, 119, 174, 0.14);
   --home-violet-tint: rgba(113, 82, 201, 0.14);
-  --home-indigo-tint: rgba(82, 86, 201, 0.14);
   --home-gold: #e4b53b;
-  --home-gold-tint: rgba(228, 181, 59, 0.16);
-  --home-gold-ring: rgba(228, 181, 59, 0.35);
-  --home-silver: #cfd4dc;
-  --home-silver-tint: rgba(207, 212, 220, 0.12);
-  --home-silver-ring: rgba(207, 212, 220, 0.3);
 }
 
 /* ───────────── Running prices ticker (PriceTicker) ───────────── */
@@ -336,40 +328,33 @@
 
 /* ───────────── Hero ───────────── */
 
+/* White, like the first dashboard: no washes behind the hero. */
 .heroBand {
   position: relative;
-  padding: 20px 0 8px;
-  background:
-    radial-gradient(70% 60% at 0% 0%, var(--ftp-brand-tint) 0%, transparent 62%),
-    radial-gradient(55% 55% at 100% 0%, var(--home-sky-tint) 0%, transparent 65%),
-    radial-gradient(45% 50% at 60% 100%, var(--home-violet-tint) 0%, transparent 70%);
+  padding: 24px 0 8px;
 }
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 .heroText {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
+  text-align: center;
 }
 .kicker {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  align-self: flex-start;
   margin: 0;
-  padding: 5px 14px 5px 10px;
-  border: 1px solid color-mix(in srgb, var(--ftp-brand) 22%, transparent);
-  border-radius: 999px;
-  background: var(--ftp-surface);
   font-size: 15px;
   line-height: 22px;
   font-weight: 600;
-  color: var(--ftp-text);
+  color: var(--ftp-text-2);
 }
 /* "Your data." — the one phrase of the slogan made stronger. */
 .kickerEm {
@@ -377,18 +362,18 @@
   color: var(--ftp-brand-deep);
 }
 .kickerDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--ftp-brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-brand) 22%, transparent);
 }
 .title {
   margin: 0;
-  max-width: 16em;
+  max-width: 18em;
   font-family: var(--ftp-font-h1);
-  font-size: clamp(28px, 4.2vw, 46px);
-  line-height: 1.15;
+  font-size: clamp(30px, 4.4vw, 48px);
+  line-height: 1.12;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ftp-text);
@@ -407,14 +392,26 @@
 }
 .lead {
   margin: 0;
-  max-width: 36em;
+  max-width: 38em;
   font-size: 16px;
   line-height: 24px;
   color: var(--ftp-text-2);
+  text-wrap: pretty;
+}
+/* Search and its two buttons, one centred column. */
+.heroSearch {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+  text-align: left;
 }
 .actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 .btnPrimary,
@@ -423,38 +420,36 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 50px;
+  min-height: 48px;
   padding: 0 22px;
-  border-radius: 14px;
+  border-radius: 12px;
   font-family: var(--ftp-font-sans);
   font-size: 16px;
   line-height: 22px;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 .btnPrimary {
   border: 1px solid var(--ftp-brand);
   background: var(--ftp-brand);
-  color: #fff;
+  color: var(--ftp-surface);
   font-weight: 700;
-  box-shadow: 0 10px 22px -12px rgba(37, 99, 235, 0.8);
 }
 .btnPrimary:hover {
   border-color: var(--ftp-brand-deep);
   background: var(--ftp-brand-deep);
-  transform: translateY(-1px);
 }
 .btnOutline {
   border: 1px solid var(--ftp-border-strong);
   background: var(--ftp-surface);
-  color: var(--ftp-brand-deep);
+  color: var(--ftp-text);
   font-weight: 600;
 }
 .btnOutline:hover {
   border-color: var(--ftp-brand);
-  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
 }
 .btnOutline:disabled {
   cursor: progress;
@@ -466,20 +461,12 @@
   outline-offset: 2px;
 }
 
-/* Stats (HeroStats): "Your district data — tracked and checked", then one
-   pastel tile per figure (two per row on phones, four from 640 px). */
+/* Stats (HeroStats): the first dashboard's row of plain white tiles —
+   the number in brand blue, a small grey label under it. */
 .statsBox {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 4px;
-}
-.statsHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 2px 14px;
 }
 .statsLine {
   margin: 0;
@@ -492,62 +479,62 @@
   font-weight: 800;
   color: var(--ftp-text);
 }
-.statsUpdated {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 600;
-  color: var(--ftp-text-2);
-}
 .stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .stat {
+  flex: 1 1 170px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
-  border-radius: 14px;
-  background: var(--hue-tint);
-}
-.statTop {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.statIcon {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  gap: 6px;
+  min-width: 0;
+  min-height: 96px;
+  padding: 16px 14px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 12px;
   background: var(--ftp-surface);
-  color: var(--hue);
+  text-align: center;
 }
 .statNum {
-  font-size: 24px;
-  line-height: 30px;
+  font-size: 30px;
+  line-height: 34px;
   font-weight: 800;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  color: var(--hue-deep);
+  color: var(--ftp-brand);
 }
 .statLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   line-height: 18px;
   font-weight: 600;
   color: var(--ftp-text-2);
+}
+.statIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--ftp-text-2);
+  opacity: 0.8;
+}
+/* The last tile: when we last collected something. */
+.statAgo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+  color: var(--ftp-text);
 }
 .statDot {
   width: 8px;
@@ -557,7 +544,7 @@
   background: var(--ftp-live);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-live) 22%, transparent);
 }
-.statsUpdated[data-fresh="false"] .statDot {
+.statWhen[data-fresh="false"] .statDot {
   background: var(--ftp-warn);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ftp-warn) 22%, transparent);
 }
@@ -588,7 +575,6 @@
   font-family: var(--ftp-font-sans);
   font-size: 17px;
   line-height: 24px;
-  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.04);
 }
 .searchInput::placeholder {
   color: var(--ftp-text-2);
@@ -631,8 +617,8 @@
   color: var(--ftp-text-2);
 }
 
-/* Map (HomeMap + map/DrillDownMap): beside the hero from 900 px, under it
-   on phones and tablets. */
+/* Map (HomeMap + map/DrillDownMap): 60 % of the row from 1024 px, the
+   live districts beside it; full width above them on tablets and phones. */
 .heroMap {
   min-width: 0;
 }
@@ -641,10 +627,9 @@
   margin: 0;
   padding: 12px 12px 8px;
   border: 1px solid var(--ftp-border);
-  border-radius: 20px;
+  border-radius: 16px;
   /* Plain white, so the pastel land stands out clearly. */
   background: var(--ftp-surface);
-  box-shadow: var(--ftp-shadow-1);
 }
 .mapHead {
   display: flex;
@@ -661,8 +646,7 @@
 .mapLoading {
   width: 100%;
   aspect-ratio: 8 / 9;
-  max-height: 560px;
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--ftp-surface-2);
 }
 .mapLegend {
@@ -839,10 +823,231 @@
   outline-offset: 2px;
 }
 
+/* ───────────── Map with the live districts beside it ───────────── */
+
+.mapRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.mapSide {
+  min-width: 0;
+}
+
+/* The live districts panel (LiveDistrictsCard) */
+.live {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
+}
+.liveHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--ftp-border);
+}
+.liveTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: var(--ftp-text);
+}
+.countPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ftp-brand-tint);
+  color: var(--ftp-brand-deep);
+  font-size: 12.5px;
+  font-weight: 800;
+  vertical-align: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.liveLegend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ftp-text-2);
+}
+.liveLegend .legendDot:not(:first-child) {
+  margin-left: 8px;
+}
+.legendDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ftp-live);
+}
+.legendDot[data-fresh="false"] {
+  background: var(--ftp-warn);
+}
+.liveList {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 8px;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ftp-border-strong) transparent;
+}
+.liveList li + li {
+  border-top: 1px solid var(--ftp-border);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  color: var(--ftp-text);
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+.row:hover {
+  background: var(--ftp-surface-2);
+}
+.row:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: -2px;
+}
+.rowArt {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hue);
+}
+.rowText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.rowName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+}
+.rowLocal {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ftp-text-2);
+}
+.rowMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--ftp-text-2);
+}
+.rowMeta .legendDot {
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+}
+.rowAgo {
+  white-space: nowrap;
+}
+.rowGrade {
+  flex-shrink: 0;
+  min-width: 32px;
+  padding: 1px 6px;
+  border: 1px solid var(--ftp-border-strong);
+  border-radius: 8px;
+  color: var(--ftp-text);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+  text-align: center;
+}
+.newTag {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ftp-live-tint);
+  color: var(--ftp-live-text);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 700;
+}
+.rowChevron {
+  flex-shrink: 0;
+  color: var(--ftp-border-strong);
+}
+.row:hover .rowChevron {
+  color: var(--ftp-brand);
+}
+.voteRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  margin: 8px 12px 12px;
+  padding: 8px 14px;
+  border: 1px dashed var(--ftp-border-strong);
+  border-radius: 12px;
+  color: var(--ftp-text);
+  text-decoration: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.voteRow:hover {
+  border-color: var(--ftp-brand);
+  background: var(--ftp-surface-2);
+}
+.voteRow:focus-visible {
+  outline: 2px solid var(--ftp-brand);
+  outline-offset: 2px;
+}
+.voteTitle {
+  font-size: 14.5px;
+  line-height: 20px;
+  font-weight: 700;
+}
+.voteLink {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ftp-brand-deep);
+}
+.voteArrow {
+  flex-shrink: 0;
+  color: var(--ftp-brand-deep);
+}
+
 /* ───────────── Sections ───────────── */
 
 .section {
-  margin-top: 40px;
+  margin-top: 48px;
 }
 .sectionHead {
   display: flex;
@@ -850,32 +1055,23 @@
   gap: 4px;
   margin-bottom: 16px;
 }
-.sectionHeadRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 12px;
-  margin-bottom: 12px;
-}
 .h2 {
   margin: 0;
-  font-size: 22px;
-  line-height: 1.35;
-  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--ftp-text);
+}
+:global([lang="hi"]) .h2,
+:global([lang="kn"]) .h2 {
+  line-height: 1.45;
+  letter-spacing: 0;
 }
 .sectionNote {
   margin: 0;
   font-size: 15px;
   line-height: 22px;
-  color: var(--ftp-text-2);
-}
-.sectionFoot {
-  margin: 12px 0 0;
-  font-size: 12px;
-  line-height: 18px;
   color: var(--ftp-text-2);
 }
 .textLink {
@@ -899,203 +1095,18 @@
   border-radius: 6px;
 }
 
-/* ───────────── Live districts (compact chips) ───────────── */
-
-.countPill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 24px;
-  margin-left: 4px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--ftp-brand-tint);
-  color: var(--ftp-brand-deep);
-  font-size: 13px;
-  font-weight: 800;
-  vertical-align: 3px;
-  font-variant-numeric: tabular-nums;
-}
-.liveLegend {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ftp-text-2);
-}
-.liveLegend .legendDot + .legendDot,
-.liveLegend .legendDot:not(:first-child) {
-  margin-left: 8px;
-}
-.legendDot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--ftp-live);
-}
-.legendDot[data-fresh="false"] {
-  background: var(--ftp-warn);
-}
-.chips {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.chip {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 60px;
-  padding: 8px 10px;
-  border: 1px solid var(--ftp-border);
-  border-left: 3px solid var(--hue-pop);
-  border-radius: 14px;
-  background: var(--ftp-surface);
-  color: var(--ftp-text);
-  text-decoration: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-}
-.chip:hover {
-  border-color: color-mix(in srgb, var(--hue, var(--ftp-brand)) 40%, var(--ftp-border));
-  border-left-color: var(--hue, var(--ftp-brand));
-  box-shadow: var(--ftp-shadow-2);
-  transform: translateY(-1px);
-}
-.chip:focus-visible {
-  outline: 2px solid var(--ftp-brand);
-  outline-offset: 2px;
-}
-.chipArt {
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 11px;
-  background: var(--hue-tint);
-  color: var(--hue);
-}
-.chipText {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.chipName {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 5px;
-  font-size: 15px;
-  line-height: 20px;
-  font-weight: 700;
-}
-.chipLocal {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--hue-deep);
-}
-.chipMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 5px;
-  font-size: 12.5px;
-  line-height: 17px;
-  color: var(--ftp-text-2);
-}
-.chipMeta .legendDot {
-  width: 7px;
-  height: 7px;
-  margin-left: 2px;
-}
-.chipAgo {
-  white-space: nowrap;
-}
-.chipGrade {
-  flex-shrink: 0;
-  min-width: 30px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: var(--hue-tint);
-  color: var(--hue-deep);
-  font-size: 13px;
-  font-weight: 800;
-  text-align: center;
-}
-.newTag {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ftp-live-tint);
-  color: var(--ftp-live-text);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 700;
-}
-.voteChip {
-  border-style: dashed;
-  border-left-width: 1px;
-  border-color: var(--ftp-border-strong);
-  background: var(--ftp-surface-2);
-}
-.voteChip .chipName {
-  font-size: 14px;
-}
-.voteChip .chipMeta {
-  color: var(--ftp-brand-deep);
-  font-weight: 600;
-}
-.voteArrow {
-  flex-shrink: 0;
-  color: var(--ftp-brand-deep);
-}
-
 /* ───────────── Explore all of India (IndiaGlance) ───────────── */
 
-.sectionFirst {
-  margin-top: 24px;
-}
 .india {
-  position: relative;
-  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 20px;
   padding: 20px;
-  border: 1px solid color-mix(in srgb, var(--ftp-brand) 18%, transparent);
-  border-radius: 22px;
-  background:
-    radial-gradient(60% 90% at 100% 0%, var(--home-violet-tint) 0%, transparent 70%),
-    radial-gradient(70% 90% at 0% 100%, var(--home-sky-tint) 0%, transparent 70%),
-    linear-gradient(135deg, var(--ftp-brand-tint) 0%, var(--home-indigo-tint) 100%);
-}
-/* Soft rings in the corner: decoration only. */
-.indiaDecor {
-  position: absolute;
-  right: -60px;
-  top: -60px;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  border: 28px solid color-mix(in srgb, var(--ftp-brand) 7%, transparent);
-  box-shadow: 0 0 0 36px color-mix(in srgb, var(--home-violet) 5%, transparent);
-  pointer-events: none;
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
 }
 .indiaText {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1103,16 +1114,15 @@
 }
 .indiaTitle {
   margin: 0;
-  font-family: var(--ftp-font-h1);
-  font-size: clamp(24px, 3vw, 32px);
-  line-height: 1.2;
-  font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 28px);
+  line-height: 1.25;
+  font-weight: 800;
   letter-spacing: -0.015em;
   color: var(--ftp-text);
 }
 :global([lang="hi"]) .indiaTitle,
 :global([lang="kn"]) .indiaTitle {
-  line-height: 1.4;
+  line-height: 1.45;
   letter-spacing: 0;
 }
 .indiaBody {
@@ -1120,63 +1130,61 @@
   max-width: 34em;
   font-size: 15px;
   line-height: 23px;
-  color: var(--ftp-text);
+  color: var(--ftp-text-2);
 }
 .indiaCta {
   margin-top: 6px;
-  min-height: 54px;
-  padding: 0 26px;
-  font-size: 17px;
 }
+/* Four figures in one box, split by thin lines (no coloured cards). */
 .indiaFigures {
-  position: relative;
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  border: 1px solid var(--ftp-border);
+  border-radius: 12px;
+  overflow: hidden;
 }
 .figure {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
-  border-radius: 16px;
-  background: var(--ftp-surface);
-  box-shadow: var(--ftp-shadow-1);
+  padding: 14px 16px;
+  border-color: var(--ftp-border);
+  border-style: solid;
+  border-width: 0;
+}
+.figure:nth-child(odd) {
+  border-right-width: 1px;
+}
+.figure:nth-child(n + 3) {
+  border-top-width: 1px;
 }
 .figureLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
-  line-height: 17px;
-  font-weight: 700;
+  line-height: 18px;
+  font-weight: 600;
   color: var(--ftp-text-2);
 }
 .figureIcon {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 11px;
-  background: var(--hue-tint);
-  color: var(--hue);
+  flex-shrink: 0;
+  color: var(--ftp-text-2);
 }
 .figureValue {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 6px;
-  margin: 2px 0 0;
-  font-size: 24px;
+  margin: 0;
+  font-size: 26px;
   line-height: 1.2;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--hue-deep);
+  color: var(--ftp-brand-deep);
 }
 .figurePlus {
   font-size: 18px;
@@ -1205,85 +1213,80 @@
 
 /* ───────────── How we get and check the data (DataChecks) ───────────── */
 
+/* One white box split into four steps by thin lines. */
 .steps {
   list-style: none;
   margin: 0 0 6px;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  counter-reset: none;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
+  overflow: hidden;
 }
 .step {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--hue) 16%, var(--ftp-border));
-  border-radius: 18px;
-  background: linear-gradient(170deg, var(--hue-tint) 0%, var(--ftp-surface) 58%);
+  padding: 16px 18px;
+}
+.step + .step {
+  border-top: 1px solid var(--ftp-border);
 }
 .stepTop {
-  position: relative;
   display: inline-flex;
-  align-self: flex-start;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 4px;
 }
 .stepNum {
-  position: absolute;
-  right: -8px;
-  top: -6px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--ftp-surface);
+  border: 1px solid var(--ftp-border-strong);
   border-radius: 50%;
-  background: var(--hue);
-  color: #fff;
+  color: var(--ftp-text-2);
   font-size: 12px;
   font-weight: 800;
 }
 .stepTitle {
-  font-size: 15px;
+  font-size: 15.5px;
   line-height: 21px;
   font-weight: 800;
-  color: var(--hue-deep);
+  color: var(--ftp-text);
 }
 .stepBody {
-  font-size: 13.5px;
-  line-height: 20px;
+  font-size: 14px;
+  line-height: 21px;
   color: var(--ftp-text-2);
 }
 
 /* ───────────── Support band (SupportBand) ───────────── */
 
+/* A plain white card; the rose heart is its one colour. */
 .supportBand {
-  position: relative;
-  overflow: hidden;
   display: flex;
   flex-wrap: wrap;
   gap: 14px 18px;
   padding: 20px;
-  border: 1px solid var(--ftp-support-border);
-  border-radius: 22px;
-  background:
-    radial-gradient(55% 90% at 100% 0%, var(--home-gold-tint) 0%, transparent 70%),
-    linear-gradient(135deg, var(--ftp-support-tint) 0%, var(--ftp-surface) 75%);
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  background: var(--ftp-surface);
 }
 .supportArt {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
+  border: 1px solid var(--ftp-support-border);
+  border-radius: 12px;
   background: var(--ftp-surface);
   color: var(--ftp-support);
-  box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--ftp-support) 70%, transparent), inset 0 0 0 1px var(--ftp-support-border);
 }
 .supportBody {
   flex: 1 1 280px;
@@ -1321,20 +1324,16 @@
   min-height: 32px;
   max-width: 100%;
   padding: 4px 12px;
-  border: 1px solid var(--ftp-support-border);
+  border: 1px solid var(--ftp-border);
   border-radius: 999px;
   background: var(--ftp-surface);
   font-size: 13px;
   line-height: 18px;
 }
-.supporter[data-founder] {
-  border-color: var(--home-gold-ring);
-  background: linear-gradient(135deg, var(--home-gold-tint) 0%, var(--ftp-surface) 100%);
-}
 .supporterLoading {
   width: 120px;
   border-color: transparent;
-  background: color-mix(in srgb, var(--ftp-support-tint) 70%, var(--ftp-surface-2));
+  background: var(--ftp-surface-2);
 }
 .supporterStar {
   flex-shrink: 0;
@@ -1369,7 +1368,7 @@
   min-height: 46px;
   padding: 0 20px;
   border: 1px solid var(--ftp-support-border);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ftp-surface);
   color: var(--ftp-support);
   font-size: 15px;
@@ -1389,76 +1388,96 @@
 /* ───────────── Wider screens ───────────── */
 
 @media (min-width: 640px) {
-  .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Tablets: the districts in two columns under the map. */
+  .liveList {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
   }
-  .chips {
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  .liveList li + li {
+    border-top: 0;
+  }
+  .liveList li:nth-child(n + 3) {
+    border-top: 1px solid var(--ftp-border);
   }
   .india {
     padding: 26px;
   }
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .step + .step {
+    border-top: 0;
+  }
+  .step:nth-child(odd) {
+    border-right: 1px solid var(--ftp-border);
+  }
+  .step:nth-child(n + 3) {
+    border-top: 1px solid var(--ftp-border);
+  }
+  .supportBand {
+    padding: 24px;
+  }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Tablets: the map full width but not too tall. */
+  .heroMap {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+  }
 }
 @media (min-width: 768px) {
   .heroBand {
-    padding: 32px 0 12px;
-  }
-}
-@media (min-width: 900px) {
-  .hero {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-    gap: 32px;
-  }
-  /* Beside the map the text column is narrow until 1200 px: two tiles a row. */
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .heroMap {
-    min-height: 420px;
-  }
-}
-@media (min-width: 640px) and (max-width: 899px) {
-  /* Tablets: the map under the hero text, not too tall. */
-  .heroMap {
-    max-width: 560px;
-    width: 100%;
-    margin: 0 auto;
+    padding: 36px 0 8px;
   }
 }
 @media (min-width: 1024px) {
   .heroBand {
-    padding: 44px 0 12px;
-  }
-  .steps {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-  }
-  /* A soft arrow between the steps */
-  .step:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    right: -12px;
-    top: 38px;
-    z-index: 1;
-    width: 10px;
-    height: 10px;
-    border-top: 2px solid var(--ftp-border-strong);
-    border-right: 2px solid var(--ftp-border-strong);
-    transform: rotate(45deg);
+    padding: 44px 0 8px;
   }
   .hero {
-    gap: 48px;
+    gap: 32px;
+  }
+  /* The first dashboard's split: the map 60 %, the districts 40 %. The
+     panel takes the map's height (contain: size) and its list scrolls
+     inside it when the districts outgrow the map. */
+  .mapRow {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+  .mapSide {
+    contain: size;
+    min-height: 480px;
+  }
+  .liveList {
+    display: block;
+  }
+  .liveList li:nth-child(n + 3) {
+    border-top: 0;
+  }
+  .liveList li + li {
+    border-top: 1px solid var(--ftp-border);
   }
   .section {
-    margin-top: 56px;
+    margin-top: 64px;
   }
-
-
   .india {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     align-items: center;
     gap: 36px;
     padding: 32px 36px;
+  }
+  .steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .step:nth-child(n) {
+    border-top: 0;
+    border-right: 1px solid var(--ftp-border);
+  }
+  .step:last-child {
+    border-right: 0;
   }
 }
 @media (max-width: 479px) {
@@ -1468,85 +1487,63 @@
     flex: 1 1 150px;
     padding: 0 14px;
   }
+  .heroText {
+    gap: 10px;
+  }
+  .kicker {
+    font-size: 14px;
+  }
   /* Map: a little more room for India. */
   .map {
     padding: 10px 8px 6px;
-    border-radius: 18px;
+    border-radius: 14px;
   }
-  /* Stats: two tiles per row, a little smaller. */
+  /* Stats: two tiles a row; the last one takes the whole row. */
+  .stats {
+    gap: 8px;
+  }
   .stat {
-    padding: 8px 10px;
-  }
-  .statIcon {
-    width: 22px;
-    height: 22px;
-  }
-  .statIcon svg {
-    width: 14px;
-    height: 14px;
+    flex-basis: 130px;
+    min-height: 80px;
+    padding: 12px 10px;
   }
   .statNum {
-    font-size: 21px;
-    line-height: 26px;
+    font-size: 24px;
+    line-height: 28px;
+  }
+  .statAgo {
+    min-height: 28px;
+    font-size: 16px;
+  }
+  .statLabel {
+    font-size: 12.5px;
   }
   .statsLine {
     font-size: 15px;
     line-height: 22px;
   }
-  /* Live districts: two tight columns, no picture; the badge sits in the corner. */
-  .chip {
-    position: relative;
-    align-items: flex-start;
-    min-height: 0;
-    padding: 8px 10px;
+  .liveHead {
+    padding: 12px 12px 10px;
   }
-  .chipArt {
-    display: none;
+  .liveList {
+    padding: 2px 4px;
   }
-  .chipName {
-    padding-right: 30px;
-    font-size: 14.5px;
-    line-height: 19px;
+  .row {
+    gap: 10px;
+    padding: 7px 6px;
   }
-  .chipLocal {
-    font-size: 12.5px;
+  .rowArt {
+    width: 28px;
+    height: 28px;
   }
-  .chipMeta {
-    font-size: 12px;
-    line-height: 16px;
+  .voteRow {
+    margin: 6px 8px 10px;
   }
-  .chipGrade,
-  .newTag {
-    position: absolute;
-    top: 7px;
-    right: 7px;
-    min-width: 0;
-    padding: 1px 5px;
-    font-size: 11.5px;
-  }
-  .voteChip {
-    align-items: center;
-  }
-  /* India figures: a smaller picture beside the label. */
   .figure {
-    padding: 10px 12px;
-  }
-  .figureLabel {
-    gap: 6px;
-    font-size: 12px;
-    line-height: 16px;
-  }
-  .figureIcon {
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-  }
-  .figureIcon svg {
-    width: 15px;
-    height: 15px;
+    padding: 12px;
   }
   .figureValue {
-    font-size: 21px;
+    font-size: 22px;
   }
   /* Support: the heart stays beside the words. */
   .supportBand {
@@ -1556,9 +1553,9 @@
     padding: 16px;
   }
   .supportArt {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
   }
   .supportArt svg {
     width: 20px;
@@ -1569,27 +1566,16 @@
   }
   /* Tighter sections on phones: no big gaps. */
   .section {
-    margin-top: 32px;
-  }
-  .sectionFirst {
-    margin-top: 20px;
+    margin-top: 36px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .btnPrimary,
   .btnOutline,
-  .chip,
+  .row,
+  .voteRow,
   .tickItem {
     transition: none;
-  }
-  .btnPrimary:hover,
-  .chip:hover {
-    transform: none;
-  }
-}
-@media (min-width: 1200px) {
-  .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

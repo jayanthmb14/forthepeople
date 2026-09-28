@@ -8,15 +8,13 @@
 //  IndiaGlance — "Explore all of India", the second big thing on home
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌─ pastel band ──────────────────────────────────────────────────────┐
-//   │                                   ┌────────────┐ ┌────────────┐    │
-//   │ Explore all of India              │ (map) 28+8 │ │ (hall) 543 │    │
-//   │ Parliament, the Union Budget, …   │ States and │ │ Lok Sabha  │    │
-//   │ [ Explore all of India → ]        │ UTs · MHA  │ │ seats · …  │    │
-//   │                                   ├────────────┤ ├────────────┤    │
-//   │                                   │ (abc) 22   │ │ (ruler)    │    │
-//   │                                   │ languages  │ │ 32.9 lakh  │    │
-//   │                                   └────────────┘ └────────────┘    │
+//   ┌─ white card, thin border ──────────────────────────────────────────┐
+//   │                               (map) States and UTs  (hall) Lok Sabha │
+//   │ Explore all of India          28 + 8                543              │
+//   │ Parliament, the Union Budget… MHA · checked …       Lok Sabha Sectt. │
+//   │ [ Explore all of India → ]    ──────────────────────────────────────  │
+//   │                               (abc) Languages       (ruler) Area     │
+//   │                               22                    32.9 lakh sq km  │
 //   └────────────────────────────────────────────────────────────────────┘
 //
 //  Four figures that stay true until the Constitution or the map changes,
@@ -35,11 +33,12 @@ import CountUp from "./CountUp";
 import type { IndiaFigure } from "./home-types";
 import styles from "./home.module.css";
 
-const LOOK: Record<IndiaFigure["id"], { hue: string; icon: React.ReactNode }> = {
-  states: { hue: "blue", icon: <MapIcon size={20} aria-hidden /> },
-  seats: { hue: "violet", icon: <Landmark size={20} aria-hidden /> },
-  languages: { hue: "teal", icon: <Languages size={20} aria-hidden /> },
-  area: { hue: "amber", icon: <Ruler size={20} aria-hidden /> },
+/** A small grey picture beside each figure's label (the numbers carry the blue). */
+const ICON: Record<IndiaFigure["id"], React.ReactNode> = {
+  states: <MapIcon size={16} aria-hidden />,
+  seats: <Landmark size={16} aria-hidden />,
+  languages: <Languages size={16} aria-hidden />,
+  area: <Ruler size={16} aria-hidden />,
 };
 
 export default function IndiaGlance({ locale, figures }: { locale: string; figures: IndiaFigure[] }) {
@@ -70,9 +69,8 @@ export default function IndiaGlance({ locale, figures }: { locale: string; figur
   };
 
   return (
-    <section aria-labelledby="home-india" className={`ftp-container ${styles.section} ${styles.sectionFirst}`}>
+    <section aria-labelledby="home-india" className={`ftp-container ${styles.section}`}>
       <div className={styles.india}>
-        <span className={styles.indiaDecor} aria-hidden />
         <div className={styles.indiaText}>
           <h2 id="home-india" className={styles.indiaTitle}>
             {t("india.title")}
@@ -86,9 +84,9 @@ export default function IndiaGlance({ locale, figures }: { locale: string; figur
         {figures.length > 0 && (
           <dl className={styles.indiaFigures}>
             {figures.map((f) => (
-              <div key={f.id} className={`${styles.figure} ftp-hue-${LOOK[f.id].hue}`}>
+              <div key={f.id} className={styles.figure}>
                 <dt className={styles.figureLabel}>
-                  <span className={styles.figureIcon}>{LOOK[f.id].icon}</span>
+                  <span className={styles.figureIcon}>{ICON[f.id]}</span>
                   {t(`india.fig.${f.id}`)}
                 </dt>
                 <dd className={styles.figureValue}>{value(f)}</dd>

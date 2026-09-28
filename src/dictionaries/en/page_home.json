@@ -34,9 +34,9 @@
     "states": "{n, plural, one {state} other {states}}",
     "dataPoints": "data points tracked",
     "dashboards": "dashboards each",
-    "updatedAgo": "Updated {ago}",
-    "updatedAt": "Updated {date}, {time} IST",
-    "line": "<b>Your district data</b> — tracked and checked"
+    "line": "<b>Your district data</b> — tracked and checked",
+    "when": "{date}, {time} IST",
+    "lastUpdate": "last update"
   },
   "intro": {
     "skip": "Tap anywhere to skip"

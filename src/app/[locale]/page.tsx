@@ -3,25 +3,28 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * Home page — Design v5.1 "Warm Calm".
+ * Home page — Design v5.6: the first (June) dashboard's structure and
+ * feel, in the new look, mostly white (80–90 % white, a little blue).
  *
- * The disclaimer line, header and footer come from [locale]/layout.tsx.
- * This page renders, top to bottom:
+ * The disclaimer line, header, status strip and footer come from
+ * [locale]/layout.tsx. This page renders, top to bottom:
  *
  *   0. HomeIntro          — a 1.2 s branded loading moment, once per
  *                           session, skippable, off under reduced motion
  *   1. PriceTicker        — running prices: gold 24K/22K (per 10 g),
  *                           silver, petrol and diesel (Delhi), Sensex,
  *                           Nifty, dollar — each with its own date
- *   2. HomeHero           — kicker, the ONE <h1> (a task), search,
- *                           "Find your district" + "Use my location", the
- *                           colourful stats row; the clickable India map
- *                           beside it (under it on phones)
+ *   2. HomeHero           — centred: the slogan, the ONE <h1> (a task),
+ *                           search, "Find your district" + "Use my
+ *                           location"; then the row of white number tiles
+ *                           (HeroStats); then the big clickable India map
+ *                           with the live districts beside it
+ *                           (LiveDistrictsCard; under the map on tablets
+ *                           and phones)
  *   3. IndiaGlance        — "Explore all of India": four checked national
  *                           figures and the big button
- *   4. LiveDistrictsCard  — the live districts as tight chips
- *   6. DataChecks         — how we get and check the data (4 steps)
- *   7. SupportBand        — the support ask with a few supporters' names
+ *   4. DataChecks         — how we get and check the data (4 steps)
+ *   5. SupportBand        — the support ask with a few supporters' names
  *
  * Numbers: live districts and states from the District rows loaded here,
  * dashboards per district from the sidebar registry (getPlatformFacts),
@@ -144,12 +147,17 @@ export default async function HomePage({
       <PriceTicker locale={locale} markets={markets} fuel={fuel} />
       <div className={styles.heroBand}>
         <div className="ftp-container">
-          <HomeHero locale={locale} stats={stats} districts={activeDistricts} mapStats={mapStats} />
+          <HomeHero
+            locale={locale}
+            stats={stats}
+            districts={activeDistricts}
+            mapStats={mapStats}
+            side={<LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />}
+          />
         </div>
       </div>
 
       <IndiaGlance locale={locale} figures={glance} />
-      <LiveDistrictsCard locale={locale} districts={activeDistricts} stats={mapStats} />
       <DataChecks locale={locale} example={example} />
       <SupportBand locale={locale} />
     </main>

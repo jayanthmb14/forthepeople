@@ -34,9 +34,9 @@
     "states": "{n, plural, =1 {राज्य} other {राज्य}}",
     "dataPoints": "डेटा बिंदु दर्ज",
     "dashboards": "डैशबोर्ड हर जिले में",
-    "updatedAgo": "{ago} अपडेट हुआ",
-    "updatedAt": "{date}, {time} IST को अपडेट हुआ",
-    "line": "<b>आपके जिले का डेटा</b> — जुटाया और जाँचा गया"
+    "line": "<b>आपके जिले का डेटा</b> — जुटाया और जाँचा गया",
+    "when": "{date}, {time} IST",
+    "lastUpdate": "पिछला अपडेट"
   },
   "intro": {
     "skip": "छोड़ने के लिए कहीं भी टैप करें"
