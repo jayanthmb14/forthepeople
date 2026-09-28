@@ -41,7 +41,9 @@ import {
   type WatermarkIconKey,
 } from "@/lib/india/india-super-categories";
 import { SECTION_ACCENT_COLORS } from "@/lib/india/section-accents";
+import { CategoryGlyph } from "@/components/graphics";
 import { INDIA_NS, indiaText, type IndiaText } from "../i18n";
+import { indiaModuleGlyph } from "../glyphs";
 
 const SC_ICONS: Record<WatermarkIconKey, LucideIcon> = {
   "trending-up": TrendingUp,
@@ -120,9 +122,7 @@ function ModuleRow({
         (e.currentTarget as HTMLButtonElement).style.background = "transparent";
       }}
     >
-      <span style={{ fontSize: "14px" }} aria-hidden>
-        {module.icon}
-      </span>
+      <CategoryGlyph pick={indiaModuleGlyph(module.slug, module.category)} size={16} />
       <span style={{ flex: 1, lineHeight: 1.4 }}>{x.moduleTitle(module)}</span>
       <StatusPill status={module.status} x={x} />
     </button>

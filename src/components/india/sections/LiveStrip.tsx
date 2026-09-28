@@ -35,6 +35,7 @@
 
 import * as React from "react";
 import { getTranslations } from "next-intl/server";
+import { CalendarDays, Library, Map as MapIcon, MapPin, Puzzle, type LucideIcon } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { NOT_STANDING_FACT } from "@/lib/india/figure-dates";
 import { getPlatformFacts } from "@/lib/platform-facts";
@@ -76,13 +77,14 @@ function countCitedSources(): number {
   return cited.size;
 }
 
-/** One "label value" pair with an emoji. */
-function Item({ emoji, label, value }: { emoji: string; label: string; value: string }) {
+/** Small monochrome icon before each fact (v5.1: was an emoji). */
+const ICON_STYLE: React.CSSProperties = { color: "var(--ftp-text-2)", flexShrink: 0 };
+
+/** One "label value" pair with an icon. */
+function Item({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <span className="india-live-item" style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-      <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>
-        {emoji}
-      </span>
+      <Icon size={14} aria-hidden style={ICON_STYLE} />
       <span className="ftp-label">{label}</span>
       <span className="ftp-num" style={{ color: "var(--ftp-text)", fontSize: 12, lineHeight: "16px" }}>
         {value}
@@ -149,23 +151,21 @@ export async function LiveStrip({ locale }: { locale: string }) {
     >
       {asOfIso ? (
         <span style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="ftp-emoji" aria-hidden style={{ fontSize: 13 }}>
-            🗓️
-          </span>
+          <CalendarDays size={14} aria-hidden style={ICON_STYLE} />
           <span className="ftp-label">{t("liveStrip.data")}</span>
           <FreshnessPill asOf={asOfIso} />
         </span>
       ) : (
-        <Item emoji="🗓️" label={t("liveStrip.dataAsOf")} value="—" />
+        <Item icon={CalendarDays} label={t("liveStrip.dataAsOf")} value="—" />
       )}
       <Divider />
-      <Item emoji="📚" label={t("liveStrip.sources")} value={t("liveStrip.sourcesValue", { n: sourceCount })} />
+      <Item icon={Library} label={t("liveStrip.sources")} value={t("liveStrip.sourcesValue", { n: sourceCount })} />
       <Divider />
-      <Item emoji="🧩" label={t("liveStrip.modules")} value={moduleSummary} />
+      <Item icon={Puzzle} label={t("liveStrip.modules")} value={moduleSummary} />
       <Divider />
-      <Item emoji="📍" label={t("liveStrip.districts")} value={t("liveStrip.ofTotal", { n: activeDistricts, total: totalIndiaDistricts })} />
+      <Item icon={MapPin} label={t("liveStrip.districts")} value={t("liveStrip.ofTotal", { n: activeDistricts, total: totalIndiaDistricts })} />
       <Divider />
-      <Item emoji="🗺️" label={t("liveStrip.states")} value={t("liveStrip.ofTotal", { n: activeStates, total: STATES_AND_UTS_OF_INDIA })} />
+      <Item icon={MapIcon} label={t("liveStrip.states")} value={t("liveStrip.ofTotal", { n: activeStates, total: STATES_AND_UTS_OF_INDIA })} />
       {/* v4.1: on phones the strip is not pinned (three pinned bars took a
           third of the screen) and its items wrap instead of hiding off the
           right edge. */}

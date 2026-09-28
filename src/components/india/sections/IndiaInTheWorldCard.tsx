@@ -30,6 +30,7 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
+import { CategoryGlyph } from "@/components/graphics";
 import {
   Award,
   Film,
@@ -383,9 +384,7 @@ export function IndiaInTheWorldCard() {
             gap: 10,
           }}
         >
-          <span className="ftp-emoji" aria-hidden style={{ fontSize: 22 }}>
-            🌏
-          </span>
+          <CategoryGlyph glyph="globe" size={32} chip />
           {t("title")}
         </h2>
         <span style={{ fontSize: "12px", color: "var(--color-text-tertiary)" }}>{t("subtitle")}</span>
