@@ -79,8 +79,8 @@ export function TodayWeatherTileView({ href, district, now, tomorrow, forecastSo
           textDecoration: "none",
           color: "inherit",
           borderRadius: "var(--ftp-radius-card)",
-          border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
-          background: "linear-gradient(160deg, var(--ftp-surface) 35%, var(--hue-tint))",
+          border: "1px solid var(--ftp-border)",
+          background: "var(--ftp-surface)",
           boxShadow: "var(--ftp-shadow-1)",
           padding: 16,
         }}

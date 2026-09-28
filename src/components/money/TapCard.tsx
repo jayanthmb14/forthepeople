@@ -188,8 +188,9 @@ export function SheetHighlight({
         alignItems: "flex-start",
         padding: "14px 16px",
         borderRadius: 16,
-        background: "var(--hue-tint)",
-        border: "1px solid color-mix(in srgb, var(--hue) 25%, var(--ftp-border))",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        boxShadow: "inset 3px 0 0 var(--hue)",
       }}
     >
       <div style={{ minWidth: 0 }}>

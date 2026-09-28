@@ -54,7 +54,7 @@
 .day:hover { border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border)); box-shadow: var(--ftp-shadow-2); transform: translateY(-1px); }
 .day[data-when="tomorrow"] {
   border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border));
-  background: linear-gradient(180deg, var(--hue-tint), var(--ftp-surface));
+  box-shadow: inset 0 2px 0 var(--hue);
 }
 .dayHead { display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .dayName { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--hue-deep); }
@@ -111,13 +111,13 @@
   position: relative;
   overflow: hidden;
   border-radius: var(--ftp-radius-card);
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  border: 1px solid var(--ftp-border);
   box-shadow: var(--ftp-shadow-1);
   padding: 18px;
   min-width: 0;
 }
-.heroNow { background: linear-gradient(160deg, var(--ftp-surface) 30%, var(--hue-tint)); }
-.heroTomorrow { background: linear-gradient(160deg, var(--hue-tint), color-mix(in srgb, var(--hue-pop) 35%, var(--ftp-surface))); }
+.heroNow { background: var(--ftp-surface); box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1); }
+.heroTomorrow { background: var(--ftp-surface); }
 .heroOld { background: var(--ftp-surface); }
 .heroTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .heroLabel { margin: 0; font-size: 13px; line-height: 18px; font-weight: 700; color: var(--hue-deep); }
@@ -159,7 +159,7 @@
   min-height: 190px;
   border-radius: var(--ftp-radius-card);
   border: 1px solid var(--ftp-border);
-  background: linear-gradient(160deg, var(--ftp-surface), var(--hue-tint));
+  background: var(--ftp-surface);
   display: flex;
   flex-direction: column;
   align-items: center;

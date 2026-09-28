@@ -61,14 +61,12 @@ export default function TapCard({
         font: "inherit",
         color: "var(--ftp-text)",
         cursor: "pointer",
-        background: wash ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 8%, #fff) 0%, #fff 72%)" : "var(--ftp-surface)",
-        border: highlighted
-          ? "1px solid var(--hue)"
-          : wash
-            ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))"
-            : "1px solid var(--ftp-border)",
+        // v5.2 "White Calm": always white; `wash` marks the card with a
+        // 3 px hue rule on its left edge instead of a tinted fill.
+        background: "var(--ftp-surface)",
+        border: highlighted ? "1px solid var(--hue)" : "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
+        boxShadow: wash ? "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
         minWidth: 0,
         ...style,
       }}

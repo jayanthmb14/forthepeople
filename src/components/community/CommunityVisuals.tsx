@@ -216,8 +216,8 @@ export function IconCountRow({ items, ariaLabel }: { items: IconCount[]; ariaLab
             gap: 10,
             padding: "10px 12px",
             borderRadius: 14,
-            background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)",
-            border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+            background: "var(--ftp-surface)",
+            border: "1px solid var(--ftp-border)",
             minWidth: 0,
             ["--i" as string]: i,
           }}

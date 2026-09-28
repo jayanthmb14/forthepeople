@@ -87,16 +87,14 @@ export function TapCard({
         font: "inherit",
         color: "var(--ftp-text)",
         cursor: "pointer",
-        background:
-          tone === "alert"
-            ? "linear-gradient(135deg, color-mix(in srgb, var(--ftp-warn) 10%, #fff) 0%, #fff 70%)"
-            : "var(--ftp-surface)",
+        background: "var(--ftp-surface)",
         border:
           tone === "alert"
             ? "1px solid color-mix(in srgb, var(--ftp-warn) 45%, var(--ftp-border))"
             : "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
+        // v5.2 "White Calm": an alert card is white with an amber rule.
+        boxShadow: tone === "alert" ? "inset 3px 0 0 var(--ftp-warn), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
         ...style,
       }}
     >
@@ -323,8 +321,9 @@ export function SheetNote({ children }: { children: React.ReactNode }) {
         margin: 0,
         padding: "12px 14px",
         borderRadius: 14,
-        background: "var(--hue-tint)",
-        border: "1px solid color-mix(in srgb, var(--hue) 22%, transparent)",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        boxShadow: "inset 3px 0 0 var(--hue)",
         fontSize: 15,
         lineHeight: 1.55,
         color: "var(--ftp-text)",

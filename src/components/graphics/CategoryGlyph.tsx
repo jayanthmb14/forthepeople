@@ -109,8 +109,8 @@ export function glyphChipStyle(size: number): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-    background: "linear-gradient(150deg, var(--ftp-surface) -10%, var(--hue-tint) 62%)",
-    border: "1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border))",
+    background: "var(--hue-tint)",
+    border: "1px solid color-mix(in srgb, var(--hue) 14%, transparent)",
   };
 }
 

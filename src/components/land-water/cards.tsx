@@ -73,12 +73,11 @@ export function TapCard({
         minHeight: 44,
         padding: 16,
         color: "var(--ftp-text)",
-        background: tinted
-          ? "linear-gradient(135deg, color-mix(in srgb, var(--hue) 7%, var(--ftp-surface)) 0%, var(--ftp-surface) 70%)"
-          : "var(--ftp-surface)",
-        border: tinted ? "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))" : "1px solid var(--ftp-border)",
+        // v5.2 "White Calm": white; `tinted` adds a 3 px hue rule on the left.
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
-        boxShadow: "var(--ftp-shadow-1)",
+        boxShadow: tinted ? "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
         boxSizing: "border-box",
         minWidth: 0,
         cursor: "pointer",
@@ -332,8 +331,9 @@ export function SheetNote({ emoji, children }: { emoji: string; children: React.
         alignItems: "flex-start",
         padding: "12px 14px",
         borderRadius: 14,
-        background: "var(--hue-tint)",
-        border: "1px solid color-mix(in srgb, var(--hue) 20%, transparent)",
+        background: "var(--ftp-surface)",
+        border: "1px solid var(--ftp-border)",
+        boxShadow: "inset 3px 0 0 var(--hue)",
         fontSize: 15,
         lineHeight: "23px",
         color: "var(--ftp-text)",
