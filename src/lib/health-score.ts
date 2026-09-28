@@ -33,8 +33,34 @@ const WEIGHTS = {
 
 type WeightMap = Record<keyof typeof WEIGHTS, number>;
 
-function getDistrictType(population?: number | null, density?: number | null): "metro" | "urban" | "semi-urban" | "rural" {
-  if (population && population > 5_000_000) return "metro";
+/** Census urban share (%) below which a district is weighted as rural. */
+const RURAL_BELOW_URBAN_PCT = 40;
+/** Census urban share (%) from which a district is weighted as a metro (all-city districts). */
+const METRO_FROM_URBAN_PCT = 90;
+/** Population (Census 2011) from which a district is weighted as a metro. */
+const METRO_FROM_POPULATION = 5_000_000;
+
+/**
+ * Which weights a district gets (getAdjustedWeights), from its Census 2011
+ * row. The urban share decides first — Mandya has 1.8 million people but
+ * is 83 % rural, so population alone called it "urban" (Sept 2026 audit):
+ *   urban share < 40 %                        → rural
+ *   urban share ≥ 90 % or population > 5 M    → metro
+ *   otherwise                                 → urban
+ * Without an urban share, the old rule: > 5 M metro, > 1 M urban,
+ * density > 500 per km² semi-urban, else rural.
+ */
+export function getDistrictType(
+  population?: number | null,
+  density?: number | null,
+  urbanPct?: number | null,
+): "metro" | "urban" | "semi-urban" | "rural" {
+  if (typeof urbanPct === "number" && Number.isFinite(urbanPct)) {
+    if (urbanPct < RURAL_BELOW_URBAN_PCT) return "rural";
+    if (urbanPct >= METRO_FROM_URBAN_PCT || (population ?? 0) > METRO_FROM_POPULATION) return "metro";
+    return "urban";
+  }
+  if (population && population > METRO_FROM_POPULATION) return "metro";
   if (population && population > 1_000_000) return "urban";
   if (density && density > 500) return "semi-urban";
   return "rural";
@@ -507,7 +533,7 @@ export interface HealthScoreSummary {
 export async function calculateDistrictHealthScore(districtId: string): Promise<HealthScoreSummary> {
   // Fetch district for district-type-aware weight adjustment
   const districtCensus = await census2011(districtId);
-  const districtType = getDistrictType(districtCensus?.population, districtCensus?.density);
+  const districtType = getDistrictType(districtCensus?.population, districtCensus?.density, districtCensus?.urbanPct);
   const weights = getAdjustedWeights(districtType);
 
   const [gov, edu, hlt, inf, wat, eco, saf, agr, dig, wel] = await Promise.all([
