@@ -231,6 +231,7 @@ and live districts as hue pins with a small name beside them
 
 Nowhere else: not in headings, stat tiles, buttons, list rows, section
 titles, chart titles, tickers, steps, callouts or running text.
+One owner-approved exception (28 Sept 2026): the 🇮🇳 flag after the home page H1 (June wording), marked `role="img"` with the label "India".
 
 Pictures that **encode data** (a pictogram "8 of every 10 houses", a weather
 picture, how-it-works steps, a countdown) use **simple monochrome Lucide
