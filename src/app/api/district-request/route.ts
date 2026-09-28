@@ -10,10 +10,11 @@
 // GET /api/district-request — get top requested districts
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
 import { cacheGet, cacheSet } from "@/lib/cache";
-import { rateLimit } from "@/lib/rate-limit";
+import redis from "@/lib/redis";
+import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
+import { waitingDistrict } from "@/lib/waiting-district";
 
 const TOP_CACHE_KEY = "ftp:district-requests:top";
 const ALL_CACHE_KEY = "ftp:district-requests:all";
@@ -22,19 +23,6 @@ const ALL_CACHE_KEY = "ftp:district-requests:all";
 // hits it; restrictive enough that scripts can't hammer.
 const VOTE_RATE_LIMIT = 120;
 const VOTE_RATE_WINDOW_SECONDS = 60;
-
-function hashIp(ip: string): string {
-  const salt = process.env.VOTE_IP_SALT || "forthepeople-default-salt";
-  return createHash("sha256").update(ip + salt).digest("hex").slice(0, 32);
-}
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
 
 export async function GET(req: NextRequest) {
   const wantAll = req.nextUrl.searchParams.get("all") === "1";
@@ -77,12 +65,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const stateName = (body.stateName ?? "").trim();
-    const districtName = (body.districtName ?? "").trim();
-
-    if (!stateName || !districtName) {
+    if (!body?.stateName || !body?.districtName) {
       return NextResponse.json({ error: "stateName and districtName required" }, { status: 400 });
     }
+    // Only districts the vote page lists (in the registry, not live yet),
+    // stored under the registry's spelling: these rows are the public
+    // "most requested" chart, so free text must never get in.
+    const district = waitingDistrict(body.stateName, body.districtName);
+    if (!district) {
+      return NextResponse.json({ error: "Unknown district" }, { status: 400 });
+    }
+    const { stateName, districtName } = district;
 
     const ipHash = hashIp(getClientIp(req));
     const rl = await rateLimit(`vote:${ipHash}`, VOTE_RATE_LIMIT, VOTE_RATE_WINDOW_SECONDS);
@@ -100,9 +93,9 @@ export async function POST(req: NextRequest) {
       update: { requestCount: { increment: 1 } },
     });
 
-    // Bust caches so next GET reflects the new total
-    await cacheSet(TOP_CACHE_KEY, null as unknown as object[], 0);
-    await cacheSet(ALL_CACHE_KEY, null as unknown as object[], 0);
+    // Bust caches so next GET reflects the new total. (It used to set them
+    // with a 0-second expiry, which Redis refuses, so nothing was cleared.)
+    await redis?.del(TOP_CACHE_KEY, ALL_CACHE_KEY).catch(() => {});
 
     return NextResponse.json({ success: true, requestCount: record.requestCount });
   } catch (err) {
