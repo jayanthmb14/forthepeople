@@ -55,6 +55,7 @@ import { HueDonut } from "@/components/district/civic/HueDonut";
 import { LeaderLadder } from "@/components/district/civic/LeaderLadder";
 import { LeaderSheet } from "@/components/district/civic/LeaderSheet";
 import { LeaderAvatar, isPlaceholderName, orderTiers, roleText, tierMeta } from "@/components/district/civic/leader-shared";
+import { isHeadquartersMla } from "@/lib/leader-roles";
 import { COURTS_TIER, ladderTier } from "@/lib/civic/leader-level";
 import { daysUntil, findActiveElection, findNextElection, type ElectionEvent } from "@/components/district/ElectionSection";
 import { getPartyColor } from "@/lib/constants/party-colors";
@@ -103,7 +104,7 @@ function rank(role: string): number {
 const ROLE_WORDS = /^(prime minister|president|governor|chief minister|minister|mla|mp|speaker|collector|commissioner|mayor|judge|officer|secretary|chairman|director)/i;
 
 /** One person, as a big tappable card. The whole card opens the detail sheet. */
-function LeaderCard({ l, onOpen }: { l: Leader; onOpen: (l: Leader) => void }) {
+function LeaderCard({ l, onOpen, hq = false }: { l: Leader; onOpen: (l: Leader) => void; hq?: boolean }) {
   const t = useTranslations("page_leadership");
   const f = useFormat();
   const role = roleText(l, f.locale);
@@ -153,6 +154,11 @@ function LeaderCard({ l, onOpen }: { l: Leader; onOpen: (l: Leader) => void }) {
         {l.constituency && (
           <span style={{ fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
             {l.constituency}
+          </span>
+        )}
+        {hq && (
+          <span style={{ alignSelf: "flex-start", marginTop: 4, padding: "1px 8px", borderRadius: 999, fontSize: 12, lineHeight: "18px", fontWeight: 600, color: "var(--ftp-brand)", background: "var(--ftp-brand-tint)" }}>
+            {t("hqBadge")}
           </span>
         )}
         <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
@@ -310,7 +316,9 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
   // picture and the "levels" counts leave them out.
   const govTiers = tiers.filter((x) => x !== COURTS_TIER);
   const govPeople = people.length - (byTier[COURTS_TIER]?.length ?? 0);
-  for (const tier of tiers) byTier[tier].sort((a, b) => rank(a.role) - rank(b.role) || a.name.localeCompare(b.name));
+  // The MLA for the district headquarters seat comes first among the MLAs.
+  const hqFirst = (l: Leader) => (isHeadquartersMla(l, district) ? 0 : 1);
+  for (const tier of tiers) byTier[tier].sort((a, b) => rank(a.role) - rank(b.role) || hqFirst(a) - hqFirst(b) || a.name.localeCompare(b.name));
 
   // Freshness = the most recent "last verified" date across everyone listed.
   const asOf = leaders.reduce<string | null>(
@@ -417,7 +425,7 @@ function LeadershipPageInner({ params }: { params: Promise<{ locale: string; sta
               )}
               <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
                 {byTier[tier].map((l) => (
-                  <LeaderCard key={l.id} l={l} onOpen={setSelected} />
+                  <LeaderCard key={l.id} l={l} onOpen={setSelected} hq={isHeadquartersMla(l, district)} />
                 ))}
               </div>
             </Section>

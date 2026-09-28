@@ -35,7 +35,7 @@ import type { Leader } from "@/hooks/useRealtimeData";
 import { getPartyColor } from "@/lib/constants/party-colors";
 import OverviewCard from "@/components/district/shell/OverviewCard";
 import { LeadersMark } from "@/components/district/shell/overview-art";
-import { isCollectorRole, isPoliceCommissionerRole, isSPRole } from "@/lib/leader-roles";
+import { isCollectorRole, isHeadquartersMla, isPoliceCommissionerRole, isSPRole } from "@/lib/leader-roles";
 
 interface ApiResponse { data: Leader[]; meta?: unknown }
 
@@ -103,6 +103,8 @@ export default function LeadersSnippet({
   // Some districts have several MPs (Pune: 4); list them all.
   const mps = leaders.filter(isMP);
   const mlas = leaders.filter(isMLA);
+  // The MLA for the district headquarters seat is named, not only counted.
+  const hqMla = mlas.find((l) => isHeadquartersMla(l, district));
   const partyTally = mlas.reduce<Record<string, number>>((acc, l) => {
     const k = l.party ?? t("other");
     acc[k] = (acc[k] ?? 0) + 1;
@@ -169,6 +171,19 @@ export default function LeadersSnippet({
             <Pending>{t("notRecorded")}</Pending>
           )}
         </Row>
+        {named(hqMla) && (
+          <Row badge={initials(hqMla.name)} role={t("hqMla")}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span lang="en" style={{ fontWeight: 600 }}>{hqMla.name}</span>
+              {hqMla.party && (
+                <span className="ftp-ovl-party">
+                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: getPartyColor(hqMla.party).text }} />
+                  {hqMla.party}
+                </span>
+              )}
+            </span>
+          </Row>
+        )}
         <Row badge={mlas.length > 0 ? <Vote size={15} /> : null} role={t("mlas")}>
           {mlas.length > 0 ? (
             <>

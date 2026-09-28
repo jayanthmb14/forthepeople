@@ -40,3 +40,15 @@ describe("police heads", () => {
     expect(isSPRole("Additional Superintendent of Police, Mandya")).toBe(false);
   });
 });
+
+describe("isHeadquartersMla — the MLA for the district's own seat", () => {
+  it("matches Mandya's MLA and New Delhi's, not other seats", async () => {
+    const { isHeadquartersMla } = await import("@/lib/leader-roles");
+    expect(isHeadquartersMla({ role: "MLA, Mandya", constituency: "Mandya — 189" }, "mandya")).toBe(true);
+    expect(isHeadquartersMla({ role: "MLA, New Delhi", constituency: "New Delhi — 40" }, "new-delhi")).toBe(true);
+    expect(isHeadquartersMla({ role: "MLA, Maddur", constituency: "Maddur — 187" }, "mandya")).toBe(false);
+    expect(isHeadquartersMla({ role: "MLA, Lucknow Central", constituency: "Lucknow Central" }, "lucknow")).toBe(false);
+    expect(isHeadquartersMla({ role: "MP, Mandya", constituency: "Mandya" }, "mandya")).toBe(false);
+    expect(isHeadquartersMla({ role: "MLA, Malavalli (SC)", constituency: "Malavalli (SC) — 186" }, "malavalli")).toBe(true);
+  });
+});

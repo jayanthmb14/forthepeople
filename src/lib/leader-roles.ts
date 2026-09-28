@@ -37,3 +37,20 @@ export function isSPRole(role: string): boolean {
 export function isPoliceCommissionerRole(role: string): boolean {
   return /^(commissioner of police|police commissioner)\b/i.test(role.trim());
 }
+
+/**
+ * The MLA whose assembly seat carries the district's own name — the seat of
+ * the district headquarters town (Mandya → the MLA for Mandya; New Delhi →
+ * the MLA for New Delhi). Seats such as "Lucknow Central" or "Mysuru's
+ * Chamaraja" do not count, so districts with no single headquarters seat
+ * show nothing. Owner request, Sept 2026: the Mandya MLA must be named on the
+ * overview, not only counted.
+ */
+export function isHeadquartersMla(l: { role: string; constituency?: string | null }, districtSlug: string): boolean {
+  if (!/^mla\b|member of legislative assembly/i.test(l.role.trim())) return false;
+  const seat = (l.constituency || l.role.replace(/^mla,?\s*/i, ""))
+    .split(/\s+[—–-]\s+/)[0]
+    .replace(/\((sc|st)\)/gi, "");
+  const key = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+  return key(seat) !== "" && key(seat) === key(districtSlug);
+}

@@ -144,5 +144,6 @@
     "managing-director": "Head of a state public-sector undertaking or development authority. Runs day-to-day operations.",
     "chairman": "Top governing officer of a board, authority or commission. Sets strategic direction.",
     "tahsildar": "Sub-district revenue officer. Handles land records, mutations and revenue collection at the taluk level."
-  }
+  },
+  "hqBadge": "District headquarters seat"
 }
