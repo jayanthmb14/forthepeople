@@ -46,12 +46,15 @@ Use the seed's `authorityShortCode` convention to keep look-ups fast.
 
 ### 3. Confirm portal coverage for the district's state
 
-Open `src/lib/constants/state-config.ts` → the state's `tenderPortals` array.
+Open `src/scraper/lib/gepnic.ts`: `GEPNIC_PORTALS` (one GePNIC portal per
+state) and `GEPNIC_ORGS` (district slug → the bodies we follow there).
 
-- If the state is already listed (e.g. Karnataka) → no action; scrapers will pick up new authorities on the next run.
-- If the state is **new** (e.g. first district going live in Maharashtra):
-  - Add `tenderPortals` entries for the state's eProc portals.
-  - Each portal maps to one of the existing engine types: `kppp-seam`, `nicgep`, `ireps`, `tenderwizard`. If none fit, a new engine is needed (out of scope of a district-activation run).
+- If the state has a portal (Maharashtra, Tamil Nadu, West Bengal, Delhi) →
+  add the district's bodies to `GEPNIC_ORGS`; the scrape-tenders cron picks
+  them up on its next run.
+- If the state has no entry (Karnataka's KPPP and Telangana run other
+  software) → no collector reads it; a new collector is needed before the
+  district can be switched on. Do not switch a district on without one.
 
 ### 4. Seed state-specific disclaimer clauses
 

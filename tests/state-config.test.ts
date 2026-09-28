@@ -3,7 +3,7 @@
  * © 2026 Jayanth M B. MIT License.
  */
 import { describe, expect, it } from "vitest";
-import { getModuleSources, getStateConfig, getStateConfigForDistrict } from "@/lib/constants/state-config";
+import { getModuleSources, getStateConfig } from "@/lib/constants/state-config";
 
 describe("getStateConfig per district", () => {
   it("does not give Pune Mumbai's settings", () => {
@@ -32,7 +32,7 @@ describe("getStateConfig per district", () => {
 
   it("gives Mandya and Mysuru their own power company", () => {
     expect(getStateConfig("karnataka", "mandya")!.discomName).toBe("CESC");
-    expect(getStateConfigForDistrict("mysuru", "karnataka")!.discomName).toBe("CESC");
+    expect(getStateConfig("karnataka", "mysuru")!.discomName).toBe("CESC");
     expect(getStateConfig("karnataka", "bengaluru-urban")!.discomName).toBe("BESCOM");
   });
 
