@@ -177,7 +177,7 @@ export function TopicChart({ topics, name, latestAt }: { topics: NewsTopicCount[
                   width: `${(x.count / max) * 100}%`,
                   height: "100%",
                   borderRadius: 999,
-                  background: i === 0 ? "var(--hue)" : "color-mix(in srgb, var(--hue) 62%, var(--ftp-surface))",
+                  background: x.count === max ? "var(--hue)" : "color-mix(in srgb, var(--hue) 62%, var(--ftp-surface))",
                   ["--i" as string]: i,
                 }}
               />
