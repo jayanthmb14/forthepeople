@@ -145,5 +145,23 @@
     "chairman": "Top governing officer of a board, authority or commission. Sets strategic direction.",
     "tahsildar": "Sub-district revenue officer. Handles land records, mutations and revenue collection at the taluk level."
   },
-  "hqBadge": "District headquarters seat"
+  "hqBadge": "District headquarters seat",
+  "key": {
+    "title": "Key people for {name}",
+    "lead": "The officers and representatives you are most likely to need. Tap a name for what they do and how to reach their office."
+  },
+  "table": {
+    "name": "Name and role",
+    "seat": "Constituency",
+    "party": "Party"
+  },
+  "dept": {
+    "admin": "Administration and revenue",
+    "police": "Police",
+    "development": "Zilla panchayat and development",
+    "health": "Health",
+    "education": "Education",
+    "city": "City and town",
+    "other": "Other offices"
+  }
 }

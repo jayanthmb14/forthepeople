@@ -63,7 +63,7 @@ export function LeaderLadder({
           return (
             <li key={tier} style={{ display: "grid", justifyItems: "center" }}>
               {i > 0 && (
-                <span aria-hidden style={{ fontSize: 14, lineHeight: "18px", color: "var(--hue)", margin: "2px 0" }}>
+                <span aria-hidden style={{ fontSize: 12, lineHeight: "16px", color: "var(--ftp-text-2)", margin: "2px 0" }}>
                   ▼
                 </span>
               )}
@@ -79,11 +79,12 @@ export function LeaderLadder({
                   flexWrap: "wrap",
                   padding: "12px 14px",
                   borderRadius: 16,
-                  background: `color-mix(in srgb, var(--hue) ${Math.max(3, 9 - i * 1.5)}%, #fff)`,
-                  border: "1px solid color-mix(in srgb, var(--hue) 26%, var(--ftp-border))",
+                  // v5.5: white bands; the level shows in the icon and the title only.
+                  background: "var(--ftp-surface)",
+                  border: "1px solid var(--ftp-border)",
                 }}
               >
-                <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11, background: "#fff" }}>
+                <span className="ftp-icon-chip" aria-hidden style={{ width: 36, height: 36, borderRadius: 11 }}>
                   <m.icon size={18} />
                 </span>
                 <div style={{ flex: "1 1 180px", minWidth: 0 }}>
@@ -102,8 +103,8 @@ export function LeaderLadder({
                           fontWeight: 700,
                           padding: "0 8px",
                           borderRadius: 999,
-                          background: "var(--hue)",
-                          color: "#fff",
+                          border: "1px solid color-mix(in srgb, var(--hue) 35%, var(--ftp-border))",
+                          color: "var(--hue-deep)",
                         }}
                       >
                         {t("ladder.yourVote")}
@@ -131,8 +132,8 @@ export function LeaderLadder({
                           maxWidth: "100%",
                           padding: "4px 12px",
                           borderRadius: 12,
-                          border: "1px solid color-mix(in srgb, var(--hue) 24%, var(--ftp-border))",
-                          background: "#fff",
+                          border: "1px solid var(--ftp-border)",
+                          background: "var(--ftp-surface)",
                           cursor: "pointer",
                           font: "inherit",
                           textAlign: "left",
