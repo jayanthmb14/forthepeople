@@ -5,11 +5,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import prisma from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { calculateOneTimeExpiry } from "@/lib/contribution-expiry";
 import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
+import { validRazorpaySignature } from "@/lib/supporter-payment";
 
 // All cache keys used by the supporter lists — must invalidate ALL on payment.
 // The public supporter lists' Redis keys (one list, src/lib/supporter-cache.ts).
@@ -29,37 +29,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
     }
 
-    // Verify HMAC SHA256 signature
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keySecret) {
       return NextResponse.json({ success: false, error: "Server misconfiguration" }, { status: 500 });
     }
 
-    const expectedSignature = crypto
-      .createHmac("sha256", keySecret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
-
-    // Use timing-safe comparison to prevent timing attacks
-    const signaturesMatch =
-      expectedSignature.length === razorpay_signature.length &&
-      crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, "hex"),
-        Buffer.from(razorpay_signature, "hex"),
-      );
-
-    if (!signaturesMatch) {
-      // Mark as failed
-      await prisma.contribution.update({
-        where: { id: contributionId },
-        data: { status: "failed" },
-      });
+    // Razorpay signs order_id|payment_id only. A bad signature writes nothing
+    // (it used to mark the given contribution "failed" — anyone's).
+    if (!validRazorpaySignature(`${razorpay_order_id}|${razorpay_payment_id}`, razorpay_signature, keySecret)) {
       return NextResponse.json({ success: false, error: "Invalid signature" }, { status: 400 });
+    }
+
+    // The contribution must be the one this order was created for: the id
+    // comes from the browser, and another (unpaid, bigger, "founder")
+    // contribution must not ride on this payment.
+    const order = await prisma.contribution.findFirst({
+      where: { id: contributionId, razorpayOrderId: razorpay_order_id },
+      select: { id: true },
+    });
+    if (!order) {
+      return NextResponse.json({ success: false, error: "Unknown order" }, { status: 400 });
     }
 
     // Mark as paid
     const contribution = await prisma.contribution.update({
-      where: { id: contributionId },
+      where: { id: order.id },
       data: {
         status: "paid",
         razorpayPaymentId: razorpay_payment_id,
@@ -111,7 +105,7 @@ export async function POST(req: NextRequest) {
             expiresAt: extendedExpiry,
           },
         });
-        console.log(`[verify] Returning supporter ${existing.id} (${existing.email ?? existing.phone}) — refreshed.`);
+        console.log(`[verify] Returning supporter ${existing.id} — refreshed.`);
       } else {
         await prisma.supporter.upsert({
           where: { paymentId: razorpay_payment_id },

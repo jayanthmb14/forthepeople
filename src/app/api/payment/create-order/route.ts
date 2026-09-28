@@ -7,13 +7,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRazorpay } from "@/lib/razorpay";
 import prisma from "@/lib/db";
-import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+import { oneTimeOrder } from "@/lib/supporter-payment";
 import { validateContributorName } from "@/lib/validators/contributor-name";
 import { validateSupporterMessage } from "@/lib/validators/supporter-message";
 import { getClientIp, hashIp, rateLimit } from "@/lib/rate-limit";
-
-const ABSOLUTE_MIN = 10;
-const ABSOLUTE_MAX = 500000;
 
 // Each call creates a Contribution row AND a Razorpay order, so cap it at
 // 10 per hour per hashed IP. Shared key with create-subscription so the two
@@ -54,28 +51,12 @@ export async function POST(req: NextRequest) {
     if (!messageResult.ok) {
       return NextResponse.json({ error: messageResult.reason }, { status: 400 });
     }
-    if (!Number.isInteger(amount) || amount < ABSOLUTE_MIN || amount > ABSOLUTE_MAX) {
-      return NextResponse.json(
-        { error: `Amount must be between ₹${ABSOLUTE_MIN} and ₹${ABSOLUTE_MAX.toLocaleString("en-IN")}` },
-        { status: 400 }
-      );
-    }
-
-    // Per-tier validation (one-time tiers only — subscription tiers go through create-subscription)
-    const tierConfig = TIER_CONFIG[tier];
-    if (tierConfig && !tierConfig.isRecurring) {
-      if (amount < tierConfig.minAmount) {
-        return NextResponse.json(
-          { error: `Minimum amount for ${tierConfig.name} is ₹${tierConfig.minAmount}` },
-          { status: 400 }
-        );
-      }
-      if (amount > tierConfig.maxAmount) {
-        return NextResponse.json(
-          { error: `Maximum amount for ${tierConfig.name} is ₹${tierConfig.maxAmount.toLocaleString("en-IN")}` },
-          { status: 400 }
-        );
-      }
+    // One-time orders are always stored under a one-time tier ("custom" for
+    // monthly tier names and anything unknown) and must fit its bounds: the
+    // stored tier is what the supporter wall shows (src/lib/supporter-payment.ts).
+    const order = oneTimeOrder(tier, amount);
+    if (!order.ok) {
+      return NextResponse.json({ error: order.error }, { status: 400 });
     }
 
     const razorpay = getRazorpay();
@@ -86,7 +67,7 @@ export async function POST(req: NextRequest) {
         name: nameResult.cleaned,
         email: email?.trim() || null,
         amount: amount * 100, // store in paise
-        tier: tier || "custom",
+        tier: order.tier,
         message: messageResult.cleaned,
         isPublic: isPublic !== false,
         status: "created",
@@ -94,12 +75,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Create Razorpay order
-    const order = await razorpay.orders.create({
+    const rzpOrder = await razorpay.orders.create({
       amount: amount * 100,
       currency: "INR",
       receipt: `ftp_${contribution.id}`,
       notes: {
-        tier,
+        tier: order.tier,
         platform: "forthepeople.in",
         contributionId: contribution.id,
         ...(phoneDigits.length === 10 ? { phone: phoneDigits } : {}),
@@ -109,13 +90,13 @@ export async function POST(req: NextRequest) {
     // Save orderId back to contribution
     await prisma.contribution.update({
       where: { id: contribution.id },
-      data: { razorpayOrderId: order.id },
+      data: { razorpayOrderId: rzpOrder.id },
     });
 
     return NextResponse.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
+      orderId: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
       contributionId: contribution.id,
     });
   } catch (err) {
