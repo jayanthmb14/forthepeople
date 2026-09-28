@@ -141,14 +141,11 @@ reads) to `globals.css` with a contrast test, then point the other three
 files at them and delete their local copies. New code must not add a fifth
 family.
 
-### Pastel ribbon
+### Pastel ribbon (removed in v5.6)
 
-A 2 px line along the bottom of the header (`.header::after` in
-`src/components/home/chrome.module.css`) and on the footer: the four
-"people" hues of the site — blue (`--ftp-map-live-fill`), violet
-(`--ftp-features`), green (`--ftp-live`) and amber (`--ftp-warn`) — each mixed
-with white so it stays soft, never neon. It is the only gradient in the
-chrome.
+v5.1 drew a 2 px four-hue line under the header and on top of the footer.
+v5.6 (28 Sep 2026, owner review) removed it: the chrome is white with thin
+grey rules (`--ftp-border`), like the June 2026 site, and has no gradients.
 
 ### Module hues — identity only
 
@@ -432,45 +429,54 @@ v5.1 additions, each with a purpose:
 Never: bouncing, motion on text, motion that carries no meaning, or anything
 that runs under reduced motion.
 
-## 9. Site chrome (v5.1)
+## 9. Site chrome (v5.1, calmer in v5.6)
+
+v5.6 rule: the chrome is 80–90 % white. Thin `--ftp-border` rules, no
+ribbons, washes or filled pills; colour only in small marks (the flat blue
+logo tile, the blue district pin, the rose Support text, icon strokes in
+their hue, the market and freshness dots).
 
 Built in `src/components/home/` (`chrome.module.css`) and
 `src/components/common/`:
 
-- **Disclaimer line** above the header: `--ftp-surface-2`, 12/17 text, lined
+- **Disclaimer line** above the header: `--ftp-bg`, 12/17 text, lined
   up with the header's edges.
 - **Header:** full width and sticky, 56 px. The logo sits in the left corner
   (24 px in, 28 px from 1440 px) and the actions in the right corner, on a
-  translucent white with a light blur, over the pastel ribbon (§2).
+  translucent white with a light blur and one thin grey rule under it.
 - **Apps switcher:** hovering the logo with a mouse, or pressing the small ▾
   next to it (44 px touch area), opens "ForThePeople apps": ForThePeople.in
   (you are here), Connect and Jobs. Connect and Jobs are marked "Coming
   soon", are not links, and each has its drawn mark.
 - **Right side:** search, language, "Vote on features", GitHub with the star
-  count, and Support as a soft rose pill (`--ftp-support*`). Below 1024 px,
+  count, and Support as a white pill with rose text and a thin rose border
+  (`--ftp-support*`; the rose tint only on hover). Below 1024 px,
   Vote, GitHub and Support move into a "Menu" button; on phones the apps list
   moves there too, the district chip doubles as search, and the language
   button always stays in the row.
-- **Status strip** under the header, a labelled group: weekday, date and an
-  IST clock that updates each minute (drawn in the browser only); "Share
-  market open / closed" only when the rules are sure (green dot with a slow
-  ping when open, a grey ring when closed); on district pages "Live data
-  refreshed N ago" when every live feed is on time.
-- **District bar** (district pages): the same IST day, date and time, and a
-  pill such as "3 of 5 live feeds up to date" — green when all are current,
-  amber when any is late. On phones and tablets both sit in one thin line
-  under the bar.
+- **Status strip** under the header, a labelled group, white and **centred
+  on every width**: weekday, date and an IST clock that updates each minute
+  (drawn in the browser only); "Share market open / closed" only when the
+  rules are sure (green dot with a slow ping when open, a grey ring when
+  closed); on district pages "Live data refreshed N ago" when every live
+  feed is on time. It is the only clock on the site.
+- **District bar** (district pages): the state › district › taluk switchers
+  and a pill such as "3 of 5 live feeds up to date" — green when all are
+  current, amber when any is late (v5.6: no second clock). On phones and
+  tablets the pill sits centred in one thin white line under the bar, and
+  the line is left out when there is nothing to say.
 - **Report button:** a pill "Report a problem" in the bottom-right corner on
   PC and tablet; a 44 px round flag on phones. It opens a short form (kind of
   problem, what is wrong, optional email). Focus stays inside, Escape closes.
   Hidden on admin pages and India module pages. On district pages it is the
   only report form (v5.3): it sends the state, district and module with the
   report.
-- **Footer:** light, with the same ribbon and a coloured icon chip on each
-  column title; links include Prices today, Vote for a district, Vote on
-  features and GitHub stars; a "Coming soon from ForThePeople" row shows
-  Connect and Jobs as two cards. Phones keep space at the bottom for the
-  Report button. The last line reads "Built by Jayanth M B" (the name links
+- **Footer:** plain white with one thin rule on top; each column title has
+  a small icon in its hue (no tinted tile); links include Prices today, Vote
+  for a district, Vote on features and GitHub stars; a "Coming soon from
+  ForThePeople" row shows Connect and Jobs as two white cards. Every width
+  keeps 76 px at the bottom so the Report button never covers the last
+  line. The last line reads "Built by Jayanth M B" (the name links
   to his LinkedIn, new tab) and "Free expression under Article 19(1)(a)".
 - **Slim footer (v5.3):** district pages (overview, every module, taluk and
   village page) and India module pages end with one thin line instead: the

@@ -8,7 +8,7 @@
 //  Footer — site-wide footer (Design v5.1 "Warm Calm", light)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//    ═══ pastel ribbon ═══
+//    ─── thin grey rule (v5.6: plain white, no ribbon) ───
 //    [logo] ForThePeople.in      (blue) Explore     (rose) Get involved   (teal) About
 //    Your district. Your data…   India dashboard    Support the project   About
 //    Independent … sources note  Prices today       Vote on features      Privacy
@@ -23,7 +23,7 @@
 //  "Jayanth M B" links to his LinkedIn profile (new tab; screen readers
 //  hear "LinkedIn, opens in a new tab").
 //
-//  Each column title has a small icon chip in its own pastel hue. There is
+//  Each column title has a small icon in its own hue (v5.6: no tile). There is
 //  no site-wide "Data refreshed …" line: freshness belongs to each dataset,
 //  next to its own figure (and in the status strip only when it is true).
 //

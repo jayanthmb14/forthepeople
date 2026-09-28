@@ -84,24 +84,9 @@
   white-space: nowrap;
 }
 
-/* Right side on laptops and PCs (v5.1): clock + live-feed summary. */
+/* Right side on laptops and PCs: the live-feed summary. (v5.6: the clock
+   moved out — the site-wide status strip shows the date and time.) */
 .ftp-dbar-status { display: none; flex: 0 0 auto; align-items: center; gap: 6px; }
-.ftp-dbar-clock {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 10px;
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--ftp-text-2);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.ftp-dbar-clock:empty { min-width: 1px; padding: 0; }
-.ftp-dbar-clock svg { color: var(--ftp-brand); flex-shrink: 0; }
-.ftp-dbar-time { color: var(--ftp-text); font-weight: 600; }
-.ftp-dbar-dot-sep { color: var(--ftp-border-strong); }
 
 .ftp-dbar-freshwrap { position: relative; display: inline-flex; min-width: 0; }
 .ftp-dbar-fresh {
@@ -172,24 +157,21 @@
 .ftp-dbar-feed[data-status="late"] .ftp-dbar-feed-age { color: var(--ftp-warn-text); font-weight: 600; }
 .ftp-dbar-feeds-more { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--ftp-border); font-size: 12px; color: var(--ftp-brand); }
 
-/* Phones and tablets: the same details in one thin line under the bar. */
+/* Phones and tablets: the live-feed summary in one thin white line under
+   the bar, centred. Nothing to say (no live feeds) → no line at all. */
 .ftp-dbar-sub {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 2px 10px;
+  justify-content: center;
   min-height: 34px;
   padding: 3px 12px;
   box-sizing: border-box;
-  background: color-mix(in srgb, var(--ftp-brand-tint) 55%, var(--ftp-surface));
+  background: var(--ftp-surface);
   border-bottom: 1px solid var(--ftp-border);
 }
-.ftp-dbar-sub .ftp-dbar-clock { min-height: 28px; padding: 0; font-size: 12px; }
+.ftp-dbar-sub:empty { display: none; }
+.ftp-dbar-sub .ftp-dbar-freshwrap { max-width: 100%; }
 .ftp-dbar-sub .ftp-dbar-fresh { min-height: 28px; padding: 0 10px; font-size: 12px; }
-@media (max-width: 359px) {
-  .ftp-dbar-sub { justify-content: flex-start; }
-}
 @media (min-width: 640px) {
   .ftp-dbar-inner { padding: 0 20px 0 14px; }
   .ftp-dbar-sub { padding: 3px 20px; }
@@ -205,10 +187,6 @@
 }
 @media (min-width: 1440px) {
   .ftp-dbar-inner { padding: 0 28px 0 22px; }
-}
-/* Small laptops: no calendar icon, to leave room for the crumbs. */
-@media (min-width: 1024px) and (max-width: 1199px) {
-  .ftp-dbar-clock svg { display: none; }
 }
 
 /* ---------- Module pages: the bar and the sidebar replace the

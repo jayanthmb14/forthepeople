@@ -7,9 +7,9 @@
 //  DistrictBar — the ONE bar under the site header on every district page
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   PC     [ Karnataka ▾ › Mandya ▾ › All taluks ▾ ]   Sunday, 27 Sep 2026 · 9:42 pm IST   ● 3 of 5 live feeds up to date
+//   PC     [ Karnataka ▾ › Mandya ▾ › All taluks ▾ ]                        ● 3 of 5 live feeds up to date
 //   Phone  [ Karnataka ▾ › Mandya ▾ › All taluks ▾ ]  [ Topics / Weather & rain ▾ ]
-//          Sun, 27 Sep · 9:42 pm IST            ● 3 of 5 live feeds up to date   (thin line, scrolls away)
+//                         ● 3 of 5 live feeds up to date                     (thin line, centred, scrolls away)
 //
 //  • 48 px, sticky right under the 56 px header on every width.
 //  • Left: state › district › taluk switchers (DistrictBreadcrumb, bar
@@ -17,13 +17,15 @@
 //    dropdown. On a phone the crumbs scroll sideways inside the bar.
 //  • Right, below 1024 px (no sidebar): one button that shows the page you
 //    are on and opens the topics drawer (MobileDistrictDrawer).
-//  • Right, from 1024 px (v5.1): the day, date and time in India (a clock
-//    that ticks once a minute, useMinuteClock) and the live-feed summary —
-//    a green dot when all fast feeds are current, amber when any is late.
-//    Hover or focus shows each feed with its age; the link jumps to the
-//    verification section (#verify).
-//  • Below 1024 px the same two details sit in one thin line under the bar
-//    (not sticky), in short form.
+//  • Right, from 1024 px (v5.1): the live-feed summary — a green dot when
+//    all fast feeds are current, amber when any is late. Hover or focus
+//    shows each feed with its age; the link jumps to the verification
+//    section (#verify).
+//  • Below 1024 px the summary sits in one thin line under the bar (not
+//    sticky), centred.
+//  • v5.6: no clock here any more. The day, date, IST time and share
+//    market are in the site-wide status strip (StatusStrip), centred under
+//    the header — the bar used to repeat them (two clocks on one page).
 //
 //  Replaces (v5): the per-second ticking clock / always-red "Data behind"
 //  strip, the phone breadcrumb strip, the module bar that also showed on
@@ -33,7 +35,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarDays, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import DistrictBreadcrumb from "@/components/district/DistrictBreadcrumb";
 import { MobileDistrictDrawer } from "@/components/district/MobileDistrictDrawer";
 import { INDIA_STATES, getDistrict, getState, shownSubUnits } from "@/lib/constants/districts";
@@ -43,7 +45,6 @@ import { useFormat, useModuleText, usePlaceText } from "@/i18n/client";
 import { useFreshness, type DatasetFreshness, type FreshnessResult } from "@/hooks/useFreshness";
 import { LIVE_FEED_KEYS } from "@/lib/freshness";
 import { districtRoute } from "./path";
-import { useMinuteClock } from "./useIstClock";
 
 /** Window event other entry points can fire to open the topics drawer. */
 export const OPEN_MODULES_EVENT = "ftp:open-modules-drawer";
@@ -68,27 +69,6 @@ function peerDistricts(stateSlug: string) {
   return (getState(stateSlug)?.districts ?? [])
     .map((d) => ({ slug: d.slug, name: d.name, nameLocal: d.nameLocal, isLive: d.active === true }))
     .sort((a, b) => (a.isLive !== b.isLive ? (a.isLive ? -1 : 1) : a.name.localeCompare(b.name)));
-}
-
-/** "Sunday, 27 Sep 2026 · 9:42 pm IST" (PC) or "Sun, 27 Sep · 9:42 pm IST" (phone). */
-function IstClock({ short = false }: { short?: boolean }) {
-  const t = useTranslations("page_district-shell");
-  const f = useFormat();
-  const now = useMinuteClock();
-  // Before mount there is no time yet: keep the space so nothing jumps.
-  if (now === null) return <span className="ftp-dbar-clock" aria-hidden />;
-  const date = f.date(now, short
-    ? { weekday: "short", day: "numeric", month: "short" }
-    : { weekday: "long", day: "numeric", month: "short", year: "numeric" });
-  const time = t("bar.time", { time: f.time(now, { hour: "numeric", minute: "2-digit" }) });
-  return (
-    <span className="ftp-dbar-clock" role="timer" aria-live="off" aria-label={t("bar.clockAria", { date, time })}>
-      {!short && <CalendarDays size={14} aria-hidden />}
-      <span>{date}</span>
-      <span className="ftp-dbar-dot-sep" aria-hidden>·</span>
-      <span className="ftp-dbar-time">{time}</span>
-    </span>
-  );
 }
 
 type FreshState = "loading" | "all" | "some" | "none";
@@ -230,17 +210,17 @@ export default function DistrictBar({ locale, stateSlug, districtSlug }: Props) 
             <ChevronDown size={16} aria-hidden />
           </button>
 
-          {/* Laptops and PCs: day, date and time in India + the live-feed summary. */}
+          {/* Laptops and PCs: the live-feed summary (the date and time are in
+              the site's status strip, centred above — one clock only). */}
           <div className="ftp-dbar-status">
-            <IstClock />
             <FreshSummary fresh={fresh} districtName={districtLabel} popover />
           </div>
         </div>
       </div>
 
-      {/* Phones and tablets: the same two details in one thin line (scrolls away). */}
+      {/* Phones and tablets: the live-feed summary in one thin line (scrolls
+          away). Hidden by CSS (:empty) when there is nothing to say. */}
       <div className="ftp-dbar-sub">
-        <IstClock short />
         <FreshSummary fresh={fresh} districtName={districtLabel} popover={false} />
       </div>
 
