@@ -261,7 +261,8 @@ files are archived in `docs/archive/docker/`.
    - `guard.ts` + cron `dedupe-data`: exact duplicates merged
      automatically, conflicts and similar names queued once in
      `NewsActionQueue` (dataType `verify-duplicates`).
-   - `scripts/dedupe-2026-09.ts`: the one-time clean-up with the same guard.
+   - `scripts/archive/dedupe-2026-09.ts`: the one-time clean-up with the same
+     guard (applied 28 Sep 2026).
 
 ## 4. AI
 

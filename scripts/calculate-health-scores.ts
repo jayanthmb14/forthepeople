@@ -2,7 +2,7 @@
 // Calculate district health scores for all active districts
 // Usage: npx tsx scripts/calculate-health-scores.ts
 // ═══════════════════════════════════════════════════════════
-import "dotenv/config";
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { prisma } from "../src/lib/db";
 import { calculateDistrictHealthScore } from "../src/lib/health-score";
 

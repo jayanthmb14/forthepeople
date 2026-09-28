@@ -2,7 +2,7 @@
 // Script: Classify existing news articles by module (callAI, Tier-1 chain)
 // Usage: npx tsx scripts/classify-news.ts
 // ═══════════════════════════════════════════════════════════
-import "dotenv/config";
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { prisma } from "../src/lib/db";
 import { callAI } from "../src/lib/ai-provider";
 

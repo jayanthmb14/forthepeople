@@ -5,7 +5,7 @@
 // generateInsight() (callAIJSON, purpose "insight" = the Tier-2 chain),
 // with a 2-second delay between calls
 // ═══════════════════════════════════════════════════════════
-import "dotenv/config";
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { prisma } from "../src/lib/db";
 import { MODULE_INSIGHT_CONFIGS } from "../src/lib/insight-config";
 import { generateInsight } from "../src/lib/insight-generator";

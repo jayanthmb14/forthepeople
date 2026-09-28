@@ -17,9 +17,9 @@
 //   2. Seed data for the newly activated district
 //   3. git commit + git push to deploy
 // ═══════════════════════════════════════════════════════════
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { PrismaClient } from '../src/generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
-import 'dotenv/config';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });

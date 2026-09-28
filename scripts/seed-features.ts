@@ -2,7 +2,7 @@
 // Seed initial feature requests for voting
 // Usage: npx tsx scripts/seed-features.ts
 // ═══════════════════════════════════════════════════════════
-import "dotenv/config";
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { prisma } from "../src/lib/db";
 
 const FEATURES = [
