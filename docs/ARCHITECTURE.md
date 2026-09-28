@@ -208,6 +208,10 @@ old Docker files are archived in `docs/archive/docker/`.
    - `prices`
 
    None of them writes to the database; some cache their answer in Redis.
+   Slugs are checked (`src/lib/read-api.ts`) before any cache or database
+   work, and `[module]` answers 404 for a module it does not serve.
+   `/api/public/district/<slug>` is the one route meant for other sites
+   (CORS open); each item it sends names its own source.
 5. **Freshness** — every payload carries its `updatedAt`; the UI pill
    (`src/lib/utils/timeAgo.ts` and friends) derives "Xh ago / stale" from it.
    Nothing is labelled live by default.
@@ -324,10 +328,10 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
 - **Privacy**: Plausible (cookieless), DPDP policy at `/privacy`, supporter
   records anonymised at the API boundary (`src/lib/contributor-label.ts` and the
   contributors API), name/message validators in `src/lib/validators/`.
-  Known gap (Sept 2026): `/api/data/contributors` does not yet mask names
-  that are really phone numbers (the Razorpay webhook can store the payer's
-  contact as the name). The support components hide them on screen
-  (`src/components/support/public-name.ts`); the API fix is still to do.
+  `/api/data/contributors` sends every name through `publicDisplayName()`
+  (`src/lib/supporter-name.ts`): a name that is really a phone number or an
+  e-mail (the Razorpay webhook can store the payer's contact as the name)
+  goes out as "Supporter".
 - **Secrets**: only names in git (`.env.example`); values in Vercel env and the
   owner's password manager. Push protection is on.
 

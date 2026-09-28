@@ -7,9 +7,11 @@
 // ═══════════════════════════════════════════════════════════════════════
 // GET /api/data/freshness?district=mandya
 //
-// How old every dataset on a district's pages is, in ONE database round
-// trip (a single SELECT of scalar sub-queries), cached in Redis for five
-// minutes. Read-only.
+// How old every dataset on a district's pages is: one SELECT of scalar
+// sub-queries for most datasets, plus the district lookup, a few filtered
+// aggregates (mandi prices, panchayats, the last alerts-feed read) and the
+// collectors' snapshots in Redis. The row → datasets step is pure
+// (src/lib/freshness-facts.ts). Cached in Redis for five minutes. Read-only.
 //
 // Response:
 //   datasets  one row per dataset (src/lib/freshness.ts DATASETS): rows,

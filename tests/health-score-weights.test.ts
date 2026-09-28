@@ -93,3 +93,20 @@ describe("cropPriceStability (report card: how steady mandi prices were over 30 
     expect(cropPriceStability([])).toMatchObject({ noData: true });
   });
 });
+
+describe("storedWeights (the health-score API's category weights)", () => {
+  it("returns the weights the grade was computed with (metro: infrastructure 13, agriculture 5, digital 7)", async () => {
+    const { storedWeights } = await import("@/lib/health-score");
+    const metro = { governance: 15, education: 12, health: 12, infrastructure: 13, waterSanitation: 10, economy: 10, safety: 10, agriculture: 5, digitalAccess: 7, citizenWelfare: 6 };
+    expect(storedWeights(metro)).toEqual(metro);
+  });
+
+  it("falls back to the base weight for a missing or broken entry", async () => {
+    const { storedWeights } = await import("@/lib/health-score");
+    const w = storedWeights({ agriculture: 11, digitalAccess: "x" });
+    expect(w.agriculture).toBe(11);
+    expect(w.digitalAccess).toBe(5);
+    expect(w.governance).toBe(15);
+    expect(storedWeights(null).infrastructure).toBe(12);
+  });
+});

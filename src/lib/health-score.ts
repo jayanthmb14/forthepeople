@@ -76,6 +76,22 @@ export function getDistrictType(
   return "rural";
 }
 
+/**
+ * The category weights a stored report card was computed with
+ * (DistrictHealthScore.weights, which depend on the district type), with
+ * the base weight for any missing entry. The health-score API used to
+ * send the base weights for every district.
+ */
+export function storedWeights(stored: unknown): WeightMap {
+  const s = stored && typeof stored === "object" ? (stored as Record<string, unknown>) : {};
+  const out = { ...WEIGHTS } as WeightMap;
+  for (const key of Object.keys(WEIGHTS) as Array<keyof WeightMap>) {
+    const v = s[key];
+    if (typeof v === "number" && Number.isFinite(v)) out[key] = v;
+  }
+  return out;
+}
+
 // Adjust category weights slightly based on district type (always sums to 100)
 function getAdjustedWeights(districtType: string): WeightMap {
   if (districtType === "metro") {

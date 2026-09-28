@@ -12,6 +12,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
+import { storedWeights } from "@/lib/health-score";
+import { isSlug } from "@/lib/read-api";
 
 export const runtime = "nodejs";
 
@@ -19,6 +21,9 @@ export async function GET(req: NextRequest) {
   const districtSlug = req.nextUrl.searchParams.get("district");
   if (!districtSlug) {
     return NextResponse.json({ error: "district required" }, { status: 400 });
+  }
+  if (!isSlug(districtSlug)) {
+    return NextResponse.json({ error: "invalid district" }, { status: 400 });
   }
 
   const cacheKey = `ftp:health-score:${districtSlug}`;
@@ -51,22 +56,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ score: null, message: "Score calculating…" });
   }
 
+  // The weights this grade was computed with (they depend on the district
+  // type: a metro weighs infrastructure 13, agriculture 5), not the base set.
+  const w = storedWeights(score.weights);
   const response = {
     overallScore: score.overallScore,
     grade: score.grade,
     trend: score.trend,
     previousScore: score.previousScore,
     categories: {
-      governance:      { score: score.governance,      weight: 15 },
-      education:       { score: score.education,       weight: 12 },
-      health:          { score: score.health,          weight: 12 },
-      infrastructure:  { score: score.infrastructure,  weight: 12 },
-      waterSanitation: { score: score.waterSanitation, weight: 10 },
-      economy:         { score: score.economy,         weight: 10 },
-      safety:          { score: score.safety,          weight: 10 },
-      agriculture:     { score: score.agriculture,     weight: 8  },
-      digitalAccess:   { score: score.digitalAccess,   weight: 5  },
-      citizenWelfare:  { score: score.citizenWelfare,  weight: 6  },
+      governance:      { score: score.governance,      weight: w.governance },
+      education:       { score: score.education,       weight: w.education },
+      health:          { score: score.health,          weight: w.health },
+      infrastructure:  { score: score.infrastructure,  weight: w.infrastructure },
+      waterSanitation: { score: score.waterSanitation, weight: w.waterSanitation },
+      economy:         { score: score.economy,         weight: w.economy },
+      safety:          { score: score.safety,          weight: w.safety },
+      agriculture:     { score: score.agriculture,     weight: w.agriculture },
+      digitalAccess:   { score: score.digitalAccess,   weight: w.digitalAccess },
+      citizenWelfare:  { score: score.citizenWelfare,  weight: w.citizenWelfare },
     },
     breakdown: score.breakdown,
     generatedAt: score.generatedAt,
