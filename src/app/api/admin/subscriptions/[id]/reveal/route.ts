@@ -3,13 +3,15 @@
  * GET /api/admin/subscriptions/[id]/reveal
  *
  * Returns the decrypted loginPassword for a subscription. Logged in the audit
- * trail so there's a record of every credential access. Requires admin cookie —
- * no vault gate so you can quickly pull a password while debugging a service.
- * Tighten to vault-gated if needed later.
+ * trail so there's a record of every credential access. Requires the admin
+ * cookie session (requireAdminCookie: the password header alone, which skips
+ * 2FA, must not decrypt stored logins) — no vault gate so you can quickly
+ * pull a password while debugging a service. Tighten to vault-gated if
+ * needed later.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminCookie } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { logAuditAuto } from "@/lib/audit-log";
@@ -17,7 +19,7 @@ import { logAuditAuto } from "@/lib/audit-log";
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
-  const { ok } = await requireAdmin();
+  const { ok } = await requireAdminCookie();
   if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
