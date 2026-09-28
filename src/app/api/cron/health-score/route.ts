@@ -5,9 +5,9 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Vercel Cron: District health scores — weekly
-// GET /api/cron/health-score        schedule "30 1 * * 0" (vercel.json)
-//   (Sundays 01:30 UTC = 07:00 IST)
+// Vercel Cron: District health scores — daily
+// GET /api/cron/health-score        schedule "30 1 * * *" (vercel.json)
+//   (01:30 UTC = 07:00 IST; daily because a stored grade expires after 7 days)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:health-score" + one ScraperLog row
 //

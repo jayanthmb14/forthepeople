@@ -6,7 +6,7 @@
 
 // ═══════════════════════════════════════════════════════════
 // Job: News — Google News RSS + The Hindu state/city feeds
-// Schedule: daily (cron scrape-news, 06:00 UTC, vercel.json)
+// Schedule: every 4 hours (cron scrape-news, "10 */4 * * *", vercel.json)
 //
 // v5 (Sept 2026 audit): queries and feeds use the district's OWN state
 // (they said "Karnataka" for every district); the keyword classifier

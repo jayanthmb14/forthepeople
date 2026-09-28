@@ -6,8 +6,8 @@
 
 // ═══════════════════════════════════════════════════════════
 // Vercel Cron: petrol and diesel prices — twice a day
-// GET /api/cron/scrape-fuel      suggested schedule "0 7,14 * * *"
-//                                (12:30 and 19:30 IST; add to vercel.json)
+// GET /api/cron/scrape-fuel      schedule "0 7,14 * * *" (vercel.json)
+//                                (12:30 and 19:30 IST)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-fuel" + one ScraperLog row ("fuel")
 // Stores:    Redis "ftp:data:fuel" (src/lib/markets/fuel.ts), no expiry
