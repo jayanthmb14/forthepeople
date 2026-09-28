@@ -106,7 +106,7 @@ export function CalmNote({
       ? { bg: "var(--ftp-warn-tint)", border: "color-mix(in srgb, var(--ftp-warn) 28%, transparent)", icon: "var(--ftp-warn)" }
       : tone === "quiet"
         ? { bg: "var(--ftp-surface-2)", border: "var(--ftp-border)", icon: "var(--ftp-text-2)" }
-        : { bg: "var(--hue-tint)", border: "color-mix(in srgb, var(--hue) 20%, transparent)", icon: "var(--hue-deep)" };
+        : { bg: "var(--ftp-surface)", border: "var(--ftp-border)", icon: "var(--hue-deep)", rule: "inset 3px 0 0 var(--hue)" };
   return (
     <div
       role="note"
@@ -118,6 +118,8 @@ export function CalmNote({
         borderRadius: 12,
         background: palette.bg,
         border: `1px solid ${palette.border}`,
+        // v5.2 "White Calm": the hue note is white with a 3 px hue rule.
+        boxShadow: "rule" in palette ? palette.rule : undefined,
         fontSize: 14,
         lineHeight: "21px",
         color: "var(--ftp-text)",

@@ -252,9 +252,9 @@
 .ftp-dshell-main > nav.ftp-module-page + .ftp-dshell-strip[data-pos="bottom"] { padding-top: 28px; }
 .ftp-dshell-main > nav.ftp-module-page + .ftp-dshell-strip[data-pos="bottom"] > .ftp-verify { margin-top: 0; }
 
-/* ---------- Glance tiles (overview only, v5.1) ----------
-   Each tile: a pastel wash of its module hue, a drawn picture in a white
-   medallion, the number in the deep hue, and where the number is from. */
+/* ---------- Glance tiles (overview only, v5.2 "White Calm") ----------
+   Each tile: a white card, a small drawn picture on its module tint (the
+   hue accent), the number in the deep hue, and where the number is from. */
 .ftp-tiles { min-width: 0; }
 /* Flex, not grid: a row that is not full stretches its tiles, so there is
    never an empty cell (phone: 2 per row, an odd last tile takes the row). */
@@ -285,47 +285,35 @@
   min-height: 124px;
   box-sizing: border-box;
   padding: 12px 14px 12px;
-  border-radius: 16px;
+  border-radius: var(--ftp-radius-card);
   text-decoration: none;
   color: var(--ftp-text);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--hue-tint) 92%, var(--hue-pop)) 0%, var(--ftp-surface) 78%);
-  border: 1px solid color-mix(in srgb, var(--hue) 20%, var(--ftp-border));
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
   box-shadow: var(--ftp-shadow-1);
   transition: transform 180ms var(--ftp-ease-out), box-shadow 180ms var(--ftp-ease-out), border-color 150ms ease;
 }
-/* A soft pastel circle in the corner — the tile's "sun". */
-.ftp-tile::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -30px;
-  right: -30px;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--hue-pop) 55%, transparent);
-}
-.ftp-tile:hover { transform: translateY(-2px); box-shadow: var(--ftp-shadow-2); border-color: color-mix(in srgb, var(--hue) 45%, var(--ftp-border)); }
+.ftp-tile:hover { transform: translateY(-1px); box-shadow: var(--ftp-shadow-2); border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); }
 .ftp-tile-art {
   position: absolute;
   top: 10px;
   right: 10px;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: var(--ftp-surface);
+  border-radius: 12px;
+  background: var(--hue-tint);
   color: var(--hue-deep);
-  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.06), inset 0 0 0 1px color-mix(in srgb, var(--hue) 18%, transparent);
 }
+.ftp-tile-art > svg { width: 30px; height: 30px; }
 .ftp-tile-label {
-  max-width: calc(100% - 52px);
+  max-width: calc(100% - 46px);
   font-size: 13px;
   line-height: 18px;
   font-weight: 600;
-  color: var(--hue-deep);
+  color: var(--ftp-text-2);
 }
 .ftp-tile-value {
   margin-top: auto;
@@ -354,17 +342,16 @@
 }
 .ftp-tile-flag[data-tone="warn"] { background: var(--ftp-warn-tint); color: var(--ftp-warn-text); box-shadow: inset 0 0 0 1px var(--ftp-warn-border); }
 /* Money is gold. */
-.ftp-tile[data-key="budget"] { background: linear-gradient(160deg, var(--ov-gold-tint) 0%, var(--ftp-surface) 78%); border-color: color-mix(in srgb, var(--ov-gold) 35%, var(--ftp-border)); }
-.ftp-tile[data-key="budget"]::before { background: color-mix(in srgb, var(--ov-gold-pop) 60%, transparent); }
-.ftp-tile[data-key="budget"] .ftp-tile-label, .ftp-tile[data-key="budget"] .ftp-tile-value { color: var(--ov-gold-deep); }
+.ftp-tile[data-key="budget"] .ftp-tile-art { background: var(--ov-gold-tint); color: var(--ov-gold-deep); }
+.ftp-tile[data-key="budget"] .ftp-tile-value { color: var(--ov-gold-deep); }
 /* Warnings. */
-.ftp-tile[data-tone="warn"] { background: linear-gradient(160deg, var(--ftp-warn-tint) 0%, var(--ftp-surface) 80%); border-color: var(--ftp-warn-border); }
-.ftp-tile[data-tone="warn"]::before { background: color-mix(in srgb, var(--ftp-warn-border) 70%, transparent); }
-.ftp-tile[data-tone="warn"] .ftp-tile-art, .ftp-tile[data-tone="warn"] .ftp-tile-label, .ftp-tile[data-tone="warn"] .ftp-tile-value { color: var(--ftp-warn-text); }
-.ftp-tile[data-tone="danger"] { background: linear-gradient(160deg, var(--ftp-danger-tint) 0%, var(--ftp-surface) 80%); border-color: color-mix(in srgb, var(--ftp-danger) 30%, var(--ftp-border)); }
-.ftp-tile[data-tone="danger"]::before { background: color-mix(in srgb, var(--ftp-danger) 14%, transparent); }
-.ftp-tile[data-tone="danger"] .ftp-tile-art, .ftp-tile[data-tone="danger"] .ftp-tile-label, .ftp-tile[data-tone="danger"] .ftp-tile-value { color: var(--ftp-danger); }
-.ftp-tile-skeleton { height: 124px; border-radius: 16px; }
+.ftp-tile[data-tone="warn"] { border-color: var(--ftp-warn-border); }
+.ftp-tile[data-tone="warn"] .ftp-tile-art { background: var(--ftp-warn-tint); color: var(--ftp-warn-text); }
+.ftp-tile[data-tone="warn"] .ftp-tile-value { color: var(--ftp-warn-text); }
+.ftp-tile[data-tone="danger"] { border-color: color-mix(in srgb, var(--ftp-danger) 30%, var(--ftp-border)); }
+.ftp-tile[data-tone="danger"] .ftp-tile-art { background: var(--ftp-danger-tint); color: var(--ftp-danger); }
+.ftp-tile[data-tone="danger"] .ftp-tile-value { color: var(--ftp-danger); }
+.ftp-tile-skeleton { height: 124px; border-radius: var(--ftp-radius-card); }
 /* Double-check mark (when /api/data/verification says so). */
 .ftp-tile-check {
   position: absolute;
@@ -591,36 +578,30 @@
 
 
 /* ============================================================
- * District hero (DistrictIdentityCard, v5.1 "Warm Calm")
- * A pastel sky in the district's colours, a sun glow, hills along the
- * bottom and the landmark drawing. Text never sits on a strong colour.
+ * District hero (DistrictIdentityCard, v5.2 "White Calm")
+ * A white card like every page header: a 3 px hue rule on the left edge,
+ * the landmark drawing kept small on the right, a faint line of hills
+ * along the bottom. No sky wash, no sun glow.
  * ============================================================ */
 .ftp-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 24px;
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
+  border-radius: var(--ftp-radius-card);
+  border: 1px solid var(--ftp-border);
   background: var(--ftp-surface);
-  box-shadow: var(--ftp-shadow-1);
+  box-shadow: inset 3px 0 0 var(--hue), var(--ftp-shadow-1);
 }
-.ftp-hero-sky {
-  position: absolute;
-  inset: 0;
-  z-index: -3;
-  background:
-    radial-gradient(circle at 84% 20%, color-mix(in srgb, var(--ov-gold-pop) 60%, transparent) 0 46px, color-mix(in srgb, var(--ov-gold-pop) 22%, transparent) 90px, transparent 170px),
-    radial-gradient(110% 90% at 100% 0%, color-mix(in srgb, var(--hue-pop) 42%, transparent) 0%, transparent 62%),
-    linear-gradient(135deg, var(--hero-base, var(--hue-tint)) 0%, var(--ftp-surface) 52%, color-mix(in srgb, var(--hue-tint) 75%, var(--ftp-surface)) 100%);
-}
+.ftp-hero-sky { display: none; }
 .ftp-hero .ftp-hero-art {
   position: absolute;
   z-index: -2;
-  top: 6px;
-  right: 1%;
-  bottom: 14px;
-  width: 44%;
-  opacity: 1;
+  top: 10px;
+  right: 2%;
+  bottom: 12px;
+  width: 30%;
+  max-width: 360px;
+  opacity: 0.9;
   pointer-events: none;
   -webkit-mask-image: linear-gradient(to left, #000 72%, transparent 100%);
           mask-image: linear-gradient(to left, #000 72%, transparent 100%);
@@ -635,9 +616,9 @@
   height: 46px;
   pointer-events: none;
 }
-.ftp-hero-hill-back { fill: color-mix(in srgb, var(--hue-pop) 55%, transparent); }
-.ftp-hero-hill-front { fill: color-mix(in srgb, var(--hue-pop) 38%, var(--ftp-surface)); }
-.ftp-hero-body { position: relative; padding: clamp(18px, 3vw, 30px) clamp(18px, 3vw, 30px) 54px; }
+.ftp-hero-hill-back { fill: color-mix(in srgb, var(--ftp-surface-2) 70%, transparent); }
+.ftp-hero-hill-front { fill: var(--ftp-surface-2); }
+.ftp-hero-body { position: relative; padding: clamp(18px, 3vw, 28px) clamp(18px, 3vw, 28px) 40px; }
 .ftp-hero-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .ftp-hero-text { flex: 1 1 auto; min-width: 0; max-width: 60%; }
 .ftp-hero-kicker {
@@ -646,9 +627,9 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: var(--ftp-radius-pill);
-  background: color-mix(in srgb, var(--ftp-surface) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border));
-  color: var(--hue-deep);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  color: var(--ftp-text-2);
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
@@ -657,7 +638,7 @@
 .ftp-hero-name {
   margin: 0;
   font-family: var(--ftp-font-sans);
-  font-size: clamp(36px, 5vw, 54px);
+  font-size: clamp(32px, 4.4vw, 48px);
   line-height: 1.02;
   font-weight: 750;
   letter-spacing: -0.02em;
@@ -669,19 +650,18 @@
 
 /* Phones and small tablets: the picture becomes a band along the bottom. */
 @media (max-width: 767px) {
-  .ftp-hero { border-radius: 20px; }
   .ftp-hero .ftp-hero-art {
     top: auto;
-    right: -2%;
-    bottom: 8px;
-    width: 72%;
-    height: 132px;
+    right: 0;
+    bottom: 6px;
+    width: 52%;
+    height: 96px;
     -webkit-mask-image: linear-gradient(to left, #000 60%, transparent 100%);
             mask-image: linear-gradient(to left, #000 60%, transparent 100%);
   }
   .ftp-hero-text { max-width: none; }
-  .ftp-hero-body { padding-bottom: 124px; }
-  .ftp-hero-hills { height: 40px; }
+  .ftp-hero-body { padding-bottom: 92px; }
+  .ftp-hero-hills { height: 28px; }
 }
 
 /* ============================================================
@@ -697,48 +677,35 @@
   align-items: start;
 }
 
-/* ---------- The four picture cards (OverviewCard, v5.1) ---------- */
+/* ---------- The four picture cards (OverviewCard, v5.2 "White Calm") ----------
+   White, a 2 px hue rule along the top, the drawn mark on its module tint. */
 .ftp-ovc {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   min-width: 0;
   padding: 16px 16px 14px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--hue-tint) 94%, var(--hue-pop)) 0px, var(--ftp-surface) 110px);
-  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1);
+  border-radius: var(--ftp-radius-card);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  box-shadow: inset 0 2px 0 var(--hue), var(--ftp-shadow-1);
 }
-.ftp-ovc::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -46px;
-  right: -40px;
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--hue-pop) 40%, transparent);
-}
-.ftp-ovc[data-tone="gold"] {
-  background: linear-gradient(180deg, var(--ov-gold-tint) 0px, var(--ftp-surface) 110px);
-  border-color: color-mix(in srgb, var(--ov-gold) 32%, var(--ftp-border));
-}
-.ftp-ovc[data-tone="gold"]::before { background: color-mix(in srgb, var(--ov-gold-pop) 45%, transparent); }
+.ftp-ovc::before { content: none; }
+.ftp-ovc[data-tone="gold"] { box-shadow: inset 0 2px 0 var(--ov-gold), var(--ftp-shadow-1); }
+.ftp-ovc[data-tone="gold"] .ftp-ovc-mark { background: var(--ov-gold-tint); }
 .ftp-ovc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .ftp-ovc-mark {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: var(--ftp-surface);
-  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.06), inset 0 0 0 1px color-mix(in srgb, var(--hue) 18%, transparent);
+  border-radius: 12px;
+  background: var(--hue-tint);
 }
-.ftp-ovc-title { flex: 1; min-width: 0; margin: 0; font-size: 17px; line-height: 23px; font-weight: 700; color: var(--hue-deep); }
-.ftp-ovc[data-tone="gold"] .ftp-ovc-title { color: var(--ov-gold-deep); }
+.ftp-ovc-mark > svg { width: 30px; height: 30px; }
+.ftp-ovc-title { flex: 1; min-width: 0; margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; color: var(--ftp-text); }
 .ftp-ovc-more {
   flex-shrink: 0;
   display: inline-flex;
@@ -767,7 +734,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--hue-pop) 70%, var(--ftp-surface));
+  background: var(--hue-tint);
   color: var(--hue-deep);
   font-size: 12px;
   font-weight: 750;
@@ -789,9 +756,9 @@
   gap: 10px;
   min-width: 0;
   padding: 10px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface));
-  border: 1px solid color-mix(in srgb, var(--hue) 12%, var(--ftp-border));
+  border-radius: var(--ftp-radius-tile);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
 }
 .ftp-ovp-box[data-kind="ratio"] { flex-direction: column; align-items: stretch; gap: 4px; }
 .ftp-ovp-ring { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
@@ -811,7 +778,7 @@
 .ftp-ovp-bars { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
 .ftp-ovp-bar { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; color: var(--ftp-text-2); }
 .ftp-ovp-bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ftp-ovp-bar-track { height: 8px; border-radius: var(--ftp-radius-pill); background: var(--ftp-surface); overflow: hidden; }
+.ftp-ovp-bar-track { height: 8px; border-radius: var(--ftp-radius-pill); background: var(--ftp-surface-2); overflow: hidden; }
 .ftp-ovp-bar-track > span { display: block; height: 100%; border-radius: var(--ftp-radius-pill); }
 .ftp-ovp-bar[data-who="women"] .ftp-ovp-bar-track > span { background: var(--hue); }
 .ftp-ovp-bar[data-who="men"] .ftp-ovp-bar-track > span { background: color-mix(in srgb, var(--hue-pop) 85%, var(--hue)); }
@@ -942,8 +909,8 @@
   font-size: 13px;
   font-weight: 500;
 }
-.ftp-ov-taluk:hover { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); background: var(--hue-tint); }
-.ftp-ov-taluk { align-items: center; background: color-mix(in srgb, var(--hue-tint) 55%, var(--ftp-surface)); border-color: color-mix(in srgb, var(--hue) 16%, var(--ftp-border)); min-height: 44px; }
+.ftp-ov-taluk:hover { border-color: color-mix(in srgb, var(--hue) 40%, var(--ftp-border)); background: var(--ftp-surface-2); }
+.ftp-ov-taluk { align-items: center; min-height: 44px; }
 .ftp-ov-taluk-pin { flex-shrink: 0; color: var(--hue); align-self: center; }
 .ftp-ov-taluk-local { font-size: 12px; font-weight: 400; color: var(--ftp-text-2); }
 
@@ -951,13 +918,13 @@
 .ftp-report-card-v5 {
   scroll-margin-top: calc(var(--ftp-header-h, 56px) + 64px);
   padding: 14px 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--ftp-brand-tint) 80%, var(--ftp-surface)) 0%, var(--ftp-surface) 60%);
-  border: 1px solid color-mix(in srgb, var(--ftp-brand) 16%, var(--ftp-border));
-  box-shadow: var(--ftp-shadow-1);
+  border-radius: var(--ftp-radius-card);
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  box-shadow: inset 3px 0 0 var(--ftp-brand), var(--ftp-shadow-1);
 }
 .ftp-rc-mini { display: inline-flex; align-items: flex-end; gap: 3px; height: 34px; padding: 0 4px; }
-.ftp-rc-mini > span { display: flex; align-items: flex-end; width: 7px; height: 100%; border-radius: 3px; background: var(--hue-tint); overflow: hidden; }
+.ftp-rc-mini > span { display: flex; align-items: flex-end; width: 7px; height: 100%; border-radius: 3px; background: var(--ftp-surface-2); overflow: hidden; }
 .ftp-rc-mini > span > span { display: block; width: 100%; border-radius: 3px; background: var(--hue); }
 @media (max-width: 479px) { .ftp-rc-mini { display: none; } }
 .ftp-rc-summary {
@@ -1014,7 +981,7 @@ details[open] > .ftp-rc-summary .ftp-rc-open { display: none; }
   text-decoration: none;
   font-size: 14px;
 }
-.ftp-ov-topic:hover { background: var(--hue-tint); }
+.ftp-ov-topic:hover { background: var(--ftp-surface-2); }
 .ftp-ov-topic-emoji {
   width: 26px; height: 26px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;

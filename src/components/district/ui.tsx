@@ -977,7 +977,8 @@ export function Section({
 /**
  * Card — a white surface with a 1 px cool border, 14 px radius and a soft
  * shadow. When `href` is given it becomes a link: on hover it lifts 1 px and
- * its border takes the module hue. `tinted` gives a flat pastel wash.
+ * its border takes the module hue. `tinted` adds a 3 px hue rule on the left
+ * (v5.2 "White Calm": cards stay white).
  *
  * @prop padding  Inner padding in px (default 16).
  * @prop as       HTML tag when not a link ("div" | "article" | "section" | "li").
@@ -998,14 +999,16 @@ export function Card({
   href?: string;
   style?: React.CSSProperties;
   className?: string;
-  /** A flat pastel wash of the page hue with a soft hue border. */
+  /** v5.2: a white card with a 3 px page-hue rule on the left (no wash). */
   tinted?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "style" | "className">) {
   const base: React.CSSProperties = {
-    background: tinted ? "color-mix(in srgb, var(--hue-tint) 65%, var(--ftp-surface))" : "var(--ftp-surface)",
-    border: tinted ? "1px solid color-mix(in srgb, var(--hue) 16%, var(--ftp-border))" : "1px solid var(--ftp-border)",
+    // v5.2 "White Calm": always white. `tinted` marks a card as the
+    // highlighted one with a 3 px hue rule on its left edge — no wash.
+    background: "var(--ftp-surface)",
+    border: "1px solid var(--ftp-border)",
     borderRadius: "var(--ftp-radius-card)",
-    boxShadow: "var(--ftp-shadow-1)",
+    boxShadow: tinted ? "inset 3px 0 0 var(--hue), var(--ftp-shadow-1)" : "var(--ftp-shadow-1)",
     padding,
     minWidth: 0,
     ...style,
@@ -1105,11 +1108,11 @@ export function DataTable({
                   scope="col"
                   style={{
                     ...LABEL,
-                    color: "var(--hue-deep)",
+                    color: "var(--ftp-text-2)",
                     padding: pad,
                     textAlign: right ? "right" : "left",
-                    background: "var(--hue-tint)",
-                    borderBottom: "1px solid color-mix(in srgb, var(--hue) 14%, var(--ftp-border))",
+                    background: "var(--ftp-surface-2)",
+                    borderBottom: "1px solid var(--ftp-border)",
                     width: col.width,
                   }}
                 >
@@ -1121,7 +1124,7 @@ export function DataTable({
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="ftp-dt-row" style={{ background: i % 2 === 1 ? "color-mix(in srgb, var(--hue-tint) 40%, var(--ftp-surface))" : "transparent" }}>
+            <tr key={i} className="ftp-dt-row" style={{ background: i % 2 === 1 ? "color-mix(in srgb, var(--ftp-surface-2) 50%, var(--ftp-surface))" : "transparent" }}>
               {columns.map((col) => {
                 const num = col.numeric || col.mono;
                 const right = col.align === "right" || num;
@@ -1205,7 +1208,7 @@ export function ProgressBar({
         aria-valuemax={100}
         aria-valuenow={pct}
         aria-label={label ?? `${pct}%`}
-        style={{ background: "color-mix(in srgb, var(--hue-pop) 35%, var(--ftp-surface-2))", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
+        style={{ background: "var(--ftp-surface-2)", borderRadius: "var(--ftp-radius-pill)", height, overflow: "hidden" }}
       >
         <div className="ftp-grow-x" style={{ background: fill, height: "100%", width: `${pct}%`, borderRadius: "var(--ftp-radius-pill)" }} />
       </div>
@@ -1248,7 +1251,7 @@ export function KpiRing({
       style={{ position: "relative", width: size, height: size, flexShrink: 0 }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hue-tint)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--ftp-surface-2)" strokeWidth={stroke} />
         <circle
           className="ftp-draw-path"
           cx={size / 2}
@@ -1371,12 +1374,12 @@ export function EmptyState({
         alignItems: "flex-start",
         gap: 14,
         padding: "18px 20px",
-        background: "color-mix(in srgb, var(--hue-tint) 45%, var(--ftp-surface))",
+        background: "var(--ftp-surface)",
         border: "1px solid var(--ftp-border)",
         borderRadius: "var(--ftp-radius-card)",
       }}
     >
-      <span className="ftp-icon-chip" aria-hidden style={{ width: 40, height: 40, borderRadius: 12, background: "var(--ftp-surface)", border: "1px solid var(--ftp-border)" }}>
+      <span className="ftp-icon-chip" aria-hidden style={{ width: 40, height: 40, borderRadius: 12 }}>
         <KitIcon icon={chipIcon} size={18} />
       </span>
       <div style={{ minWidth: 0 }}>
