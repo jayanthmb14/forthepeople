@@ -157,8 +157,7 @@ files are archived in `docs/archive/docker/`.
    - `health-score` recomputes district report cards (a stored grade expires
      after 7 days).
    - `verify-data` runs the double-check (item 7 below).
-   - `dedupe-data` runs the duplicate guard (item 9 below; not in
-     `vercel.json` yet).
+   - `dedupe-data` runs the duplicate guard (item 9 below).
    - `scrape-courts` reads NJDG; `scrape-jjm`, `scrape-schools`,
      `scrape-mgnrega` and `scrape-tenders` read the JJM dashboard, UDISE+,
      the NREGA "At a glance" page and the state e-procurement portals.
@@ -176,8 +175,9 @@ files are archived in `docs/archive/docker/`.
      - UDISE+ and MGNREGA snapshots: `ftp:data:udise:<slug>` and
        `ftp:data:mgnrega:<slug>` (`src/scraper/lib/district-snapshot.ts`). No
        expiry; written only after every check passed, so a failed run keeps
-       the last good one. Read with `readDistrictSnapshot()`; no page reads
-       them yet.
+       the last good one. Read with `readDistrictSnapshot()` by the data API
+       (schools, gram-panchayat), the freshness and dataset-dates routes and
+       the district report card.
      - The NJDG courts snapshot: `ftp:courts:njdg:<slug>`, and High Courts at
        `ftp:courts:njdg-hc:<stateCode>` (`src/lib/courts/store.ts`, 120-day
        expiry). The collector also writes this year's filed / decided /
@@ -248,8 +248,8 @@ files are archived in `docs/archive/docker/`.
      or less; else the forecast's current value, labelled with its source and
      time; else the old reading in grey with its age.
    - `src/components/weather/` draws it (`ForecastCards`, `ForecastStrip`,
-     `ForecastDaySheet`, `WeatherArt`). `src/components/district/TodayWeatherTile.tsx`
-     is built for the overview but not mounted yet.
+     `ForecastDaySheet`, `WeatherArt`); the district overview shows today's
+     weather with `src/components/district/TodayWeatherTile.tsx`.
 
 9. **Duplicates** — `src/lib/dedupe/`:
    - `keys.ts`: when two rows are the same thing (canonical names, exam

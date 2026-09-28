@@ -80,9 +80,9 @@ const card: React.CSSProperties = {
 
 // Fallback OpenRouter pricing (USD per 1M tokens: [input, output]) for the
 // "By Model" section. Since Sept 2026 every AIUsageLog row carries the real
-// costUSD/costINR computed in src/lib/ai-provider.ts (PRICE_TABLE), so this
-// map is only consulted for rows logged before that (costUSD = 0). Keep it
-// in sync with the model chain in ai-provider.ts when you rotate models.
+// costUSD/costINR computed from PRICE_TABLE in src/lib/ai-models.ts, so this
+// map is only consulted for rows logged before that (costUSD = 0). It
+// spreads PRICE_TABLE, so rotating models in ai-models.ts keeps it in sync.
 const MODEL_PRICE_USD_PER_MTOK: Record<string, [number, number]> = {
   ...PRICE_TABLE,
   // Older rows logged before the Sept 2026 model change.

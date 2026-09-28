@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// Script: Classify existing news articles by module using Opus
+// Script: Classify existing news articles by module (callAI, Tier-1 chain)
 // Usage: npx tsx scripts/classify-news.ts
 // ═══════════════════════════════════════════════════════════
 import "dotenv/config";

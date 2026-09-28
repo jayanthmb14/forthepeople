@@ -193,6 +193,4 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
   collector by hand, call its cron route (section 3); the admin "run now"
   button (`/api/admin/run-scraper`) covers weather, news, crops and insights
   for one district.
-- The comment at the top of `health-score/route.ts` still says weekly; the
-  schedule in `vercel.json` (daily) is the one that counts.
 - Never use the word "scraper" in citizen-facing text (CLAUDE.md).
