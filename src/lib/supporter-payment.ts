@@ -158,6 +158,43 @@ export function oneTimeSupporterData(p: CapturedPayment, checkout: CheckoutAnswe
 
 // ── Monthly subscriptions ───────────────────────────────────
 
+/** Razorpay allows at most 256 characters per note value. */
+export const RAZORPAY_NOTE_MAX = 256;
+
+/**
+ * The notes create-subscription writes on a subscription. verify-subscription
+ * later reads tier, amount and place back from them
+ * (subscriptionFieldsFromNotes). Every value is cut to Razorpay's 256
+ * characters: a valid 257–280-character message used to make the
+ * subscription call fail. The full message is stored from the verify call.
+ */
+export function subscriptionNotes(input: {
+  name: string;
+  email?: string | null;
+  phone: string;
+  tier: string;
+  amount: number;
+  districtId?: string | null;
+  stateId?: string | null;
+  socialLink?: string | null;
+  message?: string | null;
+}): Record<string, string> {
+  const notes: Record<string, string> = {
+    name: input.name,
+    email: input.email?.trim() || "",
+    phone: input.phone,
+    tier: input.tier,
+    amount: String(input.amount),
+    districtId: input.districtId || "",
+    stateId: input.stateId || "",
+    socialLink: input.socialLink?.trim() || "",
+    message: input.message ?? "",
+    platform: "forthepeople.in",
+  };
+  for (const key of Object.keys(notes)) notes[key] = notes[key].slice(0, RAZORPAY_NOTE_MAX);
+  return notes;
+}
+
 export interface SubscriptionFields {
   tier: string;
   amount: number;

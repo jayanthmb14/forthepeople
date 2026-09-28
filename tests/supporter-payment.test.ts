@@ -17,7 +17,9 @@ import {
   oneTimeOrder,
   oneTimeSupporterData,
   oneTimeTierKey,
+  RAZORPAY_NOTE_MAX,
   subscriptionFieldsFromNotes,
+  subscriptionNotes,
   validRazorpaySignature,
   type CapturedPayment,
   type CheckoutAnswers,
@@ -170,6 +172,24 @@ describe("subscriptionFieldsFromNotes (verify-subscription reads Razorpay, not t
     expect(subscriptionFieldsFromNotes({ ...notes, districtId: "" }).ok).toBe(false);
     expect(subscriptionFieldsFromNotes(null).ok).toBe(false);
     expect(subscriptionFieldsFromNotes([]).ok).toBe(false);
+  });
+});
+
+describe("subscriptionNotes (create-subscription → Razorpay → verify-subscription)", () => {
+  const base = { name: "Preethaam", email: " a@b.in ", phone: "9876543210", tier: "state", amount: 999, districtId: undefined, stateId: "state_1" };
+  it("round-trips: verify-subscription accepts what create-subscription writes", () => {
+    const notes = subscriptionNotes({ ...base, socialLink: "@handle", message: "Hello" });
+    expect(notes).toMatchObject({ email: "a@b.in", tier: "state", amount: "999", districtId: "", stateId: "state_1", platform: "forthepeople.in" });
+    expect(subscriptionFieldsFromNotes(notes)).toEqual({
+      ok: true,
+      fields: { tier: "state", amount: 999, districtId: null, stateId: "state_1", badgeType: "state" },
+    });
+  });
+  it("keeps every value within Razorpay's 256 characters", () => {
+    const notes = subscriptionNotes({ ...base, message: "m".repeat(280), socialLink: "https://example.com/" + "x".repeat(400), email: "e".repeat(300) });
+    for (const [k, v] of Object.entries(notes)) expect(v.length, k).toBeLessThanOrEqual(RAZORPAY_NOTE_MAX);
+    expect(notes.message).toHaveLength(RAZORPAY_NOTE_MAX);
+    expect(subscriptionFieldsFromNotes(notes).ok).toBe(true);
   });
 });
 
