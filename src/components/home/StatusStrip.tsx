@@ -8,10 +8,14 @@
 //  StatusStrip — the slim line of small details under the header
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  PC / tablet
-//    [cal] Sunday, 27 September 2026 · [clock] 9:47 PM IST · ● Share market closed · [↻] Live data refreshed 12 minutes ago
-//  Phone
-//    [cal] Sun, 27 Sep · 9:47 PM · ● Market closed
+//  PC / tablet (centred)
+//           [cal] Sunday, 27 September 2026 | [clock] 9:47 PM IST | ● Share market closed | [↻] Live data refreshed 12 minutes ago
+//  Phone (centred)
+//           [cal] Sun, 27 Sep | 9:47 PM | ● Market closed
+//
+//  v5.6: white, centred on every width (the June site's status line was
+//  centred too), quiet grey text with small blue glyphs. This is the ONLY
+//  clock on the site: the district bar no longer shows its own.
 //
 //  - Day, date and time are IST and in the page language; the clock moves
 //    once a minute (no ticking seconds). They are drawn only in the
@@ -180,9 +184,9 @@ export default function StatusStrip() {
                 <span className={styles.stripShort}>{fmt.date(now, { weekday: "short", day: "numeric", month: "short" })}</span>
               </time>
             </span>
-            <span className={`ftp-hue-indigo ${styles.stripItem}`}>
+            <span className={`ftp-hue-blue ${styles.stripItem}`}>
               <ClockGlyph />
-              <span className="ftp-num">
+              <span className={`ftp-num ${styles.stripTime}`}>
                 <span className={styles.stripLong}>{t("time", { time: fmt.time(now, { hour: "numeric", minute: "2-digit" }) })}</span>
                 <span className={styles.stripShort}>{fmt.time(now, { hour: "numeric", minute: "2-digit" })}</span>
               </span>
@@ -195,7 +199,7 @@ export default function StatusStrip() {
               </Link>
             )}
             {refreshedAt && (
-              <span className={`ftp-hue-teal ${styles.stripItem} ${styles.stripRefreshed}`} title={t("refreshedTitle")}>
+              <span className={`ftp-hue-blue ${styles.stripItem} ${styles.stripRefreshed}`} title={t("refreshedTitle")}>
                 <RefreshGlyph />
                 {t("refreshed", { ago: fmt.ago(refreshedAt) })}
               </span>

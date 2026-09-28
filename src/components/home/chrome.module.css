@@ -1131,13 +1131,15 @@
 }
 
 /* ───────────────────────── Status strip ───────────────────────── */
-/* Day · date · IST clock · share market · live-data freshness. Under the
-   sticky header, scrolls away with the page. A soft blue wash from the
-   left; each item has a small two-tone glyph in its own hue. */
+/* Day · date · IST clock · share market (· live-data freshness on a
+   district page). Under the sticky header, scrolls away with the page.
+   v5.6: white, one thin rule under it, the items CENTRED on every width
+   (like the June site's status line). Quiet grey text; the only colour is
+   the small blue glyphs and the market dot. */
 
 .strip {
   border-bottom: 1px solid var(--ftp-border);
-  background: linear-gradient(90deg, var(--ftp-brand-tint) 0%, color-mix(in srgb, var(--ftp-brand-tint) 45%, var(--ftp-surface)) 45%, var(--ftp-surface) 100%);
+  background: var(--ftp-surface);
   color: var(--ftp-text-2);
   font-size: 13px;
   line-height: 18px;
@@ -1151,21 +1153,33 @@
   overflow: hidden;
   white-space: nowrap;
 }
+/* Centred with auto margins (not justify-content: center): when the row is
+   wider than the screen the margins fall to 0, so the start (the date) is
+   never cut off on the left. */
+.stripRow > :first-child {
+  margin-left: auto;
+}
+.stripRow > :last-child {
+  margin-right: auto;
+}
 .stripRow > * + * {
   margin-left: 12px;
   padding-left: 12px;
-  border-left: 1px solid var(--ftp-border-strong);
+  border-left: 1px solid var(--ftp-border);
 }
 .stripItem {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  color: var(--ftp-text);
+  color: var(--ftp-text-2);
   font-weight: 500;
 }
+.stripTime {
+  color: var(--ftp-text);
+  font-weight: 600;
+}
 .stripRefreshed {
-  color: var(--hue-deep);
   flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
@@ -1177,7 +1191,7 @@
   gap: 6px;
   flex-shrink: 0;
   min-height: 32px;
-  color: var(--ftp-text);
+  color: var(--ftp-text-2);
   font-weight: 500;
   text-decoration: none;
 }
