@@ -18,7 +18,7 @@
 
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
-import { callAIJSON } from "./ai-provider";
+import { AIDeadlineError, callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
 import { findSameNamed } from "./dedupe/match";
@@ -42,6 +42,16 @@ export interface NewsArticleRef {
   url: string;
   publishedAt: Date;
   source?: string | null;
+}
+
+/** deadlineAt: epoch ms after which no AI call starts (the news cron's time budget). */
+export interface InfraAIOptions {
+  deadlineAt?: number;
+}
+
+function aiFailure(step: string, err: unknown): void {
+  if (err instanceof AIDeadlineError) console.log(`[infra-sync] ${step} skipped: no time left in the run`);
+  else console.error(`[infra-sync] ${step} failed:`, err instanceof Error ? err.message : err);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -132,7 +142,8 @@ Hard rules:
 }
 
 export async function extractInfraFromNews(
-  article: NewsArticleRef
+  article: NewsArticleRef,
+  opts: InfraAIOptions = {},
 ): Promise<InfraExtraction | null> {
   try {
     const { data: parsed } = await callAIJSON<Record<string, unknown>>({
@@ -143,11 +154,12 @@ export async function extractInfraFromNews(
       maxTokens: 1400,
       temperature: 0,
       timeoutMs: 30_000,
+      deadlineAt: opts.deadlineAt,
     });
     const safe = sanitizeInfra(parsed, article.title);
     return safe ? applyScopeOverride(safe) : null;
   } catch (err) {
-    console.error("[infra-sync] extract failed:", err instanceof Error ? err.message : err);
+    aiFailure("extract", err);
     return null;
   }
 }
@@ -189,7 +201,8 @@ Set verified=false if the article doesn't support the core facts. Be conservativ
 
 export async function verifyInfraExtraction(
   article: NewsArticleRef,
-  extraction: InfraExtraction
+  extraction: InfraExtraction,
+  opts: InfraAIOptions = {},
 ): Promise<InfraVerification> {
   try {
     const { data: parsed } = await callAIJSON<Partial<InfraVerification>>({
@@ -200,6 +213,7 @@ export async function verifyInfraExtraction(
       maxTokens: 800,
       temperature: 0,
       timeoutMs: 30_000,
+      deadlineAt: opts.deadlineAt,
     });
     return {
       verified: parsed.verified === true,
@@ -207,8 +221,8 @@ export async function verifyInfraExtraction(
       flags: Array.isArray(parsed.flags) ? parsed.flags.filter((s): s is string => typeof s === "string").slice(0, 10) : [],
     };
   } catch (err) {
-    console.error("[infra-sync] verify failed:", err instanceof Error ? err.message : err);
-    // On verifier failure, don't falsely mark verified — return neutral
+    aiFailure("verify", err);
+    // On verifier failure (or no time left), don't falsely mark verified — nothing is written.
     return { verified: false, corrections: null, flags: ["verifier_error"] };
   }
 }
@@ -610,16 +624,17 @@ export async function syncInfraFromNews(
  */
 export async function extractVerifyAndSyncInfra(
   article: NewsArticleRef,
-  sourceDistrictId: string
+  sourceDistrictId: string,
+  opts: InfraAIOptions = {},
 ): Promise<InfraSyncResult | null> {
-  const extraction = await extractInfraFromNews(article);
+  const extraction = await extractInfraFromNews(article, opts);
   if (!extraction) return null;
   if (extraction.confidence < 0.5) return null;
 
   // Verified or hidden: only what the second pass confirms is written. (It
   // used to be written anyway when the extractor rated itself ≥ 0.85 —
   // also when the verifier said the article does not support it, or failed.)
-  const verification = await verifyInfraExtraction(article, extraction);
+  const verification = await verifyInfraExtraction(article, extraction, opts);
   if (!verification.verified) {
     console.log(`[infra-sync] skipped unverified: "${article.title.slice(0, 80)}" flags=${verification.flags.join(",")}`);
     return null;

@@ -172,7 +172,9 @@ Use "news" module if it doesn't clearly fit another. confidence = how certain yo
 // writes Leader, CrimeStat, PowerOutage or Scheme rows — and anything below
 // 0.85) / execute.
 export async function executeNewsAction(
-  classification: NewsClassification
+  classification: NewsClassification,
+  /** deadlineAt: no AI extraction starts after it (the news cron's time budget). */
+  opts: { deadlineAt?: number } = {},
 ): Promise<void> {
   const { districtId, targetModule, extractedData, articleTitle, articleUrl, confidence } = classification;
   const decision = decideNewsAction(classification);
@@ -268,7 +270,7 @@ export async function executeNewsAction(
         }
         infraExtractionsThisRun++;
         try {
-          const result = await extractVerifyAndSyncInfra(article, districtId);
+          const result = await extractVerifyAndSyncInfra(article, districtId, opts);
           if (!result) {
             console.log(`[NewsAction] infra: skipped (no projectName / low confidence / verify fail): ${articleTitle.slice(0, 60)}`);
           } else {
@@ -297,7 +299,7 @@ export async function executeNewsAction(
         // News-driven exam sync — extract structured metadata then upsert.
         // Failure is non-fatal: the NewsItem still persists via the outer pipeline.
         try {
-          const extraction = await extractExamFromNews(article);
+          const extraction = await extractExamFromNews(article, opts);
           if (!extraction) {
             console.log(`[NewsAction] exams: extraction returned null for "${articleTitle.slice(0, 60)}"`);
             break;

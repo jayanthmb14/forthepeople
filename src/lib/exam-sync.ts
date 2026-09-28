@@ -31,7 +31,7 @@
 
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
-import { callAIJSON } from "./ai-provider";
+import { AIDeadlineError, callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";
 import { logUpdate } from "./update-log";
 import {
@@ -158,7 +158,9 @@ Rules:
  * specific exam). Never throws.
  */
 export async function extractExamFromNews(
-  article: NewsArticleRef
+  article: NewsArticleRef,
+  /** deadlineAt: epoch ms after which no AI call starts (the news cron's time budget). */
+  opts: { deadlineAt?: number } = {},
 ): Promise<ExamExtraction | null> {
   let parsed: Partial<ExamExtraction>;
   try {
@@ -170,10 +172,12 @@ export async function extractExamFromNews(
       maxTokens: 1024,
       temperature: 0,
       timeoutMs: 30_000,
+      deadlineAt: opts.deadlineAt,
     });
     parsed = data;
   } catch (err) {
-    console.error("[exam-sync] extract failed:", err instanceof Error ? err.message : err);
+    if (err instanceof AIDeadlineError) console.log("[exam-sync] extract skipped: no time left in the run");
+    else console.error("[exam-sync] extract failed:", err instanceof Error ? err.message : err);
     return null;
   }
 

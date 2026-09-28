@@ -225,6 +225,11 @@ export async function scrapeNews(
   let aiCalls = 0;
   const aiUnavailable = () =>
     aiCalls >= MAX_AI_PER_DISTRICT || (aiDeadline !== undefined && Date.now() >= aiDeadline);
+  // Module actions run alongside the fetching, but the job waits for them
+  // before it returns: started and forgotten, they outlived the cron's
+  // response and Vercel could freeze one half-way (a project created
+  // without its timeline row). Their AI calls respect the same deadline.
+  const pendingActions: Promise<void>[] = [];
   try {
     const queries = buildNewsQueries(ctx.districtName, ctx.stateName);
     let aiSkippedForTime = 0;
@@ -369,7 +374,7 @@ export async function scrapeNews(
         // Execute module action only if the AI says it is about this district
         // and is confident (executeNewsAction checks both again).
         if (aiClassification && aiClassification.isAboutDistrict && aiClassification.confidence >= 0.60) {
-          executeNewsAction({
+          const action = executeNewsAction({
             articleId: saved.id,
             articleTitle: item.headline,
             articleUrl: item.url,
@@ -382,7 +387,10 @@ export async function scrapeNews(
             extractedData: aiClassification.extractedData,
             confidence: aiClassification.confidence,
             isAboutDistrict: aiClassification.isAboutDistrict,
-          }).catch(() => {});
+          }, { deadlineAt: opts.deadlineAt }).catch((err) => {
+            ctx.log(`[News] action failed for "${item.headline.slice(0, 60)}": ${err instanceof Error ? err.message : String(err)}`);
+          });
+          pendingActions.push(action);
         }
 
         newCount++;
@@ -453,5 +461,7 @@ export async function scrapeNews(
     const msg = err instanceof Error ? err.message : String(err);
     ctx.log(`Error: ${msg}`);
     return { success: false, recordsNew: 0, recordsUpdated: 0, error: msg };
+  } finally {
+    await Promise.allSettled(pendingActions);
   }
 }
