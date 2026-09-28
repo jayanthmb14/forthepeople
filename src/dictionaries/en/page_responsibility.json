@@ -22,7 +22,7 @@
     "newest": "Newest story: {date}"
   },
   "newsTitle": "Because of what's in the news",
-  "newsLead": "Things in the news about {name} in the last 2 weeks, and what you can do about each. Tap a card for the steps.",
+  "newsLead": "Things in the news about {name} in the last 2 weeks, and what you can do about each. Tap a row for the steps.",
   "newsNone": "No news about {name} in the last 2 weeks matched a topic, so the list below is in its usual order.",
   "newsError": "We could not read the latest news just now, so the list below is in its usual order.",
   "card": {
@@ -171,8 +171,8 @@
   },
   "inNews": "In the news",
   "allTitle": "All the things you can do",
-  "allLead": "Tap a card to see why it matters, who to tell and how to reach them.",
-  "allLeadNews": "Areas that are in the news come first. Tap a card to see why it matters, who to tell and how to reach them.",
+  "allLead": "Grouped by area. Each action is short: pick one and start today.",
+  "allLeadNews": "Areas that are in the news come first. Each action is short: pick one and start today.",
   "chipsLabel": "Show the actions for one area",
   "all": "All",
   "area": {
@@ -187,8 +187,16 @@
   "chartAria": "Ring chart of actions by area. {summary}",
   "chartCenter": "{n, plural, one {action} other {actions}}",
   "otherAreas": "Other areas",
-  "footSpecific": "These actions were researched from government pages, official reports and local news. Tap a card to see where each one comes from.",
+  "footSpecific": "These actions were researched from government pages, official reports and local news. Tap Details to see where each one comes from.",
   "projectionLead": "If citizens and government work together, here is where {name} can be by 2030:",
   "footGeneric": "This is general guidance for {name}. Each district gets its own guide, built around its own challenges and strengths, as research is completed.",
-  "downloadCsv": "Download CSV"
+  "downloadCsv": "Download CSV",
+  "whoToCall": {
+    "title": "Who to call",
+    "lead": "Tap a number to call. In any emergency, dial 112.",
+    "more": "More helplines and your rights"
+  },
+  "row": {
+    "tell": "Tell:"
+  }
 }

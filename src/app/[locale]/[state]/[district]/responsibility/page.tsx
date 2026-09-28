@@ -11,15 +11,17 @@
 //  The answer, in one sentence: "In the last 2 weeks most news about
 //  Mandya was about water (5 stories), so saving water is at the top."
 //
-//  ModulePage → PageHeader → Explainer → 4 StatTiles → the picture
-//  (TopicBars: this fortnight's news by topic) → "Because of what's in the
-//  news" (one action card per busy topic, with the headline that triggered
-//  it; tap → steps, why, the headlines, helpline) → all the things you can
-//  do, as tappable cards, with the areas that are in the news first (tap →
-//  why, who to tell, call / website, source) → areas ring → CSV · Share ·
-//  Compare. No emoji: topics and areas are words. Emergency numbers are on
-//  "Helplines & your rights"; sources are in the layout's verification
-//  panel.
+//  ModulePage → PageHeader → Explainer → 4 StatTiles → the picture row
+//  (this fortnight's news by topic as a bar chart, beside "Who to call":
+//  four tap-to-call numbers and a link to "Helplines & your rights") →
+//  "Because of what's in the news" (one numbered row per busy topic; tap →
+//  steps, why, the headlines, helpline) → "All the things you can do":
+//  area chips, then one white card per area with every action listed
+//  (researched districts: what, why, whom to tell, call / website inline,
+//  "Details" → the source) → "What <district> can become" → areas ring →
+//  CSV · Share · Compare.
+//  v5.5 (owner, 28 Sep 2026): mostly white — colour only on small things
+//  (a number, a check mark, a link); charts in the chart blue.
 //
 //  Responsibilities change with the news: /api/data/responsibility-news
 //  counts the district's last 14 days of news by topic with a plain rule
@@ -50,13 +52,14 @@ import { ChartCard, Explainer } from "@/components/district/visuals";
 import { IconPictogram, PageActions } from "@/components/district/page-kit";
 import { HueDonut } from "@/components/district/civic/HueDonut";
 import {
-  ActionCard,
   ActionSheet,
-  AreaCard,
-  AreaSheet,
-  TopicBars,
-  TopicCard,
+  AreaChecklist,
+  ProjectionCard,
+  ResearchArea,
+  TopicChart,
+  TopicList,
   TopicSheet,
+  WhoToCall,
   useTopicText,
   type ResearchItem,
 } from "@/components/district/civic/ResponsibilityParts";
@@ -151,10 +154,8 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
   const [area, setArea] = useState("all");
   const [topicOpen, setTopicOpen] = useState<NewsTopicCount | null>(null);
   const [actionOpen, setActionOpen] = useState<{ item: ResearchItem; area: string } | null>(null);
-  const [areaOpen, setAreaOpen] = useState<{ title: string; items: string[] } | null>(null);
   const closeTopic = useCallback(() => setTopicOpen(null), []);
   const closeAction = useCallback(() => setActionOpen(null), []);
-  const closeArea = useCallback(() => setAreaOpen(null), []);
 
   const { data: apiData, isLoading } = useQuery<ResponsibilityApiResponse>({
     queryKey: ["responsibility", state, district],
@@ -232,6 +233,19 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
     { value: "all", label: t("all"), count: actionCount },
     ...areas.map((a) => ({ value: a.key, label: a.label, count: a.value })),
   ];
+  // The chosen area may not exist after the data changes (another district).
+  const shownArea = areas.some((a) => a.key === area) ? area : "all";
+
+  // The picture: what the news is about; without news, the contact
+  // pictogram (researched districts) explains the list instead.
+  const picture =
+    topics.length > 0 ? (
+      <TopicChart topics={topics} name={districtName} latestAt={news?.latestAt ?? null} />
+    ) : districtSpecific && withContact > 0 ? (
+      <Card padding={18}>
+        <IconPictogram icon={Megaphone} filled={contactShare * 10} label={t("pictogramContact", { n: Math.round(contactShare * 10) })} />
+      </Card>
+    ) : null;
 
   return (
     <ModulePage>
@@ -282,23 +296,12 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
         </StatStrip>
       )}
 
-      {/* The picture: what the news is about. Without news, the contact
-          pictogram (researched districts) explains the list instead. */}
-      {topics.length > 0 ? (
-        <div style={{ marginTop: 16 }}>
-          <Card tinted padding={18}>
-            <TopicBars topics={topics} name={districtName} latestAt={news?.latestAt ?? null} />
-          </Card>
+      {/* The picture row: the news chart (or the contact pictogram) beside who to call. */}
+      {!isLoading && (
+        <div className={picture ? "ftp-picture-row" : undefined} style={{ marginTop: 16, maxWidth: picture ? undefined : 560 }}>
+          {picture}
+          <WhoToCall state={state} base={base} />
         </div>
-      ) : (
-        districtSpecific &&
-        withContact > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <Card tinted padding={18}>
-              <IconPictogram icon={Megaphone} filled={contactShare * 10} label={t("pictogramContact", { n: Math.round(contactShare * 10) })} />
-            </Card>
-          </div>
-        )
       )}
 
       {/* Because of what's in the news */}
@@ -309,11 +312,7 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
               <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
                 {t("newsLead", { name: districtName })}
               </p>
-              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
-                {topTopics.map((x) => (
-                  <TopicCard key={x.topic} x={x} onOpen={setTopicOpen} />
-                ))}
-              </div>
+              <TopicList topics={topTopics} onOpen={setTopicOpen} />
             </>
           ) : (
             <p className="ftp-body" style={{ color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
@@ -323,34 +322,31 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
         </Section>
       )}
 
-      {/* All the things you can do */}
+      {/* All the things you can do: one white card per area, every action listed. */}
       {!isLoading && (
         <Section title={t("allTitle")}>
           <p className="ftp-body" style={{ margin: "-6px 0 12px", color: "var(--ftp-text-2)", fontSize: 14, lineHeight: "21px" }}>
             {topTopics.length > 0 ? t("allLeadNews") : t("allLead")}
           </p>
+          {areas.length > 1 && (
+            <div style={{ marginBottom: 12 }}>
+              <Chips label={t("chipsLabel")} value={shownArea} onChange={setArea} items={chipItems} />
+            </div>
+          )}
           {districtSpecific ? (
             <>
-              {areas.length > 1 && (
-                <div style={{ marginBottom: 12 }}>
-                  <Chips label={t("chipsLabel")} value={area} onChange={setArea} items={chipItems} />
-                </div>
-              )}
-              <div className="ftp-grid">
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "520px", alignItems: "start" } as React.CSSProperties}>
                 {specificSections
-                  .filter((s) => area === "all" || s.section === area)
-                  .flatMap((s) => {
-                    const inNews = areaInNews(s.section);
-                    return s.items.map((item, idx) => (
-                      <ActionCard
-                        key={`${s.section}-${idx}`}
-                        item={item}
-                        area={s.section}
-                        inNews={inNews}
-                        onOpen={() => setActionOpen({ item, area: s.section })}
-                      />
-                    ));
-                  })}
+                  .filter((s) => shownArea === "all" || s.section === shownArea)
+                  .map((s) => (
+                    <ResearchArea
+                      key={s.section}
+                      title={s.section}
+                      items={s.items}
+                      inNews={areaInNews(s.section)}
+                      onOpen={(item) => setActionOpen({ item, area: s.section })}
+                    />
+                  ))}
               </div>
               <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 16 }}>
                 {t("footSpecific")}
@@ -358,34 +354,20 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
             </>
           ) : (
             <>
-              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "260px" } as React.CSSProperties}>
-                {genericActionSections.map((s) => {
-                  return (
-                    <AreaCard
-                      key={s.title}
-                      title={s.title}
-                      items={s.items}
-                      inNews={areaInNews(s.title)}
-                      onOpen={() => setAreaOpen({ title: s.title, items: s.items })}
-                    />
-                  );
-                })}
+              <div className="ftp-grid" style={{ ["--ftp-grid-min" as string]: "340px", alignItems: "start" } as React.CSSProperties}>
+                {genericActionSections
+                  .filter((s) => shownArea === "all" || s.title === shownArea)
+                  .map((s) => (
+                    <AreaChecklist key={s.title} title={s.title} items={s.items} inNews={areaInNews(s.title)} />
+                  ))}
               </div>
-              {genericProjection && (
+              {genericProjection && shownArea === "all" && (
                 <div style={{ marginTop: 16 }}>
-                  <Card tinted padding={18}>
-                    <p className="ftp-display" style={{ margin: 0, fontSize: 17, lineHeight: "22px", fontWeight: 650 }}>
-                      {genericProjection.title}
-                    </p>
-                    <p className="ftp-body" style={{ margin: "4px 0 10px", color: "var(--ftp-text-2)" }}>
-                      {t("projectionLead", { name: districtName })}
-                    </p>
-                    <ul className="ftp-prose" style={{ margin: 0, paddingInlineStart: 20, display: "grid", gap: 6, fontSize: 14, lineHeight: "21px" }}>
-                      {genericProjection.items.map((it, i) => (
-                        <li key={i}>{it}</li>
-                      ))}
-                    </ul>
-                  </Card>
+                  <ProjectionCard
+                    title={genericProjection.title}
+                    lead={t("projectionLead", { name: districtName })}
+                    items={genericProjection.items}
+                  />
                 </div>
               )}
               <p className="ftp-body" style={{ color: "var(--ftp-text-2)", marginTop: 16 }}>
@@ -409,7 +391,6 @@ export default function ResponsibilityPage({ params }: { params: Promise<{ local
 
       <TopicSheet x={topicOpen} onClose={closeTopic} name={districtName} base={base} />
       <ActionSheet open={actionOpen} onClose={closeAction} />
-      <AreaSheet open={areaOpen} onClose={closeArea} />
     </ModulePage>
   );
 }

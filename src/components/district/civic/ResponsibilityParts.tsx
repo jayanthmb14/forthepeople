@@ -3,21 +3,29 @@
  * © 2026 Jayanth M B. MIT License.
  */
 
-// Pieces of the "What you can do" page (responsibility):
-//   TopicBars     the picture: this fortnight's news, by topic, as bars
-//   TopicCard     "Because of what's in the news": one action per busy topic
-//   TopicSheet    its detail: steps, why it is here, the headlines, helpline
-//   ActionCard / ActionSheet   one researched action (why, who to tell, source)
-//   AreaCard / AreaSheet       one area of the general guide (all its tips)
+// Pieces of the "What you can do" page (responsibility). v5.5 (owner, 28 Sep
+// 2026: "organise it better", mostly white): white cards and plain lists,
+// colour only on small things (a number, a check mark, a link).
+//   TopicChart    the picture: this fortnight's news, by topic (ChartCard)
+//   WhoToCall     four numbers most people need, tap to call, and a link
+//                 to "Helplines & your rights" for the rest
+//   TopicList     "Because of what's in the news": one numbered row per
+//                 busy topic; TopicSheet has the steps, why and headlines
+//   AreaChecklist the general guide: one card per area, every tip shown
+//   ResearchArea  researched actions of one area: what, why, whom to tell,
+//                 call / website inline; ActionSheet has the source
+//   ProjectionCard "What <district> can become"
 // No emoji: topics and areas are words; only "who to tell" keeps a small
-// Lucide megaphone. Emergency numbers live on "Helplines & your rights".
+// Lucide megaphone.
 // Text: "page_responsibility" namespace. Headlines, researched actions and
 // the general guide are data and are shown as written.
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ChevronRight, ExternalLink, Globe, Megaphone, Phone } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Globe, Megaphone, Phone } from "lucide-react";
 import { DetailList, DetailSheet } from "@/components/district/DetailSheet";
+import { ChartCard } from "@/components/district/visuals";
+import { getHelplines } from "@/components/district/civic/CitizenParts";
 import { useFormat, useModuleText } from "@/i18n/client";
 import { hueClass } from "@/lib/design/hues";
 import { topicRule, type NewsTopicId } from "@/lib/civic/news-topics";
@@ -35,23 +43,39 @@ const SHEET_HUE = hueClass("responsibility");
 /** Steps per topic in the dictionary (topics.<id>.step1 … step3). */
 const STEPS = ["step1", "step2", "step3"] as const;
 
-/** The card surface shared by the tappable cards on this page. */
-const CARD_BUTTON: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-  gap: 8,
-  width: "100%",
-  minHeight: 44,
-  padding: 16,
-  textAlign: "left",
-  font: "inherit",
-  color: "var(--ftp-text)",
-  cursor: "pointer",
+/** The white card every block on this page sits in. */
+const WHITE_CARD: React.CSSProperties = {
   background: "var(--ftp-surface)",
   border: "1px solid var(--ftp-border)",
   borderRadius: "var(--ftp-radius-card)",
   boxShadow: "var(--ftp-shadow-1)",
+  minWidth: 0,
+};
+
+/** The small grey number at the start of a numbered row. */
+const STEP_NUMBER: React.CSSProperties = {
+  width: 26,
+  height: 26,
+  borderRadius: 999,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--ftp-surface-2)",
+  color: "var(--ftp-text-2)",
+  fontSize: 13,
+  fontWeight: 700,
+};
+
+/** A quiet inline link (call, website, details) with a 44 px tap height. */
+const INLINE_LINK: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  minHeight: 44,
+  fontSize: 13,
+  fontWeight: 600,
+  color: "var(--hue-deep)",
+  textDecoration: "none",
 };
 
 /** A 44 px action link for sheet footers. */
@@ -105,13 +129,14 @@ export function InNewsTag() {
         display: "inline-flex",
         alignItems: "center",
         gap: 4,
-        padding: "1px 8px",
+        padding: "0 8px",
         borderRadius: 999,
-        background: "var(--hue)",
-        color: "#fff",
-        fontSize: 11,
+        border: "1px solid color-mix(in srgb, var(--hue) 35%, var(--ftp-border))",
+        background: "var(--ftp-surface)",
+        color: "var(--hue-deep)",
+        fontSize: 12,
         lineHeight: "18px",
-        fontWeight: 700,
+        fontWeight: 600,
         whiteSpace: "nowrap",
       }}
     >
@@ -120,24 +145,22 @@ export function InNewsTag() {
   );
 }
 
-// ── The picture ─────────────────────────────────────────────────────────
+// ── The picture: this fortnight's news, by topic ────────────────────────
 
-export function TopicBars({ topics, name, latestAt }: { topics: NewsTopicCount[]; name: string; latestAt: string | null }) {
+/** A plain bar chart in a ChartCard (white card, the chart blue, a table view). */
+export function TopicChart({ topics, name, latestAt }: { topics: NewsTopicCount[]; name: string; latestAt: string | null }) {
   const t = useTranslations("page_responsibility");
   const f = useFormat();
   const shown = topics.slice(0, 6);
   const max = Math.max(1, ...shown.map((x) => x.count));
   const summary = shown.map((x) => `${t(`topics.${x.topic}.label`)}: ${f.number(x.count)}`).join(", ");
   return (
-    <figure style={{ margin: 0 }}>
-      <figcaption style={{ marginBottom: 12 }}>
-        <span className="ftp-display" style={{ display: "block", fontSize: 18, lineHeight: "24px", fontWeight: 650, color: "var(--ftp-text)" }}>
-          {t("newsPic.title")}
-        </span>
-        <span style={{ display: "block", marginTop: 2, fontSize: 13, lineHeight: "20px", color: "var(--ftp-text-2)" }}>
-          {t("newsPic.lead", { name })}
-        </span>
-      </figcaption>
+    <ChartCard
+      title={t("newsPic.title")}
+      units={t("newsPic.lead", { name })}
+      asOf={latestAt}
+      table={shown.map((x) => ({ label: t(`topics.${x.topic}.label`), value: f.number(x.count) }))}
+    >
       <div role="img" aria-label={t("newsPic.aria", { summary })} style={{ display: "grid", gap: 10 }}>
         {shown.map((x, i) => (
           <div
@@ -146,7 +169,7 @@ export function TopicBars({ topics, name, latestAt }: { topics: NewsTopicCount[]
             style={{ display: "grid", gridTemplateColumns: "minmax(0, 10em) minmax(40px, 1fr) 2.5em", alignItems: "center", gap: 10 }}
           >
             <span style={{ fontSize: 14, lineHeight: "18px", color: "var(--ftp-text)" }}>{t(`topics.${x.topic}.label`)}</span>
-            <span style={{ display: "block", height: 14, borderRadius: 999, background: "color-mix(in srgb, var(--hue-tint) 70%, var(--ftp-surface-2))", overflow: "hidden" }}>
+            <span style={{ display: "block", height: 10, borderRadius: 999, background: "var(--ftp-surface-2)", overflow: "hidden" }}>
               <span
                 className="ftp-grow-x"
                 style={{
@@ -154,67 +177,133 @@ export function TopicBars({ topics, name, latestAt }: { topics: NewsTopicCount[]
                   width: `${(x.count / max) * 100}%`,
                   height: "100%",
                   borderRadius: 999,
-                  background: "linear-gradient(90deg, var(--hue-pop), var(--hue))",
+                  background: i === 0 ? "var(--hue)" : "color-mix(in srgb, var(--hue) 62%, var(--ftp-surface))",
                   ["--i" as string]: i,
                 }}
               />
             </span>
-            <span className="ftp-num" style={{ fontSize: 16, fontWeight: 650, color: "var(--hue-deep)", textAlign: "right" }}>
+            <span className="ftp-num" style={{ fontSize: 15, fontWeight: 650, color: "var(--ftp-text)", textAlign: "right" }}>
               {f.number(x.count)}
             </span>
           </div>
         ))}
       </div>
-      {latestAt && (
-        <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
-          {t("newsPic.newest", { date: f.date(latestAt, { day: "numeric", month: "short", year: "numeric" }) })}
-        </p>
-      )}
-    </figure>
+    </ChartCard>
   );
 }
 
-// ── Because of what's in the news ───────────────────────────────────────
+// ── Who to call (short list; the full list is on "Helplines & your rights") ──
 
-export function TopicCard({ x, onOpen }: { x: NewsTopicCount; onOpen: (x: NewsTopicCount) => void }) {
+/** The numbers most people need, from the Helplines page's own list. */
+const QUICK_HELPLINES = ["national", "ambulance", "women", "cyber"];
+
+export function WhoToCall({ state, base }: { state: string; base: string }) {
   const t = useTranslations("page_responsibility");
-  const latest = x.headlines[0];
-  const topic = t(`topics.${x.topic}.label`);
+  const tc = useTranslations("page_citizen-corner");
+  const lines = getHelplines(state).filter((h) => QUICK_HELPLINES.includes(h.key));
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(x)}
-      className="ftp-card-link"
-      aria-haspopup="dialog"
-      style={{
-        ...CARD_BUTTON,
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--hue) 9%, #fff) 0%, #fff 75%)",
-        border: "1px solid color-mix(in srgb, var(--hue) 26%, var(--ftp-border))",
-      }}
-    >
-      <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ minWidth: 0 }}>
-          <span className="ftp-display" style={{ display: "block", fontSize: 17, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>
-            {t(`topics.${x.topic}.action`)}
-          </span>
-          <span style={{ display: "block", fontSize: 13, lineHeight: "19px", color: "var(--hue-deep)", fontWeight: 600 }}>
-            {t("card.whyNow", { n: x.count, topic })}
-          </span>
-        </span>
-      </span>
-      {latest && (
-        <span style={{ fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
-          <span style={{ fontWeight: 600 }}>{t("card.latest")} </span>
-          <Clamp lines={2} lang={latest.lang}>
-            “{latest.title}”
-          </Clamp>
-        </span>
-      )}
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 2, alignSelf: "flex-end", fontSize: 13, fontWeight: 600, color: "var(--hue-deep)" }}>
-        {t("card.open")}
-        <ChevronRight size={14} aria-hidden />
-      </span>
-    </button>
+    <section aria-labelledby="who-to-call" style={{ ...WHITE_CARD, padding: 18, display: "flex", flexDirection: "column" }}>
+      <h3 id="who-to-call" style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }}>
+        {t("whoToCall.title")}
+      </h3>
+      <p style={{ margin: "2px 0 8px", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>{t("whoToCall.lead")}</p>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        {lines.map((h, i) => {
+          const name = tc(`helplines.${h.key}.name`);
+          return (
+            <li key={h.key} style={{ borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
+              <a
+                href={`tel:${h.number.replace(/[^\d+]/g, "")}`}
+                aria-label={tc("callAria", { name, number: h.number })}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "4.5em minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: 10,
+                  minHeight: 44,
+                  padding: "6px 0",
+                  textDecoration: "none",
+                  color: "var(--ftp-text)",
+                }}
+              >
+                <span className="ftp-num" style={{ fontSize: 17, lineHeight: "22px", fontWeight: 700, color: "var(--hue-deep)" }}>
+                  {h.number}
+                </span>
+                <span style={{ fontSize: 14, lineHeight: "20px" }}>{name}</span>
+                <Phone size={16} aria-hidden style={{ color: "var(--hue)" }} />
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <a
+        href={`${base}/citizen-corner`}
+        style={{ display: "inline-flex", alignItems: "center", gap: 2, minHeight: 44, marginTop: "auto", fontSize: 14, fontWeight: 600, color: "var(--hue-deep)", textDecoration: "none" }}
+      >
+        {t("whoToCall.more")}
+        <ChevronRight size={16} aria-hidden />
+      </a>
+    </section>
+  );
+}
+
+// ── Because of what's in the news: one row per busy topic ───────────────
+
+/** One white card holding a short list; each row opens the topic's steps. */
+export function TopicList({ topics, onOpen }: { topics: NewsTopicCount[]; onOpen: (x: NewsTopicCount) => void }) {
+  const t = useTranslations("page_responsibility");
+  return (
+    <ol style={{ ...WHITE_CARD, listStyle: "none", margin: 0, padding: "4px 0" }}>
+      {topics.map((x, i) => {
+        const latest = x.headlines[0];
+        const topic = t(`topics.${x.topic}.label`);
+        return (
+          <li key={x.topic} style={{ borderTop: i === 0 ? "none" : "1px solid var(--ftp-border)" }}>
+            <button
+              type="button"
+              onClick={() => onOpen(x)}
+              aria-haspopup="dialog"
+              className="ftp-dt-row"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "28px minmax(0, 1fr) auto",
+                alignItems: "start",
+                gap: 12,
+                width: "100%",
+                minHeight: 44,
+                padding: "14px 16px",
+                border: "none",
+                background: "transparent",
+                textAlign: "left",
+                font: "inherit",
+                color: "var(--ftp-text)",
+                cursor: "pointer",
+              }}
+            >
+              <span aria-hidden className="ftp-num" style={STEP_NUMBER}>
+                {i + 1}
+              </span>
+              <span style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                <span style={{ fontSize: 15, lineHeight: "22px", fontWeight: 650 }}>{t(`topics.${x.topic}.action`)}</span>
+                <span style={{ fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>{t("card.whyNow", { n: x.count, topic })}</span>
+                {latest && (
+                  <span style={{ fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
+                    <Clamp lines={1}>
+                      <span style={{ fontWeight: 600 }}>{t("card.latest")} </span>
+                      <span lang={latest.lang}>“{latest.title}”</span>
+                    </Clamp>
+                  </span>
+                )}
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 2, marginTop: 1, fontSize: 13, lineHeight: "20px", fontWeight: 600, color: "var(--hue-deep)", whiteSpace: "nowrap" }}>
+                {t("card.open")}
+                <ChevronRight size={14} aria-hidden />
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -343,48 +432,6 @@ export function TopicSheet({ x, onClose, name, base }: { x: NewsTopicCount | nul
 
 // ── Researched actions (district-specific) ─────────────────────────────
 
-export function ActionCard({
-  item,
-  area,
-  inNews,
-  onOpen,
-}: {
-  item: ResearchItem;
-  area: string;
-  inNews: boolean;
-  onOpen: () => void;
-}) {
-  const t = useTranslations("page_responsibility");
-  return (
-    <button type="button" onClick={onOpen} className="ftp-card-link" aria-haspopup="dialog" style={CARD_BUTTON}>
-      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)", flex: 1, minWidth: 0 }}>{area}</span>
-        {inNews && <InNewsTag />}
-      </span>
-      <span className="ftp-title" style={{ fontWeight: 650, fontSize: 16, lineHeight: "22px" }}>
-        {item.action}
-      </span>
-      <span style={{ fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
-        <Clamp lines={2}>{item.whyRelevant}</Clamp>
-      </span>
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: "auto", fontSize: 12, lineHeight: "18px" }}>
-        <span style={{ color: "var(--hue-deep)", fontWeight: 600, minWidth: 0 }}>
-          {item.reportTo?.name ? (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Megaphone size={13} aria-hidden />
-              {item.reportTo.name}
-            </span>
-          ) : null}
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontWeight: 600, color: "var(--hue-deep)", flexShrink: 0 }}>
-          {t("card.details")}
-          <ChevronRight size={14} aria-hidden />
-        </span>
-      </span>
-    </button>
-  );
-}
-
 export function ActionSheet({
   open,
   onClose,
@@ -418,8 +465,8 @@ export function ActionSheet({
         style={{
           padding: "12px 14px",
           borderRadius: 14,
-          background: "linear-gradient(135deg, var(--hue-tint) 0%, #fff 90%)",
-          border: "1px solid color-mix(in srgb, var(--hue) 22%, var(--ftp-border))",
+          background: "var(--ftp-surface-2)",
+          border: "1px solid var(--ftp-border)",
         }}
       >
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
@@ -454,66 +501,119 @@ export function ActionSheet({
   );
 }
 
-// ── The general guide (districts without researched actions) ───────────
+// ── All the things you can do: one white card per area ─────────────────
 
-export function AreaCard({
+/** Title row of an area card: name, how many things, and "In the news". */
+function AreaHead({ title, n, inNews }: { title: string; n: number; inNews: boolean }) {
+  const t = useTranslations("page_responsibility");
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+      <h3 style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }}>{title}</h3>
+      <span className="ftp-num" style={{ fontSize: 13, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
+        {t("area.count", { n })}
+      </span>
+      {inNews && <InNewsTag />}
+    </div>
+  );
+}
+
+/** General guide: every tip of one area, as a checklist (nothing hidden behind a tap). */
+export function AreaChecklist({ title, items, inNews }: { title: string; items: string[]; inNews: boolean }) {
+  return (
+    <section style={{ ...WHITE_CARD, padding: "16px 18px" }}>
+      <AreaHead title={title} n={items.length} inNews={inNews} />
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ display: "grid", gridTemplateColumns: "18px minmax(0, 1fr)", gap: 8, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>
+            <Check size={16} strokeWidth={2.25} aria-hidden style={{ marginTop: 2, color: "var(--hue)" }} />
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * Researched actions of one area: each row says what to do, why, and whom
+ * to tell (with a tap-to-call number and the website when we have them);
+ * "Details" opens the sheet with the source.
+ */
+export function ResearchArea({
   title,
   items,
   inNews,
   onOpen,
 }: {
   title: string;
-  items: string[];
+  items: ResearchItem[];
   inNews: boolean;
-  onOpen: () => void;
+  onOpen: (item: ResearchItem) => void;
 }) {
   const t = useTranslations("page_responsibility");
   return (
-    <button type="button" onClick={onOpen} className="ftp-card-link" aria-haspopup="dialog" style={CARD_BUTTON}>
-      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="ftp-title" style={{ display: "block", fontWeight: 650, fontSize: 16 }}>
-            {title}
-          </span>
-          <span className="ftp-num" style={{ display: "block", fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
-            {t("area.count", { n: items.length })}
-          </span>
-        </span>
-        {inNews && <InNewsTag />}
-      </span>
-      <span style={{ display: "grid", gap: 4, fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
-        {items.slice(0, 2).map((it, i) => (
-          <span key={i} style={{ display: "flex", gap: 6 }}>
-            <span aria-hidden style={{ color: "var(--hue)" }}>•</span>
-            <Clamp lines={2}>{it}</Clamp>
-          </span>
-        ))}
-      </span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 2, alignSelf: "flex-end", fontSize: 13, fontWeight: 600, color: "var(--hue-deep)" }}>
-        {t("area.open")}
-        <ChevronRight size={14} aria-hidden />
-      </span>
-    </button>
+    <section style={{ ...WHITE_CARD, padding: "16px 18px 6px" }}>
+      <AreaHead title={title} n={items.length} inNews={inNews} />
+      <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        {items.map((item, i) => {
+          const phone = item.reportTo?.phone ?? null;
+          const url = item.reportTo?.url ?? null;
+          return (
+            <li key={i} style={{ padding: "12px 0", borderTop: "1px solid var(--ftp-border)", display: "grid", gap: 4 }}>
+              <span style={{ fontSize: 15, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>{item.action}</span>
+              <span style={{ fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
+                <Clamp lines={2}>{item.whyRelevant}</Clamp>
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: "0 14px", flexWrap: "wrap", fontSize: 13, lineHeight: "18px" }}>
+                {item.reportTo?.name && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0, color: "var(--ftp-text)" }}>
+                    <Megaphone size={13} aria-hidden style={{ color: "var(--hue)", flexShrink: 0 }} />
+                    <span>
+                      <span style={{ color: "var(--ftp-text-2)" }}>{t("row.tell")} </span>
+                      {item.reportTo.name}
+                    </span>
+                  </span>
+                )}
+                {phone && (
+                  <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="ftp-num" style={INLINE_LINK}>
+                    <Phone size={13} aria-hidden />
+                    {phone}
+                  </a>
+                )}
+                {url && (
+                  <a href={url} target="_blank" rel="noopener noreferrer" style={INLINE_LINK}>
+                    <Globe size={13} aria-hidden />
+                    {t("sheet.website")}
+                  </a>
+                )}
+                <button type="button" onClick={() => onOpen(item)} aria-haspopup="dialog" style={{ ...INLINE_LINK, border: "none", background: "transparent", padding: 0, font: "inherit", cursor: "pointer", marginInlineStart: "auto" }}>
+                  {t("card.details")}
+                  <ChevronRight size={14} aria-hidden />
+                </button>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
-export function AreaSheet({ open, onClose }: { open: { title: string; items: string[] } | null; onClose: () => void }) {
-  const t = useTranslations("page_responsibility");
-  if (!open) return null;
+/** "What {district} can become": the general guide's goals, in a quiet white card. */
+export function ProjectionCard({ title, lead, items }: { title: string; lead: string; items: string[] }) {
   return (
-    <DetailSheet open onClose={onClose} title={open.title} subtitle={t("area.count", { n: open.items.length })} hueClassName={SHEET_HUE}>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
-        {open.items.map((it, i) => (
-          <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: "22px" }}>
-            <span aria-hidden className="ftp-icon-chip" style={{ width: 24, height: 24, borderRadius: 8, marginTop: 1, fontSize: 13, fontWeight: 700 }}>
-              ✓
-            </span>
+    <section style={{ ...WHITE_CARD, padding: "16px 18px" }}>
+      <h3 style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }}>{title}</h3>
+      <p style={{ margin: "2px 0 10px", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>{lead}</p>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ display: "grid", gridTemplateColumns: "14px minmax(0, 1fr)", gap: 8, fontSize: 14, lineHeight: "21px" }}>
+            <span aria-hidden style={{ width: 6, height: 6, marginTop: 8, borderRadius: 999, background: "var(--hue)" }} />
             <span>{it}</span>
           </li>
         ))}
       </ul>
-      <p style={{ margin: 0, fontSize: 12, lineHeight: "18px", color: "var(--ftp-text-2)" }}>{t("sheet.checkNote")}</p>
-    </DetailSheet>
+    </section>
   );
 }
 
