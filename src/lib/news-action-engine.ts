@@ -189,8 +189,18 @@ export async function executeNewsAction(
     return;
   }
 
-  // Mid confidence, or a review-only module: queue for admin review
+  // Mid confidence, or a review-only module: queue for admin review — once
+  // per article (the same URL was queued up to 19 times while retention
+  // deleted and re-fetched it).
   if (decision.kind === "queue") {
+    const already = await prisma.newsActionQueue.findFirst({
+      where: { districtId, dataType: targetModule, sourceUrl: articleUrl, status: "pending" },
+      select: { id: true },
+    });
+    if (already) {
+      console.log(`[NewsAction] Already queued: ${targetModule} — ${articleTitle.slice(0, 60)}`);
+      return;
+    }
     await prisma.newsActionQueue.create({
       data: {
         districtId,

@@ -28,7 +28,8 @@ import {
   newsFeedsFor,
 } from "@/lib/news-keywords";
 import { JobContext, ScraperResult } from "../types";
-import { findCanonicalStory, titleKey, type StoredStory } from "@/lib/news-dedupe";
+import { NEWS_MAX_AGE_DAYS, findCanonicalStory, planNewsRetention, titleKey, type StoredStory } from "@/lib/news-dedupe";
+import { deleteNewsItems } from "@/lib/news-store";
 import { cleanHeadline, isPromotional, stripFeedSuffix } from "@/lib/news-quality";
 import { urlKey } from "@/lib/dedupe/keys";
 
@@ -57,8 +58,9 @@ function parseRSSDate(dateStr: string): Date {
   }
 }
 
-// Reject articles older than maxAgeDays, future-dated, or from year < current-1
-function isArticleFresh(publishedDate: Date, maxAgeDays = 3): boolean {
+// Reject articles older than maxAgeDays, future-dated, or from year < current-1.
+// Retention never deletes a story inside this window (planNewsRetention).
+function isArticleFresh(publishedDate: Date, maxAgeDays = NEWS_MAX_AGE_DAYS): boolean {
   const now = new Date();
   const ageMs = now.getTime() - publishedDate.getTime();
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
@@ -202,6 +204,7 @@ export async function scrapeNews(
     const existingUrls = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
       select: { url: true },
+      take: 5000,
     });
     // Keyed by urlKey (no www / tracking parameters / trailing slash): the same article, one row.
     existingUrls.forEach((n) => { if (n.url) seenUrls.add(urlKey(n.url)); });
@@ -375,16 +378,16 @@ export async function scrapeNews(
       }
     }
 
-    // Keep only last 50 news items
-    const old = await prisma.newsItem.findMany({
+    // Keep the newest 50 stories, and every story still inside the feeds'
+    // window: deleting one of those made the next run fetch, classify and
+    // act on it again (planNewsRetention). Copies of a deleted original are
+    // re-pointed and its translations removed (deleteNewsItems).
+    const stored = await prisma.newsItem.findMany({
       where: { districtId: ctx.districtId },
-      orderBy: { publishedAt: "desc" },
-      skip: 50,
-      select: { id: true },
+      select: { id: true, publishedAt: true },
+      take: 5000,
     });
-    if (old.length > 0) {
-      await prisma.newsItem.deleteMany({ where: { id: { in: old.map((n) => n.id) } } });
-    }
+    await deleteNewsItems(planNewsRetention(stored, Date.now()));
 
     const summary =
       `News: ${newCount} new items across ${queries.length} queries` +

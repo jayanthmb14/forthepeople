@@ -148,3 +148,54 @@ export function planTitleDuplicates<T extends { id: string; title: string; fetch
   }
   return out;
 }
+
+// ── Housekeeping of stored stories (src/lib/news-store.ts runs it) ───
+// Sept 2026 review: the "keep the newest 50" clean-up deleted stories that
+// were still inside the feeds' 3-day window. The next run fetched them
+// again as new rows — classified by the AI again, acted on and queued for
+// review again (one URL was queued 19 times) — and deleted them again. It
+// also left copies pointing (duplicateOf) at deleted originals, which hid
+// those stories from every list.
+
+/** The feeds' window: an article older than this is never fetched (src/scraper/jobs/news.ts). */
+export const NEWS_MAX_AGE_DAYS = 3;
+/** Stories kept per district beyond the fetch window. */
+export const NEWS_KEEP_PER_DISTRICT = 50;
+
+/**
+ * Ids to delete: beyond the newest `keep`, and only those older than the
+ * fetch window — a story the feeds can still return is never deleted, so
+ * it is never fetched, classified and acted on twice.
+ */
+export function planNewsRetention<T extends { id: string; publishedAt: Date | string }>(
+  rows: readonly T[],
+  now: number,
+  keep = NEWS_KEEP_PER_DISTRICT,
+  maxAgeDays = NEWS_MAX_AGE_DAYS,
+): string[] {
+  const cutoff = now - maxAgeDays * DAY_MS;
+  return [...rows]
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(keep)
+    .filter((r) => new Date(r.publishedAt).getTime() < cutoff)
+    .map((r) => r.id);
+}
+
+/**
+ * Copies whose original is being deleted: per original, the earliest copy
+ * becomes the story's row (duplicateOf null) and the others point at it,
+ * so the story stays listed once.
+ */
+export function planCopyPromotion<T extends { id: string; duplicateOf: string | null; publishedAt: Date | string }>(
+  copies: readonly T[],
+): Array<{ keepId: string; repointIds: string[] }> {
+  const byOriginal = new Map<string, T[]>();
+  for (const c of copies) {
+    if (!c.duplicateOf) continue;
+    byOriginal.set(c.duplicateOf, [...(byOriginal.get(c.duplicateOf) ?? []), c]);
+  }
+  return [...byOriginal.values()].map((g) => {
+    const sorted = [...g].sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime() || a.id.localeCompare(b.id));
+    return { keepId: sorted[0].id, repointIds: sorted.slice(1).map((r) => r.id) };
+  });
+}
