@@ -472,7 +472,7 @@ export function ActionSheet({
         <p style={{ margin: 0, fontSize: 12, lineHeight: "16px", fontWeight: 700, color: "var(--hue-deep)" }}>
           {t("sheet.whyHere")}
         </p>
-        <p style={{ margin: "4px 0 0", fontSize: 15, lineHeight: "23px" }}>{item.whyRelevant}</p>
+        <p style={{ margin: "4px 0 0", fontSize: 15, lineHeight: "23px" }} lang="en">{item.whyRelevant}</p>
       </div>
       <DetailList
         rows={[
@@ -508,7 +508,7 @@ function AreaHead({ title, n, inNews }: { title: string; n: number; inNews: bool
   const t = useTranslations("page_responsibility");
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-      <h3 style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }}>{title}</h3>
+      <h3 style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }} lang="en">{title}</h3>
       <span className="ftp-num" style={{ fontSize: 13, lineHeight: "18px", color: "var(--ftp-text-2)" }}>
         {t("area.count", { n })}
       </span>
@@ -526,7 +526,7 @@ export function AreaChecklist({ title, items, inNews }: { title: string; items: 
         {items.map((it, i) => (
           <li key={i} style={{ display: "grid", gridTemplateColumns: "18px minmax(0, 1fr)", gap: 8, fontSize: 14, lineHeight: "21px", color: "var(--ftp-text)" }}>
             <Check size={16} strokeWidth={2.25} aria-hidden style={{ marginTop: 2, color: "var(--hue)" }} />
-            <span>{it}</span>
+            <span lang="en">{it}</span>
           </li>
         ))}
       </ul>
@@ -560,9 +560,9 @@ export function ResearchArea({
           const url = item.reportTo?.url ?? null;
           return (
             <li key={i} style={{ padding: "12px 0", borderTop: "1px solid var(--ftp-border)", display: "grid", gap: 4 }}>
-              <span style={{ fontSize: 15, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }}>{item.action}</span>
+              <span style={{ fontSize: 15, lineHeight: "22px", fontWeight: 650, color: "var(--ftp-text)" }} lang="en">{item.action}</span>
               <span style={{ fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>
-                <Clamp lines={2}>{item.whyRelevant}</Clamp>
+                <span lang="en"><Clamp lines={2}>{item.whyRelevant}</Clamp></span>
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: "0 14px", flexWrap: "wrap", fontSize: 13, lineHeight: "18px" }}>
                 {item.reportTo?.name && (
@@ -603,13 +603,13 @@ export function ResearchArea({
 export function ProjectionCard({ title, lead, items }: { title: string; lead: string; items: string[] }) {
   return (
     <section style={{ ...WHITE_CARD, padding: "16px 18px" }}>
-      <h3 style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }}>{title}</h3>
+      <h3 style={{ margin: 0, fontSize: 16, lineHeight: "22px", fontWeight: 700, color: "var(--ftp-text)" }} lang="en">{title}</h3>
       <p style={{ margin: "2px 0 10px", fontSize: 13, lineHeight: "19px", color: "var(--ftp-text-2)" }}>{lead}</p>
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
         {items.map((it, i) => (
           <li key={i} style={{ display: "grid", gridTemplateColumns: "14px minmax(0, 1fr)", gap: 8, fontSize: 14, lineHeight: "21px" }}>
             <span aria-hidden style={{ width: 6, height: 6, marginTop: 8, borderRadius: 999, background: "var(--hue)" }} />
-            <span>{it}</span>
+            <span lang="en">{it}</span>
           </li>
         ))}
       </ul>

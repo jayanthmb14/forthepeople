@@ -308,3 +308,12 @@ APIs, AI/news, dead code); fixed with tests, merged, 1,072 tests passing.
    removed; this is expected.
 7. Old feedback rows still hold raw IP addresses (new ones don't); 146
    district-request rows include names that are not real districts.
+
+## 9. After the v5.6 "White Calm" refresh (28 Sep 2026)
+
+- [ ] **Look at the preview on your phone and laptop** — home (`/en`, `/hi`, `/kn`), Mandya overview, News, What you can do, Leaders & officers. Tap a map pin, "Use my location", the search box, a news row.
+- [ ] **Decide: all charts blue?** Every chart now draws in one soft blue (module colour stays on headers and icons). One switch in `ChartGradients`/`ChartCard` brings per-module chart colours back.
+- [ ] **Decide: one-line headlines on phones.** On 320–390 px a headline shows ~30 characters then "…". Two lines under 480 px is a one-line CSS change.
+- [ ] **"Prices today"** — the home section is gone, but `/prices` still exists (the status strip's market link and the footer point to it). Say if the page itself should go.
+- [ ] **"What you can do" tips are English only** (`src/lib/constants/responsibility-content.ts`, ~900 lines) — now that every tip is shown, `/hi` and `/kn` show more English there. Before translating, the tips' statistics (e.g. tonnes of waste, % figures) need a source check like the rest of the site; then translate once (Sarvam) into hi/kn.
+- [ ] **Sarvam and Galileo** — replies sent 28 Sep from forthepeople1547@gmail.com. Still yours: the Sarvam onboarding form (https://tally.so/r/aQE0Y2) + API key → `SARVAM_API_KEY` in Vercel; Cloudflare account + nameservers at Hostinger, then tell Grace.
