@@ -10,8 +10,23 @@
 //
 //   normalizeCitizenTips()  keep only complete tips, clean the fields
 //   tipsToStore()           NEVER replace good tips with an empty list
+//   citizenTipsKey()        the Redis key the cron writes and the page reads
 // ═══════════════════════════════════════════════════════════
 import { asArray } from "@/lib/ai-json";
+
+/** Redis key of a district's stored tips (written by the cron, read by /api/ai/citizen-tips). */
+export function citizenTipsKey(districtSlug: string): string {
+  return `ftp:ai:citizen-tips:${districtSlug}`;
+}
+
+/**
+ * How long stored tips live: two weekly runs. With a 7-day expiry (the
+ * cron's own interval) last week's tips were usually gone by the time this
+ * week's run reached a district, so "keep last week's tips when the AI
+ * fails" found nothing and the Citizen Corner went empty for a week
+ * (v5.5). The tips carry their own month and generatedAt.
+ */
+export const CITIZEN_TIPS_TTL_S = 14 * 24 * 60 * 60;
 
 export type TipUrgency = "now" | "soon" | "general";
 

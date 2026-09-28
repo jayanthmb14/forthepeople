@@ -33,7 +33,7 @@ and one `ScraperLog` row (via `cronStarted()` / `cronFinished()` in
 | `/api/cron/generate-insights` | `0 0,12 * * *` | 05:30 and 17:30 | 230 s (insights), 255 s (infra) / 300 s | AI module insights that are missing or expired and whose data changed (oldest first; leaders regardless of data at 7 days old, daily during an election in the state — `src/lib/insight-refresh.ts`), then up to 10 infra analyses, then translation with the time left. Writes `AIModuleInsight`, infra analyses in Redis, `ContentTranslation`, `AIUsageLog`. |
 | `/api/cron/news-intelligence` | `0 */4 * * *` | every 4 h at :30 (01:30, 05:30 …) | 240 s / 300 s | AI reading of fresh news, one call per district, new news only. Writes `AIInsight` (low-confidence ones to `ReviewQueue`) and `AIUsageLog`. A run where every AI call failed is recorded as an error and emails the admin. |
 | `/api/cron/scrape-budget` | `0 6 * * 1` | Monday 11:30 | — / 300 s | Deliberate no-op: returns `skipped` until a data.gov.in budget resource id exists (section 7). |
-| `/api/cron/generate-citizen-tips` | `0 6 * * 0` | Sunday 11:30 | 240 s / 300 s | 6 AI tips per district. Writes Redis `ftp:ai:citizen-tips:<slug>` (7-day expiry). |
+| `/api/cron/generate-citizen-tips` | `0 6 * * 0` | Sunday 11:30 | 240 s / 300 s | 6 AI tips per district (prompt context: official alerts only, weather only if under 6 h old). Writes Redis `ftp:ai:citizen-tips:<slug>` (14-day expiry, so a failed week keeps last week's tips). |
 | `/api/cron/update-exams` | `30 6 * * *` | daily 12:00 | 70 s (official-page pass) / 120 s | Reads UPSC's and SSC's official exam pages, moves exam status forward by date ("open" only with a published closing date), flags exams unconfirmed for over 30 days. Writes `GovernmentExam`. |
 | `/api/cron/platform-report` | `0 0 * * 0` | Sunday 05:30 | 240 s (no AI model attempt after it) / 300 s | Weekly AI platform report. Writes one `PlatformReport` row. |
 | `/api/cron/health-score` | `30 1 * * *` | daily 07:00 | 100 s / 120 s | Recomputes every live district's report card (`calculateDistrictHealthScore()`). Writes `DistrictHealthScore`. Daily because a stored grade expires after 7 days. |
@@ -152,7 +152,7 @@ district totals yet):
 | `ftp:data:mgnrega:<slug>` | `scrape-mgnrega` | none |
 | `ftp:data:fuel` | `scrape-fuel` | none (read by `/api/data/prices` → `fuel` and the home page) |
 | `ftp:courts:njdg:<slug>`, `ftp:courts:njdg-hc:<stateCode>` | `scrape-courts` | 120 days (housekeeping only) |
-| `ftp:ai:citizen-tips:<slug>` | `generate-citizen-tips` | 7 days |
+| `ftp:ai:citizen-tips:<slug>` | `generate-citizen-tips` | 14 days (two weekly runs) |
 
 ## 5. Health — what "stale" means
 
