@@ -30,7 +30,7 @@
     },
     "map": {
       "title": "The India map",
-      "body": "Blue pins are the live districts. Tap one, or pick it from the list of live districts."
+      "body": "Each pin is a live district. Tap one, or pick it from the list of live districts."
     },
     "india": {
       "title": "Explore all of India",
@@ -56,7 +56,7 @@
     },
     "overview": {
       "title": "This district at a glance",
-      "body": "Leaders, people, projects and money in short. Tap “View all” on a card to see more."
+      "body": "The main facts about this district, in short. Tap “View all” on a card to see more."
     },
     "verify": {
       "title": "Check this data",
