@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { calculateBadgeLevel } from "@/lib/badge-level";
 import { alertPaymentReceived } from "@/lib/admin-alerts";
-import { capturedPaymentFromRazorpay, validRazorpaySignature } from "@/lib/supporter-payment";
+import { capturedPaymentFromRazorpay, expiryOnCancel, validRazorpaySignature } from "@/lib/supporter-payment";
 import { recordOneTimePayment } from "@/lib/record-supporter-payment";
 import { CONTRIBUTOR_CACHE_KEYS as SUPPORTER_LIST_KEYS } from "@/lib/supporter-cache";
 
@@ -125,25 +125,28 @@ export async function POST(req: NextRequest) {
             subscriptionStatus: "active",
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             badgeLevel,
-            // Update amount if charge amount changed
-            ...(subscriptionEntity.current_end
-              ? {}
-              : {}),
           },
         });
       }
-    } else if (event === "subscription.halted" && subscriptionEntity) {
+    } else if ((event === "subscription.halted" || event === "subscription.cancelled") && subscriptionEntity) {
+      // A stopped subscription stays on the wall until the end of the period
+      // already paid for, then the sponsor lists' expiry filter drops it.
+      // Before, only the status changed and expiresAt stayed empty, so
+      // cancelled District Champions were shown for months.
       const subId = String(subscriptionEntity.id);
-      await prisma.supporter.updateMany({
+      const rows = await prisma.supporter.findMany({
         where: { razorpaySubscriptionId: subId },
-        data: { subscriptionStatus: "expired" },
+        select: { id: true, expiresAt: true },
       });
-    } else if (event === "subscription.cancelled" && subscriptionEntity) {
-      const subId = String(subscriptionEntity.id);
-      await prisma.supporter.updateMany({
-        where: { razorpaySubscriptionId: subId },
-        data: { subscriptionStatus: "cancelled" },
-      });
+      for (const row of rows) {
+        await prisma.supporter.update({
+          where: { id: row.id },
+          data: {
+            subscriptionStatus: event === "subscription.halted" ? "expired" : "cancelled",
+            expiresAt: expiryOnCancel(subscriptionEntity.current_end, row.expiresAt),
+          },
+        });
+      }
     } else if (event === "subscription.paused" && subscriptionEntity) {
       const subId = String(subscriptionEntity.id);
       await prisma.supporter.updateMany({
