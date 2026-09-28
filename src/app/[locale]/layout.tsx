@@ -24,6 +24,13 @@ import { getGithubStars } from "@/components/home/github-stars";
 import Footer from "@/components/home/Footer";
 import SkipLink from "@/components/common/SkipLink";
 import ReportButton from "@/components/common/ReportButton";
+// The once-in-a-while "Sorry to interrupt" support card (lazy, client only;
+// rules in src/components/support/nudge-logic.ts). Prices come from the plan table.
+import SupportNudgeMount from "@/components/support/SupportNudgeMount";
+import { smallestAmounts } from "@/components/support/nudge-logic";
+import { TIER_CONFIG } from "@/lib/constants/razorpay-plans";
+
+const NUDGE_PRICES = smallestAmounts(TIER_CONFIG);
 
 /**
  * Only the locales in src/i18n/routing.ts may render this layout.
@@ -83,6 +90,7 @@ export default async function LocaleLayout({
           {children}
           <Footer locale={locale} githubStars={githubStars} />
           <ReportButton />
+          <SupportNudgeMount monthlyFrom={NUDGE_PRICES.monthly} onceFrom={NUDGE_PRICES.once} />
         </QueryProvider>
       </div>
     </NextIntlClientProvider>

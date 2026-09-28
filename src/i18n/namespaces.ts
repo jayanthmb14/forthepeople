@@ -60,6 +60,7 @@ export const PAGE_NAMESPACES: readonly string[] = [
   "page_staffing",
   "page_state",
   "page_support",
+  "page_support-nudge",
   "page_taluk",
   "page_tenders",
   "page_transport",

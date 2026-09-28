@@ -71,6 +71,7 @@ import { DetailSheet } from "@/components/district/DetailSheet";
 import TierArt from "./TierArt";
 import SupporterAvatar from "./SupporterAvatar";
 import { tierHueClass, tierKeyOf } from "./tier-look";
+import { markSupporterPaid } from "./nudge-store";
 import {
   checkCheckout,
   firstProblem,
@@ -237,6 +238,12 @@ export default function SupportCheckout({ tier }: Props) {
 
   // Success data
   const [paidAmount, setPaidAmount] = useState(0);
+
+  // A verified payment: the "Sorry to interrupt" support card never asks
+  // this browser again (SupportNudge). Storage only — the payment flow is untouched.
+  useEffect(() => {
+    if (step === "success") markSupporterPaid();
+  }, [step]);
 
   useEffect(() => {
     loadRazorpayScript().then(setScriptReady);
