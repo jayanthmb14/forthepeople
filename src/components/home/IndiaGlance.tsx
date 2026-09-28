@@ -5,41 +5,34 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-//  IndiaGlance — "Explore all of India", the second big thing on home
+//  IndiaGlance — "Explore the whole India", a slim band under the dashboard
 // ═══════════════════════════════════════════════════════════════════════
 //
-//   ┌─ white card, thin border ──────────────────────────────────────────┐
-//   │                               (map) States and UTs  (hall) Lok Sabha │
-//   │ Explore all of India          28 + 8                543              │
-//   │ Parliament, the Union Budget… MHA · checked …       Lok Sabha Sectt. │
-//   │ [ Explore all of India → ]    ──────────────────────────────────────  │
-//   │                               (abc) Languages       (ruler) Area     │
-//   │                               22                    32.9 lakh sq km  │
-//   └────────────────────────────────────────────────────────────────────┘
+//   ┌─ white band, thin border ───────────────────────────────────────────┐
+//   │ [ Explore the whole India → ]  │ 28 + 8        543        22     32.9 lakh sq km │
+//   │ Parliament, the Union Budget…  │ States & UTs  Lok Sabha  Langs  Area            │
+//   │                                │ MHA · checked … (source + date under each)      │
+//   └─────────────────────────────────────────────────────────────────────┘
 //
-//  Four figures that stay true until the Constitution or the map changes,
-//  from the IndiaIndicator rows the India dashboard uses (home-data.ts →
+//  Sits directly under the map and the live districts (the June site had
+//  the same "Explore the whole India →" pill near its map). The pill is
+//  the band's heading, so the words are not repeated. Four figures that
+//  stay true until the Constitution or the map changes, from the
+//  IndiaIndicator rows the India dashboard uses (home-data.ts →
 //  loadIndiaFigures), each with its source (linked) and the date it was
-//  checked. A missing row leaves its tile out; the band and its button
-//  always show. Numbers count up once.
+//  checked. A missing row leaves its figure out; the band and its pill
+//  always show. Numbers count up once. Phones: the pill full width, the
+//  figures two a row.
 //
 //  Server component (CountUp is the only client piece).
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowRight, Landmark, Languages, Map as MapIcon, Ruler } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { intlLocale } from "@/i18n/languages";
 import { formatDate } from "@/i18n/format-date";
 import CountUp from "./CountUp";
 import type { IndiaFigure } from "./home-types";
 import styles from "./home.module.css";
-
-/** A small grey picture beside each figure's label (the numbers carry the blue). */
-const ICON: Record<IndiaFigure["id"], React.ReactNode> = {
-  states: <MapIcon size={16} aria-hidden />,
-  seats: <Landmark size={16} aria-hidden />,
-  languages: <Languages size={16} aria-hidden />,
-  area: <Ruler size={16} aria-hidden />,
-};
 
 export default function IndiaGlance({ locale, figures }: { locale: string; figures: IndiaFigure[] }) {
   const t = useTranslations("page_home");
@@ -69,26 +62,22 @@ export default function IndiaGlance({ locale, figures }: { locale: string; figur
   };
 
   return (
-    <section aria-labelledby="home-india" className={`ftp-container ${styles.section}`}>
+    <section aria-labelledby="home-india" className={`ftp-container ${styles.indiaWrap}`} data-reveal>
       <div className={styles.india}>
         <div className={styles.indiaText}>
           <h2 id="home-india" className={styles.indiaTitle}>
-            {t("india.title")}
+            <Link href={`/${locale}/india`} className={styles.indiaPill}>
+              {t("india.cta")}
+              <ArrowRight size={17} aria-hidden className={styles.indiaArrow} />
+            </Link>
           </h2>
           <p className={styles.indiaBody}>{t("india.body")}</p>
-          <Link href={`/${locale}/india`} className={`${styles.btnPrimary} ${styles.indiaCta}`}>
-            {t("india.cta")}
-            <ArrowRight size={18} aria-hidden />
-          </Link>
         </div>
         {figures.length > 0 && (
           <dl className={styles.indiaFigures}>
             {figures.map((f) => (
               <div key={f.id} className={styles.figure}>
-                <dt className={styles.figureLabel}>
-                  <span className={styles.figureIcon}>{ICON[f.id]}</span>
-                  {t(`india.fig.${f.id}`)}
-                </dt>
+                <dt className={styles.figureLabel}>{t(`india.fig.${f.id}`)}</dt>
                 <dd className={styles.figureValue}>{value(f)}</dd>
                 <dd className={styles.figureSource}>
                   {f.sourceUrl ? (
