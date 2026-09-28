@@ -143,6 +143,18 @@ export function fyStartDate(fy: string | null | undefined): Date | null {
   return new Date(Date.UTC(Number(m[1]), 3, 1));
 }
 
+/**
+ * The later of two financial years ("2025-26" vs "2026-27"), by the date
+ * each starts; either may be missing. A tie keeps the first.
+ */
+export function newerFy(a: string | null | undefined, b: string | null | undefined): string | null {
+  const da = fyStartDate(a);
+  const db = fyStartDate(b);
+  if (!da) return db ? (b ?? null) : (a ?? b ?? null);
+  if (!db) return a ?? null;
+  return db.getTime() > da.getTime() ? (b ?? null) : (a ?? null);
+}
+
 /** 31 December of a calendar year (UTC); null for a missing year. */
 export function yearEndDate(year: number | null | undefined): Date | null {
   if (year === null || year === undefined || !Number.isFinite(year)) return null;

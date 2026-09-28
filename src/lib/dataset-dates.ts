@@ -32,6 +32,7 @@ import {
 import { SHOWN_BUDGET_ALLOCATION, SHOWN_BUDGET_ENTRY } from "@/lib/data-filters";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
 import type { DatasetDate } from "@/lib/constants/dataset-collection";
+import { newerFy } from "@/lib/freshness";
 import { readCourtsSnapshot } from "@/lib/courts/store";
 import { courtStatReadDate } from "@/lib/courts/snapshot";
 
@@ -152,7 +153,7 @@ export async function collectDatasetDates(
     budget: {
       rows: budgetE._count._all + budgetA._count._all,
       newest: iso(latest(budgetE._max.fetchedAt, budgetA._max.fetchedAt)),
-      period: [budgetE._max.fiscalYear, budgetTop._max.fiscalYear].filter(Boolean).sort().pop() ?? null,
+      period: newerFy(budgetE._max.fiscalYear, budgetTop._max.fiscalYear),
     },
     infrastructure: { rows: infra._count._all, newest: iso(infra._max.lastVerifiedAt ?? infra._max.updatedAt), period: null },
     industries: { rows: industries._count._all, newest: iso(industries._max.updatedAt), period: null },

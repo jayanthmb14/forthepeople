@@ -84,7 +84,7 @@ function formatAge(ageMinutes: number | null): string {
 async function queryRow(districtId: string): Promise<FreshnessRow | null> {
   // Filters match what the pages show (src/lib/data-filters.ts):
   // NOT_FROM_NEWS (source not a URL), SHOWN_BUDGET_ENTRY (collector rows only —
-  // never the seeded budgets), LOCAL_INFRA (DISTRICT/CITY scope),
+  // never the seeded budgets), SHOWN_BUDGET_ALLOCATION (linked to its source), LOCAL_INFRA (DISTRICT/CITY scope),
   // NJDG_COURTSTAT, JJM_DISTRICT_TOTAL, SHOWN_CRIME / SHOWN_TRAFFIC (no
   // estimates), news without duplicates, active leaders / industries / people,
   // OFFICIAL_ALERTS (SACHET rows only), NOT_SEEDED_RAINFALL.
@@ -127,6 +127,9 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       (SELECT max(x."fiscalYear") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})) AS budget_fy,
       (SELECT max(x."fetchedAt") FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})) AS budget_checked,
       (SELECT count(*) FROM "BudgetEntry" x WHERE x."districtId" = d.id AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE}))::int AS budget_rows,
+      (SELECT max(x."fiscalYear") FROM "BudgetAllocation" x WHERE x."districtId" = d.id AND x."sourceUrl" IS NOT NULL) AS budget_alloc_fy,
+      (SELECT max(x."fetchedAt") FROM "BudgetAllocation" x WHERE x."districtId" = d.id AND x."sourceUrl" IS NOT NULL) AS budget_alloc_checked,
+      (SELECT count(*) FROM "BudgetAllocation" x WHERE x."districtId" = d.id AND x."sourceUrl" IS NOT NULL)::int AS budget_alloc_rows,
       EXISTS (
         SELECT 1 FROM "BudgetEntry" x
         WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%' AND (x.source = ANY(${COLLECTED_BUDGET_SOURCES}) OR x.source LIKE ${DATA_GOV_BUDGET_LIKE})
@@ -213,7 +216,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "district required" }, { status: 400 });
   }
 
-  const key = cacheKey(districtSlug, "freshness:v6");
+  const key = cacheKey(districtSlug, "freshness:v7");
   const cached = await cacheGet<Record<string, unknown>>(key);
   if (cached) {
     return NextResponse.json(cached, {

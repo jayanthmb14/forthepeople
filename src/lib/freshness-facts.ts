@@ -16,6 +16,7 @@ import {
   electionResultsBehind,
   fyStartDate,
   isPrimary,
+  newerFy,
   judgeDataset,
   ruleFor,
   yearEndDate,
@@ -41,6 +42,8 @@ export interface FreshnessRow {
   traffic_date: Date | null; traffic_checked: Date | null; traffic_rows: number;
   stations_rows: number;
   budget_fy: string | null; budget_checked: Date | null; budget_rows: number; budget_estimate: boolean;
+  /** BudgetAllocation rows a page shows (SHOWN_BUDGET_ALLOCATION: they link to their source). */
+  budget_alloc_fy: string | null; budget_alloc_checked: Date | null; budget_alloc_rows: number;
   infra_date: Date | null; infra_checked: Date | null; infra_rows: number;
   tenders_date: Date | null; tenders_rows: number;
   industries_date: Date | null; industries_rows: number;
@@ -110,6 +113,10 @@ export function newer(a: Date | null | undefined, b: Date | null | undefined): D
 /** SQL row → the raw facts per dataset key (DATASETS in src/lib/freshness.ts). */
 export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw> {
   const year = (y: number | null): Raw["date"] => yearEndDate(y);
+  // The finance page lists budget entries AND allocations, so both count
+  // (Pune's budget is allocations only). The newer year of the two is the
+  // period; an entry's "estimate" note matters only for that year.
+  const budgetFy = newerFy(r.budget_fy, r.budget_alloc_fy);
   return {
     news: { rows: r.news_rows, date: r.news_date, checked: r.news_checked },
     // Official warnings only (OFFICIAL_ALERTS in src/lib/data-filters.ts:
@@ -148,12 +155,12 @@ export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw
     traffic: { rows: r.traffic_rows, date: r.traffic_date, checked: r.traffic_checked },
     stations: { rows: r.stations_rows },
     budget: {
-      rows: r.budget_rows,
-      date: fyStartDate(r.budget_fy),
-      checked: r.budget_checked,
-      period: r.budget_fy,
+      rows: r.budget_rows + r.budget_alloc_rows,
+      date: fyStartDate(budgetFy),
+      checked: newer(r.budget_checked, r.budget_alloc_checked),
+      period: budgetFy,
       periodKind: "fy",
-      estimate: r.budget_estimate,
+      estimate: r.budget_estimate && r.budget_fy === budgetFy,
     },
     projects: { rows: r.infra_rows, date: r.infra_date ?? r.infra_checked, checked: r.infra_checked },
     tenders: { rows: r.tenders_rows, date: r.tenders_date, checked: r.tenders_date, notCollected: !r.tenders_active },
