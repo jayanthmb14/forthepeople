@@ -76,3 +76,32 @@ describe("newerFy", () => {
     expect(newerFy(null, undefined)).toBeNull();
   });
 });
+
+describe("freshness facts — no maintenance edit counts as a data date (Sept 2026 audit)", () => {
+  const touched = new Date("2026-09-28T00:39:00Z"); // one clean-up pass touched some rows
+
+  it("schemes and industries are reference lists: no date, never 'current' or 'late'", () => {
+    const row = emptyRow({ schemes_rows: 12, industries_rows: 9, schemes_date: touched, industries_date: touched } as Partial<FreshnessRow>);
+    for (const key of ["schemes", "industries"]) {
+      const d = dataset(row, key);
+      expect(d.status).toBe("reference");
+      expect(d.dataDate).toBeNull();
+      expect(d.maxAgeHours).toBeNull();
+    }
+  });
+
+  it("schools without a UDISE+ snapshot have no data date (the listed rows' updatedAt is not one)", () => {
+    const d = dataset(emptyRow({ schools_rows: 40, schools_date: touched } as Partial<FreshnessRow>), "schools");
+    expect(d.rows).toBe(40);
+    expect(d.dataDate).toBeNull();
+    expect(d.status).toBe("unknown");
+  });
+
+  it("schools with a UDISE+ snapshot use when UDISE+ was read", () => {
+    const udiseAt = new Date("2026-09-22T05:00:00Z");
+    const d = dataset(emptyRow({ schools_rows: 40 }), "schools", { ...noExtra, udiseAt });
+    expect(d.rows).toBe(41);
+    expect(d.dataDate).toBe(udiseAt.toISOString());
+    expect(d.status).toBe("current");
+  });
+});

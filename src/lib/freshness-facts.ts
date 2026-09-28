@@ -46,8 +46,8 @@ export interface FreshnessRow {
   budget_alloc_fy: string | null; budget_alloc_checked: Date | null; budget_alloc_rows: number;
   infra_date: Date | null; infra_checked: Date | null; infra_rows: number;
   tenders_date: Date | null; tenders_rows: number;
-  industries_date: Date | null; industries_rows: number;
-  schemes_date: Date | null; schemes_rows: number;
+  industries_rows: number;
+  schemes_rows: number;
   housing_fy: string | null; housing_checked: Date | null; housing_rows: number; housing_estimate: boolean;
   services_rows: number;
   offices_rows: number;
@@ -58,7 +58,7 @@ export interface FreshnessRow {
   power_date: Date | null; power_rows: number;
   buses_rows: number; trains_rows: number;
   health_date: Date | null; health_rows: number;
-  schools_date: Date | null; schools_rows: number;
+  schools_rows: number;
   crops_date: Date | null; crops_checked: Date | null; crops_rows: number;
   agri_date: Date | null; agri_checked: Date | null; agri_rows: number;
   soil_date: Date | null; soil_rows: number;
@@ -164,8 +164,11 @@ export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw
     },
     projects: { rows: r.infra_rows, date: r.infra_date ?? r.infra_checked, checked: r.infra_checked },
     tenders: { rows: r.tenders_rows, date: r.tenders_date, checked: r.tenders_date, notCollected: !r.tenders_active },
-    industries: { rows: r.industries_rows, date: r.industries_date, checked: r.industries_date },
-    schemes: { rows: r.schemes_rows, date: r.schemes_date, checked: r.schemes_date },
+    // No date for schemes, industries, services and offices: hand-typed
+    // lists whose @updatedAt moves on any bulk edit, so it is not a check
+    // date (Sept 2026 audit); src/lib/freshness.ts marks them "reference".
+    industries: { rows: r.industries_rows },
+    schemes: { rows: r.schemes_rows },
     housing: {
       rows: r.housing_rows,
       date: fyStartDate(r.housing_fy),
@@ -174,9 +177,6 @@ export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw
       periodKind: "fy",
       estimate: r.housing_estimate,
     },
-    // Hand-typed directories: no date. @updatedAt moves on any bulk edit, so
-    // it is not a check date (Sept 2026 audit); src/lib/freshness.ts marks
-    // them "reference".
     services: { rows: r.services_rows },
     offices: { rows: r.offices_rows },
     exams: { rows: r.exams_rows, date: r.exams_date, checked: r.exams_date },
@@ -187,9 +187,9 @@ export function rawFacts(r: FreshnessRow, x: FreshnessExtra): Record<string, Raw
     buses: { rows: r.buses_rows },
     trains: { rows: r.trains_rows },
     health: { rows: r.health_rows, date: r.health_date, checked: r.health_date },
-    schools: x.udiseAt
-      ? { rows: r.schools_rows + 1, date: x.udiseAt, checked: x.udiseAt }
-      : { rows: r.schools_rows, date: r.schools_date, checked: r.schools_date },
+    // The UDISE+ totals date the schools page; the schools listed by name
+    // were typed in and their @updatedAt is not a data date.
+    schools: x.udiseAt ? { rows: r.schools_rows + 1, date: x.udiseAt, checked: x.udiseAt } : { rows: r.schools_rows },
     mandi: { rows: r.crops_rows, date: r.crops_date, checked: r.crops_checked },
     advice: { rows: r.agri_rows, date: r.agri_date, checked: r.agri_checked },
     soil: { rows: r.soil_rows, date: r.soil_date, checked: r.soil_date },

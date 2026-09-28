@@ -85,8 +85,8 @@ export async function collectDatasetDates(
     prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _count: { _all: true }, _max: { fetchedAt: true } }),
     prisma.budgetAllocation.aggregate({ where: { ...d, ...SHOWN_BUDGET_ALLOCATION }, _max: { fiscalYear: true } }),
     prisma.infraProject.aggregate({ where: { ...d, ...LOCAL_INFRA }, _count: { _all: true }, _max: { lastVerifiedAt: true, updatedAt: true } }),
-    prisma.localIndustry.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { updatedAt: true } }),
-    prisma.scheme.aggregate({ where: { ...d, active: true }, _count: { _all: true }, _max: { updatedAt: true } }),
+    prisma.localIndustry.count({ where: { ...d, active: true } }),
+    prisma.scheme.count({ where: { ...d, active: true } }),
     prisma.housingScheme.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
     prisma.housingScheme.aggregate({ where: d, _max: { fiscalYear: true } }),
     prisma.serviceGuide.aggregate({ where: { ...d, active: true }, _count: { _all: true } }),
@@ -101,7 +101,7 @@ export async function collectDatasetDates(
     prisma.powerOutage.aggregate({ where: { ...d, ...NOT_FROM_NEWS }, _count: { _all: true }, _max: { createdAt: true } }),
     prisma.busRoute.count({ where: { ...d, ...ACTIVE_TRANSPORT } }),
     prisma.trainSchedule.count({ where: { ...d, ...ACTIVE_TRANSPORT } }),
-    prisma.school.aggregate({ where: d, _count: { _all: true }, _max: { updatedAt: true } }),
+    prisma.school.count({ where: d }),
     prisma.cropPrice.aggregate({ where: { ...d, ...(districtSlug ? shownCropPrices(districtSlug) : SHOWN_CROP_PRICE) }, _count: { _all: true }, _max: { date: true } }),
     prisma.soilHealth.aggregate({ where: d, _count: { _all: true }, _max: { testedAt: true } }),
     prisma.agriAdvisory.aggregate({ where: d, _count: { _all: true }, _max: { weekOf: true } }),
@@ -156,13 +156,14 @@ export async function collectDatasetDates(
       period: newerFy(budgetE._max.fiscalYear, budgetTop._max.fiscalYear),
     },
     infrastructure: { rows: infra._count._all, newest: iso(infra._max.lastVerifiedAt ?? infra._max.updatedAt), period: null },
-    industries: { rows: industries._count._all, newest: iso(industries._max.updatedAt), period: null },
-    schemes: { rows: schemes._count._all, newest: iso(schemes._max.updatedAt), period: null },
+    // No date for the hand-typed lists (industries, schemes, services,
+    // offices): @updatedAt moves on any bulk edit (the 27 Sep 2026 hours
+    // clean-up made every office look checked that day; a 28 Sep pass did
+    // the same to schemes and industries), so it is not a check date
+    // (Sept 2026 audit). Hidden rows (active = false) are not counted.
+    industries: { rows: industries, newest: null, period: null },
+    schemes: { rows: schemes, newest: null, period: null },
     housing: { rows: housing._count._all, newest: iso(housing._max.updatedAt), period: housingTop._max.fiscalYear ?? null },
-    // No date for the hand-typed directories: @updatedAt moves on any bulk
-    // edit (the 27 Sep 2026 hours clean-up made every office look checked
-    // that day), so it is not a check date (Sept 2026 audit). Hidden rows
-    // (active = false) are not counted.
     services: { rows: services._count._all, newest: null, period: null },
     offices: { rows: offices._count._all, newest: null, period: null },
     exams: { rows: exams._count._all, newest: iso(exams._max.lastVerifiedAt), period: null },
@@ -170,12 +171,9 @@ export async function collectDatasetDates(
     dams: { rows: dams._count._all, newest: iso(dams._max.recordedAt), period: null },
     power: { rows: power._count._all, newest: iso(power._max.createdAt), period: null },
     transport: { rows: buses + trains, newest: null, period: null },
-    // UDISE+ totals (one snapshot) plus the schools listed by name; the date is when UDISE+ was last read.
-    schools: {
-      rows: schools._count._all + (udise ? 1 : 0),
-      newest: udise?.fetchedAt ?? iso(schools._max.updatedAt),
-      period: udise?.period ?? null,
-    },
+    // UDISE+ totals (one snapshot) plus the schools listed by name; the date
+    // is when UDISE+ was last read. The typed-in list has no date of its own.
+    schools: { rows: schools + (udise ? 1 : 0), newest: udise?.fetchedAt ?? null, period: udise?.period ?? null },
     crops: { rows: crops._count._all, newest: iso(crops._max.date), period: null },
     soil: { rows: soil._count._all + advisories._count._all, newest: iso(latest(soil._max.testedAt, advisories._max.weekOf)), period: null },
     population: { rows: profiles.length + popHistory.length, newest: null, period: editions.length ? editions.join(" · ") : null },

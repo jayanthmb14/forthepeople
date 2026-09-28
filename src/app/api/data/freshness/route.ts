@@ -140,13 +140,8 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       (SELECT count(*) FROM "InfraProject" x WHERE x."districtId" = d.id AND (x.scope IS NULL OR x.scope IN ('DISTRICT', 'CITY')))::int AS infra_rows,
       (SELECT max(x."lastCheckedAt") FROM "Tender" x WHERE x."locationDistrict" = d.name) AS tenders_date,
       (SELECT count(*) FROM "Tender" x WHERE x."locationDistrict" = d.name)::int AS tenders_rows,
-      GREATEST(
-        (SELECT max(x."updatedAt") FROM "LocalIndustry" x WHERE x."districtId" = d.id AND x.active),
-        (SELECT max(x."updatedAt") FROM "SugarFactory" x WHERE x."districtId" = d.id)
-      ) AS industries_date,
       ((SELECT count(*) FROM "LocalIndustry" x WHERE x."districtId" = d.id AND x.active)
         + (SELECT count(*) FROM "SugarFactory" x WHERE x."districtId" = d.id))::int AS industries_rows,
-      (SELECT max(x."updatedAt") FROM "Scheme" x WHERE x."districtId" = d.id) AS schemes_date,
       (SELECT count(*) FROM "Scheme" x WHERE x."districtId" = d.id)::int AS schemes_rows,
       (SELECT max(x."fiscalYear") FROM "HousingScheme" x WHERE x."districtId" = d.id) AS housing_fy,
       (SELECT max(x."updatedAt") FROM "HousingScheme" x WHERE x."districtId" = d.id) AS housing_checked,
@@ -154,7 +149,10 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
       EXISTS (SELECT 1 FROM "HousingScheme" x WHERE x."districtId" = d.id AND x.source ILIKE '%estimat%') AS housing_estimate,
       (SELECT count(*) FROM "ServiceGuide" x WHERE x."districtId" = d.id AND x.active)::int AS services_rows,
       (SELECT count(*) FROM "GovOffice" x WHERE x."districtId" = d.id AND x.active)::int AS offices_rows,
-      (SELECT max(x."updatedAt") FROM "GovernmentExam" x
+      -- When an exam row was last checked against its organiser (the same
+      -- date the data-sources page and the daily double-check use), never
+      -- @updatedAt, which any maintenance edit moves.
+      (SELECT max(x."lastVerifiedAt") FROM "GovernmentExam" x
         WHERE x.level = 'national' OR (x.level = 'state' AND x."stateId" = d."stateId") OR x."districtId" = d.id) AS exams_date,
       (SELECT count(*) FROM "GovernmentExam" x
         WHERE x.level = 'national' OR (x.level = 'state' AND x."stateId" = d."stateId") OR x."districtId" = d.id)::int AS exams_rows,
@@ -182,7 +180,6 @@ async function queryRow(districtId: string): Promise<FreshnessRow | null> {
           AND (x.department ILIKE '%health%' OR x.type ILIKE '%hospital%' OR x.type ILIKE '%health%'))
         + (SELECT count(*) FROM "DepartmentStaffing" x WHERE x."districtId" = d.id AND x.department ILIKE '%health%'
           AND x."sourceUrl" ~* '^https?://([a-z0-9-]+\.)*(gov\.in|nic\.in)(/|:|$)'))::int AS health_rows,
-      (SELECT max(x."updatedAt") FROM "School" x WHERE x."districtId" = d.id) AS schools_date,
       (SELECT count(*) FROM "School" x WHERE x."districtId" = d.id)::int AS schools_rows,
       (SELECT max(x."date") FROM "CropPrice" x WHERE x."districtId" = d.id) AS crops_date,
       (SELECT max(x."fetchedAt") FROM "CropPrice" x WHERE x."districtId" = d.id) AS crops_checked,
@@ -216,7 +213,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "district required" }, { status: 400 });
   }
 
-  const key = cacheKey(districtSlug, "freshness:v7");
+  const key = cacheKey(districtSlug, "freshness:v8");
   const cached = await cacheGet<Record<string, unknown>>(key);
   if (cached) {
     return NextResponse.json(cached, {
