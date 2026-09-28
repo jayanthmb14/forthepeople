@@ -177,7 +177,10 @@ export const NOT_STUB_TENDER = { OR: [{ rawHtmlSnapshot: null }, { NOT: { rawHtm
 // Crops, alerts. Each filter says which audit finding it answers.
 
 /**
- * CropPrice rows a page may show or count:
+ * The base rule for CropPrice rows. For one district's prices always use
+ * shownCropPrices(districtSlug) below — it adds the in-district mandi
+ * rule; this constant alone would show Ramanagara prices as Bengaluru
+ * Urban's. CropPrice rows a page may show or count:
  *  - not hand-typed seed rows. prisma/seed.ts wrote 8 invented Mandya
  *    prices labelled "AGMARKNET / data.gov.in" (Areca "₹350/kg",
  *    Sugarcane "₹3/kg"), and the Bengaluru / Mysuru seed scripts did the
@@ -202,7 +205,8 @@ export const SHOWN_CROP_PRICE = {
 };
 
 /**
- * SHOWN_CROP_PRICE, plus only the mandis inside the district where the
+ * THE per-district crop-price rule (pages, report card, insights, public
+ * API): SHOWN_CROP_PRICE, plus only the mandis inside the district where the
  * AGMARKNET district is bigger than ours (Bengaluru Urban: only Bangalore
  * APMC; New Delhi: none — agmarknetMarketsInDistrict in
  * src/scraper/lib/district-aliases.ts). An empty OR matches no row.

@@ -60,3 +60,36 @@ describe("report-card measures with nothing behind them are placeholders, not fi
     expect(dataCoverage([healthAlertsMetric(), powerReliabilityMetric(0, 0), soilHealthMetric(4)])).toEqual({ measured: 1, total: 3 });
   });
 });
+
+describe("cropPriceStability (report card: how steady mandi prices were over 30 days)", () => {
+  const day = (d: number) => new Date(Date.UTC(2026, 8, d));
+  const row = (commodity: string, d: number, modalPrice: number, market = "Mandya") => ({ commodity, variety: null, market, date: day(d), modalPrice });
+
+  it("steady prices per crop score high, however far apart the crops' prices are", async () => {
+    const { cropPriceStability } = await import("@/lib/health-score");
+    // Onion ₹1,500, wheat ₹2,400, areca ₹45,000 — each flat for three days.
+    const rows = ["Onion:1500", "Wheat:2400", "Arecanut:45000"].flatMap((x) => {
+      const [c, p] = x.split(":");
+      return [1, 2, 3].map((d) => row(c, d, Number(p)));
+    });
+    const m = cropPriceStability(rows);
+    expect(m.noData).toBeUndefined();
+    expect(m.value).toBe(0);
+    expect(m.score).toBe(100);
+  });
+
+  it("measures change over time within one crop and market", async () => {
+    const { cropPriceStability } = await import("@/lib/health-score");
+    // 1000, 1200, 800: mean 1000, population std-dev 163.3 → CV 16.3 % → score 51.
+    const m = cropPriceStability([row("Tomato", 1, 1000), row("Tomato", 2, 1200), row("Tomato", 3, 800)]);
+    expect(m.value).toBe(16);
+    expect(m.score).toBe(51);
+  });
+
+  it("is a placeholder without at least three dated prices for one crop in one market", async () => {
+    const { cropPriceStability } = await import("@/lib/health-score");
+    const oneEach = [row("Onion", 1, 1500), row("Wheat", 1, 2400), row("Tomato", 2, 900), row("Tomato", 3, 950, "Other APMC")];
+    expect(cropPriceStability(oneEach)).toMatchObject({ noData: true });
+    expect(cropPriceStability([])).toMatchObject({ noData: true });
+  });
+});

@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
 import { Prisma } from "@/generated/prisma";
-import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT } from "@/lib/data-filters";
+import { JJM_DISTRICT_TOTAL, LOCAL_INFRA, NJDG_COURTSTAT, NOT_FROM_NEWS, NOT_FROM_NEWS_OPTIONAL, SHOWN_CRIME, VERIFIED_PANCHAYAT, shownCropPrices } from "@/lib/data-filters";
 import { SHOWN_BUDGET_ALLOCATION } from "@/lib/data-filters";
 import { withPublishedSpend } from "@/lib/money/budget-shown";
 import { readDistrictSnapshot } from "@/scraper/lib/district-snapshot";
@@ -175,6 +175,48 @@ export function agriAdvisoriesMetric(active: number): SubMetric {
   const label = "Active Agri Advisories";
   if (active === 0) return { value: 0, max: 5, score: NO_DATA_SCORE, label, noData: true };
   return { value: active, max: 5, score: Math.min(100, active * 20), label };
+}
+
+/** One mandi price, as the crops page may show it (shownCropPrices). */
+export interface PricePoint {
+  commodity: string;
+  variety: string | null;
+  market: string;
+  date: Date;
+  modalPrice: number;
+}
+
+/** Fewest market days a crop needs in one mandi before its prices say anything about stability. */
+const MIN_PRICE_DAYS = 3;
+
+/**
+ * Crop price stability: for each crop (and variety) in each mandi with at
+ * least three market days, how much its modal price moved (coefficient of
+ * variation, %); the average across them is the value, lower is better.
+ * The old measure took the spread of 30 rows of DIFFERENT crops (onion
+ * against wheat against areca), which says nothing about stability and
+ * scored 0 for Pune (Sept 2026 audit). Too few dated prices → placeholder.
+ */
+export function cropPriceStability(prices: readonly PricePoint[]): SubMetric {
+  const series = new Map<string, { days: Set<number>; values: number[] }>();
+  for (const p of prices) {
+    if (!(p.modalPrice > 0)) continue;
+    const key = `${p.commodity}|${p.variety ?? ""}|${p.market}`;
+    const s = series.get(key) ?? { days: new Set<number>(), values: [] };
+    s.days.add(new Date(p.date).setUTCHours(0, 0, 0, 0));
+    s.values.push(p.modalPrice);
+    series.set(key, s);
+  }
+  const cvs: number[] = [];
+  for (const { days, values } of series.values()) {
+    if (days.size < MIN_PRICE_DAYS) continue;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const sd = Math.sqrt(values.reduce((acc, v) => acc + (v - mean) ** 2, 0) / values.length);
+    cvs.push((sd / mean) * 100);
+  }
+  if (cvs.length === 0) return { value: 0, max: 0, score: 60, label: "Crop Price Stability", noData: true };
+  const cv = cvs.reduce((a, b) => a + b, 0) / cvs.length;
+  return { value: Math.round(cv), max: 0, score: Math.round(Math.max(0, 100 - cv * 3)), label: "Crop Price Stability (CV % — lower is better)" };
 }
 
 /** How many measures rest on real data (the rest are placeholders). */
@@ -378,25 +420,18 @@ async function calcWaterSanitation(districtId: string): Promise<CategoryResult> 
 }
 
 // ── 6. Economy ───────────────────────────────────────────────
-async function calcEconomy(districtId: string): Promise<CategoryResult> {
+async function calcEconomy(districtId: string, districtSlug: string): Promise<CategoryResult> {
   const sub: Record<string, SubMetric> = {};
 
-  // Crop price stability (std dev of recent prices — lower = better)
+  // Crop price stability over the last 30 days: only the prices the crops
+  // page shows (shownCropPrices — no seed rows, only mandis in the district).
   const prices = await prisma.cropPrice.findMany({
-    where: { districtId, date: { gte: new Date(Date.now() - 30 * 86400000) } },
+    where: { districtId, date: { gte: new Date(Date.now() - 30 * 86400000) }, ...shownCropPrices(districtSlug) },
+    select: { commodity: true, variety: true, market: true, date: true, modalPrice: true },
     orderBy: { date: "desc" },
-    take: 30,
+    take: 3000,
   });
-  if (prices.length > 5) {
-    const modals = prices.map((p) => p.modalPrice);
-    const mean = modals.reduce((a, b) => a + b, 0) / modals.length;
-    const stdDev = Math.sqrt(modals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / modals.length);
-    const cv = mean > 0 ? (stdDev / mean) * 100 : 20; // coefficient of variation
-    const stabilityScore = Math.max(0, 100 - cv * 3);
-    sub.cropPriceStability = { value: Math.round(cv), max: 0, score: Math.round(stabilityScore), label: "Crop Price Stability (CV % — lower is better)" };
-  } else {
-    sub.cropPriceStability = { value: 0, max: 0, score: 60, label: "Crop Price Stability", noData: true };
-  }
+  sub.cropPriceStability = cropPriceStability(prices);
 
   // Revenue collection
   const revenue = await prisma.revenueCollection.findMany({
@@ -571,6 +606,10 @@ export interface HealthScoreSummary {
 }
 
 export async function calculateDistrictHealthScore(districtId: string): Promise<HealthScoreSummary> {
+  const district = (await prisma.district.findUnique({ where: { id: districtId }, select: { name: true, slug: true } })) ?? {
+    name: districtId,
+    slug: "",
+  };
   // Fetch district for district-type-aware weight adjustment
   const districtCensus = await census2011(districtId);
   const districtType = getDistrictType(districtCensus?.population, districtCensus?.density, districtCensus?.urbanPct);
@@ -582,7 +621,7 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
     calcHealth(districtId),
     calcInfrastructure(districtId),
     calcWaterSanitation(districtId),
-    calcEconomy(districtId),
+    calcEconomy(districtId, district.slug),
     calcSafety(districtId),
     calcAgriculture(districtId),
     calcDigitalAccess(districtId),
@@ -671,9 +710,8 @@ export async function calculateDistrictHealthScore(districtId: string): Promise<
     update: scoreData,
   });
 
-  const district = await prisma.district.findFirst({ where: { id: districtId }, select: { name: true } });
   console.log(
-    `[Health Score] ${district?.name ?? districtId}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}` +
+    `[Health Score] ${district.name}: ${overallScore}/100 (${grade})${trend ? ` — ${trend}` : ""}` +
       ` — ${coverage.measured} of ${coverage.total} measures backed by data`,
   );
   return { overallScore, grade, ...coverage };
