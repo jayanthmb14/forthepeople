@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { tendersCollectedFor } from "@/lib/constants/tender-portals";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export async function GET() {
       orderBy: { name: "asc" },
     });
     return NextResponse.json({
-      districts: rows.map((d) => ({
+      // Only districts the collector reads (tender-portals.ts).
+      districts: rows.filter((d) => tendersCollectedFor(d.state.slug, d.slug)).map((d) => ({
         districtSlug: d.slug,
         districtName: d.name,
         stateSlug: d.state.slug,

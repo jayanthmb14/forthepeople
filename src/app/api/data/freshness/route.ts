@@ -53,6 +53,7 @@ import {
 } from "@/lib/data-filters";
 import { SACHET_SOURCE_PREFIX } from "@/scraper/lib/sachet";
 import { getCronRun } from "@/lib/cron-auth";
+import { tendersCollectedFor } from "@/lib/constants/tender-portals";
 
 export const runtime = "nodejs";
 
@@ -435,7 +436,7 @@ export async function GET(req: NextRequest) {
 
   const district = await prisma.district.findFirst({
     where: { slug: districtSlug },
-    select: { id: true, name: true },
+    select: { id: true, name: true, state: { select: { slug: true } } },
   });
   if (!district) {
     return NextResponse.json({ error: "District not found" }, { status: 404 });
@@ -445,6 +446,8 @@ export async function GET(req: NextRequest) {
   if (!row) {
     return NextResponse.json({ error: "District not found" }, { status: 404 });
   }
+  // Tenders count as collected only where the collector reads the district.
+  row.tenders_active = row.tenders_active && tendersCollectedFor(district.state.slug, districtSlug);
 
   const now = new Date();
   const [courtsSnapshot, udise, nrega, gp, alertsRun, crops] = await Promise.all([

@@ -1,16 +1,28 @@
 # Tenders Module — Activating for a New District
 
-_Last updated: 2026-04-20. See also: `docs/29-Tenders-Module-Architecture.md`._
+_Last updated: 2026-09-28. See also: `docs/29-Tenders-Module-Architecture.md`._
 
 ## TL;DR
 
-Turning on tenders for a district is a DB-only flip (no code change) once the first district in that state is live. The sidebar link is already universal.
+A district's tender pages are open only when **both** hold:
 
-```sql
-UPDATE "District" SET "tendersActive" = true WHERE slug = 'your-district-slug';
-```
+1. the collector reads it — its state has a portal in `GEPNIC_PORTALS` and
+   the district has bodies in `GEPNIC_ORGS`
+   (`src/lib/constants/tender-portals.ts`, `tendersCollectedFor()`); and
+2. `District.tendersActive` is true (the owner's switch, e.g. after the
+   legal / robots check in `docs/OWNER-TODO.md` §6).
 
-The snippet on the district overview, the locked-state page, and the tenders dashboard all react to this flag automatically.
+Everywhere else the locked "not tracked yet" page shows. The sidebar link is
+already universal.
+
+State on 28 Sep 2026: the collector reads Pune, Mumbai, Chennai, Kolkata and
+New Delhi, whose flags are still off (legal check pending); the flag is on
+for Bengaluru Urban, Mandya and Mysuru, which no collector reads, so their
+pages stay locked by rule 1. `scripts/activate-tenders-districts.ts
+--confirm` makes the stored flag match the collector.
+
+The snippet on the district overview, the locked-state page, the freshness
+panel and the tenders dashboard all follow this rule automatically.
 
 ---
 
@@ -18,17 +30,13 @@ The snippet on the district overview, the locked-state page, and the tenders das
 
 ### 1. Flip the flag
 
-```sql
-UPDATE "District"
-SET "tendersActive" = true
-WHERE slug = 'your-district-slug';
-```
-
-Or via the existing bulk script:
+After step 3 (the district is in `GEPNIC_ORGS`), let the script set the
+flag for every district at once — on where the collector reads, off
+everywhere else:
 
 ```bash
-# Edit scripts/activate-tenders-districts.ts — append slug to ACTIVE_SLUGS.
-npx tsx scripts/activate-tenders-districts.ts
+npx tsx scripts/activate-tenders-districts.ts            # dry run: lists the changes
+npx tsx scripts/activate-tenders-districts.ts --confirm  # writes them
 ```
 
 ### 2. Seed authorities for the district
@@ -46,12 +54,12 @@ Use the seed's `authorityShortCode` convention to keep look-ups fast.
 
 ### 3. Confirm portal coverage for the district's state
 
-Open `src/scraper/lib/gepnic.ts`: `GEPNIC_PORTALS` (one GePNIC portal per
+Open `src/lib/constants/tender-portals.ts`: `GEPNIC_PORTALS` (one GePNIC portal per
 state) and `GEPNIC_ORGS` (district slug → the bodies we follow there).
 
 - If the state has a portal (Maharashtra, Tamil Nadu, West Bengal, Delhi) →
-  add the district's bodies to `GEPNIC_ORGS`; the scrape-tenders cron picks
-  them up on its next run.
+  add the district's bodies to `GEPNIC_ORGS` (`src/lib/constants/tender-portals.ts`);
+  the scrape-tenders cron picks them up on its next run.
 - If the state has no entry (Karnataka's KPPP and Telangana run other
   software) → no collector reads it; a new collector is needed before the
   district can be switched on. Do not switch a district on without one.
@@ -69,7 +77,7 @@ The `/tenders/disclaimer` page composes universal clauses first, then state-spec
 ### 5. Nothing to do in UI
 
 - Sidebar link already renders "Govt. Tenders" for every district (Fix 2).
-- Overview snippet already renders for every district, falling out of LOCKED into LIVE the moment `tendersActive` flips and data arrives (Fix 5).
+- Overview snippet already renders for every district, falling out of LOCKED into LIVE once the district is collected, `tendersActive` is on and data arrives (Fix 5).
 - Dashboard, apply-guide, transparency, how-it-works pages already work for any district via dynamic routes (Module 30 from launch).
 
 ### 6. Verify end-to-end

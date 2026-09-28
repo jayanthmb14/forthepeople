@@ -1,41 +1,52 @@
-// One-shot activator for the Tenders module. Run AFTER Vercel's build
-// has applied the schema (adds District.tendersActive). Idempotent —
-// re-running is safe (upsert-style where clause + setMany).
+// Keeps the per-district tenders switch (District.tendersActive) in line
+// with what the collector reads: ON for every active district in
+// GEPNIC_ORGS whose state has a GePNIC portal
+// (src/lib/constants/tender-portals.ts), OFF for every other district.
+// The tender pages already stay locked where no collector reads the district
+// (tendersCollectedFor), so this only makes the stored flag agree.
 //
-// Usage (from project root, with DATABASE_URL set to production pooled URL):
-//   npx tsx scripts/activate-tenders-districts.ts
+// Dry run by default: prints what would change and writes nothing.
+//   npx tsx scripts/activate-tenders-districts.ts            # dry run
+//   npx tsx scripts/activate-tenders-districts.ts --confirm  # write
 //
-// Adds new slugs here as coverage expands — see docs/TENDERS-ACTIVATION.md.
+// Before --confirm: do the legal / robots check on the state portals
+// (docs/OWNER-TODO.md §6). Idempotent — re-running is safe.
+// See docs/TENDERS-ACTIVATION.md.
 
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
-import "dotenv/config";
+import { tendersCollectedFor } from "../src/lib/constants/tender-portals";
 
-const ACTIVE_SLUGS = ["bengaluru-urban", "mandya", "mysuru"] as const;
+const CONFIRM = process.argv.includes("--confirm");
 
 async function main() {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
   const prisma = new PrismaClient({ adapter });
 
   try {
-    const before = await prisma.district.count({ where: { tendersActive: true } });
-    console.log(`[activate-tenders] currently active: ${before} district(s)`);
-
-    const res = await prisma.district.updateMany({
-      where: { slug: { in: [...ACTIVE_SLUGS] } },
-      data: { tendersActive: true },
-    });
-    console.log(`[activate-tenders] flipped ${res.count} district(s) to tendersActive=true`);
-
-    const final = await prisma.district.findMany({
-      where: { tendersActive: true },
-      select: { slug: true, name: true, state: { select: { slug: true } } },
+    const districts = await prisma.district.findMany({
+      where: { active: true },
+      select: { id: true, slug: true, name: true, tendersActive: true, state: { select: { slug: true } } },
       orderBy: { name: "asc" },
     });
-    console.log("[activate-tenders] active now:");
-    for (const d of final) {
-      console.log(`  • ${d.name} (${d.state.slug}/${d.slug})`);
+    const turnOn = districts.filter((d) => !d.tendersActive && tendersCollectedFor(d.state.slug, d.slug));
+    const turnOff = districts.filter((d) => d.tendersActive && !tendersCollectedFor(d.state.slug, d.slug));
+
+    for (const d of turnOn) console.log(`  ON   ${d.name} (${d.state.slug}/${d.slug})`);
+    for (const d of turnOff) console.log(`  OFF  ${d.name} (${d.state.slug}/${d.slug}) — no collector reads it`);
+    if (!turnOn.length && !turnOff.length) {
+      console.log("[activate-tenders] the flag already matches the collector; nothing to do");
+      return;
     }
+    if (!CONFIRM) {
+      console.log(`[activate-tenders] dry run: ${turnOn.length} to switch on, ${turnOff.length} to switch off. Re-run with --confirm to write.`);
+      return;
+    }
+
+    const on = await prisma.district.updateMany({ where: { id: { in: turnOn.map((d) => d.id) } }, data: { tendersActive: true } });
+    const off = await prisma.district.updateMany({ where: { id: { in: turnOff.map((d) => d.id) } }, data: { tendersActive: false } });
+    console.log(`[activate-tenders] switched on ${on.count}, switched off ${off.count}`);
   } finally {
     await prisma.$disconnect();
   }

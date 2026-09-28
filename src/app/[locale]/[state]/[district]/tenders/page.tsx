@@ -127,7 +127,8 @@ export default function TendersPage({
   const closeSheet = useCallback(() => setOpenId(null), []);
   const pageSize = 20;
 
-  // Per-district lock check — reads from DB.tendersActive. When false we
+  // Per-district lock check — DB.tendersActive AND a collector reading the
+  // district (tendersCollectedFor, applied by the access route). When false we
   // render TenderLockedState instead of the dashboard. Cached 2 minutes.
   const access = useQuery<AccessResponse>({
     queryKey: ["tenders-access", districtSlug],

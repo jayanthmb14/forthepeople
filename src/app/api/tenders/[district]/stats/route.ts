@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDistrictName, serializeForJson } from "@/lib/tenders/tender-helpers";
 import { NOT_STUB_TENDER } from "@/lib/data-filters";
+import { tendersCollectedFor } from "@/lib/constants/tender-portals";
 
 export const dynamic = "force-dynamic";
 
@@ -65,11 +66,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
       select: { id: true, title: true, bidSubmissionEnd: true },
     }),
     // Activation flag — used to determine snippet status = LOCKED.
-    prisma.district.findFirst({ where: { name: districtName }, select: { tendersActive: true } }),
+    prisma.district.findFirst({ where: { slug: districtSlug, active: true }, select: { tendersActive: true, state: { select: { slug: true } } } }),
   ]);
 
   // Snippet status derivation
-  const tendersActive = districtFlag?.tendersActive ?? false;
+  // On only where the collector reads the district (tender-portals.ts).
+  const tendersActive = Boolean(districtFlag?.tendersActive && tendersCollectedFor(districtFlag.state.slug, districtSlug));
   const lastCheckedAt = lastCheckedAgg._max.lastCheckedAt ?? null;
   let snippetStatus: "LIVE" | "STALE" | "LOCKED" | "NO_DATA";
   if (!tendersActive) snippetStatus = "LOCKED";

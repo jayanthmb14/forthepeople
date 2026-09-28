@@ -53,3 +53,19 @@ describe("police sources", () => {
     expect(modulePortal("police", "maharashtra", "pune") ?? "").not.toMatch(/ncrb/);
   });
 });
+
+describe("tender switch follows the collector", () => {
+  it("is possible only where the collector reads the district", async () => {
+    const { tendersCollectedFor, GEPNIC_ORGS } = await import("@/lib/constants/tender-portals");
+    for (const [state, district] of [["maharashtra", "pune"], ["maharashtra", "mumbai"], ["tamil-nadu", "chennai"], ["west-bengal", "kolkata"], ["delhi", "new-delhi"]]) {
+      expect(tendersCollectedFor(state, district)).toBe(true);
+    }
+    // The old KPPP pilot districts: switched on in the DB, read by nothing.
+    for (const district of ["bengaluru-urban", "mandya", "mysuru"]) {
+      expect(tendersCollectedFor("karnataka", district)).toBe(false);
+    }
+    // A followed body in a state without a portal would not count either.
+    expect(tendersCollectedFor("karnataka", "pune")).toBe(false);
+    expect(Object.keys(GEPNIC_ORGS).length).toBeGreaterThan(0);
+  });
+});
