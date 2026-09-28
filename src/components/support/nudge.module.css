@@ -1,0 +1,172 @@
+/*
+ * ForThePeople.in — Your District. Your Data. Your Right.
+ * © 2026 Jayanth M B. MIT License.
+ *
+ * nudge.module.css — the "Sorry to interrupt" support card (SupportNudge).
+ * Design v5.2 "White Calm": a white card, a 1 px border, a soft shadow and
+ * the rose support colour only on the heart and the main button. Tokens only.
+ *
+ *   PC / tablet  bottom-left, 360 px wide ("Report a problem" is bottom-right)
+ *   Phone        full width minus 12 px gutters, above the 44 px report
+ *                button (12 + 44 + 12 px) and the safe area
+ */
+
+.card {
+  position: fixed;
+  left: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  /* Same layer as the report button (40): under header menus, sheets and pop-ups. */
+  z-index: 40;
+  width: min(360px, calc(100vw - 40px));
+  padding: 16px 16px 14px;
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
+  border-radius: 16px;
+  box-shadow: var(--ftp-shadow-2);
+  color: var(--ftp-text);
+  font-family: var(--ftp-font-sans);
+  animation: nudgeIn 180ms var(--ftp-ease-out, ease-out) both;
+}
+@keyframes nudgeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 40px; /* room for ✕ */
+}
+.heart {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ftp-support-tint);
+  color: var(--ftp-support);
+}
+.heart svg {
+  fill: color-mix(in srgb, var(--ftp-support) 22%, transparent);
+}
+.title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--ftp-text);
+}
+.body {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ftp-text);
+}
+.price {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ftp-text-2);
+}
+
+.close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ftp-text-2);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.close:hover {
+  background: var(--ftp-surface-2);
+  color: var(--ftp-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.primary {
+  flex: 1 1 auto;
+  border: 1px solid var(--ftp-support);
+  background: var(--ftp-support);
+  color: var(--ftp-surface);
+}
+.primary:hover {
+  background: color-mix(in srgb, var(--ftp-support) 88%, var(--ftp-text));
+}
+.primaryHeart {
+  fill: color-mix(in srgb, var(--ftp-surface) 35%, transparent);
+}
+.secondary {
+  border: 1px solid var(--ftp-border-strong);
+  background: var(--ftp-surface);
+  color: var(--ftp-text);
+}
+.secondary:hover {
+  background: var(--ftp-surface-2);
+}
+
+.close:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid var(--ftp-focus, var(--ftp-brand));
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .card {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    /* Above the 44 px round report button in the corner. */
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    border-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+  .close,
+  .primary,
+  .secondary {
+    transition: none;
+  }
+}

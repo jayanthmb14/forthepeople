@@ -530,7 +530,7 @@ Styles in `district-shell.css`; parts in `src/components/district/shell/`:
 - News and alerts stay lower down. The glance row shows only on the
   overview, not above module pages.
 
-## 11. Support page (v5.1)
+## 11. Support page (v5.1, White Calm in v5.7)
 
 - Each plan has its own pastel hue (via `ftp-hue-<name>`, `tier-look.ts`) and
   a drawn picture: one-time gift **rose** (the support colour), District
@@ -547,6 +547,20 @@ Styles in `district-shell.css`; parts in `src/components/district/shell/`:
   phone number or email is shown as "Supporter".
 - The home support band is soft rose and gold, with a few real supporter
   names (Founding Builder first) and no amounts.
+- **v5.7 refresh (28 Sep 2026)** — White Calm on `/support`: every card is
+  white with a 1 px `--ftp-border`; the plans and the supporters sit in two
+  slightly darker rounded *bands* (`--ftp-surface-2` mixed into `--ftp-bg`,
+  20 px radius) so their white cards stand out — the one place a band is
+  allowed. A plan shows its hue only as a 2 px top rule, its chip, its price
+  and its picture (no wash); it lifts 2 px on hover (150 ms), and the plan
+  whose checkout is open (or linked as `#plan-<key>`) gets a hue outline.
+  The amount + button sit in a card footer. The rose/blue header wash and
+  the coloured step washes are gone. Blocks rise in over 180 ms.
+- **Support nudge** (`SupportNudge.tsx`, rules in `nudge-logic.ts`): a
+  non-modal white card, 16 px radius, bottom-left on PCs (the report button
+  owns bottom-right) and above the report button on phones; rose only on
+  the heart chip and the main button; no emoji; no focus stealing (polite
+  live region); 180 ms slide-in, none under reduced motion.
 
 ## 12. Words
 

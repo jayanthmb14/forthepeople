@@ -55,8 +55,9 @@
   padding: 16px 12px 12px;
   overflow: hidden;
   scroll-snap-align: start;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--hue-tint) 88%, var(--ftp-surface)) 0px, var(--ftp-surface) 76px);
-  border: 1px solid color-mix(in srgb, var(--hue) 18%, var(--ftp-border));
+  /* v5.2 White Calm: a white card; the plan colour is only the top rule. */
+  background: var(--ftp-surface);
+  border: 1px solid var(--ftp-border);
   border-radius: var(--ftp-radius-card);
   box-shadow: var(--ftp-shadow-1);
 }
@@ -64,15 +65,14 @@
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--hue-pop), color-mix(in srgb, var(--hue) 50%, var(--hue-pop)), var(--hue-pop));
+  height: 2px;
+  background: var(--hue);
 }
 .card[data-tier="founder"] {
-  background: linear-gradient(180deg, var(--sup-gold-tint) 0px, var(--ftp-surface) 84px);
-  border-color: color-mix(in srgb, var(--sup-gold) 45%, var(--ftp-border));
+  border-color: color-mix(in srgb, var(--sup-gold) 35%, var(--ftp-border));
 }
 .card[data-tier="founder"]::before {
-  background: linear-gradient(90deg, var(--sup-gold-soft), var(--sup-gold), var(--sup-gold-soft));
+  background: var(--sup-gold);
 }
 
 .head {
