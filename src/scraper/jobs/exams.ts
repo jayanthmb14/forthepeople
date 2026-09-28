@@ -46,11 +46,13 @@ import {
   parseUpscExamPage,
   type OfficialExam,
 } from "../lib/exam-sources";
+import { fetchSource } from "../lib/source-fetch";
 
+// Names ForThePeople.in honestly; kept as it was (a new user agent would
+// need a check against upsc.gov.in first).
 const BROWSER_UA =
   "Mozilla/5.0 (compatible; ForThePeople.in/1.0; +https://forthepeople.in) AppleWebKit/537.36 (KHTML, like Gecko)";
 const FETCH_TIMEOUT_MS = 12_000;
-const UPSC_CONCURRENCY = 4;
 /** Exams whose exam date is further back than this are not refreshed. */
 const STALE_EXAM_DAYS = 180;
 
@@ -58,14 +60,23 @@ const STALE_EXAM_DAYS = 180;
 // examStatusRank() in src/lib/dedupe/keys.ts (legacy words included).
 const rank = (s: string | null | undefined) => examStatusRank(s);
 
+/**
+ * One official page through the shared polite fetcher (src/scraper/lib/
+ * source-fetch.ts): one request every 2.5 s per host (Sept 2026: the UPSC
+ * pass sent 4 pages at once), no retry (as before, so the pass stays inside
+ * the cron's time budget), and no redirect following (upsc.gov.in answers
+ * moved pages with a redirect to its home page). Throws on failure so the
+ * caller logs it and writes nothing.
+ */
 async function getText(url: string, headers: Record<string, string> = {}): Promise<string> {
-  const res = await fetch(url, {
+  const res = await fetchSource(url, {
     headers: { "User-Agent": BROWSER_UA, ...headers },
-    redirect: "manual", // upsc.gov.in answers moved pages with a redirect to its home page
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    redirect: "manual",
+    timeoutMs: FETCH_TIMEOUT_MS,
+    retries: 0,
   });
-  if (res.status !== 200) throw new Error(`${new URL(url).host} HTTP ${res.status}`);
-  return res.text();
+  if (!res.ok) throw new Error(`${new URL(url).host} ${res.error ?? `HTTP ${res.status}`}`);
+  return res.text;
 }
 
 /** UPSC active exams with the facts from each exam's page. */
@@ -75,20 +86,20 @@ async function collectUpsc(log: (m: string) => void, deadlineMs: number): Promis
   const current = list.filter((x) => isCurrentExamTitle(x.title, now));
   log(`UPSC: ${list.length} active exams listed, ${current.length} current`);
 
+  // One page at a time (the fetcher keeps 2.5 s between upsc.gov.in
+  // requests); what the time budget does not reach is read tomorrow.
   const out: OfficialExam[] = [];
-  for (let i = 0; i < current.length; i += UPSC_CONCURRENCY) {
+  for (let i = 0; i < current.length; i++) {
     if (Date.now() > deadlineMs) {
       log(`UPSC: time budget reached, ${current.length - i} exam page(s) left for tomorrow`);
       break;
     }
-    const batch = current.slice(i, i + UPSC_CONCURRENCY);
-    const settled = await Promise.allSettled(
-      batch.map(async (x) => parseUpscExamPage(await getText(x.url), x.url, x.title)),
-    );
-    settled.forEach((s, j) => {
-      if (s.status === "fulfilled") out.push(s.value);
-      else log(`UPSC: "${batch[j].title}" page failed: ${s.reason instanceof Error ? s.reason.message : String(s.reason)}`);
-    });
+    const x = current[i];
+    try {
+      out.push(parseUpscExamPage(await getText(x.url), x.url, x.title));
+    } catch (err) {
+      log(`UPSC: "${x.title}" page failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
   return out;
 }

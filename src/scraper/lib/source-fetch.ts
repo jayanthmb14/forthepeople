@@ -6,7 +6,7 @@
 
 // ═══════════════════════════════════════════════════════════
 // One polite HTTP helper for the government-portal collectors
-// (JJM, UDISE+, NREGA, …).
+// (JJM, UDISE+, NREGA, GePNIC, PPAC, UPSC / SSC exams, …).
 //
 //   • every call has a hard timeout (AbortSignal.timeout);
 //   • one retry, after a short pause, on a network error or a
@@ -31,6 +31,12 @@ export interface SourceFetchOptions {
   minGapMs?: number;
   /** Stop (without trying) when Date.now() is past this. */
   deadlineMs?: number;
+  /**
+   * "follow" (default) or "manual": with "manual" a 3xx is not followed and
+   * comes back as ok:false "HTTP 30x" (upsc.gov.in answers a moved page with
+   * a redirect to its home page, which must not be read as the exam page).
+   */
+  redirect?: "follow" | "manual";
 }
 
 export interface SourceFetchResult {
@@ -43,21 +49,28 @@ export interface SourceFetchResult {
   cookies: string[];
 }
 
-const lastHit = new Map<string, number>();
+/** Start time of the latest request per host, reserved before waiting. */
+const lastStart = new Map<string, number>();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // 500 too: the NIC portals (GePNIC, NREGA) return a stray 500 now and then.
 const RETRY_STATUS = new Set([500, 502, 503, 504]);
 
+/**
+ * Wait until `minGapMs` after the previous request to this host. The slot is
+ * reserved before sleeping, so callers that start together queue up one gap
+ * apart instead of all firing when the first gap ends.
+ */
 async function waitForHost(host: string, minGapMs: number): Promise<void> {
-  const last = lastHit.get(host);
   const now = Date.now();
-  if (last !== undefined && now - last < minGapMs) await sleep(minGapMs - (now - last));
-  lastHit.set(host, Date.now());
+  const prev = lastStart.get(host);
+  const at = prev === undefined ? now : Math.max(now, prev + minGapMs);
+  lastStart.set(host, at);
+  if (at > now) await sleep(at - now);
 }
 
 /** Fetch a URL politely. Never throws. */
 export async function fetchSource(url: string, opts: SourceFetchOptions = {}): Promise<SourceFetchResult> {
-  const { method = "GET", headers = {}, body, timeoutMs = 20_000, retries = 1, minGapMs = 2_500, deadlineMs } = opts;
+  const { method = "GET", headers = {}, body, timeoutMs = 20_000, retries = 1, minGapMs = 2_500, deadlineMs, redirect = "follow" } = opts;
   const host = new URL(url).host;
   const started = Date.now();
   let lastError = "";
@@ -81,7 +94,7 @@ export async function fetchSource(url: string, opts: SourceFetchOptions = {}): P
           ...headers,
         },
         body,
-        redirect: "follow",
+        redirect,
         signal: AbortSignal.timeout(timeoutMs),
       });
       const text = await res.text();
