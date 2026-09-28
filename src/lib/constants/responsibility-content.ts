@@ -115,6 +115,12 @@ const MANDYA_CONTENT: DistrictResponsibilityContent = {
 };
 
 // ── Bengaluru Urban ─────────────────────────────────────────
+// BBMP was dissolved on 2 Sep 2025; the Greater Bengaluru Authority and five
+// city corporations replaced it (state-config.ts). Sept 2026: every BBMP
+// mention now says "your city corporation (Greater Bengaluru Authority)";
+// figures, app names and ward counts that only BBMP pages backed (the
+// 6,000 t/day waste figure, "243 wards", the SWM and Sahaaya apps,
+// composting subsidies) were dropped rather than guessed.
 
 const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
   districtName: "Bengaluru Urban",
@@ -124,12 +130,11 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
     {
       title: "Cleanliness & Waste",
       items: [
-        "Bengaluru generates ~6,000 tonnes of solid waste per day — only ~40% is properly segregated (source: BBMP SWM)",
-        "Segregate waste at source: wet (green), dry (blue), reject (red) — BBMP mandates 3-bin segregation",
-        "E-waste from IT sector is a growing crisis — drop old electronics at BBMP-authorised e-waste centres, not in regular bins",
+        "Segregate waste at source: wet, dry and reject in separate bins",
+        "E-waste from IT sector is a growing crisis — drop old electronics at authorised e-waste collection centres, not in regular bins",
         "Construction debris dumping on lake beds is illegal — report it to the city corporation",
-        "Compost wet waste at home or apartment level — BBMP offers composting subsidies for bulk generators",
-        "Download BBMP SWM app to report missed pickups, illegal dumping, and burning of waste",
+        "Compost wet waste at home or at apartment level",
+        "Report missed pickups, illegal dumping and burning of waste to your city corporation (Greater Bengaluru Authority)",
       ],
     },
     {
@@ -149,7 +154,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
         "Bengaluru has 80 lakh+ registered vehicles — average commute is 1.5-2 hours daily",
         "Use Namma Metro and BMTC buses wherever possible — every car off the road helps",
         "Carpool for office commutes — apps like Quickride and local apartment groups reduce vehicles by 30%",
-        "Report potholes to the city corporation (Sahaaya app)",
+        "Report potholes to your city corporation (Greater Bengaluru Authority)",
         "Outer Ring Road, Silk Board junction, and KR Puram are critical bottlenecks — avoid peak hours if possible",
         "Follow lane discipline and signal rules — Bengaluru records 800+ road fatalities per year",
       ],
@@ -161,7 +166,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
         "Bellandur and Varthur lakes have caught fire from toxic foam — never dump sewage or chemicals into storm drains",
         "Ulsoor, Sankey, Hebbal lakes are biodiversity hotspots — volunteer with lake restoration groups",
         "Urban heat island effect has increased temperatures by 2-3°C — every tree you plant counts",
-        "Report tree felling to BBMP Forest Cell — cutting trees without permission is a criminal offence",
+        "Report tree felling to your city corporation (Greater Bengaluru Authority) — cutting trees without permission is a criminal offence",
         "Avoid single-use plastics — Karnataka has a plastic ban in effect since 2016",
       ],
     },
@@ -171,16 +176,16 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
         "Use IChangeMyCity app to report civic issues — potholes, garbage, broken streetlights",
         "Volunteer at government schools for digital literacy sessions — Bengaluru has the talent to bridge the digital divide",
         "Contribute to OpenStreetMap for Bengaluru — better maps help emergency services and urban planning",
-        "Attend BBMP ward committee meetings — they are open to public and discuss your ward's budget",
-        "Use BBMP Sahaaya, BES-COM apps, and BWSSB portals for all civic services instead of middlemen",
+        "Attend your ward committee meetings — they are open to the public and discuss your ward's budget",
+        "Use the official city corporation, BESCOM and BWSSB apps and portals for civic services instead of middlemen",
       ],
     },
     {
       title: "Civic Duty",
       items: [
-        "Attend BBMP ward committee meetings — each of 243 wards has monthly meetings open to all residents",
+        "Attend your ward committee's meetings — they are open to all residents",
         "Pay property tax on time via Bengaluru One portal — unpaid taxes reduce funds for roads and drains",
-        "File RTI applications to question BBMP, BDA, and BWSSB spending in your area",
+        "File RTI applications to question your city corporation's, BDA's and BWSSB's spending in your area",
         "Verify your name on the electoral roll at voters.eci.gov.in — Bengaluru's voter turnout is often below 55%",
         "Report corruption to the Karnataka Lokayukta: lokayukta.karnataka.gov.in or its office, 080-22257013",
         "Join or form your apartment's Resident Welfare Association (RWA) — collective civic action works",
@@ -190,7 +195,7 @@ const BENGALURU_URBAN_CONTENT: DistrictResponsibilityContent = {
       title: "What Bengaluru Can Become in 5 Years",
       isProjection: true,
       items: [
-        "India's cleanest metro — if waste segregation compliance reaches 90% across all 243 wards",
+        "India's cleanest metro — if waste segregation compliance reaches 90% in every ward",
         "Water-secure city — if rainwater harvesting is enforced and 50+ lakes are restored",
         "30-minute city — if Metro Phase 3 completes and last-mile connectivity improves",
         "10% green cover recovery — if 1 crore trees are planted and protected across the district",

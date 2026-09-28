@@ -34,7 +34,7 @@ and one `ScraperLog` row (via `cronStarted()` / `cronFinished()` in
 | `/api/cron/news-intelligence` | `0 */4 * * *` | every 4 h at :30 (01:30, 05:30 …) | 240 s / 300 s | AI reading of fresh news, one call per district, new news only. Writes `AIInsight` (low-confidence ones to `ReviewQueue`) and `AIUsageLog`. A run where every AI call failed is recorded as an error and emails the admin. |
 | `/api/cron/scrape-budget` | `0 6 * * 1` | Monday 11:30 | — / 300 s | Deliberate no-op: returns `skipped` until a data.gov.in budget resource id exists (section 7). |
 | `/api/cron/generate-citizen-tips` | `0 6 * * 0` | Sunday 11:30 | 240 s / 300 s | 6 AI tips per district (prompt context: official alerts only, weather only if under 6 h old). Writes Redis `ftp:ai:citizen-tips:<slug>` (14-day expiry, so a failed week keeps last week's tips). |
-| `/api/cron/update-exams` | `30 6 * * *` | daily 12:00 | 70 s (official-page pass) / 120 s | Reads UPSC's and SSC's official exam pages, moves exam status forward by date ("open" only with a published closing date), flags exams unconfirmed for over 30 days. Writes `GovernmentExam`. |
+| `/api/cron/update-exams` | `30 6 * * *` | daily 12:00 | 70 s (official-page pass) / 120 s | Reads UPSC's and SSC's official exam pages (one request every 2.5 s per site; UPSC pages the budget does not reach are read the next day), moves exam status forward by date ("open" only with a published closing date), flags exams unconfirmed for over 30 days. Writes `GovernmentExam`. |
 | `/api/cron/platform-report` | `0 0 * * 0` | Sunday 05:30 | 240 s (no AI model attempt after it) / 300 s | Weekly AI platform report. Writes one `PlatformReport` row. |
 | `/api/cron/health-score` | `30 1 * * *` | daily 07:00 | 100 s / 120 s | Recomputes every live district's report card (`calculateDistrictHealthScore()`). Writes `DistrictHealthScore`. Daily because a stored grade expires after 7 days. |
 | `/api/cron/verify-data` | `45 6 * * *` | daily 12:15 (after the 06:00 UTC dam run and the 03:30 UTC crop run) | 240 s / 300 s | The double-check: freshness, leaders, weather, dams and mandi verifiers (`src/lib/verification/`). Writes `DataVerification` rows and, for disagreements, `NewsActionQueue` items (dataType `verify-leaders`, no repeats) plus one admin alert. Never changes the data it checks. Lock `lock:cron:verify-data`. Needs `npm run db:push` first; until then it logs itself as skipped. |
@@ -205,4 +205,8 @@ monitor (UptimeRobot / Better Stack) at that URL and `/en`.
   fails when a route's header `schedule "…"`, a `PORTAL_COLLECTORS` entry or
   a data-sources `cron` disagrees with it, or a route and `vercel.json` do
   not list each other.
+- There is no local runner any more (`npm run scraper` is gone). To run a
+  collector by hand, call its cron route (section 3); the admin "run now"
+  button (`/api/admin/run-scraper`) covers weather, news, crops and insights
+  for one district.
 - Never use the word "scraper" in citizen-facing text (CLAUDE.md).

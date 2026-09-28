@@ -29,8 +29,8 @@ are copied into prose. Read `CHANGELOG.md` for what changed and when.
 ```
 
 Everything runs inside Vercel serverless functions. There is no long-running
-worker: the old Railway scheduler (`src/scraper/scheduler.ts`, `npm run
-scraper`) and the job modules only it ran were deleted on 2026-09-28. The
+worker: the old Railway node-cron scheduler (`src/scraper/scheduler.ts`, `npm
+run scraper`) and the job modules only it ran were deleted on 2026-09-28. The
 old Docker files are archived in `docs/archive/docker/`.
 
 ## 2. Routing
@@ -141,6 +141,10 @@ old Docker files are archived in `docs/archive/docker/`.
      with module, cron, schedule, storage, source and expected age, for the
      "Where our data comes from" page and the freshness checks. Nothing reads
      it yet.
+   - The old jobs that called dead APIs (courts, JJM, MGNREGA, schools,
+     power, police, housing, RTI and others) ran only from the retired local
+     scheduler and were deleted with it; `git log -- src/scraper/scheduler.ts`
+     finds them.
 2. **Scheduling** — `vercel.json` `crons` calls `src/app/api/cron/<job>/route.ts`
    on a schedule. Each route checks `Authorization: Bearer <CRON_SECRET>`, runs
    the job(s) inside its own time budget, and records a `ScraperLog` row per
@@ -154,8 +158,7 @@ old Docker files are archived in `docs/archive/docker/`.
    - `health-score` recomputes district report cards (a stored grade expires
      after 7 days).
    - `verify-data` runs the double-check (item 7 below).
-   - `dedupe-data` runs the duplicate guard (item 9 below; not in
-     `vercel.json` yet).
+   - `dedupe-data` runs the duplicate guard (item 9 below).
    - `scrape-courts` reads NJDG; `scrape-jjm`, `scrape-schools`,
      `scrape-mgnrega` and `scrape-tenders` read the JJM dashboard, UDISE+,
      the NREGA "At a glance" page and the state e-procurement portals.
@@ -173,8 +176,9 @@ old Docker files are archived in `docs/archive/docker/`.
      - UDISE+ and MGNREGA snapshots: `ftp:data:udise:<slug>` and
        `ftp:data:mgnrega:<slug>` (`src/scraper/lib/district-snapshot.ts`). No
        expiry; written only after every check passed, so a failed run keeps
-       the last good one. Read with `readDistrictSnapshot()`; no page reads
-       them yet.
+       the last good one. Read with `readDistrictSnapshot()` by the data API
+       (schools, gram-panchayat), the freshness and dataset-dates routes and
+       the district report card.
      - The NJDG courts snapshot: `ftp:courts:njdg:<slug>`, and High Courts at
        `ftp:courts:njdg-hc:<stateCode>` (`src/lib/courts/store.ts`, 120-day
        expiry). The collector also writes this year's filed / decided /
@@ -211,9 +215,11 @@ old Docker files are archived in `docs/archive/docker/`.
    work, and `[module]` answers 404 for a module it does not serve.
    `/api/public/district/<slug>` is the one route meant for other sites
    (CORS open); each item it sends names its own source.
-5. **Freshness** — every payload carries its `updatedAt`; the UI pill
-   (`src/lib/utils/timeAgo.ts` and friends) derives "Xh ago / stale" from it.
-   Nothing is labelled live by default.
+5. **Freshness** — every payload carries its `updatedAt`. The district shell
+   reads `/api/data/freshness` (the district bar's feed pill,
+   `StaleDataNotice`, `VerifyPanel`) and the kit's `AsOfText` / `ReadingAge`
+   turn dates into translated "N days old" text. Nothing is labelled live by
+   default.
 6. **Content edits** — the admin Content Editor writes to the same tables and
    invalidates the cache key; every change is recorded in `UpdateLog` with the
    old/new diff (`src/lib/update-log.ts`) and surfaced on the district
@@ -247,8 +253,8 @@ old Docker files are archived in `docs/archive/docker/`.
      or less; else the forecast's current value, labelled with its source and
      time; else the old reading in grey with its age.
    - `src/components/weather/` draws it (`ForecastCards`, `ForecastStrip`,
-     `ForecastDaySheet`, `WeatherArt`). `src/components/district/TodayWeatherTile.tsx`
-     is built for the overview but not mounted yet.
+     `ForecastDaySheet`, `WeatherArt`); the district overview shows today's
+     weather with `src/components/district/TodayWeatherTile.tsx`.
 
 9. **Duplicates** — `src/lib/dedupe/`:
    - `keys.ts`: when two rows are the same thing (canonical names, exam
@@ -260,7 +266,8 @@ old Docker files are archived in `docs/archive/docker/`.
    - `guard.ts` + cron `dedupe-data`: exact duplicates merged
      automatically, conflicts and similar names queued once in
      `NewsActionQueue` (dataType `verify-duplicates`).
-   - `scripts/dedupe-2026-09.ts`: the one-time clean-up with the same guard.
+   - `scripts/archive/dedupe-2026-09.ts`: the one-time clean-up with the same
+     guard (applied 28 Sep 2026).
 
 ## 4. AI
 
@@ -349,13 +356,14 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
   policies site-wide. Admin JSON is `Cache-Control: no-store`; public data
   routes may be CDN-cached briefly.
 - **Privacy**: Plausible (cookieless), DPDP policy at `/privacy`, supporter
-  records anonymised at the API boundary (`src/lib/contributor-label.ts` and the
-  contributors API), name/message validators in `src/lib/validators/`.
-  `/api/data/contributors` and `/api/payment/contributors` send every name
-  through `publicDisplayName()` (`src/lib/supporter-name.ts`): a name that is
-  really a phone number or an e-mail (older webhook rows can hold the payer's
-  contact as the name) goes out as "Supporter", and is masked again on screen;
-  new rows never take the payer's contact as a name.
+  records anonymised at the API boundary: `publicDisplayName()` in
+  `src/lib/supporter-name.ts` sends "Anonymous" for supporters who did not opt
+  in and masks names that are really a phone number or e-mail address as
+  "Supporter" (older webhook rows can hold the payer's contact as the name; new
+  rows never take it). `/api/data/contributors` and `/api/payment/contributors`
+  both use it; the support components run `src/components/support/public-name.ts`
+  as a second guard on screen. Name/message validators are in
+  `src/lib/validators/`.
 - **Secrets**: only names in git (`.env.example`); values in Vercel env and the
   owner's password manager. Push protection is on.
 
@@ -416,9 +424,9 @@ src/lib/          everything shared: db, redis, cache, ai-provider, ai-models, a
                   tenders, validators; verification/ (double-check), weather/
                   (forecast), courts/ (NJDG snapshot), dedupe/ (canonical keys,
                   duplicate guard)
-src/scraper/      collection job modules + parsers (lib/), run by the cron routes: news,
-                  crops, weather, dams, alerts, exams, budget, AI analysis, courts,
-                  JJM, schools, MGNREGA, tenders and fuel
+src/scraper/      collection job modules + parsers (lib/), run by the cron routes:
+                  news, crops, weather, dams, alerts, exams, budget, AI analysis,
+                  courts, JJM, schools, MGNREGA, tenders and fuel
 tests/            Vitest suites
 ```
 

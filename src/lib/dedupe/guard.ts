@@ -12,7 +12,7 @@
 // The writers now look up rows by canonical key before creating
 // (src/lib/dedupe/keys.ts, match.ts, exam-rules.ts); this guard is the
 // safety net that runs daily (/api/cron/dedupe-data) and in the one-time
-// clean-up (scripts/dedupe-2026-09.ts).
+// clean-up (scripts/archive/dedupe-2026-09.ts, applied 28 Sep 2026).
 //
 // For every citizen-facing table:
 //   EXACT duplicates (same canonical key in the same place) are resolved

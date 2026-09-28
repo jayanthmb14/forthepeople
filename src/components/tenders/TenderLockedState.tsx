@@ -1,5 +1,7 @@
 /**
- * Rendered on /tenders pages when District.tendersActive === false.
+ * Rendered on /tenders pages when the access route says the district is not
+ * switched on (District.tendersActive off, or no collector reads it —
+ * tendersCollectedFor in src/lib/constants/tender-portals.ts).
  * Tells the visitor tenders for this district aren't tracked yet, and
  * lists currently-live districts so they can find coverage elsewhere.
  *

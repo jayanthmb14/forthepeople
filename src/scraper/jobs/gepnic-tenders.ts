@@ -8,9 +8,9 @@
 // Job: Government contracts (tenders) from the state GePNIC portals
 // Schedule: every 2 hours via /api/cron/scrape-tenders (vercel.json).
 //
-// Sept 2026 (v5.1): the tender orchestrator (src/scraper/tender-
-// orchestrator.ts) never ran (TenderScraperRun has 0 rows) and its
-// engines target search pages behind captchas; the 12 seeded tenders all
+// Sept 2026 (v5.1): the first tender orchestrator never ran
+// (TenderScraperRun has 0 rows; deleted 28 Sep 2026) and its engines
+// targeted search pages behind captchas; the 12 seeded tenders all
 // closed in May. This job follows a short list of district bodies on
 // the Maharashtra, Tamil Nadu, West Bengal and Delhi portals (see
 // src/scraper/lib/gepnic.ts for the list, the pages used and why) and

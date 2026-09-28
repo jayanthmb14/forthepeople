@@ -41,11 +41,12 @@
 
 ## PII redaction
 
-**Status 2026-09-28:** nothing stores tender document text today — the PDF
-extractor never ran and was deleted with `src/scraper/parsers/pii-redactor.ts`
-(`git log --all -- src/scraper/parsers/pii-redactor.ts` finds it). The live
-GePNIC collector stores listing and detail fields only, and no person's name.
-Any future feature that stores document text must redact, before the DB write:
+**Status 2026-09-28:** no tender document text is stored today (`TenderDocument`
+has no rows) — the PDF extractor never ran and was deleted with
+`src/scraper/parsers/pii-redactor.ts` (`git log --all -- src/scraper/parsers/pii-redactor.ts`
+finds it). The live GePNIC collector stores listing and detail fields only, and
+no person's name from a tender page. The v1 redactor's rules below are what any
+future feature that stores document text must reapply, before the DB write:
 
 | Token | Regex | Replacement |
 |-------|-------|-------------|

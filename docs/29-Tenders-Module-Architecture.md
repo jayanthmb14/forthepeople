@@ -1,6 +1,19 @@
 # Tenders Module — Architecture (Module 30)
 
-_Local pilot: Karnataka — Bengaluru Urban, Mandya, Mysuru._
+> **Status (28 Sep 2026).** The first collection pipeline this page was
+> written for — the six portal engines, `src/scraper/tender-orchestrator.ts`,
+> `src/cron/tenders-ai-enrich.ts`, the PDF extractor and the PII redactor —
+> never ran (`TenderScraperRun`, `TenderAISummary` and `TenderDocument` have
+> no rows) and was deleted from the code on 28 Sep 2026;
+> `git log -- src/scraper/engines` finds it. The live collector is
+> `/api/cron/scrape-tenders` → `src/scraper/jobs/gepnic-tenders.ts`, which
+> reads the Maharashtra, Tamil Nadu, West Bengal and Delhi GePNIC portals
+> (`src/scraper/lib/gepnic.ts`; schedule and behaviour in
+> `docs/RUNBOOKS/crons.md`). No collector reads a Karnataka portal. The data
+> model, red-flag rules, UI pages and legal sections below still describe
+> the code.
+
+_Original local pilot (never collected): Karnataka — Bengaluru Urban, Mandya, Mysuru._
 
 ## Why this module exists
 
@@ -16,14 +29,11 @@ tenders a year per state. ForThePeople's Tenders module gives them:
 3. A **"How it works" explainer** — plain-English, 8th-grade reading
    level, bilingual (English + Kannada stub).
 
-## Data sources
+## Data sources (the v1 plan — deleted, never run)
 
-> **Status 2026-09-28:** the engines below (and `src/scraper/tender-orchestrator.ts`,
-> `src/scraper/engines/*`, `src/scraper/parsers/*`) never ran — `TenderScraperRun`
-> had 0 rows and the target pages sit behind captchas — and were deleted. The live
-> collector is `src/scraper/jobs/gepnic-tenders.ts` (cron `scrape-tenders`,
-> Maharashtra, Tamil Nadu, West Bengal and Delhi GePNIC portals). The table is
-> kept as research for future states.
+> **Status 2026-09-28:** the engines below never ran — `TenderScraperRun` had
+> 0 rows and the target pages sit behind captchas — and were deleted (see the
+> status note at the top). The table is kept as research for future states.
 
 | Priority | Portal | Engine | Volume/year (est.) |
 |----------|--------|--------|---------------------|
@@ -34,7 +44,9 @@ tenders a year per state. ForThePeople's Tenders module gives them:
 | 5 | eprocurebel.co.in | `nicgep` | BEL (NIC template) |
 | 6 | eproc.hal-india.co.in | `tenderwizard` | HAL |
 
-All engines route through `src/scraper/engines/tender-http.ts`:
+All engines routed through `src/scraper/engines/tender-http.ts` (deleted).
+The live GePNIC collector uses `src/scraper/lib/source-fetch.ts` instead
+(one request every 2.5 s per portal, honest user agent). The v1 rules were:
 - User-Agent: `ForThePeople.in Civic Transparency Bot (contact: support@forthepeople.in)`
 - 1 request per 3 seconds per portal
 - robots.txt fetched fresh every 24h and honoured
@@ -55,9 +67,10 @@ Serialisation to JSON goes through `src/lib/tenders/format.ts:serializeForJson()
 
 ## AI enrichment
 
-`scripts/tenders-ai-enrich.ts` is a **manual script, not scheduled** (it was
-never in `vercel.json` and has never run; `TenderAISummary` is empty). When run
-it does:
+Planned, never scheduled: `src/cron/tenders-ai-enrich.ts` (never in
+`vercel.json`, never run — `TenderAISummary` is empty; deleted 28 Sep 2026,
+`git log -- src/cron/tenders-ai-enrich.ts scripts/tenders-ai-enrich.ts` finds
+it) was to write:
 
 1. Plain-English summary (150 words, neutral adjective-free)
 2. Structured eligibility JSON (null when not stated)
@@ -138,7 +151,6 @@ and `<TenderDisclaimer variant="full"/>` at the foot.
 ```bash
 npx prisma db push         # schema → DB (project convention; no migrations folder)
 npx tsx prisma/seed-tenders-karnataka.ts
-npx tsx scripts/tenders-ai-enrich.ts --single-tender-id <id> --dry-run
 npx tsx scripts/tenders-redflags.ts
 bash scripts/lint-tender-copy.sh
 ```

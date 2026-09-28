@@ -3,9 +3,9 @@
  * Filters in JS to avoid Postgres regex escaping issues.
  */
 
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
-import "dotenv/config";
 
 function isSuspicious(name: string): { flag: boolean; reasons: string[] } {
   const reasons: string[] = [];

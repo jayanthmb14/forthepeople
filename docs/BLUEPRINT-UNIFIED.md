@@ -291,9 +291,9 @@ MGNREGA and tender crons, but none of it is deployed. The v5.1 collectors
 passed dry runs against the live portals on 27 Sep and have never written to
 production. Only weather, crops, news and alerts have ever filled rows
 automatically; most modules are curated by hand with sources. The old jobs
-(police, housing, power, RTI, and the old schools, MGNREGA, JJM and courts
-jobs) ran only on the retired Railway worker and never produced a row; they
-and its scheduler were deleted on 2026-09-28. The honesty rules in section 6 exist because of this: say how
+in `src/scraper/jobs/` (police, housing, power, RTI, and the old schools,
+MGNREGA, JJM and courts jobs) ran only on the retired Railway worker and
+never produced a row; they and their scheduler were deleted on 2026-09-28. The honesty rules in section 6 exist because of this: say how
 old the data is rather than pretend.
 
 ## 8. AI
@@ -432,7 +432,7 @@ Full picture: `docs/ARCHITECTURE.md`.
 
 - react-simple-maps only (hand-written D3 and Leaflet were tried and
   dropped). Components: `map/DrillDownMap` (India), `map/GenericStateMap`,
-  `map/TalukMap`, `district/DistrictLocator`; colours only from
+  `map/TalukMap`; colours only from
   `map/mapTheme.tsx`.
 - Files: `public/geo/<state>-districts.json`, `india-states.json`,
   `<district-slug>-taluks.json`. Outer rings must be clockwise for d3-geo:

@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { tendersCollectedFor } from "@/lib/constants/tender-portals";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,9 @@ export async function GET(
       );
     }
     return NextResponse.json({
-      tendersActive: row.tendersActive,
+      // Switched on only where the collector reads the district: an open
+      // dashboard with nothing behind it would suggest tracking we do not do.
+      tendersActive: row.tendersActive && tendersCollectedFor(row.state.slug, row.slug),
       districtName: row.name,
       districtSlug: row.slug,
       stateName: row.state.name,

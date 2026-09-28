@@ -24,8 +24,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
 import { acquireCronLock, releaseCronLock } from "@/scraper/lib/cron-lock";
@@ -90,9 +89,7 @@ export async function GET(request: Request) {
         const r = await scrapeCourtsNjdg(ctx, { client, deadline });
         results.push({ district: d.slug, success: r.success, newCount: r.recordsNew, updatedCount: r.recordsUpdated, error: r.error });
         console.log(`[scrape-courts/${d.slug}] ${r.success ? "ok" : "fail"} | ${logs.join(" | ")}`);
-        if (r.recordsNew + r.recordsUpdated > 0 && redis) {
-          await redis.del(cacheKey(d.slug, "courts")).catch(() => {});
-        }
+        if (r.recordsNew + r.recordsUpdated > 0) await dropModuleCaches(d.slug, ["courts"]);
       } catch (err) {
         Sentry.captureException(err);
         const msg = err instanceof Error ? err.message : String(err);

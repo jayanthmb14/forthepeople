@@ -694,5 +694,6 @@ Anthropic API: 0 new calls
 
 ### Known unresolved issues
 
-- `src/scraper/parsers/tender-pdf-extractor.ts` never ran and was deleted on
-  2026-09-28 with the old tender engines (resolved).
+- `src/scraper/parsers/tender-pdf-extractor.ts` was dormant pre-Population-v2
+  (it used pdf-parse v1 API patterns although pdf-parse@2.4.5 is installed). It
+  never ran and was deleted on 2026-09-28 with the old tender engines (resolved).

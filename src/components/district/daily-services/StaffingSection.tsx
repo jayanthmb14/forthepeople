@@ -8,9 +8,8 @@
 //  StaffingSection — "Are the posts filled?" (Layout v4.1)
 // ═══════════════════════════════════════════════════════════════════════
 //
-//  Used by the Hospitals & health and Schools pages. Same data and rules
-//  as src/components/district/StaffingWidget.tsx (police and exams still
-//  use that one):
+//  Used by the Hospitals & health and Schools pages (the police page has
+//  its own PoliceStaffing with the same rules):
 //
 //   • Data: the "exams" module response carries a `staffing` array; we
 //     keep only rows for this module (health / schools). useStaffing()

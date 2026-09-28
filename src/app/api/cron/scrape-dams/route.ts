@@ -22,8 +22,7 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { hasLiveDamSource, scrapeDams } from "@/scraper/jobs/dams";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { runOutcome } from "@/scraper/lib/run-log";
@@ -76,10 +75,10 @@ async function collectAll(runStart: number): Promise<Response> {
         error: result.error,
       });
       console.log(`[scrape-dams/${d.slug}] ${result.success ? "ok" : "fail"}, ${result.recordsNew} new, ${result.recordsUpdated} revised | ${logs.join(" | ")}`);
-      if (result.success && result.recordsNew + result.recordsUpdated > 0 && redis) {
-        // The water page (module "water") and its level chart (/api/data/dam-history).
-        await redis.del(cacheKey(d.slug, "water")).catch(() => {});
-        await redis.del(cacheKey(d.slug, "dam-history")).catch(() => {});
+      if (result.success && result.recordsNew + result.recordsUpdated > 0) {
+        // The water page (module "water") and its level chart (/api/data/dam-history);
+        // nothing writes a "dam" key.
+        await dropModuleCaches(d.slug, ["water", "dam-history"]);
       }
     } catch (err) {
       Sentry.captureException(err);

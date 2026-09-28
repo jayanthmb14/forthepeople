@@ -245,6 +245,7 @@ export const PRICE_TABLE: Record<string, [number, number]> = {
   "claude-haiku-4-5-20251001": [1, 5],
 };
 
+/** The one USD → INR rate for AI-cost figures (approximate; admin screens only). */
 export const INR_PER_USD = 84;
 
 export interface TokenUsage {

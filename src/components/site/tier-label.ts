@@ -4,8 +4,7 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-// Translated supporter badge ("Mandya Champion", "India Patron"), the
-// language-aware twin of getContributorLabel() in src/lib/contributor-label.ts.
+// Translated supporter badge ("Mandya Champion", "India Patron").
 // Pass the translator for the "page_site" namespace. Place names stay as
 // stored (they are proper nouns from the registry / database).
 

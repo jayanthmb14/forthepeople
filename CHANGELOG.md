@@ -93,7 +93,27 @@ Backend review of crons, collectors and seeds. Not deployed; no schema change, n
   list equal to `vercel.json`.
 - **Removed (never ran in production)**: the Railway scheduler and the 13 jobs only it ran
   (`npm run scraper`), and the first tender pipeline (orchestrator, engines, PDF parser); its two
-  manual jobs are now `scripts/tenders-ai-enrich.ts` and `scripts/tenders-redflags.ts`.
+  manual jobs became `scripts/tenders-ai-enrich.ts` and `scripts/tenders-redflags.ts`; the
+  enrich script was dropped when merging with `v55/be-lib-dead` (nothing ran or imported it).
+
+### Fixed — hygiene: dead code, duplicate helpers, wrong sources (branch `v55/be-lib-dead`, 2026-09-28)
+Not deployed; no schema change, no DB write, no new dependency.
+- **Tenders**: pages open only where the GePNIC collector reads the district
+  (`tendersCollectedFor`; Karnataka now shows "not tracked yet"; Pune, Mumbai, Chennai, Kolkata and
+  New Delhi wait for the owner's flag); sources name the state portal instead of six unused ones;
+  "Flagged: 0" becomes "Not checked yet" until red flags are computed; activation script syncs the
+  flag (dry run unless `--confirm`).
+- **Sources**: police "Check it yourself" no longer links NCRB; the About page lists what the
+  collectors read (NJDG, JJM, NREGASoft, SACHET, GePNIC, Open-Meteo; no eGramSwaraj/PFMS/PMAY);
+  Bengaluru's "What you can do" no longer sends people to BBMP.
+- **Removed, never run or imported**: the local scheduler + 13 legacy jobs (`npm run scraper`),
+  the first tender pipeline (engines, orchestrator, PDF extractor), 13 unused files and ~25 unused
+  exports, the per-state source tables in state-config; ten applied 2026-09 scripts moved to
+  `scripts/archive/`.
+- **One helper each**: `dropModuleCaches`, `supporterTotals`, `INR_PER_USD`, `timeAgoLabel` (admin),
+  `cronIntervalsFor` (System Health now follows `vercel.json`), `fetchSource` for exams (UPSC pages
+  2.5 s apart; concurrent callers now queue).
+- **Scripts** load `.env.local` via `./_env`; docs and comments match the code.
 
 ### Fixed — money: budgets, projects, industries, tenders, schemes (branch `v54/fix-money`, 2026-09-28)
 Owner rule: verified or hidden. Nothing here is deployed or applied to the database yet.

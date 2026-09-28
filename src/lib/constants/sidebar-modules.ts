@@ -213,10 +213,13 @@ export const MODULE_FRESHNESS: Readonly<Record<string, FreshnessRule>> = {
   "gram-panchayat":       { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto",      portal: "https://nrega.dord.gov.in/MGNREGA_new/Nrega_home.aspx" },
   // Read from NJDG twice a day by /api/cron/scrape-courts (each district at least daily).
   courts:                 { maxAgeHours: 3 * DAY,   every: "daily",    method: "auto",      portal: "https://njdg.ecourts.gov.in/njdg_v3/" },
-  police:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual",    portal: "https://ncrb.gov.in" },
+  // No "check it yourself" link: the station list is typed in from each
+  // state's police website, not NCRB (which publishes crime counts only).
+  police:                 { maxAgeHours: 2 * YEAR,  every: "yearly",   method: "manual" },
   finance:                { maxAgeHours: 400 * DAY, every: "yearly",   method: "manual" },
   infrastructure:         { maxAgeHours: 90 * DAY,  every: "monthly",  method: "news" },
-  tenders:                { maxAgeHours: 7 * DAY,   every: "daily",    method: "auto",      portal: "https://eprocure.gov.in/cppp/" },
+  // Portal link per state: modulePortal() in components/district/shell/sources.ts.
+  tenders:                { maxAgeHours: 7 * DAY,   every: "daily",    method: "auto" },
   industries:             { maxAgeHours: YEAR,      every: "yearly",   method: "manual" },
   schemes:                { maxAgeHours: 180 * DAY, every: "onChange", method: "manual",    portal: "https://www.myscheme.gov.in" },
   housing:                { maxAgeHours: 400 * DAY, every: "monthly",  method: "manual",    portal: "https://pmayg.nic.in" },

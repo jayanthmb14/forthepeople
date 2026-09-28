@@ -83,10 +83,10 @@ Still yours:
 Done on 27 Sep (dry run shown first, backup branch above):
 - Removed 26 national project copies, 260 crime numbers taken from
   headlines, 25 fake power cuts; hid 162 leaders guessed from news
-  (`scripts/cleanup-news-derived-2026-09.ts`).
+  (`scripts/archive/cleanup-news-derived-2026-09.ts`).
 - Removed 144 seeded rainfall rows, 24 invented traffic-fine rows, 14
   hard-coded exams, 8 hand-entered dam readings; blanked 4 invented
-  sugar-arrears figures (`scripts/cleanup-seeded-2026-09.ts`).
+  sugar-arrears figures (`scripts/archive/cleanup-seeded-2026-09.ts`).
 
 Being fixed now by research (official sources, dry-run scripts applied after
 review): wrong leaders (incl. Karnataka CM D. K. Shivakumar), project
@@ -98,7 +98,7 @@ Duplicates (28 Sep): the code that made them is fixed (exams stored once per
 national/state/district scope, one spelling for election types, project and
 news matching) and a nightly duplicate check runs (`dedupe-data`). The
 one-time clean-up removed 48 rows: 30 exam copies, 11 non-government exams,
-6 election copies, 1 school copy (`scripts/dedupe-2026-09.ts`).
+6 election copies, 1 school copy (`scripts/archive/dedupe-2026-09.ts`).
 
 Still yours:
 0. **Three small fixes the permission system would not let me make:**
@@ -239,7 +239,7 @@ Added 28 Sep, after the v5.1 round 3 merge:
 ## 7. After the zero-error audit (28 Sep 2026)
 
 Applied with your approval: 695 verified corrections (updates, hidden values
-and deletions) from `scripts/fix-audit-2026-09-*.ts`, each re-checked by a
+and deletions) from `scripts/archive/fix-audit-2026-09-*.ts`, each re-checked by a
 second agent; backup branch `backup-2026-09-27-pre-cleanup` holds the rows
 from before. What this leaves for you:
 

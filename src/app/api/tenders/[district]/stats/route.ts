@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDistrictName, serializeForJson } from "@/lib/tenders/tender-helpers";
 import { NOT_STUB_TENDER } from "@/lib/data-filters";
+import { tendersCollectedFor } from "@/lib/constants/tender-portals";
+import { redFlagsComputed } from "@/lib/tenders/tender-redflags";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
     lastCheckedAgg,
     nextDeadlineRow,
     districtFlag,
+    flagsChecked,
   ] = await Promise.all([
     prisma.tender.count({ where: live }),
     prisma.tender.aggregate({ where: live, _sum: { estimatedValueInr: true } }),
@@ -65,11 +68,14 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
       select: { id: true, title: true, bidSubmissionEnd: true },
     }),
     // Activation flag — used to determine snippet status = LOCKED.
-    prisma.district.findFirst({ where: { name: districtName }, select: { tendersActive: true } }),
+    prisma.district.findFirst({ where: { slug: districtSlug, active: true }, select: { tendersActive: true, state: { select: { slug: true } } } }),
+    // Has the red-flag check ever run? Until it has, "0 flagged" is unknown, not zero.
+    redFlagsComputed(),
   ]);
 
   // Snippet status derivation
-  const tendersActive = districtFlag?.tendersActive ?? false;
+  // On only where the collector reads the district (tender-portals.ts).
+  const tendersActive = Boolean(districtFlag?.tendersActive && tendersCollectedFor(districtFlag.state.slug, districtSlug));
   const lastCheckedAt = lastCheckedAgg._max.lastCheckedAt ?? null;
   let snippetStatus: "LIVE" | "STALE" | "LOCKED" | "NO_DATA";
   if (!tendersActive) snippetStatus = "LOCKED";
@@ -112,8 +118,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ district: stri
       totalValueInr: liveValueAgg._sum.estimatedValueInr ?? BigInt(0),
       mseReservedCount: mseReservedLive,
       startupExemptCount: startupExemptLive,
-      redFlaggedCount: redFlaggedLive,
+      // null = the red-flag check has not run yet (shown as "not checked").
+      redFlaggedCount: flagsChecked ? redFlaggedLive : null,
     },
+    flagsChecked,
     deadlineHistogram: [
       { bucket: "<48h", count: closingIn48h },
       { bucket: "2-7d", count: Math.max(0, closingIn7d - closingIn48h) },

@@ -1,10 +1,10 @@
 /**
  * ForThePeople.in — Infrastructure location mappings
  *
- * Used by BOTH the runtime sync path (applyScopeOverride in
- * src/lib/infra-sync.ts) and the offline cleanup script
- * (scripts/fix-infra-deep-cleanup.ts). Keeping these in one place so
- * future districts/neighborhoods can be added in exactly one file.
+ * Used by the runtime sync path (applyScopeOverride in
+ * src/lib/infra-sync.ts); the one-off cleanup script that also read it
+ * is gone. Keeping these in one place so future districts/neighborhoods
+ * can be added in exactly one file.
  *
  * Semantics
  * ─────────

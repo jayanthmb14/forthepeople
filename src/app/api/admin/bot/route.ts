@@ -11,6 +11,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
+import { INR_PER_USD } from "@/lib/ai-models";
+import { supporterTotals } from "@/lib/supporter-totals";
 
 interface BotResponse {
   reply: string;
@@ -131,31 +133,20 @@ async function handleRevenueQuery(msg: string): Promise<BotResponse> {
   monthStart.setUTCHours(0, 0, 0, 0);
 
   const [all, week, month] = await Promise.all([
-    prisma.supporter.findMany({
-      where: { status: "success" },
-      select: { amount: true },
-    }),
-    prisma.supporter.findMany({
-      where: { status: "success", createdAt: { gte: weekAgo } },
-      select: { amount: true },
-    }),
-    prisma.supporter.findMany({
-      where: { status: "success", createdAt: { gte: monthStart } },
-      select: { amount: true },
-    }),
+    supporterTotals(),
+    supporterTotals(weekAgo),
+    supporterTotals(monthStart),
   ]);
 
   const scope = /month/.test(msg) ? "month" : /week/.test(msg) ? "week" : "all";
-  const rows = scope === "month" ? month : scope === "week" ? week : all;
-  const sum = rows.reduce((s, x) => s + x.amount, 0);
+  const picked = scope === "month" ? month : scope === "week" ? week : all;
+  const sum = picked.amount;
   const label = scope === "month" ? "this month" : scope === "week" ? "this week" : "all-time";
 
   return {
-    reply: `₹${sum.toLocaleString("en-IN")} from ${rows.length} supporter${rows.length === 1 ? "" : "s"} ${label}. (All-time: ₹${all
-      .reduce((s, x) => s + x.amount, 0)
-      .toLocaleString("en-IN")} from ${all.length}.)`,
+    reply: `₹${sum.toLocaleString("en-IN")} from ${picked.count} supporter${picked.count === 1 ? "" : "s"} ${label}. (All-time: ₹${all.amount.toLocaleString("en-IN")} from ${all.count}.)`,
     action: "query_revenue",
-    actionResult: { scope, sum, count: rows.length },
+    actionResult: { scope, sum, count: picked.count },
   };
 }
 
@@ -296,7 +287,7 @@ async function handleAddExpense(raw: string): Promise<BotResponse> {
     return { reply: `Parsed amount was invalid: "${numStr}".` };
   }
 
-  const rate = 84;
+  const rate = INR_PER_USD;
   const amountINR = isUsd ? Math.round(amount * rate) : amount;
   const amountUSD = isUsd ? amount : null;
 

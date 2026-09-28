@@ -29,9 +29,9 @@
  * rows (onDelete: Cascade in prisma/schema.prisma). The Leader table is never
  * touched here.
  */
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
-import "dotenv/config";
 import { DATE_FIELDS, type Fix, type FieldValue } from "./fix-records-2026-09/types";
 import { POPULATION_FIXES } from "./fix-records-2026-09/population";
 import { POLICE_FIXES } from "./fix-records-2026-09/police";

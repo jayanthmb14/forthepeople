@@ -177,6 +177,17 @@ export async function computeFlagsForTender(tenderId: string): Promise<FlagRow[]
   return flags;
 }
 
+/**
+ * True once the red-flag computer has written any flag. Until then a
+ * "flagged" count of 0 would mean "never checked", not "nothing found", so
+ * the tender pages say "not checked yet" instead (Sept 2026: no job runs
+ * recomputeAllFlags; the only caller is the manual
+ * scripts/tenders-redflags.ts).
+ */
+export async function redFlagsComputed(): Promise<boolean> {
+  return (await prisma.tenderRedFlag.findFirst({ select: { id: true } })) !== null;
+}
+
 // ── Batch: compute + persist for all tenders needing (re)computation ──────
 export async function recomputeAllFlags(options: { limit?: number } = {}): Promise<{ processed: number; written: number }> {
   // Target: published tenders with published/closing window in last 180 days

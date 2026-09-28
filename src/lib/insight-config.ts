@@ -237,10 +237,6 @@ export const MODULE_INSIGHT_CONFIGS: ModuleInsightConfig[] = [
   },
 ];
 
-export function getInsightConfig(module: string): ModuleInsightConfig | undefined {
-  return MODULE_INSIGHT_CONFIGS.find((c) => c.module === module);
-}
-
 export function getTtlMs(config: ModuleInsightConfig): number {
   return config.ttlHours * 60 * 60 * 1000;
 }

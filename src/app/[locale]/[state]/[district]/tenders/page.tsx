@@ -71,7 +71,8 @@ type StatsResponse = {
   districtName: string;
   /** Newest `lastCheckedAt` of this district's tender rows (ISO), sent by the stats API. */
   lastCheckedAt?: string | null;
-  live: { count: number; totalValueInr: string; mseReservedCount: number; startupExemptCount: number; redFlaggedCount: number };
+  /** redFlaggedCount is null until the red-flag check has run (then the tile says "not checked"). */
+  live: { count: number; totalValueInr: string; mseReservedCount: number; startupExemptCount: number; redFlaggedCount: number | null };
   deadlineHistogram: { bucket: string; count: number }[];
   awarded90d: { count: number; totalValueInr: string };
   topAuthorities: { authority: { name: string; shortCode: string }; count: number }[];
@@ -127,7 +128,8 @@ export default function TendersPage({
   const closeSheet = useCallback(() => setOpenId(null), []);
   const pageSize = 20;
 
-  // Per-district lock check — reads from DB.tendersActive. When false we
+  // Per-district lock check — DB.tendersActive AND a collector reading the
+  // district (tendersCollectedFor, applied by the access route). When false we
   // render TenderLockedState instead of the dashboard. Cached 2 minutes.
   const access = useQuery<AccessResponse>({
     queryKey: ["tenders-access", districtSlug],
@@ -251,7 +253,11 @@ export default function TendersPage({
             <StatTile icon={Megaphone} label={t("tiles.live")} value={m.num(stats.data.live.count)} asOf={statsAsOf} />
             <StatTile icon={Wallet} label={t("tiles.value")} value={m.short(stats.data.live.totalValueInr)} countUp={false} />
             <StatTile icon={AlarmClock} label={t("tiles.closing48")} value={m.num(closing48)} />
-            <StatTile icon={Flag} label={t("tiles.flagged")} value={m.num(stats.data.live.redFlaggedCount)} sub={t("tiles.flaggedSub")} />
+            {stats.data.live.redFlaggedCount === null ? (
+              <StatTile icon={Flag} label={t("tiles.flagged")} value="—" sub={t("tiles.flaggedUnchecked")} countUp={false} />
+            ) : (
+              <StatTile icon={Flag} label={t("tiles.flagged")} value={m.num(stats.data.live.redFlaggedCount)} sub={t("tiles.flaggedSub")} />
+            )}
           </StatStrip>
         )}
 
@@ -306,9 +312,12 @@ export default function TendersPage({
                 <label style={checkboxLabel}>
                   <input type="checkbox" checked={onlyMse} onChange={(e) => setOnlyMse(e.target.checked)} style={{ accentColor: "var(--hue)", width: 18, height: 18 }} /> {t("filters.mseOnly")}
                 </label>
-                <label style={checkboxLabel}>
-                  <input type="checkbox" checked={onlyFlagged} onChange={(e) => setOnlyFlagged(e.target.checked)} style={{ accentColor: "var(--hue)", width: 18, height: 18 }} /> {t("filters.flaggedOnly")}
-                </label>
+                {/* No "flagged only" filter until the red-flag check has run. */}
+                {stats.data?.live.redFlaggedCount != null && (
+                  <label style={checkboxLabel}>
+                    <input type="checkbox" checked={onlyFlagged} onChange={(e) => setOnlyFlagged(e.target.checked)} style={{ accentColor: "var(--hue)", width: 18, height: 18 }} /> {t("filters.flaggedOnly")}
+                  </label>
+                )}
               </div>
               <div style={{ flex: "2 1 220px", minWidth: 0 }}>
                 <label htmlFor="tender-search" className="ftp-label" style={{ display: "block", marginBottom: 4 }}>{t("filters.search")}</label>

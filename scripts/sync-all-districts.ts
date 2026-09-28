@@ -6,9 +6,10 @@
  * Syncs ALL states, districts, and taluks from districts.ts constants to the DB.
  * Uses upsert — never overrides active=true with active=false.
  *
- * Run: npx tsx -r dotenv/config scripts/sync-all-districts.ts
+ * Run: npx tsx scripts/sync-all-districts.ts
  */
 
+import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { INDIA_STATES, SUB_UNIT_CHECKS, shownSubUnits, type District } from "../src/lib/constants/districts";

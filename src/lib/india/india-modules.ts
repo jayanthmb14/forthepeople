@@ -103,8 +103,9 @@ export interface IndiaModuleDef {
   /** Renders the IndiaTimeSeriesChart widget inside the band. */
   hasTimeSeries?: boolean;
   /**
-   * Scraper keys (from src/scraper/india/_registry.ts, Phase 5) that
-   * populate this module. One module can be fed by multiple scrapers.
+   * IndiaScraperRun keys that populate this module (getMacroSnapshotData
+   * reads the newest run among them). One module can be fed by multiple
+   * collectors. The planned src/scraper/india/ registry was never built.
    */
   scraperKeys: string[];
 

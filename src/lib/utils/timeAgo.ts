@@ -3,10 +3,14 @@
  * © 2026 Jayanth M B. MIT License.
  * https://github.com/jayanthmb14/forthepeople
  *
- * timeAgoLabel — the ONE relative-time formatter for "Refreshed Xh ago"
- * labels across the homepage, footer, stats tiles and district pages.
+ * Small date helpers. timeAgoLabel is the English "Xm/Xh/Xd ago" formatter
+ * for admin screens (the feedback inbox, the fact checker). Citizen pages
+ * use the translated formatters instead (fmtAgo in components/india/format.ts,
+ * ReadingAge / AsOfText in the district kit); ageInDays and
+ * calendarDaysAgoIST serve "N days ago" counts on the overview, home and
+ * tender cards.
  *
- * Honesty rules (audit 2026-09, finding 3.9):
+ * Honesty rules for timeAgoLabel (audit 2026-09, finding 3.9):
  *   - The label is ALWAYS the real age: "just now", "Xm ago", "Xh ago",
  *     "Xd ago". There is no "Live" fallback any more. A pulsing "Live" pill
  *     over 5-month-old data was the single biggest credibility problem the
@@ -37,7 +41,7 @@ export interface TimeAgoOptions {
 }
 
 /** Anything younger than this may show a green "live" dot. */
-export const LIVE_WINDOW_MINUTES = 30;
+const LIVE_WINDOW_MINUTES = 30;
 
 const UNKNOWN: TimeAgoResult = { label: "—", isStale: true, isLive: false };
 
@@ -76,47 +80,6 @@ export function timeAgoLabel(
   }
 
   return { label, isStale, isLive };
-}
-
-/**
- * Absolute "as of" stamp for data that is not fresh, e.g. "as of 20 Apr" or
- * "as of 20 Apr 2025" when the reading is from a previous year. Always in
- * IST so a reader in any timezone sees the same date the source published.
- * Returns "" for missing/invalid input so callers can render nothing.
- */
-export function asOfLabel(
-  date: string | Date | null | undefined,
-  opts?: { nowMs?: number; prefix?: string },
-): string {
-  const ms = toMs(date);
-  if (ms === null) return "";
-  const now = new Date(opts?.nowMs ?? Date.now());
-  const d = new Date(ms);
-  const sameYear = d.getUTCFullYear() === now.getUTCFullYear();
-  const text = d.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    ...(sameYear ? {} : { year: "numeric" }),
-    timeZone: "Asia/Kolkata",
-  });
-  const prefix = opts?.prefix ?? "as of";
-  return prefix ? `${prefix} ${text}` : text;
-}
-
-/**
- * True when the timestamp is known and younger than `minutes`. Use this in
- * components instead of calling Date.now() in render (React Compiler's
- * purity rule) — e.g. `isWithinMinutes(reading.recordedAt, 6 * 60)` decides
- * whether the weather page may show its LIVE badge.
- */
-export function isWithinMinutes(
-  date: string | Date | null | undefined,
-  minutes: number,
-  nowMs: number = Date.now(),
-): boolean {
-  const ms = toMs(date);
-  if (ms === null) return false;
-  return nowMs - ms < minutes * 60_000;
 }
 
 /**

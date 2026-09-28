@@ -25,8 +25,7 @@
 // ═══════════════════════════════════════════════════════════
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { cacheKey } from "@/lib/cache";
-import { redis } from "@/lib/redis";
+import { dropModuleCaches } from "@/lib/cache";
 import { collectWeather } from "@/scraper/jobs/weather";
 import { logUpdate } from "@/lib/update-log";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
@@ -75,9 +74,7 @@ async function collectAll(runStart: number): Promise<Response> {
         console.log(`[scrape-weather/${d.slug}] ${result.success ? "ok" : "fail"} | ${logs.join(" | ")}`);
 
         // Bust the district's cached weather so the page shows the new reading.
-        if (result.recordsNew > 0 && redis) {
-          await redis.del(cacheKey(d.slug, "weather")).catch(() => {});
-        }
+        if (result.recordsNew > 0) await dropModuleCaches(d.slug, ["weather"]);
         return {
           district: d.slug,
           success: result.success,

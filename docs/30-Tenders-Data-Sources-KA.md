@@ -1,10 +1,13 @@
 # Tenders — Karnataka Data Sources
 
-Per-portal detail for future expansion to other states. Last refreshed: 2026-04-19.
+> **Historical (28 Sep 2026).** The engines named below (`src/scraper/engines/*`)
+> were deleted without ever running; no collector reads a Karnataka portal
+> today. The live tender collector, `src/scraper/jobs/gepnic-tenders.ts`, reads
+> the GePNIC portals of Maharashtra, Tamil Nadu, West Bengal and Delhi
+> (`src/scraper/lib/gepnic.ts`). This file is research only, kept for a future
+> Karnataka collector.
 
-> **Status 2026-09-28:** the engines named below never ran and were deleted
-> (`src/scraper/engines/*`); this file is research only. The live collector is
-> `src/scraper/jobs/gepnic-tenders.ts`.
+Per-portal detail for future expansion to other states. Last refreshed: 2026-04-19.
 
 ## 1. KPPP — Karnataka eProcurement
 

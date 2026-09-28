@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Pencil, RefreshCw } from "lucide-react";
 import ModuleHelp from "@/components/admin/ModuleHelp";
-import { PRICE_TABLE } from "@/lib/ai-models";
+import { INR_PER_USD, PRICE_TABLE } from "@/lib/ai-models";
 
 interface UsageData {
   totalCalls: number;
@@ -80,9 +80,9 @@ const card: React.CSSProperties = {
 
 // Fallback OpenRouter pricing (USD per 1M tokens: [input, output]) for the
 // "By Model" section. Since Sept 2026 every AIUsageLog row carries the real
-// costUSD/costINR computed in src/lib/ai-provider.ts (PRICE_TABLE), so this
-// map is only consulted for rows logged before that (costUSD = 0). Keep it
-// in sync with the model chain in ai-provider.ts when you rotate models.
+// costUSD/costINR computed from PRICE_TABLE in src/lib/ai-models.ts, so this
+// map is only consulted for rows logged before that (costUSD = 0). It
+// spreads PRICE_TABLE, so rotating models in ai-models.ts keeps it in sync.
 const MODEL_PRICE_USD_PER_MTOK: Record<string, [number, number]> = {
   ...PRICE_TABLE,
   // Older rows logged before the Sept 2026 model change.
@@ -190,7 +190,7 @@ export default function CostsTab() {
   const orLimit = or?.limit ?? 10;
   const orRemaining = or?.remaining ?? Math.max(0, orLimit - orSpent);
   const orPct = or?.percentUsed ?? 0;
-  const usdToInr = or?.usdToInr ?? 84;
+  const usdToInr = or?.usdToInr ?? INR_PER_USD;
   const projectedMonthly = (() => {
     if (!usage || !usage.byDay.length) return null;
     const recent = usage.byDay.slice(-7);

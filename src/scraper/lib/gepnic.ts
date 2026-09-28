@@ -27,10 +27,9 @@
 // so they are not covered here.
 //
 // Which organisations count for a district is a short, hand-checked list
-// below: the bodies whose whole area is that district (city corporation,
-// zilla parishad, city police, city bus/power undertaking). Regional
-// bodies that also cover other districts (e.g. a metropolitan region
-// authority, a PWD region) are left out rather than guessed.
+// (GEPNIC_ORGS in src/lib/constants/tender-portals.ts): the bodies whose
+// whole area is that district. Regional bodies that also cover other
+// districts are left out rather than guessed.
 //
 // A tender is written only from its own page, and only when that page
 // agrees with the listing (same tender id, same closing date, same
@@ -38,56 +37,16 @@
 // ═══════════════════════════════════════════════════════════
 import * as cheerio from "cheerio";
 import { normName } from "./source-districts";
+import { GEPNIC_PORTALS, type GepnicPortal } from "@/lib/constants/tender-portals";
 
-export interface GepnicPortal {
-  /** Stored as Tender.sourcePortal; shown to readers as the source. */
-  host: string;
-  /** …/nicgep/app */
-  app: string;
-}
-
-export const GEPNIC_PORTALS: Record<string, GepnicPortal> = {
-  maharashtra: { host: "mahatenders.gov.in", app: "https://mahatenders.gov.in/nicgep/app" },
-  "tamil-nadu": { host: "tntenders.gov.in", app: "https://tntenders.gov.in/nicgep/app" },
-  "west-bengal": { host: "wbtenders.gov.in", app: "https://wbtenders.gov.in/nicgep/app" },
-  delhi: { host: "govtprocurement.delhi.gov.in", app: "https://govtprocurement.delhi.gov.in/nicgep/app" },
-};
+// The portal list and the followed bodies are plain data shared with the
+// source panels and the tender switch (src/lib/constants/tender-portals.ts).
+export { GEPNIC_ORGS, GEPNIC_PORTALS, type FollowedOrg, type GepnicPortal } from "@/lib/constants/tender-portals";
 
 /** Every GePNIC portal host (Tender.sourcePortal) we collect from. */
 export const GEPNIC_HOSTS: string[] = [...new Set(Object.values(GEPNIC_PORTALS).map((p) => p.host))];
 
 export const orgListUrl = (p: GepnicPortal) => `${p.app}?page=FrontEndTendersByOrganisation&service=page`;
-
-export interface FollowedOrg {
-  /** The organisation's name exactly as the portal lists it. */
-  org: string;
-  /** TenderAuthority.shortCode */
-  shortCode: string;
-  authorityType: "ULB" | "PANCHAYAT" | "PARASTATAL" | "STATE_DEPT";
-}
-
-/** District slug → the organisations whose tenders are that district's. */
-export const GEPNIC_ORGS: Record<string, FollowedOrg[]> = {
-  pune: [
-    { org: "Pune Municipal Corporation", shortCode: "MH_PMC", authorityType: "ULB" },
-    { org: "Pimpri Chinchwad Municipal Corporation", shortCode: "MH_PCMC", authorityType: "ULB" },
-    // Zilla Parishad Pune (Rural Development Department, CEO Pune).
-    { org: "RDD-CEO-PUNE", shortCode: "MH_ZP_PUNE", authorityType: "PANCHAYAT" },
-  ],
-  mumbai: [
-    { org: "Municipal Corporation of Greater Mumbai", shortCode: "MH_MCGM", authorityType: "ULB" },
-    { org: "Brihanmumbai Electric Supply and Transport Undertaking", shortCode: "MH_BEST", authorityType: "PARASTATAL" },
-  ],
-  chennai: [
-    { org: "Corporation of Chennai", shortCode: "TN_GCC", authorityType: "ULB" },
-    { org: "Metropolitan Transport Corporation(Chennai) Ltd.", shortCode: "TN_MTC", authorityType: "PARASTATAL" },
-  ],
-  kolkata: [
-    { org: "KOLKATA MUNICIPAL CORPORATION", shortCode: "WB_KMC", authorityType: "ULB" },
-    { org: "KOLKATA POLICE", shortCode: "WB_KOLKATA_POLICE", authorityType: "STATE_DEPT" },
-  ],
-  "new-delhi": [{ org: "New Delhi Municipal Council", shortCode: "DL_NDMC", authorityType: "ULB" }],
-};
 
 // ── Dates ────────────────────────────────────────────────────
 

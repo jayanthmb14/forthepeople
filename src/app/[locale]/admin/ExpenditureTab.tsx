@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import ModuleHelp from "@/components/admin/ModuleHelp";
+import { INR_PER_USD } from "@/lib/ai-models";
 
 interface Expense {
   id: string;
@@ -76,7 +77,7 @@ const RECURRING_OPTIONS = [
   { value: "yearly", label: "Yearly" },
 ];
 
-const USD_TO_INR_DEFAULT = 84;
+const USD_TO_INR_DEFAULT = INR_PER_USD;
 
 const EXPENDITURE_HELP =
   "Track all platform expenses. Add one-time or recurring costs. Paste invoice links (Drive, Dropbox, etc.). The P&L view compares revenue (from supporter contributions) against expenses per month. Download CSV for accounting and tax filing. Recurring expenses need one record per period — they are not auto-posted.";

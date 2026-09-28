@@ -233,7 +233,7 @@ export async function cronFinished(name: string, startedAtMs: number, result: Cr
   }
 }
 
-// ── Cron schedule maths (used by /api/health) ───────────────
+// ── Cron schedule maths (used by /api/health and admin System Health) ──
 /**
  * Turn a 5-field cron expression into "how many minutes between runs".
  * Handles the shapes we actually use in vercel.json:
@@ -268,6 +268,24 @@ export function cronIntervalMinutes(expr: string): number {
   }
   if (dow !== "*") return 7 * 24 * 60; // specific weekday = weekly
   return 24 * 60; // "M H * * *" = daily
+}
+
+/**
+ * Minutes between runs for each named job, read from vercel.json's `crons`
+ * (the schedule's single source of truth). `jobs` maps a key to a cron
+ * folder name (e.g. { weather: "scrape-weather" }); keys whose cron is not
+ * scheduled are left out. Used by the admin System Health tab.
+ */
+export function cronIntervalsFor(
+  crons: ReadonlyArray<{ path: string; schedule: string }>,
+  jobs: Readonly<Record<string, string>>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [key, name] of Object.entries(jobs)) {
+    const cron = crons.find((c) => c.path === `/api/cron/${name}`);
+    if (cron) out[key] = cronIntervalMinutes(cron.schedule);
+  }
+  return out;
 }
 
 /** Read one cron's run record (used by /api/health). Returns null if never recorded. */

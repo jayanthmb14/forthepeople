@@ -87,26 +87,27 @@ Future: `"NFHS-6"` (2027+), `"Census 2027"` (~2028-29).
 
 ## Chart primitives
 
-Located in `src/components/demographics/charts/`. All use Recharts (except
-`KarnatakaChoropleth` which uses react-simple-maps). Every chart exports a
-`canRender{Name}(profile)` helper for page-level gating.
+Located in `src/components/demographics/charts/`. All use Recharts. Every
+chart exports a `canRender{Name}(profile)` helper for page-level gating.
 
-14 primitives:
+11 primitives:
 
-1. PopulationPyramid (5-year bands — not yet seeded, falls back to AgePyramidStacked)
-2. AgePyramidStacked (4-group fallback: 0-6 / 7-14 / 15-59 / 60+)
-3. ReligionDonut
-4. CasteStackedBar
-5. LiteracyDumbbell
-6. EmploymentStackedBar
-7. EducationBreakdownBar
-8. HouseholdAmenitiesWaffle
-9. MigrationBreakdown
-10. LanguageBarChart
-11. UrbanRuralDonut
-12. SexRatioGauge
-13. MPIIndicatorCard (with 2019-21 → 2015-16 trend)
-14. KarnatakaChoropleth
+1. AgePyramidStacked (4 groups: 0-6 / 7-14 / 15-59 / 60+)
+2. ReligionDonut
+3. CasteStackedBar
+4. LiteracyDumbbell
+5. EmploymentStackedBar
+6. EducationBreakdownBar
+7. HouseholdAmenitiesWaffle
+8. MigrationBreakdown
+9. LanguageBarChart
+10. SexRatioGauge
+11. MPIIndicatorCard (with 2019-21 → 2015-16 trend)
+
+`PopulationPyramid` (5-year bands), `UrbanRuralDonut` and
+`KarnatakaChoropleth` were never mounted and were removed in the Sept 2026
+clean-up; `git log -- src/components/demographics/charts/` finds them if the
+5-year bands are ever extracted.
 
 Palette: `src/components/demographics/types.ts` — `OKABE_ITO`, `VIRIDIS`,
 `CASTE_COLORS`, `SEX_COLORS`.
@@ -235,11 +236,9 @@ All 9 smoke-test URLs returned HTTP 200 on 2026-04-21:
 | Gap | Impact | Plan |
 |---|---|---|
 | NFHS-5 district indicators | 3 active districts show "data pending" for household amenities, child marriage, internet/bank access | Phase 2: load via Harvard Dataverse CSV mirror (doi:10.7910/DVN/42WNZF, CC-BY 4.0) OR manual nfhsiips.in guest-login download |
-| Census 2011 5-year age bands | `PopulationPyramid` chart always falls back to 4-group `AgePyramidStacked` | Phase 2: extract Table C-13 |
-| Karnataka GeoJSON choropleth | If `public/geo/karnataka-districts.json` missing, shows placeholder | Verified present as of Group B |
+| Census 2011 5-year age bands | Only the 4-group `AgePyramidStacked` is drawn | Phase 2: extract Table C-13 (and restore `PopulationPyramid` from git) |
 | Vijayanagara district | No Census 2011 or NITI MPI 2023 row (bifurcated 2021) | Phase 2: add Karnataka DES current estimates at state level; full data with Census 2027 |
 | Other state-specific sources | PRS India, Karnataka DES economic handbook, BBMP ward-level | Phase 3: state-by-state onboarding |
-| `tender-pdf-extractor.ts` | Never ran; deleted 2026-09-28 with the old tender engines | — |
 
 ## Revision history
 

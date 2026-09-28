@@ -133,20 +133,6 @@ export function isTransientError(error: string | null | undefined): boolean {
 
 // ── Helper functions for common alerts ────────────────────
 
-export function alertScraperFailed(scraper: string, error: string) {
-  if (isTransientError(error)) {
-    // Skip email + DB alert — still logged to ScraperLog by the caller.
-    return Promise.resolve(false);
-  }
-  return sendAdminAlert({
-    level: "critical",
-    title: `Scraper Failed: ${scraper}`,
-    message: `The ${scraper} scraper threw an error and did not complete.`,
-    details: { Error: error, Time: new Date().toISOString() },
-    module: scraper,
-  });
-}
-
 export function alertNewFeedback(type: string, subject: string) {
   return sendAdminAlert({
     level: "info",
@@ -162,16 +148,6 @@ export function alertPaymentReceived(amountInPaise: number, planName: string) {
     title: "Payment Received",
     message: `₹${(amountInPaise / 100).toLocaleString("en-IN")} received for ${planName}.`,
     details: { Amount: `₹${(amountInPaise / 100).toLocaleString("en-IN")}`, Plan: planName },
-  });
-}
-
-export function alertStaleData(district: string, modules: string[]) {
-  return sendAdminAlert({
-    level: "warning",
-    title: `Stale Data: ${district}`,
-    message: `${modules.length} module(s) have not updated within expected timeframe.`,
-    details: { District: district, Modules: modules.join(", ") },
-    district,
   });
 }
 

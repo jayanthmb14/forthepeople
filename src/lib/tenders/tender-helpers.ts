@@ -5,7 +5,7 @@
 import { prisma } from "@/lib/db";
 
 // Re-export client-safe helpers so existing server-side imports don't break.
-export { serializeForJson, formatInr, assertFactualCopy, tenderError } from "./format";
+export { serializeForJson } from "./format";
 
 // ── District slug resolver (DB-driven) ────────────────────────────────────
 export async function resolveDistrictName(districtSlug: string): Promise<string | null> {
