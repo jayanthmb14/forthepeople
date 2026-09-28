@@ -49,9 +49,11 @@ function isMLA(l: Leader): boolean {
   return /^mla\b|member of legislative assembly/i.test(l.role);
 }
 
-/** "H.D. Kumaraswamy" → "HK"; titles like Dr./Smt. are skipped. */
+/** "H.D. Kumaraswamy" → "HK"; titles like Dr./Smt. and "(Ganiga)"-style
+ *  bracketed aliases are skipped. */
 function initials(name: string): string {
   const words = name
+    .replace(/\([^)]*\)/g, " ")
     .replace(/[.,]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !/^(dr|smt|shri|sri|mr|mrs|ms|prof|ias|ips)$/i.test(w));
