@@ -192,18 +192,6 @@ export async function generateInsight(
   return outcome.status === "ok";
 }
 
-// ── Fetch insight for a module (from DB) ─────────────────
-export async function getStoredInsight(districtId: string, module: string) {
-  return prisma.aIModuleInsight.findUnique({
-    where: { districtId_module: { districtId, module } },
-  });
-}
-
-// ── Check if insight needs regeneration ──────────────────
-export function isExpired(expiresAt: Date): boolean {
-  return new Date() >= expiresAt;
-}
-
 // ── Data-change detection ─────────────────────────────────
 // Before regenerating an insight, check whether the underlying source data
 // changed since the last insight was written. Static modules (leaders, budget,

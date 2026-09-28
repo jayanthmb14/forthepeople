@@ -433,7 +433,7 @@ Full picture: `docs/ARCHITECTURE.md`.
 
 - react-simple-maps only (hand-written D3 and Leaflet were tried and
   dropped). Components: `map/DrillDownMap` (India), `map/GenericStateMap`,
-  `map/TalukMap`, `district/DistrictLocator`; colours only from
+  `map/TalukMap`; colours only from
   `map/mapTheme.tsx`.
 - Files: `public/geo/<state>-districts.json`, `india-states.json`,
   `<district-slug>-taluks.json`. Outer rings must be clockwise for d3-geo:

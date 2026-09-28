@@ -7,8 +7,8 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  PoliceStaffing — "Police posts: filled or empty?" on the police page
 // ═══════════════════════════════════════════════════════════════════════
-//  Same data and rules as the old StaffingWidget (the "exams" module
-//  response carries a `staffing` array; rows for module "police" only),
+//  Same data and rules as StaffingSection (the "exams" module response
+//  carries a `staffing` array; rows for module "police" only),
 //  drawn with kit pieces and fully translated (page_police → staff*):
 //    • ten police officers, the filled share lit;
 //    • one bar per role (most posts first), empty posts in the danger

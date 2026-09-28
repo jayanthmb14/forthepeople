@@ -74,9 +74,9 @@ Symptoms: `/api/health` shows `ai: ❌ degraded`, an email titled
    ```
 2. Pick replacements with >= 128k context and a general "instruct/it" flavour
    (avoid "content-safety", "code", "fin" specialist models for Tier 1).
-3. Edit `src/lib/ai-provider.ts`:
-   - `getModelForPurpose()` for the primary ids
-   - `FREE_FALLBACK_MODELS` for the chain
+3. Edit `src/lib/ai-models.ts` (the only file that names models):
+   - `TIER1_FREE_MODELS` / `TIER2_MODELS` / `FACT_CHECK_MODELS` for the chains
+   - `KNOWN_MODEL_EXPIRY` when OpenRouter publishes an end date
    - `PRICE_TABLE` — add every new id (free ones as `[0, 0]`)
 4. Update the table in section 1 of this file and the date at the top.
 5. `npx tsc --noEmit`, commit, deploy.

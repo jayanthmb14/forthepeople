@@ -322,12 +322,12 @@ Writers: `scrape-news`, `generate-insights`, and the catch-up cron
   policies site-wide. Admin JSON is `Cache-Control: no-store`; public data
   routes may be CDN-cached briefly.
 - **Privacy**: Plausible (cookieless), DPDP policy at `/privacy`, supporter
-  records anonymised at the API boundary (`src/lib/contributor-label.ts` and the
-  contributors API), name/message validators in `src/lib/validators/`.
-  Known gap (Sept 2026): `/api/data/contributors` does not yet mask names
-  that are really phone numbers (the Razorpay webhook can store the payer's
-  contact as the name). The support components hide them on screen
-  (`src/components/support/public-name.ts`); the API fix is still to do.
+  records anonymised at the API boundary: `publicDisplayName()` in
+  `src/lib/supporter-name.ts` sends "Anonymous" for supporters who did not opt
+  in and masks names that are really a phone number or e-mail address as
+  "Supporter" (the contributors APIs use it; the support components run
+  `src/components/support/public-name.ts` as a second guard). Name/message
+  validators are in `src/lib/validators/`.
 - **Secrets**: only names in git (`.env.example`); values in Vercel env and the
   owner's password manager. Push protection is on.
 

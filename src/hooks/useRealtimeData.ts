@@ -5,13 +5,12 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// ForThePeople.in — All 29 module-specific data hooks
+// ForThePeople.in — module-specific data hooks
 // Usage: const { data, isLoading, error } = useCropPrices("mandya", "karnataka")
 // ═══════════════════════════════════════════════════════════
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useLocale } from "next-intl";
 import { useDistrictData } from "./useDistrictData";
 
 // ── Types ────────────────────────────────────────────────
@@ -309,16 +308,6 @@ export interface RtiTemplate {
   active: boolean;
 }
 
-export interface CourtStat {
-  id: string;
-  year: number;
-  courtName: string;
-  filed: number;
-  disposed: number;
-  pending: number;
-  avgDays: number | null;
-}
-
 export interface ElectionResult {
   id: string;
   year: number;
@@ -357,19 +346,6 @@ export interface GramPanchayat {
   fundsUtilized?: number | null;
 }
 
-export interface School {
-  id: string;
-  name: string;
-  nameLocal?: string | null;
-  type: string;
-  level: string;
-  address?: string | null;
-  students?: number | null;
-  teachers?: number | null;
-  studentTeacherRatio?: number | null;
-  results: Array<{ id: string; year: number; exam: string; appeared: number; passed: number; passPercentage: number }>;
-}
-
 export interface JJMStatus {
   id: string;
   /** "district" = the JJM dashboard's total for the whole district (no water test of its own). */
@@ -397,16 +373,6 @@ export interface HousingScheme {
   fundsReleased?: number | null;
   fundsSpent?: number | null;
   source: string;
-}
-
-export interface PowerOutage {
-  id: string;
-  area: string;
-  reason?: string | null;
-  startTime: string;
-  endTime?: string | null;
-  durationHours?: number | null;
-  affectedHouseholds?: number | null;
 }
 
 export interface BusRoute {
@@ -473,17 +439,6 @@ export interface ServiceGuide {
   onlineUrl?: string | null;
   steps: string[];
   tips?: string | null;
-  active: boolean;
-}
-
-export interface CitizenTip {
-  id: string;
-  category: string;
-  categoryLocal?: string | null;
-  title: string;
-  titleLocal?: string | null;
-  description: string;
-  priority: number;
   active: boolean;
 }
 
@@ -635,10 +590,6 @@ export function useRTI(district: string, state: string) {
   );
 }
 
-export function useCourts(district: string, state: string) {
-  return useDistrictData<CourtStat[]>("courts", district, state);
-}
-
 export function useElections(district: string, state: string) {
   return useDistrictData<{ results: ElectionResult[]; booths: PollingBooth[] }>(
     "elections", district, state
@@ -649,20 +600,12 @@ export function usePanchayats(district: string, state: string) {
   return useDistrictData<GramPanchayat[]>("panchayats", district, state);
 }
 
-export function useSchools(district: string, state: string) {
-  return useDistrictData<School[]>("schools", district, state);
-}
-
 export function useJJM(district: string, state: string) {
   return useDistrictData<JJMStatus[]>("jjm", district, state);
 }
 
 export function useHousing(district: string, state: string) {
   return useDistrictData<HousingScheme[]>("housing", district, state);
-}
-
-export function usePower(district: string, state: string) {
-  return useDistrictData<PowerOutage[]>("power", district, state);
 }
 
 export function useTransport(district: string, state: string) {
@@ -684,20 +627,12 @@ export function useServices(district: string, state: string) {
   return useDistrictData<ServiceGuide[]>("services", district, state);
 }
 
-export function useTips(district: string, state: string) {
-  return useDistrictData<CitizenTip[]>("tips", district, state);
-}
-
 export function useAlerts(district: string, state: string) {
   return useDistrictData<LocalAlert[]>("alerts", district, state);
 }
 
 export function useOffices(district: string, state: string) {
   return useDistrictData<GovOffice[]>("offices", district, state);
-}
-
-export function useAgriAdvisories(district: string, state: string) {
-  return useDistrictData<AgriAdvisory[]>("agri", district, state);
 }
 
 export function usePopulation(district: string, state: string) {
@@ -854,34 +789,4 @@ export interface ExamsData {
 
 export function useExams(district: string, state: string) {
   return useDistrictData<ExamsData>("exams", district, state);
-}
-
-// ── AI Insight ────────────────────────────────────────────
-export interface AIInsight {
-  id: string;
-  module: string;
-  headline: string;
-  summary: string;
-  sentiment: "positive" | "negative" | "neutral";
-  confidence: number;
-  sourceUrls: string[];
-  createdAt: string;
-  /** Language of headline/summary: the page language once translated, else "en". */
-  lang?: string;
-}
-
-export function useAIInsight(district: string, module: string) {
-  const locale = useLocale();
-  return useQuery<AIInsight | null>({
-    queryKey: ["ai-insight", district, module, locale],
-    queryFn: async () => {
-      // Stored translation for this language (translated once in the backend).
-      const res = await fetch(`/api/insights?district=${district}&module=${module}&locale=${locale}`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.insight ?? null;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,
-  });
 }

@@ -39,7 +39,6 @@ import {
   PLAIN_PARAMS_MODELS,
   REASONING_MODELS,
   REASONING_TOKEN_HEADROOM,
-  TIER1_FREE_MODELS,
   estimateCost as estimateCostPure,
   findExpiringModels,
   getModelForPurpose as getModelForPurposePure,
@@ -86,9 +85,6 @@ export interface AIResponse {
 
 // ── Re-exports kept for existing importers ─────────────────
 export const getModelForPurpose = getModelForPurposePure;
-export const estimateCost = estimateCostPure;
-/** @deprecated kept for old importers; the free chain lives in ai-models.ts */
-export const FREE_FALLBACK_MODELS: readonly string[] = TIER1_FREE_MODELS.slice(1);
 
 function paidFallbackEnabled(): boolean {
   return process.env.AI_PAID_FALLBACK === "1";
@@ -519,10 +515,6 @@ const CACHE_TTL = 60_000;
 export function invalidateAISettingsCache() {
   cachedSettings = null;
   cacheTs = 0;
-}
-
-export function invalidateKeyCache(_provider?: string) {
-  // No-op — kept for backward compat with admin API routes
 }
 
 export async function getAPIKey(_provider?: string): Promise<string | null> {

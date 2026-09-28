@@ -1614,12 +1614,6 @@ export function shownSubUnits(
   };
 }
 
-export function getActiveDistrict(
-  stateSlug: string
-): District | undefined {
-  return getState(stateSlug)?.districts.find((d) => d.active);
-}
-
 export function getActiveDistricts(stateSlug: string): District[] {
   return getState(stateSlug)?.districts.filter((d) => d.active) ?? [];
 }
@@ -1643,7 +1637,3 @@ export function getTotalActiveDistrictCount(): number {
 export function getActiveStateCount(): number {
   return INDIA_STATES.filter((s) => s.districts.some((d) => d.active)).length;
 }
-
-// Pilot district constants
-export const PILOT_STATE = "karnataka";
-export const PILOT_DISTRICT = "mandya";
