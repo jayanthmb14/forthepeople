@@ -1,4 +1,8 @@
-# What Jayanth needs to do (as of 27 Sep 2026, branch `redesign-v4`)
+# What Jayanth needs to do (as of 28 Sep 2026)
+
+> **Released to production on 28 Sep 2026** — `main` = `redesign-v4` (e9f9e05), deployed by Vercel and checked live.
+> To undo instantly: Vercel → Deployments → the 11 Jun production deployment (38df958) → "Instant Rollback".
+> Items in §1 about reviewing/shipping the preview are done; everything else below is still yours.
 
 Everything below needs your account, your money or your judgement.
 Production (`main`) is unchanged; the branch goes to a Vercel preview first.
