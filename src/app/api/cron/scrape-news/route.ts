@@ -6,7 +6,8 @@
 
 // ═══════════════════════════════════════════════════════════
 // Vercel Cron: News collector (every 4 hours, vercel.json)
-// Also: auto-expires stale alerts (>14 days) + deduplicates news
+// Also: deduplicates news; switches off non-official LocalAlerts older than
+// 14 days (official SACHET alerts expire in scrape-alerts, by their CAP date)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-news"
 //
@@ -28,6 +29,7 @@ import { translationTargets } from "@/lib/translation/content";
 import { translatePendingContent } from "@/lib/translation/job";
 import { verifyCron, cronStarted, cronFinished } from "@/lib/cron-auth";
 import { planTitleDuplicates } from "@/lib/news-dedupe";
+import { OFFICIAL_ALERTS } from "@/lib/data-filters";
 import { jobContextFor, listActiveDistricts } from "@/scraper/lib/cron-districts";
 import { withCronErrors } from "@/scraper/lib/cron-run";
 
@@ -126,6 +128,9 @@ async function collectAll(runStart: number): Promise<Response> {
     } catch { /* non-fatal */ }
 
     // ── 3. Expire stale LocalAlerts (>14 days, still active) ──
+    // Never official NDMA SACHET alerts: those follow their own CAP expiry
+    // (scrape-alerts). This sweep used to switch off valid long-running
+    // warnings, which the next SACHET re-issue switched back on (v5.5).
     let alertsExpired = 0;
     try {
       const staleDate = new Date(Date.now() - STALE_ALERT_DAYS * 86_400_000);
@@ -134,6 +139,8 @@ async function collectAll(runStart: number): Promise<Response> {
           districtId: districtId,
           active: true,
           createdAt: { lt: staleDate },
+          // sourceUrl is nullable: NOT(startsWith) alone would skip NULL rows.
+          OR: [{ sourceUrl: null }, { NOT: OFFICIAL_ALERTS }],
         },
         data: { active: false },
       });

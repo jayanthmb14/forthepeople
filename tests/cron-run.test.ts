@@ -81,6 +81,12 @@ describe("cron routes", () => {
     }
   });
 
+  it("scrape-news's 14-day alert sweep never touches official SACHET alerts", () => {
+    const news = routes.find((r) => r.name === "scrape-news")!.src;
+    const sweep = news.slice(news.indexOf("localAlert.updateMany"), news.indexOf("data: { active: false }"));
+    expect(sweep).toMatch(/OR: \[\{ sourceUrl: null \}, \{ NOT: OFFICIAL_ALERTS \}\]/);
+  });
+
   it("never default a district's state to Karnataka", () => {
     for (const r of routes) expect(r.src, r.name).not.toMatch(/\?\?\s*"karnataka"/i);
   });
