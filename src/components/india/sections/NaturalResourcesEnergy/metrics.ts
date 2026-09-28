@@ -19,14 +19,13 @@ export const ENERGY_SPEC: BandSpec = {
   watermarkClass: "sunWatermark",
   dotsAccent: "#1F5C5C",
   directory: [
-    { moduleSlug: P, emoji: "⚡", featured: true, value: { ref: { moduleSlug: P, metricKey: "installed_capacity_gw" }, fmt: "fmt.gw" } },
-    { moduleSlug: "energy-renewables", emoji: "☀️", value: { ref: { moduleSlug: "energy-renewables", metricKey: "renewable_installed_gw" }, fmt: "energy.fmt.gwClean" } },
-    { moduleSlug: "energy-coal", emoji: "🪨", value: { ref: { moduleSlug: "energy-coal", metricKey: "coal_production_million_tonnes" }, fmt: "energy.fmt.mtCoal" } },
-    { moduleSlug: "energy-fuels", emoji: "🛢", value: { ref: { moduleSlug: "energy-fuels", metricKey: "crude_imports_million_tonnes" }, fmt: "energy.fmt.mtCrude" } },
+    { moduleSlug: P, featured: true, value: { ref: { moduleSlug: P, metricKey: "installed_capacity_gw" }, fmt: "fmt.gw" } },
+    { moduleSlug: "energy-renewables", value: { ref: { moduleSlug: "energy-renewables", metricKey: "renewable_installed_gw" }, fmt: "energy.fmt.gwClean" } },
+    { moduleSlug: "energy-coal", value: { ref: { moduleSlug: "energy-coal", metricKey: "coal_production_million_tonnes" }, fmt: "energy.fmt.mtCoal" } },
+    { moduleSlug: "energy-fuels", value: { ref: { moduleSlug: "energy-fuels", metricKey: "crude_imports_million_tonnes" }, fmt: "energy.fmt.mtCrude" } },
   ],
   featured: {
     moduleSlug: P,
-    emoji: "⚡",
     headline: { ref: { moduleSlug: P, metricKey: "installed_capacity_gw" } },
     growth: { ref: { moduleSlug: P, metricKey: "capacity_change_yoy_gw" }, fmt: "energy.growth" },
     callout: { value: { ref: { moduleSlug: P, metricKey: "re_target_gw_2030" }, fmt: "fmt.gw" }, sub: "calloutSub" },
@@ -40,7 +39,7 @@ export const ENERGY_SPEC: BandSpec = {
   cards: [
     {
       key: "topStates",
-      emoji: "⚡",
+      glyph: "medal",
       href: "/india/energy-power",
       bars: true,
       rows: [
@@ -55,14 +54,14 @@ export const ENERGY_SPEC: BandSpec = {
     },
     {
       key: "mix",
-      emoji: "🔌",
+      glyph: "power",
       href: "/india/energy-renewables",
       mixBar: true,
       rows: [
-        { key: "coal", emoji: "🪨", color: "#475569", value: { ref: { moduleSlug: P, metricKey: "mix_pct_coal" }, fmt: "fmt.pct" } },
-        { key: "renewables", emoji: "☀️", color: "#D97706", value: { ref: { moduleSlug: P, metricKey: "mix_pct_renewables" }, fmt: "fmt.pct" } },
-        { key: "hydro", emoji: "💧", color: "#0369A1", value: { ref: { moduleSlug: P, metricKey: "mix_pct_hydro" }, fmt: "fmt.pct" } },
-        { key: "nuclear", emoji: "⚛️", color: "#7C3AED", value: { ref: { moduleSlug: P, metricKey: "mix_pct_nuclear" }, decimals: 1, fmt: "fmt.pct" } },
+        { key: "coal", glyph: { glyph: "industry", hue: "slate" }, color: "#475569", value: { ref: { moduleSlug: P, metricKey: "mix_pct_coal" }, fmt: "fmt.pct" } },
+        { key: "renewables", glyph: "sun", color: "#D97706", value: { ref: { moduleSlug: P, metricKey: "mix_pct_renewables" }, fmt: "fmt.pct" } },
+        { key: "hydro", glyph: "water", color: "#0369A1", value: { ref: { moduleSlug: P, metricKey: "mix_pct_hydro" }, fmt: "fmt.pct" } },
+        { key: "nuclear", glyph: { glyph: "power", hue: "violet" }, color: "#7C3AED", value: { ref: { moduleSlug: P, metricKey: "mix_pct_nuclear" }, decimals: 1, fmt: "fmt.pct" } },
       ],
     },
   ],

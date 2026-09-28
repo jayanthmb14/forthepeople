@@ -20,16 +20,15 @@ export const INFRA_SPEC: BandSpec = {
   watermarkClass: "buildingWatermark",
   dotsAccent: "#5F5E5A",
   directory: [
-    { moduleSlug: R, emoji: "🛣", featured: true, value: { ref: { moduleSlug: R, metricKey: "nh_length_km" }, fmt: "fmt.km" } },
-    { moduleSlug: "infra-railways", emoji: "🚆", value: { ref: { moduleSlug: "infra-railways", metricKey: "route_km" }, fmt: "fmt.km" } },
-    { moduleSlug: "infra-aviation", emoji: "✈", value: { ref: { moduleSlug: "infra-aviation", metricKey: "airports_operational_count" }, fmt: "infra.fmt.airports" } },
-    { moduleSlug: "infra-telecom", emoji: "📡", value: { ref: { moduleSlug: "infra-telecom", metricKey: "subscribers_crore" }, fmt: "fmt.crore" } },
-    { moduleSlug: "infra-ports", emoji: "⚓", value: { ref: { moduleSlug: "infra-ports", metricKey: "major_ports_count" }, fmt: "infra.fmt.majorPorts" } },
-    { moduleSlug: "infra-smart-cities", emoji: "🏙", value: { ref: { moduleSlug: "infra-smart-cities", metricKey: "cities_count" }, fmt: "infra.fmt.cities" } },
+    { moduleSlug: R, featured: true, value: { ref: { moduleSlug: R, metricKey: "nh_length_km" }, fmt: "fmt.km" } },
+    { moduleSlug: "infra-railways", value: { ref: { moduleSlug: "infra-railways", metricKey: "route_km" }, fmt: "fmt.km" } },
+    { moduleSlug: "infra-aviation", value: { ref: { moduleSlug: "infra-aviation", metricKey: "airports_operational_count" }, fmt: "infra.fmt.airports" } },
+    { moduleSlug: "infra-telecom", value: { ref: { moduleSlug: "infra-telecom", metricKey: "subscribers_crore" }, fmt: "fmt.crore" } },
+    { moduleSlug: "infra-ports", value: { ref: { moduleSlug: "infra-ports", metricKey: "major_ports_count" }, fmt: "infra.fmt.majorPorts" } },
+    { moduleSlug: "infra-smart-cities", value: { ref: { moduleSlug: "infra-smart-cities", metricKey: "cities_count" }, fmt: "infra.fmt.cities" } },
   ],
   featured: {
     moduleSlug: R,
-    emoji: "🛣",
     headline: { ref: { moduleSlug: R, metricKey: "nh_length_km" } },
     growth: { ref: { moduleSlug: R, metricKey: "nh_change_yoy_km" }, fmt: "infra.growth" },
     callout: { value: { ref: { moduleSlug: R, metricKey: "nh_target_km_2027" }, fmt: "fmt.km" }, sub: "calloutSub" },
@@ -43,7 +42,7 @@ export const INFRA_SPEC: BandSpec = {
   cards: [
     {
       key: "topStates",
-      emoji: "🛣",
+      glyph: "medal",
       href: "/india/infra-roads",
       bars: true,
       rows: [
@@ -56,7 +55,7 @@ export const INFRA_SPEC: BandSpec = {
     },
     {
       key: "flagship",
-      emoji: "🏗",
+      glyph: "construction",
       href: "/india/category/infrastructure",
       rows: [
         { key: "bharatmala", value: { ref: { moduleSlug: R, metricKey: "bharatmala_nh_km" }, fmt: "infra.fmt.kmNh" } },

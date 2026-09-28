@@ -19,20 +19,19 @@ export const GOV_SPEC: BandSpec = {
   watermarkClass: "scaleWatermark",
   dotsAccent: "#3C3489",
   directory: [
-    { moduleSlug: POL, emoji: "👮", featured: true, value: { ref: { moduleSlug: POL, metricKey: "civil_police_total_lakh" }, fmt: "fmt.lakh" } },
-    { moduleSlug: "justice-pendency", emoji: "⚖", value: { ref: { moduleSlug: "justice-pendency", metricKey: "total_pending_crore_cases" }, fmt: "fmt.crore" } },
-    { moduleSlug: "justice-crime", emoji: "📋", value: { ref: { moduleSlug: "justice-crime", metricKey: "ipc_cases_per_year_lakh" }, fmt: "gov.fmt.lakhYear" } },
-    { moduleSlug: "justice-prisons", emoji: "🔒", value: { ref: { moduleSlug: "justice-prisons", metricKey: "prison_population_lakh" }, decimals: 1, fmt: "fmt.lakh" } },
-    { moduleSlug: "elections-loksabha", emoji: "🏛", value: { ref: { moduleSlug: "elections-loksabha", metricKey: "loksabha_seats_total" }, fmt: "gov.fmt.seats" } },
-    { moduleSlug: "elections-rajyasabha", emoji: "🏛", value: { ref: { moduleSlug: "elections-rajyasabha", metricKey: "rajyasabha_seats_total" }, fmt: "gov.fmt.seats" } },
-    { moduleSlug: "elections-turnout", emoji: "🗳", value: { ref: { moduleSlug: "elections-turnout", metricKey: "ge_2024_turnout_pct" }, decimals: 1, fmt: "fmt.pct" } },
-    { moduleSlug: "defence-budget", emoji: "🛡", value: { ref: { moduleSlug: "defence-budget", metricKey: "defence_allocation_lakh_cr" }, decimals: 1, fmt: "fmt.inrLakhCr" } },
-    { moduleSlug: "defence-exports", emoji: "✈", value: { ref: { moduleSlug: "defence-exports", metricKey: "defence_exports_thousand_cr" }, fmt: "gov.fmt.inrThousandCr" } },
-    { moduleSlug: "defence-dpsu", emoji: "🏭", value: { ref: { moduleSlug: "defence-dpsu", metricKey: "dpsu_count" }, fmt: "gov.fmt.dpsus" } },
+    { moduleSlug: POL, featured: true, value: { ref: { moduleSlug: POL, metricKey: "civil_police_total_lakh" }, fmt: "fmt.lakh" } },
+    { moduleSlug: "justice-pendency", value: { ref: { moduleSlug: "justice-pendency", metricKey: "total_pending_crore_cases" }, fmt: "fmt.crore" } },
+    { moduleSlug: "justice-crime", value: { ref: { moduleSlug: "justice-crime", metricKey: "ipc_cases_per_year_lakh" }, fmt: "gov.fmt.lakhYear" } },
+    { moduleSlug: "justice-prisons", value: { ref: { moduleSlug: "justice-prisons", metricKey: "prison_population_lakh" }, decimals: 1, fmt: "fmt.lakh" } },
+    { moduleSlug: "elections-loksabha", value: { ref: { moduleSlug: "elections-loksabha", metricKey: "loksabha_seats_total" }, fmt: "gov.fmt.seats" } },
+    { moduleSlug: "elections-rajyasabha", value: { ref: { moduleSlug: "elections-rajyasabha", metricKey: "rajyasabha_seats_total" }, fmt: "gov.fmt.seats" } },
+    { moduleSlug: "elections-turnout", value: { ref: { moduleSlug: "elections-turnout", metricKey: "ge_2024_turnout_pct" }, decimals: 1, fmt: "fmt.pct" } },
+    { moduleSlug: "defence-budget", value: { ref: { moduleSlug: "defence-budget", metricKey: "defence_allocation_lakh_cr" }, decimals: 1, fmt: "fmt.inrLakhCr" } },
+    { moduleSlug: "defence-exports", value: { ref: { moduleSlug: "defence-exports", metricKey: "defence_exports_thousand_cr" }, fmt: "gov.fmt.inrThousandCr" } },
+    { moduleSlug: "defence-dpsu", value: { ref: { moduleSlug: "defence-dpsu", metricKey: "dpsu_count" }, fmt: "gov.fmt.dpsus" } },
   ],
   featured: {
     moduleSlug: POL,
-    emoji: "👮",
     headline: { ref: { moduleSlug: POL, metricKey: "civil_police_total_lakh" } },
     growth: { ref: { moduleSlug: POL, metricKey: "police_per_lakh_population" }, fmt: "gov.growth" },
     callout: { value: { ref: { moduleSlug: POL, metricKey: "un_target_per_lakh" } }, sub: "calloutSub" },
@@ -46,7 +45,7 @@ export const GOV_SPEC: BandSpec = {
   cards: [
     {
       key: "justice",
-      emoji: "⚖️",
+      glyph: "justice",
       href: "/india/justice-police",
       rows: [
         { key: "police", value: { ref: { moduleSlug: POL, metricKey: "civil_police_total_lakh" }, fmt: "fmt.lakh" } },
@@ -58,7 +57,7 @@ export const GOV_SPEC: BandSpec = {
     },
     {
       key: "defenceElections",
-      emoji: "🛡",
+      glyph: "shield",
       href: "/india/defence-budget",
       rows: [
         { key: "defenceBudget", value: { ref: { moduleSlug: "defence-budget", metricKey: "defence_allocation_lakh_cr" }, decimals: 1, fmt: "fmt.inrLakhCr" } },

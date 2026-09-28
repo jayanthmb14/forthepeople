@@ -44,7 +44,6 @@ export type DirectoryFormat =
 
 export type DirectoryRow = {
   moduleSlug: string;
-  emoji: string;
   headlineRef: MetricRef;
   format: DirectoryFormat;
   companion?: MetricRef;
@@ -54,39 +53,33 @@ export type DirectoryRow = {
 export const KNOW_DIRECTORY: DirectoryRow[] = [
   {
     moduleSlug: "know-india-constitution",
-    emoji: "📜",
     headlineRef: { moduleSlug: "know-india-constitution", metricKey: "articles_count" },
     format: "count_with_suffix",
     isFeatured: true,
   },
   {
     moduleSlug: "know-india-history-timeline",
-    emoji: "🏛",
     headlineRef: { moduleSlug: "know-india-history-timeline", metricKey: "civilization_span_years" },
     format: "year_span",
   },
   {
     moduleSlug: "know-india-geography-physical",
-    emoji: "🗺",
     headlineRef: { moduleSlug: "know-india-geography-physical", metricKey: "area_total_million_km2" },
     format: "million_km2",
   },
   {
     moduleSlug: "know-india-parliament",
-    emoji: "🏛",
     headlineRef: { moduleSlug: "know-india-parliament", metricKey: "lok_sabha_seats" },
     companion: { moduleSlug: "know-india-parliament", metricKey: "rajya_sabha_seats" },
     format: "lok_rajya",
   },
   {
     moduleSlug: "know-india-elections",
-    emoji: "🗳",
     headlineRef: { moduleSlug: "know-india-elections", metricKey: "registered_voters_millions" },
     format: "millions_voters",
   },
   {
     moduleSlug: "know-india-budget",
-    emoji: "💰",
     headlineRef: { moduleSlug: "know-india-budget", metricKey: "budget_process_stages" },
     format: "stages_count",
   },

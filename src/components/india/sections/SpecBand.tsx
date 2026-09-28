@@ -22,9 +22,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { CategoryGlyph } from "@/components/graphics";
 import { SectionWatermark } from "./SectionWatermark";
 import { BandNumber, BandVisibleProvider, RowBar, useBandText, useBandVisible } from "./band-kit";
-import { indicatorKey, type BandSpec, type CardSpec, type RowSpec, type TextOrValue, type ValueSpec } from "./band-spec";
+import { indicatorKey, type BandSpec, type CardSpec, type GlyphRef, type RowSpec, type TextOrValue, type ValueSpec } from "./band-spec";
+import { indiaModuleGlyph } from "../glyphs";
 import { INDIA_SUPER_CATEGORIES, type IndiaSuperCategoryDef } from "@/lib/india/india-super-categories";
 import { INDIA_NS } from "../i18n";
 import { getIndiaModuleBySlug, type IndiaModuleStatus } from "@/lib/india/india-modules";
@@ -51,6 +54,12 @@ type Styles = Readonly<Record<string, string>>;
 type Text = ReturnType<typeof useBandText>;
 
 const EM_DASH = "—";
+
+/** A spec's glyph as CategoryGlyph props (a name keeps the glyph's own hue). */
+const glyphProps = (g: GlyphRef) => (typeof g === "string" ? { glyph: g } : { pick: g });
+
+/** Inline pictures sit centred on the text line, not on its baseline. */
+const CENTRED: React.CSSProperties = { alignSelf: "center" };
 
 type ByKey = BandDataLike["indicatorByKey"];
 
@@ -109,7 +118,7 @@ function Card({
       <div className={styles.rightCardHeader}>
         <span className={styles.rightCardTitle}>{tb(`cards.${card.key}.title`)}</span>
         <span className={styles.rightCardIcon} aria-hidden>
-          {card.emoji}
+          <CategoryGlyph {...glyphProps(card.glyph)} size={16} />
         </span>
       </div>
 
@@ -132,17 +141,17 @@ function Card({
               <div className={styles.rightCardListEntry}>
                 <span className={styles.rightCardListEntryLeft}>
                   {row.arrow ? (
-                    <span className={styles.rightCardListEntryArrow} aria-hidden>
-                      {row.arrow === "down" ? "⬇" : "⬆"}
+                    <span className={styles.rightCardListEntryArrow} aria-hidden style={{ ...CENTRED, display: "inline-flex" }}>
+                      {row.arrow === "down" ? <ArrowDown size={12} strokeWidth={2.5} /> : <ArrowUp size={12} strokeWidth={2.5} />}
                     </span>
                   ) : null}
                   {row.rank !== undefined ? <span className={styles.rightCardListEntryRank}>#{row.rank}</span> : null}
-                  {row.emoji || (card.mixBar && row.color) ? (
-                    <span className={styles.rightCardListEntryEmoji} aria-hidden>
+                  {row.glyph || (card.mixBar && row.color) ? (
+                    <span className={styles.rightCardListEntryEmoji} aria-hidden style={{ ...CENTRED, display: "inline-flex", alignItems: "center" }}>
                       {card.mixBar && row.color ? (
                         <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: row.color, marginInlineEnd: 4 }} />
                       ) : null}
-                      {row.emoji}
+                      {row.glyph ? <CategoryGlyph {...glyphProps(row.glyph)} size={16} /> : null}
                     </span>
                   ) : null}
                   <span className={styles.rightCardListEntryLabel}>
@@ -196,7 +205,7 @@ export function SpecBand({ spec, styles, data, locale }: { spec: BandSpec; style
         return (
           <Link key={row.moduleSlug} href={`/${locale}/india/${row.moduleSlug}`} className={styles.directoryRow} data-status={mod.status}>
             <span className={styles.directoryRowLabel}>
-              <span aria-hidden>{row.emoji}</span> {def ? x.moduleTitle(def) : mod.title}
+              <CategoryGlyph pick={indiaModuleGlyph(row.moduleSlug, def?.category)} size={16} style={CENTRED} /> {def ? x.moduleTitle(def) : mod.title}
               {row.featured && <span className={styles.directoryRowFeaturedTag}>{t("band.featured")}</span>}
             </span>
             <span className={styles.directoryRowValue}>
@@ -249,7 +258,7 @@ export function SpecBand({ spec, styles, data, locale }: { spec: BandSpec; style
             <div className={styles.featuredHeader}>
               <div className={styles.featuredHeaderLeft}>
                 <span className={styles.featuredIcon} aria-hidden>
-                  {f.emoji}
+                  <CategoryGlyph pick={indiaModuleGlyph(f.moduleSlug, featuredDef?.category)} size={18} />
                 </span>
                 <span className={styles.featuredTitle}>{featuredDef ? x.moduleTitle(featuredDef) : f.moduleSlug}</span>
                 {headlineInd?.source && <span className={styles.featuredSourceInline}>{headlineInd.source}</span>}

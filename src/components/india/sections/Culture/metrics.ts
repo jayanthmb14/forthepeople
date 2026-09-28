@@ -21,15 +21,14 @@ export const CULTURE_SPEC: BandSpec = {
   dotsAccent: "#993556",
   staticDirectory: true,
   directory: [
-    { moduleSlug: H, emoji: "🏛", featured: true, value: { ref: { moduleSlug: H, metricKey: "asi_monuments_count" }, fmt: "culture.fmt.monuments" } },
-    { moduleSlug: "tourism-overview", emoji: "✈", value: { ref: { moduleSlug: "tourism-overview", metricKey: "international_arrivals_lakh" }, fmt: "culture.fmt.lakhArrivals" } },
-    { moduleSlug: "sports-olympics", emoji: "🏅", value: { ref: { moduleSlug: "sports-olympics", metricKey: "olympic_medals_total" }, fmt: "culture.fmt.medals" } },
-    { moduleSlug: "sports-khelo-india", emoji: "🏆", value: { ref: { moduleSlug: "sports-khelo-india", metricKey: "khelo_athletes_thousand" }, fmt: "culture.fmt.kAthletes" } },
-    { moduleSlug: "tourism-gi-tags", emoji: "🏷", value: { ref: { moduleSlug: "tourism-gi-tags", metricKey: "gi_tags_count" }, fmt: "fmt.plus" } },
+    { moduleSlug: H, featured: true, value: { ref: { moduleSlug: H, metricKey: "asi_monuments_count" }, fmt: "culture.fmt.monuments" } },
+    { moduleSlug: "tourism-overview", value: { ref: { moduleSlug: "tourism-overview", metricKey: "international_arrivals_lakh" }, fmt: "culture.fmt.lakhArrivals" } },
+    { moduleSlug: "sports-olympics", value: { ref: { moduleSlug: "sports-olympics", metricKey: "olympic_medals_total" }, fmt: "culture.fmt.medals" } },
+    { moduleSlug: "sports-khelo-india", value: { ref: { moduleSlug: "sports-khelo-india", metricKey: "khelo_athletes_thousand" }, fmt: "culture.fmt.kAthletes" } },
+    { moduleSlug: "tourism-gi-tags", value: { ref: { moduleSlug: "tourism-gi-tags", metricKey: "gi_tags_count" }, fmt: "fmt.plus" } },
   ],
   featured: {
     moduleSlug: H,
-    emoji: "🏛",
     headline: { ref: { moduleSlug: H, metricKey: "asi_monuments_count" } },
     growth: { ref: { moduleSlug: H, metricKey: "unesco_sites_count" }, fmt: "culture.growth" },
     callout: { label: "calloutLabel", value: { ref: { moduleSlug: H, metricKey: "global_rank_unesco" }, rank: true }, sub: "calloutSub" },
@@ -43,7 +42,7 @@ export const CULTURE_SPEC: BandSpec = {
   cards: [
     {
       key: "heritage",
-      emoji: "🏛",
+      glyph: "civic",
       href: "/india/tourism-heritage",
       linkValue: { ref: { moduleSlug: H, metricKey: "unesco_sites_count" } },
       rows: [
@@ -56,7 +55,7 @@ export const CULTURE_SPEC: BandSpec = {
     },
     {
       key: "output",
-      emoji: "🎭",
+      glyph: "lotus",
       href: "/india/category/culture",
       rows: [
         { key: "films", value: { ref: { moduleSlug: H, metricKey: "bollywood_films_per_year" }, fmt: "culture.fmt.filmsYear" } },

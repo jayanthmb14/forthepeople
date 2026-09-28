@@ -19,6 +19,8 @@
  */
 
 import Link from "next/link";
+import { CategoryGlyph } from "@/components/graphics";
+import { indiaModuleGlyph } from "../../glyphs";
 import styles from "./styles.module.css";
 import { SectionWatermark } from "../SectionWatermark";
 import { BandNumber, BandVisibleProvider, useBandText, useBandVisible } from "../band-kit";
@@ -84,7 +86,8 @@ function DirectoryRowItem({ row, data, locale, text }: { row: DirectoryRow; data
   return (
     <Link href={`/${locale}/india/${row.moduleSlug}`} className={styles.directoryRow}>
       <span className={styles.directoryRowLabel}>
-        <span aria-hidden>{row.emoji}</span> {def ? text.x.moduleTitle(def) : module_.title}
+        <CategoryGlyph pick={indiaModuleGlyph(row.moduleSlug, def?.category)} size={16} style={{ alignSelf: "center" }} />{" "}
+        {def ? text.x.moduleTitle(def) : module_.title}
         {row.isFeatured && <span className={styles.directoryRowFeaturedTag}>{text.t("band.featured")}</span>}
       </span>
       <span className={styles.directoryRowValue}>
@@ -134,7 +137,7 @@ function DraftingTimelineCard({ locale, text }: { locale: string; text: Text }) 
       <div className={styles.rightCardHeader}>
         <span className={styles.rightCardTitle}>{tb("timelineTitle")}</span>
         <span className={styles.rightCardIcon} aria-hidden>
-          ⏳
+          <CategoryGlyph glyph="book" size={16} />
         </span>
       </div>
       <ol className={styles.rightCardList} style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -161,7 +164,7 @@ function NotableArticlesCard({ locale, data, text }: { locale: string; data: Kno
       <div className={styles.rightCardHeader}>
         <span className={styles.rightCardTitle}>{tb("articlesTitle")}</span>
         <span className={styles.rightCardIcon} aria-hidden>
-          ⚖
+          <CategoryGlyph glyph="justice" size={16} />
         </span>
       </div>
       <ul className={styles.rightCardList} style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -238,7 +241,7 @@ export function KnowAboutIndiaClient({ data, locale }: Props) {
             <div className={styles.featuredHeader}>
               <div className={styles.featuredHeaderLeft}>
                 <span className={styles.featuredIcon} aria-hidden>
-                  {featuredRow?.emoji ?? ""}
+                  {featuredModuleSlug ? <CategoryGlyph pick={indiaModuleGlyph(featuredModuleSlug, featuredDef?.category)} size={18} /> : null}
                 </span>
                 <span className={styles.featuredTitle}>{featuredDef ? x.moduleTitle(featuredDef) : featuredModuleSlug ?? ""}</span>
                 {featuredHeadlineInd?.source && <span className={styles.featuredSourceInline}>{featuredHeadlineInd.source}</span>}

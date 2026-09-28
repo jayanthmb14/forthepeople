@@ -23,7 +23,6 @@ export type DirectoryFormat =
 export type DirectoryRow = {
   /** Module whose (translated) title is shown as the row label. */
   moduleSlug: string;
-  emoji: string;
   headlineRef: MetricRef;
   format: DirectoryFormat;
   /** Optional second metric (e.g. UT count for states_uts_combined). */
@@ -35,44 +34,37 @@ export type DirectoryRow = {
 export const MACRO_DIRECTORY: DirectoryRow[] = [
   {
     moduleSlug: "economy-gdp",
-    emoji: "📈",
     headlineRef: { moduleSlug: "economy-gdp", metricKey: "gdp_nominal_usd_trillion" },
     format: "trillion_usd",
   },
   {
     moduleSlug: "economy-inflation",
-    emoji: "🛒",
     headlineRef: { moduleSlug: "economy-inflation", metricKey: "cpi_inflation" },
     format: "percent",
   },
   {
     moduleSlug: "economy-employment",
-    emoji: "💼",
     headlineRef: { moduleSlug: "economy-employment", metricKey: "workforce_size" },
     format: "millions_people",
   },
   {
     moduleSlug: "demographics-population",
-    emoji: "👥",
     headlineRef: { moduleSlug: "demographics-population", metricKey: "population_total" },
     format: "billion_people",
     isFeatured: true,
   },
   {
     moduleSlug: "budget-union",
-    emoji: "🏛",
     headlineRef: { moduleSlug: "budget-union", metricKey: "total_outlay_inr_lakh_crore" },
     format: "lakh_crore_inr",
   },
   {
     moduleSlug: "budget-gst",
-    emoji: "🛍",
     headlineRef: { moduleSlug: "budget-gst", metricKey: "monthly_collection_inr_lakh_crore" },
     format: "lakh_crore_per_month",
   },
   {
     moduleSlug: "national-snapshot",
-    emoji: "🌐",
     headlineRef: { moduleSlug: "national-snapshot", metricKey: "states_count" },
     companion: { moduleSlug: "national-snapshot", metricKey: "uts_count" },
     format: "states_uts_combined",

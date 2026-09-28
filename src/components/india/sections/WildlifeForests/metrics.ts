@@ -24,13 +24,12 @@ export const WILDLIFE_SPEC: BandSpec = {
   dotsAccent: "#3B6D11",
   staticDirectory: true,
   directory: [
-    { moduleSlug: F, emoji: "🌳", featured: true, value: { ref: { moduleSlug: F, metricKey: "forest_cover_pct" }, decimals: 1, fmt: "fmt.pct" } },
-    { moduleSlug: T, emoji: "🐅", value: { ref: { moduleSlug: T, metricKey: "tiger_population_total" }, fmt: "wildlife.fmt.tigers" } },
-    { moduleSlug: "wildlife-protected-areas", emoji: "🦁", value: { ref: { moduleSlug: "wildlife-protected-areas", metricKey: "parks_count_total" }, fmt: "fmt.plus" } },
+    { moduleSlug: F, featured: true, value: { ref: { moduleSlug: F, metricKey: "forest_cover_pct" }, decimals: 1, fmt: "fmt.pct" } },
+    { moduleSlug: T, value: { ref: { moduleSlug: T, metricKey: "tiger_population_total" }, fmt: "wildlife.fmt.tigers" } },
+    { moduleSlug: "wildlife-protected-areas", value: { ref: { moduleSlug: "wildlife-protected-areas", metricKey: "parks_count_total" }, fmt: "fmt.plus" } },
   ],
   featured: {
     moduleSlug: F,
-    emoji: "🌳",
     headline: { ref: { moduleSlug: F, metricKey: "forest_cover_pct" }, decimals: 1, fmt: "fmt.pct" },
     growth: { ref: { moduleSlug: F, metricKey: "forest_cover_change_2021" }, fmt: "wildlife.growth" },
     callout: { value: { ref: { moduleSlug: F, metricKey: "forest_cover_target_pct" }, fmt: "fmt.pct" }, sub: "calloutSub" },
@@ -60,7 +59,7 @@ export const WILDLIFE_SPEC: BandSpec = {
   cards: [
     {
       key: "topStates",
-      emoji: "🌿",
+      glyph: "medal",
       href: "/india/wildlife-forests",
       bars: true,
       rows: [
@@ -73,13 +72,13 @@ export const WILDLIFE_SPEC: BandSpec = {
     },
     {
       key: "biodiversity",
-      emoji: "🐾",
+      glyph: "paw",
       href: "/india/wildlife-tigers",
       rows: [
-        { key: "tigers", emoji: "🐅", value: { ref: { moduleSlug: T, metricKey: "tiger_population_total" } } },
-        { key: "elephants", emoji: "🐘", value: { ref: { moduleSlug: F, metricKey: "elephants_count" } } },
-        { key: "rhinos", emoji: "🦏", value: { ref: { moduleSlug: F, metricKey: "rhinos_count" } } },
-        { key: "reserves", emoji: "🏞️", value: { ref: { moduleSlug: T, metricKey: "tiger_reserves_count" } } },
+        { key: "tigers", value: { ref: { moduleSlug: T, metricKey: "tiger_population_total" } } },
+        { key: "elephants", value: { ref: { moduleSlug: F, metricKey: "elephants_count" } } },
+        { key: "rhinos", value: { ref: { moduleSlug: F, metricKey: "rhinos_count" } } },
+        { key: "reserves", value: { ref: { moduleSlug: T, metricKey: "tiger_reserves_count" } } },
       ],
     },
   ],

@@ -17,7 +17,12 @@
  * Plain data, no React: safe to import from server loaders.
  */
 
+import type { GlyphName, GlyphPick } from "@/components/graphics";
+
 export type MetricRef = { moduleSlug: string; metricKey: string };
+
+/** A drawn glyph (src/components/graphics), bare or with its own hue. */
+export type GlyphRef = GlyphName | GlyphPick;
 
 /** A number read from IndiaIndicator. */
 export interface ValueSpec {
@@ -41,8 +46,9 @@ export interface RowSpec {
   state?: string;
   /** "#1" before the label. */
   rank?: number;
-  emoji?: string;
-  /** ⬇ / ⬆ marker (lower-is-better / higher-is-better). */
+  /** Small picture before the label (drawn glyph, never an emoji). */
+  glyph?: GlyphRef;
+  /** Down / up arrow (lower-is-better / higher-is-better). */
   arrow?: "up" | "down";
   /** Small second label: a state's name, or a message key under `notes`. */
   note?: { state: string } | { text: string };
@@ -54,7 +60,8 @@ export interface RowSpec {
 export interface CardSpec {
   /** Title key `cards.<key>.title`, link label key `cards.<key>.link`. */
   key: string;
-  emoji: string;
+  /** Picture in the card's corner. */
+  glyph: GlyphRef;
   /** Link target after /<locale>, e.g. "/india/energy-power". */
   href: string;
   /** Number passed to the link label as {n}. */
@@ -77,10 +84,10 @@ export interface BandSpec {
   dotsAccent: string;
   /** Few modules: a plain list without the scrolling window. */
   staticDirectory?: boolean;
-  directory: Array<{ moduleSlug: string; emoji: string; value: ValueSpec; featured?: boolean }>;
+  /** Each row draws its module's glyph (src/components/india/glyphs.ts). */
+  directory: Array<{ moduleSlug: string; value: ValueSpec; featured?: boolean }>;
   featured: {
     moduleSlug: string;
-    emoji: string;
     headline: ValueSpec;
     growth?: ValueSpec;
     callout?: {

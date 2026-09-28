@@ -19,15 +19,14 @@ export const AGRI_SPEC: BandSpec = {
   watermarkClass: "wheatWatermark",
   dotsAccent: "#B58A1E",
   directory: [
-    { moduleSlug: P, emoji: "🌾", featured: true, value: { ref: { moduleSlug: P, metricKey: "foodgrain_output_million_tonnes" }, decimals: 1, fmt: "fmt.mt" } },
-    { moduleSlug: K, emoji: "💰", value: { ref: { moduleSlug: K, metricKey: "farmers_count_crore" }, fmt: "agri.fmt.crFarmers" } },
-    { moduleSlug: "agriculture-plantation", emoji: "🍃", value: { ref: { moduleSlug: "agriculture-plantation", metricKey: "tea_production_million_kg" }, fmt: "agri.fmt.tea" } },
-    { moduleSlug: "livestock-census", emoji: "🐄", value: { ref: { moduleSlug: "livestock-census", metricKey: "livestock_total_million" }, fmt: "agri.fmt.livestock" } },
-    { moduleSlug: "livestock-fisheries", emoji: "🐟", value: { ref: { moduleSlug: "livestock-fisheries", metricKey: "fish_production_lakh_tonnes" }, fmt: "agri.fmt.fish" } },
+    { moduleSlug: P, featured: true, value: { ref: { moduleSlug: P, metricKey: "foodgrain_output_million_tonnes" }, decimals: 1, fmt: "fmt.mt" } },
+    { moduleSlug: K, value: { ref: { moduleSlug: K, metricKey: "farmers_count_crore" }, fmt: "agri.fmt.crFarmers" } },
+    { moduleSlug: "agriculture-plantation", value: { ref: { moduleSlug: "agriculture-plantation", metricKey: "tea_production_million_kg" }, fmt: "agri.fmt.tea" } },
+    { moduleSlug: "livestock-census", value: { ref: { moduleSlug: "livestock-census", metricKey: "livestock_total_million" }, fmt: "agri.fmt.livestock" } },
+    { moduleSlug: "livestock-fisheries", value: { ref: { moduleSlug: "livestock-fisheries", metricKey: "fish_production_lakh_tonnes" }, fmt: "agri.fmt.fish" } },
   ],
   featured: {
     moduleSlug: P,
-    emoji: "🌾",
     headline: { ref: { moduleSlug: P, metricKey: "foodgrain_output_million_tonnes" }, decimals: 1 },
     growth: { ref: { moduleSlug: P, metricKey: "foodgrain_change_yoy_mt" }, fmt: "agri.growth" },
     callout: { label: "calloutLabel", valueText: "calloutValue", subValue: { ref: { moduleSlug: P, metricKey: "top_producer_state_pct" }, fmt: "agri.fmt.share" } },
@@ -41,7 +40,7 @@ export const AGRI_SPEC: BandSpec = {
   cards: [
     {
       key: "topCrops",
-      emoji: "🌾",
+      glyph: "medal",
       href: "/india/agriculture-production",
       bars: true,
       rows: [
@@ -55,7 +54,7 @@ export const AGRI_SPEC: BandSpec = {
     },
     {
       key: "schemes",
-      emoji: "🌱",
+      glyph: "money",
       href: "/india/agriculture-pmkisan",
       rows: [
         { key: "pmkisan", value: { ref: { moduleSlug: K, metricKey: "farmers_count_crore" }, fmt: "agri.fmt.crFarmers" } },
