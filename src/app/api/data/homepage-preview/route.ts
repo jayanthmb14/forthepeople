@@ -52,7 +52,9 @@ export async function GET() {
             select: { damName: true, storagePct: true, recordedAt: true },
           }),
           prisma.cropPrice.findFirst({
-            where: { districtId: d.id },
+            // Same rule as every other crop list (seed rows, livestock and
+            // per-nut / per-bunch prices never shown) — Sept 2026 audit.
+            where: { districtId: d.id, ...SHOWN_CROP_PRICE },
             orderBy: { date: "desc" },
             select: { commodity: true, modalPrice: true, date: true },
           }),
