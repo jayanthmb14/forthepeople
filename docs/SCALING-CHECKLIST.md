@@ -694,7 +694,7 @@ Anthropic API: 0 new calls
 
 ### Known unresolved issues
 
-- `src/scraper/parsers/tender-pdf-extractor.ts` was dormant pre-Population-v2
+- `src/scraper/parsers/tender-pdf-extractor.ts` was dormant pre-Population-v2 (deleted unrun, 28 Sep 2026)
   (missing pdf-parse devDep). Adding pdf-parse@2.4.5 made TypeScript happy
   but the extractor still uses v1 API patterns — still broken at runtime
   but fails gracefully via its `{extractionFailed: true}` return. Flagged

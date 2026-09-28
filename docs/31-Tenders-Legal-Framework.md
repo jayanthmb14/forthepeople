@@ -41,8 +41,11 @@
 
 ## PII redaction
 
-`src/scraper/parsers/pii-redactor.ts` — runs on every `extractedText`
-body before DB write:
+No tender document text is stored today (`TenderDocument` has no rows, and
+the live collector stores no person's name from a tender page). The v1
+redactor below (`src/scraper/parsers/pii-redactor.ts`, deleted 28 Sep 2026
+with the PDF extractor it served) is the rule any future document-text
+ingest must reapply. It ran on every `extractedText` body before DB write:
 
 | Token | Regex | Replacement |
 |-------|-------|-------------|

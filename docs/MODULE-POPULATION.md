@@ -241,7 +241,6 @@ All 9 smoke-test URLs returned HTTP 200 on 2026-04-21:
 | Census 2011 5-year age bands | Only the 4-group `AgePyramidStacked` is drawn | Phase 2: extract Table C-13 (and restore `PopulationPyramid` from git) |
 | Vijayanagara district | No Census 2011 or NITI MPI 2023 row (bifurcated 2021) | Phase 2: add Karnataka DES current estimates at state level; full data with Census 2027 |
 | Other state-specific sources | PRS India, Karnataka DES economic handbook, BBMP ward-level | Phase 3: state-by-state onboarding |
-| `tender-pdf-extractor.ts` | Pre-existing dormancy, unrelated to Population module | Tender team to fix |
 
 ## Revision history
 

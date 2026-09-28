@@ -4,8 +4,8 @@
 
 | Integration | Purpose in Tenders module | Env var |
 |-------------|---------------------------|---------|
-| OpenRouter (via `callAI`) | AI enrichment: summary / eligibility / checklist | `OPENROUTER_API_KEY` |
-| Sentry | Error logging from orchestrator + cron | `SENTRY_DSN` |
+| OpenRouter (via `callAI`) | AI enrichment: summary / eligibility / checklist (planned; the v1 enrichment job was deleted unrun) | `OPENROUTER_API_KEY` |
+| Sentry | Error logging from the scrape-tenders cron | `SENTRY_DSN` |
 | Plausible | Page-view analytics | (no key — cookieless) |
 | Resend | Admin alert emails when cost budget exceeded | `RESEND_API_KEY`, `ADMIN_EMAIL` |
 | Neon PostgreSQL | Primary data store | `DATABASE_URL` |
@@ -34,7 +34,9 @@ reuses existing infrastructure end-to-end.
 - IREPS: 1 req / 4 s — more restrictive robots.txt
 - Others: 1 req / 3–4 s per config row
 
-All enforced centrally in `src/scraper/engines/tender-http.ts`.
+These were enforced in `src/scraper/engines/tender-http.ts`, deleted on
+28 Sep 2026 with the v1 engines (never run). The live GePNIC collector uses
+`src/scraper/lib/source-fetch.ts`: one request every 2.5 s per portal.
 
 ## Cost monitoring notes
 
