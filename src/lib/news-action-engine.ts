@@ -13,7 +13,6 @@ import { Prisma } from "@/generated/prisma";
 import { callAIJSON } from "./ai-provider";
 import { extractExamFromNews, syncExamFromNews } from "./exam-sync";
 import { extractVerifyAndSyncInfra } from "./infra-sync";
-import { logUpdate } from "./update-log";
 import { decideNewsAction } from "./news-action-rules";
 
 // ── Per-cron extraction cap ─────────────────────────────────
@@ -165,6 +164,34 @@ Use "news" module if it doesn't clearly fit another. confidence = how certain yo
   }
 }
 
+// ── Admin review queue ───────────────────────────────────────
+/**
+ * One pending NewsActionQueue item per article and module (the same URL
+ * was queued up to 19 times while retention deleted and re-fetched it).
+ */
+async function queueForReview(c: NewsClassification): Promise<void> {
+  const already = await prisma.newsActionQueue.findFirst({
+    where: { districtId: c.districtId, dataType: c.targetModule, sourceUrl: c.articleUrl, status: "pending" },
+    select: { id: true },
+  });
+  if (already) {
+    console.log(`[NewsAction] Already queued: ${c.targetModule} — ${c.articleTitle.slice(0, 60)}`);
+    return;
+  }
+  await prisma.newsActionQueue.create({
+    data: {
+      districtId: c.districtId,
+      dataType: c.targetModule,
+      extractedData: c.extractedData as unknown as Prisma.InputJsonValue,
+      sourceUrl: c.articleUrl,
+      headline: c.articleTitle,
+      confidence: c.confidence,
+      status: "pending",
+    },
+  });
+  console.log(`[NewsAction] Queued review: ${c.targetModule} — ${c.articleTitle.slice(0, 60)}`);
+}
+
 // ── Execute DB mutation based on module ──────────────────────
 // What may happen is decided by decideNewsAction() (src/lib/news-action-rules.ts):
 // skip / drop (generic "news", police items that are not crimes) / queue for
@@ -176,7 +203,7 @@ export async function executeNewsAction(
   /** deadlineAt: no AI extraction starts after it (the news cron's time budget). */
   opts: { deadlineAt?: number } = {},
 ): Promise<void> {
-  const { districtId, targetModule, extractedData, articleTitle, articleUrl, confidence } = classification;
+  const { districtId, targetModule, articleTitle, articleUrl } = classification;
   const decision = decideNewsAction(classification);
   const article = {
     title: articleTitle,
@@ -191,30 +218,9 @@ export async function executeNewsAction(
     return;
   }
 
-  // Mid confidence, or a review-only module: queue for admin review — once
-  // per article (the same URL was queued up to 19 times while retention
-  // deleted and re-fetched it).
+  // Mid confidence, or a review-only module: queue for admin review (once per article).
   if (decision.kind === "queue") {
-    const already = await prisma.newsActionQueue.findFirst({
-      where: { districtId, dataType: targetModule, sourceUrl: articleUrl, status: "pending" },
-      select: { id: true },
-    });
-    if (already) {
-      console.log(`[NewsAction] Already queued: ${targetModule} — ${articleTitle.slice(0, 60)}`);
-      return;
-    }
-    await prisma.newsActionQueue.create({
-      data: {
-        districtId,
-        dataType: targetModule,
-        extractedData: extractedData as unknown as Prisma.InputJsonValue,
-        sourceUrl: articleUrl,
-        headline: articleTitle,
-        confidence,
-        status: "pending",
-      },
-    });
-    console.log(`[NewsAction] Queued review: ${targetModule} — ${articleTitle.slice(0, 60)}`);
+    await queueForReview(classification);
     return;
   }
 
@@ -235,26 +241,18 @@ export async function executeNewsAction(
         // shows OFFICIAL_ALERTS only). The story stays on the news page.
         console.log(`[NewsAction] News is not an official warning — no LocalAlert: ${articleTitle.slice(0, 60)}`);
 
-        // For elections: surface ECI-schedule-style headlines into UpdateLog
-        // so a human can confirm before we mutate ElectionEvent. We
-        // intentionally do NOT auto-write polling/result dates from a
+        // For elections: ECI-schedule-style headlines go to the admin review
+        // queue so a human can confirm before anything touches ElectionEvent.
+        // We intentionally do NOT auto-write polling/result dates from a
         // single article — wrong schedule data is worse than missing
-        // schedule data when voting is days away.
+        // schedule data when voting is days away. (They used to be written
+        // to the public change log as an ElectionEvent "update", although
+        // nothing had changed.)
         if (targetModule === "elections") {
           const looksScheduleAnnouncement = /\b(eci|election commission)\b.*\b(announce|schedule|notif)/i.test(articleTitle)
             || /\b(polling|voting)\s+(on|date|schedule)\b/i.test(articleTitle)
             || /\b(result|counting)\s+(on|date)\b/i.test(articleTitle);
-          if (looksScheduleAnnouncement) {
-            const dn = (await prisma.district.findUnique({ where: { id: districtId }, select: { name: true } }))?.name ?? "";
-            await logUpdate({
-              source: "scraper", actorLabel: "news-action-engine",
-              tableName: "ElectionEvent", recordId: "pending-review",
-              action: "update",
-              districtId, districtName: dn, moduleName: "elections",
-              description: `Election schedule headline flagged for review: ${articleTitle}`,
-              recordCount: 1, details: { articleUrl, reason: "auto-update of polling/result dates is gated behind manual review" },
-            });
-          }
+          if (looksScheduleAnnouncement) await queueForReview(classification);
         }
         break;
       }

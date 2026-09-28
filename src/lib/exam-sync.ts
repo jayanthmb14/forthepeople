@@ -358,7 +358,11 @@ export async function syncExamFromNews(
     }
   }
 
-  // One UpdateLog row per district that shows it (the district change feed)
+  // One UpdateLog row per district that shows it (the public change feed) —
+  // only when something was created or changed. A mention that changed no
+  // fact is not an update (for a national exam it logged one row for every
+  // district on every news mention).
+  if (created === 0 && updated === 0) return { affectedDistricts: place.districts.length, created, updated, skipped };
   for (const d of place.districts) {
     await logUpdate({
       source: "scraper",

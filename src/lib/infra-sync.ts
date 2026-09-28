@@ -422,6 +422,8 @@ export async function syncInfraFromNews(
   for (const t of targets) {
     // Same project already stored in this district? (canonical name / alias / ≥ 0.85 similar)
     let project = await findExistingProject(t.id, extraction);
+    const isNew = !project;
+    let changed = false;
 
     // ── CREATE ────────────────────────────────────────────
     if (!project) {
@@ -465,9 +467,8 @@ export async function syncInfraFromNews(
       const incomingRank = statusRank(extraction.status);
       const existingRank = statusRank(project.status);
 
-      const patch: Prisma.InfraProjectUpdateInput = {
-        lastNewsAt: now,
-      };
+      // The facts this article changes (bookkeeping is added below).
+      const patch: Prisma.InfraProjectUpdateInput = {};
 
       // Status: allow cancel from any state; otherwise only upward
       if (isCancel && project.status !== "CANCELLED" && project.status !== "cancelled") {
@@ -529,22 +530,24 @@ export async function syncInfraFromNews(
 
       if (extraction.keyPeople.length > 0) {
         const merged = mergeKeyPeople(project.keyPeople, extraction.keyPeople);
-        patch.keyPeople = merged as unknown as Prisma.InputJsonValue;
+        // Only when someone new is named (the old code rewrote the list on
+        // every mention, which counted every mention as an update).
+        if (merged.length > mergeKeyPeople(project.keyPeople, []).length) {
+          patch.keyPeople = merged as unknown as Prisma.InputJsonValue;
+        }
       }
+      changed = Object.keys(patch).length > 0;
 
+      // Bookkeeping on every mention: when the news last named it, which articles, verification.
+      patch.lastNewsAt = now;
       patch.sourceUrls = mergeSourceUrls(project.sourceUrls, article.url) as unknown as Prisma.InputJsonValue;
       if (verified) {
         patch.lastVerifiedAt = now;
         patch.verificationCount = { increment: 1 };
       }
-
-      if (Object.keys(patch).length > 2) {
-        await prisma.infraProject.update({ where: { id: project.id }, data: patch });
-        updatedProjects++;
-      } else {
-        await prisma.infraProject.update({ where: { id: project.id }, data: { lastNewsAt: now, sourceUrls: patch.sourceUrls } });
-        duplicatesSkipped++;
-      }
+      await prisma.infraProject.update({ where: { id: project.id }, data: patch });
+      if (changed) updatedProjects++;
+      else duplicatesSkipped++;
     }
 
     // ── TIMELINE ENTRY (dedupe by newsUrl) ────────────────
@@ -552,7 +555,8 @@ export async function syncInfraFromNews(
       where: { projectId: project.id, newsUrl: article.url },
       select: { id: true },
     });
-    if (!existingEntry) {
+    const timelineAdded = !existingEntry;
+    if (timelineAdded) {
       const budgetChange =
         extraction.updateType === "BUDGET_INCREASE" || extraction.updateType === "BUDGET_DECREASE"
           ? extraction.budget ?? null
@@ -588,13 +592,16 @@ export async function syncInfraFromNews(
       /* cache optional */
     }
 
-    // UpdateLog
+    // UpdateLog (the public change feed): only when the project was created,
+    // a fact changed or its timeline got this article — not for a repeat of
+    // an article already on the timeline.
+    if (!isNew && !changed && !timelineAdded) continue;
     await logUpdate({
       source: "scraper",
       actorLabel: "news-cron",
       tableName: "InfraProject",
       recordId: project.id,
-      action: existingEntry ? "update" : "update",
+      action: isNew ? "create" : "update",
       districtId: t.id,
       moduleName: "infrastructure",
       description: `${extraction.shortName}: ${extraction.updateType}`,
