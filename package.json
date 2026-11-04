@@ -30,15 +30,15 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "node scripts/gen-i18n-namespaces.mjs && next dev",
-    "build": "node scripts/gen-i18n-namespaces.mjs && prisma generate && next build",
+    "dev": "node scripts/gen-i18n-namespaces.mjs && node scripts/gen-client-namespaces.mjs && next dev",
+    "build": "node scripts/gen-i18n-namespaces.mjs && node scripts/gen-client-namespaces.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:tenders": "bash scripts/lint-tender-copy.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "prisma db push",
-    "i18n:index": "node scripts/gen-i18n-namespaces.mjs",
+    "i18n:index": "node scripts/gen-i18n-namespaces.mjs && node scripts/gen-client-namespaces.mjs",
     "geo:rewind": "node scripts/rewind-geo.mjs"
   },
   "dependencies": {

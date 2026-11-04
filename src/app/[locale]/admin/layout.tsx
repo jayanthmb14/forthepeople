@@ -10,11 +10,12 @@ import AdminBot from "@/components/admin/AdminBot";
 import { loginAction, totpAction } from "./actions";
 import { requireAdmin } from "@/lib/admin-auth";
 import { TOTP_PENDING_TOKEN_COOKIE } from "@/lib/admin-auth";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 
 type Params = Promise<{ locale: string }>;
 
-export default async function AdminLayout({
+async function AdminLayoutContent({
   children,
   params,
 }: {
@@ -213,5 +214,14 @@ export default async function AdminLayout({
       </main>
       <AdminBot />
     </div>
+  );
+}
+
+export default async function AdminLayout(props: Parameters<typeof AdminLayoutContent>[0] & { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="admin" locale={locale}>
+      <AdminLayoutContent {...props} />
+    </ScopedMessages>
   );
 }

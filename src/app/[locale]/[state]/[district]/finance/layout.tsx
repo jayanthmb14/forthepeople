@@ -7,6 +7,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { generateModuleMetadata, generateModuleJsonLd } from "@/lib/seo";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 type Params = Promise<{ locale: string; state: string; district: string }>;
 
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return generateModuleMetadata("finance", state, district, locale);
 }
 
-export default async function Layout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string; state: string; district: string }> }) {
+async function LayoutContent({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string; state: string; district: string }> }) {
   const { state, district } = await params;
   const jsonLd = generateModuleJsonLd({
     module: "finance",
@@ -35,5 +36,14 @@ export default async function Layout({ children, params }: { children: React.Rea
       )}
       {children}
     </>
+  );
+}
+
+export default async function Layout(props: Parameters<typeof LayoutContent>[0] & { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="state/district/finance" locale={locale}>
+      <LayoutContent {...props} />
+    </ScopedMessages>
   );
 }

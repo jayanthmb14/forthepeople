@@ -10,6 +10,7 @@
 // district's metadata (the page shows its own not-found state).
 import type { Metadata } from "next";
 import { generateTalukMetadata } from "@/lib/seo";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 type Params = Promise<{ locale: string; state: string; district: string; taluk: string }>;
 
@@ -18,6 +19,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return generateTalukMetadata(state, district, taluk, locale);
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   return children;
+}
+
+export default async function Layout(props: Parameters<typeof LayoutContent>[0] & { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="state/district/taluk" locale={locale}>
+      <LayoutContent {...props} />
+    </ScopedMessages>
+  );
 }

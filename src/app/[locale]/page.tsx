@@ -65,6 +65,7 @@ import SectionReveal from "@/components/home/SectionReveal";
 import { getDistrict } from "@/lib/constants/districts";
 import { placeName } from "@/i18n/place-name";
 import styles from "@/components/home/home.module.css";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -100,7 +101,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function HomePage({
+async function HomePageContent({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -176,5 +177,14 @@ export default async function HomePage({
       <SupportBand locale={locale} />
       <SectionReveal />
     </main>
+  );
+}
+
+export default async function HomePage(props: Parameters<typeof HomePageContent>[0]) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="home" locale={locale}>
+      <HomePageContent {...props} />
+    </ScopedMessages>
   );
 }

@@ -63,6 +63,7 @@ import { ChartCard, Explainer, Pictogram } from "@/components/district/visuals";
 import SiteHeader from "@/components/site/SiteHeader";
 import { Donut, type DonutSlice } from "@/components/site/SiteVisuals";
 import styles from "./state.module.css";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
@@ -149,7 +150,7 @@ function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default async function StatePage({ params }: Props) {
+async function StatePageContent({ params }: Props) {
   const { locale, state: stateSlug } = await params;
   setRequestLocale(locale);
   const stateData = getState(stateSlug);
@@ -442,5 +443,14 @@ export default async function StatePage({ params }: Props) {
         />
       </ModulePage>
     </main>
+  );
+}
+
+export default async function StatePage(props: Parameters<typeof StatePageContent>[0]) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="state" locale={locale}>
+      <StatePageContent {...props} />
+    </ScopedMessages>
   );
 }

@@ -13,8 +13,9 @@
  */
 
 import * as React from "react";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
-export default function IndiaLayout({ children }: { children: React.ReactNode }) {
+function IndiaLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
@@ -25,5 +26,14 @@ export default function IndiaLayout({ children }: { children: React.ReactNode })
     >
       {children}
     </div>
+  );
+}
+
+export default async function IndiaLayout(props: Parameters<typeof IndiaLayoutContent>[0] & { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="india" locale={locale}>
+      <IndiaLayoutContent {...props} />
+    </ScopedMessages>
   );
 }

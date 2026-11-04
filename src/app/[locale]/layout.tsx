@@ -4,8 +4,8 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
+import ScopedMessages from "@/i18n/ScopedMessages";
+import { setRequestLocale } from "next-intl/server";
 import { getLanguage } from "@/i18n/languages";
 import { notFound } from "next/navigation";
 import { routing, type Locale } from "@/i18n/routing";
@@ -72,11 +72,11 @@ export default async function LocaleLayout({
   // Static rendering: tell next-intl the locale instead of reading headers.
   setRequestLocale(locale);
 
-  const [githubStars, messages] = await Promise.all([getGithubStars(), getMessages({ locale })]);
+  const githubStars = await getGithubStars();
   const lang = getLanguage(locale);
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Kolkata">
+    <ScopedMessages scope="root" locale={locale}>
       {/* lang + dir for everything rendered in this language (screen
           readers, hyphenation, the :lang() font rules in globals.css,
           right-to-left scripts). The inline script also updates <html>. */}
@@ -98,6 +98,6 @@ export default async function LocaleLayout({
           <TourMount />
         </QueryProvider>
       </div>
-    </NextIntlClientProvider>
+    </ScopedMessages>
   );
 }

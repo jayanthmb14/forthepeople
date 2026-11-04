@@ -9,6 +9,7 @@
 // module pages are client components, which cannot export metadata.
 import type { Metadata } from "next";
 import { generateModuleMetadata } from "@/lib/seo";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 type Params = Promise<{ locale: string; state: string; district: string }>;
 
@@ -17,6 +18,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return generateModuleMetadata("exams", state, district, locale);
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   return children;
+}
+
+export default async function Layout(props: Parameters<typeof LayoutContent>[0] & { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="state/district/exams" locale={locale}>
+      <LayoutContent {...props} />
+    </ScopedMessages>
+  );
 }

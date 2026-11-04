@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npx prisma generate && next build",
+  "buildCommand": "node scripts/gen-client-namespaces.mjs && npx prisma generate && next build",
   "devCommand": "next dev",
   "installCommand": "npm ci",
   "env": {

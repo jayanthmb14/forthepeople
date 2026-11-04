@@ -16,6 +16,7 @@ import { ShellBottom, ShellTop } from "@/components/district/shell/ShellSlots";
 import "./district-shell.css";
 import { getDistrict, getState } from "@/lib/constants/districts";
 import { generateDistrictMetadata, localName } from "@/lib/seo";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
 type Params = Promise<{ locale: string; state: string; district: string }>;
 
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return generateDistrictMetadata(stateSlug, districtSlug, locale);
 }
 
-export default async function DistrictLayout({
+async function DistrictLayoutContent({
   children,
   params,
 }: {
@@ -119,5 +120,14 @@ export default async function DistrictLayout({
         </main>
       </HueScope>
     </div>
+  );
+}
+
+export default async function DistrictLayout(props: Parameters<typeof DistrictLayoutContent>[0] & { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="state/district" locale={locale}>
+      <DistrictLayoutContent {...props} />
+    </ScopedMessages>
   );
 }

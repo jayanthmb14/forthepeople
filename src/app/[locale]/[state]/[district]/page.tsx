@@ -14,8 +14,9 @@ import { notFound } from "next/navigation";
 import { getDistrict, getState, shownSubUnits } from "@/lib/constants/districts";
 import OverviewClient from "./OverviewClient";
 import LockedDistrictPreview from "@/components/district/LockedDistrictPreview";
+import ScopedMessages from "@/i18n/ScopedMessages";
 
-export default async function DistrictPage({
+async function DistrictPageContent({
   params,
 }: {
   params: Promise<{ locale: string; state: string; district: string }>;
@@ -75,5 +76,14 @@ export default async function DistrictPage({
       }}
       stateName={stateData.name}
     />
+  );
+}
+
+export default async function DistrictPage(props: Parameters<typeof DistrictPageContent>[0]) {
+  const { locale } = await props.params;
+  return (
+    <ScopedMessages scope="state/district/overview" locale={locale}>
+      <DistrictPageContent {...props} />
+    </ScopedMessages>
   );
 }
