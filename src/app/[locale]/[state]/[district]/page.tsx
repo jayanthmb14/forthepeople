@@ -8,7 +8,7 @@
 // ForThePeople.in — District Overview Dashboard
 // Shows full dashboard for active districts, preview for locked
 // ═══════════════════════════════════════════════════════════
-export const revalidate = 300; // ISR: revalidate every 5 minutes
+export const revalidate = 3600; // ISR: hourly — data changes at most every 30-60 min, shorter windows multiplied ISR writes
 
 import { notFound } from "next/navigation";
 import { getDistrict, getState, shownSubUnits } from "@/lib/constants/districts";

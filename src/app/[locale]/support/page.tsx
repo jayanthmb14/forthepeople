@@ -65,7 +65,7 @@ import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem, type SupportPa
 import { NUMBER_LOCALE } from "@/i18n/languages";
 import { languageAlternates } from "@/i18n/seo";
 
-export const revalidate = 60; // content rarely changes; 60s cache is enough
+export const revalidate = 86400; // content rarely changes; daily is enough
 
 /** Render markdown-lite: **bold** → <strong>, blank lines → new paragraph. */
 function renderBioText(text: string): React.ReactNode {

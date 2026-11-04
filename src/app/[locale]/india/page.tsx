@@ -54,7 +54,7 @@ import { getOrderedSuperCategories } from "@/lib/india/india-super-categories";
 import { languageAlternates } from "@/i18n/seo";
 import { INDIA_NS } from "@/components/india/i18n";
 
-export const revalidate = 900; // 15 min
+export const revalidate = 3600; // 1 hour
 
 export async function generateMetadata({
   params,

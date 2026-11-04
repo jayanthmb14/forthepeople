@@ -57,7 +57,7 @@ interface PageProps {
   }>;
 }
 
-export const revalidate = 900; // 15 min ISR
+export const revalidate = 3600; // 1 hour ISR
 
 /** Figures listed in a module's sheet (the rest are on its full page). */
 const SHEET_FIGURES = 6;

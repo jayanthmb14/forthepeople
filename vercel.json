@@ -38,7 +38,7 @@
     },
     {
       "path": "/api/cron/scrape-weather",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/scrape-dams",
@@ -46,7 +46,7 @@
     },
     {
       "path": "/api/cron/scrape-alerts",
-      "schedule": "*/30 * * * *"
+      "schedule": "5 * * * *"
     },
     {
       "path": "/api/cron/generate-insights",
@@ -98,7 +98,7 @@
     },
     {
       "path": "/api/cron/scrape-tenders",
-      "schedule": "15 */2 * * *"
+      "schedule": "15 */6 * * *"
     },
     {
       "path": "/api/cron/dedupe-data",

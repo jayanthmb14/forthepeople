@@ -18,7 +18,7 @@ import { hueClass } from "@/lib/design/hues";
 import { ModulePage as PageFrame } from "@/components/district/ui";
 import { languageAlternates } from "@/i18n/seo";
 
-export const revalidate = 300; // 5 min — the update log is more dynamic than the main page
+export const revalidate = 1800; // 30 min — the update log is more dynamic than the main page
 
 export async function generateMetadata({
   params,

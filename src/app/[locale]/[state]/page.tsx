@@ -39,7 +39,7 @@
 //  state names from "states", taglines from "placeLabels", the taluk word
 //  from "subUnits". District names are proper nouns and stay as stored.
 
-export const revalidate = 300; // ISR: the New pills depend on go-live dates
+export const revalidate = 3600; // ISR: hourly — the New pills depend on go-live dates (day granularity)
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";

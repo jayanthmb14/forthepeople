@@ -4,6 +4,13 @@ All notable changes to ForThePeople.in are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One dated entry per push to `main`.
 This file replaces the scattered "current state" blocks in `CLAUDE.md`, `docs/LIVE-STATE.md` and the vault.
 
+## [Unreleased] — 2026-11-04 cost cuts (branch `cost/cut-vercel-spend`)
+
+- Vercel spend tripled after the 28 Sep release (ISR writes + Fast Origin Transfer). Page ISR windows raised: district and state pages 5 min → 1 h, home / India / module / category pages 15 min → 1 h, India updates 5 → 30 min, /support 60 s → 1 day (prices unchanged at 15 min).
+- robots.txt now blocks bulk AI training crawlers (GPTBot, ClaudeBot, anthropic-ai, Google-Extended, cohere-ai, CCBot, Bytespider, Amazonbot, meta-externalagent, Applebot-Extended); search engines and user-triggered answer bots (ChatGPT-User, PerplexityBot) stay allowed.
+- Crons slowed so Neon can scale to zero between runs: scrape-weather and scrape-alerts every 30 min → hourly, scrape-tenders every 2 h → every 6 h.
+- Outside the repo (done 2026-11-04): the old Railway scraper service was deleted (it was still running and duplicating the Vercel crons), and the Vercel project's Ignored Build Step now skips every branch except `main`.
+
 ## [Unreleased] — 2026-09-27 audit fixes
 
 Branch `audit-fixes-2026-09`, five parallel work-streams merged from one end-to-end audit of the

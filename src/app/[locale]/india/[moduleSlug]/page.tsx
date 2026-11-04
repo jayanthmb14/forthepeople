@@ -40,7 +40,7 @@ const WILDLIFE_TIGERS_METHODOLOGY = [
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
-export const revalidate = 900; // 15 min ISR
+export const revalidate = 3600; // 1 hour ISR
 
 export function generateStaticParams() {
   // Every routed language × every module. The [locale] layout sets

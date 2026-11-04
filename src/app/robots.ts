@@ -17,16 +17,23 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: ["/api/"],
       },
-      // AI crawlers — explicitly allowed for GEO visibility
-      { userAgent: "GPTBot", allow: "/" },
-      { userAgent: "ChatGPT-User", allow: "/" },
-      { userAgent: "ClaudeBot", allow: "/" },
-      { userAgent: "anthropic-ai", allow: "/" },
-      { userAgent: "PerplexityBot", allow: "/" },
-      { userAgent: "Google-Extended", allow: "/" },
-      { userAgent: "Googlebot", allow: "/" },
-      { userAgent: "Bingbot", allow: "/" },
-      { userAgent: "cohere-ai", allow: "/" },
+      // AI answer bots that fetch a page when a user asks — kept for GEO visibility
+      { userAgent: "ChatGPT-User", allow: "/", disallow: ["/api/"] },
+      { userAgent: "PerplexityBot", allow: "/", disallow: ["/api/"] },
+      { userAgent: "Googlebot", allow: "/", disallow: ["/api/"] },
+      { userAgent: "Bingbot", allow: "/", disallow: ["/api/"] },
+      // Bulk AI training crawlers — blocked: each full sweep of ~1,100 pages
+      // forced ISR regenerations and was the main driver of Vercel spend
+      { userAgent: "GPTBot", disallow: "/" },
+      { userAgent: "ClaudeBot", disallow: "/" },
+      { userAgent: "anthropic-ai", disallow: "/" },
+      { userAgent: "Google-Extended", disallow: "/" },
+      { userAgent: "cohere-ai", disallow: "/" },
+      { userAgent: "CCBot", disallow: "/" },
+      { userAgent: "Bytespider", disallow: "/" },
+      { userAgent: "Amazonbot", disallow: "/" },
+      { userAgent: "meta-externalagent", disallow: "/" },
+      { userAgent: "Applebot-Extended", disallow: "/" },
     ],
     sitemap: `${BASE}/sitemap.xml`,
   };

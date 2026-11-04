@@ -70,7 +70,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forthepeople.in";
 
 // Rebuilt at most every 15 minutes: the prices (15 min in Next's data cache,
 // home-markets.ts) and the "updated" time; district rows change rarely.
-export const revalidate = 900;
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
