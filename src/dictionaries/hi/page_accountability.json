@@ -10,6 +10,7 @@
   "showLess": "कम दिखाएँ",
   "freq": {
     "every30min": "हर 30 मिनट",
+    "hourly": "हर घंटे",
     "every6h": "हर 6 घंटे",
     "daily": "रोज़",
     "dailyMarket": "रोज़, मंडी के दिनों में",

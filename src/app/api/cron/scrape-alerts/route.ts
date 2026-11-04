@@ -5,8 +5,8 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Vercel Cron: Official disaster alerts (NDMA SACHET) — every 30 minutes
-// GET /api/cron/scrape-alerts       schedule "*/30 * * * *" (vercel.json)
+// Vercel Cron: Official disaster alerts (NDMA SACHET) — hourly
+// GET /api/cron/scrape-alerts       schedule "5 * * * *" (vercel.json)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-alerts" + one ScraperLog row ("alerts")
 //

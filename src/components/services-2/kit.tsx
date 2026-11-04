@@ -609,6 +609,7 @@ export function SearchBox({
 /** getModuleSources() frequency text → `end.freq.<key>` message key. */
 const FREQ_KEY: Record<string, string> = {
   "Every 30 minutes": "every30",
+  "Every hour": "hourly",
   "Every 6 hours": "every6h",
   Daily: "daily",
   Weekly: "weekly",

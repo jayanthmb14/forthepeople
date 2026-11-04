@@ -459,7 +459,7 @@ export function getModuleSources(moduleName: string, stateSlug: string, district
     // (and its cross-check) from Open-Meteo (src/scraper/jobs/weather.ts,
     // src/lib/weather/forecast.ts); nothing is read from IMD, so IMD is
     // not named as a source.
-    weather:           { sources: ["OpenWeatherMap", "Open-Meteo"], frequency: "Every 30 minutes", isLive: true },
+    weather:           { sources: ["OpenWeatherMap", "Open-Meteo"], frequency: "Every hour", isLive: true },
     crops:             { sources: ["AGMARKNET (Agricultural Marketing Information Network)"], frequency: "Daily" },
     // Dam levels come only from the state water resources portal
     // (src/scraper/jobs/dams.ts: India-WRIS has no usable public API), so

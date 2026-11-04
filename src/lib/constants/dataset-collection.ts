@@ -57,7 +57,7 @@ export interface DatasetInfo {
   /** vercel.json cron path, for `auto`. */
   cron?: string;
   /** How often our collector runs, for `auto` (message key under every.*). */
-  every?: "30min" | "6h" | "12h" | "daily" | "weekly";
+  every?: "30min" | "1h" | "6h" | "12h" | "daily" | "weekly";
   /**
    * `auto` only for these districts (the collector covers no others);
    * every other district gets `fallback`.
@@ -96,7 +96,7 @@ export const DATASETS: readonly DatasetInfo[] = [
   // Start here
   { key: "news", slug: "news", collection: "auto", cron: "/api/cron/scrape-news", every: "daily", dateKind: "reading", maxAgeHours: 3 * DAY },
   { key: "alerts", slug: "alerts", collection: "news", dateKind: "checked" },
-  { key: "weather", slug: "weather", collection: "auto", cron: "/api/cron/scrape-weather", every: "30min", dateKind: "reading", maxAgeHours: DAY, url: "https://openweathermap.org" },
+  { key: "weather", slug: "weather", collection: "auto", cron: "/api/cron/scrape-weather", every: "1h", dateKind: "reading", maxAgeHours: DAY, url: "https://openweathermap.org" },
   { key: "rainfall", slug: "weather", collection: "hand", dateKind: "period", maxAgeHours: 62 * DAY, url: "https://mausam.imd.gov.in" },
   // You can help
   { key: "rti", slug: "rti", collection: "hand", dateKind: "period" },

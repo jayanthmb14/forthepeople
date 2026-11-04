@@ -465,6 +465,7 @@ export function ThenNowPicture({
 /** Registry cadence text (state-config.ts) → message key under "freq". */
 const FREQ_KEY: Record<string, string> = {
   "Every 30 minutes": "every30min",
+  "Every hour": "hourly",
   "Every 6 hours": "every6h",
   Daily: "daily",
   "Daily (market days)": "dailyMarket",

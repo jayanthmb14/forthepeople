@@ -28,7 +28,7 @@ describe("cronIntervalsFor (System Health expected intervals)", () => {
   const jobs = { weather: "scrape-weather", news: "scrape-news", crops: "scrape-crops", insights: "generate-insights" };
 
   it("derives each module's interval from vercel.json", () => {
-    expect(cronIntervalsFor(vercelConfig.crons, jobs)).toEqual({ weather: 30, news: 240, crops: 1440, insights: 720 });
+    expect(cronIntervalsFor(vercelConfig.crons, jobs)).toEqual({ weather: 60, news: 240, crops: 1440, insights: 720 });
   });
 
   it("leaves out a key whose cron is not scheduled", () => {

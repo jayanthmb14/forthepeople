@@ -42,6 +42,7 @@
   },
   "every": {
     "30min": "every 30 minutes",
+    "1h": "every hour",
     "6h": "every 6 hours",
     "12h": "twice a day",
     "daily": "once a day",

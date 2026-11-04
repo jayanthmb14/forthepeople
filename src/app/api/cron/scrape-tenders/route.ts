@@ -5,8 +5,8 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Vercel Cron: Government contracts (tenders) — every 2 hours
-// GET /api/cron/scrape-tenders      schedule "15 */2 * * *" (vercel.json)
+// Vercel Cron: Government contracts (tenders) — every 6 hours
+// GET /api/cron/scrape-tenders      schedule "15 */6 * * *" (vercel.json)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-tenders" + one ScraperLog row ("tenders")
 //

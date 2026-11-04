@@ -82,7 +82,7 @@ export const PORTAL_COLLECTORS: CollectorInfo[] = [
     key: "tenders",
     module: "tenders",
     cronPath: "/api/cron/scrape-tenders",
-    schedule: "15 */2 * * *",
+    schedule: "15 */6 * * *",
     storage: "Tender",
     sourceName: "State e-procurement portals (NIC GePNIC)",
     sourceUrl: "https://mahatenders.gov.in/nicgep/app?page=FrontEndTendersByOrganisation&service=page",

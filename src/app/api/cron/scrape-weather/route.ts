@@ -5,8 +5,8 @@
  */
 
 // ═══════════════════════════════════════════════════════════
-// Vercel Cron: Weather collector — every 30 minutes
-// GET /api/cron/scrape-weather      schedule "*/30 * * * *" (vercel.json)
+// Vercel Cron: Weather collector — hourly
+// GET /api/cron/scrape-weather      schedule "0 * * * *" (vercel.json)
 // Auth: verifyCron() — Bearer (Vercel) or x-cron-secret (manual)
 // Run state: Redis "ftp:cron:scrape-weather"
 //
