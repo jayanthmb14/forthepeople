@@ -1,8 +1,9 @@
 name: Cloudflare build
 
 # Builds the Cloudflare Worker (OpenNext) on Linux against a throwaway
-# Postgres, reports the bundle size, then serves it in workerd (wrangler dev)
-# and checks key pages and one cron tick. Results are posted as annotations.
+# Postgres, reports the bundle size and its biggest inputs, then serves it in
+# workerd (wrangler dev) and checks key pages and one cron tick. Results are
+# posted as a few annotations (GitHub shows at most 10 notices per step).
 # Deploys happen through Cloudflare Workers Builds, not here
 # (docs/RUNBOOKS/CLOUDFLARE.md).
 
@@ -52,10 +53,22 @@ jobs:
       - name: Build for Workers
         run: npx opennextjs-cloudflare build
 
-      - name: Bundle size
+      - name: Bundle size and biggest inputs
         run: |
-          npx wrangler deploy --dry-run --outdir .wrangler-dry 2>&1 | tee dry.txt
+          npx wrangler deploy --dry-run --outdir .wrangler-dry --metafile .wrangler-dry/meta.json 2>&1 | tee dry.txt
           echo "::notice title=Worker bundle::$(grep -i 'Total Upload' dry.txt | head -1)"
+          node -e '
+            const m = require("./.wrangler-dry/meta.json");
+            const out = Object.values(m.outputs).sort((a, b) => b.bytes - a.bytes)[0];
+            const byPkg = {};
+            for (const [file, v] of Object.entries(out.inputs)) {
+              const nm = file.split("node_modules/").pop();
+              const key = file.includes("node_modules/") ? nm.split("/").slice(0, nm.startsWith("@") ? 2 : 1).join("/") : file.split("/").slice(0, 4).join("/");
+              byPkg[key] = (byPkg[key] || 0) + v.bytesInOutput;
+            }
+            const top = Object.entries(byPkg).sort((a, b) => b[1] - a[1]).slice(0, 30);
+            console.log("::notice title=Biggest bundle inputs (KiB, raw)::" + top.map(([k, b]) => k + " " + Math.round(b / 1024)).join("%0A"));
+          '
 
       - name: Serve in workerd and check pages
         run: |
@@ -63,15 +76,26 @@ jobs:
           npx wrangler dev --port 8787 --test-scheduled > dev.log 2>&1 &
           for i in $(seq 1 90); do curl -s -o /dev/null http://127.0.0.1:8787/robots.txt && break; sleep 2; done
           fail=0
-          for p in /en /hi /kn /en/support /en/india /en/karnataka /en/karnataka/mandya /kn/karnataka/mandya /en/karnataka/mandya/finance /en/karnataka/mandya/weather /api/health /robots.txt /sitemap.xml /en/does-not-exist; do
+          results=""
+          for p in /en /hi /kn /en/support /en/india /en/india/updates /en/prices /en/karnataka /en/karnataka/mandya /kn/karnataka/mandya /en/karnataka/mandya/finance /en/karnataka/mandya/weather /en/karnataka/mandya/tenders /api/health /robots.txt /sitemap.xml /en/does-not-exist /en/opengraph-image; do
             r=$(curl -s -o /dev/null -w "%{http_code} %{size_download}B %{time_total}s" "http://127.0.0.1:8787$p")
-            echo "::notice title=GET $p::$r"
+            results="$results$p $r%0A"
             case "$p:${r%% *}" in /en/does-not-exist:404|/api/health:*|*:200) ;; *) fail=1 ;; esac
           done
+          echo "::notice title=Pages::$results"
           # Monday 2026-11-16 06:00 UTC: scrape-dams and scrape-budget are due.
           curl -s "http://127.0.0.1:8787/__scheduled?cron=*/5+*+*+*+*&time=1794808800" -o /dev/null -w "scheduled %{http_code}\n"
-          sleep 20
-          echo "::notice title=Cron lines::$(grep -o '\[cron\][^"]*' dev.log | head -8 | tr '\n' ' ')"
-          errs=$(grep -ciE 'error|exception' dev.log || true)
-          echo "::notice title=workerd log::$errs error/exception lines; first: $(grep -iE 'error|exception' dev.log | head -3 | tr '\n' ' ' | cut -c1-400)"
+          sleep 25
+          echo "::notice title=Cron lines::$(grep -o '\[cron\].*' dev.log | head -8 | tr '\n' '|')"
+          node -e '
+            const lines = require("fs").readFileSync("dev.log", "utf8").split("\n");
+            const seen = new Set(); const out = [];
+            lines.forEach((l, i) => {
+              if (!/error|exception|failed|cannot|not supported|unsupported/i.test(l)) return;
+              const key = l.replace(/[0-9a-f]{6,}|\d+/gi, "#").slice(0, 160);
+              if (seen.has(key)) return; seen.add(key);
+              out.push(lines.slice(i, i + 4).join(" | ").replace(/\s+/g, " ").slice(0, 600));
+            });
+            console.log("::error title=workerd errors (" + out.length + " distinct)::" + (out.slice(0, 12).join("%0A") || "none"));
+          '
           exit $fail
