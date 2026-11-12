@@ -1,0 +1,46 @@
+{
+	// Cloudflare Workers config for forthepeople.in (built with @opennextjs/cloudflare).
+	// Setup steps: docs/RUNBOOKS/CLOUDFLARE.md. Secrets (DATABASE_URL, CRON_SECRET, ...)
+	// are NOT in this file: set them with `npx wrangler secret put NAME` or in the
+	// dashboard (Workers & Pages → forthepeople → Settings → Variables and Secrets).
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "forthepeople",
+	"main": "cloudflare/worker.ts",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	// Run the Worker near the database (Neon) rather than near each visitor.
+	"placement": { "mode": "smart" },
+	"observability": { "enabled": true },
+	"vars": {
+		"NEXT_PUBLIC_SITE_URL": "https://forthepeople.in",
+		"CRON_ORIGIN": "https://forthepeople.in"
+	},
+	// One tick every 5 minutes runs the vercel.json crons due that minute (cloudflare/worker.ts).
+	"triggers": { "crons": ["*/5 * * * *"] },
+	"services": [
+		// Self-reference used by the OpenNext cache (https://opennext.js.org/cloudflare/caching).
+		{ "binding": "WORKER_SELF_REFERENCE", "service": "forthepeople" }
+	],
+	"r2_buckets": [
+		// ISR / data cache. Create once: npx wrangler r2 bucket create forthepeople-opennext-cache
+		{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "forthepeople-opennext-cache" }
+	],
+	"d1_databases": [
+		// revalidatePath / revalidateTag. Create once: npx wrangler d1 create forthepeople-tag-cache,
+		// paste the printed database_id here.
+		{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "forthepeople-tag-cache", "database_id": "REPLACE_WITH_D1_ID" }
+	],
+	"durable_objects": {
+		// Background ISR revalidation queue.
+		"bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+	"images": {
+		// next/image optimisation through Cloudflare Images (5,000 unique transformations/month free).
+		"binding": "IMAGES"
+	}
+}

@@ -9,13 +9,16 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_CHAIN_MODELS,
   FACT_CHECK_MODELS,
+  SARVAM_MODELS,
   TIER1_FREE_MODELS,
   TIER1_PAID_BACKSTOP,
   TIER2_MODELS,
   estimateCost,
   findExpiringModels,
   getModelForPurpose,
+  isSarvamModel,
   planChain,
+  sarvamEndpoint,
   selectChain,
   tierForPurpose,
 } from "@/lib/ai-models";
@@ -85,6 +88,28 @@ describe("planChain + selectChain", () => {
     const chain = selectChain(plan, { live: new Set<string>(TIER1_FREE_MODELS), broken: none, pinned });
     expect(chain[0]).toBe(pinned);
     expect(chain).toHaveLength(4);
+  });
+
+  it("with a Sarvam key, Sarvam goes first in tiers 1 and 2 and survives discovery", () => {
+    const live = new Set<string>(ALL_CHAIN_MODELS); // OpenRouter's list never names Sarvam models
+    const t1 = selectChain(planChain("news-analysis", { paidFallback: true, sarvam: true }), { live, broken: none });
+    expect(t1.slice(0, 2)).toEqual([...SARVAM_MODELS]);
+    expect(t1[t1.length - 1]).toBe(TIER1_PAID_BACKSTOP);
+    const t2 = selectChain(planChain("insight", { paidFallback: false, sarvam: true }), { live, broken: none });
+    expect(t2.slice(0, 2)).toEqual([...SARVAM_MODELS]);
+    expect(t2[2]).toBe(TIER2_MODELS[0]);
+  });
+
+  it("fact-check and key-less calls never use Sarvam", () => {
+    expect(selectChain(planChain("fact-check", { paidFallback: false, sarvam: true }), { live: null, broken: none })).toEqual([
+      ...FACT_CHECK_MODELS,
+    ]);
+    expect(selectChain(planChain("news-analysis", { paidFallback: false }), { live: null, broken: none }).some(isSarvamModel)).toBe(false);
+  });
+
+  it("maps Sarvam chain ids to their API version", () => {
+    expect(sarvamEndpoint("sarvam/sarvam-105b")).toEqual({ url: "https://api.sarvam.ai/v1/chat/completions", id: "sarvam-105b" });
+    expect(sarvamEndpoint("sarvam/glm5.3-flash")).toEqual({ url: "https://api.sarvam.ai/v2/chat/completions", id: "glm5.3-flash" });
   });
 
   it("returns an empty chain when nothing is usable", () => {

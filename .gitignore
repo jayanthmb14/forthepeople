@@ -77,3 +77,8 @@ docker-compose.override.yml
 !.yarn/releases
 !.yarn/versions
 scripts/data-pdfs/
+
+# Cloudflare (OpenNext) build output and local secrets
+.open-next/
+.wrangler/
+.dev.vars

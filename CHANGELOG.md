@@ -4,6 +4,15 @@ All notable changes to ForThePeople.in are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One dated entry per push to `main`.
 This file replaces the scattered "current state" blocks in `CLAUDE.md`, `docs/LIVE-STATE.md` and the vault.
 
+## [Unreleased] — 2026-11-12 move hosting to Cloudflare Workers; Sarvam AI (branch `cloudflare/migrate`)
+
+- Builds as a Cloudflare Worker with `@opennextjs/cloudflare` (`wrangler.jsonc`, `open-next.config.ts`, `cloudflare/worker.ts`): ISR in R2, revalidation state in D1, background regeneration in a Durable Object queue, images through Cloudflare Images. Next.js 16.3 → 16.4.6 (the adapter's minimum). Setup: `docs/RUNBOOKS/CLOUDFLARE.md`.
+- Crons: one Cloudflare Cron Trigger every 5 minutes runs each `vercel.json` cron due that minute, in-process, with the same `Bearer CRON_SECRET` (`src/lib/cron-match.ts`, `tests/cron-match.test.ts`).
+- `src/lib/db.ts`: one Prisma client per request on Workers (sockets cannot cross requests there); optional Hyperdrive pooling. Unchanged singleton on Node.
+- The India module OG image no longer pins the edge runtime (unsupported by the adapter).
+- AI: with `SARVAM_API_KEY` set, Sarvam's `sarvam-105b` then `glm5.3-flash` go first for Tier 1 and Tier 2 (news analysis, insights), paid from Sarvam Startup Program credits; OpenRouter models stay as fallbacks; fact-check unchanged.
+- `.github/workflows/cloudflare-build.yml`: builds the Worker on Linux, reports bundle size, serves it in workerd and checks key pages and a cron tick.
+
 ## [Unreleased] — 2026-11-04 cost cuts (branch `cost/cut-vercel-spend`)
 
 - Vercel spend tripled after the 28 Sep release (ISR writes + Fast Origin Transfer). Page ISR windows raised: district and state pages 5 min → 1 h, home / India / module / category pages 15 min → 1 h, India updates 5 → 30 min, /support 60 s → 1 day (prices unchanged at 15 min).

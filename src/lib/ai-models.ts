@@ -40,6 +40,29 @@ export const TIER1_FREE_MODELS = [
   "openrouter/free",
 ] as const;
 
+// ── Sarvam (Indian provider, Sarvam Startup Program credits) ──
+// When SARVAM_API_KEY is set these go FIRST in Tier 1 and Tier 2; the
+// OpenRouter models follow as fallbacks. Ids carry a "sarvam/" prefix so the
+// chain can tell them from OpenRouter slugs (they are never on OpenRouter's
+// live list, so discovery does not filter them). Checked against
+// docs.sarvam.ai on 2026-11-12: sarvam-105b is Sarvam's own model on
+// /v1/chat/completions (Sarvam-M is retired); glm5.3-flash is the cheapest
+// model on /v2. OpenAI-shaped request and response, json_object supported.
+export const SARVAM_PREFIX = "sarvam/";
+export const SARVAM_MODELS = ["sarvam/sarvam-105b", "sarvam/glm5.3-flash"] as const;
+const SARVAM_V1_MODELS: ReadonlySet<string> = new Set(["sarvam-105b", "sarvam-105b-conversations"]);
+
+export function isSarvamModel(model: string): boolean {
+  return model.startsWith(SARVAM_PREFIX);
+}
+
+/** The Sarvam URL and bare model id for a "sarvam/<id>" chain entry. */
+export function sarvamEndpoint(model: string): { url: string; id: string } {
+  const id = model.slice(SARVAM_PREFIX.length);
+  const version = SARVAM_V1_MODELS.has(id) ? "v1" : "v2";
+  return { url: `https://api.sarvam.ai/${version}/chat/completions`, id };
+}
+
 // Paid backstop for Tier 1. ONLY used when AI_PAID_FALLBACK=1 (set in Vercel
 // on 2026-09-27), and always in the LAST slot of the chain. The most accurate
 // model in the 27 Sep test; about $0.0004 per news article.
@@ -76,6 +99,8 @@ export const REASONING_MODELS: ReadonlySet<string> = new Set([
   // headroom its thinking used up max_tokens -> "reasoning only, no answer".
   // Its optional params stay off (PLAIN_PARAMS_MODELS); only headroom applies.
   "typesafe/jev-router",
+  // Thinks by default; asked for reasoning_effort "low" (ai-provider.ts).
+  "sarvam/sarvam-105b",
 ]);
 
 // Routers that choose their own reasoning effort and reject response_format /
@@ -133,16 +158,20 @@ export interface ChainPlan {
  * The ordered list of models a call MAY try, before we know which are live.
  * `pinned` = the caller asked for a specific model; it goes first.
  */
-export function planChain(purpose: string, opts: { paidFallback: boolean; pinned?: string }): ChainPlan {
+export function planChain(
+  purpose: string,
+  opts: { paidFallback: boolean; pinned?: string; sarvam?: boolean },
+): ChainPlan {
   const tier = tierForPurpose(purpose);
+  const sarvam = opts.sarvam ? [...SARVAM_MODELS] : [];
   let base: string[];
   let reserved: string[] = [];
   if (tier === "fact-check") {
     base = [...FACT_CHECK_MODELS];
   } else if (tier === "tier2") {
-    base = [...TIER2_MODELS, ...TIER1_FREE_MODELS];
+    base = [...sarvam, ...TIER2_MODELS, ...TIER1_FREE_MODELS];
   } else {
-    base = [...TIER1_FREE_MODELS];
+    base = [...sarvam, ...TIER1_FREE_MODELS];
     if (opts.paidFallback) reserved = [TIER1_PAID_BACKSTOP];
   }
   const candidates = dedupe([...(opts.pinned ? [opts.pinned] : []), ...base]).filter((m) => !reserved.includes(m));
@@ -152,7 +181,7 @@ export function planChain(purpose: string, opts: { paidFallback: boolean; pinned
 /**
  * Turn a plan into the concrete chain for this call:
  *   - drop models that are not on OpenRouter's live list (when we know it);
- *     a pinned model is exempt (the caller may know a brand-new id)
+ *     a pinned model and Sarvam models are exempt (they are not OpenRouter's)
  *   - drop models whose circuit breaker is open
  *   - cap at maxAttempts, but ALWAYS keep the reserved (paid) slot last
  */
@@ -161,7 +190,8 @@ export function selectChain(
   state: { live: ReadonlySet<string> | null; broken: ReadonlySet<string>; pinned?: string },
 ): string[] {
   const usable = (m: string) =>
-    !state.broken.has(m) && (state.live === null || state.live.has(m) || (state.pinned !== undefined && m === state.pinned));
+    !state.broken.has(m) &&
+    (state.live === null || state.live.has(m) || isSarvamModel(m) || (state.pinned !== undefined && m === state.pinned));
   const reserved = plan.reserved.filter(usable);
   const room = Math.max(0, plan.maxAttempts - reserved.length);
   const main = plan.candidates.filter(usable).slice(0, room);
@@ -224,6 +254,11 @@ export function findExpiringModels(
 // are logged at $0 so a missing entry never blocks a call. Old ids stay so
 // historical AIUsageLog rows keep their cost.
 export const PRICE_TABLE: Record<string, [number, number]> = {
+  // Sarvam list prices (INR per 1M tokens, docs.sarvam.ai 2026-11-12) at
+  // INR_PER_USD: sarvam-105b ₹15 / ₹60, glm5.3-flash ₹13.5 / ₹45. Paid from
+  // Startup Program credits while they last.
+  "sarvam/sarvam-105b": [15 / 84, 60 / 84],
+  "sarvam/glm5.3-flash": [13.5 / 84, 45 / 84],
   // Tier 1 (free). jev-router bills at the routed model's price; it routed to
   // a free stealth model on 2026-09-27. OpenRouter's dashboard is the truth.
   "typesafe/jev-router": [0, 0],

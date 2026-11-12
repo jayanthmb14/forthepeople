@@ -13,7 +13,6 @@ import { ImageResponse } from "next/og";
 import { getIndiaModuleBySlug } from "@/lib/india/india-modules";
 import { CATEGORY_ACCENT } from "@/lib/india/india-design";
 
-export const runtime = "edge";
 export const alt = "India dashboard module";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

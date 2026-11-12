@@ -1,0 +1,77 @@
+name: Cloudflare build
+
+# Builds the Cloudflare Worker (OpenNext) on Linux against a throwaway
+# Postgres, reports the bundle size, then serves it in workerd (wrangler dev)
+# and checks key pages and one cron tick. Results are posted as annotations.
+# Deploys happen through Cloudflare Workers Builds, not here
+# (docs/RUNBOOKS/CLOUDFLARE.md).
+
+on:
+  push:
+    branches: ["cloudflare/**"]
+  workflow_dispatch:
+
+jobs:
+  worker:
+    name: Build and smoke-test the Worker
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: forthepeople
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Throwaway CI database only; never production.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forthepeople
+      NEXT_PUBLIC_SITE_URL: https://forthepeople.in
+      ADMIN_SESSION_SECRET: ci-build-placeholder-not-a-real-secret
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Push schema to the throwaway CI database
+        run: npx prisma db push --accept-data-loss
+
+      - name: Build for Workers
+        run: npx opennextjs-cloudflare build
+
+      - name: Bundle size
+        run: |
+          npx wrangler deploy --dry-run --outdir .wrangler-dry 2>&1 | tee dry.txt
+          echo "::notice title=Worker bundle::$(grep -i 'Total Upload' dry.txt | head -1)"
+
+      - name: Serve in workerd and check pages
+        run: |
+          printf 'DATABASE_URL=%s\nCRON_SECRET=ci-cron-secret\nADMIN_SESSION_SECRET=%s\nCRON_ORIGIN=http://127.0.0.1:8787\n' "$DATABASE_URL" "$ADMIN_SESSION_SECRET" > .dev.vars
+          npx wrangler dev --port 8787 --test-scheduled > dev.log 2>&1 &
+          for i in $(seq 1 90); do curl -s -o /dev/null http://127.0.0.1:8787/robots.txt && break; sleep 2; done
+          fail=0
+          for p in /en /hi /kn /en/support /en/india /en/karnataka /en/karnataka/mandya /kn/karnataka/mandya /en/karnataka/mandya/finance /en/karnataka/mandya/weather /api/health /robots.txt /sitemap.xml /en/does-not-exist; do
+            r=$(curl -s -o /dev/null -w "%{http_code} %{size_download}B %{time_total}s" "http://127.0.0.1:8787$p")
+            echo "::notice title=GET $p::$r"
+            case "$p:${r%% *}" in /en/does-not-exist:404|/api/health:*|*:200) ;; *) fail=1 ;; esac
+          done
+          # Monday 2026-11-16 06:00 UTC: scrape-dams and scrape-budget are due.
+          curl -s "http://127.0.0.1:8787/__scheduled?cron=*/5+*+*+*+*&time=1794808800" -o /dev/null -w "scheduled %{http_code}\n"
+          sleep 20
+          echo "::notice title=Cron lines::$(grep -o '\[cron\][^"]*' dev.log | head -8 | tr '\n' ' ')"
+          errs=$(grep -ciE 'error|exception' dev.log || true)
+          echo "::notice title=workerd log::$errs error/exception lines; first: $(grep -iE 'error|exception' dev.log | head -3 | tr '\n' ' ' | cut -c1-400)"
+          exit $fail

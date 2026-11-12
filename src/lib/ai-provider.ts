@@ -43,7 +43,9 @@ import {
   estimateCost as estimateCostPure,
   findExpiringModels,
   getModelForPurpose as getModelForPurposePure,
+  isSarvamModel,
   planChain,
+  sarvamEndpoint,
   selectChain,
   type ExpiringModel,
   type TokenUsage,
@@ -407,6 +409,68 @@ async function callOpenRouter(
   return { text, usage: data.usage, answeredBy: typeof data.model === "string" && data.model ? data.model : model };
 }
 
+// ── Sarvam call ─────────────────────────────────────────────
+// Same OpenAI-shaped request as OpenRouter, sent to api.sarvam.ai with the
+// `api-subscription-key` header. HTTP errors reuse OpenRouterError so the
+// same 402 / 429 / 404 breaker rules apply.
+async function callSarvam(
+  req: AIRequest,
+  model: string,
+  opts: CallOptions,
+): Promise<{ text: string; usage?: TokenUsage; answeredBy: string }> {
+  const apiKey = process.env.SARVAM_API_KEY;
+  if (!apiKey) throw new Error("SARVAM_API_KEY not set");
+  const { url, id } = sarvamEndpoint(model);
+
+  let sys = req.systemPrompt;
+  if (req.jsonMode) {
+    sys += "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences, no preamble, no explanation. Pure JSON only.";
+  }
+  const reasoning = REASONING_MODELS.has(model);
+  const body: Record<string, unknown> = {
+    model: id,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: req.userPrompt },
+    ],
+    max_tokens: opts.maxTokens + (reasoning ? REASONING_TOKEN_HEADROOM : 0),
+    temperature: opts.temperature,
+  };
+  if (opts.optionalParams) {
+    if (req.jsonMode && req.jsonShape === "object") body.response_format = { type: "json_object" };
+    if (reasoning) body.reasoning_effort = "low";
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "api-subscription-key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(opts.timeoutMs),
+  });
+  if (!res.ok) {
+    throw new OpenRouterError(res.status, await res.text().catch(() => ""));
+  }
+
+  const data = (await res.json()) as {
+    usage?: TokenUsage;
+    choices?: Array<{ finish_reason?: string; message?: { content?: unknown; reasoning_content?: unknown } }>;
+  };
+  const choice = data.choices?.[0];
+  if (!choice) throw new EmptyAnswerError("no choices in response");
+  let text = contentToText(choice.message?.content).trim();
+  if (!text) {
+    throw new EmptyAnswerError(choice.message?.reasoning_content ? "reasoning only, no answer" : "empty answer");
+  }
+  if (req.jsonMode) {
+    text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  }
+  return { text, usage: data.usage, answeredBy: model };
+}
+
+function callModel(req: AIRequest, model: string, opts: CallOptions) {
+  return isSarvamModel(model) ? callSarvam(req, model, opts) : callOpenRouter(req, model, opts);
+}
+
 // ── Usage logging (exactly ONE row per callAI) ──────────────
 async function logUsage(
   provider: string,
@@ -582,12 +646,12 @@ async function callAnthropic(
  *   capped at the tier's max attempts.
  */
 async function buildModelChain(purpose: string, pinned: string | undefined): Promise<string[]> {
-  const plan = planChain(purpose, { paidFallback: paidFallbackEnabled(), pinned });
+  const plan = planChain(purpose, { paidFallback: paidFallbackEnabled(), pinned, sarvam: Boolean(process.env.SARVAM_API_KEY) });
   const all = [...plan.candidates, ...plan.reserved];
 
   const live = await getLiveModelIds();
   if (live) {
-    const dropped = all.filter((m) => !live.has(m) && m !== pinned);
+    const dropped = all.filter((m) => !live.has(m) && m !== pinned && !isSarvamModel(m));
     if (dropped.length) console.warn(`[AI] skipping models not on OpenRouter live list: ${dropped.join(", ")}`);
   }
   const broken = await getBrokenModels(all);
@@ -655,12 +719,12 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
       const callOpts: CallOptions = { maxTokens, temperature: temp, timeoutMs, optionalParams: true };
       let result: Awaited<ReturnType<typeof callOpenRouter>>;
       try {
-        result = await callOpenRouter(request, model, callOpts);
+        result = await callModel(request, model, callOpts);
       } catch (err) {
         // A provider that rejects response_format / reasoning: retry once plain.
         if (!isParamRejection(err)) throw err;
         console.warn(`[AI] ${model} rejected optional params; retrying without them`);
-        result = await callOpenRouter(request, model, { ...callOpts, optionalParams: false });
+        result = await callModel(request, model, { ...callOpts, optionalParams: false });
       }
 
       // In JSON mode an unparseable answer is a failed attempt, not a success.
@@ -684,8 +748,9 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
         .catch(() => {});
 
       // One log row for the whole call. If earlier models failed, say so.
+      const provider = isSarvamModel(model) ? "sarvam" : "openrouter";
       logUsage(
-        "openrouter",
+        provider,
         model,
         purpose,
         request.district,
@@ -696,10 +761,10 @@ export async function callAI(request: AIRequest): Promise<AIResponse> {
       );
       clearDegraded().catch(() => {});
 
-      return { text: result.text, provider: "openrouter", model: result.answeredBy, usedFallback: i > 0, json };
+      return { text: result.text, provider, model: result.answeredBy, usedFallback: i > 0, json };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[AI] OpenRouter (${model}) failed:`, msg);
+      console.error(`[AI] ${isSarvamModel(model) ? "Sarvam" : "OpenRouter"} (${model}) failed:`, msg);
 
       // Classify the failure and open the breaker so the NEXT call skips it.
       if (isModelGone(err)) {
