@@ -103,6 +103,6 @@ jobs:
               if (seen.has(key)) return; seen.add(key);
               out.push(lines.slice(i, i + 4).join(" | ").replace(/\s+/g, " ").slice(0, 600));
             });
-            console.log("::error title=workerd errors (" + out.length + " distinct)::" + (out.slice(0, 12).join("%0A") || "none"));
+            console.log((out.length ? "::error" : "::notice") + " title=workerd errors (" + out.length + " distinct)::" + (out.slice(0, 12).join("%0A") || "none"));
           '
           exit $fail

@@ -20,7 +20,14 @@ field must be a multiple of 5 so the 5-minute trigger reaches it
 Database: `src/lib/db.ts` gives each Worker request its own Prisma client (a
 socket opened by one request cannot be reused by another on Workers). If a
 `HYPERDRIVE` binding is added, its pooled connection string is used instead of
-`DATABASE_URL`.
+`DATABASE_URL`. The client is generated as the `@ftp/prisma-client` package in
+`node_modules` and kept out of Next's bundle (`serverExternalPackages`), so the
+Worker build uses its workerd entry, which loads the query compiler as a
+WebAssembly module (workerd refuses Wasm compiled from bytes at runtime).
+
+Bundle size: about 9.0 MiB gzip (Nov 2026), under the Workers Paid limit of
+10 MiB. `.github/workflows/cloudflare-build.yml` reports it on every push to a
+`cloudflare/**` branch, together with a workerd smoke test of key pages.
 
 ## Commands
 
