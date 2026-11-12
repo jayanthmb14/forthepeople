@@ -29,7 +29,7 @@
  *   npx tsx scripts/fix-supporter-expiry-2026-09.ts --confirm  # apply
  */
 import "./_env";
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { calculateOneTimeExpiry } from "../src/lib/contribution-expiry";
 

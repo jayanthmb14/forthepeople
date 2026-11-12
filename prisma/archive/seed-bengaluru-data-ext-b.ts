@@ -3,7 +3,7 @@
 // 100 Schools · 28 Assembly + 3 LS Elections · Budget (₹19k Cr)
 // Run standalone: npx tsx prisma/seed-bengaluru-data-ext-b.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { electionResultKey } from "../../src/lib/dedupe/keys";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";

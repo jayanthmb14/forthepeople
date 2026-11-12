@@ -4,7 +4,7 @@
  */
 
 import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 function isSuspicious(name: string): { flag: boolean; reasons: string[] } {

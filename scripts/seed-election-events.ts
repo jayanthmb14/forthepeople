@@ -8,7 +8,7 @@
  */
 
 import "./_env";
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });

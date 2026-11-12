@@ -3,7 +3,7 @@
 // 50 Police Stations · 50 Govt Offices · 50 Bus Routes
 // Run standalone: npx tsx prisma/seed-bengaluru-data-ext-a.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

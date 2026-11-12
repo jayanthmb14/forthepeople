@@ -22,7 +22,7 @@
 // Model routing: purpose "fact-check" = Claude Sonnet → Haiku, no free
 // fallback (src/lib/ai-models.ts).
 // ═══════════════════════════════════════════════════════════
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import { callAIJSON } from "@/lib/ai-provider";
 import { asArray } from "@/lib/ai-json";
 import { prisma } from "@/lib/db";

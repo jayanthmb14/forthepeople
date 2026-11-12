@@ -22,7 +22,7 @@
  */
 
 import "./_env"; // MUST be first — loads .env then .env.local
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { looksLikeContactInfo } from "../src/lib/supporter-name";
 

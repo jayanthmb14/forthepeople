@@ -9,7 +9,7 @@
 // Computes a 0-100 composite score from 10 governance categories
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import {
   JJM_DISTRICT_TOTAL,
   LOCAL_INFRA,

@@ -6,7 +6,7 @@
 //
 // Run: npx tsx prisma/seed-government-exams.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient, type Prisma } from "../src/generated/prisma";
+import { PrismaClient, type Prisma } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 import { canonicalExamStatus, sameExam } from "../src/lib/dedupe/keys";

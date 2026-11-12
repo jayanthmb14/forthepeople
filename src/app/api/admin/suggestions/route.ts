@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 
 const VALID_STATUSES = new Set([
   "PENDING",

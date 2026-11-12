@@ -36,7 +36,7 @@
  * IDEMPOTENT. Uses findFirst({districtId, name}) → skip-if-exists.
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { findSameNamed } from "../src/lib/dedupe/match";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";

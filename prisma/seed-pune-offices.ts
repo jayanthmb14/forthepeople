@@ -12,7 +12,7 @@
  * Refs: Forthepeople/27-Pune-Module-Population-2026-04-24.md
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

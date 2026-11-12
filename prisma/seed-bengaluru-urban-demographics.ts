@@ -14,7 +14,7 @@
  * Cross-check:    https://www.census2011.co.in/census/district/242-bangalore.html
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

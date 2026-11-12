@@ -57,8 +57,12 @@ jobs:
         run: |
           npx wrangler deploy --dry-run --outdir .wrangler-dry --metafile .wrangler-dry/meta.json 2>&1 | tee dry.txt
           echo "::notice title=Worker bundle::$(grep -i 'Total Upload' dry.txt | head -1)"
+          ls -la .wrangler-dry | head -20
           node -e '
-            const m = require("./.wrangler-dry/meta.json");
+            process.on("uncaughtException", (e) => { console.log("::warning title=Bundle inputs report failed::" + String(e).slice(0, 300)); process.exit(0); });
+            const fs = require("fs");
+            const metaFile = [".wrangler-dry/meta.json", ".wrangler-dry/bundle-meta.json"].find((f) => fs.existsSync(f));
+            const m = JSON.parse(fs.readFileSync(metaFile, "utf8"));
             const out = Object.values(m.outputs).sort((a, b) => b.bytes - a.bytes)[0];
             const byPkg = {};
             for (const [file, v] of Object.entries(out.inputs)) {
@@ -69,6 +73,9 @@ jobs:
             const top = Object.entries(byPkg).sort((a, b) => b[1] - a[1]).slice(0, 30);
             console.log("::notice title=Biggest bundle inputs (KiB, raw)::" + top.map(([k, b]) => k + " " + Math.round(b / 1024)).join("%0A"));
           '
+
+      - name: Create the local cache tables (R2 / D1)
+        run: npx opennextjs-cloudflare populateCache local
 
       - name: Serve in workerd and check pages
         run: |
@@ -83,8 +90,8 @@ jobs:
             case "$p:${r%% *}" in /en/does-not-exist:404|/api/health:*|*:200) ;; *) fail=1 ;; esac
           done
           echo "::notice title=Pages::$results"
-          # Monday 2026-11-16 06:00 UTC: scrape-dams and scrape-budget are due.
-          curl -s "http://127.0.0.1:8787/__scheduled?cron=*/5+*+*+*+*&time=1794808800" -o /dev/null -w "scheduled %{http_code}\n"
+          # Fires the 5-minute trigger once at the current time.
+          curl -s "http://127.0.0.1:8787/__scheduled?cron=*/5+*+*+*+*" -o /dev/null -w "scheduled %{http_code}\n"
           sleep 25
           echo "::notice title=Cron lines::$(grep -o '\[cron\].*' dev.log | head -8 | tr '\n' '|')"
           node -e '

@@ -31,7 +31,7 @@
 // "Sub-Inspector in Delhi Police and CAPF Examination, 2026" are one row,
 // stored once as a national row (districtId null).
 // ═══════════════════════════════════════════════════════════
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import { prisma } from "@/lib/db";
 import type { ScraperResult } from "../types";
 import { canonicalExamStatus, examStatusRank, sameExam } from "@/lib/dedupe/keys";

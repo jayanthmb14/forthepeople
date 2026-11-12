@@ -31,7 +31,7 @@
  */
 
 import "./_env";
-import { PrismaClient, Prisma } from "../src/generated/prisma";
+import { PrismaClient, Prisma } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { logUpdate } from "../src/lib/update-log";
 import { getRoleDescription } from "../src/lib/constants/role-descriptions";

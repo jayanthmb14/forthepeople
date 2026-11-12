@@ -10,7 +10,7 @@
  *   npx tsx scripts/check-india-module-status.ts
  */
 import "./_env";
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { INDIA_MODULES } from "../src/lib/india/india-modules";
 import { moduleStatusMismatches } from "../src/lib/india/module-status";

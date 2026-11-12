@@ -3,7 +3,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { requireAdmin } from "@/lib/admin-auth";
 
 const SINGLETON_ID = "site-announcement-singleton";

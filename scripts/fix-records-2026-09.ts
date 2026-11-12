@@ -30,7 +30,7 @@
  * touched here.
  */
 import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { DATE_FIELDS, type Fix, type FieldValue } from "./fix-records-2026-09/types";
 import { POPULATION_FIXES } from "./fix-records-2026-09/population";

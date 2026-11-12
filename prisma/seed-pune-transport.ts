@@ -12,7 +12,7 @@
  * IDEMPOTENT — findFirst + skip-if-exists.
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

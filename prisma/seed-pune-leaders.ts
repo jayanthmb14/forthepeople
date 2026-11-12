@@ -31,7 +31,7 @@
  * Data verified as of April 2026. `lastVerifiedAt` set to seed execution time.
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

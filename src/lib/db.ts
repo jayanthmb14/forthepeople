@@ -4,7 +4,7 @@
  * https://github.com/jayanthmb14/forthepeople
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 function createPrismaClient(connectionString = process.env.DATABASE_URL) {

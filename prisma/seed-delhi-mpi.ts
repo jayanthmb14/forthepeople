@@ -32,7 +32,7 @@
  * IDEMPOTENT: re-running upserts by (districtId/stateId, year, dataset).
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

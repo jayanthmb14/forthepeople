@@ -168,6 +168,12 @@ const nextConfig: NextConfig = {
     return [...districtModuleRedirects, indiaDetailRedirect];
   },
 
+  // The Prisma client (generated into node_modules/@ftp/prisma-client) stays
+  // outside Next's server bundle, so the Cloudflare (OpenNext) build resolves
+  // its workerd entry, which loads the query compiler as a WebAssembly module.
+  // Workers cannot compile the base64 copy the Node entry embeds.
+  serverExternalPackages: ["@ftp/prisma-client"],
+
   // Remove default "x-powered-by: Next.js" header (we set our own above)
   poweredByHeader: false,
 

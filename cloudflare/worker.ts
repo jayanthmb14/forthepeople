@@ -41,7 +41,7 @@ async function runCron(path: string, env: Env, ctx: Ctx): Promise<void> {
   }
 }
 
-export default {
+const worker = {
   fetch: handler.fetch,
 
   async scheduled(controller: { scheduledTime: number }, env: Env, ctx: Ctx) {
@@ -51,3 +51,5 @@ export default {
     }
   },
 };
+
+export default worker;

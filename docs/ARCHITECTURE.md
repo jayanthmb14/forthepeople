@@ -167,8 +167,8 @@ old Docker files are archived in `docs/archive/docker/`.
      by the small `src/scraper/lib/pdf-text.ts`); Redis `ftp:data:fuel`.
    `/api/health` reads those timestamps and reports `degraded` when a job is
    older than twice its schedule.
-3. **Storage** — Neon PostgreSQL via Prisma (`prisma/schema.prisma`, generated
-   client under `src/generated/prisma`, git-ignored). Money is stored in whole
+3. **Storage** — Neon PostgreSQL via Prisma (`prisma/schema.prisma`; the
+   client is generated as the `@ftp/prisma-client` package under `node_modules`, kept external in `next.config.ts` so the Cloudflare build uses its workerd entry). Money is stored in whole
    rupees. Districts are registered in `src/lib/constants/districts.ts`
    (`isActive` flag + `getTotalActiveDistrictCount()`); everything else about a
    district comes from the DB.

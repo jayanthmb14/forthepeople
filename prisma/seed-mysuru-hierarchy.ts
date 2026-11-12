@@ -3,7 +3,7 @@
 // Run standalone: npx tsx prisma/seed-mysuru-hierarchy.ts
 // Or imported by seed-expansion.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

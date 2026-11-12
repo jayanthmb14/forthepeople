@@ -3,7 +3,7 @@
 // Deletes every row of ~50 tables, then writes demo rows, some invented
 // (random rainfall, arrears, challans). Provenance only — never run.
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 import { exitUnlessLocalSeedAllowed } from "../seed-guard";

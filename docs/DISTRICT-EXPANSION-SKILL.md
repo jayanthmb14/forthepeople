@@ -409,7 +409,7 @@ Other states will have their own variants. Before seeding any new state, run:
 
 ```bash
 npx tsx -r dotenv/config -e "
-  import { PrismaClient } from './src/generated/prisma';
+  import { PrismaClient } from '@ftp/prisma-client';
   import { PrismaPg } from '@prisma/adapter-pg';
   const p = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
   (async () => {

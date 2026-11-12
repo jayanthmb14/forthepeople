@@ -11,7 +11,7 @@
  * shows an italic "Analysis will be available soon" placeholder.
  */
 
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { prisma } from "./db";
 import { callAIJSON } from "./ai-provider";
 import redis from "./redis";

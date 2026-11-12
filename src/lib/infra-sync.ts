@@ -16,7 +16,7 @@
  *   - If the article only says "the government", announcedBy is null.
  */
 
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import { prisma } from "./db";
 import { AIDeadlineError, callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";

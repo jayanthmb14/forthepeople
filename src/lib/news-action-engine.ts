@@ -9,7 +9,7 @@
 // High confidence (>0.85): auto-execute | Mid (0.60-0.85): queue for review
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "./db";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import { callAIJSON } from "./ai-provider";
 import { extractExamFromNews, syncExamFromNews } from "./exam-sync";
 import { extractVerifyAndSyncInfra } from "./infra-sync";

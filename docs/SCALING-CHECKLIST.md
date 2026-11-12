@@ -229,7 +229,7 @@ Create a seed file for the new district's core data:
 
 ```typescript
 // prisma/seed-newdistrict.ts
-import { PrismaClient } from '@/generated/prisma';
+import { PrismaClient } from '@ftp/prisma-client';
 
 const prisma = new PrismaClient();
 
@@ -286,7 +286,7 @@ npx prisma studio
 
 # OR via a small script:
 # npx tsx -e "
-#   import { PrismaClient } from '@/generated/prisma';
+#   import { PrismaClient } from '@ftp/prisma-client';
 #   const p = new PrismaClient();
 #   p.district.update({ where: { slug: 'new-district' }, data: { active: true } })
 #    .then(() => p.\$disconnect());

@@ -15,7 +15,7 @@
  * IDEMPOTENT — findFirst by (districtId, name, scope) + skip.
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { findSameNamed } from "../src/lib/dedupe/match";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";

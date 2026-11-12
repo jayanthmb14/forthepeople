@@ -4,7 +4,7 @@
 // NEVER involves an LLM.
 
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { NOT_STUB_TENDER } from "@/lib/data-filters";
 
 type FlagRow = {

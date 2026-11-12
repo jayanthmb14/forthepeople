@@ -9,7 +9,7 @@
  */
 
 import { prisma } from "@/lib/db";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 
 export type UpdateSource = "admin_edit" | "scraper" | "cron" | "api" | "ai_bot";
 export type UpdateAction = "create" | "update" | "delete";

@@ -7,7 +7,7 @@
 // (pure; tests/tender-list-query.test.ts). Numbers must be plain whole
 // numbers: "1.5", "abc" or "-3" used to reach BigInt() / parseInt() and
 // answer 500 or send NaN to the database; now they are a 400.
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { NOT_STUB_TENDER } from "@/lib/data-filters";
 
 export interface TenderListQuery {

@@ -5,7 +5,10 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  // Generated as a package under node_modules so next.config can keep it
+  // external: the Cloudflare build then picks its workerd entry (edge.js),
+  // which loads the query compiler as a WebAssembly module.
+  output   = "../node_modules/@ftp/prisma-client"
 }
 
 datasource db {

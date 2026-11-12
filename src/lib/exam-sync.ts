@@ -29,7 +29,7 @@
  *     it is official and written in the article text (src/lib/exam-news.ts).
  */
 
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import { prisma } from "./db";
 import { AIDeadlineError, callAIJSON } from "./ai-provider";
 import { cacheKey, cacheSet } from "./cache";

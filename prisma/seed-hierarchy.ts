@@ -6,7 +6,7 @@
 // Run: npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed-hierarchy.ts
 // Or:  npx tsx prisma/seed-hierarchy.ts
 // ═══════════════════════════════════════════════════════════
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 

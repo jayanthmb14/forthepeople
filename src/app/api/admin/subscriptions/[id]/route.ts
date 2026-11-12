@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { encrypt } from "@/lib/encryption";
 import { logAuditAuto } from "@/lib/audit-log";
 import { requireAdmin } from "@/lib/admin-auth";

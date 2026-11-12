@@ -11,7 +11,7 @@
 // src/lib/supporter-payment.ts; this file only reads the checkout and writes.
 
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { oneTimeSupporterData, type CapturedPayment, type CheckoutAnswers } from "@/lib/supporter-payment";
 
 /** What the supporter typed at checkout for this order, or null. */

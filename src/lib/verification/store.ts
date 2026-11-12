@@ -16,7 +16,7 @@
 // `npm run db:push` has not created the table yet (Prisma P2021).
 // ═══════════════════════════════════════════════════════════
 import { prisma } from "@/lib/db";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@ftp/prisma-client";
 import type { ReviewRequest, StoredCheckRow, VerificationRecord } from "./types";
 
 const RETENTION_DAYS = 120;

@@ -13,7 +13,7 @@ import { prisma } from "@/lib/db";
 import { cacheSet } from "@/lib/cache";
 import { logAuditAuto } from "@/lib/audit-log";
 import { SUPPORT_DEFAULTS, type CostBreakdownItem, type HelpItem } from "@/lib/support-defaults";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 
 const ROW_ID = "support-page-config";
 const CACHE_KEY = "ftp:support-page-config:v1";

@@ -917,7 +917,7 @@ export function formatWrites(writes: Write[], districts: DistrictRef[], rows: Le
 
 async function main() {
   await import("./_env");
-  const { PrismaClient } = await import("../src/generated/prisma");
+  const { PrismaClient } = await import("@ftp/prisma-client");
   const { PrismaPg } = await import("@prisma/adapter-pg");
 
   const CONFIRM = process.argv.includes("--confirm");

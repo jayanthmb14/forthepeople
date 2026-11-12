@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@ftp/prisma-client";
 import { logAuditAuto } from "@/lib/audit-log";
 import { detectAndCleanSocialLink } from "@/lib/social-detect";
 import { bustSupporterCaches } from "@/lib/supporter-cache";

@@ -10,7 +10,7 @@
  */
 
 import "./_env"; // MUST be first: loads .env + .env.local before any module reads process.env
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@ftp/prisma-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { INDIA_STATES, SUB_UNIT_CHECKS, shownSubUnits, type District } from "../src/lib/constants/districts";
 
