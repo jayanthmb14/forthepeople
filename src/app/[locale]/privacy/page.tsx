@@ -58,7 +58,7 @@ const ITEM: React.CSSProperties = { marginBottom: 6 };
 
 /** Processors / services named in clauses 8 and 12 (proper nouns), with their privacy pages. */
 const SERVICES: { key: string; name: string; policyUrl: string; policyLabel: string }[] = [
-  { key: "vercel", name: "Vercel", policyUrl: "https://vercel.com/legal/privacy-policy", policyLabel: "vercel.com/legal/privacy-policy" },
+  { key: "cloudflare", name: "Cloudflare", policyUrl: "https://www.cloudflare.com/privacypolicy/", policyLabel: "cloudflare.com/privacypolicy" },
   { key: "razorpay", name: "Razorpay", policyUrl: "https://razorpay.com/privacy/", policyLabel: "razorpay.com/privacy" },
   { key: "neon", name: "Neon", policyUrl: "https://neon.tech/privacy-policy", policyLabel: "neon.tech/privacy-policy" },
   { key: "upstash", name: "Upstash", policyUrl: "https://upstash.com/trust/privacy.pdf", policyLabel: "upstash.com/trust/privacy.pdf" },
@@ -98,7 +98,7 @@ export default async function PrivacyPage({ params }: Props) {
   return (
     <main className="ftp-hue-slate" style={{ background: "var(--ftp-bg)", minHeight: "100vh" }}>
       <ModulePage>
-          <LegalPageHeader title={t("title")} lastUpdated="2026-09-28" emoji="🔒" />
+          <LegalPageHeader title={t("title")} lastUpdated="2026-11-13" emoji="🔒" />
           <Explainer emoji="🔒">{t("simple")}</Explainer>
           <LegalGlance
             label={t("glanceLabel")}

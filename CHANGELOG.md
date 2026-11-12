@@ -12,6 +12,8 @@ This file replaces the scattered "current state" blocks in `CLAUDE.md`, `docs/LI
 - The India module OG image no longer pins the edge runtime (unsupported by the adapter).
 - AI: with `SARVAM_API_KEY` set, Sarvam's `sarvam-105b` then `glm5.3-flash` go first for Tier 1 and Tier 2 (news analysis, insights), paid from Sarvam Startup Program credits; OpenRouter models stay as fallbacks; fact-check unchanged.
 - `.github/workflows/cloudflare-build.yml`: builds the Worker on Linux, reports bundle size, serves it in workerd and checks key pages and a cron tick.
+- Privacy policy (DPDP processor disclosure): Cloudflare replaces Vercel as the hosting processor (clauses 8 and 12, server-log row); last updated 2026-11-13 — move the date to the actual switch-over day if it differs.
+- Prisma client generated as `@ftp/prisma-client` in `node_modules` (was `src/generated/prisma`) and kept in `serverExternalPackages`, so the Worker loads the query compiler as a Wasm module.
 
 ## [Unreleased] — 2026-11-04 cost cuts (branch `cost/cut-vercel-spend`)
 

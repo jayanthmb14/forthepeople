@@ -121,7 +121,7 @@
       "r4": {
         "data": "Server logs",
         "howLong": "30 days",
-        "why": "Vercel platform default; security investigations"
+        "why": "Hosting platform (Cloudflare) logs; security investigations"
       },
       "r5": {
         "data": "Error logs (Sentry)",
@@ -155,9 +155,9 @@
     "s7b": "Under DPDP Act 2023, we do not engage in targeted advertising or behavioural monitoring of children.",
     "s8intro": "Some of our processors store or process data on servers outside India. We disclose these clearly:",
     "t8": {
-      "vercel": {
-        "purpose": "Hosting",
-        "location": "Global edge + US origin"
+      "cloudflare": {
+        "purpose": "Hosting, content delivery and security",
+        "location": "Global edge network (served from the data centre nearest the visitor)"
       },
       "razorpay": {
         "purpose": "Payments",
@@ -202,7 +202,7 @@
     },
     "s11": "In the event of a personal data breach that is likely to result in risk to you, we will notify affected users within <b>72 hours</b> of becoming aware of the breach, as required under DPDP Act 2023. Notifications will include the nature of the breach, data affected, actions being taken, and steps you can take to protect yourself. We will also notify the Data Protection Board of India within the required timeframe.",
     "t12": {
-      "vercel": "Hosting & deployment",
+      "cloudflare": "Hosting, content delivery & security",
       "razorpay": "Payment processing",
       "neon": "Managed PostgreSQL database",
       "upstash": "Redis cache",
