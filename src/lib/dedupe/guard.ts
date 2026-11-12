@@ -34,7 +34,7 @@
 // in tests/dedupe-guard.test.ts; runDuplicateGuard() does the reads and
 // writes and takes the Prisma client (or a transaction) as an argument.
 // ═══════════════════════════════════════════════════════════
-import type { PrismaClient } from "../../generated/prisma";
+import type { PrismaClient } from "@ftp/prisma-client";
 import {
   canonicalElectionType,
   electionResultKey,
